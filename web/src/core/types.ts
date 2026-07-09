@@ -11,6 +11,7 @@ export type GameFile = {
 
 export type Command = {
   type: string;
+  payload?: unknown;
 };
 
 export type CoreResult<T> =
@@ -21,20 +22,41 @@ export type ReplayState = {
   schemaVersion: number;
   eventCount: number;
   phase: string;
-  warnings: unknown[];
+  players: Player[];
+  warnings: CoreWarning[];
 };
 
 export type Proposal = {
-  event: {
-    id: string;
-    type: string;
-    phase: string;
-    payload: unknown;
-    summary: string;
-    createdAt: string;
-  };
-  warnings: unknown[];
+  event: GameEvent;
+  warnings: CoreWarning[];
   followUpSteps: unknown[];
   preview: unknown;
 };
 
+export type GameEvent = {
+  id: string;
+  type: string;
+  phase: string;
+  payload: unknown;
+  summary: string;
+  createdAt: string;
+};
+
+export type Player = {
+  id: string;
+  seat: number;
+  name: string;
+  actualCharacter: string;
+  shownCharacter: string;
+  alignment: "good" | "evil";
+  alive: boolean;
+  ghostVoteUsed: boolean;
+  deathAnnounced: boolean;
+  notes: string;
+};
+
+export type CoreWarning = {
+  code: string;
+  severity: "warning" | "info";
+  messageKo: string;
+};
