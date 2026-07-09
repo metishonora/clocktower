@@ -208,7 +208,7 @@ h2 {
 
 .setupGrid {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .setupRow {
@@ -239,6 +239,30 @@ label {
   font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.characterSummary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-left: 3px solid #736b5c;
+  padding-left: 8px;
+  color: #efe3c8;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.characterSummary.Townsfolk {
+  border-color: #2f9b7a;
+}
+
+.characterSummary.Outsider {
+  border-color: #c89b42;
+}
+
+.characterSummary.Minion,
+.characterSummary.Demon {
+  border-color: #b14e45;
 }
 
 input,
@@ -278,6 +302,53 @@ select {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 18px 0 0;
+}
+
+.setupSummary {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  border-top: 1px solid #514535;
+  padding-top: 14px;
+}
+
+.setupSummary h2 {
+  font-size: 1.05rem;
+}
+
+.setupCounts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.setupCounts div {
+  border: 1px solid #5b5143;
+  border-radius: 6px;
+  background: #181612;
+  padding: 9px;
+}
+
+.setupCounts .matched {
+  border-color: #2f9b7a;
+}
+
+.setupCounts .mismatched {
+  border-color: #8b6730;
+}
+
+.setupCounts dt {
+  color: #cdbf9f;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.setupCounts dd {
+  margin: 4px 0 0;
+  color: #fff5d5;
+  font-size: 1.15rem;
+  font-weight: 900;
 }
 
 .counts div {
@@ -341,7 +412,7 @@ select {
 
 @media (min-width: 1180px) {
   .setupRow {
-    grid-template-columns: 34px minmax(96px, 1fr) minmax(132px, 1fr) minmax(132px, 1fr);
+    grid-template-columns: 34px minmax(96px, 0.8fr) minmax(160px, 1fr) minmax(160px, 1fr);
   }
 }
 
@@ -382,6 +453,10 @@ select {
     width: 112px;
     min-height: 86px;
     padding: 7px;
+  }
+
+  .setupCounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mapCenter {

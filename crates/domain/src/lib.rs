@@ -505,6 +505,31 @@ mod tests {
     }
 
     #[test]
+    fn propose_create_game_returns_nonblocking_distribution_warnings() {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": [
+                    { "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "chef", "shownCharacter": "chef" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                ]
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["warnings"][0]["code"],
+            "SETUP_DISTRIBUTION_MISMATCH"
+        );
+    }
+
+    #[test]
     fn replay_setup_confirmed_event_derives_player_state() {
         let game = json!({
             "schemaVersion": 1,

@@ -10,6 +10,8 @@ type Character = {
   kind: "Townsfolk" | "Outsider" | "Minion" | "Demon";
 };
 
+type CharacterKind = Character["kind"];
+
 type DraftPlayer = {
   seat: number;
   name: string;
@@ -42,7 +44,32 @@ const characters: Character[] = [
   { id: "imp", label: "Imp", kind: "Demon" },
 ];
 
-const defaultCharacters = ["washerwoman", "librarian", "investigator", "poisoner", "imp"];
+const defaultCharacters = [
+  "washerwoman",
+  "librarian",
+  "investigator",
+  "poisoner",
+  "imp",
+  "butler",
+  "chef",
+  "empath",
+  "recluse",
+  "fortuneTeller",
+  "undertaker",
+  "spy",
+  "monk",
+  "ravenkeeper",
+  "baron",
+];
+
+const characterKinds: CharacterKind[] = ["Townsfolk", "Outsider", "Minion", "Demon"];
+
+const kindLabels: Record<CharacterKind, string> = {
+  Townsfolk: "마을주민",
+  Outsider: "외부인",
+  Minion: "하수인",
+  Demon: "악마",
+};
 
 function createGameFile(events: unknown[] = []): GameFile {
   const now = new Date().toISOString();
@@ -88,12 +115,39 @@ function App() {
       });
   }, [gameFile]);
 
+  const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
   const players = replayState?.players ?? [];
   const setupConfirmed = players.length > 0;
-  const shownWarnings = proposalResult?.ok
-    ? proposalResult.value.warnings
-    : replayState?.warnings ?? [];
+  const shownWarnings =
+    !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
+
+  useEffect(() => {
+    if (hasConfirmedEvents) return;
+
+    let cancelled = false;
+    propose(gameFile, {
+      type: "createGame",
+      payload: { players: draftPlayers },
+    })
+      .then((result) => {
+        if (!cancelled) setProposalResult(result);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setProposalResult({
+          ok: false,
+          error: {
+            code: "SETUP_PREVIEW_FAILED",
+            messageKo: error instanceof Error ? error.message : "설정 검토 실패",
+          },
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftPlayers, gameFile, hasConfirmedEvents]);
 
   async function confirmSetup() {
     setBusy(true);
@@ -154,6 +208,7 @@ function App() {
             draftPlayers={draftPlayers}
             onChange={setDraftPlayers}
             onConfirm={confirmSetup}
+            warnings={shownWarnings}
             busy={busy}
           />
         )}
@@ -182,15 +237,19 @@ function SetupForm({
   draftPlayers,
   onChange,
   onConfirm,
+  warnings,
   busy,
 }: {
   draftPlayers: DraftPlayer[];
   onChange: (players: DraftPlayer[]) => void;
   onConfirm: () => void;
+  warnings: CoreWarning[];
   busy: boolean;
 }) {
   const canRemove = draftPlayers.length > 5;
   const canAdd = draftPlayers.length < 15;
+  const counts = countCharacters(draftPlayers);
+  const expectedCounts = expectedDistribution(draftPlayers.length);
 
   function updatePlayer(seat: number, patch: Partial<DraftPlayer>) {
     onChange(
@@ -203,6 +262,14 @@ function SetupForm({
           : player,
       ),
     );
+  }
+
+  function updateActualCharacter(player: DraftPlayer, actualCharacter: string) {
+    updatePlayer(player.seat, {
+      actualCharacter,
+      shownCharacter:
+        player.shownCharacter === player.actualCharacter ? actualCharacter : player.shownCharacter,
+    });
   }
 
   return (
@@ -244,8 +311,11 @@ function SetupForm({
               실제 캐릭터
               <CharacterSelect
                 value={player.actualCharacter}
-                onChange={(actualCharacter) => updatePlayer(player.seat, { actualCharacter })}
+                onChange={(actualCharacter) => updateActualCharacter(player, actualCharacter)}
               />
+              <span className={`characterSummary ${characterKind(player.actualCharacter)}`}>
+                {characterLabel(player.actualCharacter)}
+              </span>
             </label>
             <label>
               보여준 캐릭터
@@ -253,15 +323,47 @@ function SetupForm({
                 value={player.shownCharacter}
                 onChange={(shownCharacter) => updatePlayer(player.seat, { shownCharacter })}
               />
+              <span className={`characterSummary ${characterKind(player.shownCharacter)}`}>
+                {characterLabel(player.shownCharacter)}
+              </span>
             </label>
           </div>
         ))}
       </div>
 
+      <SetupSummary counts={counts} expectedCounts={expectedCounts} warnings={warnings} />
+
       <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy}>
         {busy ? "확정 중" : "설정 확정"}
       </button>
     </>
+  );
+}
+
+function SetupSummary({
+  counts,
+  expectedCounts,
+  warnings,
+}: {
+  counts: Record<CharacterKind, number>;
+  expectedCounts: Record<CharacterKind, number>;
+  warnings: CoreWarning[];
+}) {
+  return (
+    <section className="setupSummary" aria-label="조합 힌트">
+      <h2>조합 힌트</h2>
+      <dl className="setupCounts">
+        {characterKinds.map((kind) => (
+          <div className={counts[kind] === expectedCounts[kind] ? "matched" : "mismatched"} key={kind}>
+            <dt>{kindLabels[kind]}</dt>
+            <dd>
+              {counts[kind]} / {expectedCounts[kind]}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <Warnings warnings={warnings} />
+    </section>
   );
 }
 
@@ -396,6 +498,44 @@ function Warnings({ warnings }: { warnings: CoreWarning[] }) {
 
 function characterLabel(characterId: string): string {
   return characters.find((character) => character.id === characterId)?.label ?? characterId;
+}
+
+function characterKind(characterId: string): CharacterKind {
+  return characters.find((character) => character.id === characterId)?.kind ?? "Townsfolk";
+}
+
+function countCharacters(players: DraftPlayer[] | Player[]): Record<CharacterKind, number> {
+  return players.reduce(
+    (counts, player) => {
+      counts[characterKind(player.actualCharacter)] += 1;
+      return counts;
+    },
+    { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 },
+  );
+}
+
+function expectedDistribution(playerCount: number): Record<CharacterKind, number> {
+  const distributions: Record<number, [number, number, number, number]> = {
+    5: [3, 0, 1, 1],
+    6: [3, 1, 1, 1],
+    7: [5, 0, 1, 1],
+    8: [5, 1, 1, 1],
+    9: [5, 2, 1, 1],
+    10: [7, 0, 2, 1],
+    11: [7, 1, 2, 1],
+    12: [7, 2, 2, 1],
+    13: [9, 0, 3, 1],
+    14: [9, 1, 3, 1],
+    15: [9, 2, 3, 1],
+  };
+  const [townsfolk, outsider, minion, demon] = distributions[playerCount] ?? [0, 0, 0, 0];
+
+  return {
+    Townsfolk: townsfolk,
+    Outsider: outsider,
+    Minion: minion,
+    Demon: demon,
+  };
 }
 
 createRoot(document.getElementById("root")!).render(
