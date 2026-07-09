@@ -4,6 +4,8 @@ export type Character = {
   id: string;
   label: string;
   kind: CharacterKind;
+  icon: string;
+  abilitySummary: string;
 };
 
 export type DraftPlayer = {
@@ -26,28 +28,28 @@ export type CreateGamePlayerInput = {
 };
 
 export const characters: Character[] = [
-  { id: "washerwoman", label: "세탁부", kind: "Townsfolk" },
-  { id: "librarian", label: "사서", kind: "Townsfolk" },
-  { id: "investigator", label: "조사관", kind: "Townsfolk" },
-  { id: "chef", label: "요리사", kind: "Townsfolk" },
-  { id: "empath", label: "공감능력자", kind: "Townsfolk" },
-  { id: "fortuneTeller", label: "점쟁이", kind: "Townsfolk" },
-  { id: "undertaker", label: "장의사", kind: "Townsfolk" },
-  { id: "monk", label: "수도사", kind: "Townsfolk" },
-  { id: "ravenkeeper", label: "까마귀지기", kind: "Townsfolk" },
-  { id: "virgin", label: "처녀", kind: "Townsfolk" },
-  { id: "slayer", label: "학살자", kind: "Townsfolk" },
-  { id: "soldier", label: "군인", kind: "Townsfolk" },
-  { id: "mayor", label: "시장", kind: "Townsfolk" },
-  { id: "butler", label: "집사", kind: "Outsider" },
-  { id: "drunk", label: "술꾼", kind: "Outsider" },
-  { id: "recluse", label: "은둔자", kind: "Outsider" },
-  { id: "saint", label: "성자", kind: "Outsider" },
-  { id: "poisoner", label: "독살자", kind: "Minion" },
-  { id: "spy", label: "스파이", kind: "Minion" },
-  { id: "scarletWoman", label: "붉은 여인", kind: "Minion" },
-  { id: "baron", label: "남작", kind: "Minion" },
-  { id: "imp", label: "임프", kind: "Demon" },
+  { id: "washerwoman", label: "세탁부", kind: "Townsfolk", icon: "W", abilitySummary: "마을주민 1명과 후보 2명을 확인합니다." },
+  { id: "librarian", label: "사서", kind: "Townsfolk", icon: "L", abilitySummary: "외부인 1명과 후보 2명을 확인합니다." },
+  { id: "investigator", label: "조사관", kind: "Townsfolk", icon: "I", abilitySummary: "하수인 1명과 후보 2명을 확인합니다." },
+  { id: "chef", label: "요리사", kind: "Townsfolk", icon: "C", abilitySummary: "서로 이웃한 악 팀 쌍의 수를 듣습니다." },
+  { id: "empath", label: "공감능력자", kind: "Townsfolk", icon: "E", abilitySummary: "밤마다 살아있는 양옆 이웃 중 악 팀 수를 듣습니다." },
+  { id: "fortuneTeller", label: "점쟁이", kind: "Townsfolk", icon: "F", abilitySummary: "두 명 중 악마가 있는지 확인합니다." },
+  { id: "undertaker", label: "장의사", kind: "Townsfolk", icon: "U", abilitySummary: "전날 처형으로 죽은 플레이어의 캐릭터를 듣습니다." },
+  { id: "monk", label: "수도사", kind: "Townsfolk", icon: "M", abilitySummary: "자신이 아닌 한 명을 악마로부터 보호합니다." },
+  { id: "ravenkeeper", label: "까마귀지기", kind: "Townsfolk", icon: "R", abilitySummary: "밤에 죽으면 한 명의 캐릭터를 확인합니다." },
+  { id: "virgin", label: "처녀", kind: "Townsfolk", icon: "V", abilitySummary: "처음 지명한 마을주민을 즉시 처형할 수 있습니다." },
+  { id: "slayer", label: "학살자", kind: "Townsfolk", icon: "S", abilitySummary: "게임 중 한 번 악마라고 생각한 플레이어를 쏩니다." },
+  { id: "soldier", label: "군인", kind: "Townsfolk", icon: "S", abilitySummary: "악마에게 죽지 않습니다." },
+  { id: "mayor", label: "시장", kind: "Townsfolk", icon: "M", abilitySummary: "세 명 생존과 무처형으로 승리할 수 있습니다." },
+  { id: "butler", label: "집사", kind: "Outsider", icon: "B", abilitySummary: "주인이 투표할 때만 투표할 수 있습니다." },
+  { id: "drunk", label: "술꾼", kind: "Outsider", icon: "D", abilitySummary: "마을주민이라고 생각하지만 실제로는 능력이 없습니다." },
+  { id: "recluse", label: "은둔자", kind: "Outsider", icon: "R", abilitySummary: "악 팀이나 하수인/악마로 등록될 수 있습니다." },
+  { id: "saint", label: "성자", kind: "Outsider", icon: "S", abilitySummary: "처형으로 죽으면 악 팀이 승리합니다." },
+  { id: "poisoner", label: "독살자", kind: "Minion", icon: "P", abilitySummary: "밤마다 한 명을 다음 해질녘까지 중독시킵니다." },
+  { id: "spy", label: "스파이", kind: "Minion", icon: "S", abilitySummary: "밤마다 그리모어를 보고 선 팀으로 등록될 수 있습니다." },
+  { id: "scarletWoman", label: "붉은 여인", kind: "Minion", icon: "S", abilitySummary: "악마가 죽으면 새 악마가 될 수 있습니다." },
+  { id: "baron", label: "남작", kind: "Minion", icon: "B", abilitySummary: "게임 시작 시 외부인이 2명 더 많아집니다." },
+  { id: "imp", label: "임프", kind: "Demon", icon: "I", abilitySummary: "밤마다 한 명을 죽입니다." },
 ];
 
 export const characterKinds: CharacterKind[] = ["Townsfolk", "Outsider", "Minion", "Demon"];

@@ -141,49 +141,46 @@ function App() {
   }
 
   return (
-    <main className="shell">
-      <section className="panel grimoire">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">그리모어</p>
-            <h1>Trouble Brewing</h1>
-          </div>
-          <span className="phaseBadge">{setupConfirmed ? "설정 확정" : "설정 입력"}</span>
-        </div>
+    <main className={setupConfirmed ? "shell confirmedShell" : "shell setupShell"}>
+      {setupConfirmed ? (
+        <>
+          <section className="panel grimoire">
+            <div className="sectionHeader">
+              <div>
+                <p className="eyebrow">그리모어</p>
+                <h1>Trouble Brewing</h1>
+              </div>
+              <span className="phaseBadge">설정 확정</span>
+            </div>
+            <Grimoire players={players} draftPlayers={setupDraft.players} />
+          </section>
 
-        <Grimoire players={players} draftPlayers={setupDraft.players} />
-      </section>
+          <section className="panel setup">
+            <p className="eyebrow">설정</p>
+            <ConfirmedSetup players={players} onReset={resetSetup} />
+          </section>
 
-      <section className="panel setup">
-        <p className="eyebrow">설정</p>
-        {setupConfirmed ? (
-          <ConfirmedSetup players={players} onReset={resetSetup} />
-        ) : (
-          <SetupForm
-            draft={setupDraft}
-            onChange={setSetupDraft}
-            onConfirm={confirmSetup}
+          <EventLog
+            events={gameFile.game.events}
+            replayResult={replayResult}
+            proposalResult={proposalResult}
+            loadError={loadError}
             warnings={shownWarnings}
-            busy={busy}
           />
-        )}
-      </section>
-
-      <aside className="panel log">
-        <p className="eyebrow">이벤트 로그</p>
-        <Status replayResult={replayResult} proposalResult={proposalResult} loadError={loadError} />
-        <Warnings warnings={shownWarnings} />
-        <ol className="eventList">
-          {gameFile.game.events.length === 0 ? <li>확정된 이벤트 없음</li> : null}
-          {gameFile.game.events.map((event, index) => {
-            const summary =
-              event && typeof event === "object" && "summary" in event
-                ? String(event.summary)
-                : `이벤트 ${index + 1}`;
-            return <li key={index}>{summary}</li>;
-          })}
-        </ol>
-      </aside>
+        </>
+      ) : (
+        <SetupForm
+          draft={setupDraft}
+          onChange={setSetupDraft}
+          onConfirm={confirmSetup}
+          warnings={shownWarnings}
+          busy={busy}
+          replayResult={replayResult}
+          proposalResult={proposalResult}
+          loadError={loadError}
+          events={gameFile.game.events}
+        />
+      )}
     </main>
   );
 }
@@ -194,12 +191,20 @@ function SetupForm({
   onConfirm,
   warnings,
   busy,
+  replayResult,
+  proposalResult,
+  loadError,
+  events,
 }: {
   draft: SetupDraft;
   onChange: (draft: SetupDraft) => void;
   onConfirm: () => void;
   warnings: CoreWarning[];
   busy: boolean;
+  replayResult?: CoreResult<ReplayState>;
+  proposalResult?: CoreResult<Proposal>;
+  loadError?: string;
+  events: unknown[];
 }) {
   const canRemove = draft.players.length > 5;
   const canAdd = draft.players.length < 15;
@@ -210,105 +215,222 @@ function SetupForm({
 
   return (
     <>
-      <div className="setupActions">
-        <button
-          type="button"
-          className="iconButton"
-          aria-label="플레이어 제거"
-          onClick={() => onChange(resizeSetupDraft(draft, draft.players.length - 1))}
-          disabled={!canRemove || busy}
-        >
-          -
-        </button>
-        <strong>{draft.players.length}명</strong>
-        <button
-          type="button"
-          className="iconButton"
-          aria-label="플레이어 추가"
-          onClick={() => onChange(resizeSetupDraft(draft, draft.players.length + 1))}
-          disabled={!canAdd || busy}
-        >
-          +
-        </button>
-        <span className="selectedSeatLabel">선택: {draft.selectedSeat}번</span>
-      </div>
-
-      <div className="setupGrid" aria-label="플레이어 설정">
-        {draft.players.map((player) => (
-          <div className={`setupRow ${player.seat === draft.selectedSeat ? "selected" : ""}`} key={player.seat}>
+      <section className="panel grimoire draftGrimoire">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">그리모어 초안</p>
+            <h1>Trouble Brewing</h1>
+          </div>
+          <div className="setupActions" aria-label="인원 선택">
             <button
               type="button"
-              className="seatNumber"
-              aria-pressed={player.seat === draft.selectedSeat}
-              onClick={() => onChange(selectSeat(draft, player.seat))}
+              className="iconButton"
+              aria-label="플레이어 제거"
+              onClick={() => onChange(resizeSetupDraft(draft, draft.players.length - 1))}
+              disabled={!canRemove || busy}
             >
-              {player.seat}
+              -
             </button>
+            <strong>{draft.players.length}명</strong>
+            <button
+              type="button"
+              className="iconButton"
+              aria-label="플레이어 추가"
+              onClick={() => onChange(resizeSetupDraft(draft, draft.players.length + 1))}
+              disabled={!canAdd || busy}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <DraftGrimoireCircle draft={draft} onChange={onChange} busy={busy} />
+      </section>
+
+      <aside className="setupRail">
+        <section className="panel reviewPanel">
+          <div className="sectionHeader compact">
+            <div>
+              <p className="eyebrow">검토</p>
+              <h2>설정 힌트</h2>
+            </div>
+            <span className="phaseBadge">선택 {draft.selectedSeat}번</span>
+          </div>
+          <SetupSummary counts={counts} expectedCounts={expectedCounts} warnings={warnings} />
+          <Status replayResult={replayResult} proposalResult={proposalResult} loadError={loadError} />
+          <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
+            {busy ? "확정 중" : "설정 확정"}
+          </button>
+        </section>
+
+        <section className="panel characterPoolPanel">
+          <div className="sectionHeader compact">
+            <div>
+              <p className="eyebrow">캐릭터 풀</p>
+              <h2>{selectedPlayer ? `${selectedPlayer.seat}번 좌석에 배정` : "좌석 선택"}</h2>
+            </div>
+            {selectedPlayer?.actualCharacter ? (
+              <button
+                type="button"
+                className="secondaryAction"
+                onClick={() => onChange(unassignActualCharacter(draft))}
+                disabled={busy}
+              >
+                배정 해제
+              </button>
+            ) : null}
+          </div>
+          <CharacterPool draft={draft} onChange={onChange} busy={busy} counts={counts} expectedCounts={expectedCounts} />
+        </section>
+
+        <EventLog
+          events={events}
+          replayResult={replayResult}
+          proposalResult={proposalResult}
+          loadError={loadError}
+          warnings={[]}
+        />
+      </aside>
+    </>
+  );
+}
+
+function DraftGrimoireCircle({
+  draft,
+  onChange,
+  busy,
+}: {
+  draft: SetupDraft;
+  onChange: (draft: SetupDraft) => void;
+  busy: boolean;
+}) {
+  const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
+  const selectedCharacter = characters.find((character) => character.id === selectedPlayer?.actualCharacter);
+
+  return (
+    <div
+      className={`seatMap draftSeatMap ${draft.players.length >= 12 ? "compactSeats" : ""}`}
+      aria-label="원형 그리모어 좌석 맵"
+    >
+      <section className="draftMapCenter" aria-label="선택한 플레이어">
+        {selectedPlayer ? (
+          <>
+            <span className="centerSeatBadge">{selectedPlayer.seat}번</span>
             <label>
               이름
               <input
-                value={player.name}
-                onChange={(event) => onChange(updateDraftPlayer(draft, player.seat, { name: event.target.value }))}
-              />
-            </label>
-            <label>
-              실제 캐릭터
-              <CharacterSelect
-                value={player.actualCharacter ?? ""}
-                includeEmpty
-                onChange={(actualCharacter) =>
-                  onChange(
-                    actualCharacter
-                      ? assignActualCharacter(draft, actualCharacter, player.seat)
-                      : unassignActualCharacter(draft, player.seat),
-                  )
+                value={selectedPlayer.name}
+                disabled={busy}
+                onChange={(event) =>
+                  onChange(updateDraftPlayer(draft, selectedPlayer.seat, { name: event.target.value }))
                 }
               />
-              <span className={`characterSummary ${characterKind(player.actualCharacter) ?? "unassigned"}`}>
-                {characterLabel(player.actualCharacter)}
-              </span>
             </label>
-            {player.actualCharacter === "drunk" ? (
+            <strong className={`centerCharacter ${characterKind(selectedPlayer.actualCharacter) ?? "unassigned"}`}>
+              {characterLabel(selectedPlayer.actualCharacter)}
+            </strong>
+            {selectedCharacter ? <p className="centerAbilitySummary">{selectedCharacter.abilitySummary}</p> : null}
+            {selectedPlayer.actualCharacter === "drunk" ? (
               <label>
                 보여준 캐릭터
                 <CharacterSelect
-                  value={player.shownCharacter ?? ""}
+                  value={selectedPlayer.shownCharacter ?? ""}
                   options={drunkShownCharacterOptions()}
                   includeEmpty
-                  onChange={(shownCharacter) => onChange(setDrunkShownCharacter(draft, shownCharacter, player.seat))}
+                  disabled={busy}
+                  onChange={(shownCharacter) => onChange(setDrunkShownCharacter(draft, shownCharacter))}
                 />
-                <span className={`characterSummary ${characterKind(player.shownCharacter) ?? "unassigned"}`}>
-                  {characterLabel(player.shownCharacter)}
-                </span>
               </label>
             ) : null}
+          </>
+        ) : null}
+      </section>
+
+      {draft.players.map((player, index) => {
+        const angle = (360 / draft.players.length) * index;
+        const kind = characterKind(player.actualCharacter);
+        const selected = player.seat === draft.selectedSeat;
+
+        return (
+          <button
+            type="button"
+            className={`seatToken draftSeatToken ${kind ?? "unassigned"} ${selected ? "selected" : ""}`}
+            style={{ "--seat-angle": `${angle}deg` } as React.CSSProperties}
+            aria-pressed={selected}
+            onClick={() => onChange(selectSeat(draft, player.seat))}
+            disabled={busy}
+            key={player.seat}
+          >
+            <span className="seatTokenNumber">{player.seat}</span>
+            <strong>{player.name}</strong>
+            <small>{characterLabel(player.actualCharacter)}</small>
+            {player.actualCharacter === "drunk" ? (
+              <small className="shownCharacter">보여준 캐릭터: {characterLabel(player.shownCharacter)}</small>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CharacterPool({
+  draft,
+  onChange,
+  busy,
+  counts,
+  expectedCounts,
+}: {
+  draft: SetupDraft;
+  onChange: (draft: SetupDraft) => void;
+  busy: boolean;
+  counts: Record<CharacterKind, number>;
+  expectedCounts: Record<CharacterKind, number>;
+}) {
+  return (
+    <div className="characterPool" aria-label="Trouble Brewing 캐릭터 풀">
+      {characterKinds.map((kind) => (
+        <section className="characterGroup" key={kind}>
+          <div className="characterGroupHeader">
+            <h3>{kindLabels[kind]}</h3>
+            <span className={counts[kind] === expectedCounts[kind] ? "matched" : "mismatched"}>
+              {counts[kind]} / {expectedCounts[kind]}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className="characterCards">
+            {characters
+              .filter((character) => character.kind === kind)
+              .map((character) => {
+                const usedBy = draft.players.find((player) => player.actualCharacter === character.id);
+                const selected = draft.players[draft.selectedSeat - 1]?.actualCharacter === character.id;
 
-      {selectedPlayer ? (
-        <section className="selectedSeatEditor" aria-label="선택한 좌석 배정">
-          <h2>{selectedPlayer.seat}번 좌석</h2>
-          <CharacterSelect
-            value={selectedPlayer.actualCharacter ?? ""}
-            includeEmpty
-            onChange={(actualCharacter) =>
-              onChange(
-                actualCharacter
-                  ? assignActualCharacter(draft, actualCharacter)
-                  : unassignActualCharacter(draft),
-              )
-            }
-          />
+                return (
+                  <button
+                    type="button"
+                    className={`characterCard ${character.kind} ${usedBy ? "used" : "unused"} ${
+                      selected ? "selected" : ""
+                    }`}
+                    onClick={() => onChange(assignActualCharacter(draft, character.id))}
+                    disabled={busy}
+                    key={character.id}
+                  >
+                    <span className="characterIcon" aria-hidden="true">
+                      {character.icon}
+                    </span>
+                    <span className="characterText">
+                      <strong>{character.label}</strong>
+                      <small>{character.abilitySummary}</small>
+                    </span>
+                    <span className="usageLabel">
+                      {usedBy ? `사용 중: ${usedBy.seat}번` : "미사용"}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
         </section>
-      ) : null}
-
-      <SetupSummary counts={counts} expectedCounts={expectedCounts} warnings={warnings} />
-
-      <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
-        {busy ? "확정 중" : "설정 확정"}
-      </button>
-    </>
+      ))}
+    </div>
   );
 }
 
@@ -317,14 +439,16 @@ function CharacterSelect({
   onChange,
   options = characters,
   includeEmpty = false,
+  disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   options?: typeof characters;
   includeEmpty?: boolean;
+  disabled?: boolean;
 }) {
   return (
-    <select value={value} onChange={(event) => onChange(event.target.value)}>
+    <select value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}>
       {includeEmpty ? <option value="">미배정</option> : null}
       {options.map((character) => (
         <option value={character.id} key={character.id}>
@@ -359,6 +483,38 @@ function SetupSummary({
       </dl>
       <Warnings warnings={warnings} />
     </section>
+  );
+}
+
+function EventLog({
+  events,
+  replayResult,
+  proposalResult,
+  loadError,
+  warnings,
+}: {
+  events: unknown[];
+  replayResult?: CoreResult<ReplayState>;
+  proposalResult?: CoreResult<Proposal>;
+  loadError?: string;
+  warnings: CoreWarning[];
+}) {
+  return (
+    <aside className="panel log">
+      <p className="eyebrow">이벤트 로그</p>
+      <Status replayResult={replayResult} proposalResult={proposalResult} loadError={loadError} />
+      <Warnings warnings={warnings} />
+      <ol className="eventList">
+        {events.length === 0 ? <li>확정된 이벤트 없음</li> : null}
+        {events.map((event, index) => {
+          const summary =
+            event && typeof event === "object" && "summary" in event
+              ? String(event.summary)
+              : `이벤트 ${index + 1}`;
+          return <li key={index}>{summary}</li>;
+        })}
+      </ol>
+    </aside>
   );
 }
 
