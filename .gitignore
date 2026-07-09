@@ -5,3 +5,4 @@
 /web/dist/
 /web/tsconfig.tsbuildinfo
 /web/src/generated/clocktower_wasm/
+/.codex-tmp/

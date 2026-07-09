@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "src",
+    "outDir": "../.codex-tmp/web-tests",
+    "declaration": false
+  },
+  "include": ["src/setupDraft.ts", "src/setupDraft.test.ts", "src/node-test.d.ts"]
+}

@@ -220,15 +220,31 @@ h2 {
   padding-top: 8px;
 }
 
+.setupRow.selected {
+  border-color: #d4a84e;
+}
+
 .seatNumber {
   display: grid;
   width: 30px;
   height: 30px;
   place-items: center;
   align-self: center;
+  border: 0;
   border-radius: 50%;
   background: #74572d;
   color: #fff5d5;
+  font-weight: 900;
+}
+
+.seatNumber[aria-pressed="true"] {
+  background: #d4a84e;
+  color: #181612;
+}
+
+.selectedSeatLabel {
+  color: #f3d38b;
+  font-size: 0.86rem;
   font-weight: 900;
 }
 
@@ -263,6 +279,11 @@ label {
 .characterSummary.Minion,
 .characterSummary.Demon {
   border-color: #b14e45;
+}
+
+.characterSummary.unassigned {
+  border-color: #7b756b;
+  color: #b9afa0;
 }
 
 input,
@@ -310,6 +331,18 @@ select {
   margin-top: 16px;
   border-top: 1px solid #514535;
   padding-top: 14px;
+}
+
+.selectedSeatEditor {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  border-top: 1px solid #514535;
+  padding-top: 14px;
+}
+
+.selectedSeatEditor h2 {
+  font-size: 1rem;
 }
 
 .setupSummary h2 {

@@ -40,7 +40,8 @@ struct SetupPlayerInput {
     seat: u8,
     name: String,
     actual_character: String,
-    shown_character: String,
+    #[serde(default)]
+    shown_character: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -221,8 +222,8 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
     let players = payload
         .players
         .iter()
-        .map(|player| normalized_setup_player(player))
-        .collect::<Vec<_>>();
+        .map(normalized_setup_player)
+        .collect::<Result<Vec<_>, _>>()?;
     let derived_players = players
         .iter()
         .map(player_from_setup_input)
@@ -284,10 +285,27 @@ fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> 
         if player.name.trim().is_empty() {
             return Err(error("INVALID_PLAYER", "플레이어 이름을 입력해야 합니다."));
         }
-        if character_kind(&player.actual_character).is_none()
-            || character_kind(&player.shown_character).is_none()
-        {
+        if character_kind(&player.actual_character).is_none() {
             return Err(error("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."));
+        }
+        if let Some(shown_character) = &player.shown_character {
+            if character_kind(shown_character).is_none() {
+                return Err(error("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."));
+            }
+        }
+        if player.actual_character == "drunk" {
+            let Some(shown_character) = &player.shown_character else {
+                return Err(error(
+                    "INVALID_DRUNK_SHOWN_CHARACTER",
+                    "Drunk의 Shown Character는 마을주민이어야 합니다.",
+                ));
+            };
+            if !is_townsfolk(shown_character) {
+                return Err(error(
+                    "INVALID_DRUNK_SHOWN_CHARACTER",
+                    "Drunk의 Shown Character는 마을주민이어야 합니다.",
+                ));
+            }
         }
         seats.push(player.seat);
     }
@@ -305,8 +323,26 @@ fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> 
     Ok(())
 }
 
-fn normalized_setup_player(player: &SetupPlayerInput) -> SetupPlayerInput {
-    SetupPlayerInput {
+fn normalized_setup_player(player: &SetupPlayerInput) -> Result<SetupPlayerInput, CoreError> {
+    let shown_character = if player.actual_character == "drunk" {
+        let shown_character = player.shown_character.clone().ok_or_else(|| {
+            error(
+                "INVALID_DRUNK_SHOWN_CHARACTER",
+                "Drunk의 Shown Character는 마을주민이어야 합니다.",
+            )
+        })?;
+        if !is_townsfolk(&shown_character) {
+            return Err(error(
+                "INVALID_DRUNK_SHOWN_CHARACTER",
+                "Drunk의 Shown Character는 마을주민이어야 합니다.",
+            ));
+        }
+        shown_character
+    } else {
+        player.actual_character.clone()
+    };
+
+    Ok(SetupPlayerInput {
         id: Some(
             player
                 .id
@@ -316,12 +352,12 @@ fn normalized_setup_player(player: &SetupPlayerInput) -> SetupPlayerInput {
         seat: player.seat,
         name: player.name.trim().to_string(),
         actual_character: player.actual_character.clone(),
-        shown_character: player.shown_character.clone(),
-    }
+        shown_character: Some(shown_character),
+    })
 }
 
 fn player_from_setup_input(player: &SetupPlayerInput) -> Result<Player, CoreError> {
-    let normalized = normalized_setup_player(player);
+    let normalized = normalized_setup_player(player)?;
     let alignment = character_kind(&normalized.actual_character)
         .map(|kind| kind.alignment())
         .ok_or_else(|| error("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."))?;
@@ -331,7 +367,9 @@ fn player_from_setup_input(player: &SetupPlayerInput) -> Result<Player, CoreErro
         seat: normalized.seat,
         name: normalized.name,
         actual_character: normalized.actual_character,
-        shown_character: normalized.shown_character,
+        shown_character: normalized
+            .shown_character
+            .expect("normalized player should have a shown character"),
         alignment,
         alive: true,
         ghost_vote_used: false,
@@ -432,6 +470,10 @@ fn character_kind(character: &str) -> Option<CharacterKind> {
     }
 }
 
+fn is_townsfolk(character: &str) -> bool {
+    matches!(character_kind(character), Some(CharacterKind::Townsfolk))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -483,11 +525,11 @@ mod tests {
             "type": "createGame",
             "payload": {
                 "players": [
-                    { "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
-                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
-                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
-                    { "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
-                    { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                    { "seat": 1, "name": "Ada", "actualCharacter": "washerwoman" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "poisoner" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "imp" }
                 ]
             }
         });
@@ -527,6 +569,82 @@ mod tests {
             actual["value"]["warnings"][0]["code"],
             "SETUP_DISTRIBUTION_MISMATCH"
         );
+    }
+
+    #[test]
+    fn propose_create_game_derives_non_drunk_shown_character_from_actual_character() {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": [
+                    { "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "chef" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "empath" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "mayor" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "spy" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "baron" }
+                ]
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["event"]["payload"]["players"][0]["shownCharacter"],
+            "washerwoman"
+        );
+        assert_eq!(
+            actual["value"]["event"]["payload"]["players"][3]["shownCharacter"],
+            "poisoner"
+        );
+    }
+
+    #[test]
+    fn propose_create_game_preserves_townsfolk_shown_character_for_drunk() {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": [
+                    { "seat": 1, "name": "Ada", "actualCharacter": "drunk", "shownCharacter": "chef" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                ]
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["event"]["payload"]["players"][0]["shownCharacter"],
+            "chef"
+        );
+    }
+
+    #[test]
+    fn propose_create_game_rejects_non_townsfolk_shown_character_for_drunk() {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": [
+                    { "seat": 1, "name": "Ada", "actualCharacter": "drunk", "shownCharacter": "imp" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                ]
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "INVALID_DRUNK_SHOWN_CHARACTER");
     }
 
     #[test]

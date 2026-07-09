@@ -2,74 +2,26 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { propose, replay } from "./core/wasmClient";
 import type { CoreResult, CoreWarning, GameFile, Player, Proposal, ReplayState } from "./core/types";
+import {
+  assignActualCharacter,
+  characterKinds,
+  characterKind,
+  characterLabel,
+  characters,
+  createSetupDraft,
+  drunkShownCharacterOptions,
+  kindLabels,
+  resizeSetupDraft,
+  selectSeat,
+  setDrunkShownCharacter,
+  toCreateGamePlayers,
+  type CharacterKind,
+  type DraftPlayer,
+  type SetupDraft,
+  unassignActualCharacter,
+  updateDraftPlayer,
+} from "./setupDraft";
 import "./styles.css";
-
-type Character = {
-  id: string;
-  label: string;
-  kind: "Townsfolk" | "Outsider" | "Minion" | "Demon";
-};
-
-type CharacterKind = Character["kind"];
-
-type DraftPlayer = {
-  seat: number;
-  name: string;
-  actualCharacter: string;
-  shownCharacter: string;
-};
-
-const characters: Character[] = [
-  { id: "washerwoman", label: "Washerwoman", kind: "Townsfolk" },
-  { id: "librarian", label: "Librarian", kind: "Townsfolk" },
-  { id: "investigator", label: "Investigator", kind: "Townsfolk" },
-  { id: "chef", label: "Chef", kind: "Townsfolk" },
-  { id: "empath", label: "Empath", kind: "Townsfolk" },
-  { id: "fortuneTeller", label: "Fortune Teller", kind: "Townsfolk" },
-  { id: "undertaker", label: "Undertaker", kind: "Townsfolk" },
-  { id: "monk", label: "Monk", kind: "Townsfolk" },
-  { id: "ravenkeeper", label: "Ravenkeeper", kind: "Townsfolk" },
-  { id: "virgin", label: "Virgin", kind: "Townsfolk" },
-  { id: "slayer", label: "Slayer", kind: "Townsfolk" },
-  { id: "soldier", label: "Soldier", kind: "Townsfolk" },
-  { id: "mayor", label: "Mayor", kind: "Townsfolk" },
-  { id: "butler", label: "Butler", kind: "Outsider" },
-  { id: "drunk", label: "Drunk", kind: "Outsider" },
-  { id: "recluse", label: "Recluse", kind: "Outsider" },
-  { id: "saint", label: "Saint", kind: "Outsider" },
-  { id: "poisoner", label: "Poisoner", kind: "Minion" },
-  { id: "spy", label: "Spy", kind: "Minion" },
-  { id: "scarletWoman", label: "Scarlet Woman", kind: "Minion" },
-  { id: "baron", label: "Baron", kind: "Minion" },
-  { id: "imp", label: "Imp", kind: "Demon" },
-];
-
-const defaultCharacters = [
-  "washerwoman",
-  "librarian",
-  "investigator",
-  "poisoner",
-  "imp",
-  "butler",
-  "chef",
-  "empath",
-  "recluse",
-  "fortuneTeller",
-  "undertaker",
-  "spy",
-  "monk",
-  "ravenkeeper",
-  "baron",
-];
-
-const characterKinds: CharacterKind[] = ["Townsfolk", "Outsider", "Minion", "Demon"];
-
-const kindLabels: Record<CharacterKind, string> = {
-  Townsfolk: "마을주민",
-  Outsider: "외부인",
-  Minion: "하수인",
-  Demon: "악마",
-};
 
 function createGameFile(events: unknown[] = []): GameFile {
   const now = new Date().toISOString();
@@ -86,22 +38,9 @@ function createGameFile(events: unknown[] = []): GameFile {
   };
 }
 
-function createDraftPlayer(seat: number): DraftPlayer {
-  const character = defaultCharacters[seat - 1] ?? "washerwoman";
-
-  return {
-    seat,
-    name: `플레이어 ${seat}`,
-    actualCharacter: character,
-    shownCharacter: character,
-  };
-}
-
 function App() {
   const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile());
-  const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>(() =>
-    Array.from({ length: 5 }, (_, index) => createDraftPlayer(index + 1)),
-  );
+  const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
   const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
   const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
   const [busy, setBusy] = useState(false);
@@ -119,16 +58,21 @@ function App() {
   const replayState = replayResult?.ok ? replayResult.value : undefined;
   const players = replayState?.players ?? [];
   const setupConfirmed = players.length > 0;
+  const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
   const shownWarnings =
     !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
 
   useEffect(() => {
     if (hasConfirmedEvents) return;
+    if (!createGamePlayers) {
+      setProposalResult(undefined);
+      return;
+    }
 
     let cancelled = false;
     propose(gameFile, {
       type: "createGame",
-      payload: { players: draftPlayers },
+      payload: { players: createGamePlayers },
     })
       .then((result) => {
         if (!cancelled) setProposalResult(result);
@@ -147,15 +91,26 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [draftPlayers, gameFile, hasConfirmedEvents]);
+  }, [createGamePlayers, gameFile, hasConfirmedEvents]);
 
   async function confirmSetup() {
+    if (!createGamePlayers) {
+      setProposalResult({
+        ok: false,
+        error: {
+          code: "SETUP_INCOMPLETE",
+          messageKo: "모든 좌석에 Actual Character를 배정해야 합니다.",
+        },
+      });
+      return;
+    }
+
     setBusy(true);
     setLoadError(undefined);
 
     const result = await propose(gameFile, {
       type: "createGame",
-      payload: { players: draftPlayers },
+      payload: { players: createGamePlayers },
     }).catch((error: unknown): CoreResult<Proposal> => ({
       ok: false,
       error: {
@@ -182,7 +137,7 @@ function App() {
   function resetSetup() {
     setGameFile(createGameFile());
     setProposalResult(undefined);
-    setDraftPlayers(Array.from({ length: 5 }, (_, index) => createDraftPlayer(index + 1)));
+    setSetupDraft(createSetupDraft());
   }
 
   return (
@@ -196,7 +151,7 @@ function App() {
           <span className="phaseBadge">{setupConfirmed ? "설정 확정" : "설정 입력"}</span>
         </div>
 
-        <Grimoire players={players} draftPlayers={draftPlayers} />
+        <Grimoire players={players} draftPlayers={setupDraft.players} />
       </section>
 
       <section className="panel setup">
@@ -205,8 +160,8 @@ function App() {
           <ConfirmedSetup players={players} onReset={resetSetup} />
         ) : (
           <SetupForm
-            draftPlayers={draftPlayers}
-            onChange={setDraftPlayers}
+            draft={setupDraft}
+            onChange={setSetupDraft}
             onConfirm={confirmSetup}
             warnings={shownWarnings}
             busy={busy}
@@ -234,43 +189,24 @@ function App() {
 }
 
 function SetupForm({
-  draftPlayers,
+  draft,
   onChange,
   onConfirm,
   warnings,
   busy,
 }: {
-  draftPlayers: DraftPlayer[];
-  onChange: (players: DraftPlayer[]) => void;
+  draft: SetupDraft;
+  onChange: (draft: SetupDraft) => void;
   onConfirm: () => void;
   warnings: CoreWarning[];
   busy: boolean;
 }) {
-  const canRemove = draftPlayers.length > 5;
-  const canAdd = draftPlayers.length < 15;
-  const counts = countCharacters(draftPlayers);
-  const expectedCounts = expectedDistribution(draftPlayers.length);
-
-  function updatePlayer(seat: number, patch: Partial<DraftPlayer>) {
-    onChange(
-      draftPlayers.map((player) =>
-        player.seat === seat
-          ? {
-              ...player,
-              ...patch,
-            }
-          : player,
-      ),
-    );
-  }
-
-  function updateActualCharacter(player: DraftPlayer, actualCharacter: string) {
-    updatePlayer(player.seat, {
-      actualCharacter,
-      shownCharacter:
-        player.shownCharacter === player.actualCharacter ? actualCharacter : player.shownCharacter,
-    });
-  }
+  const canRemove = draft.players.length > 5;
+  const canAdd = draft.players.length < 15;
+  const counts = countCharacters(draft.players);
+  const expectedCounts = expectedDistribution(draft.players.length);
+  const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
+  const setupIncomplete = !toCreateGamePlayers(draft.players);
 
   return (
     <>
@@ -279,64 +215,123 @@ function SetupForm({
           type="button"
           className="iconButton"
           aria-label="플레이어 제거"
-          onClick={() => onChange(draftPlayers.slice(0, -1))}
+          onClick={() => onChange(resizeSetupDraft(draft, draft.players.length - 1))}
           disabled={!canRemove || busy}
         >
           -
         </button>
-        <strong>{draftPlayers.length}명</strong>
+        <strong>{draft.players.length}명</strong>
         <button
           type="button"
           className="iconButton"
           aria-label="플레이어 추가"
-          onClick={() => onChange([...draftPlayers, createDraftPlayer(draftPlayers.length + 1)])}
+          onClick={() => onChange(resizeSetupDraft(draft, draft.players.length + 1))}
           disabled={!canAdd || busy}
         >
           +
         </button>
+        <span className="selectedSeatLabel">선택: {draft.selectedSeat}번</span>
       </div>
 
       <div className="setupGrid" aria-label="플레이어 설정">
-        {draftPlayers.map((player) => (
-          <div className="setupRow" key={player.seat}>
-            <div className="seatNumber">{player.seat}</div>
+        {draft.players.map((player) => (
+          <div className={`setupRow ${player.seat === draft.selectedSeat ? "selected" : ""}`} key={player.seat}>
+            <button
+              type="button"
+              className="seatNumber"
+              aria-pressed={player.seat === draft.selectedSeat}
+              onClick={() => onChange(selectSeat(draft, player.seat))}
+            >
+              {player.seat}
+            </button>
             <label>
               이름
               <input
                 value={player.name}
-                onChange={(event) => updatePlayer(player.seat, { name: event.target.value })}
+                onChange={(event) => onChange(updateDraftPlayer(draft, player.seat, { name: event.target.value }))}
               />
             </label>
             <label>
               실제 캐릭터
               <CharacterSelect
-                value={player.actualCharacter}
-                onChange={(actualCharacter) => updateActualCharacter(player, actualCharacter)}
+                value={player.actualCharacter ?? ""}
+                includeEmpty
+                onChange={(actualCharacter) =>
+                  onChange(
+                    actualCharacter
+                      ? assignActualCharacter(draft, actualCharacter, player.seat)
+                      : unassignActualCharacter(draft, player.seat),
+                  )
+                }
               />
-              <span className={`characterSummary ${characterKind(player.actualCharacter)}`}>
+              <span className={`characterSummary ${characterKind(player.actualCharacter) ?? "unassigned"}`}>
                 {characterLabel(player.actualCharacter)}
               </span>
             </label>
-            <label>
-              보여준 캐릭터
-              <CharacterSelect
-                value={player.shownCharacter}
-                onChange={(shownCharacter) => updatePlayer(player.seat, { shownCharacter })}
-              />
-              <span className={`characterSummary ${characterKind(player.shownCharacter)}`}>
-                {characterLabel(player.shownCharacter)}
-              </span>
-            </label>
+            {player.actualCharacter === "drunk" ? (
+              <label>
+                보여준 캐릭터
+                <CharacterSelect
+                  value={player.shownCharacter ?? ""}
+                  options={drunkShownCharacterOptions()}
+                  includeEmpty
+                  onChange={(shownCharacter) => onChange(setDrunkShownCharacter(draft, shownCharacter, player.seat))}
+                />
+                <span className={`characterSummary ${characterKind(player.shownCharacter) ?? "unassigned"}`}>
+                  {characterLabel(player.shownCharacter)}
+                </span>
+              </label>
+            ) : null}
           </div>
         ))}
       </div>
 
+      {selectedPlayer ? (
+        <section className="selectedSeatEditor" aria-label="선택한 좌석 배정">
+          <h2>{selectedPlayer.seat}번 좌석</h2>
+          <CharacterSelect
+            value={selectedPlayer.actualCharacter ?? ""}
+            includeEmpty
+            onChange={(actualCharacter) =>
+              onChange(
+                actualCharacter
+                  ? assignActualCharacter(draft, actualCharacter)
+                  : unassignActualCharacter(draft),
+              )
+            }
+          />
+        </section>
+      ) : null}
+
       <SetupSummary counts={counts} expectedCounts={expectedCounts} warnings={warnings} />
 
-      <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy}>
+      <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
         {busy ? "확정 중" : "설정 확정"}
       </button>
     </>
+  );
+}
+
+function CharacterSelect({
+  value,
+  onChange,
+  options = characters,
+  includeEmpty = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options?: typeof characters;
+  includeEmpty?: boolean;
+}) {
+  return (
+    <select value={value} onChange={(event) => onChange(event.target.value)}>
+      {includeEmpty ? <option value="">미배정</option> : null}
+      {options.map((character) => (
+        <option value={character.id} key={character.id}>
+          {character.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -367,24 +362,6 @@ function SetupSummary({
   );
 }
 
-function CharacterSelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select value={value} onChange={(event) => onChange(event.target.value)}>
-      {characters.map((character) => (
-        <option value={character.id} key={character.id}>
-          {character.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
 function Grimoire({
   players,
   draftPlayers,
@@ -399,9 +376,11 @@ function Grimoire({
       <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
       {seats.map((seat, index) => {
         const angle = (360 / seats.length) * index;
-        const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : "";
-        const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : "";
+        const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : undefined;
+        const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : undefined;
         const alignment = "alignment" in seat ? seat.alignment : "good";
+        const showShownCharacter =
+          actualCharacter === "drunk" || Boolean(shownCharacter && actualCharacter !== shownCharacter);
 
         return (
           <article
@@ -412,7 +391,7 @@ function Grimoire({
             <span className="seatTokenNumber">{seat.seat}</span>
             <strong>{seat.name}</strong>
             <small>{characterLabel(actualCharacter)}</small>
-            {actualCharacter !== shownCharacter ? (
+            {showShownCharacter ? (
               <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
             ) : null}
           </article>
@@ -496,18 +475,11 @@ function Warnings({ warnings }: { warnings: CoreWarning[] }) {
   );
 }
 
-function characterLabel(characterId: string): string {
-  return characters.find((character) => character.id === characterId)?.label ?? characterId;
-}
-
-function characterKind(characterId: string): CharacterKind {
-  return characters.find((character) => character.id === characterId)?.kind ?? "Townsfolk";
-}
-
 function countCharacters(players: DraftPlayer[] | Player[]): Record<CharacterKind, number> {
   return players.reduce(
     (counts, player) => {
-      counts[characterKind(player.actualCharacter)] += 1;
+      const kind = characterKind(player.actualCharacter);
+      if (kind) counts[kind] += 1;
       return counts;
     },
     { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 },
