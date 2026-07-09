@@ -30,6 +30,89 @@ Out of scope for MVP:
 - Generic rules DSL.
 - Traveller/Fabled support.
 
+## Language
+
+Use English canonical terms in code and project documents. Korean is used for user-facing UI messages.
+
+**Storyteller**:
+The app user who runs the game and sees the full truth.
+_Avoid_: Host, admin, moderator
+
+**Player**:
+A game participant seated in the circle.
+_Avoid_: User
+
+**Grimoire**:
+The Storyteller-facing complete game state, including secret character and token information.
+_Avoid_: Board, table
+
+**Actual Character**:
+The character a player truly has in the game state.
+_Avoid_: Real character, assigned character
+
+**Shown Character**:
+The character a player was shown or believes they are, which can differ from the actual character for the Drunk.
+_Avoid_: Display character, fake character
+
+**Confirmed Event**:
+A Storyteller-confirmed game event stored as the source of truth.
+_Avoid_: Action, log item, transaction
+
+**Draft Input**:
+Unconfirmed UI input that can be changed or discarded without affecting game state.
+_Avoid_: Temporary event
+
+**Command**:
+A Storyteller intent sent to the Rust core for validation.
+_Avoid_: Event request, UI action
+
+**Proposal**:
+A Rust-generated candidate result of a command, including the canonical event when confirmation is valid.
+_Avoid_: Preview event
+
+**Reveal**:
+A player-facing information display that must contain only the information currently being shown.
+_Avoid_: Public view, player screen
+
+**Execution**:
+The Storyteller-confirmed result of the day's nomination and vote process.
+_Avoid_: Death
+
+**Death**:
+A change to a player's alive/dead state.
+_Avoid_: Execution
+
+**Announcement**:
+A public communication that a player died.
+_Avoid_: Death
+
+**Registration Judgment**:
+A specific rule judgment where Spy or Recluse may register differently from their actual character or alignment.
+_Avoid_: Registration override as player state
+
+**System Token**:
+A rule-affecting token such as poisoned, drunk, or protected.
+_Avoid_: Reminder
+
+**Script Token**:
+A Trouble Brewing character reminder token such as Monk protected, Butler master, or Poisoner poisoned.
+_Avoid_: System token
+
+**Note**:
+Free text attached to a player with no rules impact.
+_Avoid_: Token
+
+## Relationships
+
+- A **Storyteller** manages one current game.
+- A **Player** has one **Actual Character** and may have a different **Shown Character**.
+- A **Confirmed Event** changes derived game state when replayed.
+- A **Command** can produce a **Proposal**; a confirmed **Proposal** appends a **Confirmed Event**.
+- An **Execution** may cause **Death**, but **Death** can also happen without **Execution**.
+- A **Death** may require a later **Announcement**.
+- A **Registration Judgment** belongs to a specific rule check, not to a player globally.
+- A **Reveal** must not receive the full **Grimoire**.
+
 ## Technical Direction
 
 Use a Rust core with a TypeScript UI.
