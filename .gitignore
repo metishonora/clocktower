@@ -1,0 +1,7 @@
+/target/
+/.pnpm-store/
+/node_modules/
+/web/node_modules/
+/web/dist/
+/web/tsconfig.tsbuildinfo
+/web/src/generated/clocktower_wasm/
