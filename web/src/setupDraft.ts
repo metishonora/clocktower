@@ -118,20 +118,36 @@ export function createSetupDraft(playerCount = 5): SetupDraft {
 }
 
 export function createSetupDraftFromConfirmedPlayers(players: ConfirmedSetupPlayer[]): SetupDraft {
-  const draftPlayers = [...players]
-    .sort((player, nextPlayer) => player.seat - nextPlayer.seat)
-    .map((player) => ({
-      seat: player.seat,
-      name: player.name,
-      actualCharacter: player.actualCharacter,
-      shownCharacter: player.actualCharacter === "drunk" ? player.shownCharacter : undefined,
-    }));
+  const draftPlayers = confirmedPlayersToDraftPlayers(players);
 
   return {
     players: draftPlayers,
     selectedSeat: draftPlayers[0]?.seat ?? 1,
     seatLayoutPreset: "circle",
     seatPositions: seatLayoutPositions(draftPlayers.length || 5, "circle"),
+  };
+}
+
+export function syncSetupDraftWithConfirmedPlayers(
+  draft: SetupDraft,
+  players: ConfirmedSetupPlayer[],
+): SetupDraft {
+  if (players.length === 0) return draft;
+
+  const nextPlayers = confirmedPlayersToDraftPlayers(players);
+  const sameSeats =
+    draft.players.length === nextPlayers.length &&
+    draft.players.every((player, index) => player.seat === nextPlayers[index].seat);
+
+  return {
+    ...draft,
+    players: nextPlayers,
+    selectedSeat: nextPlayers.some((player) => player.seat === draft.selectedSeat)
+      ? draft.selectedSeat
+      : nextPlayers[0]?.seat ?? 1,
+    seatPositions: sameSeats
+      ? resizeSeatPositions(draft.seatPositions, nextPlayers.length, draft.seatLayoutPreset)
+      : seatLayoutPositions(nextPlayers.length, draft.seatLayoutPreset),
   };
 }
 
@@ -419,6 +435,17 @@ function toSeatPositions(
 ): SeatPositions {
   positions[seat] = position;
   return positions;
+}
+
+function confirmedPlayersToDraftPlayers(players: ConfirmedSetupPlayer[]): DraftPlayer[] {
+  return [...players]
+    .sort((player, nextPlayer) => player.seat - nextPlayer.seat)
+    .map((player) => ({
+      seat: player.seat,
+      name: player.name,
+      actualCharacter: player.actualCharacter,
+      shownCharacter: player.actualCharacter === "drunk" ? player.shownCharacter : undefined,
+    }));
 }
 
 function clockwiseSeatAngle(index: number, playerCount: number): number {

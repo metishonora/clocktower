@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { propose, replay, setupDistribution, setupDistributionSync } from "./core/wasmClient";
-import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types";
-import { exportGameFileJson, importGameFileJson, loadLatestGame, saveLatestGame } from "./gameStorage";
+import { propose, replay, setupDistribution, setupDistributionSync } from "./core/wasmClient.js";
+import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types.js";
+import { exportGameFileJson, importGameFileJson, loadLatestGame, saveLatestGame } from "./gameStorage.js";
+import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
   createSetupDraftFromConfirmedPlayers,
   toCreateGamePlayers,
   type SetupDraft,
-} from "./setupDraft";
+} from "./setupDraft.js";
 
 export function createGameFile(events: unknown[] = []): GameFile {
   const now = new Date().toISOString();
@@ -101,6 +102,11 @@ export function useGameStore() {
   const setupHintsReady = Boolean(setupExpectedCounts);
   const shownWarnings =
     !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
+
+  useEffect(() => {
+    if (!setupConfirmed) return;
+    setSetupDraft((current) => syncSetupDraftFromReplayState(current, replayState));
+  }, [replayState, setupConfirmed]);
 
   useEffect(() => {
     if (hasConfirmedEvents) return;

@@ -427,6 +427,7 @@ select {
 
 .seatLayoutToolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -465,6 +466,7 @@ select {
 
 .seatLayoutActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
@@ -918,6 +920,24 @@ select {
 
   .setupActions {
     width: max-content;
+  }
+
+  .seatLayoutToolbar,
+  .seatLayoutActions {
+    justify-content: flex-start;
+  }
+
+  .seatLayoutPresets,
+  .seatLayoutActions {
+    width: 100%;
+  }
+
+  .seatLayoutPresets button,
+  .seatLayoutActions button,
+  .layoutOkBadge,
+  .layoutOverlapBadge {
+    flex: 1 1 128px;
+    text-align: center;
   }
 
   .seatMap {

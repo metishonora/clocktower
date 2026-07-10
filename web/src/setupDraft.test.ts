@@ -12,6 +12,7 @@ import {
   setSeatLayoutPreset,
   setDrunkShownCharacter,
   seatLayoutPositions,
+  syncSetupDraftWithConfirmedPlayers,
   toCreateGamePlayers,
   unassignActualCharacter,
   updateSeatPosition,
@@ -117,6 +118,79 @@ test("confirmed setup Players can be restored into an editable setup draft", () 
   equal(draft.players[1].actualCharacter, "washerwoman");
   equal(draft.players[1].shownCharacter, undefined);
   deepEqual(draft.seatPositions, seatLayoutPositions(2, "circle"));
+});
+
+test("confirmed Players sync into the seating draft after load or import", () => {
+  let draft = createSetupDraft(5);
+  draft = setSeatLayoutPreset(draft, "longTable");
+  draft = updateSeatPosition(draft, 2, { x: 44, y: 55 });
+
+  const synced = syncSetupDraftWithConfirmedPlayers(draft, [
+    {
+      seat: 1,
+      name: "Ada",
+      actualCharacter: "washerwoman",
+      shownCharacter: "washerwoman",
+    },
+    {
+      seat: 2,
+      name: "Bert",
+      actualCharacter: "drunk",
+      shownCharacter: "chef",
+    },
+    {
+      seat: 3,
+      name: "Cy",
+      actualCharacter: "imp",
+      shownCharacter: "imp",
+    },
+  ]);
+
+  equal(synced.players.length, 3);
+  equal(synced.players[1].name, "Bert");
+  equal(synced.players[1].shownCharacter, "chef");
+  equal(synced.seatLayoutPreset, "longTable");
+  deepEqual(synced.seatPositions, seatLayoutPositions(3, "longTable"));
+});
+
+test("confirmed Player sync preserves manually adjusted matching seats", () => {
+  let draft = createSetupDraft(5);
+  draft = updateSeatPosition(draft, 2, { x: 44, y: 55 });
+
+  const synced = syncSetupDraftWithConfirmedPlayers(draft, [
+    {
+      seat: 1,
+      name: "Ada",
+      actualCharacter: "washerwoman",
+      shownCharacter: "washerwoman",
+    },
+    {
+      seat: 2,
+      name: "Bert",
+      actualCharacter: "librarian",
+      shownCharacter: "librarian",
+    },
+    {
+      seat: 3,
+      name: "Cy",
+      actualCharacter: "poisoner",
+      shownCharacter: "poisoner",
+    },
+    {
+      seat: 4,
+      name: "Dee",
+      actualCharacter: "baron",
+      shownCharacter: "baron",
+    },
+    {
+      seat: 5,
+      name: "Eli",
+      actualCharacter: "imp",
+      shownCharacter: "imp",
+    },
+  ]);
+
+  deepEqual(synced.seatPositions[2], { x: 44, y: 55 });
 });
 
 test("unassigning clears Actual and Drunk Shown Character together", () => {

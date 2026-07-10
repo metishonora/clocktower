@@ -6,7 +6,7 @@ import type {
   ReplayState,
   SetupDistribution,
   SetupDistributionRequest,
-} from "./types";
+} from "./types.js";
 import init, {
   propose as wasmPropose,
   replay as wasmReplay,

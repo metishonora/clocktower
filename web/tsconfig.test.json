@@ -11,5 +11,13 @@
     "outDir": "../.codex-tmp/web-tests",
     "declaration": false
   },
-  "include": ["src/setupDraft.ts", "src/setupDraft.test.ts", "src/gameStorage.ts", "src/gameStorage.test.ts", "src/node-test.d.ts"]
+  "include": [
+    "src/setupDraft.ts",
+    "src/setupDraft.test.ts",
+    "src/gameStorage.ts",
+    "src/gameStorage.test.ts",
+    "src/gameStoreSync.ts",
+    "src/gameStore.test.ts",
+    "src/node-test.d.ts"
+  ]
 }
