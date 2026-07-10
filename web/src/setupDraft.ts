@@ -38,6 +38,13 @@ export type CreateGamePlayerInput = {
   shownCharacter?: string;
 };
 
+export type ConfirmedSetupPlayer = {
+  seat: number;
+  name: string;
+  actualCharacter: string;
+  shownCharacter: string;
+};
+
 export const characters: Character[] = [
   { id: "washerwoman", label: "세탁부", kind: "Townsfolk", icon: "W", abilitySummary: "마을주민 1명과 후보 2명을 확인합니다." },
   { id: "librarian", label: "사서", kind: "Townsfolk", icon: "L", abilitySummary: "외부인 1명과 후보 2명을 확인합니다." },
@@ -107,6 +114,24 @@ export function createSetupDraft(playerCount = 5): SetupDraft {
     selectedSeat: 1,
     seatLayoutPreset: "circle",
     seatPositions: seatLayoutPositions(players.length, "circle"),
+  };
+}
+
+export function createSetupDraftFromConfirmedPlayers(players: ConfirmedSetupPlayer[]): SetupDraft {
+  const draftPlayers = [...players]
+    .sort((player, nextPlayer) => player.seat - nextPlayer.seat)
+    .map((player) => ({
+      seat: player.seat,
+      name: player.name,
+      actualCharacter: player.actualCharacter,
+      shownCharacter: player.actualCharacter === "drunk" ? player.shownCharacter : undefined,
+    }));
+
+  return {
+    players: draftPlayers,
+    selectedSeat: draftPlayers[0]?.seat ?? 1,
+    seatLayoutPreset: "circle",
+    seatPositions: seatLayoutPositions(draftPlayers.length || 5, "circle"),
   };
 }
 

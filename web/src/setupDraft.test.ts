@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   assignActualCharacter,
   createSetupDraft,
+  createSetupDraftFromConfirmedPlayers,
   drunkShownCharacterOptions,
   resetActualCharacters,
   resetSeatLayout,
@@ -91,6 +92,31 @@ test("Drunk Shown Character choices are constrained to Townsfolk", () => {
   );
   equal(draft.players[0].shownCharacter, undefined);
   equal(toCreateGamePlayers(draft.players), undefined);
+});
+
+test("confirmed setup Players can be restored into an editable setup draft", () => {
+  const draft = createSetupDraftFromConfirmedPlayers([
+    {
+      seat: 2,
+      name: "Bert",
+      actualCharacter: "washerwoman",
+      shownCharacter: "washerwoman",
+    },
+    {
+      seat: 1,
+      name: "Ada",
+      actualCharacter: "drunk",
+      shownCharacter: "chef",
+    },
+  ]);
+
+  equal(draft.selectedSeat, 1);
+  equal(draft.players[0].name, "Ada");
+  equal(draft.players[0].actualCharacter, "drunk");
+  equal(draft.players[0].shownCharacter, "chef");
+  equal(draft.players[1].actualCharacter, "washerwoman");
+  equal(draft.players[1].shownCharacter, undefined);
+  deepEqual(draft.seatPositions, seatLayoutPositions(2, "circle"));
 });
 
 test("unassigning clears Actual and Drunk Shown Character together", () => {

@@ -6,3 +6,7 @@
 /web/tsconfig.tsbuildinfo
 /web/src/generated/clocktower_wasm/
 /.codex-tmp/
+
+# Local agent skill installs/cache.
+/.agents/
+/skills-lock.json

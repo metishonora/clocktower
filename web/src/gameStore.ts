@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { propose, replay, setupDistribution, setupDistributionSync } from "./core/wasmClient";
 import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types";
 import { exportGameFileJson, importGameFileJson, loadLatestGame, saveLatestGame } from "./gameStorage";
-import { createSetupDraft, toCreateGamePlayers, type SetupDraft } from "./setupDraft";
+import {
+  createSetupDraft,
+  createSetupDraftFromConfirmedPlayers,
+  toCreateGamePlayers,
+  type SetupDraft,
+} from "./setupDraft";
 
 export function createGameFile(events: unknown[] = []): GameFile {
   const now = new Date().toISOString();
@@ -202,6 +207,26 @@ export function useGameStore() {
     setSetupDraft(createSetupDraft());
   }
 
+  function undoLatestEvent() {
+    if (!window.confirm("설정 확정을 되돌리고 다시 수정할까요?")) return;
+
+    if (players.length > 0) {
+      setSetupDraft(createSetupDraftFromConfirmedPlayers(players));
+    }
+    setProposalResult(undefined);
+    setGameFile((current) => {
+      if (current.game.events.length === 0) return current;
+      return {
+        ...current,
+        game: {
+          ...current.game,
+          updatedAt: new Date().toISOString(),
+          events: current.game.events.slice(0, -1),
+        },
+      };
+    });
+  }
+
   async function importGameFile(json: string) {
     if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 가져온 게임으로 교체할까요?")) {
       return;
@@ -242,6 +267,7 @@ export function useGameStore() {
     shownWarnings,
     confirmSetup,
     resetSetup,
+    undoLatestEvent,
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };
