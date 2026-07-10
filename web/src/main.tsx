@@ -81,8 +81,6 @@ function App() {
               <p className="eyebrow">설정</p>
               <ConfirmedSetup
                 players={gameStore.players}
-                canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
-                onUndo={gameStore.undoLatestEvent}
                 onExport={exportLatestGame}
                 onImport={() => importInputRef.current?.click()}
                 onReset={gameStore.resetSetup}
@@ -574,15 +572,11 @@ function Grimoire({
 
 function ConfirmedSetup({
   players,
-  canUndo,
-  onUndo,
   onExport,
   onImport,
   onReset,
 }: {
   players: Player[];
-  canUndo: boolean;
-  onUndo: () => void;
   onExport: () => void;
   onImport: () => void;
   onReset: () => void;
@@ -622,9 +616,6 @@ function ConfirmedSetup({
         </div>
       </dl>
       <div className="confirmedActions">
-        <button type="button" className="secondaryButton" onClick={onUndo} disabled={!canUndo}>
-          마지막 이벤트 되돌리기
-        </button>
         <button type="button" className="secondaryButton" onClick={onExport}>
           JSON 내보내기
         </button>

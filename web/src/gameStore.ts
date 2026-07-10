@@ -157,23 +157,6 @@ export function useGameStore() {
     setSetupDraft(createSetupDraft());
   }
 
-  function undoLatestEvent() {
-    if (!window.confirm("마지막 확정 이벤트를 되돌릴까요?")) return;
-
-    setProposalResult(undefined);
-    setGameFile((current) => {
-      if (current.game.events.length === 0) return current;
-      return {
-        ...current,
-        game: {
-          ...current.game,
-          updatedAt: new Date().toISOString(),
-          events: current.game.events.slice(0, -1),
-        },
-      };
-    });
-  }
-
   async function importGameFile(json: string) {
     if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 가져온 게임으로 교체할까요?")) {
       return;
@@ -212,7 +195,6 @@ export function useGameStore() {
     shownWarnings,
     confirmSetup,
     resetSetup,
-    undoLatestEvent,
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };
