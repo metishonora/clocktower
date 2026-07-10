@@ -11,6 +11,7 @@ import {
   createSetupDraft,
   drunkShownCharacterOptions,
   kindLabels,
+  resetActualCharacters,
   resizeSetupDraft,
   selectSeat,
   setDrunkShownCharacter,
@@ -269,16 +270,14 @@ function SetupForm({
               <p className="eyebrow">캐릭터 풀</p>
               <h2>{selectedPlayer ? `${selectedPlayer.seat}번 좌석에 배정` : "좌석 선택"}</h2>
             </div>
-            {selectedPlayer?.actualCharacter ? (
-              <button
-                type="button"
-                className="secondaryAction"
-                onClick={() => onChange(unassignActualCharacter(draft))}
-                disabled={busy}
-              >
-                배정 해제
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="secondaryAction"
+              onClick={() => onChange(resetActualCharacters(draft))}
+              disabled={busy || draft.players.every((player) => !player.actualCharacter)}
+            >
+              배정 초기화
+            </button>
           </div>
           <CharacterPool draft={draft} onChange={onChange} busy={busy} counts={counts} expectedCounts={expectedCounts} />
         </section>
@@ -410,6 +409,9 @@ function CharacterPool({
               .map((character) => {
                 const usedBy = draft.players.find((player) => player.actualCharacter === character.id);
                 const selected = draft.players[draft.selectedSeat - 1]?.actualCharacter === character.id;
+                const nextDraft = selected
+                  ? unassignActualCharacter(draft)
+                  : assignActualCharacter(draft, character.id);
 
                 return (
                   <button
@@ -417,7 +419,7 @@ function CharacterPool({
                     className={`characterCard ${character.kind} ${usedBy ? "used" : "unused"} ${
                       selected ? "selected" : ""
                     }`}
-                    onClick={() => onChange(assignActualCharacter(draft, character.id))}
+                    onClick={() => onChange(nextDraft)}
                     disabled={busy}
                     key={character.id}
                   >

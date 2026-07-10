@@ -142,6 +142,13 @@ export function unassignActualCharacter(draft: SetupDraft, seat = draft.selected
   };
 }
 
+export function resetActualCharacters(draft: SetupDraft): SetupDraft {
+  return {
+    ...draft,
+    players: draft.players.map(withoutAssignment),
+  };
+}
+
 export function setDrunkShownCharacter(
   draft: SetupDraft,
   shownCharacter: string,

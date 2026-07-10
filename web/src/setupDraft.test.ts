@@ -4,6 +4,7 @@ import {
   assignActualCharacter,
   createSetupDraft,
   drunkShownCharacterOptions,
+  resetActualCharacters,
   selectSeat,
   setDrunkShownCharacter,
   toCreateGamePlayers,
@@ -95,4 +96,20 @@ test("unassigning clears Actual and Drunk Shown Character together", () => {
 
   equal(draft.players[0].actualCharacter, undefined);
   equal(draft.players[0].shownCharacter, undefined);
+});
+
+test("resetting assignments preserves names and selected seat", () => {
+  let draft = createSetupDraft();
+  draft = assignActualCharacter(draft, "drunk", 1);
+  draft = setDrunkShownCharacter(draft, "chef", 1);
+  draft = assignActualCharacter(draft, "imp", 2);
+  draft = selectSeat(draft, 2);
+
+  const reset = resetActualCharacters(draft);
+
+  equal(reset.selectedSeat, 2);
+  equal(reset.players[0].name, "플레이어 1");
+  equal(reset.players[0].actualCharacter, undefined);
+  equal(reset.players[0].shownCharacter, undefined);
+  equal(reset.players[1].actualCharacter, undefined);
 });
