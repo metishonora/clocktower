@@ -306,6 +306,8 @@ function DraftGrimoireCircle({
 }) {
   const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
   const selectedCharacter = characters.find((character) => character.id === selectedPlayer?.actualCharacter);
+  const counts = countCharacters(draft.players);
+  const expectedCounts = expectedDistribution(draft.players.length);
 
   return (
     <div
@@ -350,11 +352,14 @@ function DraftGrimoireCircle({
         const angle = (360 / draft.players.length) * index;
         const kind = characterKind(player.actualCharacter);
         const selected = player.seat === draft.selectedSeat;
+        const overLimit = kind ? counts[kind] > expectedCounts[kind] : false;
 
         return (
           <button
             type="button"
-            className={`seatToken draftSeatToken ${kind ?? "unassigned"} ${selected ? "selected" : ""}`}
+            className={`seatToken draftSeatToken ${kind ?? "unassigned"} ${selected ? "selected" : ""} ${
+              overLimit ? "overLimit" : ""
+            }`}
             style={{ "--seat-angle": `${angle}deg` } as React.CSSProperties}
             aria-pressed={selected}
             onClick={() => onChange(selectSeat(draft, player.seat))}
@@ -390,11 +395,13 @@ function CharacterPool({
   return (
     <div className="characterPool" aria-label="Trouble Brewing 캐릭터 풀">
       {characterKinds.map((kind) => (
-        <section className="characterGroup" key={kind}>
+        <section className={`characterGroup ${countStatus(counts[kind], expectedCounts[kind])}`} key={kind}>
           <div className="characterGroupHeader">
             <h3>{kindLabels[kind]}</h3>
-            <span className={counts[kind] === expectedCounts[kind] ? "matched" : "mismatched"}>
+            <span className={countStatus(counts[kind], expectedCounts[kind])}>
               {counts[kind]} / {expectedCounts[kind]}
+              {counts[kind] > expectedCounts[kind] ? " 초과" : null}
+              {counts[kind] < expectedCounts[kind] ? " 부족" : null}
             </span>
           </div>
           <div className="characterCards">
@@ -472,14 +479,20 @@ function SetupSummary({
     <section className="setupSummary" aria-label="조합 힌트">
       <h2>조합 힌트</h2>
       <dl className="setupCounts">
-        {characterKinds.map((kind) => (
-          <div className={counts[kind] === expectedCounts[kind] ? "matched" : "mismatched"} key={kind}>
-            <dt>{kindLabels[kind]}</dt>
-            <dd>
-              {counts[kind]} / {expectedCounts[kind]}
-            </dd>
-          </div>
-        ))}
+        {characterKinds.map((kind) => {
+          const status = countStatus(counts[kind], expectedCounts[kind]);
+          return (
+            <div className={status} key={kind}>
+              <dt>
+                {kindLabels[kind]}
+                {status !== "matched" ? <span>{status === "over" ? "초과" : "부족"}</span> : null}
+              </dt>
+              <dd>
+                {counts[kind]} / {expectedCounts[kind]}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
       <Warnings warnings={warnings} />
     </section>
@@ -664,6 +677,12 @@ function expectedDistribution(playerCount: number): Record<CharacterKind, number
     Minion: minion,
     Demon: demon,
   };
+}
+
+function countStatus(actual: number, expected: number): "matched" | "under" | "over" {
+  if (actual < expected) return "under";
+  if (actual > expected) return "over";
+  return "matched";
 }
 
 createRoot(document.getElementById("root")!).render(
