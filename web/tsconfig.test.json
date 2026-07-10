@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
@@ -11,5 +11,5 @@
     "outDir": "../.codex-tmp/web-tests",
     "declaration": false
   },
-  "include": ["src/setupDraft.ts", "src/setupDraft.test.ts", "src/node-test.d.ts"]
+  "include": ["src/setupDraft.ts", "src/setupDraft.test.ts", "src/gameStorage.ts", "src/gameStorage.test.ts", "src/node-test.d.ts"]
 }

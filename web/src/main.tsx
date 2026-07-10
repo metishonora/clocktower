@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { propose, replay } from "./core/wasmClient";
-import type { CoreResult, CoreWarning, GameFile, Player, Proposal, ReplayState } from "./core/types";
+import type { CoreResult, CoreWarning, Player, Proposal, ReplayState } from "./core/types";
+import { useGameStore } from "./gameStore";
 import {
   assignActualCharacter,
   characterKinds,
@@ -17,6 +17,7 @@ import {
   selectSeat,
   seatLayoutPresetLabels,
   seatLayoutPresets,
+  seatLayoutPositions,
   setSeatLayoutPreset,
   setDrunkShownCharacter,
   toCreateGamePlayers,
@@ -34,165 +35,84 @@ import "./styles.css";
 const SEAT_OVERLAP_X_PERCENT = 19;
 const SEAT_OVERLAP_Y_PERCENT = 14;
 
-function createGameFile(events: unknown[] = []): GameFile {
-  const now = new Date().toISOString();
-
-  return {
-    schemaVersion: 1,
-    game: {
-      id: "local-game",
-      name: "Trouble Brewing",
-      createdAt: now,
-      updatedAt: now,
-      events,
-    },
-  };
-}
-
 function App() {
-  const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile());
-  const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
-  const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
-  const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
-  const [busy, setBusy] = useState(false);
-  const [loadError, setLoadError] = useState<string>();
+  const gameStore = useGameStore();
+  const importInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    replay(gameFile)
-      .then(setReplayResult)
-      .catch((error: unknown) => {
-        setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
-      });
-  }, [gameFile]);
-
-  const hasConfirmedEvents = gameFile.game.events.length > 0;
-  const replayState = replayResult?.ok ? replayResult.value : undefined;
-  const players = replayState?.players ?? [];
-  const setupConfirmed = players.length > 0;
-  const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
-  const shownWarnings =
-    !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
-
-  useEffect(() => {
-    if (hasConfirmedEvents) return;
-    if (!createGamePlayers) {
-      setProposalResult(undefined);
-      return;
-    }
-
-    let cancelled = false;
-    propose(gameFile, {
-      type: "createGame",
-      payload: { players: createGamePlayers },
-    })
-      .then((result) => {
-        if (!cancelled) setProposalResult(result);
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setProposalResult({
-          ok: false,
-          error: {
-            code: "SETUP_PREVIEW_FAILED",
-            messageKo: error instanceof Error ? error.message : "설정 검토 실패",
-          },
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [createGamePlayers, gameFile, hasConfirmedEvents]);
-
-  async function confirmSetup() {
-    if (!createGamePlayers) {
-      setProposalResult({
-        ok: false,
-        error: {
-          code: "SETUP_INCOMPLETE",
-          messageKo: "모든 좌석에 Actual Character를 배정해야 합니다.",
-        },
-      });
-      return;
-    }
-
-    setBusy(true);
-    setLoadError(undefined);
-
-    const result = await propose(gameFile, {
-      type: "createGame",
-      payload: { players: createGamePlayers },
-    }).catch((error: unknown): CoreResult<Proposal> => ({
-      ok: false,
-      error: {
-        code: "WASM_LOAD_FAILED",
-        messageKo: error instanceof Error ? error.message : "앱 상태 로드 실패",
-      },
-    }));
-
-    setProposalResult(result);
-    setBusy(false);
-
-    if (!result.ok) return;
-
-    setGameFile((current) => ({
-      ...current,
-      game: {
-        ...current.game,
-        updatedAt: new Date().toISOString(),
-        events: [...current.game.events, result.value.event],
-      },
-    }));
+  function exportLatestGame() {
+    const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `clocktower-${new Date().toISOString()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
-  function resetSetup() {
-    setGameFile(createGameFile());
-    setProposalResult(undefined);
-    setSetupDraft(createSetupDraft());
+  async function importGame(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    await gameStore.importGameFile(await file.text());
   }
 
   return (
-    <main className={setupConfirmed ? "shell confirmedShell" : "shell setupShell"}>
-      {setupConfirmed ? (
-        <>
-          <section className="panel grimoire">
-            <div className="sectionHeader">
-              <div>
-                <p className="eyebrow">그리모어</p>
-                <h1>Trouble Brewing</h1>
+    <>
+      <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
+      <main className={gameStore.setupConfirmed ? "shell confirmedShell" : "shell setupShell"}>
+        {gameStore.setupConfirmed ? (
+          <>
+            <section className="panel grimoire">
+              <div className="sectionHeader">
+                <div>
+                  <p className="eyebrow">그리모어</p>
+                  <h1>Trouble Brewing</h1>
+                </div>
+                <span className="phaseBadge">설정 확정</span>
               </div>
-              <span className="phaseBadge">설정 확정</span>
-            </div>
-            <Grimoire players={players} draftPlayers={setupDraft.players} seatPositions={setupDraft.seatPositions} />
-          </section>
+              <Grimoire
+                players={gameStore.players}
+                draftPlayers={gameStore.setupDraft.players}
+                seatPositions={gameStore.setupDraft.seatPositions}
+              />
+            </section>
 
-          <section className="panel setup">
-            <p className="eyebrow">설정</p>
-            <ConfirmedSetup players={players} onReset={resetSetup} />
-          </section>
+            <section className="panel setup">
+              <p className="eyebrow">설정</p>
+              <ConfirmedSetup
+                players={gameStore.players}
+                canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
+                onUndo={gameStore.undoLatestEvent}
+                onExport={exportLatestGame}
+                onImport={() => importInputRef.current?.click()}
+                onReset={gameStore.resetSetup}
+              />
+            </section>
 
-          <EventLog
-            events={gameFile.game.events}
-            replayResult={replayResult}
-            proposalResult={proposalResult}
-            loadError={loadError}
-            warnings={shownWarnings}
+            <EventLog
+              events={gameStore.gameFile.game.events}
+              replayResult={gameStore.replayResult}
+              proposalResult={gameStore.proposalResult}
+              loadError={gameStore.loadError}
+              warnings={gameStore.shownWarnings}
+            />
+          </>
+        ) : (
+          <SetupForm
+            draft={gameStore.setupDraft}
+            onChange={gameStore.setSetupDraft}
+            onConfirm={gameStore.confirmSetup}
+            onImport={() => importInputRef.current?.click()}
+            warnings={gameStore.shownWarnings}
+            busy={gameStore.busy || !gameStore.storageReady}
+            replayResult={gameStore.replayResult}
+            proposalResult={gameStore.proposalResult}
+            loadError={gameStore.loadError}
+            events={gameStore.gameFile.game.events}
           />
-        </>
-      ) : (
-        <SetupForm
-          draft={setupDraft}
-          onChange={setSetupDraft}
-          onConfirm={confirmSetup}
-          warnings={shownWarnings}
-          busy={busy}
-          replayResult={replayResult}
-          proposalResult={proposalResult}
-          loadError={loadError}
-          events={gameFile.game.events}
-        />
-      )}
-    </main>
+        )}
+      </main>
+    </>
   );
 }
 
@@ -200,6 +120,7 @@ function SetupForm({
   draft,
   onChange,
   onConfirm,
+  onImport,
   warnings,
   busy,
   replayResult,
@@ -210,6 +131,7 @@ function SetupForm({
   draft: SetupDraft;
   onChange: (draft: SetupDraft) => void;
   onConfirm: () => void;
+  onImport: () => void;
   warnings: CoreWarning[];
   busy: boolean;
   replayResult?: CoreResult<ReplayState>;
@@ -271,6 +193,9 @@ function SetupForm({
           <Status replayResult={replayResult} proposalResult={proposalResult} loadError={loadError} />
           <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
             {busy ? "확정 중" : "설정 확정"}
+          </button>
+          <button type="button" className="secondaryButton" onClick={onImport} disabled={busy}>
+            JSON 가져오기
           </button>
         </section>
 
@@ -612,6 +537,7 @@ function Grimoire({
   seatPositions: SeatPositions;
 }) {
   const seats = players.length > 0 ? players : draftPlayers;
+  const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);
 
   return (
     <div className="seatMap adjustableSeatMap" aria-label="그리모어 좌석 맵">
@@ -625,7 +551,7 @@ function Grimoire({
         const alignment = "alignment" in seat ? seat.alignment : "good";
         const showShownCharacter =
           actualCharacter === "drunk" || Boolean(shownCharacter && actualCharacter !== shownCharacter);
-        const position = seatPositions[seat.seat];
+        const position = seatPositions[seat.seat] ?? fallbackPositions[seat.seat];
 
         return (
           <article
@@ -646,7 +572,21 @@ function Grimoire({
   );
 }
 
-function ConfirmedSetup({ players, onReset }: { players: Player[]; onReset: () => void }) {
+function ConfirmedSetup({
+  players,
+  canUndo,
+  onUndo,
+  onExport,
+  onImport,
+  onReset,
+}: {
+  players: Player[];
+  canUndo: boolean;
+  onUndo: () => void;
+  onExport: () => void;
+  onImport: () => void;
+  onReset: () => void;
+}) {
   const counts = useMemo(
     () =>
       players.reduce(
@@ -681,9 +621,20 @@ function ConfirmedSetup({ players, onReset }: { players: Player[]; onReset: () =
           <dd>{counts.Demon}</dd>
         </div>
       </dl>
-      <button type="button" className="secondaryButton" onClick={onReset}>
-        새 설정
-      </button>
+      <div className="confirmedActions">
+        <button type="button" className="secondaryButton" onClick={onUndo} disabled={!canUndo}>
+          마지막 이벤트 되돌리기
+        </button>
+        <button type="button" className="secondaryButton" onClick={onExport}>
+          JSON 내보내기
+        </button>
+        <button type="button" className="secondaryButton" onClick={onImport}>
+          JSON 가져오기
+        </button>
+        <button type="button" className="secondaryButton" onClick={onReset}>
+          새 설정
+        </button>
+      </div>
     </>
   );
 }
