@@ -33,6 +33,18 @@ export type Proposal = {
   preview: unknown;
 };
 
+export type SetupDistributionRequest = {
+  playerCount: number;
+  actualCharacters: string[];
+};
+
+export type SetupDistribution = {
+  Townsfolk: number;
+  Outsider: number;
+  Minion: number;
+  Demon: number;
+};
+
 export type GameEvent = {
   id: string;
   type: string;

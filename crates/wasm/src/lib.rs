@@ -10,6 +10,11 @@ pub fn propose(game_file_json: &str, command_json: &str) -> String {
     clocktower_domain::propose_json(game_file_json, command_json)
 }
 
+#[wasm_bindgen]
+pub fn setup_distribution(request_json: &str) -> String {
+    clocktower_domain::setup_distribution_json(request_json)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -33,5 +38,13 @@ mod tests {
     #[test]
     fn wasm_adapter_returns_propose_json() {
         assert!(propose(EMPTY_GAME, r#"{ "type": "smoke" }"#).contains("smokeConfirmed"));
+    }
+
+    #[test]
+    fn wasm_adapter_returns_setup_distribution_json() {
+        assert!(
+            setup_distribution(r#"{ "playerCount": 7, "actualCharacters": ["baron"] }"#)
+                .contains(r#""Townsfolk":3"#)
+        );
     }
 }

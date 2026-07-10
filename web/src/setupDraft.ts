@@ -273,6 +273,19 @@ export function drunkShownCharacterOptions(): Character[] {
   return characters.filter((character) => character.kind === "Townsfolk");
 }
 
+export function countCharacterKinds(
+  players: ReadonlyArray<{ actualCharacter?: string }>,
+): Record<CharacterKind, number> {
+  return players.reduce<Record<CharacterKind, number>>(
+    (counts, player) => {
+      const kind = characterKind(player.actualCharacter);
+      if (kind) counts[kind] += 1;
+      return counts;
+    },
+    { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 },
+  );
+}
+
 export function seatLayoutPositions(playerCount: number, preset: SeatLayoutPreset): SeatPositions {
   if (preset === "oval") return ovalSeatPositions(playerCount);
   if (preset === "longTable") return longTableSeatPositions(playerCount);

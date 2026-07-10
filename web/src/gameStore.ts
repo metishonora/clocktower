@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { propose, replay } from "./core/wasmClient";
-import type { CoreResult, GameFile, Proposal, ReplayState } from "./core/types";
+import { propose, replay, setupDistribution, setupDistributionSync } from "./core/wasmClient";
+import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types";
 import { exportGameFileJson, importGameFileJson, loadLatestGame, saveLatestGame } from "./gameStorage";
 import { createSetupDraft, toCreateGamePlayers, type SetupDraft } from "./setupDraft";
 
@@ -24,6 +24,10 @@ export function useGameStore() {
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
   const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
   const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
+  const [asyncSetupExpectedCounts, setAsyncSetupExpectedCounts] = useState<{
+    requestKey: string;
+    counts: SetupDistribution;
+  }>();
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string>();
   const [storageReady, setStorageReady] = useState(false);
@@ -72,8 +76,49 @@ export function useGameStore() {
   const players = replayState?.players ?? [];
   const setupConfirmed = players.length > 0;
   const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
+  const setupDistributionRequest = useMemo(
+    () => ({
+      playerCount: setupDraft.players.length,
+      actualCharacters: setupDraft.players.flatMap((player) =>
+        player.actualCharacter ? [player.actualCharacter] : [],
+      ),
+    }),
+    [setupDraft.players],
+  );
+  const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
+  const setupExpectedCounts = useMemo(() => {
+    const result = setupDistributionSync(setupDistributionRequest);
+    if (result?.ok) return result.value;
+    return asyncSetupExpectedCounts?.requestKey === setupDistributionRequestKey
+      ? asyncSetupExpectedCounts.counts
+      : undefined;
+  }, [asyncSetupExpectedCounts, setupDistributionRequest, setupDistributionRequestKey]);
+  const setupHintsReady = Boolean(setupExpectedCounts);
   const shownWarnings =
     !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
+
+  useEffect(() => {
+    if (hasConfirmedEvents) return;
+
+    let cancelled = false;
+    const requestKey = setupDistributionRequestKey;
+    setupDistribution(setupDistributionRequest)
+      .then((result) => {
+        if (!cancelled && result.ok) {
+          setAsyncSetupExpectedCounts({
+            requestKey,
+            counts: result.value,
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "설정 힌트 계산 실패");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasConfirmedEvents, setupDistributionRequest, setupDistributionRequestKey]);
 
   useEffect(() => {
     if (hasConfirmedEvents) return;
@@ -192,6 +237,8 @@ export function useGameStore() {
     hasConfirmedEvents,
     players,
     setupConfirmed,
+    setupExpectedCounts,
+    setupHintsReady,
     shownWarnings,
     confirmSetup,
     resetSetup,

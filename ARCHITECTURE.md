@@ -32,13 +32,16 @@ Keep the WebAssembly boundary small and JSON-based for MVP.
 ```ts
 core.propose(gameFileJson, commandJson) -> proposalJson
 core.replay(gameFileJson) -> stateJson
+core.setupDistribution(requestJson) -> distributionJson
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
 
 `replay` checks the schema version and rebuilds the current rules state, visible step overview, and warnings from confirmed events.
 
-Keep the Rust WebAssembly API stateless for MVP. Each call receives the current `GameFile`.
+`setupDistribution` is a read-only setup draft query. It owns Trouble Brewing setup distribution rules, including Baron adjustment, before the setup draft is complete enough to become a `createGame` command. Its draft input is limited to player count and assigned Actual Character IDs; Rust derives all rule effects from that input. Keep this API limited to deterministic setup guidance that has no confirmed event.
+
+Keep the Rust WebAssembly API stateless for MVP. Calls that depend on confirmed game state receive the current `GameFile`; setup draft queries receive only their draft input.
 
 If repeated replay becomes slow on real iPad hardware, add a stateful Rust session API as a measured optimization.
 

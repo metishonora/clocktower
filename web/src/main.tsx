@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { CoreResult, CoreWarning, Player, Proposal, ReplayState } from "./core/types";
+import type { CoreResult, CoreWarning, Player, Proposal, ReplayState, SetupDistribution } from "./core/types";
 import { useGameStore } from "./gameStore";
 import {
   assignActualCharacter,
@@ -8,6 +8,7 @@ import {
   characterKind,
   characterLabel,
   characters,
+  countCharacterKinds,
   createSetupDraft,
   drunkShownCharacterOptions,
   kindLabels,
@@ -102,7 +103,8 @@ function App() {
             onConfirm={gameStore.confirmSetup}
             onImport={() => importInputRef.current?.click()}
             warnings={gameStore.shownWarnings}
-            busy={gameStore.busy || !gameStore.storageReady}
+            expectedCounts={gameStore.setupExpectedCounts}
+            busy={gameStore.busy || !gameStore.storageReady || !gameStore.setupHintsReady}
             replayResult={gameStore.replayResult}
             proposalResult={gameStore.proposalResult}
             loadError={gameStore.loadError}
@@ -120,6 +122,7 @@ function SetupForm({
   onConfirm,
   onImport,
   warnings,
+  expectedCounts,
   busy,
   replayResult,
   proposalResult,
@@ -131,6 +134,7 @@ function SetupForm({
   onConfirm: () => void;
   onImport: () => void;
   warnings: CoreWarning[];
+  expectedCounts?: SetupDistribution;
   busy: boolean;
   replayResult?: CoreResult<ReplayState>;
   proposalResult?: CoreResult<Proposal>;
@@ -139,8 +143,7 @@ function SetupForm({
 }) {
   const canRemove = draft.players.length > 5;
   const canAdd = draft.players.length < 15;
-  const counts = countCharacters(draft.players);
-  const expectedCounts = expectedDistribution(draft.players.length);
+  const counts = countCharacterKinds(draft.players);
   const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
   const setupIncomplete = !toCreateGamePlayers(draft.players);
 
@@ -175,7 +178,7 @@ function SetupForm({
           </div>
         </div>
 
-        <DraftGrimoireCircle draft={draft} onChange={onChange} busy={busy} />
+        <DraftGrimoireCircle draft={draft} onChange={onChange} busy={busy} expectedCounts={expectedCounts} />
       </section>
 
       <aside className="setupRail">
@@ -231,16 +234,17 @@ function DraftGrimoireCircle({
   draft,
   onChange,
   busy,
+  expectedCounts,
 }: {
   draft: SetupDraft;
   onChange: (draft: SetupDraft) => void;
   busy: boolean;
+  expectedCounts?: SetupDistribution;
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
   const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
   const selectedCharacter = characters.find((character) => character.id === selectedPlayer?.actualCharacter);
-  const counts = countCharacters(draft.players);
-  const expectedCounts = expectedDistribution(draft.players.length);
+  const counts = countCharacterKinds(draft.players);
   const overlapSeats = findOverlappingSeats(draft.seatPositions);
 
   return (
@@ -330,7 +334,7 @@ function DraftGrimoireCircle({
         {draft.players.map((player) => {
           const kind = characterKind(player.actualCharacter);
           const selected = player.seat === draft.selectedSeat;
-          const overLimit = kind ? counts[kind] > expectedCounts[kind] : false;
+          const overLimit = kind && expectedCounts ? counts[kind] > expectedCounts[kind] : false;
           const position = draft.seatPositions[player.seat];
 
           return (
@@ -381,56 +385,59 @@ function CharacterPool({
   onChange: (draft: SetupDraft) => void;
   busy: boolean;
   counts: Record<CharacterKind, number>;
-  expectedCounts: Record<CharacterKind, number>;
+  expectedCounts?: Record<CharacterKind, number>;
 }) {
   return (
     <div className="characterPool" aria-label="Trouble Brewing 캐릭터 풀">
-      {characterKinds.map((kind) => (
-        <section className={`characterGroup ${countStatus(counts[kind], expectedCounts[kind])}`} key={kind}>
-          <div className="characterGroupHeader">
-            <h3>{kindLabels[kind]}</h3>
-            <span className={countStatus(counts[kind], expectedCounts[kind])}>
-              {counts[kind]} / {expectedCounts[kind]}
-              {counts[kind] > expectedCounts[kind] ? " 초과" : null}
-              {counts[kind] < expectedCounts[kind] ? " 부족" : null}
-            </span>
-          </div>
-          <div className="characterCards">
-            {characters
-              .filter((character) => character.kind === kind)
-              .map((character) => {
-                const usedBy = draft.players.find((player) => player.actualCharacter === character.id);
-                const selected = draft.players[draft.selectedSeat - 1]?.actualCharacter === character.id;
-                const nextDraft = selected
-                  ? unassignActualCharacter(draft)
-                  : assignActualCharacter(draft, character.id);
+      {characterKinds.map((kind) => {
+        const status = expectedCounts ? countStatus(counts[kind], expectedCounts[kind]) : "matched";
+        return (
+          <section className={`characterGroup ${status}`} key={kind}>
+            <div className="characterGroupHeader">
+              <h3>{kindLabels[kind]}</h3>
+              <span className={status}>
+                {counts[kind]} / {expectedCounts?.[kind] ?? "계산 중"}
+                {expectedCounts && counts[kind] > expectedCounts[kind] ? " 초과" : null}
+                {expectedCounts && counts[kind] < expectedCounts[kind] ? " 부족" : null}
+              </span>
+            </div>
+            <div className="characterCards">
+              {characters
+                .filter((character) => character.kind === kind)
+                .map((character) => {
+                  const usedBy = draft.players.find((player) => player.actualCharacter === character.id);
+                  const selected = draft.players[draft.selectedSeat - 1]?.actualCharacter === character.id;
+                  const nextDraft = selected
+                    ? unassignActualCharacter(draft)
+                    : assignActualCharacter(draft, character.id);
 
-                return (
-                  <button
-                    type="button"
-                    className={`characterCard ${character.kind} ${usedBy ? "used" : "unused"} ${
-                      selected ? "selected" : ""
-                    }`}
-                    onClick={() => onChange(nextDraft)}
-                    disabled={busy}
-                    key={character.id}
-                  >
-                    <span className="characterIcon" aria-hidden="true">
-                      {character.icon}
-                    </span>
-                    <span className="characterText">
-                      <strong>{character.label}</strong>
-                      <small>{character.abilitySummary}</small>
-                    </span>
-                    <span className="usageLabel">
-                      {usedBy ? `사용 중: ${usedBy.seat}번` : "미사용"}
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
-        </section>
-      ))}
+                  return (
+                    <button
+                      type="button"
+                      className={`characterCard ${character.kind} ${usedBy ? "used" : "unused"} ${
+                        selected ? "selected" : ""
+                      }`}
+                      onClick={() => onChange(nextDraft)}
+                      disabled={busy}
+                      key={character.id}
+                    >
+                      <span className="characterIcon" aria-hidden="true">
+                        {character.icon}
+                      </span>
+                      <span className="characterText">
+                        <strong>{character.label}</strong>
+                        <small>{character.abilitySummary}</small>
+                      </span>
+                      <span className="usageLabel">
+                        {usedBy ? `사용 중: ${usedBy.seat}번` : "미사용"}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -466,7 +473,7 @@ function SetupSummary({
   warnings,
 }: {
   counts: Record<CharacterKind, number>;
-  expectedCounts: Record<CharacterKind, number>;
+  expectedCounts?: Record<CharacterKind, number>;
   warnings: CoreWarning[];
 }) {
   return (
@@ -474,7 +481,7 @@ function SetupSummary({
       <h2>조합 힌트</h2>
       <dl className="setupCounts">
         {characterKinds.map((kind) => {
-          const status = countStatus(counts[kind], expectedCounts[kind]);
+          const status = expectedCounts ? countStatus(counts[kind], expectedCounts[kind]) : "matched";
           return (
             <div className={status} key={kind}>
               <dt>
@@ -482,7 +489,7 @@ function SetupSummary({
                 {status !== "matched" ? <span>{status === "over" ? "초과" : "부족"}</span> : null}
               </dt>
               <dd>
-                {counts[kind]} / {expectedCounts[kind]}
+                {counts[kind]} / {expectedCounts?.[kind] ?? "계산 중"}
               </dd>
             </div>
           );
@@ -583,14 +590,7 @@ function ConfirmedSetup({
 }) {
   const counts = useMemo(
     () =>
-      players.reduce(
-        (next, player) => {
-          const kind = characters.find((character) => character.id === player.actualCharacter)?.kind;
-          if (kind) next[kind] += 1;
-          return next;
-        },
-        { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 },
-      ),
+      countCharacterKinds(players),
     [players],
   );
 
@@ -660,41 +660,6 @@ function Warnings({ warnings }: { warnings: CoreWarning[] }) {
       ))}
     </div>
   );
-}
-
-function countCharacters(players: DraftPlayer[] | Player[]): Record<CharacterKind, number> {
-  return players.reduce(
-    (counts, player) => {
-      const kind = characterKind(player.actualCharacter);
-      if (kind) counts[kind] += 1;
-      return counts;
-    },
-    { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 },
-  );
-}
-
-function expectedDistribution(playerCount: number): Record<CharacterKind, number> {
-  const distributions: Record<number, [number, number, number, number]> = {
-    5: [3, 0, 1, 1],
-    6: [3, 1, 1, 1],
-    7: [5, 0, 1, 1],
-    8: [5, 1, 1, 1],
-    9: [5, 2, 1, 1],
-    10: [7, 0, 2, 1],
-    11: [7, 1, 2, 1],
-    12: [7, 2, 2, 1],
-    13: [9, 0, 3, 1],
-    14: [9, 1, 3, 1],
-    15: [9, 2, 3, 1],
-  };
-  const [townsfolk, outsider, minion, demon] = distributions[playerCount] ?? [0, 0, 0, 0];
-
-  return {
-    Townsfolk: townsfolk,
-    Outsider: outsider,
-    Minion: minion,
-    Demon: demon,
-  };
 }
 
 function countStatus(actual: number, expected: number): "matched" | "under" | "over" {

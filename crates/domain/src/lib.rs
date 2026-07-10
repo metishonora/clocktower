@@ -50,6 +50,23 @@ struct CreateGamePayload {
     players: Vec<SetupPlayerInput>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetupDistributionRequest {
+    player_count: usize,
+    #[serde(default)]
+    actual_characters: Vec<String>,
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "PascalCase")]
+struct SetupDistribution {
+    townsfolk: usize,
+    outsider: usize,
+    minion: usize,
+    demon: usize,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct CoreResult<T: Serialize> {
@@ -168,6 +185,29 @@ pub fn propose_json(game_file_json: &str, command_json: &str) -> String {
             _ => Err(error("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다.")),
         }
     });
+
+    to_json(result)
+}
+
+pub fn setup_distribution_json(request_json: &str) -> String {
+    let result = serde_json::from_str::<SetupDistributionRequest>(request_json)
+        .map_err(|_| error("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."))
+        .and_then(|request| {
+            if request.player_count < 5 || request.player_count > 15 {
+                return Err(error(
+                    "INVALID_PLAYER_COUNT",
+                    "플레이어는 5명 이상 15명 이하이어야 합니다.",
+                ));
+            }
+
+            Ok(expected_distribution(
+                request.player_count,
+                request
+                    .actual_characters
+                    .iter()
+                    .any(|character| character.as_str() == "baron"),
+            ))
+        });
 
     to_json(result)
 }
@@ -384,17 +424,24 @@ fn validate_setup_warnings(players: &[Player]) -> Vec<CoreWarning> {
     }
 
     let mut warnings = Vec::new();
-    let expected = expected_distribution(players.len());
-    let actual = players.iter().fold((0, 0, 0, 0), |mut counts, player| {
-        match character_kind(&player.actual_character) {
-            Some(CharacterKind::Townsfolk) => counts.0 += 1,
-            Some(CharacterKind::Outsider) => counts.1 += 1,
-            Some(CharacterKind::Minion) => counts.2 += 1,
-            Some(CharacterKind::Demon) => counts.3 += 1,
-            None => {}
-        }
-        counts
-    });
+    let actual = players
+        .iter()
+        .fold(SetupDistribution::empty(), |mut counts, player| {
+            match character_kind(&player.actual_character) {
+                Some(CharacterKind::Townsfolk) => counts.townsfolk += 1,
+                Some(CharacterKind::Outsider) => counts.outsider += 1,
+                Some(CharacterKind::Minion) => counts.minion += 1,
+                Some(CharacterKind::Demon) => counts.demon += 1,
+                None => {}
+            }
+            counts
+        });
+    let expected = expected_distribution(
+        players.len(),
+        players
+            .iter()
+            .any(|player| player.actual_character.as_str() == "baron"),
+    );
 
     if actual != expected {
         warnings.push(CoreWarning {
@@ -402,7 +449,7 @@ fn validate_setup_warnings(players: &[Player]) -> Vec<CoreWarning> {
             severity: "warning",
             message_ko: format!(
                 "Trouble Brewing 권장 구성은 마을주민 {}, 외부인 {}, 하수인 {}, 악마 {}명입니다.",
-                expected.0, expected.1, expected.2, expected.3
+                expected.townsfolk, expected.outsider, expected.minion, expected.demon
             ),
         });
     }
@@ -423,20 +470,96 @@ fn validate_setup_warnings(players: &[Player]) -> Vec<CoreWarning> {
     warnings
 }
 
-fn expected_distribution(player_count: usize) -> (usize, usize, usize, usize) {
-    match player_count {
-        5 => (3, 0, 1, 1),
-        6 => (3, 1, 1, 1),
-        7 => (5, 0, 1, 1),
-        8 => (5, 1, 1, 1),
-        9 => (5, 2, 1, 1),
-        10 => (7, 0, 2, 1),
-        11 => (7, 1, 2, 1),
-        12 => (7, 2, 2, 1),
-        13 => (9, 0, 3, 1),
-        14 => (9, 1, 3, 1),
-        15 => (9, 2, 3, 1),
-        _ => (0, 0, 0, 0),
+impl SetupDistribution {
+    fn empty() -> Self {
+        Self {
+            townsfolk: 0,
+            outsider: 0,
+            minion: 0,
+            demon: 0,
+        }
+    }
+}
+
+fn expected_distribution(player_count: usize, has_baron: bool) -> SetupDistribution {
+    let distribution = match player_count {
+        5 => SetupDistribution {
+            townsfolk: 3,
+            outsider: 0,
+            minion: 1,
+            demon: 1,
+        },
+        6 => SetupDistribution {
+            townsfolk: 3,
+            outsider: 1,
+            minion: 1,
+            demon: 1,
+        },
+        7 => SetupDistribution {
+            townsfolk: 5,
+            outsider: 0,
+            minion: 1,
+            demon: 1,
+        },
+        8 => SetupDistribution {
+            townsfolk: 5,
+            outsider: 1,
+            minion: 1,
+            demon: 1,
+        },
+        9 => SetupDistribution {
+            townsfolk: 5,
+            outsider: 2,
+            minion: 1,
+            demon: 1,
+        },
+        10 => SetupDistribution {
+            townsfolk: 7,
+            outsider: 0,
+            minion: 2,
+            demon: 1,
+        },
+        11 => SetupDistribution {
+            townsfolk: 7,
+            outsider: 1,
+            minion: 2,
+            demon: 1,
+        },
+        12 => SetupDistribution {
+            townsfolk: 7,
+            outsider: 2,
+            minion: 2,
+            demon: 1,
+        },
+        13 => SetupDistribution {
+            townsfolk: 9,
+            outsider: 0,
+            minion: 3,
+            demon: 1,
+        },
+        14 => SetupDistribution {
+            townsfolk: 9,
+            outsider: 1,
+            minion: 3,
+            demon: 1,
+        },
+        15 => SetupDistribution {
+            townsfolk: 9,
+            outsider: 2,
+            minion: 3,
+            demon: 1,
+        },
+        _ => SetupDistribution::empty(),
+    };
+
+    if has_baron {
+        SetupDistribution {
+            townsfolk: distribution.townsfolk.saturating_sub(2),
+            outsider: distribution.outsider + 2,
+            ..distribution
+        }
+    } else {
+        distribution
     }
 }
 
@@ -569,6 +692,156 @@ mod tests {
             actual["value"]["warnings"][0]["code"],
             "SETUP_DISTRIBUTION_MISMATCH"
         );
+    }
+
+    #[test]
+    fn expected_distribution_covers_baron_and_non_baron_representative_player_counts() {
+        for (player_count, normal, baron) in [
+            (
+                5,
+                SetupDistribution {
+                    townsfolk: 3,
+                    outsider: 0,
+                    minion: 1,
+                    demon: 1,
+                },
+                SetupDistribution {
+                    townsfolk: 1,
+                    outsider: 2,
+                    minion: 1,
+                    demon: 1,
+                },
+            ),
+            (
+                7,
+                SetupDistribution {
+                    townsfolk: 5,
+                    outsider: 0,
+                    minion: 1,
+                    demon: 1,
+                },
+                SetupDistribution {
+                    townsfolk: 3,
+                    outsider: 2,
+                    minion: 1,
+                    demon: 1,
+                },
+            ),
+            (
+                10,
+                SetupDistribution {
+                    townsfolk: 7,
+                    outsider: 0,
+                    minion: 2,
+                    demon: 1,
+                },
+                SetupDistribution {
+                    townsfolk: 5,
+                    outsider: 2,
+                    minion: 2,
+                    demon: 1,
+                },
+            ),
+            (
+                15,
+                SetupDistribution {
+                    townsfolk: 9,
+                    outsider: 2,
+                    minion: 3,
+                    demon: 1,
+                },
+                SetupDistribution {
+                    townsfolk: 7,
+                    outsider: 4,
+                    minion: 3,
+                    demon: 1,
+                },
+            ),
+        ] {
+            assert_eq!(expected_distribution(player_count, false), normal);
+            assert_eq!(expected_distribution(player_count, true), baron);
+        }
+    }
+
+    #[test]
+    fn setup_distribution_json_returns_baron_adjusted_counts() {
+        let actual: Value = serde_json::from_str(&setup_distribution_json(
+            r#"{ "playerCount": 7, "actualCharacters": ["baron"] }"#,
+        ))
+        .unwrap();
+
+        assert_eq!(
+            actual,
+            json!({
+                "ok": true,
+                "value": {
+                    "Townsfolk": 3,
+                    "Outsider": 2,
+                    "Minion": 1,
+                    "Demon": 1
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn propose_create_game_uses_baron_adjusted_distribution_warnings() {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": [
+                    { "seat": 1, "name": "Ada", "actualCharacter": "washerwoman" },
+                    { "seat": 2, "name": "Bert", "actualCharacter": "librarian" },
+                    { "seat": 3, "name": "Cora", "actualCharacter": "chef" },
+                    { "seat": 4, "name": "Dev", "actualCharacter": "butler" },
+                    { "seat": 5, "name": "Eve", "actualCharacter": "drunk", "shownCharacter": "empath" },
+                    { "seat": 6, "name": "Fay", "actualCharacter": "baron" },
+                    { "seat": 7, "name": "Gus", "actualCharacter": "imp" }
+                ]
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["warnings"], json!([]));
+    }
+
+    #[test]
+    fn replay_uses_baron_adjusted_distribution_warnings() {
+        let game = json!({
+            "schemaVersion": 1,
+            "game": {
+                "id": "game-1",
+                "name": "Setup",
+                "createdAt": "2026-01-01T00:00:00.000Z",
+                "updatedAt": "2026-01-01T00:00:00.000Z",
+                "events": [{
+                    "id": "evt-1",
+                    "type": "setupConfirmed",
+                    "phase": "setup",
+                    "payload": {
+                        "players": [
+                            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+                            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+                            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "chef", "shownCharacter": "chef" },
+                            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "butler", "shownCharacter": "butler" },
+                            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "drunk", "shownCharacter": "empath" },
+                            { "id": "player-6", "seat": 6, "name": "Fay", "actualCharacter": "baron", "shownCharacter": "baron" },
+                            { "id": "player-7", "seat": 7, "name": "Gus", "actualCharacter": "imp", "shownCharacter": "imp" }
+                        ]
+                    },
+                    "summary": "초기 설정 확정: 7명",
+                    "createdAt": "2026-01-01T00:00:00.000Z"
+                }]
+            }
+        });
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["warnings"], json!([]));
     }
 
     #[test]
