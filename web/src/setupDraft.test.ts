@@ -5,10 +5,15 @@ import {
   createSetupDraft,
   drunkShownCharacterOptions,
   resetActualCharacters,
+  resetSeatLayout,
+  resizeSetupDraft,
   selectSeat,
+  setSeatLayoutPreset,
   setDrunkShownCharacter,
+  seatLayoutPositions,
   toCreateGamePlayers,
   unassignActualCharacter,
+  updateSeatPosition,
 } from "./setupDraft.js";
 
 test("assigning an unused Actual Character updates only the selected Player", () => {
@@ -112,4 +117,63 @@ test("resetting assignments preserves names and selected seat", () => {
   equal(reset.players[0].actualCharacter, undefined);
   equal(reset.players[0].shownCharacter, undefined);
   equal(reset.players[1].actualCharacter, undefined);
+});
+
+test("default seat layout starts at upper right and proceeds clockwise", () => {
+  const positions = createSetupDraft(7).seatPositions;
+
+  equal(positions[1].x > 50, true);
+  equal(positions[1].y < 50, true);
+  equal(positions[2].x > positions[1].x, true);
+  equal(positions[2].y > positions[1].y, true);
+});
+
+test("seat layout presets keep clockwise seat order from upper right", () => {
+  const longTable = seatLayoutPositions(7, "longTable");
+  const horseshoe = seatLayoutPositions(7, "horseshoe");
+
+  deepEqual(longTable[1], { x: 82, y: 18 });
+  equal(longTable[2].x, 82);
+  equal(longTable[2].y > longTable[1].y, true);
+  equal(longTable[5].x, 18);
+  equal(longTable[5].y > longTable[6].y, true);
+
+  deepEqual(horseshoe[1], { x: 82, y: 18 });
+  equal(horseshoe[2].x, 82);
+  equal(horseshoe[2].y > horseshoe[1].y, true);
+  equal(horseshoe[4].y, 82);
+});
+
+test("Storyteller can choose a preset and manually adjust a seat position", () => {
+  let draft = createSetupDraft(7);
+  draft = setSeatLayoutPreset(draft, "longTable");
+  draft = updateSeatPosition(draft, 2, { x: 200, y: -10 });
+
+  equal(draft.seatLayoutPreset, "longTable");
+  deepEqual(draft.seatPositions[1], { x: 82, y: 18 });
+  deepEqual(draft.seatPositions[2], { x: 92, y: 12 });
+});
+
+test("resetting seat layout restores automatic circle positions", () => {
+  let draft = createSetupDraft(7);
+  draft = setSeatLayoutPreset(draft, "horseshoe");
+  draft = updateSeatPosition(draft, 1, { x: 40, y: 40 });
+
+  const reset = resetSeatLayout(draft);
+
+  equal(reset.seatLayoutPreset, "circle");
+  deepEqual(reset.seatPositions, seatLayoutPositions(7, "circle"));
+});
+
+test("resizing preserves manually adjusted existing seat positions", () => {
+  let draft = createSetupDraft(7);
+  draft = setSeatLayoutPreset(draft, "longTable");
+  draft = updateSeatPosition(draft, 2, { x: 44, y: 55 });
+
+  const resized = resizeSetupDraft(draft, 8);
+
+  equal(resized.seatLayoutPreset, "longTable");
+  deepEqual(resized.seatPositions[1], draft.seatPositions[1]);
+  deepEqual(resized.seatPositions[2], { x: 44, y: 55 });
+  deepEqual(resized.seatPositions[8], seatLayoutPositions(8, "longTable")[8]);
 });

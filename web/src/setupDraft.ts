@@ -15,9 +15,20 @@ export type DraftPlayer = {
   shownCharacter?: string;
 };
 
+export type SeatPosition = {
+  x: number;
+  y: number;
+};
+
+export type SeatPositions = Record<number, SeatPosition>;
+
+export type SeatLayoutPreset = "circle" | "oval" | "longTable" | "horseshoe";
+
 export type SetupDraft = {
   players: DraftPlayer[];
   selectedSeat: number;
+  seatLayoutPreset: SeatLayoutPreset;
+  seatPositions: SeatPositions;
 };
 
 export type CreateGamePlayerInput = {
@@ -53,6 +64,7 @@ export const characters: Character[] = [
 ];
 
 export const characterKinds: CharacterKind[] = ["Townsfolk", "Outsider", "Minion", "Demon"];
+export const seatLayoutPresets: SeatLayoutPreset[] = ["circle", "oval", "longTable", "horseshoe"];
 
 export const kindLabels: Record<CharacterKind, string> = {
   Townsfolk: "마을주민",
@@ -60,6 +72,25 @@ export const kindLabels: Record<CharacterKind, string> = {
   Minion: "하수인",
   Demon: "악마",
 };
+
+export const seatLayoutPresetLabels: Record<SeatLayoutPreset, string> = {
+  circle: "원형",
+  oval: "타원",
+  longTable: "긴 테이블",
+  horseshoe: "ㄷ자",
+};
+
+const SEAT_POSITION_MIN_X = 8;
+const SEAT_POSITION_MAX_X = 92;
+const SEAT_POSITION_MIN_Y = 12;
+const SEAT_POSITION_MAX_Y = 88;
+const CIRCLE_RADIUS = 36;
+const OVAL_HORIZONTAL_RADIUS = 41;
+const OVAL_VERTICAL_RADIUS = 28;
+const TABLE_EDGE_START = 18;
+const TABLE_EDGE_END = 82;
+const HORSESHOE_RIGHT_LEG_END = 0.34;
+const HORSESHOE_BOTTOM_END = 0.67;
 
 export function createDraftPlayer(seat: number): DraftPlayer {
   return {
@@ -69,9 +100,13 @@ export function createDraftPlayer(seat: number): DraftPlayer {
 }
 
 export function createSetupDraft(playerCount = 5): SetupDraft {
+  const players = Array.from({ length: playerCount }, (_, index) => createDraftPlayer(index + 1));
+
   return {
-    players: Array.from({ length: playerCount }, (_, index) => createDraftPlayer(index + 1)),
+    players,
     selectedSeat: 1,
+    seatLayoutPreset: "circle",
+    seatPositions: seatLayoutPositions(players.length, "circle"),
   };
 }
 
@@ -85,6 +120,8 @@ export function resizeSetupDraft(draft: SetupDraft, playerCount: number): SetupD
   return {
     players,
     selectedSeat: Math.min(draft.selectedSeat, nextCount),
+    seatLayoutPreset: draft.seatLayoutPreset,
+    seatPositions: resizeSeatPositions(draft.seatPositions, nextCount, draft.seatLayoutPreset),
   };
 }
 
@@ -103,6 +140,34 @@ export function updateDraftPlayer(
     players: draft.players.map((player) =>
       player.seat === seat ? { ...player, ...patch } : player,
     ),
+  };
+}
+
+export function setSeatLayoutPreset(draft: SetupDraft, preset: SeatLayoutPreset): SetupDraft {
+  return {
+    ...draft,
+    seatLayoutPreset: preset,
+    seatPositions: seatLayoutPositions(draft.players.length, preset),
+  };
+}
+
+export function resetSeatLayout(draft: SetupDraft): SetupDraft {
+  return setSeatLayoutPreset(draft, "circle");
+}
+
+export function updateSeatPosition(
+  draft: SetupDraft,
+  seat: number,
+  position: SeatPosition,
+): SetupDraft {
+  if (!draft.players.some((player) => player.seat === seat)) return draft;
+
+  return {
+    ...draft,
+    seatPositions: {
+      ...draft.seatPositions,
+      [seat]: clampSeatPosition(position),
+    },
   };
 }
 
@@ -206,6 +271,127 @@ export function isTownsfolk(characterId?: string): boolean {
 
 export function drunkShownCharacterOptions(): Character[] {
   return characters.filter((character) => character.kind === "Townsfolk");
+}
+
+export function seatLayoutPositions(playerCount: number, preset: SeatLayoutPreset): SeatPositions {
+  if (preset === "oval") return ovalSeatPositions(playerCount);
+  if (preset === "longTable") return longTableSeatPositions(playerCount);
+  if (preset === "horseshoe") return horseshoeSeatPositions(playerCount);
+  return circleSeatPositions(playerCount);
+}
+
+function circleSeatPositions(playerCount: number): SeatPositions {
+  return ellipseSeatPositions(playerCount, CIRCLE_RADIUS, CIRCLE_RADIUS);
+}
+
+function ovalSeatPositions(playerCount: number): SeatPositions {
+  return ellipseSeatPositions(playerCount, OVAL_HORIZONTAL_RADIUS, OVAL_VERTICAL_RADIUS);
+}
+
+function ellipseSeatPositions(
+  playerCount: number,
+  horizontalRadius: number,
+  verticalRadius: number,
+): SeatPositions {
+  return Array.from({ length: playerCount }, (_, index) => {
+    const angle = clockwiseSeatAngle(index, playerCount);
+    return [
+      index + 1,
+      {
+        x: 50 + Math.cos(angle) * horizontalRadius,
+        y: 50 + Math.sin(angle) * verticalRadius,
+      },
+    ] as const;
+  }).reduce<SeatPositions>(toSeatPositions, {});
+}
+
+function longTableSeatPositions(playerCount: number): SeatPositions {
+  const rightCount = Math.ceil(playerCount / 2);
+  const leftCount = playerCount - rightCount;
+
+  return Array.from({ length: playerCount }, (_, index) => {
+    const onRightSide = index < rightCount;
+    const sideIndex = onRightSide ? index : index - rightCount;
+    const sideCount = onRightSide ? rightCount : leftCount;
+
+    return [
+      index + 1,
+      {
+        x: onRightSide ? TABLE_EDGE_END : TABLE_EDGE_START,
+        y: onRightSide
+          ? TABLE_EDGE_START + (sideIndex * (TABLE_EDGE_END - TABLE_EDGE_START)) / Math.max(1, sideCount - 1)
+          : TABLE_EDGE_END - (sideIndex * (TABLE_EDGE_END - TABLE_EDGE_START)) / Math.max(1, sideCount - 1),
+      },
+    ] as const;
+  }).reduce<SeatPositions>(toSeatPositions, {});
+}
+
+function horseshoeSeatPositions(playerCount: number): SeatPositions {
+  return Array.from({ length: playerCount }, (_, index) => {
+    const progress = playerCount === 1 ? 0 : index / (playerCount - 1);
+    if (progress < HORSESHOE_RIGHT_LEG_END) {
+      return [
+        index + 1,
+        {
+          x: TABLE_EDGE_END,
+          y: TABLE_EDGE_START + (progress / HORSESHOE_RIGHT_LEG_END) * (TABLE_EDGE_END - TABLE_EDGE_START),
+        },
+      ] as const;
+    }
+    if (progress < HORSESHOE_BOTTOM_END) {
+      return [
+        index + 1,
+        {
+          x:
+            TABLE_EDGE_END -
+            ((progress - HORSESHOE_RIGHT_LEG_END) / (HORSESHOE_BOTTOM_END - HORSESHOE_RIGHT_LEG_END)) *
+              (TABLE_EDGE_END - TABLE_EDGE_START),
+          y: TABLE_EDGE_END,
+        },
+      ] as const;
+    }
+    return [
+      index + 1,
+      {
+        x: TABLE_EDGE_START,
+        y:
+          TABLE_EDGE_END -
+          ((progress - HORSESHOE_BOTTOM_END) / (1 - HORSESHOE_BOTTOM_END)) *
+            (TABLE_EDGE_END - TABLE_EDGE_START),
+      },
+    ] as const;
+  }).reduce<SeatPositions>(toSeatPositions, {});
+}
+
+function resizeSeatPositions(
+  currentPositions: SeatPositions,
+  playerCount: number,
+  preset: SeatLayoutPreset,
+): SeatPositions {
+  const presetPositions = seatLayoutPositions(playerCount, preset);
+  return Array.from({ length: playerCount }, (_, index) => {
+    const seat = index + 1;
+    return [seat, currentPositions[seat] ?? presetPositions[seat]] as const;
+  }).reduce<SeatPositions>(toSeatPositions, {});
+}
+
+function toSeatPositions(
+  positions: SeatPositions,
+  [seat, position]: readonly [number, SeatPosition],
+): SeatPositions {
+  positions[seat] = position;
+  return positions;
+}
+
+function clockwiseSeatAngle(index: number, playerCount: number): number {
+  return -Math.PI / 4 + (Math.PI * 2 * index) / playerCount;
+}
+
+function clampSeatPosition(position: SeatPosition): SeatPosition {
+  return {
+    x: Math.max(SEAT_POSITION_MIN_X, Math.min(SEAT_POSITION_MAX_X, position.x)),
+    y: Math.max(SEAT_POSITION_MIN_Y, Math.min(SEAT_POSITION_MAX_Y, position.y)),
+  };
 }
 
 function validDrunkShownCharacter(characterId?: string): string | undefined {

@@ -421,6 +421,118 @@ select {
   line-height: 1.2;
 }
 
+.seatLayoutToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.seatLayoutPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 1px solid rgba(31, 111, 91, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: 0 8px 20px rgba(54, 43, 28, 0.08);
+  padding: 4px;
+}
+
+.seatLayoutPresets button,
+.seatLayoutActions button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.seatLayoutPresets button.selected,
+.seatLayoutActions button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.1);
+  color: var(--primary-dark);
+}
+
+.seatLayoutActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.layoutOkBadge,
+.layoutOverlapBadge {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.layoutOkBadge {
+  border: 1px solid rgba(35, 123, 88, 0.34);
+  background: rgba(35, 123, 88, 0.1);
+  color: var(--ok);
+}
+
+.layoutOverlapBadge {
+  border: 1px solid rgba(183, 55, 44, 0.38);
+  background: #fff0ed;
+  color: #9f2e26;
+}
+
+.adjustableSeatMap {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(32, 35, 31, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(32, 35, 31, 0.04) 1px, transparent 1px),
+    #f8f4ec;
+  background-size: 32px 32px;
+}
+
+.adjustableSeatMap::before {
+  display: none;
+}
+
+.draftLayoutTableMark {
+  position: absolute;
+  top: 39%;
+  left: 17%;
+  z-index: 0;
+  display: grid;
+  width: 66%;
+  height: 22%;
+  place-items: center;
+  border: 2px dashed #c9bda9;
+  border-radius: 999px;
+  color: #958875;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.adjustableSeatToken {
+  transform: translate(-50%, -50%);
+}
+
+.layoutEditing .adjustableSeatToken {
+  touch-action: none;
+}
+
+.adjustableSeatToken.overlap {
+  background: #fff0ed;
+  box-shadow:
+    0 0 0 4px rgba(183, 55, 44, 0.24),
+    0 14px 28px rgba(54, 43, 28, 0.18);
+}
+
 .shownCharacter {
   color: var(--warning);
   font-weight: 900;

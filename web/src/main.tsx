@@ -12,17 +12,27 @@ import {
   drunkShownCharacterOptions,
   kindLabels,
   resetActualCharacters,
+  resetSeatLayout,
   resizeSetupDraft,
   selectSeat,
+  seatLayoutPresetLabels,
+  seatLayoutPresets,
+  setSeatLayoutPreset,
   setDrunkShownCharacter,
   toCreateGamePlayers,
   type CharacterKind,
   type DraftPlayer,
+  type SeatPosition,
+  type SeatPositions,
   type SetupDraft,
   unassignActualCharacter,
   updateDraftPlayer,
+  updateSeatPosition,
 } from "./setupDraft";
 import "./styles.css";
+
+const SEAT_OVERLAP_X_PERCENT = 19;
+const SEAT_OVERLAP_Y_PERCENT = 14;
 
 function createGameFile(events: unknown[] = []): GameFile {
   const now = new Date().toISOString();
@@ -153,7 +163,7 @@ function App() {
               </div>
               <span className="phaseBadge">설정 확정</span>
             </div>
-            <Grimoire players={players} draftPlayers={setupDraft.players} />
+            <Grimoire players={players} draftPlayers={setupDraft.players} seatPositions={setupDraft.seatPositions} />
           </section>
 
           <section className="panel setup">
@@ -303,78 +313,137 @@ function DraftGrimoireCircle({
   onChange: (draft: SetupDraft) => void;
   busy: boolean;
 }) {
+  const [layoutEditing, setLayoutEditing] = useState(false);
   const selectedPlayer = draft.players.find((player) => player.seat === draft.selectedSeat);
   const selectedCharacter = characters.find((character) => character.id === selectedPlayer?.actualCharacter);
   const counts = countCharacters(draft.players);
   const expectedCounts = expectedDistribution(draft.players.length);
+  const overlapSeats = findOverlappingSeats(draft.seatPositions);
 
   return (
-    <div
-      className={`seatMap draftSeatMap ${draft.players.length >= 12 ? "compactSeats" : ""}`}
-      aria-label="원형 그리모어 좌석 맵"
-    >
-      <section className="draftMapCenter" aria-label="선택한 플레이어">
-        {selectedPlayer ? (
-          <>
-            <span className="centerSeatBadge">{selectedPlayer.seat}번</span>
-            <label>
-              이름
-              <input
-                value={selectedPlayer.name}
-                disabled={busy}
-                onChange={(event) =>
-                  onChange(updateDraftPlayer(draft, selectedPlayer.seat, { name: event.target.value }))
-                }
-              />
-            </label>
-            <strong className={`centerCharacter ${characterKind(selectedPlayer.actualCharacter) ?? "unassigned"}`}>
-              {characterLabel(selectedPlayer.actualCharacter)}
-            </strong>
-            {selectedCharacter ? <p className="centerAbilitySummary">{selectedCharacter.abilitySummary}</p> : null}
-            {selectedPlayer.actualCharacter === "drunk" ? (
-              <label>
-                보여준 캐릭터
-                <CharacterSelect
-                  value={selectedPlayer.shownCharacter ?? ""}
-                  options={drunkShownCharacterOptions()}
-                  includeEmpty
-                  disabled={busy}
-                  onChange={(shownCharacter) => onChange(setDrunkShownCharacter(draft, shownCharacter))}
-                />
-              </label>
-            ) : null}
-          </>
-        ) : null}
-      </section>
-
-      {draft.players.map((player, index) => {
-        const angle = (360 / draft.players.length) * index;
-        const kind = characterKind(player.actualCharacter);
-        const selected = player.seat === draft.selectedSeat;
-        const overLimit = kind ? counts[kind] > expectedCounts[kind] : false;
-
-        return (
+    <>
+      <div className="seatLayoutToolbar">
+        <div className="seatLayoutPresets" aria-label="좌석 배치 프리셋">
+          {seatLayoutPresets.map((preset) => (
+            <button
+              type="button"
+              className={draft.seatLayoutPreset === preset ? "selected" : ""}
+              onClick={() => onChange(setSeatLayoutPreset(draft, preset))}
+              disabled={busy}
+              key={preset}
+            >
+              {seatLayoutPresetLabels[preset]}
+            </button>
+          ))}
+        </div>
+        <div className="seatLayoutActions">
+          {overlapSeats.size > 0 ? (
+            <span className="layoutOverlapBadge">겹침 {Array.from(overlapSeats).join(", ")}</span>
+          ) : (
+            <span className="layoutOkBadge">겹침 없음</span>
+          )}
           <button
             type="button"
-            className={`seatToken draftSeatToken ${kind ?? "unassigned"} ${selected ? "selected" : ""} ${
-              overLimit ? "overLimit" : ""
-            }`}
-            style={{ "--seat-angle": `${angle}deg` } as React.CSSProperties}
-            aria-pressed={selected}
-            onClick={() => onChange(selectSeat(draft, player.seat))}
+            className={`secondaryAction ${layoutEditing ? "selected" : ""}`}
+            onClick={() => setLayoutEditing((current) => !current)}
             disabled={busy}
-            key={player.seat}
           >
-            <span className="seatTokenNumber">{player.seat}</span>
-            <strong>{player.name}</strong>
-            <small>{characterLabel(player.actualCharacter)}</small>
-            {player.actualCharacter === "drunk" ? (
-              <small className="shownCharacter">보여준 캐릭터: {characterLabel(player.shownCharacter)}</small>
-            ) : null}
+            위치 조정
           </button>
-        );
-      })}
-    </div>
+          <button
+            type="button"
+            className="secondaryAction"
+            onClick={() => onChange(resetSeatLayout(draft))}
+            disabled={busy}
+          >
+            자동 배치
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={`seatMap draftSeatMap adjustableSeatMap ${layoutEditing ? "layoutEditing" : ""} ${
+          draft.players.length >= 12 ? "compactSeats" : ""
+        }`}
+        aria-label="조정 가능한 그리모어 좌석 맵"
+      >
+        <div className="draftLayoutTableMark" aria-hidden="true">
+          테이블
+        </div>
+        <section className="draftMapCenter" aria-label="선택한 플레이어">
+          {selectedPlayer ? (
+            <>
+              <span className="centerSeatBadge">{selectedPlayer.seat}번</span>
+              <label>
+                이름
+                <input
+                  value={selectedPlayer.name}
+                  disabled={busy}
+                  onChange={(event) =>
+                    onChange(updateDraftPlayer(draft, selectedPlayer.seat, { name: event.target.value }))
+                  }
+                />
+              </label>
+              <strong className={`centerCharacter ${characterKind(selectedPlayer.actualCharacter) ?? "unassigned"}`}>
+                {characterLabel(selectedPlayer.actualCharacter)}
+              </strong>
+              {selectedCharacter ? <p className="centerAbilitySummary">{selectedCharacter.abilitySummary}</p> : null}
+              {selectedPlayer.actualCharacter === "drunk" ? (
+                <label>
+                  보여준 캐릭터
+                  <CharacterSelect
+                    value={selectedPlayer.shownCharacter ?? ""}
+                    options={drunkShownCharacterOptions()}
+                    includeEmpty
+                    disabled={busy}
+                    onChange={(shownCharacter) => onChange(setDrunkShownCharacter(draft, shownCharacter))}
+                  />
+                </label>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+
+        {draft.players.map((player) => {
+          const kind = characterKind(player.actualCharacter);
+          const selected = player.seat === draft.selectedSeat;
+          const overLimit = kind ? counts[kind] > expectedCounts[kind] : false;
+          const position = draft.seatPositions[player.seat];
+
+          return (
+            <button
+              type="button"
+              className={`seatToken draftSeatToken adjustableSeatToken ${kind ?? "unassigned"} ${
+                selected ? "selected" : ""
+              } ${overLimit ? "overLimit" : ""} ${overlapSeats.has(player.seat) ? "overlap" : ""}`}
+              style={{ left: `${position.x}%`, top: `${position.y}%` }}
+              aria-pressed={selected}
+              onPointerDown={(event) =>
+                startSeatDrag({
+                  event,
+                  enabled: layoutEditing,
+                  busy,
+                  initialPosition: position,
+                  onMove: (position) => onChange(updateSeatPosition(draft, player.seat, position)),
+                })
+              }
+              onClick={() => {
+                if (!layoutEditing) onChange(selectSeat(draft, player.seat));
+              }}
+              disabled={busy}
+              key={player.seat}
+            >
+              <span className="seatTokenNumber">{player.seat}</span>
+              <strong>{player.name}</strong>
+              <small>{characterLabel(player.actualCharacter)}</small>
+              {player.actualCharacter === "drunk" ? (
+                <small className="shownCharacter">보여준 캐릭터: {characterLabel(player.shownCharacter)}</small>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -536,27 +605,32 @@ function EventLog({
 function Grimoire({
   players,
   draftPlayers,
+  seatPositions,
 }: {
   players: Player[];
   draftPlayers: DraftPlayer[];
+  seatPositions: SeatPositions;
 }) {
   const seats = players.length > 0 ? players : draftPlayers;
 
   return (
-    <div className="seatMap" aria-label="원형 그리모어 좌석 맵">
+    <div className="seatMap adjustableSeatMap" aria-label="그리모어 좌석 맵">
+      <div className="draftLayoutTableMark" aria-hidden="true">
+        테이블
+      </div>
       <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
-      {seats.map((seat, index) => {
-        const angle = (360 / seats.length) * index;
+      {seats.map((seat) => {
         const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : undefined;
         const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : undefined;
         const alignment = "alignment" in seat ? seat.alignment : "good";
         const showShownCharacter =
           actualCharacter === "drunk" || Boolean(shownCharacter && actualCharacter !== shownCharacter);
+        const position = seatPositions[seat.seat];
 
         return (
           <article
-            className={`seatToken ${alignment}`}
-            style={{ "--seat-angle": `${angle}deg` } as React.CSSProperties}
+            className={`seatToken adjustableSeatToken ${alignment}`}
+            style={{ left: `${position.x}%`, top: `${position.y}%` }}
             key={seat.seat}
           >
             <span className="seatTokenNumber">{seat.seat}</span>
@@ -685,6 +759,75 @@ function countStatus(actual: number, expected: number): "matched" | "under" | "o
   if (actual < expected) return "under";
   if (actual > expected) return "over";
   return "matched";
+}
+
+function startSeatDrag({
+  event,
+  enabled,
+  busy,
+  initialPosition,
+  onMove,
+}: {
+  event: React.PointerEvent<HTMLButtonElement>;
+  enabled: boolean;
+  busy: boolean;
+  initialPosition: SeatPosition;
+  onMove: (position: SeatPosition) => void;
+}) {
+  if (!enabled || busy) return;
+
+  const canvas = event.currentTarget.closest(".seatMap");
+  if (!(canvas instanceof HTMLElement)) return;
+  const canvasElement = canvas;
+
+  event.currentTarget.setPointerCapture(event.pointerId);
+  const initialRect = canvasElement.getBoundingClientRect();
+  const initialCenterX = initialRect.left + (initialRect.width * initialPosition.x) / 100;
+  const initialCenterY = initialRect.top + (initialRect.height * initialPosition.y) / 100;
+  const grabOffsetX = event.clientX - initialCenterX;
+  const grabOffsetY = event.clientY - initialCenterY;
+
+  function moveSeat(clientX: number, clientY: number) {
+    const rect = canvasElement.getBoundingClientRect();
+    onMove({
+      x: ((clientX - grabOffsetX - rect.left) / rect.width) * 100,
+      y: ((clientY - grabOffsetY - rect.top) / rect.height) * 100,
+    });
+  }
+
+  moveSeat(event.clientX, event.clientY);
+
+  function handlePointerMove(moveEvent: PointerEvent) {
+    moveSeat(moveEvent.clientX, moveEvent.clientY);
+  }
+
+  function handlePointerUp() {
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", handlePointerUp);
+  }
+
+  window.addEventListener("pointermove", handlePointerMove);
+  window.addEventListener("pointerup", handlePointerUp);
+}
+
+function findOverlappingSeats(positions: SeatPositions): Set<number> {
+  const overlapping = new Set<number>();
+  const entries = Object.entries(positions).map(([seat, position]) => [Number(seat), position] as const);
+
+  for (let index = 0; index < entries.length; index += 1) {
+    for (let nextIndex = index + 1; nextIndex < entries.length; nextIndex += 1) {
+      const [seat, position] = entries[index];
+      const [nextSeat, nextPosition] = entries[nextIndex];
+      const overlapsHorizontally = Math.abs(position.x - nextPosition.x) < SEAT_OVERLAP_X_PERCENT;
+      const overlapsVertically = Math.abs(position.y - nextPosition.y) < SEAT_OVERLAP_Y_PERCENT;
+      if (overlapsHorizontally && overlapsVertically) {
+        overlapping.add(seat);
+        overlapping.add(nextSeat);
+      }
+    }
+  }
+
+  return overlapping;
 }
 
 createRoot(document.getElementById("root")!).render(
