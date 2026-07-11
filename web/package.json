@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "pnpm --workspace-root build:wasm && vite --host 127.0.0.1",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
-    "test": "tsc -p tsconfig.test.json && node --test ../.codex-tmp/web-tests/*.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

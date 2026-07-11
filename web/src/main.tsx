@@ -7,10 +7,12 @@ import type {
   PhaseStep,
   Player,
   Proposal,
+  RevealPayload,
   ReplayState,
   SetupDistribution,
 } from "./core/types";
 import { useGameStore } from "./gameStore";
+import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
 import {
   assignActualCharacter,
   characterKinds,
@@ -44,6 +46,10 @@ import "./styles.css";
 function App() {
   const gameStore = useGameStore();
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const latestRevealPayload = proposalRevealPayload(
+    gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined,
+  );
 
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
@@ -60,6 +66,15 @@ function App() {
     event.currentTarget.value = "";
     if (!file) return;
     await gameStore.importGameFile(await file.text());
+  }
+
+  function showReveal(payload: RevealPayload) {
+    setActiveRevealPayload(payload);
+    gameStore.clearProposalResult();
+  }
+
+  if (activeRevealPayload) {
+    return <RevealScreen payload={activeRevealPayload} onClose={() => setActiveRevealPayload(undefined)} />;
   }
 
   return (
@@ -90,9 +105,11 @@ function App() {
                   currentStep={gameStore.currentStep}
                   phaseOverview={gameStore.phaseOverview}
                   players={gameStore.players}
+                  revealPayload={latestRevealPayload}
                   busy={gameStore.busy}
                   onConfirm={gameStore.confirmCurrentStep}
                   onSkip={gameStore.skipCurrentStep}
+                  onShowReveal={showReveal}
                 />
               </section>
 
@@ -551,16 +568,20 @@ function CurrentStepPane({
   currentStep,
   phaseOverview,
   players,
+  revealPayload,
   busy,
   onConfirm,
   onSkip,
+  onShowReveal,
 }: {
   currentStep?: PhaseStep;
   phaseOverview: PhaseOverviewItem[];
   players: Player[];
+  revealPayload?: RevealPayload;
   busy: boolean;
   onConfirm: (input?: unknown) => void;
   onSkip: () => void;
+  onShowReveal: (payload: RevealPayload) => void;
 }) {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const currentPlayer = currentStep?.playerId
@@ -630,6 +651,14 @@ function CurrentStepPane({
           <p className="emptyStep">진행할 단계 없음</p>
         )}
       </section>
+
+      {revealPayload ? (
+        <RevealPreview
+          payload={revealPayload}
+          onShow={() => onShowReveal(revealPayload)}
+          disabled={busy}
+        />
+      ) : null}
 
       <section className="phaseOverview" aria-label="단계 개요">
         <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>

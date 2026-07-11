@@ -279,6 +279,10 @@ export function useGameStore() {
     });
   }
 
+  function clearProposalResult() {
+    setProposalResult(undefined);
+  }
+
   async function importGameFile(json: string) {
     if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 가져온 게임으로 교체할까요?")) {
       return;
@@ -326,6 +330,7 @@ export function useGameStore() {
     skipCurrentStep,
     resetSetup,
     undoLatestEvent,
+    clearProposalResult,
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };

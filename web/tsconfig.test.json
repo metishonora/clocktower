@@ -7,8 +7,9 @@
     "forceConsistentCasingInFileNames": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
     "rootDir": "src",
-    "outDir": "../.codex-tmp/web-tests",
+    "outDir": ".codex-tmp/web-tests",
     "declaration": false
   },
   "include": [
@@ -18,6 +19,8 @@
     "src/gameStorage.test.ts",
     "src/gameStoreSync.ts",
     "src/gameStore.test.ts",
+    "src/reveal.tsx",
+    "src/reveal.test.tsx",
     "src/node-test.d.ts"
   ]
 }

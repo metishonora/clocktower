@@ -812,6 +812,28 @@ select {
   gap: 14px;
 }
 
+.revealPreview {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(31, 111, 91, 0.28);
+  border-radius: 8px;
+  background: rgba(31, 111, 91, 0.08);
+  padding: 12px;
+}
+
+.revealPreviewMessage {
+  margin: 0;
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  padding: 12px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .currentStepCard {
   display: grid;
   gap: 12px;
@@ -1024,6 +1046,48 @@ select {
   margin: 8px 0;
   color: var(--muted);
   line-height: 1.35;
+}
+
+.revealShell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: #101713;
+  color: #fffdf8;
+  padding: 18px;
+}
+
+.revealCard {
+  display: grid;
+  width: min(760px, 100%);
+  gap: 18px;
+  place-items: center;
+  text-align: center;
+}
+
+.revealCard p {
+  width: 100%;
+  margin: 0;
+  border: 1px solid rgba(255, 253, 248, 0.2);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  padding: clamp(24px, 8vw, 54px);
+  font-size: clamp(2rem, 7vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.revealCloseButton {
+  min-height: 36px;
+  border: 1px solid rgba(255, 253, 248, 0.32);
+  border-radius: 6px;
+  background: transparent;
+  color: #fffdf8;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 @media (max-width: 1180px) {

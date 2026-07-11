@@ -33,6 +33,11 @@ export type Proposal = {
   warnings: CoreWarning[];
   followUpSteps: unknown[];
   preview: unknown;
+  revealPayload?: RevealPayload;
+};
+
+export type RevealPayload = {
+  messageKo: string;
 };
 
 export type SetupDistributionRequest = {

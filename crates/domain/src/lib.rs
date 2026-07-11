@@ -105,6 +105,14 @@ struct Proposal {
     warnings: Vec<CoreWarning>,
     follow_up_steps: Vec<Value>,
     preview: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reveal_payload: Option<RevealPayload>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RevealPayload {
+    message_ko: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -237,6 +245,7 @@ pub fn propose_json(game_file_json: &str, command_json: &str) -> String {
                 warnings: Vec::new(),
                 follow_up_steps: Vec::new(),
                 preview: serde_json::json!({ "messageKo": "코어 계약 정상" }),
+                reveal_payload: None,
             }),
             "createGame" => propose_create_game(&game_file, command.payload),
             "confirmStep" => propose_phase_step(&game_file, command.payload, false),
@@ -348,6 +357,7 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
         preview: serde_json::json!({
             "messageKo": format!("플레이어 {count}명 설정을 확정합니다.")
         }),
+        reveal_payload: None,
     })
 }
 
@@ -381,6 +391,11 @@ fn propose_phase_step(
     };
     let summary_action = if skip { "건너뜀" } else { "확정" };
     let event_count = game_file.game.events.len() + 1;
+    let reveal_payload = if skip {
+        None
+    } else {
+        phase_step_reveal_payload(&current_step, &players)
+    };
 
     Ok(Proposal {
         event: GameEvent {
@@ -404,7 +419,84 @@ fn propose_phase_step(
         preview: serde_json::json!({
             "messageKo": format!("현재 단계를 {summary_action}합니다.")
         }),
+        reveal_payload,
     })
+}
+
+fn phase_step_reveal_payload(step: &PhaseStep, players: &[Player]) -> Option<RevealPayload> {
+    match step.character.as_deref()? {
+        "chef" => Some(RevealPayload {
+            message_ko: format!(
+                "서로 이웃한 악 팀 쌍은 {}쌍입니다.",
+                evil_neighbor_pair_count(players)
+            ),
+        }),
+        "empath" => Some(RevealPayload {
+            message_ko: format!(
+                "살아있는 양옆 이웃 중 악 팀은 {}명입니다.",
+                empath_evil_neighbor_count(players, step.player_id.as_deref()?)?
+            ),
+        }),
+        _ => None,
+    }
+}
+
+fn evil_neighbor_pair_count(players: &[Player]) -> usize {
+    let seated = seated_players(players);
+    if seated.len() < 2 {
+        return 0;
+    }
+
+    seated
+        .iter()
+        .enumerate()
+        .filter(|(index, player)| {
+            player.alignment == Alignment::Evil
+                && seated[(index + 1) % seated.len()].alignment == Alignment::Evil
+        })
+        .count()
+}
+
+fn empath_evil_neighbor_count(players: &[Player], player_id: &str) -> Option<usize> {
+    let seated = seated_players(players);
+    let index = seated.iter().position(|player| player.id == player_id)?;
+    let neighbor_indexes = alive_neighbor_indexes(&seated, index);
+
+    Some(
+        neighbor_indexes
+            .iter()
+            .filter(|neighbor_index| seated[**neighbor_index].alignment == Alignment::Evil)
+            .count(),
+    )
+}
+
+fn alive_neighbor_indexes(players: &[&Player], index: usize) -> Vec<usize> {
+    if players.len() < 2 {
+        return Vec::new();
+    }
+
+    let mut indexes = Vec::new();
+    for distance in 1..players.len() {
+        let left = (index + players.len() - distance) % players.len();
+        if players[left].alive {
+            indexes.push(left);
+            break;
+        }
+    }
+    for distance in 1..players.len() {
+        let right = (index + distance) % players.len();
+        if players[right].alive && !indexes.contains(&right) {
+            indexes.push(right);
+            break;
+        }
+    }
+    indexes
+}
+
+fn seated_players(players: &[Player]) -> Vec<&Player> {
+    let mut seated = players.iter().collect::<Vec<_>>();
+    seated.sort_by_key(|player| player.seat);
+    seated
 }
 
 fn validate_required_input(
@@ -1583,6 +1675,51 @@ mod tests {
         assert_eq!(proposal["value"]["event"]["type"], "phaseStepConfirmed");
         assert_eq!(proposal["value"]["event"]["payload"]["stepId"], "firstNight:demonInfo");
         assert_eq!(replayed["value"]["currentStep"]["id"], "firstNight:washerwoman");
+    }
+
+    #[test]
+    fn confirming_chef_step_returns_reveal_payload() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:chef" }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "서로 이웃한 악 팀 쌍은 0쌍입니다."
+        );
+    }
+
+    #[test]
+    fn confirming_empath_step_returns_reveal_payload() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+            phase_event("phaseStepConfirmed", "firstNight:chef")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:empath" }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "살아있는 양옆 이웃 중 악 팀은 0명입니다."
+        );
     }
 
     #[test]

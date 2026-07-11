@@ -6,6 +6,7 @@
 /web/tsconfig.tsbuildinfo
 /web/src/generated/clocktower_wasm/
 /.codex-tmp/
+/web/.codex-tmp/
 
 # Local agent skill installs/cache.
 /.agents/
