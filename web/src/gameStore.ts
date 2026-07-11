@@ -70,11 +70,19 @@ export function useGameStore() {
   }, [gameFile, storageError, storageReady]);
 
   useEffect(() => {
+    let cancelled = false;
+
     replay(gameFile)
-      .then(setReplayResult)
+      .then((result) => {
+        if (!cancelled) setReplayResult(result);
+      })
       .catch((error: unknown) => {
-        setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [gameFile]);
 
   const hasConfirmedEvents = gameFile.game.events.length > 0;
@@ -247,6 +255,8 @@ export function useGameStore() {
         setLoadError(importedReplay.error.messageKo);
         return;
       }
+      setReplayResult(importedReplay);
+      setSetupDraft((current) => syncSetupDraftFromReplayState(current, importedReplay.value));
       setGameFile(importedGameFile);
       setProposalResult(undefined);
     } catch (error) {

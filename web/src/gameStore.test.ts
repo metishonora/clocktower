@@ -18,6 +18,57 @@ test("store syncs confirmed replay Players into seating draft after load or impo
   deepEqual(synced.seatPositions, seatLayoutPositions(3, "longTable"));
 });
 
+test("store sync replaces same-seat confirmed Players from another imported game", () => {
+  const draft = syncSetupDraftFromReplayState(createSetupDraft(5), replayStateWithPlayers(3));
+
+  const synced = syncSetupDraftFromReplayState(draft, {
+    ...replayStateWithPlayers(3),
+    players: [
+      {
+        id: "player-1",
+        seat: 1,
+        name: "June",
+        actualCharacter: "chef",
+        shownCharacter: "chef",
+        alignment: "good",
+        alive: true,
+        ghostVoteUsed: false,
+        deathAnnounced: false,
+        notes: "",
+      },
+      {
+        id: "player-2",
+        seat: 2,
+        name: "Kai",
+        actualCharacter: "poisoner",
+        shownCharacter: "poisoner",
+        alignment: "evil",
+        alive: true,
+        ghostVoteUsed: false,
+        deathAnnounced: false,
+        notes: "",
+      },
+      {
+        id: "player-3",
+        seat: 3,
+        name: "Mina",
+        actualCharacter: "imp",
+        shownCharacter: "imp",
+        alignment: "evil",
+        alive: true,
+        ghostVoteUsed: false,
+        deathAnnounced: false,
+        notes: "",
+      },
+    ],
+  });
+
+  equal(synced.players[0].name, "June");
+  equal(synced.players[0].actualCharacter, "chef");
+  equal(synced.players[1].name, "Kai");
+  equal(synced.players[1].actualCharacter, "poisoner");
+});
+
 test("store leaves the seating draft unchanged before setup is confirmed", () => {
   const draft = createSetupDraft(5);
 
