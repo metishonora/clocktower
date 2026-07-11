@@ -88,6 +88,8 @@ export function useGameStore() {
   const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
   const players = replayState?.players ?? [];
+  const currentStep = replayState?.currentStep ?? undefined;
+  const phaseOverview = replayState?.phaseOverview ?? [];
   const setupConfirmed = players.length > 0;
   const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
   const setupDistributionRequest = useMemo(
@@ -201,12 +203,48 @@ export function useGameStore() {
 
     if (!result.ok) return;
 
+    appendProposalEvent(result.value);
+  }
+
+  async function confirmCurrentStep(input?: unknown) {
+    await proposeCurrentStep("confirmStep", input);
+  }
+
+  async function skipCurrentStep() {
+    await proposeCurrentStep("skipStep");
+  }
+
+  async function proposeCurrentStep(commandType: "confirmStep" | "skipStep", input?: unknown) {
+    if (!currentStep) return;
+
+    setBusy(true);
+    setLoadError(undefined);
+
+    const result = await propose(gameFile, {
+      type: commandType,
+      payload: { stepId: currentStep.id, input: input ?? null },
+    }).catch((error: unknown): CoreResult<Proposal> => ({
+      ok: false,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "앱 상태 로드 실패",
+      },
+    }));
+
+    setProposalResult(result);
+    setBusy(false);
+
+    if (!result.ok) return;
+    appendProposalEvent(result.value);
+  }
+
+  function appendProposalEvent(proposal: Proposal) {
     setGameFile((current) => ({
       ...current,
       game: {
         ...current.game,
         updatedAt: new Date().toISOString(),
-        events: [...current.game.events, result.value.event],
+        events: [...current.game.events, proposal.event],
       },
     }));
   }
@@ -277,11 +315,15 @@ export function useGameStore() {
     storageReady,
     hasConfirmedEvents,
     players,
+    currentStep,
+    phaseOverview,
     setupConfirmed,
     setupExpectedCounts,
     setupHintsReady,
     shownWarnings,
     confirmSetup,
+    confirmCurrentStep,
+    skipCurrentStep,
     resetSetup,
     undoLatestEvent,
     importGameFile,

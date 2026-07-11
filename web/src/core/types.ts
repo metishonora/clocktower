@@ -23,6 +23,8 @@ export type ReplayState = {
   eventCount: number;
   phase: string;
   players: Player[];
+  currentStep: PhaseStep | null;
+  phaseOverview: PhaseOverviewItem[];
   warnings: CoreWarning[];
 };
 
@@ -71,4 +73,26 @@ export type CoreWarning = {
   code: string;
   severity: "warning" | "info";
   messageKo: string;
+};
+
+export type PhaseStep = {
+  id: string;
+  phase: string;
+  stepType: string;
+  character?: string;
+  playerId?: string;
+  requiredInput: RequiredInput;
+  canSkip: boolean;
+};
+
+export type PhaseOverviewItem = PhaseStep & {
+  status: "waiting" | "current" | "complete" | "skipped" | "needsFollowUp";
+};
+
+export type RequiredInput = {
+  kind: string;
+  target?: string;
+  minSelections?: number;
+  maxSelections?: number;
+  optional: boolean;
 };

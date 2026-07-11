@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -91,6 +93,8 @@ struct ReplayState {
     event_count: usize,
     phase: &'static str,
     players: Vec<Player>,
+    current_step: Option<PhaseStep>,
+    phase_overview: Vec<PhaseOverviewItem>,
     warnings: Vec<CoreWarning>,
 }
 
@@ -113,6 +117,56 @@ struct GameEvent {
     payload: Value,
     summary: String,
     created_at: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct PhaseStep {
+    id: String,
+    phase: &'static str,
+    step_type: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    character: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    player_id: Option<String>,
+    required_input: RequiredInput,
+    can_skip: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct RequiredInput {
+    kind: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_selections: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_selections: Option<u8>,
+    optional: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PhaseOverviewItem {
+    id: String,
+    phase: &'static str,
+    step_type: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    character: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    player_id: Option<String>,
+    required_input: RequiredInput,
+    can_skip: bool,
+    status: &'static str,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PhaseStepCommandPayload {
+    step_id: String,
+    #[serde(default)]
+    input: Value,
 }
 
 #[derive(Debug, Serialize)]
@@ -149,12 +203,15 @@ pub fn replay_json(game_file_json: &str) -> String {
     let result = parse_game_file(game_file_json).and_then(|game_file| {
         let players = replay_players(&game_file.game.events)?;
         let warnings = validate_setup_warnings(&players);
+        let phase_state = replay_phase_state(&players, &game_file.game.events)?;
 
         Ok(ReplayState {
             schema_version: game_file.schema_version,
             event_count: game_file.game.events.len(),
-            phase: "setup",
+            phase: phase_state.phase,
             players,
+            current_step: phase_state.current_step,
+            phase_overview: phase_state.phase_overview,
             warnings,
         })
     });
@@ -182,6 +239,8 @@ pub fn propose_json(game_file_json: &str, command_json: &str) -> String {
                 preview: serde_json::json!({ "messageKo": "코어 계약 정상" }),
             }),
             "createGame" => propose_create_game(&game_file, command.payload),
+            "confirmStep" => propose_phase_step(&game_file, command.payload, false),
+            "skipStep" => propose_phase_step(&game_file, command.payload, true),
             _ => Err(error("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다.")),
         }
     });
@@ -292,16 +351,507 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
     })
 }
 
-fn replay_players(events: &[ConfirmedEvent]) -> Result<Vec<Player>, CoreError> {
-    let Some(setup_event) = events
-        .iter()
-        .rev()
-        .find(|event| event.event_type == "setupConfirmed")
-    else {
-        return Ok(Vec::new());
+fn propose_phase_step(
+    game_file: &GameFile,
+    payload: Value,
+    skip: bool,
+) -> Result<Proposal, CoreError> {
+    let payload: PhaseStepCommandPayload = serde_json::from_value(payload)
+        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    let players = replay_players(&game_file.game.events)?;
+    let phase_state = replay_phase_state(&players, &game_file.game.events)?;
+    let Some(current_step) = phase_state.current_step else {
+        return Err(error("NO_CURRENT_STEP", "진행할 현재 단계가 없습니다."));
     };
 
-    let payload: CreateGamePayload = serde_json::from_value(setup_event.payload.clone())
+    if payload.step_id != current_step.id {
+        return Err(error("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."));
+    }
+    if skip && !current_step.can_skip {
+        return Err(error("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."));
+    }
+    if !skip {
+        validate_required_input(&current_step.required_input, &payload.input, &players)?;
+    }
+
+    let event_type = if skip {
+        "phaseStepSkipped"
+    } else {
+        "phaseStepConfirmed"
+    };
+    let summary_action = if skip { "건너뜀" } else { "확정" };
+    let event_count = game_file.game.events.len() + 1;
+
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("phase-step-{event_count}"),
+            event_type: event_type.to_string(),
+            phase: current_step.phase.to_string(),
+            payload: if skip {
+                serde_json::json!({ "stepId": current_step.id })
+            } else {
+                serde_json::json!({ "stepId": current_step.id, "input": payload.input })
+            },
+            summary: format!("단계 {summary_action}: {}", current_step.id),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
+        },
+        warnings: Vec::new(),
+        follow_up_steps: Vec::new(),
+        preview: serde_json::json!({
+            "messageKo": format!("현재 단계를 {summary_action}합니다.")
+        }),
+    })
+}
+
+fn validate_required_input(
+    input: &RequiredInput,
+    value: &Value,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    if input.target != Some("player") && input.target != Some("players") {
+        return Ok(());
+    }
+
+    let player_ids = value
+        .get("playerIds")
+        .and_then(Value::as_array)
+        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    if player_ids.iter().any(|player_id| !player_id.is_string()) {
+        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
+    }
+    let mut unique_player_ids = HashSet::new();
+    let roster_player_ids = players
+        .iter()
+        .map(|player| player.id.as_str())
+        .collect::<HashSet<_>>();
+    for player_id in player_ids.iter().filter_map(Value::as_str) {
+        if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
+            return Err(error("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."));
+        }
+    }
+
+    let count = player_ids.len();
+    if let Some(min) = input.min_selections {
+        if count < usize::from(min) {
+            return Err(error("MISSING_STEP_INPUT", "현재 단계에 필요한 입력이 없습니다."));
+        }
+    }
+    if let Some(max) = input.max_selections {
+        if count > usize::from(max) {
+            return Err(error("TOO_MUCH_STEP_INPUT", "현재 단계 입력이 너무 많습니다."));
+        }
+    }
+
+    Ok(())
+}
+
+struct PhaseReplayState {
+    phase: &'static str,
+    current_step: Option<PhaseStep>,
+    phase_overview: Vec<PhaseOverviewItem>,
+}
+
+fn replay_phase_state(
+    players: &[Player],
+    events: &[ConfirmedEvent],
+) -> Result<PhaseReplayState, CoreError> {
+    if players.is_empty() {
+        return Ok(PhaseReplayState {
+            phase: "setup",
+            current_step: None,
+            phase_overview: Vec::new(),
+        });
+    }
+
+    let step_statuses = phase_step_statuses(events, players)?;
+    for (phase, steps) in phase_sequences(players, events.len() + 2) {
+        let phase_complete = steps
+            .iter()
+            .all(|step| step_status(&step.id, &step_statuses).is_done());
+        if phase_complete {
+            continue;
+        }
+
+        let current_step = steps
+            .iter()
+            .find(|step| !step_status(&step.id, &step_statuses).is_done())
+            .cloned();
+        let current_step_id = current_step.as_ref().map(|step| step.id.as_str());
+        let phase_overview = steps
+            .into_iter()
+            .map(|step| {
+                let status = match step_status(&step.id, &step_statuses) {
+                    StepStatus::Complete => "complete",
+                    StepStatus::Skipped => "skipped",
+                    StepStatus::NeedsFollowUp => "needsFollowUp",
+                    StepStatus::Open if Some(step.id.as_str()) == current_step_id => "current",
+                    StepStatus::Open => "waiting",
+                };
+
+                PhaseOverviewItem {
+                    id: step.id,
+                    phase: step.phase,
+                    step_type: step.step_type,
+                    character: step.character,
+                    player_id: step.player_id,
+                    required_input: step.required_input,
+                    can_skip: step.can_skip,
+                    status,
+                }
+            })
+            .collect();
+
+        return Ok(PhaseReplayState {
+            phase,
+            current_step,
+            phase_overview,
+        });
+    }
+
+    Ok(PhaseReplayState {
+        phase: "night",
+        current_step: None,
+        phase_overview: Vec::new(),
+    })
+}
+
+#[derive(Debug, Copy, Clone)]
+enum StepStatus {
+    Open,
+    Complete,
+    Skipped,
+    NeedsFollowUp,
+}
+
+impl StepStatus {
+    fn is_done(self) -> bool {
+        matches!(self, StepStatus::Complete | StepStatus::Skipped)
+    }
+}
+
+fn step_status(step_id: &str, statuses: &HashMap<String, StepStatus>) -> StepStatus {
+    statuses.get(step_id).copied().unwrap_or(StepStatus::Open)
+}
+
+fn phase_step_statuses(
+    events: &[ConfirmedEvent],
+    players: &[Player],
+) -> Result<HashMap<String, StepStatus>, CoreError> {
+    let mut statuses = HashMap::new();
+    for event in events {
+        let status = match event.event_type.as_str() {
+            "phaseStepConfirmed" => StepStatus::Complete,
+            "phaseStepSkipped" => StepStatus::Skipped,
+            "phaseStepNeedsFollowUp" => StepStatus::NeedsFollowUp,
+            _ => continue,
+        };
+        let Some(step_id) = event.payload.get("stepId").and_then(Value::as_str) else {
+            return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+        };
+        let Some((_, _, Some(step))) = current_phase_steps(players, events.len() + 2, &statuses)
+        else {
+            return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+        };
+        if step.id != step_id {
+            return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+        }
+        if matches!(status, StepStatus::Skipped) && !step.can_skip {
+            return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+        }
+        if matches!(status, StepStatus::Complete) {
+            validate_required_input(
+                &step.required_input,
+                event.payload.get("input").unwrap_or(&Value::Null),
+                players,
+            )?;
+        }
+        statuses.insert(step_id.to_string(), status);
+    }
+    Ok(statuses)
+}
+
+fn phase_sequences(players: &[Player], max_cycles: usize) -> Vec<(&'static str, Vec<PhaseStep>)> {
+    let mut sequences = vec![("firstNight", first_night_steps(players))];
+    for cycle in 1..=max_cycles.max(1) {
+        sequences.push(("day", day_steps(cycle)));
+        sequences.push(("night", night_steps(players, cycle)));
+    }
+    sequences
+}
+
+fn current_phase_steps(
+    players: &[Player],
+    max_cycles: usize,
+    statuses: &HashMap<String, StepStatus>,
+) -> Option<(&'static str, Vec<PhaseStep>, Option<PhaseStep>)> {
+    for (phase, steps) in phase_sequences(players, max_cycles) {
+        let phase_complete = steps
+            .iter()
+            .all(|step| step_status(&step.id, statuses).is_done());
+        if phase_complete {
+            continue;
+        }
+
+        let current_step = steps
+            .iter()
+            .find(|step| !step_status(&step.id, statuses).is_done())
+            .cloned();
+        return Some((phase, steps, current_step));
+    }
+
+    None
+}
+
+fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
+    let mut steps = Vec::new();
+    if players
+        .iter()
+        .any(|player| matches!(character_kind(&player.actual_character), Some(CharacterKind::Minion)))
+    {
+        steps.push(simple_step(
+            "firstNight",
+            "firstNight",
+            "minionInfo",
+            "evilInfo",
+            required_none(),
+            false,
+        ));
+    }
+    if players
+        .iter()
+        .any(|player| matches!(character_kind(&player.actual_character), Some(CharacterKind::Demon)))
+    {
+        steps.push(simple_step(
+            "firstNight",
+            "firstNight",
+            "demonInfo",
+            "evilInfo",
+            required_none(),
+            false,
+        ));
+    }
+
+    steps.extend(character_steps(
+        "firstNight",
+        "firstNight",
+        players,
+        &[
+            "poisoner",
+            "washerwoman",
+            "librarian",
+            "investigator",
+            "chef",
+            "empath",
+            "fortuneTeller",
+            "butler",
+            "spy",
+        ],
+    ));
+    steps.push(phase_transition_step(
+        "firstNight",
+        "firstNight",
+        "toDay",
+        "day",
+    ));
+    steps
+}
+
+fn day_steps(cycle: usize) -> Vec<PhaseStep> {
+    let prefix = phase_prefix("day", cycle);
+    vec![
+        simple_step("day", &prefix, "announceDeaths", "announcement", required_none(), false),
+        simple_step(
+            "day",
+            &prefix,
+            "nominations",
+            "nomination",
+            RequiredInput {
+                kind: "optionalVotes",
+                target: Some("players"),
+                min_selections: Some(0),
+                max_selections: None,
+                optional: true,
+            },
+            true,
+        ),
+        simple_step(
+            "day",
+            &prefix,
+            "execution",
+            "execution",
+            RequiredInput {
+                kind: "optionalPlayer",
+                target: Some("player"),
+                min_selections: Some(0),
+                max_selections: Some(1),
+                optional: true,
+            },
+            true,
+        ),
+        phase_transition_step("day", &prefix, "toNight", "night"),
+    ]
+}
+
+fn night_steps(players: &[Player], cycle: usize) -> Vec<PhaseStep> {
+    let prefix = phase_prefix("night", cycle);
+    character_steps(
+        "night",
+        &prefix,
+        players,
+        &[
+            "poisoner",
+            "monk",
+            "imp",
+            "ravenkeeper",
+            "undertaker",
+            "fortuneTeller",
+            "butler",
+            "spy",
+        ],
+    )
+    .into_iter()
+    .chain([phase_transition_step("night", &prefix, "toDay", "day")])
+    .collect()
+}
+
+fn character_steps(
+    phase: &'static str,
+    id_prefix: &str,
+    players: &[Player],
+    order: &[&str],
+) -> Vec<PhaseStep> {
+    let waking_characters = players
+        .iter()
+        .filter_map(|player| awakening_character(player).map(|character| (character, player.id.as_str())))
+        .collect::<HashMap<_, _>>();
+    let mut emitted = HashSet::new();
+
+    order
+        .iter()
+        .filter_map(|character| {
+            if !waking_characters.contains_key(character) || !emitted.insert(*character) {
+                return None;
+            }
+
+            Some(PhaseStep {
+                id: format!("{id_prefix}:{character}"),
+                phase,
+                step_type: "character",
+                character: Some((*character).to_string()),
+                player_id: waking_characters
+                    .get(character)
+                    .map(|player_id| (*player_id).to_string()),
+                required_input: character_required_input(character),
+                can_skip: true,
+            })
+        })
+        .collect()
+}
+
+fn character_required_input(character: &str) -> RequiredInput {
+    match character {
+        "poisoner" | "monk" | "imp" | "ravenkeeper" | "butler" => required_players(1, 1),
+        "washerwoman" | "librarian" | "investigator" | "fortuneTeller" => required_players(2, 2),
+        _ => required_none(),
+    }
+}
+
+fn simple_step(
+    phase: &'static str,
+    id_prefix: &str,
+    name: &'static str,
+    step_type: &'static str,
+    required_input: RequiredInput,
+    can_skip: bool,
+) -> PhaseStep {
+    PhaseStep {
+        id: format!("{id_prefix}:{name}"),
+        phase,
+        step_type,
+        character: None,
+        player_id: None,
+        required_input,
+        can_skip,
+    }
+}
+
+fn phase_transition_step(
+    phase: &'static str,
+    id_prefix: &str,
+    name: &'static str,
+    next_phase: &'static str,
+) -> PhaseStep {
+    PhaseStep {
+        id: format!("{id_prefix}:{name}"),
+        phase,
+        step_type: "phaseTransition",
+        character: None,
+        player_id: None,
+        required_input: RequiredInput {
+            kind: next_phase,
+            target: Some("phase"),
+            min_selections: None,
+            max_selections: None,
+            optional: false,
+        },
+        can_skip: false,
+    }
+}
+
+fn phase_prefix(phase: &str, cycle: usize) -> String {
+    if cycle <= 1 {
+        phase.to_string()
+    } else {
+        format!("{phase}{cycle}")
+    }
+}
+
+fn required_none() -> RequiredInput {
+    RequiredInput {
+        kind: "none",
+        target: None,
+        min_selections: None,
+        max_selections: None,
+        optional: false,
+    }
+}
+
+fn required_players(min: u8, max: u8) -> RequiredInput {
+    RequiredInput {
+        kind: if max == 1 { "playerIds" } else { "playerIds" },
+        target: Some(if max == 1 { "player" } else { "players" }),
+        min_selections: Some(min),
+        max_selections: Some(max),
+        optional: min == 0,
+    }
+}
+
+fn awakening_character(player: &Player) -> Option<&str> {
+    if player.actual_character == "drunk" {
+        Some(player.shown_character.as_str())
+    } else {
+        Some(player.actual_character.as_str())
+    }
+}
+
+fn replay_players(events: &[ConfirmedEvent]) -> Result<Vec<Player>, CoreError> {
+    if events.is_empty() {
+        return Ok(Vec::new());
+    };
+    if events[0].event_type != "setupConfirmed"
+        || events
+            .iter()
+            .skip(1)
+            .any(|event| event.event_type == "setupConfirmed")
+    {
+        return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+    }
+
+    let payload: CreateGamePayload = serde_json::from_value(events[0].payload.clone())
         .map_err(|_| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
 
     validate_setup_inputs(&payload.players)?;
@@ -626,6 +1176,8 @@ mod tests {
                     "eventCount": 0,
                     "phase": "setup",
                     "players": [],
+                    "currentStep": null,
+                    "phaseOverview": [],
                     "warnings": []
                 }
             })
@@ -960,6 +1512,256 @@ mod tests {
     }
 
     #[test]
+    fn replay_derives_current_step_and_phase_overview_after_setup() {
+        let game = game_with_events(json!([setup_event()]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["phase"], "firstNight");
+        assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:demonInfo");
+        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["kind"], "none");
+        assert_eq!(actual["value"]["currentStep"]["canSkip"], false);
+        assert_eq!(actual["value"]["phaseOverview"][0]["id"], "firstNight:demonInfo");
+        assert_eq!(actual["value"]["phaseOverview"][0]["status"], "current");
+        assert_eq!(actual["value"]["phaseOverview"][1]["status"], "waiting");
+    }
+
+    #[test]
+    fn replay_returns_required_input_shape_for_player_selection_steps() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:washerwoman");
+        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["target"], "players");
+        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["minSelections"], 2);
+        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["maxSelections"], 2);
+    }
+
+    #[test]
+    fn replay_marks_confirmed_skipped_and_follow_up_phase_steps() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+            phase_event("phaseStepSkipped", "firstNight:chef"),
+            phase_event("phaseStepNeedsFollowUp", "firstNight:empath")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:empath");
+        assert_eq!(actual["value"]["phaseOverview"][0]["status"], "complete");
+        assert_eq!(actual["value"]["phaseOverview"][1]["status"], "complete");
+        assert_eq!(actual["value"]["phaseOverview"][2]["status"], "skipped");
+        assert_eq!(actual["value"]["phaseOverview"][3]["status"], "needsFollowUp");
+        assert_eq!(actual["value"]["phaseOverview"][4]["status"], "waiting");
+    }
+
+    #[test]
+    fn confirming_current_step_returns_canonical_event_and_advances_replay() {
+        let game = game_with_events(json!([setup_event()]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:demonInfo" }
+        });
+
+        let proposal: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+        let mut events = game["game"]["events"].as_array().unwrap().clone();
+        events.push(proposal["value"]["event"].clone());
+        let replayed: Value = serde_json::from_str(&replay_json(&game_with_events(Value::Array(events)).to_string()))
+            .unwrap();
+
+        assert_eq!(proposal["ok"], true);
+        assert_eq!(proposal["value"]["event"]["type"], "phaseStepConfirmed");
+        assert_eq!(proposal["value"]["event"]["payload"]["stepId"], "firstNight:demonInfo");
+        assert_eq!(replayed["value"]["currentStep"]["id"], "firstNight:washerwoman");
+    }
+
+    #[test]
+    fn confirming_player_selection_step_requires_matching_input_shape() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:washerwoman", "input": { "playerIds": ["player-1"] } }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "MISSING_STEP_INPUT");
+    }
+
+    #[test]
+    fn skipping_is_rejected_for_non_skippable_phase_transition_steps() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+            phase_event("phaseStepConfirmed", "firstNight:chef"),
+            phase_event("phaseStepConfirmed", "firstNight:empath"),
+            phase_event("phaseStepConfirmed", "firstNight:fortuneTeller")
+        ]));
+        let command = json!({
+            "type": "skipStep",
+            "payload": { "stepId": "firstNight:toDay" }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "STEP_CANNOT_BE_SKIPPED");
+    }
+
+    #[test]
+    fn phase_transition_confirmation_moves_from_first_night_to_day() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+            phase_event("phaseStepConfirmed", "firstNight:chef"),
+            phase_event("phaseStepConfirmed", "firstNight:empath"),
+            phase_event("phaseStepConfirmed", "firstNight:fortuneTeller"),
+            phase_event("phaseStepConfirmed", "firstNight:toDay")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["phase"], "day");
+        assert_eq!(actual["value"]["currentStep"]["id"], "day:announceDeaths");
+        assert_eq!(actual["value"]["phaseOverview"][0]["status"], "current");
+    }
+
+    #[test]
+    fn phase_transition_confirmation_moves_from_night_to_next_day() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+            phase_event("phaseStepConfirmed", "firstNight:chef"),
+            phase_event("phaseStepConfirmed", "firstNight:empath"),
+            phase_event("phaseStepConfirmed", "firstNight:fortuneTeller"),
+            phase_event("phaseStepConfirmed", "firstNight:toDay"),
+            phase_event("phaseStepConfirmed", "day:announceDeaths"),
+            phase_event("phaseStepSkipped", "day:nominations"),
+            phase_event("phaseStepSkipped", "day:execution"),
+            phase_event("phaseStepConfirmed", "day:toNight"),
+            phase_event("phaseStepConfirmed", "night:imp"),
+            phase_event("phaseStepConfirmed", "night:fortuneTeller"),
+            phase_event("phaseStepConfirmed", "night:toDay")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["phase"], "day");
+        assert_eq!(actual["value"]["currentStep"]["id"], "day2:announceDeaths");
+    }
+
+    #[test]
+    fn replay_rejects_invalid_phase_step_events() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:notARealStep")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    }
+
+    #[test]
+    fn replay_rejects_phase_step_events_without_step_id() {
+        let game = game_with_events(json!([
+            setup_event(),
+            {
+                "id": "evt-missing-step-id",
+                "type": "phaseStepConfirmed",
+                "phase": "firstNight",
+                "payload": {},
+                "summary": "missing step id",
+                "createdAt": "2026-01-01T00:00:00.000Z"
+            }
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    }
+
+    #[test]
+    fn replay_rejects_out_of_order_phase_step_events() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    }
+
+    #[test]
+    fn replay_rejects_phase_step_events_before_setup() {
+        let game = game_with_events(json!([
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            setup_event()
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    }
+
+    #[test]
+    fn replay_rejects_phase_step_events_with_unknown_player_input() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event_with_input(
+                "phaseStepConfirmed",
+                "firstNight:washerwoman",
+                json!({ "playerIds": ["player-1", "not-a-player"] })
+            )
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    }
+
+    #[test]
+    fn replay_rejects_skipped_non_skippable_phase_transition_events() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepSkipped", "firstNight:toDay")
+        ]));
+
+        let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false);
+        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    }
+
+    #[test]
     fn propose_create_game_rejects_invalid_player_count() {
         let command = json!({
             "type": "createGame",
@@ -971,5 +1773,70 @@ mod tests {
 
         assert_eq!(actual["ok"], false);
         assert_eq!(actual["error"]["code"], "INVALID_PLAYER_COUNT");
+    }
+
+    fn game_with_events(events: Value) -> Value {
+        json!({
+            "schemaVersion": 1,
+            "game": {
+                "id": "game-1",
+                "name": "Setup",
+                "createdAt": "2026-01-01T00:00:00.000Z",
+                "updatedAt": "2026-01-01T00:00:00.000Z",
+                "events": events
+            }
+        })
+    }
+
+    fn setup_event() -> Value {
+        json!({
+            "id": "evt-1",
+            "type": "setupConfirmed",
+            "phase": "setup",
+            "payload": {
+                "players": [
+                    { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+                    { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+                    { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+                    { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+                    { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                ]
+            },
+            "summary": "초기 설정 확정: 5명",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        })
+    }
+
+    fn phase_event(event_type: &str, step_id: &str) -> Value {
+        let input = if event_type == "phaseStepConfirmed" {
+            if ["washerwoman", "librarian", "investigator", "fortuneTeller"]
+                .iter()
+                .any(|character| step_id.ends_with(character))
+            {
+                json!({ "playerIds": ["player-1", "player-2"] })
+            } else if ["poisoner", "monk", "imp", "ravenkeeper", "butler"]
+                .iter()
+                .any(|character| step_id.ends_with(character))
+            {
+                json!({ "playerIds": ["player-1"] })
+            } else {
+                Value::Null
+            }
+        } else {
+            Value::Null
+        };
+
+        phase_event_with_input(event_type, step_id, input)
+    }
+
+    fn phase_event_with_input(event_type: &str, step_id: &str, input: Value) -> Value {
+        json!({
+            "id": format!("evt-{step_id}"),
+            "type": event_type,
+            "phase": step_id.split(':').next().unwrap(),
+            "payload": { "stepId": step_id, "input": input },
+            "summary": step_id,
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        })
     }
 }

@@ -121,6 +121,8 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
     eventCount: playerCount > 0 ? 1 : 0,
     phase: playerCount > 0 ? "setup" : "empty",
     players: basePlayers.slice(0, playerCount),
+    currentStep: null,
+    phaseOverview: [],
     warnings: [],
   };
 }

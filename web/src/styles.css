@@ -807,6 +807,160 @@ select {
   margin-top: 14px;
 }
 
+.phasePanel {
+  display: grid;
+  gap: 14px;
+}
+
+.currentStepCard {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 12px;
+}
+
+.currentStepCard dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.currentStepCard dl div {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.currentStepCard dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.currentStepCard dd {
+  min-width: 0;
+  margin: 0;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.stepActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stepActions .primaryButton:only-child {
+  grid-column: 1 / -1;
+}
+
+.emptyStep {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.playerStepInput {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.playerStepInput button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  padding: 8px;
+  text-align: left;
+}
+
+.playerStepInput button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.1);
+}
+
+.playerStepInput span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fffdf8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.playerStepInput strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.phaseOverview {
+  display: grid;
+  gap: 8px;
+}
+
+.phaseOverview ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phaseOverview li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-left-width: 5px;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 9px 10px;
+}
+
+.phaseOverview li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.phaseOverview li strong {
+  border-radius: 999px;
+  background: #ece5d8;
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+}
+
+.phaseOverview li.current {
+  border-left-color: var(--accent);
+  background: rgba(167, 71, 46, 0.08);
+}
+
+.phaseOverview li.complete {
+  border-left-color: var(--ok);
+}
+
+.phaseOverview li.skipped {
+  border-left-color: var(--warning);
+}
+
+.phaseOverview li.needsFollowUp {
+  border-left-color: #b7372c;
+}
+
 .counts div {
   border-top: 1px solid var(--line);
   padding-top: 10px;

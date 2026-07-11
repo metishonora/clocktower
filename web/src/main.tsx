@@ -1,6 +1,15 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { CoreResult, CoreWarning, Player, Proposal, ReplayState, SetupDistribution } from "./core/types";
+import type {
+  CoreResult,
+  CoreWarning,
+  PhaseOverviewItem,
+  PhaseStep,
+  Player,
+  Proposal,
+  ReplayState,
+  SetupDistribution,
+} from "./core/types";
 import { useGameStore } from "./gameStore";
 import {
   assignActualCharacter,
@@ -75,17 +84,30 @@ function App() {
               />
             </section>
 
-            <section className="panel setup">
-              <p className="eyebrow">설정</p>
-              <ConfirmedSetup
-                players={gameStore.players}
-                canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
-                onUndo={gameStore.undoLatestEvent}
-                onExport={exportLatestGame}
-                onImport={() => importInputRef.current?.click()}
-                onReset={gameStore.resetSetup}
-              />
-            </section>
+            <aside className="setupRail">
+              <section className="panel phasePanel">
+                <CurrentStepPane
+                  currentStep={gameStore.currentStep}
+                  phaseOverview={gameStore.phaseOverview}
+                  players={gameStore.players}
+                  busy={gameStore.busy}
+                  onConfirm={gameStore.confirmCurrentStep}
+                  onSkip={gameStore.skipCurrentStep}
+                />
+              </section>
+
+              <section className="panel setup">
+                <p className="eyebrow">설정</p>
+                <ConfirmedSetup
+                  players={gameStore.players}
+                  canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
+                  onUndo={gameStore.undoLatestEvent}
+                  onExport={exportLatestGame}
+                  onImport={() => importInputRef.current?.click()}
+                  onReset={gameStore.resetSetup}
+                />
+              </section>
+            </aside>
 
             <EventLog
               events={gameStore.gameFile.game.events}
@@ -523,6 +545,235 @@ function SetupSummary({
       <Warnings warnings={warnings} />
     </section>
   );
+}
+
+function CurrentStepPane({
+  currentStep,
+  phaseOverview,
+  players,
+  busy,
+  onConfirm,
+  onSkip,
+}: {
+  currentStep?: PhaseStep;
+  phaseOverview: PhaseOverviewItem[];
+  players: Player[];
+  busy: boolean;
+  onConfirm: (input?: unknown) => void;
+  onSkip: () => void;
+}) {
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const currentPlayer = currentStep?.playerId
+    ? players.find((player) => player.id === currentStep.playerId)
+    : undefined;
+  const selectionValid = currentStep ? requiredSelectionValid(currentStep, selectedPlayerIds.length) : false;
+
+  useEffect(() => {
+    setSelectedPlayerIds([]);
+  }, [currentStep?.id]);
+
+  return (
+    <>
+      <div className="sectionHeader compact">
+        <div>
+          <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
+          <h2>{currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
+        </div>
+        {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
+      </div>
+
+      <section className="currentStepCard" aria-label="현재 단계">
+        {currentStep ? (
+          <>
+            <dl>
+              <div>
+                <dt>단계</dt>
+                <dd>{stepTypeLabel(currentStep.stepType)}</dd>
+              </div>
+              <div>
+                <dt>입력</dt>
+                <dd>{inputShapeLabel(currentStep.requiredInput)}</dd>
+              </div>
+              {currentPlayer ? (
+                <div>
+                  <dt>대상</dt>
+                  <dd>
+                    {currentPlayer.seat}번 {currentPlayer.name}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            <PlayerStepInput
+              step={currentStep}
+              players={players}
+              selectedPlayerIds={selectedPlayerIds}
+              onChange={setSelectedPlayerIds}
+              busy={busy}
+            />
+            <div className="stepActions">
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={() => onConfirm(stepInputPayload(currentStep, selectedPlayerIds))}
+                disabled={busy || !selectionValid}
+              >
+                확정
+              </button>
+              {currentStep.canSkip ? (
+                <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
+                  건너뛰기
+                </button>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <p className="emptyStep">진행할 단계 없음</p>
+        )}
+      </section>
+
+      <section className="phaseOverview" aria-label="단계 개요">
+        <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>
+        <ol>
+          {phaseOverview.length === 0 ? <li>표시할 단계 없음</li> : null}
+          {phaseOverview.map((step) => (
+            <li className={step.status} key={step.id}>
+              <span>{stepTitle(step, step.playerId ? players.find((player) => player.id === step.playerId) : undefined)}</span>
+              <strong>{stepStatusLabel(step.status)}</strong>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </>
+  );
+}
+
+function PlayerStepInput({
+  step,
+  players,
+  selectedPlayerIds,
+  onChange,
+  busy,
+}: {
+  step: PhaseStep;
+  players: Player[];
+  selectedPlayerIds: string[];
+  onChange: (playerIds: string[]) => void;
+  busy: boolean;
+}) {
+  if (step.requiredInput.target !== "player" && step.requiredInput.target !== "players") return null;
+
+  const max = step.requiredInput.maxSelections ?? players.length;
+
+  function togglePlayer(playerId: string) {
+    if (selectedPlayerIds.includes(playerId)) {
+      onChange(selectedPlayerIds.filter((selectedId) => selectedId !== playerId));
+      return;
+    }
+    if (max === 1) {
+      onChange([playerId]);
+      return;
+    }
+    if (selectedPlayerIds.length >= max) return;
+    onChange([...selectedPlayerIds, playerId]);
+  }
+
+  return (
+    <div className="playerStepInput" aria-label="단계 입력">
+      {players.map((player) => (
+        <button
+          type="button"
+          className={selectedPlayerIds.includes(player.id) ? "selected" : ""}
+          onClick={() => togglePlayer(player.id)}
+          aria-pressed={selectedPlayerIds.includes(player.id)}
+          disabled={busy}
+          key={player.id}
+        >
+          <span>{player.seat}</span>
+          <strong>{player.name}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function phaseLabel(phase: string): string {
+  if (phase === "firstNight") return "첫 밤";
+  if (phase === "day") return "낮";
+  if (phase === "night") return "밤";
+  return "설정";
+}
+
+function stepTitle(step: PhaseStep, player?: Player): string {
+  if (step.stepType === "phaseTransition") return `${phaseLabel(step.requiredInput.kind)} 시작`;
+  if (step.character) {
+    const label = characterLabel(step.character);
+    return player ? `${label}: ${player.seat}번 ${player.name}` : label;
+  }
+  if (step.id.endsWith(":announceDeaths")) return "사망 발표";
+  if (step.id.endsWith(":nominations")) return "지명과 투표";
+  if (step.id.endsWith(":execution")) return "처형 확정";
+  return step.id;
+}
+
+function stepTypeLabel(stepType: string): string {
+  if (stepType === "character") return "캐릭터";
+  if (stepType === "phaseTransition") return "전환";
+  if (stepType === "announcement") return "발표";
+  if (stepType === "nomination") return "지명";
+  if (stepType === "execution") return "처형";
+  return stepType;
+}
+
+function inputKindLabel(inputKind: string): string {
+  if (inputKind === "none") return "없음";
+  if (inputKind === "playerIds") return "플레이어";
+  if (inputKind === "optionalVotes") return "투표 선택";
+  if (inputKind === "optionalPlayer") return "플레이어 선택";
+  if (inputKind === "day") return "낮";
+  if (inputKind === "night") return "밤";
+  return inputKind;
+}
+
+function inputShapeLabel(input: PhaseStep["requiredInput"]): string {
+  const parts = [inputKindLabel(input.kind)];
+  if (input.target) parts.push(inputTargetLabel(input.target));
+  if (input.minSelections !== undefined || input.maxSelections !== undefined) {
+    const min = input.minSelections ?? 0;
+    const max = input.maxSelections ?? "제한 없음";
+    parts.push(`${min}-${max}`);
+  }
+  if (input.optional) parts.push("선택");
+  return parts.join(" · ");
+}
+
+function inputTargetLabel(target: string): string {
+  if (target === "player") return "플레이어";
+  if (target === "players") return "플레이어들";
+  if (target === "phase") return "페이즈";
+  return target;
+}
+
+function requiredSelectionValid(step: PhaseStep, selectedCount: number): boolean {
+  const input = step.requiredInput;
+  if (input.target !== "player" && input.target !== "players") return true;
+  if (input.minSelections !== undefined && selectedCount < input.minSelections) return false;
+  if (input.maxSelections !== undefined && selectedCount > input.maxSelections) return false;
+  return true;
+}
+
+function stepInputPayload(step: PhaseStep, selectedPlayerIds: string[]): unknown {
+  if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
+    return { playerIds: selectedPlayerIds };
+  }
+  return null;
+}
+
+function stepStatusLabel(status: PhaseOverviewItem["status"]): string {
+  if (status === "current") return "현재";
+  if (status === "complete") return "완료";
+  if (status === "skipped") return "건너뜀";
+  if (status === "needsFollowUp") return "후속 필요";
+  return "대기";
 }
 
 function EventLog({
