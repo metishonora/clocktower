@@ -3,6 +3,7 @@
 ## Working style
 
 - Write progress updates in Korean using caveman lite style.
+- When implementation needs a UI/product decision, confirm it with the user through a prototype before building the final version. Do not add UI behavior or product scope the user did not ask for.
 
 ## Code-change completion checklist
 
