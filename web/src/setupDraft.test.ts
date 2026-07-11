@@ -5,6 +5,7 @@ import {
   createSetupDraft,
   createSetupDraftFromConfirmedPlayers,
   drunkShownCharacterOptions,
+  findOverlappingSeats,
   resetActualCharacters,
   resetSeatLayout,
   resizeSetupDraft,
@@ -263,6 +264,23 @@ test("resetting seat layout restores automatic circle positions", () => {
 
   equal(reset.seatLayoutPreset, "circle");
   deepEqual(reset.seatPositions, seatLayoutPositions(7, "circle"));
+});
+
+test("automatic 11 Player circle layout does not report overlapping seats", () => {
+  deepEqual(Array.from(findOverlappingSeats(seatLayoutPositions(11, "circle"))), []);
+});
+
+test("seat overlap detection still flags manually crowded seats", () => {
+  deepEqual(
+    Array.from(
+      findOverlappingSeats({
+        1: { x: 50, y: 50 },
+        2: { x: 58, y: 58 },
+        3: { x: 82, y: 18 },
+      }),
+    ),
+    [1, 2],
+  );
 });
 
 test("resizing preserves manually adjusted existing seat positions", () => {

@@ -98,6 +98,7 @@ const TABLE_EDGE_START = 18;
 const TABLE_EDGE_END = 82;
 const HORSESHOE_RIGHT_LEG_END = 0.34;
 const HORSESHOE_BOTTOM_END = 0.67;
+const SEAT_OVERLAP_DISTANCE_PERCENT = 12;
 
 export function createDraftPlayer(seat: number): DraftPlayer {
   return {
@@ -332,6 +333,25 @@ export function seatLayoutPositions(playerCount: number, preset: SeatLayoutPrese
   if (preset === "longTable") return longTableSeatPositions(playerCount);
   if (preset === "horseshoe") return horseshoeSeatPositions(playerCount);
   return circleSeatPositions(playerCount);
+}
+
+export function findOverlappingSeats(positions: SeatPositions): Set<number> {
+  const overlapping = new Set<number>();
+  const entries = Object.entries(positions).map(([seat, position]) => [Number(seat), position] as const);
+
+  for (let index = 0; index < entries.length; index += 1) {
+    for (let nextIndex = index + 1; nextIndex < entries.length; nextIndex += 1) {
+      const [seat, position] = entries[index];
+      const [nextSeat, nextPosition] = entries[nextIndex];
+      const distance = Math.hypot(position.x - nextPosition.x, position.y - nextPosition.y);
+      if (distance < SEAT_OVERLAP_DISTANCE_PERCENT) {
+        overlapping.add(seat);
+        overlapping.add(nextSeat);
+      }
+    }
+  }
+
+  return overlapping;
 }
 
 function circleSeatPositions(playerCount: number): SeatPositions {

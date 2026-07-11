@@ -11,6 +11,7 @@ import {
   countCharacterKinds,
   createSetupDraft,
   drunkShownCharacterOptions,
+  findOverlappingSeats,
   kindLabels,
   resetActualCharacters,
   resetSeatLayout,
@@ -24,16 +25,12 @@ import {
   toCreateGamePlayers,
   type CharacterKind,
   type SeatPosition,
-  type SeatPositions,
   type SetupDraft,
   unassignActualCharacter,
   updateDraftPlayer,
   updateSeatPosition,
 } from "./setupDraft";
 import "./styles.css";
-
-const SEAT_OVERLAP_X_PERCENT = 19;
-const SEAT_OVERLAP_Y_PERCENT = 14;
 
 function App() {
   const gameStore = useGameStore();
@@ -777,26 +774,6 @@ function startSeatDrag({
 
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", handlePointerUp);
-}
-
-function findOverlappingSeats(positions: SeatPositions): Set<number> {
-  const overlapping = new Set<number>();
-  const entries = Object.entries(positions).map(([seat, position]) => [Number(seat), position] as const);
-
-  for (let index = 0; index < entries.length; index += 1) {
-    for (let nextIndex = index + 1; nextIndex < entries.length; nextIndex += 1) {
-      const [seat, position] = entries[index];
-      const [nextSeat, nextPosition] = entries[nextIndex];
-      const overlapsHorizontally = Math.abs(position.x - nextPosition.x) < SEAT_OVERLAP_X_PERCENT;
-      const overlapsVertically = Math.abs(position.y - nextPosition.y) < SEAT_OVERLAP_Y_PERCENT;
-      if (overlapsHorizontally && overlapsVertically) {
-        overlapping.add(seat);
-        overlapping.add(nextSeat);
-      }
-    }
-  }
-
-  return overlapping;
 }
 
 createRoot(document.getElementById("root")!).render(
