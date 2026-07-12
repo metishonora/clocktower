@@ -146,6 +146,7 @@ function App() {
             busy={setupFormBusy({
               commandBusy: gameStore.busy,
               storageReady: gameStore.storageReady,
+              replayingConfirmedGame: gameStore.hasConfirmedEvents && !gameStore.setupConfirmed,
             })}
             replayResult={gameStore.replayResult}
             proposalResult={gameStore.proposalResult}
