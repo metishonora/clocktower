@@ -38,6 +38,7 @@ export type Proposal = {
 
 export type RevealPayload = {
   messageKo: string;
+  previewMessageKo?: string;
 };
 
 export type SetupDistributionRequest = {
@@ -99,5 +100,8 @@ export type RequiredInput = {
   target?: string;
   minSelections?: number;
   maxSelections?: number;
+  setupInfo?: string;
+  characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
+  zeroAllowed?: boolean;
   optional: boolean;
 };

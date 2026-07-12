@@ -113,6 +113,8 @@ struct Proposal {
 #[serde(rename_all = "camelCase")]
 struct RevealPayload {
     message_ko: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    preview_message_ko: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -151,7 +153,17 @@ struct RequiredInput {
     min_selections: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     max_selections: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    setup_info: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    character_kind: Option<&'static str>,
+    #[serde(skip_serializing_if = "is_false")]
+    zero_allowed: bool,
     optional: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Serialize)]
@@ -378,7 +390,10 @@ fn propose_phase_step(
         return Err(error("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."));
     }
     if skip && !current_step.can_skip {
-        return Err(error("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."));
+        return Err(error(
+            "STEP_CANNOT_BE_SKIPPED",
+            "건너뛸 수 없는 단계입니다.",
+        ));
     }
     if !skip {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
@@ -394,7 +409,22 @@ fn propose_phase_step(
     let reveal_payload = if skip {
         None
     } else {
-        phase_step_reveal_payload(&current_step, &players)
+        phase_step_reveal_payload(&current_step, &players, &payload.input)
+    };
+    let event_payload = if skip {
+        serde_json::json!({ "stepId": current_step.id })
+    } else {
+        phase_step_event_payload(&current_step, &players, payload.input)
+    };
+    let summary = if skip {
+        format!("단계 {summary_action}: {}", current_step.id)
+    } else {
+        phase_step_summary(
+            &current_step,
+            &players,
+            event_payload.get("input").unwrap_or(&Value::Null),
+        )
+        .unwrap_or_else(|| format!("단계 {summary_action}: {}", current_step.id))
     };
 
     Ok(Proposal {
@@ -402,12 +432,8 @@ fn propose_phase_step(
             id: format!("phase-step-{event_count}"),
             event_type: event_type.to_string(),
             phase: current_step.phase.to_string(),
-            payload: if skip {
-                serde_json::json!({ "stepId": current_step.id })
-            } else {
-                serde_json::json!({ "stepId": current_step.id, "input": payload.input })
-            },
-            summary: format!("단계 {summary_action}: {}", current_step.id),
+            payload: event_payload,
+            summary,
             created_at: game_file
                 .game
                 .updated_at
@@ -423,22 +449,259 @@ fn propose_phase_step(
     })
 }
 
-fn phase_step_reveal_payload(step: &PhaseStep, players: &[Player]) -> Option<RevealPayload> {
+fn phase_step_event_payload(step: &PhaseStep, players: &[Player], input: Value) -> Value {
+    if step.character.as_deref() == Some("chef") {
+        let true_value = evil_neighbor_pair_count(players);
+        let displayed_value = numeric_input_value(&input).unwrap_or(true_value);
+        return serde_json::json!({
+            "stepId": step.id,
+            "input": {
+                "trueValue": true_value,
+                "displayedValue": displayed_value,
+                "reason": numeric_input_reason(&input)
+            }
+        });
+    }
+
+    serde_json::json!({ "stepId": step.id, "input": input })
+}
+
+fn phase_step_reveal_payload(
+    step: &PhaseStep,
+    players: &[Player],
+    input: &Value,
+) -> Option<RevealPayload> {
+    match step.step_type {
+        "evilInfo" => return evil_info_reveal_payload(step, players, input),
+        _ => {}
+    }
+
     match step.character.as_deref()? {
+        "washerwoman" => setup_info_reveal_payload("washerwoman", input, players),
+        "librarian" => setup_info_reveal_payload("librarian", input, players),
+        "investigator" => setup_info_reveal_payload("investigator", input, players),
         "chef" => Some(RevealPayload {
             message_ko: format!(
                 "서로 이웃한 악 팀 쌍은 {}쌍입니다.",
-                evil_neighbor_pair_count(players)
+                numeric_input_value(input).unwrap_or_else(|| evil_neighbor_pair_count(players))
             ),
+            preview_message_ko: None,
         }),
         "empath" => Some(RevealPayload {
             message_ko: format!(
                 "살아있는 양옆 이웃 중 악 팀은 {}명입니다.",
                 empath_evil_neighbor_count(players, step.player_id.as_deref()?)?
             ),
+            preview_message_ko: None,
+        }),
+        "spy" => Some(RevealPayload {
+            message_ko: format!("스파이 그리모어:\n{}", grimoire_lines(players).join("\n")),
+            preview_message_ko: Some("스파이 그리모어 Reveal 준비됨".to_string()),
         }),
         _ => None,
     }
+}
+
+fn phase_step_summary(step: &PhaseStep, players: &[Player], input: &Value) -> Option<String> {
+    match step.character.as_deref()? {
+        "washerwoman" | "librarian" | "investigator" => {
+            setup_info_summary(step.character.as_deref()?, input, players)
+        }
+        "chef" => {
+            let true_value = input
+                .get("trueValue")
+                .and_then(Value::as_u64)
+                .map(|value| value as usize)
+                .unwrap_or_else(|| evil_neighbor_pair_count(players));
+            let displayed_value = input
+                .get("displayedValue")
+                .and_then(Value::as_u64)
+                .map(|value| value as usize)
+                .unwrap_or(true_value);
+            Some(format!(
+                "요리사 정보 확정: 실제 {true_value}쌍, 표시 {displayed_value}쌍{}",
+                input
+                    .get("reason")
+                    .and_then(Value::as_str)
+                    .map(|reason| format!(" ({})", chef_reason_label(reason)))
+                    .unwrap_or_default()
+            ))
+        }
+        _ => None,
+    }
+}
+
+fn setup_info_summary(kind: &str, input: &Value, players: &[Player]) -> Option<String> {
+    if kind == "librarian" && input.get("zeroOutsiders").and_then(Value::as_bool) == Some(true) {
+        return Some("사서 정보 확정: 외부인 0명".to_string());
+    }
+
+    let character_id = input.get("characterId")?.as_str()?;
+    let candidates = setup_info_candidate_labels(input, players)?;
+    Some(format!(
+        "{} 정보 확정: {} 중 {}",
+        setup_info_label(kind),
+        candidates.join(", "),
+        character_label(character_id)
+    ))
+}
+
+fn setup_info_reveal_payload(
+    kind: &str,
+    input: &Value,
+    players: &[Player],
+) -> Option<RevealPayload> {
+    if kind == "librarian" && input.get("zeroOutsiders").and_then(Value::as_bool) == Some(true) {
+        return Some(RevealPayload {
+            message_ko: "사서 정보: 외부인은 0명입니다.".to_string(),
+            preview_message_ko: None,
+        });
+    }
+
+    let character_id = input.get("characterId")?.as_str()?;
+    let candidates = setup_info_candidate_labels(input, players)?;
+    Some(RevealPayload {
+        message_ko: format!(
+            "{} 정보: {} 중 한 명은 {}입니다.",
+            setup_info_label(kind),
+            candidates.join(" 또는 "),
+            character_label(character_id)
+        ),
+        preview_message_ko: None,
+    })
+}
+
+fn setup_info_candidate_labels(input: &Value, players: &[Player]) -> Option<Vec<String>> {
+    input
+        .get("playerIds")?
+        .as_array()?
+        .iter()
+        .filter_map(Value::as_str)
+        .map(|player_id| player_label(players, player_id))
+        .collect()
+}
+
+fn evil_info_reveal_payload(
+    step: &PhaseStep,
+    players: &[Player],
+    input: &Value,
+) -> Option<RevealPayload> {
+    let demons = players
+        .iter()
+        .filter(|player| {
+            matches!(
+                character_kind(&player.actual_character),
+                Some(CharacterKind::Demon)
+            )
+        })
+        .map(|player| player_character_label(player))
+        .collect::<Vec<_>>();
+    let minions = players
+        .iter()
+        .filter(|player| {
+            matches!(
+                character_kind(&player.actual_character),
+                Some(CharacterKind::Minion)
+            )
+        })
+        .map(|player| player_character_label(player))
+        .collect::<Vec<_>>();
+
+    if step.id.ends_with(":minionInfo") {
+        return Some(RevealPayload {
+            message_ko: format!(
+                "하수인 정보:\n악마: {}\n하수인: {}",
+                list_or_none(&demons),
+                list_or_none(&minions)
+            ),
+            preview_message_ko: None,
+        });
+    }
+    if step.id.ends_with(":demonInfo") {
+        let bluffs = input
+            .get("characterIds")
+            .and_then(Value::as_array)
+            .map(|character_ids| {
+                character_ids
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(character_label)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .filter(|bluffs| !bluffs.is_empty())
+            .unwrap_or_else(|| "없음".to_string());
+        return Some(RevealPayload {
+            message_ko: format!(
+                "악마 정보:\n하수인: {}\n블러프: {bluffs}",
+                list_or_none(&minions)
+            ),
+            preview_message_ko: None,
+        });
+    }
+
+    None
+}
+
+fn grimoire_lines(players: &[Player]) -> Vec<String> {
+    seated_players(players)
+        .iter()
+        .map(|player| player_character_label(player))
+        .collect()
+}
+
+fn list_or_none(values: &[String]) -> String {
+    if values.is_empty() {
+        "없음".to_string()
+    } else {
+        values.join(", ")
+    }
+}
+
+fn player_character_label(player: &Player) -> String {
+    format!(
+        "{}번 {} - {}",
+        player.seat,
+        player.name,
+        character_label(&player.actual_character)
+    )
+}
+
+fn player_label(players: &[Player], player_id: &str) -> Option<String> {
+    players
+        .iter()
+        .find(|player| player.id == player_id)
+        .map(|player| format!("{}번 {}", player.seat, player.name))
+}
+
+fn setup_info_label(kind: &str) -> &'static str {
+    match kind {
+        "washerwoman" => "세탁부",
+        "librarian" => "사서",
+        "investigator" => "조사관",
+        _ => "정보",
+    }
+}
+
+fn chef_reason_label(reason: &str) -> &'static str {
+    match reason {
+        "drunk" => "술취함",
+        "poisoned" => "중독",
+        "registration" => "등록 판정",
+        _ => "표시값 조정",
+    }
+}
+
+fn numeric_input_value(input: &Value) -> Option<usize> {
+    input
+        .get("value")
+        .or_else(|| input.get("displayedValue"))
+        .and_then(Value::as_u64)
+        .map(|value| value as usize)
+}
+
+fn numeric_input_reason(input: &Value) -> Option<&str> {
+    input.get("reason").and_then(Value::as_str)
 }
 
 fn evil_neighbor_pair_count(players: &[Player]) -> usize {
@@ -504,6 +767,15 @@ fn validate_required_input(
     value: &Value,
     players: &[Player],
 ) -> Result<(), CoreError> {
+    if input.kind == "setupInfo" {
+        return validate_setup_info_input(input.setup_info.unwrap_or_default(), value, players);
+    }
+    if input.kind == "number" {
+        return validate_number_input(value);
+    }
+    if input.target == Some("characters") {
+        return validate_character_selection(input, value);
+    }
     if input.target != Some("player") && input.target != Some("players") {
         return Ok(());
     }
@@ -522,19 +794,28 @@ fn validate_required_input(
         .collect::<HashSet<_>>();
     for player_id in player_ids.iter().filter_map(Value::as_str) {
         if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
-            return Err(error("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."));
+            return Err(error(
+                "INVALID_STEP_INPUT",
+                "현재 단계 입력이 올바르지 않습니다.",
+            ));
         }
     }
 
     let count = player_ids.len();
     if let Some(min) = input.min_selections {
         if count < usize::from(min) {
-            return Err(error("MISSING_STEP_INPUT", "현재 단계에 필요한 입력이 없습니다."));
+            return Err(error(
+                "MISSING_STEP_INPUT",
+                "현재 단계에 필요한 입력이 없습니다.",
+            ));
         }
     }
     if let Some(max) = input.max_selections {
         if count > usize::from(max) {
-            return Err(error("TOO_MUCH_STEP_INPUT", "현재 단계 입력이 너무 많습니다."));
+            return Err(error(
+                "TOO_MUCH_STEP_INPUT",
+                "현재 단계 입력이 너무 많습니다.",
+            ));
         }
     }
 
@@ -700,10 +981,12 @@ fn current_phase_steps(
 
 fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
     let mut steps = Vec::new();
-    if players
-        .iter()
-        .any(|player| matches!(character_kind(&player.actual_character), Some(CharacterKind::Minion)))
-    {
+    if players.iter().any(|player| {
+        matches!(
+            character_kind(&player.actual_character),
+            Some(CharacterKind::Minion)
+        )
+    }) {
         steps.push(simple_step(
             "firstNight",
             "firstNight",
@@ -713,16 +996,18 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
             false,
         ));
     }
-    if players
-        .iter()
-        .any(|player| matches!(character_kind(&player.actual_character), Some(CharacterKind::Demon)))
-    {
+    if players.iter().any(|player| {
+        matches!(
+            character_kind(&player.actual_character),
+            Some(CharacterKind::Demon)
+        )
+    }) {
         steps.push(simple_step(
             "firstNight",
             "firstNight",
             "demonInfo",
             "evilInfo",
-            required_none(),
+            required_characters(0, 3),
             false,
         ));
     }
@@ -755,7 +1040,14 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
 fn day_steps(cycle: usize) -> Vec<PhaseStep> {
     let prefix = phase_prefix("day", cycle);
     vec![
-        simple_step("day", &prefix, "announceDeaths", "announcement", required_none(), false),
+        simple_step(
+            "day",
+            &prefix,
+            "announceDeaths",
+            "announcement",
+            required_none(),
+            false,
+        ),
         simple_step(
             "day",
             &prefix,
@@ -766,6 +1058,9 @@ fn day_steps(cycle: usize) -> Vec<PhaseStep> {
                 target: Some("players"),
                 min_selections: Some(0),
                 max_selections: None,
+                setup_info: None,
+                character_kind: None,
+                zero_allowed: false,
                 optional: true,
             },
             true,
@@ -780,6 +1075,9 @@ fn day_steps(cycle: usize) -> Vec<PhaseStep> {
                 target: Some("player"),
                 min_selections: Some(0),
                 max_selections: Some(1),
+                setup_info: None,
+                character_kind: None,
+                zero_allowed: false,
                 optional: true,
             },
             true,
@@ -818,7 +1116,9 @@ fn character_steps(
 ) -> Vec<PhaseStep> {
     let waking_characters = players
         .iter()
-        .filter_map(|player| awakening_character(player).map(|character| (character, player.id.as_str())))
+        .filter_map(|player| {
+            awakening_character(player).map(|character| (character, player.id.as_str()))
+        })
         .collect::<HashMap<_, _>>();
     let mut emitted = HashSet::new();
 
@@ -847,7 +1147,20 @@ fn character_steps(
 fn character_required_input(character: &str) -> RequiredInput {
     match character {
         "poisoner" | "monk" | "imp" | "ravenkeeper" | "butler" => required_players(1, 1),
-        "washerwoman" | "librarian" | "investigator" | "fortuneTeller" => required_players(2, 2),
+        "washerwoman" => required_setup_info("washerwoman", "Townsfolk", 2, 2, false),
+        "librarian" => required_setup_info("librarian", "Outsider", 0, 2, true),
+        "investigator" => required_setup_info("investigator", "Minion", 2, 2, false),
+        "fortuneTeller" => required_players(2, 2),
+        "chef" => RequiredInput {
+            kind: "number",
+            target: Some("number"),
+            min_selections: Some(0),
+            max_selections: None,
+            setup_info: None,
+            character_kind: None,
+            zero_allowed: false,
+            optional: true,
+        },
         _ => required_none(),
     }
 }
@@ -888,6 +1201,9 @@ fn phase_transition_step(
             target: Some("phase"),
             min_selections: None,
             max_selections: None,
+            setup_info: None,
+            character_kind: None,
+            zero_allowed: false,
             optional: false,
         },
         can_skip: false,
@@ -908,6 +1224,9 @@ fn required_none() -> RequiredInput {
         target: None,
         min_selections: None,
         max_selections: None,
+        setup_info: None,
+        character_kind: None,
+        zero_allowed: false,
         optional: false,
     }
 }
@@ -918,8 +1237,194 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         target: Some(if max == 1 { "player" } else { "players" }),
         min_selections: Some(min),
         max_selections: Some(max),
+        setup_info: None,
+        character_kind: None,
+        zero_allowed: false,
         optional: min == 0,
     }
+}
+
+fn required_characters(min: u8, max: u8) -> RequiredInput {
+    RequiredInput {
+        kind: "characterIds",
+        target: Some("characters"),
+        min_selections: Some(min),
+        max_selections: Some(max),
+        setup_info: None,
+        character_kind: None,
+        zero_allowed: false,
+        optional: min == 0,
+    }
+}
+
+fn required_setup_info(
+    kind: &'static str,
+    character_kind: &'static str,
+    min: u8,
+    max: u8,
+    zero_allowed: bool,
+) -> RequiredInput {
+    RequiredInput {
+        kind: "setupInfo",
+        target: Some("players"),
+        min_selections: Some(min),
+        max_selections: Some(max),
+        setup_info: Some(kind),
+        character_kind: Some(character_kind),
+        zero_allowed,
+        optional: false,
+    }
+}
+
+fn validate_setup_info_input(
+    setup_info: &str,
+    value: &Value,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    if setup_info == "librarian"
+        && value.get("zeroOutsiders").and_then(Value::as_bool) == Some(true)
+    {
+        let player_count = value
+            .get("playerIds")
+            .and_then(Value::as_array)
+            .map_or(0, Vec::len);
+        if player_count == 0 {
+            return Ok(());
+        }
+        return Err(error(
+            "INVALID_STEP_INPUT",
+            "현재 단계 입력이 올바르지 않습니다.",
+        ));
+    }
+
+    let player_ids = validate_player_ids(value, players)?;
+    if player_ids.len() != 2 {
+        return Err(error(
+            "MISSING_STEP_INPUT",
+            "현재 단계에 필요한 입력이 없습니다.",
+        ));
+    }
+
+    let Some(character_id) = value.get("characterId").and_then(Value::as_str) else {
+        return Err(error(
+            "MISSING_STEP_INPUT",
+            "현재 단계에 필요한 입력이 없습니다.",
+        ));
+    };
+    let Some(kind) = character_kind(character_id) else {
+        return Err(error("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."));
+    };
+
+    let valid_kind = match setup_info {
+        "washerwoman" => matches!(kind, CharacterKind::Townsfolk),
+        "librarian" => matches!(kind, CharacterKind::Outsider),
+        "investigator" => matches!(kind, CharacterKind::Minion),
+        _ => false,
+    };
+    if !valid_kind {
+        return Err(error(
+            "INVALID_STEP_INPUT",
+            "현재 단계 입력이 올바르지 않습니다.",
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_number_input(value: &Value) -> Result<(), CoreError> {
+    if value.is_null() {
+        return Ok(());
+    }
+
+    let Some(number) = value.get("value").or_else(|| value.get("displayedValue")) else {
+        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
+    };
+    if number.as_u64().filter(|number| *number <= 15).is_some() {
+        if let Some(reason) = value.get("reason").and_then(Value::as_str) {
+            if !matches!(reason, "drunk" | "poisoned" | "registration") {
+                return Err(error(
+                    "INVALID_STEP_INPUT",
+                    "현재 단계 입력이 올바르지 않습니다.",
+                ));
+            }
+        }
+        return Ok(());
+    }
+
+    Err(error(
+        "INVALID_STEP_INPUT",
+        "현재 단계 입력이 올바르지 않습니다.",
+    ))
+}
+
+fn validate_character_selection(input: &RequiredInput, value: &Value) -> Result<(), CoreError> {
+    let character_ids = value
+        .get("characterIds")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    if character_ids
+        .iter()
+        .any(|character_id| !character_id.is_string())
+    {
+        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
+    }
+    let mut unique_character_ids = HashSet::new();
+    for character_id in character_ids.iter().filter_map(Value::as_str) {
+        if !unique_character_ids.insert(character_id) || character_kind(character_id).is_none() {
+            return Err(error(
+                "INVALID_STEP_INPUT",
+                "현재 단계 입력이 올바르지 않습니다.",
+            ));
+        }
+    }
+
+    let count = character_ids.len();
+    if let Some(min) = input.min_selections {
+        if count < usize::from(min) {
+            return Err(error(
+                "MISSING_STEP_INPUT",
+                "현재 단계에 필요한 입력이 없습니다.",
+            ));
+        }
+    }
+    if let Some(max) = input.max_selections {
+        if count > usize::from(max) {
+            return Err(error(
+                "TOO_MUCH_STEP_INPUT",
+                "현재 단계 입력이 너무 많습니다.",
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_player_ids(value: &Value, players: &[Player]) -> Result<Vec<String>, CoreError> {
+    let player_ids = value
+        .get("playerIds")
+        .and_then(Value::as_array)
+        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    if player_ids.iter().any(|player_id| !player_id.is_string()) {
+        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
+    }
+    let mut unique_player_ids = HashSet::new();
+    let roster_player_ids = players
+        .iter()
+        .map(|player| player.id.as_str())
+        .collect::<HashSet<_>>();
+    let mut valid_ids = Vec::new();
+    for player_id in player_ids.iter().filter_map(Value::as_str) {
+        if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
+            return Err(error(
+                "INVALID_STEP_INPUT",
+                "현재 단계 입력이 올바르지 않습니다.",
+            ));
+        }
+        valid_ids.push(player_id.to_string());
+    }
+
+    Ok(valid_ids)
 }
 
 fn awakening_character(player: &Player) -> Option<&str> {
@@ -1237,6 +1742,34 @@ fn character_kind(character: &str) -> Option<CharacterKind> {
 
 fn is_townsfolk(character: &str) -> bool {
     matches!(character_kind(character), Some(CharacterKind::Townsfolk))
+}
+
+fn character_label(character: &str) -> &'static str {
+    match character {
+        "washerwoman" => "세탁부",
+        "librarian" => "사서",
+        "investigator" => "조사관",
+        "chef" => "요리사",
+        "empath" => "공감능력자",
+        "fortuneTeller" => "점쟁이",
+        "undertaker" => "장의사",
+        "monk" => "수도사",
+        "ravenkeeper" => "까마귀지기",
+        "virgin" => "처녀",
+        "slayer" => "학살자",
+        "soldier" => "군인",
+        "mayor" => "시장",
+        "butler" => "집사",
+        "drunk" => "술꾼",
+        "recluse" => "은둔자",
+        "saint" => "성자",
+        "poisoner" => "독살자",
+        "spy" => "스파이",
+        "scarletWoman" => "붉은 여인",
+        "baron" => "남작",
+        "imp" => "임프",
+        _ => "알 수 없음",
+    }
 }
 
 #[cfg(test)]
@@ -1612,9 +2145,23 @@ mod tests {
         assert_eq!(actual["ok"], true);
         assert_eq!(actual["value"]["phase"], "firstNight");
         assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:demonInfo");
-        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["kind"], "none");
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["kind"],
+            "characterIds"
+        );
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["target"],
+            "characters"
+        );
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["maxSelections"],
+            3
+        );
         assert_eq!(actual["value"]["currentStep"]["canSkip"], false);
-        assert_eq!(actual["value"]["phaseOverview"][0]["id"], "firstNight:demonInfo");
+        assert_eq!(
+            actual["value"]["phaseOverview"][0]["id"],
+            "firstNight:demonInfo"
+        );
         assert_eq!(actual["value"]["phaseOverview"][0]["status"], "current");
         assert_eq!(actual["value"]["phaseOverview"][1]["status"], "waiting");
     }
@@ -1629,10 +2176,22 @@ mod tests {
         let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
 
         assert_eq!(actual["ok"], true);
-        assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:washerwoman");
-        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["target"], "players");
-        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["minSelections"], 2);
-        assert_eq!(actual["value"]["currentStep"]["requiredInput"]["maxSelections"], 2);
+        assert_eq!(
+            actual["value"]["currentStep"]["id"],
+            "firstNight:washerwoman"
+        );
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["target"],
+            "players"
+        );
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["minSelections"],
+            2
+        );
+        assert_eq!(
+            actual["value"]["currentStep"]["requiredInput"]["maxSelections"],
+            2
+        );
     }
 
     #[test]
@@ -1652,7 +2211,10 @@ mod tests {
         assert_eq!(actual["value"]["phaseOverview"][0]["status"], "complete");
         assert_eq!(actual["value"]["phaseOverview"][1]["status"], "complete");
         assert_eq!(actual["value"]["phaseOverview"][2]["status"], "skipped");
-        assert_eq!(actual["value"]["phaseOverview"][3]["status"], "needsFollowUp");
+        assert_eq!(
+            actual["value"]["phaseOverview"][3]["status"],
+            "needsFollowUp"
+        );
         assert_eq!(actual["value"]["phaseOverview"][4]["status"], "waiting");
     }
 
@@ -1668,13 +2230,21 @@ mod tests {
             serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
         let mut events = game["game"]["events"].as_array().unwrap().clone();
         events.push(proposal["value"]["event"].clone());
-        let replayed: Value = serde_json::from_str(&replay_json(&game_with_events(Value::Array(events)).to_string()))
-            .unwrap();
+        let replayed: Value = serde_json::from_str(&replay_json(
+            &game_with_events(Value::Array(events)).to_string(),
+        ))
+        .unwrap();
 
         assert_eq!(proposal["ok"], true);
         assert_eq!(proposal["value"]["event"]["type"], "phaseStepConfirmed");
-        assert_eq!(proposal["value"]["event"]["payload"]["stepId"], "firstNight:demonInfo");
-        assert_eq!(replayed["value"]["currentStep"]["id"], "firstNight:washerwoman");
+        assert_eq!(
+            proposal["value"]["event"]["payload"]["stepId"],
+            "firstNight:demonInfo"
+        );
+        assert_eq!(
+            replayed["value"]["currentStep"]["id"],
+            "firstNight:washerwoman"
+        );
     }
 
     #[test]
@@ -1696,6 +2266,250 @@ mod tests {
         assert_eq!(
             actual["value"]["revealPayload"]["messageKo"],
             "서로 이웃한 악 팀 쌍은 0쌍입니다."
+        );
+
+        let mut events = game["game"]["events"].as_array().unwrap().clone();
+        events.push(actual["value"]["event"].clone());
+        let replayed: Value = serde_json::from_str(&replay_json(
+            &game_with_events(Value::Array(events)).to_string(),
+        ))
+        .unwrap();
+        assert_eq!(replayed["ok"], true);
+    }
+
+    #[test]
+    fn confirming_washerwoman_information_logs_and_reveals_selected_setup_info() {
+        let game = game_with_events(json!([
+            setup_event(),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:washerwoman",
+                "input": {
+                    "playerIds": ["player-1", "player-2"],
+                    "characterId": "chef"
+                }
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["event"]["payload"]["input"]["characterId"],
+            "chef"
+        );
+        assert_eq!(
+            actual["value"]["event"]["summary"],
+            "세탁부 정보 확정: 1번 Ada, 2번 Bert 중 요리사"
+        );
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "세탁부 정보: 1번 Ada 또는 2번 Bert 중 한 명은 요리사입니다."
+        );
+    }
+
+    #[test]
+    fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+                { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:poisoner")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:librarian",
+                "input": { "zeroOutsiders": true }
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["event"]["summary"],
+            "사서 정보 확정: 외부인 0명"
+        );
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "사서 정보: 외부인은 0명입니다."
+        );
+    }
+
+    #[test]
+    fn confirming_investigator_information_requires_minion_character_and_reveals_it() {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+                { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:poisoner")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:investigator",
+                "input": {
+                    "playerIds": ["player-2", "player-4"],
+                    "characterId": "poisoner"
+                }
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "조사관 정보: 2번 Bert 또는 4번 Dev 중 한 명은 독살자입니다."
+        );
+    }
+
+    #[test]
+    fn confirming_chef_can_log_true_count_and_reveal_different_displayed_value() {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+                { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:poisoner"),
+            phase_event("phaseStepConfirmed", "firstNight:washerwoman")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:chef",
+                "input": { "value": 0, "reason": "registration" }
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["event"]["payload"]["input"]["trueValue"], 1);
+        assert_eq!(
+            actual["value"]["event"]["payload"]["input"]["displayedValue"],
+            0
+        );
+        assert_eq!(
+            actual["value"]["event"]["payload"]["input"]["reason"],
+            "registration"
+        );
+        assert_eq!(
+            actual["value"]["event"]["summary"],
+            "요리사 정보 확정: 실제 1쌍, 표시 0쌍 (등록 판정)"
+        );
+        assert_eq!(
+            actual["value"]["revealPayload"]["messageKo"],
+            "서로 이웃한 악 팀 쌍은 0쌍입니다."
+        );
+    }
+
+    #[test]
+    fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
+        let game = game_with_events(json!([setup_event_with_minion()]));
+        let minion_command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:minionInfo" }
+        });
+
+        let minion_actual: Value = serde_json::from_str(&propose_json(
+            &game.to_string(),
+            &minion_command.to_string(),
+        ))
+        .unwrap();
+
+        assert_eq!(minion_actual["ok"], true);
+        assert_eq!(
+            minion_actual["value"]["revealPayload"]["messageKo"],
+            "하수인 정보:\n악마: 5번 Eve - 임프\n하수인: 4번 Dev - 독살자"
+        );
+
+        let demon_game = game_with_events(json!([
+            setup_event_with_minion(),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo")
+        ]));
+        let demon_command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:demonInfo",
+                "input": { "characterIds": ["washerwoman", "librarian", "chef"] }
+            }
+        });
+        let demon_actual: Value = serde_json::from_str(&propose_json(
+            &demon_game.to_string(),
+            &demon_command.to_string(),
+        ))
+        .unwrap();
+
+        assert_eq!(demon_actual["ok"], true);
+        assert_eq!(
+            demon_actual["value"]["revealPayload"]["messageKo"],
+            "악마 정보:\n하수인: 4번 Dev - 독살자\n블러프: 세탁부, 사서, 요리사"
+        );
+    }
+
+    #[test]
+    fn spy_step_reveals_grimoire_only_through_reveal_payload() {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+                { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "spy", "shownCharacter": "spy" },
+                { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:chef"),
+            phase_event("phaseStepConfirmed", "firstNight:empath"),
+            phase_event("phaseStepConfirmed", "firstNight:fortuneTeller")
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "firstNight:spy" }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["event"]["payload"]["input"], Value::Null);
+        assert!(actual["value"]["preview"]["messageKo"]
+            .as_str()
+            .unwrap()
+            .contains("현재 단계를 확정합니다."));
+        assert!(actual["value"]["revealPayload"]["messageKo"]
+            .as_str()
+            .unwrap()
+            .contains("5번 Eve - 임프"));
+        assert_eq!(
+            actual["value"]["revealPayload"]["previewMessageKo"],
+            "스파이 그리모어 Reveal 준비됨"
         );
     }
 
@@ -1926,19 +2740,31 @@ mod tests {
     }
 
     fn setup_event() -> Value {
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ]))
+    }
+
+    fn setup_event_with_minion() -> Value {
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ]))
+    }
+
+    fn setup_event_with_players(players: Value) -> Value {
         json!({
             "id": "evt-1",
             "type": "setupConfirmed",
             "phase": "setup",
-            "payload": {
-                "players": [
-                    { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
-                    { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
-                    { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
-                    { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
-                    { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
-                ]
-            },
+            "payload": { "players": players },
             "summary": "초기 설정 확정: 5명",
             "createdAt": "2026-01-01T00:00:00.000Z"
         })
@@ -1950,7 +2776,15 @@ mod tests {
                 .iter()
                 .any(|character| step_id.ends_with(character))
             {
-                json!({ "playerIds": ["player-1", "player-2"] })
+                if step_id.ends_with("washerwoman") {
+                    json!({ "playerIds": ["player-1", "player-2"], "characterId": "chef" })
+                } else if step_id.ends_with("librarian") {
+                    json!({ "playerIds": ["player-1", "player-2"], "characterId": "drunk" })
+                } else if step_id.ends_with("investigator") {
+                    json!({ "playerIds": ["player-1", "player-2"], "characterId": "poisoner" })
+                } else {
+                    json!({ "playerIds": ["player-1", "player-2"] })
+                }
             } else if ["poisoner", "monk", "imp", "ravenkeeper", "butler"]
                 .iter()
                 .any(|character| step_id.ends_with(character))

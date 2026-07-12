@@ -584,13 +584,33 @@ function CurrentStepPane({
   onShowReveal: (payload: RevealPayload) => void;
 }) {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedCharacterId, setSelectedCharacterId] = useState("");
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
+  const [zeroOutsiders, setZeroOutsiders] = useState(false);
+  const [numberValue, setNumberValue] = useState("");
+  const [numberReason, setNumberReason] = useState("");
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
-  const selectionValid = currentStep ? requiredSelectionValid(currentStep, selectedPlayerIds.length) : false;
+  const selectionValid = currentStep
+    ? stepInputReady(
+        currentStep,
+        selectedPlayerIds.length,
+        selectedCharacterIds.length,
+        selectedCharacterId,
+        zeroOutsiders,
+        numberValue,
+        numberReason,
+      )
+    : false;
 
   useEffect(() => {
     setSelectedPlayerIds([]);
+    setSelectedCharacterId("");
+    setSelectedCharacterIds([]);
+    setZeroOutsiders(false);
+    setNumberValue("");
+    setNumberReason("");
   }, [currentStep?.id]);
 
   return (
@@ -630,12 +650,45 @@ function CurrentStepPane({
               selectedPlayerIds={selectedPlayerIds}
               onChange={setSelectedPlayerIds}
               busy={busy}
+              selectionDisabled={Boolean(currentStep.requiredInput.zeroAllowed && zeroOutsiders)}
+            />
+            <StepSpecificInput
+              step={currentStep}
+              selectedCharacterId={selectedCharacterId}
+              selectedCharacterIds={selectedCharacterIds}
+              zeroOutsiders={zeroOutsiders}
+              numberValue={numberValue}
+              numberReason={numberReason}
+              busy={busy}
+              onCharacterChange={setSelectedCharacterId}
+              onCharactersChange={setSelectedCharacterIds}
+              onZeroOutsidersChange={(checked) => {
+                setZeroOutsiders(checked);
+                if (checked) {
+                  setSelectedPlayerIds([]);
+                  setSelectedCharacterId("");
+                }
+              }}
+              onNumberChange={setNumberValue}
+              onNumberReasonChange={setNumberReason}
             />
             <div className="stepActions">
               <button
                 type="button"
                 className="primaryButton"
-                onClick={() => onConfirm(stepInputPayload(currentStep, selectedPlayerIds))}
+                onClick={() =>
+                  onConfirm(
+                    stepInputPayload(
+                      currentStep,
+                      selectedPlayerIds,
+                      selectedCharacterId,
+                      selectedCharacterIds,
+                      zeroOutsiders,
+                      numberValue,
+                      numberReason,
+                    ),
+                  )
+                }
                 disabled={busy || !selectionValid}
               >
                 확정
@@ -682,12 +735,14 @@ function PlayerStepInput({
   selectedPlayerIds,
   onChange,
   busy,
+  selectionDisabled = false,
 }: {
   step: PhaseStep;
   players: Player[];
   selectedPlayerIds: string[];
   onChange: (playerIds: string[]) => void;
   busy: boolean;
+  selectionDisabled?: boolean;
 }) {
   if (step.requiredInput.target !== "player" && step.requiredInput.target !== "players") return null;
 
@@ -714,11 +769,159 @@ function PlayerStepInput({
           className={selectedPlayerIds.includes(player.id) ? "selected" : ""}
           onClick={() => togglePlayer(player.id)}
           aria-pressed={selectedPlayerIds.includes(player.id)}
-          disabled={busy}
+          disabled={busy || selectionDisabled}
           key={player.id}
         >
           <span>{player.seat}</span>
           <strong>{player.name}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StepSpecificInput({
+  step,
+  selectedCharacterId,
+  selectedCharacterIds,
+  zeroOutsiders,
+  numberValue,
+  numberReason,
+  busy,
+  onCharacterChange,
+  onCharactersChange,
+  onZeroOutsidersChange,
+  onNumberChange,
+  onNumberReasonChange,
+}: {
+  step: PhaseStep;
+  selectedCharacterId: string;
+  selectedCharacterIds: string[];
+  zeroOutsiders: boolean;
+  numberValue: string;
+  numberReason: string;
+  busy: boolean;
+  onCharacterChange: (characterId: string) => void;
+  onCharactersChange: (characterIds: string[]) => void;
+  onZeroOutsidersChange: (checked: boolean) => void;
+  onNumberChange: (value: string) => void;
+  onNumberReasonChange: (value: string) => void;
+}) {
+  if (step.requiredInput.kind === "setupInfo") {
+    const options = setupInfoCharacterOptions(step.requiredInput.characterKind);
+    return (
+      <div className="stepSpecificInput">
+        {step.requiredInput.zeroAllowed ? (
+          <label className="inlineToggle">
+            <input
+              type="checkbox"
+              checked={zeroOutsiders}
+              disabled={busy}
+              onChange={(event) => onZeroOutsidersChange(event.target.checked)}
+            />
+            {step.requiredInput.characterKind ? `${kindLabels[step.requiredInput.characterKind]} 0명` : "0명"}
+          </label>
+        ) : null}
+        {!zeroOutsiders ? (
+          <label>
+            보여줄 캐릭터
+            <CharacterSelect
+              value={selectedCharacterId}
+              options={options}
+              includeEmpty
+              disabled={busy}
+              onChange={onCharacterChange}
+            />
+          </label>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (step.requiredInput.target === "characters") {
+    return (
+      <CharacterStepInput
+        step={step}
+        selectedCharacterIds={selectedCharacterIds}
+        busy={busy}
+        onChange={onCharactersChange}
+      />
+    );
+  }
+
+  if (step.requiredInput.kind === "number") {
+    return (
+      <div className="stepSpecificInput">
+        <label>
+          표시할 숫자
+          <input
+            type="number"
+            min="0"
+            max="15"
+            inputMode="numeric"
+            value={numberValue}
+            disabled={busy}
+            placeholder="실제값 사용"
+            onChange={(event) => onNumberChange(event.target.value)}
+          />
+        </label>
+        {numberValue.trim().length > 0 ? (
+          <label>
+            표시 이유
+            <select
+              value={numberReason}
+              disabled={busy}
+              onChange={(event) => onNumberReasonChange(event.target.value)}
+            >
+              <option value="">선택</option>
+              <option value="drunk">술취함</option>
+              <option value="poisoned">중독</option>
+              <option value="registration">등록 판정</option>
+            </select>
+          </label>
+        ) : null}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function CharacterStepInput({
+  step,
+  selectedCharacterIds,
+  busy,
+  onChange,
+}: {
+  step: PhaseStep;
+  selectedCharacterIds: string[];
+  busy: boolean;
+  onChange: (characterIds: string[]) => void;
+}) {
+  const max = step.requiredInput.maxSelections ?? characters.length;
+
+  function toggleCharacter(characterId: string) {
+    if (selectedCharacterIds.includes(characterId)) {
+      onChange(selectedCharacterIds.filter((selectedId) => selectedId !== characterId));
+      return;
+    }
+    if (selectedCharacterIds.length >= max) return;
+    onChange([...selectedCharacterIds, characterId]);
+  }
+
+  return (
+    <div className="characterStepInput" aria-label="캐릭터 입력">
+      {characters.map((character) => (
+        <button
+          type="button"
+          className={selectedCharacterIds.includes(character.id) ? `selected ${character.kind}` : character.kind}
+          aria-pressed={selectedCharacterIds.includes(character.id)}
+          disabled={busy}
+          onClick={() => toggleCharacter(character.id)}
+          key={character.id}
+        >
+          <span>{character.icon}</span>
+          <strong>{character.label}</strong>
         </button>
       ))}
     </div>
@@ -756,6 +959,9 @@ function stepTypeLabel(stepType: string): string {
 function inputKindLabel(inputKind: string): string {
   if (inputKind === "none") return "없음";
   if (inputKind === "playerIds") return "플레이어";
+  if (inputKind === "setupInfo") return "설정 정보";
+  if (inputKind === "characterIds") return "캐릭터";
+  if (inputKind === "number") return "숫자";
   if (inputKind === "optionalVotes") return "투표 선택";
   if (inputKind === "optionalPlayer") return "플레이어 선택";
   if (inputKind === "day") return "낮";
@@ -778,6 +984,8 @@ function inputShapeLabel(input: PhaseStep["requiredInput"]): string {
 function inputTargetLabel(target: string): string {
   if (target === "player") return "플레이어";
   if (target === "players") return "플레이어들";
+  if (target === "characters") return "캐릭터들";
+  if (target === "number") return "숫자";
   if (target === "phase") return "페이즈";
   return target;
 }
@@ -790,11 +998,66 @@ function requiredSelectionValid(step: PhaseStep, selectedCount: number): boolean
   return true;
 }
 
-function stepInputPayload(step: PhaseStep, selectedPlayerIds: string[]): unknown {
+function stepInputReady(
+  step: PhaseStep,
+  selectedCount: number,
+  selectedCharacterCount: number,
+  selectedCharacterId: string,
+  zeroOutsiders: boolean,
+  numberValue: string,
+  numberReason: string,
+): boolean {
+  if (step.requiredInput.kind === "setupInfo") {
+    if (step.requiredInput.zeroAllowed && zeroOutsiders) return selectedCount === 0;
+    return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
+  }
+  if (step.requiredInput.target === "characters") {
+    return requiredSelectionCountValid(step, selectedCharacterCount);
+  }
+  if (step.requiredInput.kind === "number") {
+    if (numberValue.trim().length === 0) return true;
+    const value = Number(numberValue);
+    return Number.isInteger(value) && value >= 0 && value <= 15 && numberReason.length > 0;
+  }
+  return requiredSelectionValid(step, selectedCount);
+}
+
+function stepInputPayload(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  selectedCharacterId: string,
+  selectedCharacterIds: string[],
+  zeroOutsiders: boolean,
+  numberValue: string,
+  numberReason: string,
+): unknown {
+  if (step.requiredInput.kind === "setupInfo") {
+    if (step.requiredInput.zeroAllowed && zeroOutsiders) return { zeroOutsiders: true };
+    return { playerIds: selectedPlayerIds, characterId: selectedCharacterId };
+  }
+  if (step.requiredInput.target === "characters") {
+    return { characterIds: selectedCharacterIds };
+  }
+  if (step.requiredInput.kind === "number") {
+    if (numberValue.trim().length === 0) return null;
+    return { value: Number(numberValue), reason: numberReason };
+  }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
     return { playerIds: selectedPlayerIds };
   }
   return null;
+}
+
+function requiredSelectionCountValid(step: PhaseStep, selectedCount: number): boolean {
+  const input = step.requiredInput;
+  if (input.minSelections !== undefined && selectedCount < input.minSelections) return false;
+  if (input.maxSelections !== undefined && selectedCount > input.maxSelections) return false;
+  return true;
+}
+
+function setupInfoCharacterOptions(kind?: CharacterKind): typeof characters {
+  if (!kind) return characters;
+  return characters.filter((character) => character.kind === kind);
 }
 
 function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

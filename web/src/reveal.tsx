@@ -33,7 +33,7 @@ export function RevealPreview({
           <h2>플레이어에게 보일 내용</h2>
         </div>
       </div>
-      <p className="revealPreviewMessage">{payload.messageKo}</p>
+      <p className="revealPreviewMessage">{payload.previewMessageKo ?? payload.messageKo}</p>
       <button type="button" className="primaryButton" onClick={onShow} disabled={disabled}>
         플레이어에게 공개
       </button>
