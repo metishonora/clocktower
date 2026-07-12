@@ -13,6 +13,8 @@ This checklist applies to code changes only. Do not run tests, code review, comm
 
 When using the `implement` skill, TDD is encouraged but not mandatory. Use TDD where it fits a clear, pre-agreed seam; otherwise implement with focused validation and explain why TDD was skipped.
 
+After completing an `implement` request, ask the user to run an acceptance test. State what behavior is in the acceptance-test scope, and state what remains unimplemented or intentionally deferred to another ticket.
+
 - When closing a ticket, include regression coverage for the changed behavior when practical. Prefer the smallest test that would fail before the fix. If no regression test is added, state why in the completion note.
 - For Rust changes, run `cargo test --workspace`.
 - For web changes, run `pnpm --dir web test` and `pnpm --dir web build` when relevant.
