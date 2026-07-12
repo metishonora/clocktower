@@ -141,6 +141,7 @@ function App() {
             onChange={gameStore.setSetupDraft}
             onConfirm={gameStore.confirmSetup}
             onImport={() => importInputRef.current?.click()}
+            onReset={gameStore.resetSetup}
             warnings={gameStore.shownWarnings}
             expectedCounts={gameStore.setupExpectedCounts}
             busy={setupFormBusy({
@@ -152,6 +153,8 @@ function App() {
             proposalResult={gameStore.proposalResult}
             loadError={gameStore.loadError}
             events={gameStore.gameFile.game.events}
+            hasConfirmedEvents={gameStore.hasConfirmedEvents}
+            setupConfirmed={gameStore.setupConfirmed}
           />
         )}
       </main>
@@ -164,6 +167,7 @@ function SetupForm({
   onChange,
   onConfirm,
   onImport,
+  onReset,
   warnings,
   expectedCounts,
   busy,
@@ -171,11 +175,14 @@ function SetupForm({
   proposalResult,
   loadError,
   events,
+  hasConfirmedEvents,
+  setupConfirmed,
 }: {
   draft: SetupDraft;
   onChange: (draft: SetupDraft) => void;
   onConfirm: () => void;
   onImport: () => void;
+  onReset: () => void;
   warnings: CoreWarning[];
   expectedCounts?: SetupDistribution;
   busy: boolean;
@@ -183,6 +190,8 @@ function SetupForm({
   proposalResult?: CoreResult<Proposal>;
   loadError?: string;
   events: unknown[];
+  hasConfirmedEvents: boolean;
+  setupConfirmed: boolean;
 }) {
   const canRemove = draft.players.length > 5;
   const canAdd = draft.players.length < 15;
@@ -235,12 +244,20 @@ function SetupForm({
           </div>
           <SetupSummary counts={counts} expectedCounts={expectedCounts} warnings={warnings} />
           <Status replayResult={replayResult} proposalResult={proposalResult} loadError={loadError} />
+          {hasConfirmedEvents && !setupConfirmed ? (
+            <p className="status pending">저장된 게임을 불러오는 중입니다. 새 게임을 시작하거나 JSON을 가져올 수 있습니다.</p>
+          ) : null}
           <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
             {busy ? "확정 중" : "설정 확정"}
           </button>
-          <button type="button" className="secondaryButton" onClick={onImport} disabled={busy}>
-            JSON 가져오기
-          </button>
+          <div className="setupRecoveryActions">
+            <button type="button" className="secondaryButton" onClick={onReset} disabled={false}>
+              새 게임
+            </button>
+            <button type="button" className="secondaryButton" onClick={onImport} disabled={false}>
+              JSON 가져오기
+            </button>
+          </div>
         </section>
 
         <section className="panel characterPoolPanel">
