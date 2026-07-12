@@ -13,6 +13,7 @@ import type {
 } from "./core/types";
 import { useGameStore } from "./gameStore";
 import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
+import { setupFormBusy } from "./setupReadiness";
 import {
   assignActualCharacter,
   characterKinds,
@@ -142,7 +143,10 @@ function App() {
             onImport={() => importInputRef.current?.click()}
             warnings={gameStore.shownWarnings}
             expectedCounts={gameStore.setupExpectedCounts}
-            busy={gameStore.busy || !gameStore.storageReady || !gameStore.setupHintsReady}
+            busy={setupFormBusy({
+              commandBusy: gameStore.busy,
+              storageReady: gameStore.storageReady,
+            })}
             replayResult={gameStore.replayResult}
             proposalResult={gameStore.proposalResult}
             loadError={gameStore.loadError}

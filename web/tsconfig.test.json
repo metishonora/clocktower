@@ -19,6 +19,8 @@
     "src/gameStorage.test.ts",
     "src/gameStoreSync.ts",
     "src/gameStore.test.ts",
+    "src/setupReadiness.ts",
+    "src/setupReadiness.test.ts",
     "src/reveal.tsx",
     "src/reveal.test.tsx",
     "src/node-test.d.ts"
