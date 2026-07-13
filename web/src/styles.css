@@ -1419,7 +1419,7 @@ select {
 }
 
 .deliveredInfo span,
-.targetList > span,
+.targetPickerHeader span,
 .trueInfo span {
   color: var(--clean-muted);
   font-size: 0.76rem;
@@ -1503,7 +1503,7 @@ select {
   font-size: 1.15rem;
 }
 
-.targetList {
+.targetPicker {
   display: grid;
   gap: 8px;
   border: 1px solid var(--clean-line);
@@ -1512,17 +1512,79 @@ select {
   padding: 12px;
 }
 
-.targetList div {
+.targetPickerHeader {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
-.targetList strong {
+.targetPickerHeader strong {
   border-radius: 999px;
   background: rgba(60, 163, 141, 0.16);
   color: #c9fff3;
-  padding: 8px 10px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+}
+
+.targetOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.targetOptions button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+  min-height: 58px;
+  align-items: center;
+  border: 1px solid rgba(216, 179, 79, 0.28);
+  border-radius: 6px;
+  background: rgba(5, 4, 9, 0.34);
+  color: var(--clean-text);
+  padding: 8px;
+  text-align: left;
+}
+
+.targetOptions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.targetOptions button.selected {
+  border-color: var(--clean-gold);
+  background: rgba(216, 179, 79, 0.18);
+}
+
+.targetOptions button strong {
+  display: grid;
+  width: 28px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(216, 179, 79, 0.24);
+  color: var(--clean-gold);
+  font-size: 0.84rem;
+}
+
+.targetOptions button span,
+.targetOptions button small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.targetOptions button span {
+  font-weight: 900;
+}
+
+.targetOptions button small {
+  grid-column: 2;
+  color: var(--clean-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .cleanActionButtons {
@@ -1984,6 +2046,7 @@ select {
   .cleanActionButtons,
   .deliveredInfoOptions,
   .fixedDeliveredInfo,
+  .targetOptions,
   .peekList article {
     grid-template-columns: 1fr;
   }

@@ -26,6 +26,9 @@ type PrototypeStep = {
   deliveryMode: "none" | "fixed" | "choose";
   deliveryReason?: string;
   selectedTargetIds: string[];
+  targetLabel?: string;
+  targetMin?: number;
+  targetMax?: number;
 };
 
 const variants: PrototypeVariant[] = ["A", "B", "C"];
@@ -57,6 +60,9 @@ const steps: PrototypeStep[] = [
     action: "중독 대상 선택",
     deliveryMode: "none",
     selectedTargetIds: ["p2"],
+    targetLabel: "중독 대상",
+    targetMin: 1,
+    targetMax: 1,
   },
   {
     key: "chef",
@@ -81,6 +87,9 @@ const steps: PrototypeStep[] = [
     deliveredInfo: "예",
     deliveryMode: "fixed",
     selectedTargetIds: ["p5", "p7"],
+    targetLabel: "선택 대상",
+    targetMin: 2,
+    targetMax: 2,
   },
 ];
 
@@ -91,23 +100,44 @@ export function PhaseControlPrototype() {
   const [deliveredInfoByStep, setDeliveredInfoByStep] = useState<Record<PrototypeStepKey, string>>(() =>
     Object.fromEntries(steps.map((step) => [step.key, step.deliveredInfo ?? ""])) as Record<PrototypeStepKey, string>,
   );
+  const [targetIdsByStep, setTargetIdsByStep] = useState<Record<PrototypeStepKey, string[]>>(() =>
+    Object.fromEntries(steps.map((step) => [step.key, step.selectedTargetIds])) as Record<PrototypeStepKey, string[]>,
+  );
   const step = steps.find((item) => item.key === stepKey) ?? steps[1];
   const actor = playerById(step.actorId);
   const deliveredInfo = deliveredInfoByStep[step.key] ?? "";
+  const selectedTargetIds = targetIdsByStep[step.key] ?? [];
   const prototypeState = useMemo(
     () => ({
       question: "Concise phase-control layout for rule-literate Storyteller",
       variant,
       step: step.key,
       grimoirePeekOpen: peekOpen,
+      selectedTargetIds,
       deliveredInfo,
       deliveryMode: step.deliveryMode,
       defaultScreenIncludes: ["phase action", "actor", "true information when Storyteller can choose", "delivered information"],
     }),
-    [deliveredInfo, peekOpen, step.deliveryMode, step.key, variant],
+    [deliveredInfo, peekOpen, selectedTargetIds, step.deliveryMode, step.key, variant],
   );
   function updateDeliveredInfo(value: string) {
     setDeliveredInfoByStep((current) => ({ ...current, [step.key]: value }));
+  }
+  function toggleTarget(playerId: string) {
+    setTargetIdsByStep((current) => {
+      const currentTargets = current[step.key] ?? [];
+      const targetMax = step.targetMax ?? 0;
+      if (currentTargets.includes(playerId)) {
+        return { ...current, [step.key]: currentTargets.filter((id) => id !== playerId) };
+      }
+      if (targetMax <= 1) {
+        return { ...current, [step.key]: [playerId] };
+      }
+      if (currentTargets.length >= targetMax) {
+        return current;
+      }
+      return { ...current, [step.key]: [...currentTargets, playerId] };
+    });
   }
 
   return (
@@ -119,7 +149,9 @@ export function PhaseControlPrototype() {
         <VariantMapFirst
           step={step}
           actor={actor}
+          selectedTargetIds={selectedTargetIds}
           deliveredInfo={deliveredInfo}
+          onToggleTarget={toggleTarget}
           onDeliveredInfoChange={updateDeliveredInfo}
           onPeekOpen={() => setPeekOpen(true)}
         />
@@ -128,7 +160,9 @@ export function PhaseControlPrototype() {
         <VariantActionFirst
           step={step}
           actor={actor}
+          selectedTargetIds={selectedTargetIds}
           deliveredInfo={deliveredInfo}
+          onToggleTarget={toggleTarget}
           onDeliveredInfoChange={updateDeliveredInfo}
           onPeekOpen={() => setPeekOpen(true)}
         />
@@ -137,13 +171,15 @@ export function PhaseControlPrototype() {
         <VariantOrderFirst
           step={step}
           actor={actor}
+          selectedTargetIds={selectedTargetIds}
           deliveredInfo={deliveredInfo}
+          onToggleTarget={toggleTarget}
           onDeliveredInfoChange={updateDeliveredInfo}
           onPeekOpen={() => setPeekOpen(true)}
         />
       ) : null}
 
-      {peekOpen ? <GrimoirePeek step={step} onClose={() => setPeekOpen(false)} /> : null}
+      {peekOpen ? <GrimoirePeek step={step} selectedTargetIds={selectedTargetIds} onClose={() => setPeekOpen(false)} /> : null}
       <PrototypeState state={prototypeState} />
       <PrototypeSwitcher current={variant} onChange={setVariant} />
     </main>
@@ -153,23 +189,29 @@ export function PhaseControlPrototype() {
 function VariantMapFirst({
   step,
   actor,
+  selectedTargetIds,
   deliveredInfo,
+  onToggleTarget,
   onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  selectedTargetIds: string[];
   deliveredInfo: string;
+  onToggleTarget: (playerId: string) => void;
   onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
   return (
     <section className="cleanPhaseLayout mapFirst">
-      <CompactGrimoire step={step} />
+      <CompactGrimoire step={step} selectedTargetIds={selectedTargetIds} />
       <ActionPanel
         step={step}
         actor={actor}
+        selectedTargetIds={selectedTargetIds}
         deliveredInfo={deliveredInfo}
+        onToggleTarget={onToggleTarget}
         onDeliveredInfoChange={onDeliveredInfoChange}
         onPeekOpen={onPeekOpen}
       />
@@ -180,13 +222,17 @@ function VariantMapFirst({
 function VariantActionFirst({
   step,
   actor,
+  selectedTargetIds,
   deliveredInfo,
+  onToggleTarget,
   onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  selectedTargetIds: string[];
   deliveredInfo: string;
+  onToggleTarget: (playerId: string) => void;
   onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
@@ -195,14 +241,16 @@ function VariantActionFirst({
       <ActionPanel
         step={step}
         actor={actor}
+        selectedTargetIds={selectedTargetIds}
         deliveredInfo={deliveredInfo}
+        onToggleTarget={onToggleTarget}
         onDeliveredInfoChange={onDeliveredInfoChange}
         onPeekOpen={onPeekOpen}
         dominant
       />
       <aside className="quietContext">
         <ProgressStrip current={step.key} />
-        <CompactGrimoire step={step} small />
+        <CompactGrimoire step={step} selectedTargetIds={selectedTargetIds} small />
       </aside>
     </section>
   );
@@ -211,24 +259,30 @@ function VariantActionFirst({
 function VariantOrderFirst({
   step,
   actor,
+  selectedTargetIds,
   deliveredInfo,
+  onToggleTarget,
   onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  selectedTargetIds: string[];
   deliveredInfo: string;
+  onToggleTarget: (playerId: string) => void;
   onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
   return (
     <section className="cleanPhaseLayout orderFirst">
       <ProgressRail current={step.key} />
-      <CompactGrimoire step={step} />
+      <CompactGrimoire step={step} selectedTargetIds={selectedTargetIds} />
       <ActionPanel
         step={step}
         actor={actor}
+        selectedTargetIds={selectedTargetIds}
         deliveredInfo={deliveredInfo}
+        onToggleTarget={onToggleTarget}
         onDeliveredInfoChange={onDeliveredInfoChange}
         onPeekOpen={onPeekOpen}
       />
@@ -294,14 +348,18 @@ function StepTabs({
 function ActionPanel({
   step,
   actor,
+  selectedTargetIds,
   deliveredInfo,
+  onToggleTarget,
   onDeliveredInfoChange,
   onPeekOpen,
   dominant = false,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  selectedTargetIds: string[];
   deliveredInfo: string;
+  onToggleTarget: (playerId: string) => void;
   onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
   dominant?: boolean;
@@ -320,6 +378,10 @@ function ActionPanel({
 
       <ActorToken player={actor} />
 
+      {step.targetMax ? (
+        <TargetPicker step={step} selectedTargetIds={selectedTargetIds} onToggleTarget={onToggleTarget} />
+      ) : null}
+
       {step.deliveryMode === "choose" ? (
         <section className="trueInfo">
           <span>진실된 정보</span>
@@ -337,8 +399,6 @@ function ActionPanel({
       ) : null}
 
       {step.deliveryMode === "fixed" ? <FixedDeliveredInfo value={deliveredInfo} /> : null}
-
-      {step.selectedTargetIds.length > 0 ? <TargetList targetIds={step.selectedTargetIds} /> : null}
 
       <div className="cleanActionButtons">
         <button type="button" className="quietButton">
@@ -421,17 +481,41 @@ function FixedDeliveredInfo({ value }: { value: string }) {
   );
 }
 
-function TargetList({ targetIds }: { targetIds: string[] }) {
+function TargetPicker({
+  step,
+  selectedTargetIds,
+  onToggleTarget,
+}: {
+  step: PrototypeStep;
+  selectedTargetIds: string[];
+  onToggleTarget: (playerId: string) => void;
+}) {
+  const targetMax = step.targetMax ?? 0;
   return (
-    <section className="targetList">
-      <span>선택 대상</span>
-      <div>
-        {targetIds.map((id) => {
-          const target = playerById(id);
+    <section className="targetPicker">
+      <div className="targetPickerHeader">
+        <span>{step.targetLabel ?? "선택 대상"}</span>
+        <strong>
+          {selectedTargetIds.length}/{targetMax}
+        </strong>
+      </div>
+      <div className="targetOptions">
+        {players.map((playerItem) => {
+          const selected = selectedTargetIds.includes(playerItem.id);
+          const disabled = !selected && selectedTargetIds.length >= targetMax;
           return (
-            <strong key={id}>
-              {target.seat}. {target.name}
-            </strong>
+            <button
+              type="button"
+              aria-pressed={selected}
+              className={selected ? "selected" : ""}
+              disabled={disabled}
+              onClick={() => onToggleTarget(playerItem.id)}
+              key={playerItem.id}
+            >
+              <strong>{playerItem.seat}</strong>
+              <span>{playerItem.name}</span>
+              <small>{characterLabel(playerItem.actualCharacter)}</small>
+            </button>
           );
         })}
       </div>
@@ -439,14 +523,22 @@ function TargetList({ targetIds }: { targetIds: string[] }) {
   );
 }
 
-function CompactGrimoire({ step, small = false }: { step: PrototypeStep; small?: boolean }) {
+function CompactGrimoire({
+  step,
+  selectedTargetIds,
+  small = false,
+}: {
+  step: PrototypeStep;
+  selectedTargetIds: string[];
+  small?: boolean;
+}) {
   return (
     <section className={`cleanGrimoire ${small ? "small" : ""}`} aria-label="compact grimoire">
       <div className="grimoireTable">
         <strong>Grimoire</strong>
         {players.map((playerItem, index) => {
           const angle = -90 + (index * 360) / players.length;
-          const selected = step.actorId === playerItem.id || step.selectedTargetIds.includes(playerItem.id);
+          const selected = step.actorId === playerItem.id || selectedTargetIds.includes(playerItem.id);
           const kind = characterKind(playerItem.actualCharacter);
           return (
             <button
@@ -503,7 +595,15 @@ function ProgressRail({ current }: { current: PrototypeStepKey }) {
   );
 }
 
-function GrimoirePeek({ step, onClose }: { step: PrototypeStep; onClose: () => void }) {
+function GrimoirePeek({
+  step,
+  selectedTargetIds,
+  onClose,
+}: {
+  step: PrototypeStep;
+  selectedTargetIds: string[];
+  onClose: () => void;
+}) {
   return (
     <div className="peekBackdrop" role="dialog" aria-modal="true" aria-label="Grimoire Peek">
       <section className="grimoirePeek">
@@ -517,7 +617,7 @@ function GrimoirePeek({ step, onClose }: { step: PrototypeStep; onClose: () => v
           </button>
         </header>
         <div className="peekBody">
-          <CompactGrimoire step={step} />
+          <CompactGrimoire step={step} selectedTargetIds={selectedTargetIds} />
           <section className="peekList">
             {players.map((playerItem) => {
               const kind = characterKind(playerItem.actualCharacter);
