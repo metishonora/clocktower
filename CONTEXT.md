@@ -46,6 +46,12 @@ _Avoid_: User
 The Storyteller-facing complete game state, including secret character and token information.
 _Avoid_: Board, table
 
+**Grimoire Peek**:
+A temporary read-only overlay for quickly checking the full Grimoire state during phase control.
+It can include seat order, alive/dead state, Actual Character, important tokens, and current phase progress.
+It should not include long rules text, editing forms, or the full event log.
+_Avoid_: Phase Overview, rules help
+
 **Actual Character**:
 The character a player truly has in the game state.
 _Avoid_: Real character, assigned character

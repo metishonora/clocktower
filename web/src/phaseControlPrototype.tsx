@@ -1,0 +1,558 @@
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import type { Player } from "./core/types";
+import { characterKind, characterLabel, kindLabels } from "./setupDraft";
+
+// PROTOTYPE issue #25: three clean phase-control layouts, switchable with
+// ?prototype=phase-control&variant=, for deciding concise Storyteller UI.
+
+type PrototypeVariant = "A" | "B" | "C";
+type PrototypeStepKey = "chef" | "fortuneTeller" | "poisoner";
+
+type PrototypePlayer = Player & {
+  tokenLabel?: string;
+  statusTokens: string[];
+  scriptTokens: string[];
+};
+
+type PrototypeStep = {
+  key: PrototypeStepKey;
+  phase: "첫 번째 밤";
+  progress: string;
+  actorId: string;
+  action: string;
+  inputLabel: string;
+  trueInfo?: string;
+  falseInfoAllowed: boolean;
+  selectedTargetIds: string[];
+};
+
+const variants: PrototypeVariant[] = ["A", "B", "C"];
+
+const variantNames: Record<PrototypeVariant, string> = {
+  A: "Grimoire + right panel",
+  B: "Action first",
+  C: "Order first",
+};
+
+const players: PrototypePlayer[] = [
+  player("p1", 1, "민지", "washerwoman", "good"),
+  player("p2", 2, "준호", "chef", "good", ["중독"]),
+  player("p3", 3, "서연", "empath", "good"),
+  player("p4", 4, "도윤", "fortuneTeller", "good"),
+  player("p5", 5, "하린", "recluse", "good"),
+  player("p6", 6, "지우", "poisoner", "evil"),
+  player("p7", 7, "현우", "imp", "evil"),
+  player("p8", 8, "유나", "drunk", "good", ["술취함"], ["보여준 캐릭터: 수도사"]),
+  player("p9", 9, "태오", "mayor", "good"),
+];
+
+const steps: PrototypeStep[] = [
+  {
+    key: "poisoner",
+    phase: "첫 번째 밤",
+    progress: "1/6",
+    actorId: "p6",
+    action: "중독 대상 선택",
+    inputLabel: "플레이어 1명",
+    falseInfoAllowed: false,
+    selectedTargetIds: ["p2"],
+  },
+  {
+    key: "chef",
+    phase: "첫 번째 밤",
+    progress: "2/6",
+    actorId: "p2",
+    action: "악한 쌍 전달",
+    inputLabel: "숫자",
+    trueInfo: "1",
+    falseInfoAllowed: true,
+    selectedTargetIds: [],
+  },
+  {
+    key: "fortuneTeller",
+    phase: "첫 번째 밤",
+    progress: "3/6",
+    actorId: "p4",
+    action: "선택 2명 판정",
+    inputLabel: "플레이어 2명",
+    trueInfo: "예",
+    falseInfoAllowed: true,
+    selectedTargetIds: ["p5", "p7"],
+  },
+];
+
+export function PhaseControlPrototype() {
+  const [variant, setVariant] = useUrlVariant();
+  const [stepKey, setStepKey] = useState<PrototypeStepKey>("chef");
+  const [peekOpen, setPeekOpen] = useState(false);
+  const step = steps.find((item) => item.key === stepKey) ?? steps[1];
+  const actor = playerById(step.actorId);
+  const prototypeState = useMemo(
+    () => ({
+      question: "Concise phase-control layout for rule-literate Storyteller",
+      variant,
+      step: step.key,
+      grimoirePeekOpen: peekOpen,
+      defaultScreenIncludes: ["phase action", "actor", "status tokens", "true information when false info is possible"],
+    }),
+    [peekOpen, step.key, variant],
+  );
+
+  return (
+    <main className={`cleanPhasePrototype variant${variant}`}>
+      <PrototypeTopBar step={step} variant={variant} onVariantChange={setVariant} />
+      <StepTabs active={step.key} onChange={setStepKey} />
+
+      {variant === "A" ? (
+        <VariantMapFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+      ) : null}
+      {variant === "B" ? (
+        <VariantActionFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+      ) : null}
+      {variant === "C" ? (
+        <VariantOrderFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+      ) : null}
+
+      {peekOpen ? <GrimoirePeek step={step} onClose={() => setPeekOpen(false)} /> : null}
+      <PrototypeState state={prototypeState} />
+      <PrototypeSwitcher current={variant} onChange={setVariant} />
+    </main>
+  );
+}
+
+function VariantMapFirst({
+  step,
+  actor,
+  onPeekOpen,
+}: {
+  step: PrototypeStep;
+  actor: PrototypePlayer;
+  onPeekOpen: () => void;
+}) {
+  return (
+    <section className="cleanPhaseLayout mapFirst">
+      <CompactGrimoire step={step} />
+      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} />
+    </section>
+  );
+}
+
+function VariantActionFirst({
+  step,
+  actor,
+  onPeekOpen,
+}: {
+  step: PrototypeStep;
+  actor: PrototypePlayer;
+  onPeekOpen: () => void;
+}) {
+  return (
+    <section className="cleanPhaseLayout actionFirst">
+      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} dominant />
+      <aside className="quietContext">
+        <ProgressStrip current={step.key} />
+        <CompactGrimoire step={step} small />
+      </aside>
+    </section>
+  );
+}
+
+function VariantOrderFirst({
+  step,
+  actor,
+  onPeekOpen,
+}: {
+  step: PrototypeStep;
+  actor: PrototypePlayer;
+  onPeekOpen: () => void;
+}) {
+  return (
+    <section className="cleanPhaseLayout orderFirst">
+      <ProgressRail current={step.key} />
+      <CompactGrimoire step={step} />
+      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} />
+    </section>
+  );
+}
+
+function PrototypeTopBar({
+  step,
+  variant,
+  onVariantChange,
+}: {
+  step: PrototypeStep;
+  variant: PrototypeVariant;
+  onVariantChange: (variant: PrototypeVariant) => void;
+}) {
+  return (
+    <header className="cleanPhaseTopBar">
+      <div>
+        <p>PROTOTYPE issue #25</p>
+        <h1>{step.phase}</h1>
+      </div>
+      <div className="variantTabs" aria-label="variant">
+        {variants.map((item) => (
+          <button
+            type="button"
+            className={item === variant ? "selected" : ""}
+            onClick={() => onVariantChange(item)}
+            key={item}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </header>
+  );
+}
+
+function StepTabs({
+  active,
+  onChange,
+}: {
+  active: PrototypeStepKey;
+  onChange: (step: PrototypeStepKey) => void;
+}) {
+  return (
+    <nav className="cleanStepTabs" aria-label="sample steps">
+      {steps.map((step) => (
+        <button
+          type="button"
+          className={step.key === active ? "selected" : ""}
+          onClick={() => onChange(step.key)}
+          key={step.key}
+        >
+          <span>{step.progress}</span>
+          {characterLabel(playerById(step.actorId).actualCharacter)}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function ActionPanel({
+  step,
+  actor,
+  onPeekOpen,
+  dominant = false,
+}: {
+  step: PrototypeStep;
+  actor: PrototypePlayer;
+  onPeekOpen: () => void;
+  dominant?: boolean;
+}) {
+  const kind = characterKind(actor.actualCharacter);
+  return (
+    <section className={`cleanActionPanel ${dominant ? "dominant" : ""}`}>
+      <div className="cleanActionHeader">
+        <div>
+          <span>{step.progress}</span>
+          <h2>{step.action}</h2>
+        </div>
+        <button type="button" onClick={onPeekOpen}>
+          전체 보기
+        </button>
+      </div>
+
+      <ActorToken player={actor} />
+
+      <dl className="cleanFacts">
+        <Fact label="입력" value={step.inputLabel} />
+        {kind ? <Fact label="종류" value={kindLabels[kind]} /> : null}
+        <Fact label="상태" value={actor.statusTokens.length > 0 ? actor.statusTokens.join(" · ") : "정상"} />
+      </dl>
+
+      {step.falseInfoAllowed ? (
+        <section className="trueInfo">
+          <span>진실된 정보</span>
+          <strong>{step.trueInfo}</strong>
+        </section>
+      ) : null}
+
+      {step.selectedTargetIds.length > 0 ? <TargetList targetIds={step.selectedTargetIds} /> : null}
+
+      <div className="cleanActionButtons">
+        <button type="button" className="quietButton">
+          뒤로
+        </button>
+        <button type="button" className="primaryCleanButton">
+          다음
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ActorToken({ player }: { player: PrototypePlayer }) {
+  const kind = characterKind(player.actualCharacter);
+  return (
+    <article className={`actorToken ${kind ?? ""}`}>
+      <div className="characterDisc">
+        <strong>{player.tokenLabel ?? characterLabel(player.actualCharacter).slice(0, 1)}</strong>
+        <span>{player.seat}</span>
+      </div>
+      <div>
+        <h3>{characterLabel(player.actualCharacter)}</h3>
+        <p>
+          {player.seat}번 {player.name}
+        </p>
+        <div className="tokenBadges">
+          {kind ? <span>{kindLabels[kind]}</span> : null}
+          {player.alignment === "good" ? <span>선</span> : <span>악</span>}
+          {player.statusTokens.map((token) => (
+            <span className="warningBadge" key={token}>
+              {token}
+            </span>
+          ))}
+          {player.scriptTokens.map((token) => (
+            <span key={token}>{token}</span>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function TargetList({ targetIds }: { targetIds: string[] }) {
+  return (
+    <section className="targetList">
+      <span>선택 대상</span>
+      <div>
+        {targetIds.map((id) => {
+          const target = playerById(id);
+          return (
+            <strong key={id}>
+              {target.seat}. {target.name}
+            </strong>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function CompactGrimoire({ step, small = false }: { step: PrototypeStep; small?: boolean }) {
+  return (
+    <section className={`cleanGrimoire ${small ? "small" : ""}`} aria-label="compact grimoire">
+      <div className="grimoireTable">
+        <strong>Grimoire</strong>
+        {players.map((playerItem, index) => {
+          const angle = -90 + (index * 360) / players.length;
+          const selected = step.actorId === playerItem.id || step.selectedTargetIds.includes(playerItem.id);
+          const kind = characterKind(playerItem.actualCharacter);
+          return (
+            <button
+              type="button"
+              className={`${selected ? "selected" : ""} ${kind ?? ""}`}
+              style={{
+                "--seat-x": `${50 + 42 * Math.cos((angle * Math.PI) / 180)}%`,
+                "--seat-y": `${50 + 42 * Math.sin((angle * Math.PI) / 180)}%`,
+              } as CSSProperties}
+              key={playerItem.id}
+            >
+              <span>{playerItem.seat}</span>
+              <small>{characterLabel(playerItem.actualCharacter)}</small>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ProgressStrip({ current }: { current: PrototypeStepKey }) {
+  return (
+    <section className="progressStrip" aria-label="phase progress">
+      {steps.map((step) => (
+        <article className={step.key === current ? "current" : ""} key={step.key}>
+          <span>{step.progress}</span>
+          <strong>{characterLabel(playerById(step.actorId).actualCharacter)}</strong>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function ProgressRail({ current }: { current: PrototypeStepKey }) {
+  return (
+    <aside className="progressRail" aria-label="phase order">
+      <h2>순서</h2>
+      {steps.map((step) => (
+        <article className={step.key === current ? "current" : ""} key={step.key}>
+          <span>{step.progress}</span>
+          <strong>{characterLabel(playerById(step.actorId).actualCharacter)}</strong>
+        </article>
+      ))}
+      <article>
+        <span>4/6</span>
+        <strong>점쟁이</strong>
+      </article>
+      <article>
+        <span>5/6</span>
+        <strong>임프</strong>
+      </article>
+    </aside>
+  );
+}
+
+function GrimoirePeek({ step, onClose }: { step: PrototypeStep; onClose: () => void }) {
+  return (
+    <div className="peekBackdrop" role="dialog" aria-modal="true" aria-label="Grimoire Peek">
+      <section className="grimoirePeek">
+        <header>
+          <div>
+            <p>Grimoire Peek</p>
+            <h2>전체 상태</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        </header>
+        <div className="peekBody">
+          <CompactGrimoire step={step} />
+          <section className="peekList">
+            {players.map((playerItem) => {
+              const kind = characterKind(playerItem.actualCharacter);
+              return (
+                <article key={playerItem.id}>
+                  <strong>
+                    {playerItem.seat}. {playerItem.name}
+                  </strong>
+                  <span>{characterLabel(playerItem.actualCharacter)}</span>
+                  <small>{kind ? kindLabels[kind] : "미정"}</small>
+                  {[...playerItem.statusTokens, ...playerItem.scriptTokens].map((token) => (
+                    <em key={token}>{token}</em>
+                  ))}
+                </article>
+              );
+            })}
+          </section>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PrototypeState({ state }: { state: unknown }) {
+  return (
+    <section className="cleanPrototypeState" aria-label="prototype state">
+      <h2>Prototype state</h2>
+      <pre>{JSON.stringify(state, null, 2)}</pre>
+    </section>
+  );
+}
+
+function PrototypeSwitcher({
+  current,
+  onChange,
+}: {
+  current: PrototypeVariant;
+  onChange: (variant: PrototypeVariant) => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft") onChange(adjacentVariant(current, -1));
+      if (event.key === "ArrowRight") onChange(adjacentVariant(current, 1));
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [current, onChange]);
+
+  if (!import.meta.env.DEV) return null;
+
+  return (
+    <nav className="cleanPrototypeSwitcher" aria-label="prototype variant switcher">
+      <button type="button" onClick={() => onChange(adjacentVariant(current, -1))} aria-label="previous variant">
+        ←
+      </button>
+      <strong>
+        {current} - {variantNames[current]}
+      </strong>
+      <button type="button" onClick={() => onChange(adjacentVariant(current, 1))} aria-label="next variant">
+        →
+      </button>
+    </nav>
+  );
+}
+
+function useUrlVariant(): [PrototypeVariant, (variant: PrototypeVariant) => void] {
+  const [variant, setVariantState] = useState<PrototypeVariant>(() => parseVariant());
+
+  function setVariant(variant: PrototypeVariant) {
+    const params = new URLSearchParams(window.location.search);
+    params.set("prototype", "phase-control");
+    params.set("variant", variant);
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    setVariantState(variant);
+  }
+
+  useEffect(() => {
+    function syncFromUrl() {
+      setVariantState(parseVariant());
+    }
+
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, []);
+
+  return [variant, setVariant];
+}
+
+function parseVariant(): PrototypeVariant {
+  const value = new URLSearchParams(window.location.search).get("variant");
+  return value === "B" || value === "C" ? value : "A";
+}
+
+function adjacentVariant(current: PrototypeVariant, offset: 1 | -1): PrototypeVariant {
+  const index = variants.indexOf(current);
+  return variants[(index + offset + variants.length) % variants.length];
+}
+
+function playerById(playerId: string): PrototypePlayer {
+  const found = players.find((item) => item.id === playerId);
+  if (!found) return players[0];
+  return found;
+}
+
+function player(
+  id: string,
+  seat: number,
+  name: string,
+  actualCharacter: string,
+  alignment: Player["alignment"],
+  statusTokens: string[] = [],
+  scriptTokens: string[] = [],
+): PrototypePlayer {
+  return {
+    id,
+    seat,
+    name,
+    actualCharacter,
+    shownCharacter: actualCharacter,
+    alignment,
+    alive: true,
+    ghostVoteUsed: false,
+    deathAnnounced: false,
+    notes: "",
+    tokenLabel: tokenLabel(actualCharacter),
+    statusTokens,
+    scriptTokens,
+  };
+}
+
+function tokenLabel(characterId: string): string {
+  const label = characterLabel(characterId);
+  return label === characterId ? "?" : label.slice(0, 1);
+}

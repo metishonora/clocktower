@@ -4,6 +4,7 @@
   "scripts": {
     "build:wasm": "wasm-pack build crates/wasm --target web --out-dir ../../web/src/generated/clocktower_wasm",
     "dev": "pnpm --dir web dev",
+    "prototype:phase-control": "pnpm --dir web prototype:phase-control",
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
     "test:web": "pnpm --dir web test"
