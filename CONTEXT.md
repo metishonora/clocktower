@@ -83,6 +83,7 @@ _Avoid_: Public view, player screen
 **Delivered Information**:
 The exact information the Storyteller chose to show or tell for an information step.
 It may match or differ from true information and must be available later for replay and audit.
+When the possible values are known, Delivered Information should be chosen from valid options instead of free text.
 _Avoid_: Result, true result
 
 **Execution**:

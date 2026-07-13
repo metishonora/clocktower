@@ -12,6 +12,7 @@ Shared decisions already made:
 - iPad default uses a right-side action panel. Mobile uses a bottom sheet.
 - Do not show low-value fact rows such as input kind, character kind, or status as separate rows in the action panel.
 - Delivered Information must be persisted for later Storyteller review/replay. This likely needs a separate implementation ticket because it changes command/proposal/event payload shape.
+- Delivered Information should be selected from valid options, not free-text typed, whenever the possible values are known.
 
 Variants:
 
@@ -22,7 +23,7 @@ Variants:
 Decision placeholder:
 
 - Chosen direction: A - map-first split with right-side action panel.
-- Pieces to keep: compact acting Player token, true information block, Delivered Information field, Grimoire Peek.
+- Pieces to keep: compact acting Player token, true information block, Delivered Information option buttons, Grimoire Peek.
 - Pieces to reject: input/kind/status fact rows in the action panel, verbose rules explanation.
 - Follow-up ticket needed: persist Delivered Information in Confirmed Events and replay/audit UI.
 - Issue #25 comment URL:

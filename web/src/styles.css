@@ -1451,8 +1451,13 @@ select {
   padding: 12px;
 }
 
-.deliveredInfo input {
-  min-width: 0;
+.deliveredInfoOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.deliveredInfoOptions button {
   border: 1px solid rgba(216, 179, 79, 0.4);
   border-radius: 6px;
   background: rgba(5, 4, 9, 0.42);
@@ -1460,6 +1465,12 @@ select {
   padding: 10px 12px;
   font-size: 1.4rem;
   font-weight: 900;
+}
+
+.deliveredInfoOptions button.selected {
+  border-color: var(--clean-gold);
+  background: var(--clean-gold);
+  color: #24162e;
 }
 
 .targetList {
@@ -1941,6 +1952,7 @@ select {
 
   .actorToken,
   .cleanActionButtons,
+  .deliveredInfoOptions,
   .peekList article {
     grid-template-columns: 1fr;
   }

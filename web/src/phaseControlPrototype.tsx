@@ -22,6 +22,7 @@ type PrototypeStep = {
   action: string;
   trueInfo?: string;
   deliveredInfo?: string;
+  deliveredOptions?: string[];
   falseInfoAllowed: boolean;
   selectedTargetIds: string[];
 };
@@ -64,6 +65,7 @@ const steps: PrototypeStep[] = [
     action: "악한 쌍 전달",
     trueInfo: "1",
     deliveredInfo: "1",
+    deliveredOptions: ["0", "1", "2"],
     falseInfoAllowed: true,
     selectedTargetIds: [],
   },
@@ -75,6 +77,7 @@ const steps: PrototypeStep[] = [
     action: "선택 2명 판정",
     trueInfo: "예",
     deliveredInfo: "아니오",
+    deliveredOptions: ["예", "아니오"],
     falseInfoAllowed: true,
     selectedTargetIds: ["p5", "p7"],
   },
@@ -323,14 +326,11 @@ function ActionPanel({
       ) : null}
 
       {step.falseInfoAllowed ? (
-        <label className="deliveredInfo">
-          <span>전달한 정보</span>
-          <input
-            value={deliveredInfo}
-            onChange={(event) => onDeliveredInfoChange(event.target.value)}
-            aria-label="전달한 정보"
-          />
-        </label>
+        <DeliveredInfoChoices
+          value={deliveredInfo}
+          options={step.deliveredOptions ?? []}
+          onChange={onDeliveredInfoChange}
+        />
       ) : null}
 
       {step.selectedTargetIds.length > 0 ? <TargetList targetIds={step.selectedTargetIds} /> : null}
@@ -374,6 +374,36 @@ function ActorToken({ player }: { player: PrototypePlayer }) {
         </div>
       </div>
     </article>
+  );
+}
+
+function DeliveredInfoChoices({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <section className="deliveredInfo">
+      <span>전달한 정보</span>
+      <div className="deliveredInfoOptions" role="radiogroup" aria-label="전달한 정보">
+        {options.map((option) => (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={value === option}
+            className={value === option ? "selected" : ""}
+            onClick={() => onChange(option)}
+            key={option}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
