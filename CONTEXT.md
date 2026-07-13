@@ -80,6 +80,11 @@ _Avoid_: Preview event
 A player-facing information display that must contain only the information currently being shown.
 _Avoid_: Public view, player screen
 
+**Delivered Information**:
+The exact information the Storyteller chose to show or tell for an information step.
+It may match or differ from true information and must be available later for replay and audit.
+_Avoid_: Result, true result
+
 **Execution**:
 The Storyteller-confirmed result of the day's nomination and vote process.
 _Avoid_: Death

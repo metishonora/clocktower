@@ -6,10 +6,12 @@ Run: `pnpm prototype:phase-control`, then open `http://localhost:5173/?prototype
 
 Shared decisions already made:
 
-- Default screen includes phase action, acting Player, status information, and true information when false information may be shown.
+- Default screen includes phase action, acting Player, true information when false information may be shown, and Delivered Information.
 - Rules explanation stays out of the default screen.
 - Grimoire Peek is a temporary read-only overlay for full state checks.
 - iPad default uses a right-side action panel. Mobile uses a bottom sheet.
+- Do not show low-value fact rows such as input kind, character kind, or status as separate rows in the action panel.
+- Delivered Information must be persisted for later Storyteller review/replay. This likely needs a separate implementation ticket because it changes command/proposal/event payload shape.
 
 Variants:
 
@@ -19,7 +21,8 @@ Variants:
 
 Decision placeholder:
 
-- Chosen direction:
-- Pieces to keep:
-- Pieces to reject:
+- Chosen direction: A - map-first split with right-side action panel.
+- Pieces to keep: compact acting Player token, true information block, Delivered Information field, Grimoire Peek.
+- Pieces to reject: input/kind/status fact rows in the action panel, verbose rules explanation.
+- Follow-up ticket needed: persist Delivered Information in Confirmed Events and replay/audit UI.
 - Issue #25 comment URL:

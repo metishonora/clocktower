@@ -1418,33 +1418,12 @@ select {
   color: #ffd2c8;
 }
 
-.cleanFacts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cleanFacts div {
-  min-width: 0;
-  border: 1px solid var(--clean-line);
-  border-radius: 8px;
-  background: rgba(255, 249, 238, 0.06);
-  padding: 10px;
-}
-
-.cleanFacts dt,
+.deliveredInfo span,
 .targetList > span,
 .trueInfo span {
   color: var(--clean-muted);
   font-size: 0.76rem;
   font-weight: 900;
-}
-
-.cleanFacts dd {
-  margin: 4px 0 0;
-  font-size: 1.04rem;
-  font-weight: 900;
-  overflow-wrap: anywhere;
 }
 
 .trueInfo {
@@ -1461,6 +1440,26 @@ select {
   color: var(--clean-text);
   font-size: clamp(2.4rem, 6vw, 4rem);
   line-height: 1;
+}
+
+.deliveredInfo {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--clean-line);
+  border-radius: 8px;
+  background: rgba(255, 249, 238, 0.06);
+  padding: 12px;
+}
+
+.deliveredInfo input {
+  min-width: 0;
+  border: 1px solid rgba(216, 179, 79, 0.4);
+  border-radius: 6px;
+  background: rgba(5, 4, 9, 0.42);
+  color: var(--clean-text);
+  padding: 10px 12px;
+  font-size: 1.4rem;
+  font-weight: 900;
 }
 
 .targetList {
@@ -1941,7 +1940,6 @@ select {
   }
 
   .actorToken,
-  .cleanFacts,
   .cleanActionButtons,
   .peekList article {
     grid-template-columns: 1fr;

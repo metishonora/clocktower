@@ -20,8 +20,8 @@ type PrototypeStep = {
   progress: string;
   actorId: string;
   action: string;
-  inputLabel: string;
   trueInfo?: string;
+  deliveredInfo?: string;
   falseInfoAllowed: boolean;
   selectedTargetIds: string[];
 };
@@ -53,7 +53,6 @@ const steps: PrototypeStep[] = [
     progress: "1/6",
     actorId: "p6",
     action: "중독 대상 선택",
-    inputLabel: "플레이어 1명",
     falseInfoAllowed: false,
     selectedTargetIds: ["p2"],
   },
@@ -63,8 +62,8 @@ const steps: PrototypeStep[] = [
     progress: "2/6",
     actorId: "p2",
     action: "악한 쌍 전달",
-    inputLabel: "숫자",
     trueInfo: "1",
+    deliveredInfo: "1",
     falseInfoAllowed: true,
     selectedTargetIds: [],
   },
@@ -74,8 +73,8 @@ const steps: PrototypeStep[] = [
     progress: "3/6",
     actorId: "p4",
     action: "선택 2명 판정",
-    inputLabel: "플레이어 2명",
     trueInfo: "예",
+    deliveredInfo: "아니오",
     falseInfoAllowed: true,
     selectedTargetIds: ["p5", "p7"],
   },
@@ -85,18 +84,26 @@ export function PhaseControlPrototype() {
   const [variant, setVariant] = useUrlVariant();
   const [stepKey, setStepKey] = useState<PrototypeStepKey>("chef");
   const [peekOpen, setPeekOpen] = useState(false);
+  const [deliveredInfoByStep, setDeliveredInfoByStep] = useState<Record<PrototypeStepKey, string>>(() =>
+    Object.fromEntries(steps.map((step) => [step.key, step.deliveredInfo ?? ""])) as Record<PrototypeStepKey, string>,
+  );
   const step = steps.find((item) => item.key === stepKey) ?? steps[1];
   const actor = playerById(step.actorId);
+  const deliveredInfo = deliveredInfoByStep[step.key] ?? "";
   const prototypeState = useMemo(
     () => ({
       question: "Concise phase-control layout for rule-literate Storyteller",
       variant,
       step: step.key,
       grimoirePeekOpen: peekOpen,
-      defaultScreenIncludes: ["phase action", "actor", "status tokens", "true information when false info is possible"],
+      deliveredInfo,
+      defaultScreenIncludes: ["phase action", "actor", "true information when false info is possible", "delivered information"],
     }),
-    [peekOpen, step.key, variant],
+    [deliveredInfo, peekOpen, step.key, variant],
   );
+  function updateDeliveredInfo(value: string) {
+    setDeliveredInfoByStep((current) => ({ ...current, [step.key]: value }));
+  }
 
   return (
     <main className={`cleanPhasePrototype variant${variant}`}>
@@ -104,13 +111,31 @@ export function PhaseControlPrototype() {
       <StepTabs active={step.key} onChange={setStepKey} />
 
       {variant === "A" ? (
-        <VariantMapFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+        <VariantMapFirst
+          step={step}
+          actor={actor}
+          deliveredInfo={deliveredInfo}
+          onDeliveredInfoChange={updateDeliveredInfo}
+          onPeekOpen={() => setPeekOpen(true)}
+        />
       ) : null}
       {variant === "B" ? (
-        <VariantActionFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+        <VariantActionFirst
+          step={step}
+          actor={actor}
+          deliveredInfo={deliveredInfo}
+          onDeliveredInfoChange={updateDeliveredInfo}
+          onPeekOpen={() => setPeekOpen(true)}
+        />
       ) : null}
       {variant === "C" ? (
-        <VariantOrderFirst step={step} actor={actor} onPeekOpen={() => setPeekOpen(true)} />
+        <VariantOrderFirst
+          step={step}
+          actor={actor}
+          deliveredInfo={deliveredInfo}
+          onDeliveredInfoChange={updateDeliveredInfo}
+          onPeekOpen={() => setPeekOpen(true)}
+        />
       ) : null}
 
       {peekOpen ? <GrimoirePeek step={step} onClose={() => setPeekOpen(false)} /> : null}
@@ -123,16 +148,26 @@ export function PhaseControlPrototype() {
 function VariantMapFirst({
   step,
   actor,
+  deliveredInfo,
+  onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  deliveredInfo: string;
+  onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
   return (
     <section className="cleanPhaseLayout mapFirst">
       <CompactGrimoire step={step} />
-      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} />
+      <ActionPanel
+        step={step}
+        actor={actor}
+        deliveredInfo={deliveredInfo}
+        onDeliveredInfoChange={onDeliveredInfoChange}
+        onPeekOpen={onPeekOpen}
+      />
     </section>
   );
 }
@@ -140,15 +175,26 @@ function VariantMapFirst({
 function VariantActionFirst({
   step,
   actor,
+  deliveredInfo,
+  onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  deliveredInfo: string;
+  onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
   return (
     <section className="cleanPhaseLayout actionFirst">
-      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} dominant />
+      <ActionPanel
+        step={step}
+        actor={actor}
+        deliveredInfo={deliveredInfo}
+        onDeliveredInfoChange={onDeliveredInfoChange}
+        onPeekOpen={onPeekOpen}
+        dominant
+      />
       <aside className="quietContext">
         <ProgressStrip current={step.key} />
         <CompactGrimoire step={step} small />
@@ -160,17 +206,27 @@ function VariantActionFirst({
 function VariantOrderFirst({
   step,
   actor,
+  deliveredInfo,
+  onDeliveredInfoChange,
   onPeekOpen,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  deliveredInfo: string;
+  onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
 }) {
   return (
     <section className="cleanPhaseLayout orderFirst">
       <ProgressRail current={step.key} />
       <CompactGrimoire step={step} />
-      <ActionPanel step={step} actor={actor} onPeekOpen={onPeekOpen} />
+      <ActionPanel
+        step={step}
+        actor={actor}
+        deliveredInfo={deliveredInfo}
+        onDeliveredInfoChange={onDeliveredInfoChange}
+        onPeekOpen={onPeekOpen}
+      />
     </section>
   );
 }
@@ -233,15 +289,18 @@ function StepTabs({
 function ActionPanel({
   step,
   actor,
+  deliveredInfo,
+  onDeliveredInfoChange,
   onPeekOpen,
   dominant = false,
 }: {
   step: PrototypeStep;
   actor: PrototypePlayer;
+  deliveredInfo: string;
+  onDeliveredInfoChange: (value: string) => void;
   onPeekOpen: () => void;
   dominant?: boolean;
 }) {
-  const kind = characterKind(actor.actualCharacter);
   return (
     <section className={`cleanActionPanel ${dominant ? "dominant" : ""}`}>
       <div className="cleanActionHeader">
@@ -256,17 +315,22 @@ function ActionPanel({
 
       <ActorToken player={actor} />
 
-      <dl className="cleanFacts">
-        <Fact label="입력" value={step.inputLabel} />
-        {kind ? <Fact label="종류" value={kindLabels[kind]} /> : null}
-        <Fact label="상태" value={actor.statusTokens.length > 0 ? actor.statusTokens.join(" · ") : "정상"} />
-      </dl>
-
       {step.falseInfoAllowed ? (
         <section className="trueInfo">
           <span>진실된 정보</span>
           <strong>{step.trueInfo}</strong>
         </section>
+      ) : null}
+
+      {step.falseInfoAllowed ? (
+        <label className="deliveredInfo">
+          <span>전달한 정보</span>
+          <input
+            value={deliveredInfo}
+            onChange={(event) => onDeliveredInfoChange(event.target.value)}
+            aria-label="전달한 정보"
+          />
+        </label>
       ) : null}
 
       {step.selectedTargetIds.length > 0 ? <TargetList targetIds={step.selectedTargetIds} /> : null}
@@ -310,15 +374,6 @@ function ActorToken({ player }: { player: PrototypePlayer }) {
         </div>
       </div>
     </article>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
   );
 }
 
