@@ -23,6 +23,8 @@
     "src/setupReadiness.test.ts",
     "src/reveal.tsx",
     "src/reveal.test.tsx",
+    "src/voting.ts",
+    "src/voting.test.ts",
     "src/node-test.d.ts"
   ]
 }

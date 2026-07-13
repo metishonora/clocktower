@@ -25,6 +25,7 @@ export type ReplayState = {
   players: Player[];
   currentStep: PhaseStep | null;
   phaseOverview: PhaseOverviewItem[];
+  dayState?: DayState;
   warnings: CoreWarning[];
 };
 
@@ -93,6 +94,31 @@ export type PhaseStep = {
 
 export type PhaseOverviewItem = PhaseStep & {
   status: "waiting" | "current" | "complete" | "skipped" | "needsFollowUp";
+};
+
+export type DayState = {
+  nominations: NominationRecord[];
+  executionCandidate?: ExecutionCandidate;
+  confirmedExecution?: ConfirmedExecution;
+};
+
+export type NominationRecord = {
+  stepId: string;
+  nominatorId: string;
+  nomineeId: string;
+  voterIds: string[];
+  voteCount: number;
+  ghostVoteSpentPlayerIds: string[];
+  updatesExecutionCandidate: boolean;
+};
+
+export type ExecutionCandidate = {
+  nomineeId: string;
+  voteCount: number;
+};
+
+export type ConfirmedExecution = {
+  playerId?: string;
 };
 
 export type RequiredInput = {

@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type {
   CoreResult,
   CoreWarning,
+  DayState,
   PhaseOverviewItem,
   PhaseStep,
   Player,
@@ -42,15 +43,42 @@ import {
   updateDraftPlayer,
   updateSeatPosition,
 } from "./setupDraft";
+import {
+  ghostVotesSpentByDraft,
+  pendingExecutionCandidateMessage,
+  seatPlayerLabel,
+  validVotePlayersByDraft,
+  voteStatusForPlayer,
+} from "./voting";
 import "./styles.css";
+
+type NominationDraft = {
+  nominatorId: string;
+  nomineeId: string;
+  voterIds: string[];
+};
+
+function emptyNominationDraft(): NominationDraft {
+  return {
+    nominatorId: "",
+    nomineeId: "",
+    voterIds: [],
+  };
+}
 
 function App() {
   const gameStore = useGameStore();
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const [nominationDraft, setNominationDraft] = useState<NominationDraft>(() => emptyNominationDraft());
   const latestRevealPayload = proposalRevealPayload(
     gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined,
   );
+  const votingStepActive = gameStore.currentStep?.requiredInput.kind === "nominationVote";
+
+  useEffect(() => {
+    setNominationDraft(emptyNominationDraft());
+  }, [gameStore.currentStep?.id]);
 
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
@@ -97,6 +125,7 @@ function App() {
                 draft={gameStore.setupDraft}
                 onDraftChange={gameStore.setSetupDraft}
                 busy={gameStore.busy}
+                nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
               />
             </section>
 
@@ -106,6 +135,9 @@ function App() {
                   currentStep={gameStore.currentStep}
                   phaseOverview={gameStore.phaseOverview}
                   players={gameStore.players}
+                  dayState={gameStore.dayState}
+                  nominationDraft={nominationDraft}
+                  onNominationDraftChange={setNominationDraft}
                   revealPayload={latestRevealPayload}
                   busy={gameStore.busy}
                   onConfirm={gameStore.confirmCurrentStep}
@@ -590,6 +622,9 @@ function CurrentStepPane({
   currentStep,
   phaseOverview,
   players,
+  dayState,
+  nominationDraft,
+  onNominationDraftChange,
   revealPayload,
   busy,
   onConfirm,
@@ -599,6 +634,9 @@ function CurrentStepPane({
   currentStep?: PhaseStep;
   phaseOverview: PhaseOverviewItem[];
   players: Player[];
+  dayState?: DayState;
+  nominationDraft: NominationDraft;
+  onNominationDraftChange: (draft: NominationDraft) => void;
   revealPayload?: RevealPayload;
   busy: boolean;
   onConfirm: (input?: unknown) => void;
@@ -620,6 +658,7 @@ function CurrentStepPane({
         selectedPlayerIds.length,
         selectedCharacterIds.length,
         selectedCharacterId,
+        nominationDraft,
         zeroOutsiders,
         numberValue,
         numberReason,
@@ -666,14 +705,24 @@ function CurrentStepPane({
                 </div>
               ) : null}
             </dl>
-            <PlayerStepInput
-              step={currentStep}
-              players={players}
-              selectedPlayerIds={selectedPlayerIds}
-              onChange={setSelectedPlayerIds}
-              busy={busy}
-              selectionDisabled={Boolean(currentStep.requiredInput.zeroAllowed && zeroOutsiders)}
-            />
+            {currentStep.requiredInput.kind === "nominationVote" ? (
+              <NominationVoteInput
+                players={players}
+                dayState={dayState}
+                draft={nominationDraft}
+                onChange={onNominationDraftChange}
+                busy={busy}
+              />
+            ) : (
+              <PlayerStepInput
+                step={currentStep}
+                players={players}
+                selectedPlayerIds={selectedPlayerIds}
+                onChange={setSelectedPlayerIds}
+                busy={busy}
+                selectionDisabled={Boolean(currentStep.requiredInput.zeroAllowed && zeroOutsiders)}
+              />
+            )}
             <StepSpecificInput
               step={currentStep}
               selectedCharacterId={selectedCharacterId}
@@ -694,33 +743,43 @@ function CurrentStepPane({
               onNumberChange={setNumberValue}
               onNumberReasonChange={setNumberReason}
             />
-            <div className="stepActions">
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={() =>
-                  onConfirm(
-                    stepInputPayload(
-                      currentStep,
-                      selectedPlayerIds,
-                      selectedCharacterId,
-                      selectedCharacterIds,
-                      zeroOutsiders,
-                      numberValue,
-                      numberReason,
-                    ),
-                  )
-                }
-                disabled={busy || !selectionValid}
-              >
-                확정
-              </button>
-              {currentStep.canSkip ? (
-                <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
-                  건너뛰기
+            {currentStep.requiredInput.kind === "executionDecision" ? (
+              <ExecutionDecisionActions
+                players={players}
+                candidate={dayState?.executionCandidate}
+                busy={busy}
+                onConfirm={onConfirm}
+              />
+            ) : (
+              <div className="stepActions">
+                <button
+                  type="button"
+                  className="primaryButton"
+                  onClick={() =>
+                    onConfirm(
+                      stepInputPayload(
+                        currentStep,
+                        selectedPlayerIds,
+                        selectedCharacterId,
+                        selectedCharacterIds,
+                        nominationDraft,
+                        zeroOutsiders,
+                        numberValue,
+                        numberReason,
+                      ),
+                    )
+                  }
+                  disabled={busy || !selectionValid}
+                >
+                  확정
                 </button>
-              ) : null}
-            </div>
+                {currentStep.canSkip ? (
+                  <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
+                    지명 종료
+                  </button>
+                ) : null}
+              </div>
+            )}
           </>
         ) : (
           <p className="emptyStep">진행할 단계 없음</p>
@@ -798,6 +857,118 @@ function PlayerStepInput({
           <strong>{player.name}</strong>
         </button>
       ))}
+    </div>
+  );
+}
+
+function NominationVoteInput({
+  players,
+  dayState,
+  draft,
+  onChange,
+  busy,
+}: {
+  players: Player[];
+  dayState?: DayState;
+  draft: NominationDraft;
+  onChange: (draft: NominationDraft) => void;
+  busy: boolean;
+}) {
+  const ghostVoteSpentPlayers = ghostVotesSpentByDraft(players, draft);
+  const validVotePlayers = validVotePlayersByDraft(players, draft);
+  const pendingCandidateMessage = pendingExecutionCandidateMessage(players, dayState, draft);
+  const candidate = dayState?.executionCandidate
+    ? players.find((player) => player.id === dayState.executionCandidate?.nomineeId)
+    : undefined;
+
+  return (
+    <div className="nominationVoteInput">
+      <div className="nominationSelectors">
+        <label>
+          지명자
+          <select
+            value={draft.nominatorId}
+            disabled={busy}
+            onChange={(event) => onChange({ ...draft, nominatorId: event.target.value })}
+          >
+            <option value="">선택</option>
+            {players.map((player) => (
+              <option value={player.id} key={player.id}>
+                {seatPlayerLabel(player)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          피지명자
+          <select
+            value={draft.nomineeId}
+            disabled={busy}
+            onChange={(event) => onChange({ ...draft, nomineeId: event.target.value })}
+          >
+            <option value="">선택</option>
+            {players.map((player) => (
+              <option value={player.id} key={player.id}>
+                {seatPlayerLabel(player)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <dl className="votePreview">
+        <div>
+          <dt>현재 표</dt>
+          <dd>{validVotePlayers.length}표</dd>
+        </div>
+        <div>
+          <dt>소비될 유령표</dt>
+          <dd>{ghostVoteSpentPlayers.length > 0 ? ghostVoteSpentPlayers.map(seatPlayerLabel).join(", ") : "없음"}</dd>
+        </div>
+        <div>
+          <dt>현재 처형 후보</dt>
+          <dd>{candidate && dayState?.executionCandidate ? `${seatPlayerLabel(candidate)} · ${dayState.executionCandidate.voteCount}표` : "없음"}</dd>
+        </div>
+        <div>
+          <dt>확정 후</dt>
+          <dd>{pendingCandidateMessage}</dd>
+        </div>
+      </dl>
+      <p className="nominationHint">투표자는 Grimoire 좌석을 눌러 선택합니다.</p>
+    </div>
+  );
+}
+
+function ExecutionDecisionActions({
+  players,
+  candidate,
+  busy,
+  onConfirm,
+}: {
+  players: Player[];
+  candidate?: DayState["executionCandidate"];
+  busy: boolean;
+  onConfirm: (input?: unknown) => void;
+}) {
+  const candidatePlayer = candidate ? players.find((player) => player.id === candidate.nomineeId) : undefined;
+
+  return (
+    <div className="executionDecision">
+      <p>
+        후보: {candidate && candidatePlayer ? `${seatPlayerLabel(candidatePlayer)} · ${candidate.voteCount}표` : "없음"}
+      </p>
+      <div className="stepActions">
+        <button
+          type="button"
+          className="primaryButton"
+          onClick={() => onConfirm({ execute: true })}
+          disabled={busy || !candidate}
+        >
+          처형 확정
+        </button>
+        <button type="button" className="secondaryButton" onClick={() => onConfirm({ execute: false })} disabled={busy}>
+          처형 없음
+        </button>
+      </div>
     </div>
   );
 }
@@ -964,7 +1135,7 @@ function stepTitle(step: PhaseStep, player?: Player): string {
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
   }
   if (step.id.endsWith(":announceDeaths")) return "사망 발표";
-  if (step.id.endsWith(":nominations")) return "지명과 투표";
+  if (step.stepType === "nomination") return `지명과 투표 ${step.id.split(":").at(-1)}`;
   if (step.id.endsWith(":execution")) return "처형 확정";
   return step.id;
 }
@@ -984,8 +1155,8 @@ function inputKindLabel(inputKind: string): string {
   if (inputKind === "setupInfo") return "설정 정보";
   if (inputKind === "characterIds") return "캐릭터";
   if (inputKind === "number") return "숫자";
-  if (inputKind === "optionalVotes") return "투표 선택";
-  if (inputKind === "optionalPlayer") return "플레이어 선택";
+  if (inputKind === "nominationVote") return "지명 투표";
+  if (inputKind === "executionDecision") return "처형 결정";
   if (inputKind === "day") return "낮";
   if (inputKind === "night") return "밤";
   return inputKind;
@@ -1009,6 +1180,7 @@ function inputTargetLabel(target: string): string {
   if (target === "characters") return "캐릭터들";
   if (target === "number") return "숫자";
   if (target === "phase") return "페이즈";
+  if (target === "execution") return "처형";
   return target;
 }
 
@@ -1025,10 +1197,17 @@ function stepInputReady(
   selectedCount: number,
   selectedCharacterCount: number,
   selectedCharacterId: string,
+  nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
   numberValue: string,
   numberReason: string,
 ): boolean {
+  if (step.requiredInput.kind === "nominationVote") {
+    return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
+  }
+  if (step.requiredInput.kind === "executionDecision") {
+    return true;
+  }
   if (step.requiredInput.kind === "setupInfo") {
     if (step.requiredInput.zeroAllowed && zeroOutsiders) return selectedCount === 0;
     return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
@@ -1049,10 +1228,17 @@ function stepInputPayload(
   selectedPlayerIds: string[],
   selectedCharacterId: string,
   selectedCharacterIds: string[],
+  nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
   numberValue: string,
   numberReason: string,
 ): unknown {
+  if (step.requiredInput.kind === "nominationVote") {
+    return nominationDraft;
+  }
+  if (step.requiredInput.kind === "executionDecision") {
+    return { execute: true };
+  }
   if (step.requiredInput.kind === "setupInfo") {
     if (step.requiredInput.zeroAllowed && zeroOutsiders) return { zeroOutsiders: true };
     return { playerIds: selectedPlayerIds, characterId: selectedCharacterId };
@@ -1127,11 +1313,16 @@ function Grimoire({
   draft,
   onDraftChange,
   busy,
+  nominationVoting,
 }: {
   players: Player[];
   draft: SetupDraft;
   onDraftChange: (draft: SetupDraft) => void;
   busy: boolean;
+  nominationVoting?: {
+    draft: NominationDraft;
+    onChange: (draft: NominationDraft) => void;
+  };
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
   const seats = players.length > 0 ? players : draft.players;
@@ -1158,17 +1349,36 @@ function Grimoire({
         </div>
         <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
         {seats.map((seat) => {
+          const confirmedPlayer = "id" in seat ? (seat as Player) : undefined;
           const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : undefined;
           const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : undefined;
           const alignment = "alignment" in seat ? seat.alignment : "good";
           const showShownCharacter =
             actualCharacter === "drunk" || Boolean(shownCharacter && actualCharacter !== shownCharacter);
           const position = draft.seatPositions[seat.seat] ?? fallbackPositions[seat.seat];
+          const playerId = confirmedPlayer?.id;
+          const votingSelected = Boolean(playerId && nominationVoting?.draft.voterIds.includes(playerId));
+          const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
+          const votingDisabled = busy || layoutEditing || !playerId || Boolean(voteStatus?.disabled);
+
+          function toggleVote() {
+            if (!playerId || !nominationVoting || votingDisabled) return;
+            const voterIds = votingSelected
+              ? nominationVoting.draft.voterIds.filter((selectedId) => selectedId !== playerId)
+              : [...nominationVoting.draft.voterIds, playerId];
+            nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
+          }
 
           return (
-            <article
-              className={`seatToken adjustableSeatToken ${alignment} ${overlapSeats.has(seat.seat) ? "overlap" : ""}`}
+            <button
+              type="button"
+              className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
+                overlapSeats.has(seat.seat) ? "overlap" : ""
+              } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
+                voteStatus?.className ?? ""
+              }`}
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
+              onClick={toggleVote}
               onPointerDown={(event) =>
                 startSeatDrag({
                   event,
@@ -1178,15 +1388,18 @@ function Grimoire({
                   onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
                 })
               }
+              aria-disabled={nominationVoting ? votingDisabled : true}
+              aria-pressed={nominationVoting ? votingSelected : undefined}
               key={seat.seat}
             >
               <span className="seatTokenNumber">{seat.seat}</span>
               <strong>{seat.name}</strong>
               <small>{characterLabel(actualCharacter)}</small>
+              {nominationVoting && voteStatus ? <small>{voteStatus.label}</small> : null}
               {showShownCharacter ? (
                 <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
               ) : null}
-            </article>
+            </button>
           );
         })}
       </div>

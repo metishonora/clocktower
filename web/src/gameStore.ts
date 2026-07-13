@@ -90,6 +90,7 @@ export function useGameStore() {
   const players = replayState?.players ?? [];
   const currentStep = replayState?.currentStep ?? undefined;
   const phaseOverview = replayState?.phaseOverview ?? [];
+  const dayState = replayState?.dayState;
   const setupConfirmed = players.length > 0;
   const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
   const setupDistributionRequest = useMemo(
@@ -321,6 +322,7 @@ export function useGameStore() {
     players,
     currentStep,
     phaseOverview,
+    dayState,
     setupConfirmed,
     setupExpectedCounts,
     setupHintsReady,

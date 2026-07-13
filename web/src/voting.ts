@@ -1,0 +1,66 @@
+import type { DayState, Player } from "./core/types.js";
+
+export type VoteDraft = {
+  nomineeId: string;
+  voterIds: string[];
+};
+
+export function seatPlayerLabel(player: Player): string {
+  return `${player.seat}번 ${player.name}`;
+}
+
+export function ghostVotesSpentByDraft(players: Player[], draft: VoteDraft): Player[] {
+  return validVotePlayersByDraft(players, draft).filter((player) => !player.alive && !player.ghostVoteUsed);
+}
+
+export function validVotePlayersByDraft(players: Player[], draft: VoteDraft): Player[] {
+  return draft.voterIds
+    .map((playerId) => players.find((player) => player.id === playerId))
+    .filter((player): player is Player => Boolean(player && (player.alive || !player.ghostVoteUsed)));
+}
+
+export function pendingExecutionCandidateMessage(
+  players: Player[],
+  dayState: DayState | undefined,
+  draft: VoteDraft,
+): string {
+  const nominee = players.find((player) => player.id === draft.nomineeId);
+  if (!nominee) return "피지명자 선택 필요";
+
+  const voteCount = validVotePlayersByDraft(players, draft).length;
+  const threshold = Math.floor(players.filter((player) => player.alive).length / 2) + 1;
+  if (voteCount < threshold) return `과반 미달 · 필요 ${threshold}표`;
+
+  const currentCandidate = dayState?.executionCandidate;
+  if (currentCandidate && voteCount <= currentCandidate.voteCount) {
+    return `현재 후보 유지 · 갱신하려면 ${currentCandidate.voteCount + 1}표`;
+  }
+
+  return `후보 갱신: ${seatPlayerLabel(nominee)} · ${voteCount}표`;
+}
+
+export function voteStatusForPlayer(player: Player, selected: boolean): {
+  className: string;
+  disabled: boolean;
+  label: string;
+} {
+  if (!player.alive && player.ghostVoteUsed) {
+    return {
+      className: "voteUnavailable",
+      disabled: true,
+      label: "사망 · 유령표 사용됨",
+    };
+  }
+  if (!player.alive) {
+    return {
+      className: "deadSeat",
+      disabled: false,
+      label: selected ? "유령표 투표" : "사망 · 유령표 있음",
+    };
+  }
+  return {
+    className: "",
+    disabled: false,
+    label: selected ? "투표" : "미투표",
+  };
+}

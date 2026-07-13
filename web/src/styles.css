@@ -355,6 +355,18 @@ select {
   appearance: none;
 }
 
+.confirmedSeatToken {
+  appearance: none;
+}
+
+.confirmedSeatToken[aria-disabled="true"] {
+  cursor: default;
+}
+
+.confirmedSeatToken.votingEnabled[aria-disabled="false"] {
+  cursor: pointer;
+}
+
 .seatToken.selected {
   border-color: var(--primary);
   box-shadow:
@@ -407,6 +419,20 @@ select {
 
 .seatToken.selected .seatTokenNumber {
   background: var(--primary);
+}
+
+.seatToken.voteSelected {
+  background: rgba(31, 111, 91, 0.1);
+}
+
+.seatToken.deadSeat {
+  border-style: dashed;
+  background: #fff8e8;
+}
+
+.seatToken.voteUnavailable {
+  background: #eee8dc;
+  color: var(--muted);
 }
 
 .seatToken strong,
@@ -939,6 +965,50 @@ select {
   gap: 10px;
 }
 
+.nominationVoteInput,
+.executionDecision {
+  display: grid;
+  gap: 10px;
+}
+
+.nominationSelectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.votePreview {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.votePreview div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.votePreview dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.votePreview dd,
+.executionDecision p,
+.nominationHint {
+  min-width: 0;
+  margin: 0;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.nominationHint {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .inlineToggle {
   display: flex;
   align-items: center;
@@ -1179,8 +1249,432 @@ select {
   font-weight: 900;
 }
 
+.phasePrototypeShell {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 92px;
+}
+
+.phasePrototypeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.phasePrototypeMode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.phasePrototypeMode button,
+.prototypeSwitcher button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.phasePrototypeMode button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.12);
+  color: var(--primary-dark);
+}
+
+.phasePrototypeVariant {
+  min-width: 0;
+}
+
+.phasePrototypeVariantA {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.55fr) minmax(420px, 1fr) minmax(280px, 0.55fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.phasePrototypeVariantB {
+  display: grid;
+  grid-template-columns: minmax(440px, 0.9fr) minmax(420px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.phasePrototypeVariantB .phasePrototypeWording {
+  grid-column: 1 / -1;
+}
+
+.phasePrototypeVariantC {
+  display: grid;
+  gap: 14px;
+}
+
+.phasePrototypeScriptLayout {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(320px, 0.5fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.phasePrototypeAction,
+.phasePrototypeOrder,
+.phasePrototypeWording,
+.phasePrototypeBoard,
+.phasePrototypeState {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.phasePrototypeAction {
+  display: grid;
+  gap: 14px;
+}
+
+.phasePrototypeAction.dominant {
+  border-top: 6px solid var(--accent);
+}
+
+.phasePrototypeAction.scripted .phasePrototypeInstruction {
+  font-size: 1.18rem;
+}
+
+.phasePrototypeInstruction {
+  margin: 0;
+  border-left: 5px solid var(--accent);
+  border-radius: 6px;
+  background: #fff5e4;
+  color: var(--ink);
+  padding: 14px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.42;
+}
+
+.phasePrototypeAction dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.phasePrototypeAction dl div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.phasePrototypeAction dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.phasePrototypeAction dd {
+  min-width: 0;
+  margin: 0;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.phasePrototypeOrder {
+  display: grid;
+  gap: 12px;
+}
+
+.phasePrototypeOrder ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phasePrototypeOrder li,
+.phasePrototypeBoard article,
+.phasePrototypeStrip article {
+  border: 1px solid var(--line);
+  border-left: 5px solid #c9bda9;
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.phasePrototypeOrder li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+}
+
+.phasePrototypeOrder li span,
+.phasePrototypeBoard article strong,
+.phasePrototypeStrip article strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.phasePrototypeOrder li strong,
+.phasePrototypeBoard small,
+.phasePrototypeStrip small {
+  border-radius: 999px;
+  background: #ece5d8;
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.phasePrototypeOrder .current,
+.phasePrototypeBoard .current,
+.phasePrototypeStrip .current {
+  border-left-color: var(--accent);
+  background: rgba(167, 71, 46, 0.08);
+}
+
+.phasePrototypeOrder .complete,
+.phasePrototypeBoard .complete,
+.phasePrototypeStrip .complete {
+  border-left-color: var(--ok);
+}
+
+.phasePrototypePlayers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.phasePrototypePlayers button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+  padding: 8px;
+  text-align: left;
+}
+
+.phasePrototypePlayers button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.1);
+}
+
+.phasePrototypePlayers span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fffdf8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.phasePrototypePlayers strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.phasePrototypeNumber {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 6px 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 12px;
+}
+
+.phasePrototypeNumber span,
+.phasePrototypeNumber small {
+  min-width: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.phasePrototypeNumber strong {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  grid-row: 1 / 3;
+  grid-column: 2;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fffdf8;
+  font-size: 2rem;
+}
+
+.phasePrototypeBoard {
+  display: grid;
+  gap: 12px;
+}
+
+.phasePrototypeBoard > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.phasePrototypeBoard section {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 10px;
+}
+
+.phasePrototypeBoard section p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.phasePrototypeBoard article {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.phasePrototypeBoard small {
+  justify-self: start;
+}
+
+.phasePrototypeStrip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.phasePrototypeStrip article {
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  padding: 10px;
+}
+
+.phasePrototypeStrip span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fffdf8;
+  font-weight: 900;
+}
+
+.phasePrototypeStrip small {
+  justify-self: start;
+}
+
+.phasePrototypeWording {
+  display: grid;
+  gap: 12px;
+}
+
+.phasePrototypeWording.compact {
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.phasePrototypeWording article {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--townsfolk);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 12px;
+}
+
+.phasePrototypeWording article + article {
+  border-left-color: var(--outsider);
+}
+
+.phasePrototypeWording p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.phasePrototypeState {
+  background: #20231f;
+  color: #fffdf8;
+}
+
+.phasePrototypeState h2 {
+  font-size: 0.9rem;
+}
+
+.phasePrototypeState pre {
+  max-height: 260px;
+  margin: 10px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.prototypeSwitcher {
+  position: fixed;
+  right: 50%;
+  bottom: 18px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 44px minmax(180px, auto) 44px;
+  gap: 8px;
+  align-items: center;
+  transform: translateX(50%);
+  border: 1px solid rgba(255, 253, 248, 0.24);
+  border-radius: 999px;
+  background: #20231f;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+  color: #fffdf8;
+  padding: 8px;
+}
+
+.prototypeSwitcher button {
+  width: 44px;
+  height: 44px;
+  border-color: transparent;
+  border-radius: 50%;
+  background: #fffdf8;
+}
+
+.prototypeSwitcher strong {
+  padding: 0 10px;
+  text-align: center;
+}
+
 @media (max-width: 1180px) {
   .confirmedShell {
+    grid-template-columns: 1fr;
+  }
+
+  .phasePrototypeVariantA,
+  .phasePrototypeVariantB,
+  .phasePrototypeScriptLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .phasePrototypeWording.compact {
     grid-template-columns: 1fr;
   }
 }
@@ -1205,6 +1699,15 @@ select {
 
   .draftSeatMap.compactSeats {
     --map-radius: min(34vw, 246px);
+  }
+
+  .phasePrototypeHeader {
+    display: grid;
+  }
+
+  .phasePrototypePlayers,
+  .phasePrototypeBoard > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1285,6 +1788,17 @@ select {
   .setupCounts,
   .characterCards {
     grid-template-columns: 1fr;
+  }
+
+  .phasePrototypeMode,
+  .phasePrototypePlayers,
+  .phasePrototypeBoard > div {
+    grid-template-columns: 1fr;
+  }
+
+  .prototypeSwitcher {
+    width: calc(100vw - 20px);
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
 }
 
