@@ -23,7 +23,8 @@ type PrototypeStep = {
   trueInfo?: string;
   deliveredInfo?: string;
   deliveredOptions?: string[];
-  falseInfoAllowed: boolean;
+  deliveryMode: "none" | "fixed" | "choose";
+  deliveryReason?: string;
   selectedTargetIds: string[];
 };
 
@@ -54,7 +55,7 @@ const steps: PrototypeStep[] = [
     progress: "1/6",
     actorId: "p6",
     action: "중독 대상 선택",
-    falseInfoAllowed: false,
+    deliveryMode: "none",
     selectedTargetIds: ["p2"],
   },
   {
@@ -66,7 +67,8 @@ const steps: PrototypeStep[] = [
     trueInfo: "1",
     deliveredInfo: "1",
     deliveredOptions: ["0", "1", "2"],
-    falseInfoAllowed: true,
+    deliveryMode: "choose",
+    deliveryReason: "중독",
     selectedTargetIds: [],
   },
   {
@@ -76,9 +78,8 @@ const steps: PrototypeStep[] = [
     actorId: "p4",
     action: "선택 2명 판정",
     trueInfo: "예",
-    deliveredInfo: "아니오",
-    deliveredOptions: ["예", "아니오"],
-    falseInfoAllowed: true,
+    deliveredInfo: "예",
+    deliveryMode: "fixed",
     selectedTargetIds: ["p5", "p7"],
   },
 ];
@@ -100,9 +101,10 @@ export function PhaseControlPrototype() {
       step: step.key,
       grimoirePeekOpen: peekOpen,
       deliveredInfo,
-      defaultScreenIncludes: ["phase action", "actor", "true information when false info is possible", "delivered information"],
+      deliveryMode: step.deliveryMode,
+      defaultScreenIncludes: ["phase action", "actor", "true information when Storyteller can choose", "delivered information"],
     }),
-    [deliveredInfo, peekOpen, step.key, variant],
+    [deliveredInfo, peekOpen, step.deliveryMode, step.key, variant],
   );
   function updateDeliveredInfo(value: string) {
     setDeliveredInfoByStep((current) => ({ ...current, [step.key]: value }));
@@ -318,20 +320,23 @@ function ActionPanel({
 
       <ActorToken player={actor} />
 
-      {step.falseInfoAllowed ? (
+      {step.deliveryMode === "choose" ? (
         <section className="trueInfo">
           <span>진실된 정보</span>
           <strong>{step.trueInfo}</strong>
+          {step.deliveryReason ? <small>{step.deliveryReason} 때문에 다르게 전달 가능</small> : null}
         </section>
       ) : null}
 
-      {step.falseInfoAllowed ? (
+      {step.deliveryMode === "choose" ? (
         <DeliveredInfoChoices
           value={deliveredInfo}
           options={step.deliveredOptions ?? []}
           onChange={onDeliveredInfoChange}
         />
       ) : null}
+
+      {step.deliveryMode === "fixed" ? <FixedDeliveredInfo value={deliveredInfo} /> : null}
 
       {step.selectedTargetIds.length > 0 ? <TargetList targetIds={step.selectedTargetIds} /> : null}
 
@@ -403,6 +408,15 @@ function DeliveredInfoChoices({
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function FixedDeliveredInfo({ value }: { value: string }) {
+  return (
+    <section className="fixedDeliveredInfo">
+      <span>전달 정보</span>
+      <strong>{value}</strong>
     </section>
   );
 }

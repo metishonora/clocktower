@@ -12,7 +12,7 @@ Shared decisions already made:
 - iPad default uses a right-side action panel. Mobile uses a bottom sheet.
 - Do not show low-value fact rows such as input kind, character kind, or status as separate rows in the action panel.
 - Delivered Information must be persisted for later Storyteller review/replay. This likely needs a separate implementation ticket because it changes command/proposal/event payload shape.
-- Delivered Information should be selected from valid options, not free-text typed, whenever the possible values are known.
+- Delivered Information choices appear only when the Storyteller is allowed to choose a displayed value, such as drunk/poisoned or a registration judgment. Otherwise the delivered value is fixed and no choice buttons are shown.
 
 Variants:
 

@@ -83,7 +83,8 @@ _Avoid_: Public view, player screen
 **Delivered Information**:
 The exact information the Storyteller chose to show or tell for an information step.
 It may match or differ from true information and must be available later for replay and audit.
-When the possible values are known, Delivered Information should be chosen from valid options instead of free text.
+When the Storyteller is allowed to choose it, Delivered Information should be chosen from valid options instead of free text.
+If no drunk, poisoned, Registration Judgment, or other discretion applies, Delivered Information is fixed and should not be presented as a choice.
 _Avoid_: Result, true result
 
 **Execution**:

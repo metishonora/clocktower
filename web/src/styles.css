@@ -1442,6 +1442,11 @@ select {
   line-height: 1;
 }
 
+.trueInfo small {
+  color: var(--clean-muted);
+  font-weight: 900;
+}
+
 .deliveredInfo {
   display: grid;
   gap: 8px;
@@ -1471,6 +1476,31 @@ select {
   border-color: var(--clean-gold);
   background: var(--clean-gold);
   color: #24162e;
+}
+
+.fixedDeliveredInfo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--clean-line);
+  border-radius: 8px;
+  background: rgba(255, 249, 238, 0.06);
+  padding: 12px;
+}
+
+.fixedDeliveredInfo span {
+  color: var(--clean-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.fixedDeliveredInfo strong {
+  border-radius: 999px;
+  background: rgba(60, 163, 141, 0.16);
+  color: #c9fff3;
+  padding: 8px 12px;
+  font-size: 1.15rem;
 }
 
 .targetList {
@@ -1953,6 +1983,7 @@ select {
   .actorToken,
   .cleanActionButtons,
   .deliveredInfoOptions,
+  .fixedDeliveredInfo,
   .peekList article {
     grid-template-columns: 1fr;
   }
