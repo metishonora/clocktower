@@ -22,10 +22,10 @@ Variants:
 - B - action-first split: action panel dominates, context is secondary.
 - C - order-first split: phase order rail drives the layout, Grimoire and action panel sit beside it.
 
-Decision placeholder:
+Final decision:
 
 - Chosen direction: A - map-first split with right-side action panel.
 - Pieces to keep: compact acting Player token with ability summary, target buttons before result output, true information block, Delivered Information option buttons, Grimoire Peek.
 - Pieces to reject: input/kind/status fact rows in the action panel, verbose rules explanation.
 - Follow-up ticket needed: persist Delivered Information in Confirmed Events and replay/audit UI.
-- Issue #25 comment URL:
+- Issue #25 comment URL: https://github.com/metishonora/clocktower/issues/25#issuecomment-4964093218
