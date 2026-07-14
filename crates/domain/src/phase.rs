@@ -1,0 +1,267 @@
+use crate::model::{
+    CharacterKind, InputTarget, Phase, PhaseStep, PhaseStepStatus, Player, RequiredInput,
+    RequiredInputKind, SetupInfoKind, StepInput, StepType,
+};
+use crate::{
+    characters::character_kind,
+    error::{CoreError, ErrorKind},
+};
+use std::collections::{HashMap, HashSet};
+
+pub(crate) fn step_status(
+    step_id: &str,
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> PhaseStepStatus {
+    statuses
+        .get(step_id)
+        .copied()
+        .unwrap_or(PhaseStepStatus::Waiting)
+}
+
+pub(crate) fn simple_step(
+    phase: Phase,
+    id_prefix: &str,
+    name: &'static str,
+    step_type: StepType,
+    required_input: RequiredInput,
+    can_skip: bool,
+) -> PhaseStep {
+    PhaseStep {
+        id: format!("{id_prefix}:{name}"),
+        phase,
+        step_type,
+        character: None,
+        player_id: None,
+        required_input,
+        can_skip,
+    }
+}
+
+pub(crate) fn phase_transition_step(
+    phase: Phase,
+    id_prefix: &str,
+    name: &'static str,
+    next_phase: RequiredInputKind,
+) -> PhaseStep {
+    PhaseStep {
+        id: format!("{id_prefix}:{name}"),
+        phase,
+        step_type: StepType::PhaseTransition,
+        character: None,
+        player_id: None,
+        required_input: RequiredInput {
+            kind: next_phase,
+            target: Some(InputTarget::Phase),
+            min_selections: None,
+            max_selections: None,
+            setup_info: None,
+            character_kind: None,
+            zero_allowed: false,
+            optional: false,
+        },
+        can_skip: false,
+    }
+}
+
+pub(crate) fn phase_prefix(phase: &str, cycle: usize) -> String {
+    if cycle <= 1 {
+        phase.to_string()
+    } else {
+        format!("{phase}{cycle}")
+    }
+}
+
+pub(crate) fn required_none() -> RequiredInput {
+    RequiredInput {
+        kind: RequiredInputKind::None,
+        target: None,
+        min_selections: None,
+        max_selections: None,
+        setup_info: None,
+        character_kind: None,
+        zero_allowed: false,
+        optional: false,
+    }
+}
+
+pub(crate) fn required_characters(min: u8, max: u8) -> RequiredInput {
+    RequiredInput {
+        kind: RequiredInputKind::CharacterIds,
+        target: Some(InputTarget::Characters),
+        min_selections: Some(min),
+        max_selections: Some(max),
+        setup_info: None,
+        character_kind: None,
+        zero_allowed: false,
+        optional: min == 0,
+    }
+}
+pub(crate) fn validate_required_input(
+    input: &RequiredInput,
+    typed_value: &StepInput,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    if input.kind == RequiredInputKind::SetupInfo {
+        return validate_setup_info_input(
+            input
+                .setup_info
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+            typed_value,
+            players,
+        );
+    }
+    if input.kind == RequiredInputKind::Number {
+        return validate_number_input(typed_value);
+    }
+    if matches!(
+        input.kind,
+        RequiredInputKind::NominationVote | RequiredInputKind::ExecutionDecision
+    ) {
+        return Ok(());
+    }
+    if input.target == Some(InputTarget::Characters) {
+        return validate_character_selection(input, typed_value);
+    }
+    if input.target != Some(InputTarget::Player) && input.target != Some(InputTarget::Players) {
+        return Ok(());
+    }
+
+    let player_ids = typed_value
+        .as_ref()
+        .and_then(|value| value.player_ids.as_ref())
+        .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+    let mut unique_player_ids = HashSet::new();
+    let roster_player_ids = players
+        .iter()
+        .map(|player| player.id.as_str())
+        .collect::<HashSet<_>>();
+    for player_id in player_ids {
+        let player_id = player_id.as_str();
+        if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+    }
+
+    let count = player_ids.len();
+    if let Some(min) = input.min_selections {
+        if count < usize::from(min) {
+            return Err(ErrorKind::MissingStepInput.into_error());
+        }
+    }
+    if let Some(max) = input.max_selections {
+        if count > usize::from(max) {
+            return Err(ErrorKind::TooMuchStepInput.into_error());
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_setup_info_input(
+    setup_info: SetupInfoKind,
+    value: &StepInput,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    let value = value
+        .as_ref()
+        .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+    if setup_info == SetupInfoKind::Librarian && value.zero_outsiders == Some(true) {
+        let player_count = value.player_ids.as_ref().map_or(0, Vec::len);
+        if player_count == 0 {
+            return Ok(());
+        }
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+
+    let player_ids = validate_player_ids(value.player_ids.as_deref(), players)?;
+    if player_ids.len() != 2 {
+        return Err(ErrorKind::MissingStepInput.into_error());
+    }
+
+    let Some(character_id) = value.character_id.as_deref() else {
+        return Err(ErrorKind::MissingStepInput.into_error());
+    };
+    let Some(kind) = character_kind(character_id) else {
+        return Err(ErrorKind::UnknownCharacter.into_error());
+    };
+
+    let valid_kind = match setup_info {
+        SetupInfoKind::Washerwoman => matches!(kind, CharacterKind::Townsfolk),
+        SetupInfoKind::Librarian => matches!(kind, CharacterKind::Outsider),
+        SetupInfoKind::Investigator => matches!(kind, CharacterKind::Minion),
+    };
+    if !valid_kind {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_number_input(value: &StepInput) -> Result<(), CoreError> {
+    let Some(value) = value.as_ref() else {
+        return Ok(());
+    };
+
+    let Some(number) = value.value.or(value.displayed_value) else {
+        return Err(ErrorKind::MalformedCommand.into_error());
+    };
+    if number <= 15 {
+        return Ok(());
+    }
+
+    Err(ErrorKind::InvalidStepInput.into_error())
+}
+
+pub(crate) fn validate_character_selection(
+    input: &RequiredInput,
+    value: &StepInput,
+) -> Result<(), CoreError> {
+    let character_ids = value
+        .as_ref()
+        .and_then(|value| value.character_ids.as_ref())
+        .cloned()
+        .unwrap_or_default();
+    let mut unique_character_ids = HashSet::new();
+    for character_id in &character_ids {
+        let character_id = character_id.as_str();
+        if !unique_character_ids.insert(character_id) || character_kind(character_id).is_none() {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+    }
+
+    let count = character_ids.len();
+    if let Some(min) = input.min_selections {
+        if count < usize::from(min) {
+            return Err(ErrorKind::MissingStepInput.into_error());
+        }
+    }
+    if let Some(max) = input.max_selections {
+        if count > usize::from(max) {
+            return Err(ErrorKind::TooMuchStepInput.into_error());
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_player_ids(
+    player_ids: Option<&[String]>,
+    players: &[Player],
+) -> Result<Vec<String>, CoreError> {
+    let player_ids = player_ids.ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+    let mut unique_player_ids = HashSet::new();
+    let roster_player_ids = players
+        .iter()
+        .map(|player| player.id.as_str())
+        .collect::<HashSet<_>>();
+    let mut valid_ids = Vec::new();
+    for player_id in player_ids {
+        let player_id = player_id.as_str();
+        if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        valid_ids.push(player_id.to_string());
+    }
+
+    Ok(valid_ids)
+}
