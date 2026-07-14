@@ -119,7 +119,7 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
   return {
     schemaVersion: 1,
     eventCount: playerCount > 0 ? 1 : 0,
-    phase: playerCount > 0 ? "setup" : "empty",
+    phase: "setup",
     players: basePlayers.slice(0, playerCount),
     currentStep: null,
     phaseOverview: [],

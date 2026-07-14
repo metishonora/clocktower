@@ -65,7 +65,7 @@ describe("ClocktowerApp live-play integration", () => {
       expect(savedGame.game.events).toHaveLength(2);
       expect(savedGame.game.events[1]).toEqual(canonicalEvent);
       expect(
-        savedGame.game.events.filter((savedEvent) => eventId(savedEvent) === canonicalEvent.id),
+        savedGame.game.events.filter((savedEvent) => savedEvent.id === canonicalEvent.id),
       ).toHaveLength(1);
       expect(storage.saveLatestGame).toHaveBeenCalledWith(savedGame);
     });
@@ -195,8 +195,4 @@ function latestSavedGame(savedGames: GameFile[]): GameFile {
   const savedGame = savedGames.at(-1);
   if (!savedGame) throw new Error("game was not autosaved");
   return savedGame;
-}
-
-function eventId(value: unknown): unknown {
-  return value && typeof value === "object" && "id" in value ? value.id : undefined;
 }

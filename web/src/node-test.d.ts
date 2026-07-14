@@ -7,4 +7,9 @@ declare module "node:assert/strict" {
   export function equal<T>(actual: T, expected: T, message?: string): void;
   export function deepEqual<T>(actual: T, expected: T, message?: string): void;
   export function notEqual<T>(actual: T, expected: T, message?: string): void;
+  export function throws(fn: () => unknown, expected?: RegExp): void;
+}
+
+declare module "node:fs" {
+  export function readFileSync(path: string, encoding: "utf8"): string;
 }

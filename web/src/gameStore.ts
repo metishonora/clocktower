@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter.js";
-import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types.js";
+import type {
+  CoreResult,
+  GameEvent,
+  GameFile,
+  PhaseStepInput,
+  Proposal,
+  ReplayState,
+  SetupDistribution,
+} from "./core/types.js";
 import {
   exportGameFileJson,
   importGameFileJson,
@@ -16,7 +24,7 @@ import {
   type SetupDraft,
 } from "./setupDraft.js";
 
-export function createGameFile(events: unknown[] = []): GameFile {
+export function createGameFile(events: GameEvent[] = []): GameFile {
   const now = new Date().toISOString();
 
   return {
@@ -219,7 +227,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     appendProposalEvent(result.value);
   }
 
-  async function confirmCurrentStep(input?: unknown) {
+  async function confirmCurrentStep(input?: PhaseStepInput) {
     await proposeCurrentStep("confirmStep", input);
   }
 
@@ -227,16 +235,17 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     await proposeCurrentStep("skipStep");
   }
 
-  async function proposeCurrentStep(commandType: "confirmStep" | "skipStep", input?: unknown) {
+  async function proposeCurrentStep(commandType: "confirmStep" | "skipStep", input?: PhaseStepInput) {
     if (!currentStep) return;
 
     setBusy(true);
     setLoadError(undefined);
 
-    const result = await core.propose(gameFile, {
-      type: commandType,
-      payload: { stepId: currentStep.id, input: input ?? null },
-    }).catch((error: unknown): CoreResult<Proposal> => ({
+    const command =
+      commandType === "confirmStep"
+        ? { type: "confirmStep" as const, payload: { stepId: currentStep.id, input: input ?? null } }
+        : { type: "skipStep" as const, payload: { stepId: currentStep.id, input: null as null } };
+    const result = await core.propose(gameFile, command).catch((error: unknown): CoreResult<Proposal> => ({
       ok: false,
       error: {
         code: "WASM_LOAD_FAILED",

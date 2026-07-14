@@ -1,4 +1,5 @@
 import type { GameFile } from "./core/types.js";
+import { parseGameEvent } from "./core/validation.js";
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -107,7 +108,7 @@ function validateGameFile(value: unknown): GameFile {
       name: value.game.name,
       createdAt: value.game.createdAt,
       updatedAt: value.game.updatedAt,
-      events: value.game.events,
+      events: value.game.events.map(parseGameEvent),
     },
   };
 }
