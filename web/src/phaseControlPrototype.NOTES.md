@@ -14,6 +14,7 @@ Shared decisions already made:
 - Delivered Information must be persisted for later Storyteller review/replay. This likely needs a separate implementation ticket because it changes command/proposal/event payload shape.
 - Delivered Information choices appear only when the Storyteller is allowed to choose a displayed value, such as drunk/poisoned or a registration judgment. Otherwise the delivered value is fixed and no choice buttons are shown.
 - Target selection is a Storyteller input, so it appears before computed or delivered information. Poisoner and Fortune Teller examples use target buttons above the result area.
+- The acting Player token includes the character ability summary beneath kind/alignment/status badges.
 
 Variants:
 
@@ -24,7 +25,7 @@ Variants:
 Decision placeholder:
 
 - Chosen direction: A - map-first split with right-side action panel.
-- Pieces to keep: compact acting Player token, target buttons before result output, true information block, Delivered Information option buttons, Grimoire Peek.
+- Pieces to keep: compact acting Player token with ability summary, target buttons before result output, true information block, Delivered Information option buttons, Grimoire Peek.
 - Pieces to reject: input/kind/status fact rows in the action panel, verbose rules explanation.
 - Follow-up ticket needed: persist Delivered Information in Confirmed Events and replay/audit UI.
 - Issue #25 comment URL:

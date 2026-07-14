@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Player } from "./core/types";
-import { characterKind, characterLabel, kindLabels } from "./setupDraft";
+import { characterKind, characterLabel, characters, kindLabels } from "./setupDraft";
 
 // PROTOTYPE issue #25: three clean phase-control layouts, switchable with
 // ?prototype=phase-control&variant=, for deciding concise Storyteller UI.
@@ -414,6 +414,7 @@ function ActionPanel({
 
 function ActorToken({ player }: { player: PrototypePlayer }) {
   const kind = characterKind(player.actualCharacter);
+  const abilitySummary = characters.find((character) => character.id === player.actualCharacter)?.abilitySummary;
   return (
     <article className={`actorToken ${kind ?? ""}`}>
       <div className="characterDisc">
@@ -437,6 +438,7 @@ function ActorToken({ player }: { player: PrototypePlayer }) {
             <span key={token}>{token}</span>
           ))}
         </div>
+        {abilitySummary ? <p className="actorAbilitySummary">{abilitySummary}</p> : null}
       </div>
     </article>
   );

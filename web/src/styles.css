@@ -1418,6 +1418,14 @@ select {
   color: #ffd2c8;
 }
 
+.actorAbilitySummary {
+  margin: 10px 0 0;
+  color: var(--clean-muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
 .deliveredInfo span,
 .targetPickerHeader span,
 .trueInfo span {
