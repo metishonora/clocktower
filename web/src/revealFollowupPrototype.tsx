@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { RevealPreview, RevealScreen } from "./reveal";
+import { RevealPreview } from "./reveal";
 
 // PROTOTYPE issue #32: confirm the post-confirm Reveal follow-up flow before
 // connecting it to the production game-store state.
@@ -8,7 +8,7 @@ type PrototypeView = "followup" | "reveal" | "continued";
 
 const confirmedReveal = {
   previewMessageKo: "요리사에게 악한 팀 이웃 수를 공개합니다.",
-  messageKo: "서로 이웃한 악한 팀 쌍은 1쌍입니다.",
+  messageKo: "1쌍",
 };
 
 const seats = [
@@ -27,7 +27,7 @@ export function RevealFollowupPrototype() {
   const [view, setView] = useState<PrototypeView>("followup");
 
   if (view === "reveal") {
-    return <RevealScreen payload={confirmedReveal} onClose={() => setView("followup")} />;
+    return <PrototypeRevealScreen onClose={() => setView("followup")} />;
   }
 
   return (
@@ -108,6 +108,20 @@ export function RevealFollowupPrototype() {
           <span>Reveal을 열거나 닫아도 이 로그는 바뀌지 않습니다.</span>
         </div>
       </aside>
+    </main>
+  );
+}
+
+function PrototypeRevealScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <main className="revealShell" aria-label="플레이어 공개 화면">
+      <section className="revealCard revealPrototypePlayerCard">
+        <h1 className="revealPrototypePlayerLabel">서로 이웃한 악한 팀 쌍</h1>
+        <p>{confirmedReveal.messageKo}</p>
+        <button type="button" className="revealCloseButton revealPrototypeCloseButton" onClick={onClose}>
+          확인했다면 눈을 감으세요.
+        </button>
+      </section>
     </main>
   );
 }
