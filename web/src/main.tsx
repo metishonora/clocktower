@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createRoot } from "react-dom/client";
+import type { CoreAdapter } from "./core/coreAdapter";
 import type {
   CoreResult,
   CoreWarning,
@@ -13,6 +13,7 @@ import type {
   SetupDistribution,
 } from "./core/types";
 import { useGameStore } from "./gameStore";
+import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
@@ -67,16 +68,24 @@ function emptyNominationDraft(): NominationDraft {
   };
 }
 
-function App() {
+export type ClocktowerAppProps = {
+  coreAdapter: CoreAdapter;
+  storageDriver: GameStorageDriver;
+};
+
+export function App(props: ClocktowerAppProps) {
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "phase-control") {
     return <PhaseControlPrototype />;
   }
 
-  return <ClocktowerApp />;
+  return <ClocktowerApp {...props} />;
 }
 
-function ClocktowerApp() {
-  const gameStore = useGameStore();
+export function ClocktowerApp({
+  coreAdapter,
+  storageDriver,
+}: ClocktowerAppProps) {
+  const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [nominationDraft, setNominationDraft] = useState<NominationDraft>(() => emptyNominationDraft());
@@ -1562,9 +1571,3 @@ function startSeatDrag({
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", handlePointerUp);
 }
-
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);

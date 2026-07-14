@@ -5,17 +5,23 @@
     "dev": "pnpm --workspace-root build:wasm && vite --host 127.0.0.1",
     "prototype:phase-control": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
-    "test": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js"
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js",
+    "test:integration": "tsc -p tsconfig.integration.json --noEmit && vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.0.1",
-    "@types/react-dom": "^19.0.2"
+    "@types/react-dom": "^19.0.2",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.10"
   }
 }

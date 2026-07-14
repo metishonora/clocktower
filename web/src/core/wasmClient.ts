@@ -7,6 +7,7 @@ import type {
   SetupDistribution,
   SetupDistributionRequest,
 } from "./types.js";
+import type { CoreAdapter } from "./coreAdapter.js";
 import init, {
   propose as wasmPropose,
   replay as wasmReplay,
@@ -49,3 +50,10 @@ export function setupDistributionSync(
   if (!initialized) return undefined;
   return JSON.parse(wasmSetupDistribution(JSON.stringify(request)));
 }
+
+export const wasmCoreAdapter: CoreAdapter = {
+  replay,
+  propose,
+  setupDistribution,
+  setupDistributionSync,
+};
