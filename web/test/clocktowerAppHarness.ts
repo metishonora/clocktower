@@ -1,0 +1,205 @@
+import { vi } from "vitest";
+import type { CoreAdapter } from "../src/core/coreAdapter";
+import type {
+  CoreResult,
+  GameEvent,
+  GameFile,
+  PhaseStep,
+  Player,
+  Proposal,
+  ReplayState,
+  SetupDistribution,
+} from "../src/core/types";
+import type { GameStorageDriver } from "../src/gameStorage";
+
+const setupDistribution: SetupDistribution = {
+  Townsfolk: 3,
+  Outsider: 0,
+  Minion: 1,
+  Demon: 1,
+};
+
+const emptyReplayState: ReplayState = {
+  schemaVersion: 1,
+  eventCount: 0,
+  phase: "empty",
+  players: [],
+  currentStep: null,
+  phaseOverview: [],
+  warnings: [],
+};
+
+export class MemoryGameStorageDriver implements GameStorageDriver {
+  readonly savedGames: GameFile[] = [];
+
+  constructor(private readonly loadedGame: GameFile | undefined) {}
+
+  readonly loadLatestGame = vi.fn(async (): Promise<GameFile | undefined> => {
+    return this.loadedGame ? structuredClone(this.loadedGame) : undefined;
+  });
+
+  readonly saveLatestGame = vi.fn(async (gameFile: GameFile): Promise<void> => {
+    this.savedGames.push(structuredClone(gameFile));
+  });
+}
+
+export function createCoreHarness({
+  initialReplay,
+  replayAfterProposal,
+  proposal,
+}: {
+  initialReplay: ReplayState;
+  replayAfterProposal: ReplayState;
+  proposal: Proposal;
+}) {
+  const core: CoreAdapter = {
+    replay: vi.fn(async (gameFile: GameFile): Promise<CoreResult<ReplayState>> => {
+      if (gameFile.game.events.length === 0) return success(emptyReplayState);
+      return success(gameFile.game.events.length === 1 ? initialReplay : replayAfterProposal);
+    }),
+    propose: vi.fn(async () => success(proposal)),
+    setupDistribution: vi.fn(async () => success(setupDistribution)),
+    setupDistributionSync: vi.fn(() => success(setupDistribution)),
+  };
+
+  return core;
+}
+
+export function gameFile(): GameFile {
+  return {
+    schemaVersion: 1,
+    game: {
+      id: "game-integration",
+      name: "Trouble Brewing",
+      createdAt: "2026-07-14T00:00:00.000Z",
+      updatedAt: "2026-07-14T00:00:00.000Z",
+      events: [
+        {
+          id: "event-setup",
+          type: "gameCreated",
+          phase: "setup",
+          payload: {},
+          summary: "초기 설정 확정",
+          createdAt: "2026-07-14T00:00:00.000Z",
+        },
+      ],
+    },
+  };
+}
+
+export function replayState({
+  currentStep,
+  dayState,
+  eventCount = 1,
+}: {
+  currentStep: PhaseStep;
+  dayState?: ReplayState["dayState"];
+  eventCount?: number;
+}): ReplayState {
+  return {
+    schemaVersion: 1,
+    eventCount,
+    phase: currentStep.phase,
+    players: players(),
+    currentStep,
+    phaseOverview: [{ ...currentStep, status: "current" }],
+    dayState,
+    warnings: [],
+  };
+}
+
+export function step({
+  id,
+  character,
+  playerId,
+  kind = "none",
+  target,
+  minSelections,
+  maxSelections,
+  stepType = "character",
+  phase = "firstNight",
+}: {
+  id: string;
+  character?: string;
+  playerId?: string;
+  kind?: string;
+  target?: string;
+  minSelections?: number;
+  maxSelections?: number;
+  stepType?: string;
+  phase?: string;
+}): PhaseStep {
+  return {
+    id,
+    phase,
+    stepType,
+    character,
+    playerId,
+    requiredInput: {
+      kind,
+      target,
+      minSelections,
+      maxSelections,
+      optional: false,
+    },
+    canSkip: false,
+  };
+}
+
+export function proposal(event: GameEvent, revealPayload?: Proposal["revealPayload"]): Proposal {
+  return {
+    event,
+    warnings: [],
+    followUpSteps: [],
+    preview: null,
+    revealPayload,
+  };
+}
+
+export function event(id: string, summary: string, phase = "firstNight"): GameEvent {
+  return {
+    id,
+    type: "stepConfirmed",
+    phase,
+    payload: {},
+    summary,
+    createdAt: "2026-07-14T00:01:00.000Z",
+  };
+}
+
+export function players(): Player[] {
+  return [
+    player("player-1", 1, "Ada", "washerwoman", "good"),
+    player("player-2", 2, "Bert", "chef", "good", false),
+    player("player-3", 3, "Cy", "librarian", "good", false, true),
+    player("player-4", 4, "Dae", "poisoner", "evil"),
+    player("player-5", 5, "Eun", "imp", "evil"),
+  ];
+}
+
+function player(
+  id: string,
+  seat: number,
+  name: string,
+  character: string,
+  alignment: Player["alignment"],
+  alive = true,
+  ghostVoteUsed = false,
+): Player {
+  return {
+    id,
+    seat,
+    name,
+    actualCharacter: character,
+    shownCharacter: character,
+    alignment,
+    alive,
+    ghostVoteUsed,
+    deathAnnounced: !alive,
+    notes: "",
+  };
+}
+
+function success<T>(value: T): CoreResult<T> {
+  return { ok: true, value };
+}

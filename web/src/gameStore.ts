@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { propose, replay, setupDistribution, setupDistributionSync } from "./core/wasmClient.js";
+import type { CoreAdapter } from "./core/coreAdapter.js";
 import type { CoreResult, GameFile, Proposal, ReplayState, SetupDistribution } from "./core/types.js";
-import { exportGameFileJson, importGameFileJson, loadLatestGame, saveLatestGame } from "./gameStorage.js";
+import {
+  exportGameFileJson,
+  importGameFileJson,
+  loadLatestGame,
+  saveLatestGame,
+  type GameStorageDriver,
+} from "./gameStorage.js";
 import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
@@ -25,7 +31,13 @@ export function createGameFile(events: unknown[] = []): GameFile {
   };
 }
 
-export function useGameStore() {
+export type GameStoreDependencies = {
+  core: CoreAdapter;
+  storage: GameStorageDriver;
+};
+
+export function useGameStore({ core, storage }: GameStoreDependencies) {
+  const [storageDriver] = useState<GameStorageDriver>(() => storage);
   const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile());
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
   const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
@@ -42,7 +54,7 @@ export function useGameStore() {
   useEffect(() => {
     let cancelled = false;
 
-    loadLatestGame()
+    loadLatestGame(storageDriver)
       .then((storedGameFile) => {
         if (cancelled) return;
         if (storedGameFile) setGameFile(storedGameFile);
@@ -57,22 +69,22 @@ export function useGameStore() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [storageDriver]);
 
   useEffect(() => {
     if (!storageReady || storageError) return;
 
-    saveLatestGame(gameFile)
+    saveLatestGame(gameFile, storageDriver)
       .then(() => setStorageError(undefined))
       .catch((error: unknown) => {
         setStorageError(error instanceof Error ? error.message : "게임 자동 저장 실패");
       });
-  }, [gameFile, storageError, storageReady]);
+  }, [gameFile, storageDriver, storageError, storageReady]);
 
   useEffect(() => {
     let cancelled = false;
 
-    replay(gameFile)
+    core.replay(gameFile)
       .then((result) => {
         if (!cancelled) setReplayResult(result);
       })
@@ -83,7 +95,7 @@ export function useGameStore() {
     return () => {
       cancelled = true;
     };
-  }, [gameFile]);
+  }, [core, gameFile]);
 
   const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
@@ -104,12 +116,12 @@ export function useGameStore() {
   );
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {
-    const result = setupDistributionSync(setupDistributionRequest);
+    const result = core.setupDistributionSync(setupDistributionRequest);
     if (result?.ok) return result.value;
     return asyncSetupExpectedCounts?.requestKey === setupDistributionRequestKey
       ? asyncSetupExpectedCounts.counts
       : undefined;
-  }, [asyncSetupExpectedCounts, setupDistributionRequest, setupDistributionRequestKey]);
+  }, [asyncSetupExpectedCounts, core, setupDistributionRequest, setupDistributionRequestKey]);
   const setupHintsReady = Boolean(setupExpectedCounts);
   const shownWarnings =
     !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
@@ -124,7 +136,7 @@ export function useGameStore() {
 
     let cancelled = false;
     const requestKey = setupDistributionRequestKey;
-    setupDistribution(setupDistributionRequest)
+    core.setupDistribution(setupDistributionRequest)
       .then((result) => {
         if (!cancelled && result.ok) {
           setAsyncSetupExpectedCounts({
@@ -140,7 +152,7 @@ export function useGameStore() {
     return () => {
       cancelled = true;
     };
-  }, [hasConfirmedEvents, setupDistributionRequest, setupDistributionRequestKey]);
+  }, [core, hasConfirmedEvents, setupDistributionRequest, setupDistributionRequestKey]);
 
   useEffect(() => {
     if (hasConfirmedEvents) return;
@@ -150,7 +162,7 @@ export function useGameStore() {
     }
 
     let cancelled = false;
-    propose(gameFile, {
+    core.propose(gameFile, {
       type: "createGame",
       payload: { players: createGamePlayers },
     })
@@ -171,7 +183,7 @@ export function useGameStore() {
     return () => {
       cancelled = true;
     };
-  }, [createGamePlayers, gameFile, hasConfirmedEvents]);
+  }, [core, createGamePlayers, gameFile, hasConfirmedEvents]);
 
   async function confirmSetup() {
     if (!createGamePlayers) {
@@ -188,7 +200,7 @@ export function useGameStore() {
     setBusy(true);
     setLoadError(undefined);
 
-    const result = await propose(gameFile, {
+    const result = await core.propose(gameFile, {
       type: "createGame",
       payload: { players: createGamePlayers },
     }).catch((error: unknown): CoreResult<Proposal> => ({
@@ -221,7 +233,7 @@ export function useGameStore() {
     setBusy(true);
     setLoadError(undefined);
 
-    const result = await propose(gameFile, {
+    const result = await core.propose(gameFile, {
       type: commandType,
       payload: { stepId: currentStep.id, input: input ?? null },
     }).catch((error: unknown): CoreResult<Proposal> => ({
@@ -293,7 +305,7 @@ export function useGameStore() {
     setLoadError(undefined);
     try {
       const importedGameFile = importGameFileJson(json);
-      const importedReplay = await replay(importedGameFile);
+      const importedReplay = await core.replay(importedGameFile);
       if (!importedReplay.ok) {
         setLoadError(importedReplay.error.messageKo);
         return;
