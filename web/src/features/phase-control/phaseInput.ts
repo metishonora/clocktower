@@ -1,5 +1,4 @@
 import type {
-  NumericReason,
   Phase,
   PhaseOverviewItem,
   PhaseStep,
@@ -96,12 +95,19 @@ export function stepInputReady(
   nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
   numberValue: string,
-  numberReason: string,
 ): boolean {
   if (step.requiredInput.kind === "nominationVote") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
   }
   if (step.requiredInput.kind === "executionDecision") return true;
+  if (
+    step.informationPrompt?.deliveryMode === "selectable" &&
+    step.informationPrompt.computedResult.kind === "number"
+  ) {
+    if (numberValue.trim().length === 0) return false;
+    const value = Number(numberValue);
+    if (!Number.isInteger(value) || value < 0 || value > 15) return false;
+  }
   if (step.requiredInput.kind === "setupInfo") {
     if (step.requiredInput.zeroAllowed && zeroOutsiders) return selectedCount === 0;
     return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
@@ -110,9 +116,7 @@ export function stepInputReady(
     return requiredSelectionCountValid(step, selectedCharacterCount);
   }
   if (step.requiredInput.kind === "number") {
-    if (numberValue.trim().length === 0) return true;
-    const value = Number(numberValue);
-    return Number.isInteger(value) && value >= 0 && value <= 15 && numberReason.length > 0;
+    return true;
   }
   return requiredSelectionValid(step, selectedCount);
 }
@@ -124,8 +128,6 @@ export function stepInputPayload(
   selectedCharacterIds: string[],
   nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
-  numberValue: string,
-  numberReason: string,
 ): PhaseStepInput {
   if (step.requiredInput.kind === "nominationVote") return nominationDraft;
   if (step.requiredInput.kind === "executionDecision") return { execute: true };
@@ -135,8 +137,7 @@ export function stepInputPayload(
   }
   if (step.requiredInput.target === "characters") return { characterIds: selectedCharacterIds };
   if (step.requiredInput.kind === "number") {
-    if (numberValue.trim().length === 0) return null;
-    return { value: Number(numberValue), reason: numberReason as NumericReason };
+    return null;
   }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
     return { playerIds: selectedPlayerIds };

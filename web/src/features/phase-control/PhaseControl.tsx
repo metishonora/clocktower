@@ -3,8 +3,9 @@ import type {
   DayState,
   PhaseOverviewItem,
   PhaseStep,
-  PhaseStepInput,
+  PhaseStepConfirmation,
   Player,
+  RegistrationJudgment,
   RevealPayload,
 } from "../../core/types";
 import { RevealPreview } from "../../reveal";
@@ -54,7 +55,7 @@ export function PhaseControl({
   busy: boolean;
   onShowReveal: (payload: RevealPayload) => void;
   onContinue: () => void;
-  onConfirm: (input?: PhaseStepInput) => void;
+  onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
 }) {
   if (pendingReveal) {
@@ -162,7 +163,7 @@ function CurrentStepPane({
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
   busy: boolean;
-  onConfirm: (input?: PhaseStepInput) => void;
+  onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
 }) {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
@@ -170,11 +171,13 @@ function CurrentStepPane({
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [zeroOutsiders, setZeroOutsiders] = useState(false);
   const [numberValue, setNumberValue] = useState("");
-  const [numberReason, setNumberReason] = useState("");
+  const [registrationJudgments, setRegistrationJudgments] = useState<
+    Record<string, "" | RegistrationJudgment["registeredAs"]>
+  >({});
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
-  const selectionValid = currentStep
+  const baseSelectionValid = currentStep
     ? stepInputReady(
         currentStep,
         selectedPlayerIds.length,
@@ -183,9 +186,13 @@ function CurrentStepPane({
         nominationDraft,
         zeroOutsiders,
         numberValue,
-        numberReason,
       )
     : false;
+  const registrationValid =
+    currentStep?.informationPrompt?.registrationCandidatePlayerIds.every(
+      (playerId) => Boolean(registrationJudgments[playerId]),
+    ) ?? true;
+  const selectionValid = baseSelectionValid && registrationValid;
 
   useEffect(() => {
     setSelectedPlayerIds([]);
@@ -193,7 +200,7 @@ function CurrentStepPane({
     setSelectedCharacterIds([]);
     setZeroOutsiders(false);
     setNumberValue("");
-    setNumberReason("");
+    setRegistrationJudgments({});
   }, [currentStep?.id]);
 
   return (
@@ -238,7 +245,7 @@ function CurrentStepPane({
               selectedCharacterIds={selectedCharacterIds}
               zeroOutsiders={zeroOutsiders}
               numberValue={numberValue}
-              numberReason={numberReason}
+              registrationJudgments={registrationJudgments}
               busy={busy}
               onSelectedPlayerIdsChange={setSelectedPlayerIds}
               onCharacterChange={setSelectedCharacterId}
@@ -251,7 +258,9 @@ function CurrentStepPane({
                 }
               }}
               onNumberChange={setNumberValue}
-              onNumberReasonChange={setNumberReason}
+              onRegistrationJudgmentChange={(playerId, value) =>
+                setRegistrationJudgments((current) => ({ ...current, [playerId]: value }))
+              }
             />
             {currentStep.requiredInput.kind === "executionDecision" ? (
               <ExecutionDecisionActions
@@ -266,18 +275,31 @@ function CurrentStepPane({
                   type="button"
                   className="primaryButton"
                   onClick={() =>
-                    onConfirm(
-                      stepInputPayload(
+                    onConfirm({
+                      input: stepInputPayload(
                         currentStep,
                         selectedPlayerIds,
                         selectedCharacterId,
                         selectedCharacterIds,
                         nominationDraft,
                         zeroOutsiders,
-                        numberValue,
-                        numberReason,
                       ),
-                    )
+                      ...(currentStep.informationPrompt?.deliveryMode === "selectable" &&
+                      currentStep.informationPrompt.computedResult.kind === "number"
+                        ? { deliveredResult: { kind: "number" as const, value: Number(numberValue) } }
+                        : {}),
+                      ...(currentStep.informationPrompt?.registrationCandidatePlayerIds.length
+                        ? {
+                            registrationJudgments:
+                              currentStep.informationPrompt.registrationCandidatePlayerIds.map(
+                                (playerId) => ({
+                                  playerId,
+                                  registeredAs: registrationJudgments[playerId] as RegistrationJudgment["registeredAs"],
+                                }),
+                              ),
+                          }
+                        : {}),
+                    })
                   }
                   disabled={busy || !selectionValid}
                 >

@@ -5,6 +5,7 @@ import type {
   GameEvent,
   GameFile,
   InputTarget,
+  InformationPrompt,
   Phase,
   PhaseStep,
   Player,
@@ -131,6 +132,7 @@ export function step({
   stepType = "character",
   phase = "firstNight",
   canSkip = false,
+  informationPrompt,
 }: {
   id: string;
   character?: string;
@@ -142,6 +144,7 @@ export function step({
   stepType?: StepType;
   phase?: Phase;
   canSkip?: boolean;
+  informationPrompt?: InformationPrompt;
 }): PhaseStep {
   return {
     id,
@@ -157,6 +160,7 @@ export function step({
       optional: false,
     },
     canSkip,
+    informationPrompt,
   };
 }
 

@@ -90,6 +90,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
             optional: true,
         },
         can_skip: true,
+        information_prompt: None,
     }
 }
 

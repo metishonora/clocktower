@@ -1,5 +1,4 @@
 use crate::{
-    characters::evil_neighbor_pair_count,
     contracts::{
         Command, CreateGamePayload, ExecutionEventInput, ExecutionEventPayload, GameEvent,
         GameEventKind, GameFile, NominationEventPayload, PhaseStepCommandPayload,
@@ -7,16 +6,14 @@ use crate::{
     },
     day::{nomination_record, replay_day_state, step_prefix},
     error::{CoreError, ErrorKind},
+    information::confirmed_information,
     messages::{
         execution_event_summary, execution_preview, nomination_closed_event_summary,
         nomination_closed_preview, nomination_vote_event_summary, nomination_vote_preview,
-        numeric_input_reason, numeric_input_value, phase_step_event_summary, phase_step_preview,
-        phase_step_reveal_payload, setup_event_summary, setup_preview, smoke_event_summary,
-        smoke_preview,
+        phase_step_event_summary, phase_step_preview, phase_step_reveal_payload,
+        setup_event_summary, setup_preview, smoke_event_summary, smoke_preview,
     },
-    model::{
-        ExecutionDecisionInput, Phase, PhaseStep, Player, StepInput, StepInputFields, StepType,
-    },
+    model::{ExecutionDecisionInput, Phase, PhaseStep, Player, StepInput, StepType},
     phase::validate_required_input,
     replay::{replay_phase_state, replay_players},
     setup::{
@@ -113,6 +110,9 @@ pub(crate) fn propose_phase_step(
     if skip && current_step.step_type == StepType::Nomination {
         return propose_nomination_closed(game_file, &current_step);
     }
+    if skip && (payload.delivered_result.is_some() || !payload.registration_judgments.is_empty()) {
+        return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+    }
     if !skip {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
     }
@@ -124,32 +124,33 @@ pub(crate) fn propose_phase_step(
     }
 
     let event_count = game_file.game.events.len() + 1;
-    let reveal_payload = if skip {
+    let information = if skip {
         None
     } else {
-        phase_step_reveal_payload(&current_step, &players, &payload.input)
-    };
-    let event_input = if skip {
-        None
-    } else {
-        Some(phase_step_event_input(
+        confirmed_information(
             &current_step,
             &players,
-            payload.input,
-        ))
+            &game_file.game.events,
+            &payload.input,
+            payload.delivered_result,
+            payload.registration_judgments,
+        )?
     };
+    let event_input = if skip { None } else { Some(payload.input) };
     let summary = phase_step_event_summary(
         &current_step,
         &players,
         event_input.as_ref().unwrap_or(&None),
+        information.as_ref(),
         skip,
     );
     let kind = if let Some(input) = event_input {
         GameEventKind::PhaseStepConfirmed {
-            payload: PhaseStepEventPayload {
+            payload: Box::new(PhaseStepEventPayload {
                 step_id: current_step.id.clone(),
                 input,
-            },
+                information,
+            }),
         }
     } else {
         GameEventKind::PhaseStepSkipped {
@@ -159,18 +160,28 @@ pub(crate) fn propose_phase_step(
         }
     };
 
+    let event = GameEvent {
+        id: format!("phase-step-{event_count}"),
+        kind,
+        phase: current_step.phase,
+        summary,
+        created_at: game_file
+            .game
+            .updated_at
+            .clone()
+            .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
+    };
+    let reveal_payload = match &event.kind {
+        GameEventKind::PhaseStepConfirmed { payload } => {
+            payload.information.as_ref().and_then(|information| {
+                phase_step_reveal_payload(&current_step, &information.delivered_result, &players)
+            })
+        }
+        _ => None,
+    };
+
     Ok(Proposal {
-        event: GameEvent {
-            id: format!("phase-step-{event_count}"),
-            kind,
-            phase: current_step.phase,
-            summary,
-            created_at: game_file
-                .game
-                .updated_at
-                .clone()
-                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
-        },
+        event,
         warnings: Vec::new(),
         follow_up_steps: Vec::new(),
         preview: phase_step_preview(skip),
@@ -305,23 +316,4 @@ pub(crate) fn propose_execution_decision(
         preview: execution_preview(decision.execute),
         reveal_payload: None,
     })
-}
-
-pub(crate) fn phase_step_event_input(
-    step: &PhaseStep,
-    players: &[Player],
-    input: StepInput,
-) -> StepInput {
-    if step.character.as_deref() == Some("chef") {
-        let true_value = evil_neighbor_pair_count(players);
-        let displayed_value = numeric_input_value(&input).unwrap_or(true_value);
-        return Some(StepInputFields {
-            true_value: Some(true_value),
-            displayed_value: Some(displayed_value),
-            reason: Some(numeric_input_reason(&input)),
-            ..StepInputFields::default()
-        });
-    }
-
-    input
 }

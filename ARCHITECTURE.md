@@ -104,6 +104,7 @@ error.rs
 model.rs
 proposal.rs
 replay.rs
+information.rs
 setup.rs
 phase.rs
 day.rs
@@ -121,6 +122,8 @@ characters/
 - `error.rs` owns stable domain error codes and compact Korean error messages.
 - `proposal.rs` validates and proposes canonical confirmed events from commands.
 - `replay.rs` composes reducers and rebuilds derived state from confirmed events.
+- `information.rs` owns Delivered Information orchestration, discretion validation, legacy-event
+  compatibility, and current-step information prompts.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
@@ -295,6 +298,52 @@ UI draft
 `Proposal` should contain the canonical event when the command can be confirmed, plus warnings, computed preview information, and follow-up step hints when relevant.
 
 TypeScript must not append an event that did not come from a proposal returned by Rust.
+
+### Delivered Information Contract
+
+Treat information shown or told to a Player as confirmed domain data, not as Reveal presentation
+state. Information-producing `phaseStepConfirmed` events may carry an `information` record with
+these responsibilities:
+
+- `actor` and `targetPlayerIds` identify the rule check without parsing the Korean summary.
+- `computedResult` records the canonical result calculated from the replayed state before any
+  false-information delivery choice.
+- `deliveredResult` records exactly what the Storyteller showed or told the Player.
+- `deliveryContext` is `fixed` when the two results must match, or `discretionary` with typed
+  drunk, poisoned, and per-check Registration Judgment reasons.
+
+Use a tagged `InformationResult` union/enum for result values. Add result variants when a script
+implements a new kind of information; do not fall back to `serde_json::Value`, `unknown`, or a
+Korean message as the persisted value. Registration Judgments identify the affected Player and
+the alignment or character-kind value used for that specific check. They are not global Player
+state.
+
+Replay may derive an `informationPrompt` for the current `PhaseStep`. This prompt is transient
+rules guidance containing the computed result and whether Delivered Information is fixed or must
+be selected. It is not an audit-history copy. The Confirmed Event remains the only persisted audit
+source, and event-log summaries consume its typed `information` payload.
+
+For fixed delivery, Commands do not accept an alternate delivered value and Rust records
+`deliveredResult = computedResult` automatically. When replayed state establishes drunk or
+poisoned discretion, or a valid Registration Judgment is submitted for the current check, the
+Command must include an explicit delivered result. Rust rejects missing discretionary values and
+unjustified alternate values at the boundary.
+
+Apply selectable delivery only to result kinds whose canonical calculation is implemented by the
+active script. Persist other currently supported Reveal results as fixed audit records until their
+own rule ticket supplies canonical true-result derivation; do not treat an unchecked Storyteller
+draft as a separately computed truth. Trouble Brewing setup-information validation is owned by
+#7/#30, and Fortune Teller, Undertaker, and Ravenkeeper calculations are owned by #8.
+
+Construct the canonical event before constructing `RevealPayload`. Reveal conversion receives
+only the confirmed `deliveredResult` plus the minimum information kind needed to format it. It
+must not read the full ReplayState, Grimoire, command draft, or `computedResult`. A Spy result uses
+a narrow Spy-specific delivered result rather than passing the general Grimoire model.
+
+Keep `schemaVersion: 1` for this additive event contract. A schema-version-1
+`phaseStepConfirmed` event without `information` is a legacy event and remains replayable. Do not
+invent or rewrite Delivered Information that was never persisted. Newly proposed supported
+information events always include the typed record, and import/export preserves it unchanged.
 
 Manual corrections use the same command/proposal/event flow.
 

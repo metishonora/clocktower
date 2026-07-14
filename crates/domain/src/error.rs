@@ -31,6 +31,11 @@ pub(crate) enum ErrorKind {
     StaleStep,
     StepCannotBeSkipped,
     NoExecutionCandidate,
+    MissingDeliveredInformation,
+    UnexpectedDeliveredInformation,
+    InvalidDeliveredInformation,
+    InvalidRegistrationJudgment,
+    MissingRegistrationJudgment,
 }
 
 impl ErrorKind {
@@ -78,6 +83,26 @@ impl ErrorKind {
             Self::StaleStep => ("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."),
             Self::StepCannotBeSkipped => ("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."),
             Self::NoExecutionCandidate => ("NO_EXECUTION_CANDIDATE", "처형 후보가 없습니다."),
+            Self::MissingDeliveredInformation => (
+                "MISSING_DELIVERED_INFORMATION",
+                "전달할 정보를 명시해야 합니다.",
+            ),
+            Self::UnexpectedDeliveredInformation => (
+                "UNEXPECTED_DELIVERED_INFORMATION",
+                "현재 단계에서는 전달 정보를 선택할 수 없습니다.",
+            ),
+            Self::InvalidDeliveredInformation => (
+                "INVALID_DELIVERED_INFORMATION",
+                "전달할 정보의 형식이나 값이 올바르지 않습니다.",
+            ),
+            Self::InvalidRegistrationJudgment => (
+                "INVALID_REGISTRATION_JUDGMENT",
+                "현재 정보 확인에 적용할 수 없는 등록 판정입니다.",
+            ),
+            Self::MissingRegistrationJudgment => (
+                "MISSING_REGISTRATION_JUDGMENT",
+                "현재 정보 확인에 적용할 등록 판정을 명시해야 합니다.",
+            ),
         };
         CoreError { code, message_ko }
     }

@@ -1,5 +1,13 @@
 import { CharacterSelect } from "../../components/CharacterSelect";
-import type { DayState, PhaseStep, PhaseStepInput, Player } from "../../core/types";
+import type {
+  DayState,
+  DeliveryReason,
+  InformationResult,
+  PhaseStep,
+  PhaseStepConfirmation,
+  Player,
+  RegistrationJudgment,
+} from "../../core/types";
 import { characters, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
@@ -67,14 +75,14 @@ export function StepInputFields({
   selectedCharacterIds,
   zeroOutsiders,
   numberValue,
-  numberReason,
+  registrationJudgments,
   busy,
   onSelectedPlayerIdsChange,
   onCharacterChange,
   onCharactersChange,
   onZeroOutsidersChange,
   onNumberChange,
-  onNumberReasonChange,
+  onRegistrationJudgmentChange,
 }: {
   step: PhaseStep;
   players: Player[];
@@ -86,14 +94,17 @@ export function StepInputFields({
   selectedCharacterIds: string[];
   zeroOutsiders: boolean;
   numberValue: string;
-  numberReason: string;
+  registrationJudgments: Record<string, "" | RegistrationJudgment["registeredAs"]>;
   busy: boolean;
   onSelectedPlayerIdsChange: (playerIds: string[]) => void;
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
   onNumberChange: (value: string) => void;
-  onNumberReasonChange: (value: string) => void;
+  onRegistrationJudgmentChange: (
+    playerId: string,
+    value: "" | RegistrationJudgment["registeredAs"],
+  ) => void;
 }) {
   return (
     <>
@@ -120,14 +131,19 @@ export function StepInputFields({
         selectedCharacterId={selectedCharacterId}
         selectedCharacterIds={selectedCharacterIds}
         zeroOutsiders={zeroOutsiders}
-        numberValue={numberValue}
-        numberReason={numberReason}
         busy={busy}
         onCharacterChange={onCharacterChange}
         onCharactersChange={onCharactersChange}
         onZeroOutsidersChange={onZeroOutsidersChange}
+      />
+      <InformationDeliveryInput
+        step={step}
+        players={players}
+        numberValue={numberValue}
+        registrationJudgments={registrationJudgments}
+        busy={busy}
         onNumberChange={onNumberChange}
-        onNumberReasonChange={onNumberReasonChange}
+        onRegistrationJudgmentChange={onRegistrationJudgmentChange}
       />
     </>
   );
@@ -142,7 +158,7 @@ export function ExecutionDecisionActions({
   players: Player[];
   candidate?: DayState["executionCandidate"];
   busy: boolean;
-  onConfirm: (input?: PhaseStepInput) => void;
+  onConfirm: (confirmation: PhaseStepConfirmation) => void;
 }) {
   const candidatePlayer = candidate ? players.find((player) => player.id === candidate.nomineeId) : undefined;
 
@@ -155,12 +171,17 @@ export function ExecutionDecisionActions({
         <button
           type="button"
           className="primaryButton"
-          onClick={() => onConfirm({ execute: true })}
+          onClick={() => onConfirm({ input: { execute: true } })}
           disabled={busy || !candidate}
         >
           처형 확정
         </button>
-        <button type="button" className="secondaryButton" onClick={() => onConfirm({ execute: false })} disabled={busy}>
+        <button
+          type="button"
+          className="secondaryButton"
+          onClick={() => onConfirm({ input: { execute: false } })}
+          disabled={busy}
+        >
           처형 없음
         </button>
       </div>
@@ -173,27 +194,19 @@ function StepSpecificInput({
   selectedCharacterId,
   selectedCharacterIds,
   zeroOutsiders,
-  numberValue,
-  numberReason,
   busy,
   onCharacterChange,
   onCharactersChange,
   onZeroOutsidersChange,
-  onNumberChange,
-  onNumberReasonChange,
 }: {
   step: PhaseStep;
   selectedCharacterId: string;
   selectedCharacterIds: string[];
   zeroOutsiders: boolean;
-  numberValue: string;
-  numberReason: string;
   busy: boolean;
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
-  onNumberChange: (value: string) => void;
-  onNumberReasonChange: (value: string) => void;
 }) {
   if (step.requiredInput.kind === "setupInfo") {
     const options = setupInfoCharacterOptions(step.requiredInput.characterKind);
@@ -237,11 +250,46 @@ function StepSpecificInput({
     );
   }
 
-  if (step.requiredInput.kind === "number") {
-    return (
-      <div className="stepSpecificInput">
+  return null;
+}
+
+function InformationDeliveryInput({
+  step,
+  players,
+  numberValue,
+  registrationJudgments,
+  busy,
+  onNumberChange,
+  onRegistrationJudgmentChange,
+}: {
+  step: PhaseStep;
+  players: Player[];
+  numberValue: string;
+  registrationJudgments: Record<string, "" | RegistrationJudgment["registeredAs"]>;
+  busy: boolean;
+  onNumberChange: (value: string) => void;
+  onRegistrationJudgmentChange: (
+    playerId: string,
+    value: "" | RegistrationJudgment["registeredAs"],
+  ) => void;
+}) {
+  const prompt = step.informationPrompt;
+  if (!prompt) return null;
+
+  const registrationCandidates = prompt.registrationCandidatePlayerIds.flatMap((playerId) => {
+    const player = players.find((candidate) => candidate.id === playerId);
+    return player ? [player] : [];
+  });
+
+  return (
+    <div className="stepSpecificInput informationDeliveryInput" aria-label="전달 정보">
+      <label>
+        계산된 실제 정보
+        <output>{informationResultLabel(prompt.computedResult)}</output>
+      </label>
+      {prompt.deliveryMode === "selectable" && prompt.computedResult.kind === "number" ? (
         <label>
-          표시할 숫자
+          전달할 숫자
           <input
             type="number"
             min="0"
@@ -249,26 +297,57 @@ function StepSpecificInput({
             inputMode="numeric"
             value={numberValue}
             disabled={busy}
-            placeholder="실제값 사용"
             onChange={(event) => onNumberChange(event.target.value)}
           />
         </label>
-        {numberValue.trim().length > 0 ? (
-          <label>
-            표시 이유
-            <select value={numberReason} disabled={busy} onChange={(event) => onNumberReasonChange(event.target.value)}>
-              <option value="">선택</option>
-              <option value="drunk">술취함</option>
-              <option value="poisoned">중독</option>
-              <option value="registration">등록 판정</option>
-            </select>
-          </label>
-        ) : null}
-      </div>
-    );
-  }
+      ) : null}
+      {prompt.activeReasons.length > 0 ? (
+        <p className="informationReasons">전달 재량: {prompt.activeReasons.map(deliveryReasonLabel).join(", ")}</p>
+      ) : null}
+      {registrationCandidates.length > 0 ? (
+        <div className="registrationJudgment" aria-label="등록 판정">
+          {registrationCandidates.map((player) => (
+            <label key={player.id}>
+              {player.seat}번 {player.name} 등록 판정
+              <select
+                aria-label={`${player.seat}번 ${player.name} 등록 판정`}
+                value={registrationJudgments[player.id] ?? ""}
+                disabled={busy}
+                onChange={(event) =>
+                  onRegistrationJudgmentChange(
+                    player.id,
+                    event.target.value as "" | RegistrationJudgment["registeredAs"],
+                  )
+                }
+              >
+                <option value="">선택</option>
+                <option value="good">선</option>
+                <option value="evil">악</option>
+              </select>
+            </label>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
-  return null;
+function informationResultLabel(result: InformationResult): string {
+  if (result.kind === "number") return String(result.value);
+  if (result.kind === "setupInfo") {
+    if (result.zeroOutsiders) return "아웃사이더 0명";
+    return `${result.playerIds.length}명${result.characterId ? ` · ${result.characterId}` : ""}`;
+  }
+  if (result.kind === "teamInfo") {
+    return `악마 ${result.demonPlayerIds.length}명 · 하수인 ${result.minionPlayerIds.length}명 · 블러프 ${result.bluffCharacterIds.length}개`;
+  }
+  return `플레이어 ${result.players.length}명`;
+}
+
+function deliveryReasonLabel(reason: DeliveryReason): string {
+  if (reason.type === "drunk") return "술취함";
+  if (reason.type === "poisoned") return "중독";
+  return "등록 판정";
 }
 
 function CharacterStepInput({

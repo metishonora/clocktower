@@ -75,6 +75,41 @@ fn event_errors_distinguish_unsupported_and_malformed_payloads() {
 }
 
 #[test]
+fn malformed_delivered_information_is_rejected_at_json_boundaries() {
+    let malformed_command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": "one" }
+        }
+    });
+    let command_actual: Value =
+        serde_json::from_str(&propose_json(EMPTY_GAME, &malformed_command.to_string())).unwrap();
+    assert_eq!(command_actual["error"]["code"], "MALFORMED_COMMAND");
+
+    let malformed_event = game_with_events(json!([{
+        "id": "event-1",
+        "type": "phaseStepConfirmed",
+        "phase": "firstNight",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "input": null,
+            "information": {
+                "targetPlayerIds": [],
+                "computedResult": { "kind": "unknown" },
+                "deliveredResult": { "kind": "number", "value": 1 },
+                "deliveryContext": { "type": "fixed" }
+            }
+        },
+        "summary": "malformed information",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    }]));
+    let event_actual: Value =
+        serde_json::from_str(&replay_json(&malformed_event.to_string())).unwrap();
+    assert_eq!(event_actual["error"]["code"], "MALFORMED_EVENT");
+}
+
+#[test]
 fn canonical_schema_v1_fixture_replays_without_wire_migration() {
     let fixture = include_str!("../../../../fixtures/schema-v1-game.json");
     let actual: Value = serde_json::from_str(&replay_json(fixture)).unwrap();

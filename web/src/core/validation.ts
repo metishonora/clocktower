@@ -1,6 +1,10 @@
 import type {
+  ConfirmedInformation,
   CoreResult,
+  DeliveryReason,
   GameEvent,
+  InformationPrompt,
+  InformationResult,
   Phase,
   PhaseStep,
   PhaseStepInput,
@@ -79,7 +83,13 @@ export function parseGameEvent(value: unknown): GameEvent {
       if (!Array.isArray(payload.players) || !payload.players.every(isSetupPlayer)) throw invalidEvent();
       break;
     case "phaseStepConfirmed":
-      if (typeof payload.stepId !== "string" || !isPhaseStepInput(payload.input)) throw invalidEvent();
+      if (
+        typeof payload.stepId !== "string" ||
+        !isPhaseStepInput(payload.input) ||
+        (payload.information !== undefined && !isConfirmedInformation(payload.information))
+      ) {
+        throw invalidEvent();
+      }
       break;
     case "phaseStepSkipped":
     case "phaseStepNeedsFollowUp":
@@ -166,7 +176,117 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     isOptionalString(value.character) &&
     isOptionalString(value.playerId) &&
     isRequiredInput(value.requiredInput) &&
-    typeof value.canSkip === "boolean"
+    typeof value.canSkip === "boolean" &&
+    (value.informationPrompt === undefined || isInformationPrompt(value.informationPrompt))
+  );
+}
+
+function isInformationPrompt(value: unknown): value is InformationPrompt {
+  return (
+    isRecord(value) &&
+    isInformationResult(value.computedResult) &&
+    (value.deliveryMode === "fixed" || value.deliveryMode === "selectable") &&
+    Array.isArray(value.activeReasons) &&
+    value.activeReasons.every(isDeliveryReason) &&
+    Array.isArray(value.registrationCandidatePlayerIds) &&
+    value.registrationCandidatePlayerIds.every(isString)
+  );
+}
+
+function isConfirmedInformation(value: unknown): value is ConfirmedInformation {
+  return (
+    isRecord(value) &&
+    (value.actor === undefined || isInformationActor(value.actor)) &&
+    Array.isArray(value.targetPlayerIds) &&
+    value.targetPlayerIds.every(isString) &&
+    isInformationResult(value.computedResult) &&
+    isInformationResult(value.deliveredResult) &&
+    isDeliveryContext(value.deliveryContext)
+  );
+}
+
+function isInformationActor(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.playerId === "string" &&
+    typeof value.characterId === "string"
+  );
+}
+
+function isInformationResult(value: unknown): value is InformationResult {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  switch (value.kind) {
+    case "number":
+      return (
+        typeof value.value === "number" &&
+        Number.isInteger(value.value) &&
+        value.value >= 0 &&
+        value.value <= 15
+      );
+    case "setupInfo":
+      return (
+        Array.isArray(value.playerIds) &&
+        value.playerIds.every(isString) &&
+        isOptionalString(value.characterId) &&
+        typeof value.zeroOutsiders === "boolean"
+      );
+    case "teamInfo":
+      return (
+        Array.isArray(value.demonPlayerIds) &&
+        value.demonPlayerIds.every(isString) &&
+        Array.isArray(value.minionPlayerIds) &&
+        value.minionPlayerIds.every(isString) &&
+        Array.isArray(value.bluffCharacterIds) &&
+        value.bluffCharacterIds.every(isString)
+      );
+    case "spyGrimoire":
+      return Array.isArray(value.players) && value.players.every(isSpyGrimoirePlayer);
+    default:
+      return false;
+  }
+}
+
+function isSpyGrimoirePlayer(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.playerId === "string" &&
+    typeof value.seat === "number" &&
+    Number.isInteger(value.seat) &&
+    typeof value.name === "string" &&
+    typeof value.characterId === "string"
+  );
+}
+
+function isDeliveryContext(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (value.type === "fixed") return true;
+  return (
+    value.type === "discretionary" &&
+    Array.isArray(value.reasons) &&
+    value.reasons.every(isDeliveryReason)
+  );
+}
+
+function isDeliveryReason(value: unknown): value is DeliveryReason {
+  if (!isRecord(value)) return false;
+  if (value.type === "drunk") return true;
+  if (value.type === "poisoned") {
+    return typeof value.poisonerPlayerId === "string" && typeof value.poisonEventId === "string";
+  }
+  return (
+    value.type === "registrationJudgment" &&
+    Array.isArray(value.judgments) &&
+    value.judgments.every(isRegistrationJudgment)
+  );
+}
+
+function isRegistrationJudgment(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.playerId === "string" &&
+    ["good", "evil", "townsfolk", "outsider", "minion", "demon"].includes(
+      String(value.registeredAs),
+    )
   );
 }
 

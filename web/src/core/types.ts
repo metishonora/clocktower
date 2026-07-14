@@ -27,10 +27,71 @@ export type PhaseStepInput =
   | { nominatorId: string; nomineeId: string; voterIds: string[] }
   | { execute: boolean };
 
+export type InformationResult =
+  | { kind: "number"; value: number }
+  | {
+      kind: "setupInfo";
+      playerIds: string[];
+      characterId?: string;
+      zeroOutsiders: boolean;
+    }
+  | {
+      kind: "teamInfo";
+      demonPlayerIds: string[];
+      minionPlayerIds: string[];
+      bluffCharacterIds: string[];
+    }
+  | {
+      kind: "spyGrimoire";
+      players: Array<{
+        playerId: string;
+        seat: number;
+        name: string;
+        characterId: string;
+      }>;
+    };
+
+export type RegistrationJudgment = {
+  playerId: string;
+  registeredAs: "good" | "evil" | "townsfolk" | "outsider" | "minion" | "demon";
+};
+
+export type DeliveryReason =
+  | { type: "drunk" }
+  | { type: "poisoned"; poisonerPlayerId: string; poisonEventId: string }
+  | { type: "registrationJudgment"; judgments: RegistrationJudgment[] };
+
+export type DeliveryContext =
+  | { type: "fixed" }
+  | { type: "discretionary"; reasons: DeliveryReason[] };
+
+export type ConfirmedInformation = {
+  actor?: { playerId: string; characterId: string };
+  targetPlayerIds: string[];
+  computedResult: InformationResult;
+  deliveredResult: InformationResult;
+  deliveryContext: DeliveryContext;
+};
+
+export type InformationPrompt = {
+  computedResult: InformationResult;
+  deliveryMode: "fixed" | "selectable";
+  activeReasons: DeliveryReason[];
+  registrationCandidatePlayerIds: string[];
+};
+
+export type PhaseStepConfirmation = {
+  input?: PhaseStepInput;
+  deliveredResult?: InformationResult;
+  registrationJudgments?: RegistrationJudgment[];
+};
+
+export type PhaseStepCommandPayload = PhaseStepConfirmation & { stepId: string };
+
 export type Command =
   | { type: "smoke" }
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
-  | { type: "confirmStep"; payload: { stepId: string; input?: PhaseStepInput } }
+  | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | { type: "skipStep"; payload: { stepId: string; input?: null } };
 
 export type CoreResult<T> =
@@ -86,7 +147,10 @@ export type GameEvent = EventCommon &
   (
     | { type: "smokeConfirmed"; payload: { source: string } }
     | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[] } }
-    | { type: "phaseStepConfirmed"; payload: { stepId: string; input: PhaseStepInput } }
+    | {
+        type: "phaseStepConfirmed";
+        payload: { stepId: string; input: PhaseStepInput; information?: ConfirmedInformation };
+      }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
     | { type: "nominationVoteConfirmed"; payload: { stepId: string; input: NominationRecord } }
@@ -136,6 +200,7 @@ export type PhaseStep = {
   playerId?: string;
   requiredInput: RequiredInput;
   canSkip: boolean;
+  informationPrompt?: InformationPrompt;
 };
 
 export type PhaseOverviewItem = PhaseStep & {

@@ -5,7 +5,7 @@ import type {
   GameEvent,
   GameFile,
   PhaseStep,
-  PhaseStepInput,
+  PhaseStepConfirmation,
   Proposal,
   RevealPayload,
   ReplayState,
@@ -240,15 +240,18 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     appendProposalEvent(result.value);
   }
 
-  async function confirmCurrentStep(input?: PhaseStepInput) {
-    await proposeCurrentStep("confirmStep", input);
+  async function confirmCurrentStep(confirmation: PhaseStepConfirmation = {}) {
+    await proposeCurrentStep("confirmStep", confirmation);
   }
 
   async function skipCurrentStep() {
     await proposeCurrentStep("skipStep");
   }
 
-  async function proposeCurrentStep(commandType: "confirmStep" | "skipStep", input?: PhaseStepInput) {
+  async function proposeCurrentStep(
+    commandType: "confirmStep" | "skipStep",
+    confirmation: PhaseStepConfirmation = {},
+  ) {
     if (!currentStep) return;
 
     setBusy(true);
@@ -256,7 +259,19 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
     const command =
       commandType === "confirmStep"
-        ? { type: "confirmStep" as const, payload: { stepId: currentStep.id, input: input ?? null } }
+        ? {
+            type: "confirmStep" as const,
+            payload: {
+              stepId: currentStep.id,
+              input: confirmation.input ?? null,
+              ...(confirmation.deliveredResult
+                ? { deliveredResult: confirmation.deliveredResult }
+                : {}),
+              ...(confirmation.registrationJudgments
+                ? { registrationJudgments: confirmation.registrationJudgments }
+                : {}),
+            },
+          }
         : { type: "skipStep" as const, payload: { stepId: currentStep.id, input: null as null } };
     const result = await core.propose(gameFile, command).catch((error: unknown): CoreResult<Proposal> => ({
       ok: false,

@@ -60,6 +60,51 @@ test("import validates basic GameFile shape and schemaVersion", () => {
   }
 });
 
+test("audit information survives save, export, and import without a replay-state copy", async () => {
+  const auditedGame: GameFile = structuredClone(gameFile);
+  auditedGame.game.events.push({
+    id: "event-chef",
+    type: "phaseStepConfirmed",
+    phase: "firstNight",
+    payload: {
+      stepId: "firstNight:chef",
+      input: null,
+      information: {
+        actor: { playerId: "player-2", characterId: "chef" },
+        targetPlayerIds: [],
+        computedResult: { kind: "number", value: 0 },
+        deliveredResult: { kind: "number", value: 1 },
+        deliveryContext: {
+          type: "discretionary",
+          reasons: [
+            {
+              type: "poisoned",
+              poisonerPlayerId: "player-4",
+              poisonEventId: "event-poisoner",
+            },
+            {
+              type: "registrationJudgment",
+              judgments: [{ playerId: "player-5", registeredAs: "evil" }],
+            },
+          ],
+        },
+      },
+    },
+    summary: "요리사가 1쌍을 확인했습니다. (실제 0쌍 · 중독)",
+    createdAt: "2026-07-15T00:00:00.000Z",
+  });
+  const driver = new MemoryGameStorageDriver();
+
+  await saveLatestGame(auditedGame, driver);
+  deepEqual(await loadLatestGame(driver), auditedGame);
+
+  const imported = importGameFileJson(
+    exportGameFileJson(auditedGame, new Date("2026-07-15T00:01:00.000Z")),
+  );
+  deepEqual(imported, auditedGame);
+  equal("informationAudit" in (imported as unknown as Record<string, unknown>), false);
+});
+
 class MemoryGameStorageDriver implements GameStorageDriver {
   value: GameFile | undefined;
   writeCount = 0;

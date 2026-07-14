@@ -1,6 +1,7 @@
 use crate::model::{
-    Alignment, CharacterKind, InputTarget, Phase, PhaseStep, Player, RequiredInput,
-    RequiredInputKind, SetupInfoKind, StepType,
+    Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget, Phase, PhaseStep,
+    Player, RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind,
+    SetupInfoKind, StepInput, StepType,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -72,6 +73,153 @@ pub(crate) fn empath_evil_neighbor_count(players: &[Player], player_id: &str) ->
     )
 }
 
+pub(crate) fn computed_information_result(
+    step: &PhaseStep,
+    players: &[Player],
+    input: &StepInput,
+) -> Option<InformationResult> {
+    if step.step_type == StepType::EvilInfo {
+        let demon_player_ids = players
+            .iter()
+            .filter(|player| character_kind(&player.actual_character) == Some(CharacterKind::Demon))
+            .map(|player| player.id.clone())
+            .collect();
+        let minion_player_ids = players
+            .iter()
+            .filter(|player| {
+                character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+            })
+            .map(|player| player.id.clone())
+            .collect();
+        let bluff_character_ids = if step.id.ends_with(":demonInfo") {
+            input
+                .as_ref()
+                .and_then(|value| value.character_ids.clone())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        return Some(InformationResult::TeamInfo {
+            demon_player_ids,
+            minion_player_ids,
+            bluff_character_ids,
+        });
+    }
+
+    match step.character.as_deref()? {
+        "washerwoman" | "librarian" | "investigator" => {
+            let input = input.as_ref()?;
+            Some(InformationResult::SetupInfo {
+                player_ids: input.player_ids.clone().unwrap_or_default(),
+                character_id: input.character_id.clone(),
+                zero_outsiders: input.zero_outsiders == Some(true),
+            })
+        }
+        "chef" => Some(InformationResult::Number {
+            value: evil_neighbor_pair_count(players),
+        }),
+        "empath" => Some(InformationResult::Number {
+            value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)?,
+        }),
+        "spy" => Some(InformationResult::SpyGrimoire {
+            players: seated_players(players)
+                .into_iter()
+                .map(|player| InformationPlayer {
+                    player_id: player.id.clone(),
+                    seat: player.seat,
+                    name: player.name.clone(),
+                    character_id: player.actual_character.clone(),
+                })
+                .collect(),
+        }),
+        _ => None,
+    }
+}
+
+pub(crate) fn registration_candidate_player_ids(
+    step: &PhaseStep,
+    players: &[Player],
+) -> Vec<String> {
+    let eligible_ids = match step.character.as_deref() {
+        Some("empath") => {
+            let Some(actor_id) = step.player_id.as_deref() else {
+                return Vec::new();
+            };
+            let seated = seated_players(players);
+            let Some(index) = seated.iter().position(|player| player.id == actor_id) else {
+                return Vec::new();
+            };
+            alive_neighbor_indexes(&seated, index)
+                .into_iter()
+                .map(|index| seated[index].id.as_str())
+                .collect::<HashSet<_>>()
+        }
+        Some("chef") => players.iter().map(|player| player.id.as_str()).collect(),
+        _ => return Vec::new(),
+    };
+
+    players
+        .iter()
+        .filter(|player| {
+            eligible_ids.contains(player.id.as_str())
+                && matches!(player.actual_character.as_str(), "spy" | "recluse")
+        })
+        .map(|player| player.id.clone())
+        .collect()
+}
+
+pub(crate) fn number_result_with_registration_judgments(
+    step: &PhaseStep,
+    players: &[Player],
+    judgments: &[RegistrationJudgment],
+) -> Option<usize> {
+    let registered_alignment = |player: &Player| {
+        judgments
+            .iter()
+            .find(|judgment| judgment.player_id == player.id)
+            .and_then(|judgment| match judgment.registered_as {
+                RegistrationValue::Good => Some(Alignment::Good),
+                RegistrationValue::Evil => Some(Alignment::Evil),
+                _ => None,
+            })
+            .unwrap_or(player.alignment)
+    };
+
+    match step.character.as_deref()? {
+        "chef" => {
+            let seated = seated_players(players);
+            if seated.len() < 2 {
+                return Some(0);
+            }
+            Some(
+                seated
+                    .iter()
+                    .enumerate()
+                    .filter(|(index, player)| {
+                        registered_alignment(player) == Alignment::Evil
+                            && registered_alignment(seated[(index + 1) % seated.len()])
+                                == Alignment::Evil
+                    })
+                    .count(),
+            )
+        }
+        "empath" => {
+            let seated = seated_players(players);
+            let actor_id = step.player_id.as_deref()?;
+            let index = seated.iter().position(|player| player.id == actor_id)?;
+            Some(
+                alive_neighbor_indexes(&seated, index)
+                    .iter()
+                    .filter(|neighbor_index| {
+                        registered_alignment(seated[**neighbor_index]) == Alignment::Evil
+                    })
+                    .count(),
+            )
+        }
+        _ => None,
+    }
+}
+
 pub(crate) fn alive_neighbor_indexes(players: &[&Player], index: usize) -> Vec<usize> {
     if players.len() < 2 {
         return Vec::new();
@@ -130,6 +278,7 @@ pub(crate) fn character_steps(
                     .map(|player_id| (*player_id).to_string()),
                 required_input: character_required_input(character),
                 can_skip: true,
+                information_prompt: None,
             })
         })
         .collect()

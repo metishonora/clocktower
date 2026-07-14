@@ -34,6 +34,7 @@ pub(crate) fn simple_step(
         player_id: None,
         required_input,
         can_skip,
+        information_prompt: None,
     }
 }
 
@@ -60,6 +61,7 @@ pub(crate) fn phase_transition_step(
             optional: false,
         },
         can_skip: false,
+        information_prompt: None,
     }
 }
 

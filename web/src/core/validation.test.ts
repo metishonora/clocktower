@@ -2,7 +2,7 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
-import { parseCoreResult, parseProposal } from "./validation.js";
+import { parseCoreResult, parseProposal, parseReplayState } from "./validation.js";
 
 test("imports the canonical schema-v1 fixture as typed GameEvent values", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
@@ -56,4 +56,78 @@ test("validates Proposal.event at the Wasm JSON boundary", () => {
   const incompleteReveal = structuredClone(valid);
   delete (incompleteReveal.value.revealPayload as { valueKo?: string }).valueKo;
   throws(() => parseCoreResult(incompleteReveal, parseProposal), /코어 응답 형식/);
+});
+
+test("validates typed confirmed information and derived information prompts", () => {
+  const information = {
+    actor: { playerId: "player-2", characterId: "chef" },
+    targetPlayerIds: [],
+    computedResult: { kind: "number", value: 0 },
+    deliveredResult: { kind: "number", value: 1 },
+    deliveryContext: {
+      type: "discretionary",
+      reasons: [
+        {
+          type: "poisoned",
+          poisonerPlayerId: "player-4",
+          poisonEventId: "event-poisoner",
+        },
+        {
+          type: "registrationJudgment",
+          judgments: [{ playerId: "player-5", registeredAs: "evil" }],
+        },
+      ],
+    },
+  };
+  const event = {
+    id: "event-chef",
+    type: "phaseStepConfirmed",
+    phase: "firstNight",
+    payload: { stepId: "firstNight:chef", input: null, information },
+    summary: "요리사 정보 확정",
+    createdAt: "2026-07-15T00:00:00.000Z",
+  };
+  const proposal = {
+    event,
+    warnings: [],
+    followUpSteps: [],
+    preview: null,
+  };
+
+  deepEqual<unknown>(parseProposal(proposal).event, event);
+
+  const replay = {
+    schemaVersion: 1,
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: {
+      id: "firstNight:chef",
+      phase: "firstNight",
+      stepType: "character",
+      requiredInput: { kind: "none", optional: false },
+      canSkip: false,
+      informationPrompt: {
+        computedResult: { kind: "number", value: 0 },
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "drunk" }],
+        registrationCandidatePlayerIds: ["player-5"],
+      },
+    },
+    phaseOverview: [],
+    warnings: [],
+  };
+  deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
+
+  const invalidNumber = structuredClone(proposal);
+  invalidNumber.event.payload.information.deliveredResult.value = -1;
+  throws(() => parseProposal(invalidNumber), /이벤트 형식/);
+
+  const invalidReason = structuredClone(proposal);
+  delete invalidReason.event.payload.information.deliveryContext.reasons[0].poisonEventId;
+  throws(() => parseProposal(invalidReason), /이벤트 형식/);
+
+  const invalidPrompt = structuredClone(replay);
+  invalidPrompt.currentStep.informationPrompt.registrationCandidatePlayerIds = [1 as unknown as string];
+  throws(() => parseReplayState(invalidPrompt), /코어 응답 형식/);
 });

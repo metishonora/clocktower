@@ -71,6 +71,117 @@ pub(crate) enum NumericReason {
     Registration,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum InformationResult {
+    Number {
+        value: usize,
+    },
+    SetupInfo {
+        player_ids: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        character_id: Option<String>,
+        zero_outsiders: bool,
+    },
+    TeamInfo {
+        demon_player_ids: Vec<String>,
+        minion_player_ids: Vec<String>,
+        bluff_character_ids: Vec<String>,
+    },
+    SpyGrimoire {
+        players: Vec<InformationPlayer>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InformationPlayer {
+    pub(crate) player_id: String,
+    pub(crate) seat: u8,
+    pub(crate) name: String,
+    pub(crate) character_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum RegistrationValue {
+    Good,
+    Evil,
+    Townsfolk,
+    Outsider,
+    Minion,
+    Demon,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RegistrationJudgment {
+    pub(crate) player_id: String,
+    pub(crate) registered_as: RegistrationValue,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InformationActor {
+    pub(crate) player_id: String,
+    pub(crate) character_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum DeliveryReason {
+    Drunk,
+    Poisoned {
+        poisoner_player_id: String,
+        poison_event_id: String,
+    },
+    RegistrationJudgment {
+        judgments: Vec<RegistrationJudgment>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub(crate) enum DeliveryContext {
+    Fixed,
+    Discretionary { reasons: Vec<DeliveryReason> },
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ConfirmedInformation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) actor: Option<InformationActor>,
+    pub(crate) target_player_ids: Vec<String>,
+    pub(crate) computed_result: InformationResult,
+    pub(crate) delivered_result: InformationResult,
+    pub(crate) delivery_context: DeliveryContext,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum InformationDeliveryMode {
+    Fixed,
+    Selectable,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InformationPrompt {
+    pub(crate) computed_result: InformationResult,
+    pub(crate) delivery_mode: InformationDeliveryMode,
+    pub(crate) active_reasons: Vec<DeliveryReason>,
+    pub(crate) registration_candidate_player_ids: Vec<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum SetupInfoKind {
@@ -122,6 +233,8 @@ pub(crate) struct PhaseStep {
     pub(crate) player_id: Option<String>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) information_prompt: Option<InformationPrompt>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -159,6 +272,8 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) player_id: Option<String>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) information_prompt: Option<InformationPrompt>,
     pub(crate) status: PhaseStepStatus,
 }
 

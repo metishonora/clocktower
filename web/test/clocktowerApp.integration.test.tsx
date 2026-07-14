@@ -130,6 +130,114 @@ describe("ClocktowerApp live-play integration", () => {
     );
   });
 
+  test("shows fixed computed information without a delivered-information control", async () => {
+    const currentStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 0 },
+        deliveryMode: "fixed",
+        activeReasons: [],
+        registrationCandidatePlayerIds: [],
+      },
+    });
+    const nextStep = step({ id: "firstNight:empath", character: "empath", playerId: "player-3" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(event("event-chef", "요리사가 0쌍을 확인했습니다.")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    const delivery = screen.getByLabelText("전달 정보");
+    expect(within(delivery).getByText("0")).toBeTruthy();
+    expect(within(delivery).queryByRole("spinbutton", { name: "전달할 숫자" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "firstNight:chef", input: null },
+    });
+  });
+
+  test("requires selectable delivered information and every registration judgment", async () => {
+    const currentStep = step({
+      id: "firstNight:empath",
+      character: "empath",
+      playerId: "player-3",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 0 },
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "drunk" }],
+        registrationCandidatePlayerIds: ["player-4", "player-5"],
+      },
+    });
+    const nextStep = step({ id: "firstNight:toDay", stepType: "phaseTransition" });
+    const canonicalEvent = event("event-empath", "공감능력자가 1을 확인했습니다. (실제 0 · 술취함)");
+    if (canonicalEvent.type !== "phaseStepConfirmed") throw new Error("unexpected event type");
+    canonicalEvent.payload.information = {
+      actor: { playerId: "player-3", characterId: "empath" },
+      targetPlayerIds: [],
+      computedResult: { kind: "number", value: 0 },
+      deliveredResult: { kind: "number", value: 1 },
+      deliveryContext: {
+        type: "discretionary",
+        reasons: [
+          { type: "drunk" },
+          {
+            type: "registrationJudgment",
+            judgments: [
+              { playerId: "player-4", registeredAs: "good" },
+              { playerId: "player-5", registeredAs: "evil" },
+            ],
+          },
+        ],
+      },
+    };
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(canonicalEvent),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "공감능력자: 3번 Cy" });
+    expect(screen.getByText("전달 재량: 술취함")).toBeTruthy();
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+
+    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "1");
+    expect(confirm.disabled).toBe(true);
+    await user.selectOptions(screen.getByRole("combobox", { name: "4번 Dae 등록 판정" }), "good");
+    expect(confirm.disabled).toBe(true);
+    await user.selectOptions(screen.getByRole("combobox", { name: "5번 Eun 등록 판정" }), "evil");
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:empath",
+        input: null,
+        deliveredResult: { kind: "number", value: 1 },
+        registrationJudgments: [
+          { playerId: "player-4", registeredAs: "good" },
+          { playerId: "player-5", registeredAs: "evil" },
+        ],
+      },
+    });
+    await waitFor(() => {
+      expect(latestSavedGame(storage.savedGames).game.events[1]).toEqual(canonicalEvent);
+    });
+  });
+
   test("keeps a confirmed Reveal repeatable until explicit continue to the replayed current step", async () => {
     const revealStep = step({
       id: "firstNight:chef",

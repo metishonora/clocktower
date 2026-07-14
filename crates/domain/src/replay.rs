@@ -4,6 +4,7 @@ use crate::{
     contracts::{GameEvent, GameEventKind, GameFile, ReplayState},
     day::{day_steps, replay_day_state, step_prefix, validate_nomination_record_input},
     error::{CoreError, ErrorKind},
+    information::{information_prompt, validate_confirmed_information},
     model::{Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player},
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
@@ -112,10 +113,13 @@ pub(crate) fn replay_phase_state(
             continue;
         }
 
-        let current_step = steps
+        let mut current_step = steps
             .iter()
             .find(|step| !step_status(&step.id, &step_statuses).is_done())
             .cloned();
+        if let Some(step) = current_step.as_mut() {
+            step.information_prompt = information_prompt(step, players, events);
+        }
         let current_step_id = current_step.as_ref().map(|step| step.id.as_str());
         let phase_overview = steps
             .into_iter()
@@ -138,6 +142,7 @@ pub(crate) fn replay_phase_state(
                     player_id: step.player_id,
                     required_input: step.required_input,
                     can_skip: step.can_skip,
+                    information_prompt: step.information_prompt,
                     status,
                 }
             })
@@ -162,7 +167,7 @@ pub(crate) fn phase_step_statuses(
     players: &[Player],
 ) -> Result<HashMap<String, PhaseStepStatus>, CoreError> {
     let mut statuses = HashMap::new();
-    for event in events {
+    for (event_index, event) in events.iter().enumerate() {
         let (status, step_id, event_input) = match &event.kind {
             GameEventKind::PhaseStepConfirmed { payload } => (
                 PhaseStepStatus::Complete,
@@ -198,6 +203,16 @@ pub(crate) fn phase_step_statuses(
         }
         if let Some(input) = event_input {
             validate_required_input(&step.required_input, input, players)?;
+            if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
+                let players_at_event = replay_players(&events[..event_index])?;
+                validate_confirmed_information(
+                    &step,
+                    &players_at_event,
+                    &events[..event_index],
+                    input,
+                    payload.information.as_ref(),
+                )?;
+            }
         }
         if let GameEventKind::NominationVoteConfirmed { payload } = &event.kind {
             validate_nomination_record_input(&payload.input, players)?;

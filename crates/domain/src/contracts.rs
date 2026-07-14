@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    CoreWarning, DayState, NominationRecord, Phase, PhaseOverviewItem, PhaseStep, Player, StepInput,
+    ConfirmedInformation, CoreWarning, DayState, InformationResult, NominationRecord, Phase,
+    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, StepInput,
 };
 
 pub(crate) struct GameFile {
@@ -73,6 +74,10 @@ pub(crate) struct PhaseStepCommandPayload {
     pub(crate) step_id: String,
     #[serde(default)]
     pub(crate) input: StepInput,
+    #[serde(default)]
+    pub(crate) delivered_result: Option<InformationResult>,
+    #[serde(default)]
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,7 +153,7 @@ pub(crate) enum GameEventKind {
     #[serde(rename = "setupConfirmed")]
     SetupConfirmed { payload: SetupEventPayload },
     #[serde(rename = "phaseStepConfirmed")]
-    PhaseStepConfirmed { payload: PhaseStepEventPayload },
+    PhaseStepConfirmed { payload: Box<PhaseStepEventPayload> },
     #[serde(rename = "phaseStepSkipped")]
     PhaseStepSkipped { payload: StepIdPayload },
     #[serde(rename = "phaseStepNeedsFollowUp")]
@@ -185,6 +190,8 @@ pub(crate) struct PhaseStepEventPayload {
     pub(crate) step_id: String,
     #[serde(default)]
     pub(crate) input: StepInput,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) information: Option<ConfirmedInformation>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
