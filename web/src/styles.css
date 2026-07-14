@@ -1249,6 +1249,222 @@ select {
   font-weight: 900;
 }
 
+.revealFollowupPrototype {
+  grid-template-rows: auto 1fr;
+}
+
+.revealPrototypeBanner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-color: rgba(31, 111, 91, 0.32);
+  background: #edf5f1;
+}
+
+.revealPrototypeBanner strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.revealPrototypeGrimoire {
+  min-height: calc(100vh - 126px);
+}
+
+.revealPrototypeMap {
+  position: relative;
+  width: min(100%, 680px);
+  aspect-ratio: 1;
+  margin: auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(31, 111, 91, 0.08) 0 30%, transparent 30.5%),
+    repeating-radial-gradient(circle at center, transparent 0 14%, rgba(214, 205, 191, 0.35) 14.2% 14.5%);
+}
+
+.revealPrototypeMapCenter {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  width: 34%;
+  min-height: 25%;
+  place-content: center;
+  gap: 5px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(31, 111, 91, 0.28);
+  border-radius: 50%;
+  background: #fffdf8;
+  text-align: center;
+}
+
+.revealPrototypeMapCenter span,
+.revealPrototypeMapCenter small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.revealPrototypeSeat {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  display: grid;
+  width: clamp(76px, 14%, 104px);
+  min-height: 74px;
+  place-content: center;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--townsfolk);
+  border-radius: 50%;
+  background: #fffdf8;
+  box-shadow: 0 8px 20px rgba(63, 51, 35, 0.12);
+  text-align: center;
+}
+
+.revealPrototypeSeat.evil {
+  border-color: var(--demon);
+}
+
+.revealPrototypeSeat.justConfirmed {
+  outline: 5px solid rgba(31, 111, 91, 0.16);
+  box-shadow: 0 0 0 2px var(--primary), 0 8px 20px rgba(63, 51, 35, 0.16);
+}
+
+.revealPrototypeSeat span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.revealPrototypeSeat strong {
+  font-size: 0.9rem;
+}
+
+.revealPrototypeSeat small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.revealPrototypeConfirmedBadge {
+  background: rgba(31, 111, 91, 0.13);
+  color: var(--primary-dark);
+}
+
+.confirmedRevealFollowupCard {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(31, 111, 91, 0.36);
+  border-radius: 8px;
+  background: #f3f8f5;
+  padding: 12px;
+}
+
+.confirmedRevealActor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.confirmedRevealActor > span {
+  display: grid;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fffdf8;
+  font-weight: 900;
+}
+
+.confirmedRevealActor div {
+  display: grid;
+  gap: 2px;
+}
+
+.confirmedRevealActor small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.confirmedRevealContinue {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid rgba(31, 111, 91, 0.2);
+  padding-top: 14px;
+}
+
+.confirmedRevealContinue p,
+.revealPrototypeContinuedNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.revealPrototypeNextStepGuard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.revealPrototypeNextStepGuard strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.revealPrototypeLatestEvent {
+  color: var(--primary) !important;
+  font-weight: 900;
+}
+
+.revealPrototypeStateNote {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  border: 1px solid rgba(31, 111, 91, 0.24);
+  border-radius: 8px;
+  background: rgba(31, 111, 91, 0.07);
+  padding: 10px;
+}
+
+.revealPrototypeStateNote span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.revealPrototypeContinuedNote {
+  border-left: 4px solid var(--primary);
+  background: rgba(31, 111, 91, 0.07);
+  padding: 10px;
+}
+
+@media (max-width: 720px) {
+  .revealPrototypeBanner {
+    display: grid;
+  }
+
+  .revealPrototypeMap {
+    min-height: 540px;
+    aspect-ratio: auto;
+  }
+
+  .revealPrototypeSeat {
+    width: 74px;
+  }
+}
+
 .phasePrototypeShell {
   display: grid;
   gap: 14px;

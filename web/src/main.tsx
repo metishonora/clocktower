@@ -20,6 +20,7 @@ import type {
 import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
+import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import {
@@ -79,6 +80,10 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "reveal-followup") {
+    return <RevealFollowupPrototype />;
+  }
+
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "phase-control") {
     return <PhaseControlPrototype />;
   }
