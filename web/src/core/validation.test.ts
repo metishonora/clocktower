@@ -40,6 +40,11 @@ test("validates Proposal.event at the Wasm JSON boundary", () => {
       warnings: [],
       followUpSteps: [],
       preview: { messageKo: "코어 계약 정상" },
+      revealPayload: {
+        messageKo: "서로 이웃한 악한 팀 쌍은 1쌍입니다.",
+        labelKo: "서로 이웃한 악한 팀 쌍",
+        valueKo: "1쌍",
+      },
     },
   };
 
@@ -47,4 +52,8 @@ test("validates Proposal.event at the Wasm JSON boundary", () => {
   const malformed = structuredClone(valid);
   delete (malformed.value.event.payload as { source?: string }).source;
   throws(() => parseCoreResult(malformed, parseProposal), /이벤트 형식/);
+
+  const incompleteReveal = structuredClone(valid);
+  delete (incompleteReveal.value.revealPayload as { valueKo?: string }).valueKo;
+  throws(() => parseCoreResult(incompleteReveal, parseProposal), /코어 응답 형식/);
 });

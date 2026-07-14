@@ -17,11 +17,11 @@ import type {
   SetupDistribution,
   StepType,
 } from "./core/types";
-import { useGameStore } from "./gameStore";
+import { useGameStore, type PendingConfirmedReveal } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
-import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
+import { RevealPreview, RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import {
   assignActualCharacter,
@@ -99,14 +99,18 @@ export function ClocktowerApp({
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [nominationDraft, setNominationDraft] = useState<NominationDraft>(() => emptyNominationDraft());
-  const latestRevealPayload = proposalRevealPayload(
-    gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined,
-  );
-  const votingStepActive = gameStore.currentStep?.requiredInput.kind === "nominationVote";
+  const votingStepActive =
+    !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
 
   useEffect(() => {
     setNominationDraft(emptyNominationDraft());
   }, [gameStore.currentStep?.id]);
+
+  useEffect(() => {
+    if (!gameStore.pendingConfirmedReveal) {
+      setActiveRevealPayload(undefined);
+    }
+  }, [gameStore.pendingConfirmedReveal]);
 
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
@@ -159,19 +163,28 @@ export function ClocktowerApp({
 
             <aside className="setupRail">
               <section className="panel phasePanel">
-                <CurrentStepPane
-                  currentStep={gameStore.currentStep}
-                  phaseOverview={gameStore.phaseOverview}
-                  players={gameStore.players}
-                  dayState={gameStore.dayState}
-                  nominationDraft={nominationDraft}
-                  onNominationDraftChange={setNominationDraft}
-                  revealPayload={latestRevealPayload}
-                  busy={gameStore.busy}
-                  onConfirm={gameStore.confirmCurrentStep}
-                  onSkip={gameStore.skipCurrentStep}
-                  onShowReveal={showReveal}
-                />
+                {gameStore.pendingConfirmedReveal ? (
+                  <ConfirmedRevealFollowup
+                    pendingReveal={gameStore.pendingConfirmedReveal}
+                    players={gameStore.players}
+                    replayReady={gameStore.pendingConfirmedRevealReady}
+                    busy={gameStore.busy}
+                    onShowReveal={showReveal}
+                    onContinue={gameStore.continueAfterConfirmedReveal}
+                  />
+                ) : (
+                  <CurrentStepPane
+                    currentStep={gameStore.currentStep}
+                    phaseOverview={gameStore.phaseOverview}
+                    players={gameStore.players}
+                    dayState={gameStore.dayState}
+                    nominationDraft={nominationDraft}
+                    onNominationDraftChange={setNominationDraft}
+                    busy={gameStore.busy}
+                    onConfirm={gameStore.confirmCurrentStep}
+                    onSkip={gameStore.skipCurrentStep}
+                  />
+                )}
               </section>
 
               <section className="panel setup">
@@ -646,6 +659,74 @@ function SetupSummary({
   );
 }
 
+function ConfirmedRevealFollowup({
+  pendingReveal,
+  players,
+  replayReady,
+  busy,
+  onShowReveal,
+  onContinue,
+}: {
+  pendingReveal: PendingConfirmedReveal;
+  players: Player[];
+  replayReady: boolean;
+  busy: boolean;
+  onShowReveal: (payload: RevealPayload) => void;
+  onContinue: () => void;
+}) {
+  const actor = pendingReveal.step.playerId
+    ? players.find((player) => player.id === pendingReveal.step.playerId)
+    : undefined;
+  const actorTitle = actor
+    ? `${actor.name}${pendingReveal.step.character ? ` · ${characterLabel(pendingReveal.step.character)}` : ""}`
+    : stepTitle(pendingReveal.step);
+
+  return (
+    <>
+      <div className="sectionHeader compact">
+        <div>
+          <p className="eyebrow">{phaseLabel(pendingReveal.step.phase)} · 후속 조치</p>
+          <h2>확정된 정보 공개</h2>
+        </div>
+        <span className="phaseBadge confirmedRevealBadge">확정됨</span>
+      </div>
+
+      <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
+        <div className="confirmedRevealActor">
+          <span>{actor?.seat ?? "•"}</span>
+          <div>
+            <strong>{actorTitle}</strong>
+            <small>{replayReady ? "이벤트 확정과 다음 상태 리플레이가 완료되었습니다." : "이벤트 확정 완료 · 다음 상태 재생 중"}</small>
+          </div>
+        </div>
+
+        <RevealPreview
+          payload={pendingReveal.payload}
+          onShow={() => onShowReveal(pendingReveal.payload)}
+          disabled={busy}
+        />
+
+        <div className="confirmedRevealContinue">
+          <button
+            type="button"
+            className="secondaryButton"
+            onClick={onContinue}
+            disabled={busy || !replayReady}
+          >
+            다음 단계로 계속
+          </button>
+          <p>{replayReady ? "Reveal을 다시 열 필요가 없을 때만 다음 단계 입력을 표시합니다." : "다음 상태 재생 중"}</p>
+        </div>
+      </section>
+
+      <div className="confirmedRevealNextStepGuard" aria-label="다음 단계 대기">
+        <span>다음 단계</span>
+        <strong>명시적으로 계속할 때까지 숨김</strong>
+      </div>
+    </>
+  );
+}
+
 function CurrentStepPane({
   currentStep,
   phaseOverview,
@@ -653,11 +734,9 @@ function CurrentStepPane({
   dayState,
   nominationDraft,
   onNominationDraftChange,
-  revealPayload,
   busy,
   onConfirm,
   onSkip,
-  onShowReveal,
 }: {
   currentStep?: PhaseStep;
   phaseOverview: PhaseOverviewItem[];
@@ -665,11 +744,9 @@ function CurrentStepPane({
   dayState?: DayState;
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
-  revealPayload?: RevealPayload;
   busy: boolean;
   onConfirm: (input?: PhaseStepInput) => void;
   onSkip: () => void;
-  onShowReveal: (payload: RevealPayload) => void;
 }) {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
@@ -813,14 +890,6 @@ function CurrentStepPane({
           <p className="emptyStep">진행할 단계 없음</p>
         )}
       </section>
-
-      {revealPayload ? (
-        <RevealPreview
-          payload={revealPayload}
-          onShow={() => onShowReveal(revealPayload)}
-          disabled={busy}
-        />
-      ) : null}
 
       <section className="phaseOverview" aria-label="단계 개요">
         <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>

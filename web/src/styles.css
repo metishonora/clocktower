@@ -1239,35 +1239,25 @@ select {
 }
 
 .revealCloseButton {
-  min-height: 36px;
+  min-height: 48px;
   border: 1px solid rgba(255, 253, 248, 0.32);
   border-radius: 6px;
   background: transparent;
   color: #fffdf8;
-  padding: 6px 10px;
-  font-size: 0.78rem;
+  padding: 10px 16px;
+  font-size: clamp(1rem, 2vw, 1.2rem);
   font-weight: 900;
 }
 
-.revealPrototypePlayerCard {
+.structuredRevealCard {
   gap: clamp(22px, 4vw, 34px);
 }
 
-.revealPrototypePlayerLabel {
+.revealPlayerLabel {
   margin: 0;
   color: #fffdf8;
   font-size: clamp(1.4rem, 3.5vw, 2.4rem);
   line-height: 1.25;
-}
-
-.revealPrototypePlayerCard p {
-  font-size: clamp(3rem, 10vw, 6rem);
-}
-
-.revealPrototypeCloseButton {
-  min-height: 48px;
-  padding: 10px 16px;
-  font-size: clamp(1rem, 2vw, 1.2rem);
 }
 
 .revealFollowupPrototype {
@@ -1368,7 +1358,7 @@ select {
   font-weight: 800;
 }
 
-.revealPrototypeConfirmedBadge {
+.confirmedRevealBadge {
   background: rgba(31, 111, 91, 0.13);
   color: var(--primary-dark);
 }
@@ -1426,7 +1416,7 @@ select {
   line-height: 1.4;
 }
 
-.revealPrototypeNextStepGuard {
+.confirmedRevealNextStepGuard {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1439,7 +1429,7 @@ select {
   font-size: 0.78rem;
 }
 
-.revealPrototypeNextStepGuard strong {
+.confirmedRevealNextStepGuard strong {
   color: var(--ink);
   text-align: right;
 }

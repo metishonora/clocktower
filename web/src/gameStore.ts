@@ -4,8 +4,10 @@ import type {
   CoreResult,
   GameEvent,
   GameFile,
+  PhaseStep,
   PhaseStepInput,
   Proposal,
+  RevealPayload,
   ReplayState,
   SetupDistribution,
 } from "./core/types.js";
@@ -16,6 +18,7 @@ import {
   saveLatestGame,
   type GameStorageDriver,
 } from "./gameStorage.js";
+import { proposalRevealPayload } from "./core/revealPayload.js";
 import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
@@ -44,12 +47,19 @@ export type GameStoreDependencies = {
   storage: GameStorageDriver;
 };
 
+export type PendingConfirmedReveal = {
+  payload: RevealPayload;
+  step: PhaseStep;
+  confirmedEventCount: number;
+};
+
 export function useGameStore({ core, storage }: GameStoreDependencies) {
   const [storageDriver] = useState<GameStorageDriver>(() => storage);
   const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile());
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
   const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
   const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
+  const [pendingConfirmedReveal, setPendingConfirmedReveal] = useState<PendingConfirmedReveal>();
   const [asyncSetupExpectedCounts, setAsyncSetupExpectedCounts] = useState<{
     requestKey: string;
     counts: SetupDistribution;
@@ -133,6 +143,9 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const setupHintsReady = Boolean(setupExpectedCounts);
   const shownWarnings =
     !hasConfirmedEvents && proposalResult?.ok ? proposalResult.value.warnings : replayState?.warnings ?? [];
+  const pendingConfirmedRevealReady = pendingConfirmedReveal
+    ? replayState?.eventCount === pendingConfirmedReveal.confirmedEventCount
+    : true;
 
   useEffect(() => {
     if (!setupConfirmed) return;
@@ -257,6 +270,16 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setBusy(false);
 
     if (!result.ok) return;
+    if (commandType === "confirmStep") {
+      const payload = proposalRevealPayload(result.value);
+      if (payload) {
+        setPendingConfirmedReveal({
+          payload,
+          step: currentStep,
+          confirmedEventCount: gameFile.game.events.length + 1,
+        });
+      }
+    }
     appendProposalEvent(result.value);
   }
 
@@ -278,6 +301,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
     setGameFile(createGameFile());
     setProposalResult(undefined);
+    setPendingConfirmedReveal(undefined);
     setSetupDraft(createSetupDraft());
   }
 
@@ -288,6 +312,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       setSetupDraft(createSetupDraftFromConfirmedPlayers(players));
     }
     setProposalResult(undefined);
+    setPendingConfirmedReveal(undefined);
     setGameFile((current) => {
       if (current.game.events.length === 0) return current;
       return {
@@ -303,6 +328,11 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
   function clearProposalResult() {
     setProposalResult(undefined);
+  }
+
+  function continueAfterConfirmedReveal() {
+    if (!pendingConfirmedRevealReady) return;
+    setPendingConfirmedReveal(undefined);
   }
 
   async function importGameFile(json: string) {
@@ -323,6 +353,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       setSetupDraft((current) => syncSetupDraftFromReplayState(current, importedReplay.value));
       setGameFile(importedGameFile);
       setProposalResult(undefined);
+      setPendingConfirmedReveal(undefined);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "게임 파일 가져오기 실패");
     } finally {
@@ -336,6 +367,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setSetupDraft,
     replayResult,
     proposalResult,
+    pendingConfirmedReveal,
+    pendingConfirmedRevealReady,
     busy,
     loadError: loadError ?? storageError,
     storageReady,
@@ -354,6 +387,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     resetSetup,
     undoLatestEvent,
     clearProposalResult,
+    continueAfterConfirmedReveal,
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };

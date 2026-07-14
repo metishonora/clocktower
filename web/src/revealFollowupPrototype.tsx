@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { RevealPreview } from "./reveal";
+import { RevealPreview, RevealScreen } from "./reveal";
 
 // PROTOTYPE issue #32: confirm the post-confirm Reveal follow-up flow before
 // connecting it to the production game-store state.
@@ -8,7 +8,9 @@ type PrototypeView = "followup" | "reveal" | "continued";
 
 const confirmedReveal = {
   previewMessageKo: "요리사에게 악한 팀 이웃 수를 공개합니다.",
-  messageKo: "1쌍",
+  messageKo: "서로 이웃한 악한 팀 쌍은 1쌍입니다.",
+  labelKo: "서로 이웃한 악한 팀 쌍",
+  valueKo: "1쌍",
 };
 
 const seats = [
@@ -27,7 +29,7 @@ export function RevealFollowupPrototype() {
   const [view, setView] = useState<PrototypeView>("followup");
 
   if (view === "reveal") {
-    return <PrototypeRevealScreen onClose={() => setView("followup")} />;
+    return <RevealScreen payload={confirmedReveal} onClose={() => setView("followup")} />;
   }
 
   return (
@@ -112,20 +114,6 @@ export function RevealFollowupPrototype() {
   );
 }
 
-function PrototypeRevealScreen({ onClose }: { onClose: () => void }) {
-  return (
-    <main className="revealShell" aria-label="플레이어 공개 화면">
-      <section className="revealCard revealPrototypePlayerCard">
-        <h1 className="revealPrototypePlayerLabel">서로 이웃한 악한 팀 쌍</h1>
-        <p>{confirmedReveal.messageKo}</p>
-        <button type="button" className="revealCloseButton revealPrototypeCloseButton" onClick={onClose}>
-          확인했다면 눈을 감으세요.
-        </button>
-      </section>
-    </main>
-  );
-}
-
 function ConfirmedRevealFollowup({
   onShowReveal,
   onContinue,
@@ -140,7 +128,7 @@ function ConfirmedRevealFollowup({
           <p className="eyebrow">첫 번째 밤 · 후속 조치</p>
           <h2>확정된 정보 공개</h2>
         </div>
-        <span className="phaseBadge revealPrototypeConfirmedBadge">확정됨</span>
+        <span className="phaseBadge confirmedRevealBadge">확정됨</span>
       </div>
 
       <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
@@ -162,7 +150,7 @@ function ConfirmedRevealFollowup({
         </div>
       </section>
 
-      <div className="revealPrototypeNextStepGuard" aria-label="다음 단계 대기">
+      <div className="confirmedRevealNextStepGuard" aria-label="다음 단계 대기">
         <span>다음 단계</span>
         <strong>명시적으로 계속할 때까지 숨김</strong>
       </div>
