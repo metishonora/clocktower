@@ -13,6 +13,7 @@ import type {
   SetupDistribution,
 } from "./core/types";
 import { useGameStore } from "./gameStore";
+import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { proposalRevealPayload, RevealPreview, RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import {
@@ -67,6 +68,14 @@ function emptyNominationDraft(): NominationDraft {
 }
 
 function App() {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "phase-control") {
+    return <PhaseControlPrototype />;
+  }
+
+  return <ClocktowerApp />;
+}
+
+function ClocktowerApp() {
   const gameStore = useGameStore();
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();

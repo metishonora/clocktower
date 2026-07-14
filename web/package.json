@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --workspace-root build:wasm && vite --host 127.0.0.1",
+    "prototype:phase-control": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "test": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js"
   },

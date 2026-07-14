@@ -46,6 +46,12 @@ _Avoid_: User
 The Storyteller-facing complete game state, including secret character and token information.
 _Avoid_: Board, table
 
+**Grimoire Peek**:
+A temporary read-only overlay for quickly checking the full Grimoire state during phase control.
+It can include seat order, alive/dead state, Actual Character, important tokens, and current phase progress.
+It should not include long rules text, editing forms, or the full event log.
+_Avoid_: Phase Overview, rules help
+
 **Actual Character**:
 The character a player truly has in the game state.
 _Avoid_: Real character, assigned character
@@ -73,6 +79,13 @@ _Avoid_: Preview event
 **Reveal**:
 A player-facing information display that must contain only the information currently being shown.
 _Avoid_: Public view, player screen
+
+**Delivered Information**:
+The exact information the Storyteller chose to show or tell for an information step.
+It may match or differ from true information and must be available later for replay and audit.
+When the Storyteller is allowed to choose it, Delivered Information should be chosen from valid options instead of free text.
+If no drunk, poisoned, Registration Judgment, or other discretion applies, Delivered Information is fixed and should not be presented as a choice.
+_Avoid_: Result, true result
 
 **Execution**:
 The Storyteller-confirmed result of the day's nomination and vote process.
