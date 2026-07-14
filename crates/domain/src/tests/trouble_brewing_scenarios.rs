@@ -50,6 +50,11 @@ fn confirming_chef_step_returns_reveal_payload() {
         actual["value"]["revealPayload"]["messageKo"],
         "서로 이웃한 악 팀 쌍은 0쌍입니다."
     );
+    assert_eq!(
+        actual["value"]["revealPayload"]["labelKo"],
+        "서로 이웃한 악한 팀 쌍"
+    );
+    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0쌍");
     assert!(actual["value"]["event"]["payload"]["input"]["reason"].is_null());
 
     let mut events = game["game"]["events"].as_array().unwrap().clone();
@@ -94,6 +99,8 @@ fn confirming_washerwoman_information_logs_and_reveals_selected_setup_info() {
         actual["value"]["revealPayload"]["messageKo"],
         "세탁부 정보: 1번 Ada 또는 2번 Bert 중 한 명은 요리사입니다."
     );
+    assert!(actual["value"]["revealPayload"].get("labelKo").is_none());
+    assert!(actual["value"]["revealPayload"].get("valueKo").is_none());
 }
 
 #[test]
@@ -211,6 +218,7 @@ fn confirming_chef_can_log_true_count_and_reveal_different_displayed_value() {
         actual["value"]["revealPayload"]["messageKo"],
         "서로 이웃한 악 팀 쌍은 0쌍입니다."
     );
+    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0쌍");
 }
 
 #[test]
@@ -318,6 +326,11 @@ fn confirming_empath_step_returns_reveal_payload() {
         actual["value"]["revealPayload"]["messageKo"],
         "살아있는 양옆 이웃 중 악 팀은 0명입니다."
     );
+    assert_eq!(
+        actual["value"]["revealPayload"]["labelKo"],
+        "살아있는 양옆 이웃 중 악한 팀"
+    );
+    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0명");
 }
 
 #[test]

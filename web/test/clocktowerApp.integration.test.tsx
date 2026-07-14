@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { GameFile } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -74,7 +74,7 @@ describe("ClocktowerApp live-play integration", () => {
     );
   });
 
-  test("opens a confirmed Reveal follow-up and closes back to the replayed current step", async () => {
+  test("keeps a confirmed Reveal repeatable until explicit continue to the replayed current step", async () => {
     const revealStep = step({
       id: "firstNight:chef",
       character: "chef",
@@ -91,7 +91,9 @@ describe("ClocktowerApp live-play integration", () => {
       replayAfterProposal: replayState({ currentStep: followUpStep, eventCount: 2 }),
       proposal: proposal(canonicalEvent, {
         previewMessageKo: "악 팀 이웃 수를 공개합니다.",
-        messageKo: "서로 이웃한 악 팀 쌍은 1쌍입니다.",
+        messageKo: "서로 이웃한 악한 팀 쌍은 1쌍입니다.",
+        labelKo: "서로 이웃한 악한 팀 쌍",
+        valueKo: "1쌍",
       }),
     });
     const storage = new MemoryGameStorageDriver(gameFile());
@@ -101,22 +103,81 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
     await user.click(screen.getByRole("button", { name: "확정" }));
-    const preview = await screen.findByLabelText("Reveal 미리보기");
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    expect(screen.getByRole("heading", { name: "확정된 정보 공개" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "공감능력자: 3번 Cy" })).toBeNull();
+    const preview = within(followup).getByLabelText("Reveal 미리보기");
     expect(within(preview).getByText("악 팀 이웃 수를 공개합니다.")).toBeTruthy();
+
+    await waitFor(() => {
+      const continueButton = within(followup).getByRole("button", { name: "다음 단계로 계속" }) as HTMLButtonElement;
+      expect(continueButton.disabled).toBe(false);
+      const savedGame = latestSavedGame(storage.savedGames);
+      expect(savedGame.game.events.filter((savedEvent) => savedEvent.id === canonicalEvent.id)).toHaveLength(1);
+    });
+    const replayCallsAfterConfirm = vi.mocked(core.replay).mock.calls.length;
 
     await user.click(within(preview).getByRole("button", { name: "플레이어에게 공개" }));
     const revealScreen = screen.getByLabelText("플레이어 공개 화면");
-    expect(within(revealScreen).getByText("서로 이웃한 악 팀 쌍은 1쌍입니다.")).toBeTruthy();
+    expect(within(revealScreen).getByRole("heading", { name: "서로 이웃한 악한 팀 쌍" })).toBeTruthy();
+    expect(within(revealScreen).getByText("1쌍")).toBeTruthy();
     expect(screen.queryByText("그리모어")).toBeNull();
     expect(screen.queryByText("이벤트 로그")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
     expect(screen.queryByLabelText("플레이어 공개 화면")).toBeNull();
+    expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "공감능력자: 3번 Cy" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
+    const reopenedReveal = screen.getByLabelText("플레이어 공개 화면");
+    await user.click(within(reopenedReveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+
+    expect(core.propose).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(core.replay).mock.calls).toHaveLength(replayCallsAfterConfirm);
+    await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));
     expect(await screen.findByRole("heading", { name: "공감능력자: 3번 Cy" })).toBeTruthy();
-    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
-      type: "confirmStep",
-      payload: { stepId: "firstNight:chef", input: null },
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+  });
+
+  test("undoing the confirmed information clears its pending Reveal", async () => {
+    const revealStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
     });
+    const followUpStep = step({
+      id: "firstNight:empath",
+      character: "empath",
+      playerId: "player-3",
+    });
+    const canonicalEvent = event("event-chef", "요리사 정보 확정");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: revealStep }),
+      replayAfterProposal: replayState({ currentStep: followUpStep, eventCount: 2 }),
+      proposal: proposal(canonicalEvent, {
+        messageKo: "서로 이웃한 악한 팀 쌍은 1쌍입니다.",
+        labelKo: "서로 이웃한 악한 팀 쌍",
+        valueKo: "1쌍",
+      }),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const confirmDialog = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    await user.click(screen.getByRole("button", { name: "확정" }));
+    await screen.findByLabelText("확정된 Reveal 후속 조치");
+    await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
+
+    expect(await screen.findByRole("heading", { name: "요리사: 2번 Bert" })).toBeTruthy();
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    await waitFor(() => {
+      expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(1);
+    });
+    confirmDialog.mockRestore();
   });
 
   test("selects nominator, nominee, and seat-map voters through the visible vote preview and confirm path", async () => {

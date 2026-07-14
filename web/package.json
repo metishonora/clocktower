@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "pnpm --workspace-root build:wasm && vite --host 127.0.0.1",
     "prototype:phase-control": "vite --host 0.0.0.0",
+    "prototype:reveal-followup": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js .codex-tmp/web-tests/**/*.test.js",

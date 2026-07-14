@@ -8,6 +8,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
+import { isRevealPayload } from "./revealPayload.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -137,12 +138,7 @@ export function parseProposal(value: unknown): Proposal {
     throw invalidCoreResponse();
   }
   const event = parseGameEvent(value.event);
-  if (
-    value.revealPayload !== undefined &&
-    (!isRecord(value.revealPayload) ||
-      typeof value.revealPayload.messageKo !== "string" ||
-      !isOptionalString(value.revealPayload.previewMessageKo))
-  ) {
+  if (value.revealPayload !== undefined && !isRevealPayload(value.revealPayload)) {
     throw invalidCoreResponse();
   }
   return { ...value, event } as Proposal;

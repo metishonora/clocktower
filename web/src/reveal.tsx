@@ -1,20 +1,4 @@
-import type { Proposal, RevealPayload } from "./core/types.js";
-
-export function proposalRevealPayload(proposal?: Proposal): RevealPayload | undefined {
-  if (!proposal?.revealPayload) return undefined;
-  return isRevealPayload(proposal.revealPayload) ? proposal.revealPayload : undefined;
-}
-
-export function isRevealPayload(value: unknown): value is RevealPayload {
-  return (
-    Boolean(value) &&
-    typeof value === "object" &&
-    value !== null &&
-    "messageKo" in value &&
-    typeof value.messageKo === "string" &&
-    value.messageKo.trim().length > 0
-  );
-}
+import type { RevealPayload } from "./core/types.js";
 
 export function RevealPreview({
   payload,
@@ -42,12 +26,17 @@ export function RevealPreview({
 }
 
 export function RevealScreen({ payload, onClose }: { payload: RevealPayload; onClose: () => void }) {
+  const label = payload.labelKo?.trim();
+  const structuredValue = label ? payload.valueKo?.trim() : undefined;
+  const value = structuredValue || payload.messageKo;
+
   return (
     <main className="revealShell" aria-label="플레이어 공개 화면">
-      <section className="revealCard">
-        <p>{payload.messageKo}</p>
+      <section className={`revealCard ${label ? "structuredRevealCard" : ""}`}>
+        {label ? <h1 className="revealPlayerLabel">{label}</h1> : null}
+        <p>{value}</p>
         <button type="button" className="revealCloseButton" onClick={onClose}>
-          확인했다면 눈을 감으세요
+          확인했다면 눈을 감으세요.
         </button>
       </section>
     </main>

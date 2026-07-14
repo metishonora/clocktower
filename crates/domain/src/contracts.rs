@@ -122,6 +122,10 @@ pub(crate) struct Proposal {
 pub(crate) struct RevealPayload {
     pub(crate) message_ko: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) label_ko: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) value_ko: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) preview_message_ko: Option<String>,
 }
 

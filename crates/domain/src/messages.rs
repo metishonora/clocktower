@@ -131,22 +131,29 @@ pub(crate) fn phase_step_reveal_payload(
         "washerwoman" => setup_info_reveal_payload("washerwoman", input, players),
         "librarian" => setup_info_reveal_payload("librarian", input, players),
         "investigator" => setup_info_reveal_payload("investigator", input, players),
-        "chef" => Some(RevealPayload {
-            message_ko: format!(
-                "서로 이웃한 악 팀 쌍은 {}쌍입니다.",
-                numeric_input_value(input).unwrap_or_else(|| evil_neighbor_pair_count(players))
-            ),
-            preview_message_ko: None,
-        }),
-        "empath" => Some(RevealPayload {
-            message_ko: format!(
-                "살아있는 양옆 이웃 중 악 팀은 {}명입니다.",
-                empath_evil_neighbor_count(players, step.player_id.as_deref()?)?
-            ),
-            preview_message_ko: None,
-        }),
+        "chef" => {
+            let count =
+                numeric_input_value(input).unwrap_or_else(|| evil_neighbor_pair_count(players));
+            Some(RevealPayload {
+                message_ko: format!("서로 이웃한 악 팀 쌍은 {count}쌍입니다."),
+                label_ko: Some("서로 이웃한 악한 팀 쌍".to_string()),
+                value_ko: Some(format!("{count}쌍")),
+                preview_message_ko: None,
+            })
+        }
+        "empath" => {
+            let count = empath_evil_neighbor_count(players, step.player_id.as_deref()?)?;
+            Some(RevealPayload {
+                message_ko: format!("살아있는 양옆 이웃 중 악 팀은 {count}명입니다."),
+                label_ko: Some("살아있는 양옆 이웃 중 악한 팀".to_string()),
+                value_ko: Some(format!("{count}명")),
+                preview_message_ko: None,
+            })
+        }
         "spy" => Some(RevealPayload {
             message_ko: format!("스파이 그리모어:\n{}", grimoire_lines(players).join("\n")),
+            label_ko: None,
+            value_ko: None,
             preview_message_ko: Some("스파이 그리모어 Reveal 준비됨".to_string()),
         }),
         _ => None,
@@ -213,6 +220,8 @@ pub(crate) fn setup_info_reveal_payload(
     if kind == "librarian" && input.zero_outsiders == Some(true) {
         return Some(RevealPayload {
             message_ko: "사서 정보: 외부인은 0명입니다.".to_string(),
+            label_ko: None,
+            value_ko: None,
             preview_message_ko: None,
         });
     }
@@ -226,6 +235,8 @@ pub(crate) fn setup_info_reveal_payload(
             candidates.join(" 또는 "),
             character_label(character_id)
         ),
+        label_ko: None,
+        value_ko: None,
         preview_message_ko: None,
     })
 }
@@ -276,6 +287,8 @@ pub(crate) fn evil_info_reveal_payload(
                 list_or_none(&demons),
                 list_or_none(&minions)
             ),
+            label_ko: None,
+            value_ko: None,
             preview_message_ko: None,
         });
     }
@@ -297,6 +310,8 @@ pub(crate) fn evil_info_reveal_payload(
                 "악마 정보:\n하수인: {}\n블러프: {bluffs}",
                 list_or_none(&minions)
             ),
+            label_ko: None,
+            value_ko: None,
             preview_message_ko: None,
         });
     }

@@ -59,6 +59,8 @@ export type Proposal = {
 export type RevealPayload = {
   messageKo: string;
   previewMessageKo?: string;
+  labelKo?: string;
+  valueKo?: string;
 };
 
 export type SetupDistributionRequest = {
