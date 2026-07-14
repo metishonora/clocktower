@@ -1,0 +1,111 @@
+import { useMemo, useState } from "react";
+import type { Player } from "../../core/types";
+import {
+  characterLabel,
+  findOverlappingSeats,
+  seatLayoutPositions,
+  updateSeatPosition,
+  type SetupDraft,
+} from "../../setupDraft";
+import { voteStatusForPlayer } from "../../voting";
+import type { NominationDraft } from "../voting/useNominationDraft";
+import { SeatLayoutControls, startSeatDrag } from "./SeatLayoutControls";
+
+export function Grimoire({
+  players,
+  draft,
+  onDraftChange,
+  busy,
+  nominationVoting,
+}: {
+  players: Player[];
+  draft: SetupDraft;
+  onDraftChange: (draft: SetupDraft) => void;
+  busy: boolean;
+  nominationVoting?: {
+    draft: NominationDraft;
+    onChange: (draft: NominationDraft) => void;
+  };
+}) {
+  const [layoutEditing, setLayoutEditing] = useState(false);
+  const seats = players.length > 0 ? players : draft.players;
+  const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);
+  const overlapSeats = findOverlappingSeats(draft.seatPositions);
+
+  return (
+    <>
+      <SeatLayoutControls
+        draft={draft}
+        layoutEditing={layoutEditing}
+        busy={busy}
+        onChange={onDraftChange}
+        onLayoutEditingChange={setLayoutEditing}
+      />
+      <div
+        className={`seatMap confirmedSeatMap adjustableSeatMap ${layoutEditing ? "layoutEditing" : ""} ${
+          seats.length >= 12 ? "compactSeats" : ""
+        }`}
+        aria-label="조정 가능한 그리모어 좌석 맵"
+      >
+        <div className="draftLayoutTableMark" aria-hidden="true">
+          테이블
+        </div>
+        <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
+        {seats.map((seat) => {
+          const confirmedPlayer = "id" in seat ? (seat as Player) : undefined;
+          const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : undefined;
+          const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : undefined;
+          const alignment = "alignment" in seat ? seat.alignment : "good";
+          const showShownCharacter =
+            actualCharacter === "drunk" || Boolean(shownCharacter && actualCharacter !== shownCharacter);
+          const position = draft.seatPositions[seat.seat] ?? fallbackPositions[seat.seat];
+          const playerId = confirmedPlayer?.id;
+          const votingSelected = Boolean(playerId && nominationVoting?.draft.voterIds.includes(playerId));
+          const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
+          const votingDisabled = busy || layoutEditing || !playerId || Boolean(voteStatus?.disabled);
+
+          function toggleVote() {
+            if (!playerId || !nominationVoting || votingDisabled) return;
+            const voterIds = votingSelected
+              ? nominationVoting.draft.voterIds.filter((selectedId) => selectedId !== playerId)
+              : [...nominationVoting.draft.voterIds, playerId];
+            nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
+          }
+
+          return (
+            <button
+              type="button"
+              className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
+                overlapSeats.has(seat.seat) ? "overlap" : ""
+              } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
+                voteStatus?.className ?? ""
+              }`}
+              style={{ left: `${position.x}%`, top: `${position.y}%` }}
+              onClick={toggleVote}
+              onPointerDown={(event) =>
+                startSeatDrag({
+                  event,
+                  enabled: layoutEditing,
+                  busy,
+                  initialPosition: position,
+                  onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
+                })
+              }
+              aria-disabled={nominationVoting ? votingDisabled : true}
+              aria-pressed={nominationVoting ? votingSelected : undefined}
+              key={seat.seat}
+            >
+              <span className="seatTokenNumber">{seat.seat}</span>
+              <strong>{seat.name}</strong>
+              <small>{characterLabel(actualCharacter)}</small>
+              {nominationVoting && voteStatus ? <small>{voteStatus.label}</small> : null}
+              {showShownCharacter ? (
+                <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}

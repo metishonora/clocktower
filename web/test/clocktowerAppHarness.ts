@@ -130,6 +130,7 @@ export function step({
   maxSelections,
   stepType = "character",
   phase = "firstNight",
+  canSkip = false,
 }: {
   id: string;
   character?: string;
@@ -140,6 +141,7 @@ export function step({
   maxSelections?: number;
   stepType?: StepType;
   phase?: Phase;
+  canSkip?: boolean;
 }): PhaseStep {
   return {
     id,
@@ -154,7 +156,7 @@ export function step({
       maxSelections,
       optional: false,
     },
-    canSkip: false,
+    canSkip,
   };
 }
 

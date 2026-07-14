@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { GameFile } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -13,7 +13,63 @@ import {
   step,
 } from "./clocktowerAppHarness";
 
+const originalCreateObjectURL = URL.createObjectURL;
+const originalRevokeObjectURL = URL.revokeObjectURL;
+
+afterEach(() => {
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: originalCreateObjectURL });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: originalRevokeObjectURL });
+});
+
 describe("ClocktowerApp live-play integration", () => {
+  test("confirms a completed setup draft through the visible setup form", async () => {
+    const firstStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+    const setupEvent = gameFile().game.events[0];
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: firstStep }),
+      replayAfterProposal: replayState({ currentStep: firstStep, eventCount: 2 }),
+      proposal: proposal(setupEvent),
+    });
+    const storage = new MemoryGameStorageDriver(undefined);
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    const seatMap = await screen.findByLabelText("조정 가능한 그리모어 좌석 맵");
+    const assignments = [
+      ["플레이어 1", "세탁부"],
+      ["플레이어 2", "사서"],
+      ["플레이어 3", "요리사"],
+      ["플레이어 4", "독살자"],
+      ["플레이어 5", "임프"],
+    ] as const;
+    for (const [playerName, characterName] of assignments) {
+      await user.click(within(seatMap).getByRole("button", { name: new RegExp(playerName) }));
+      const characterButton = screen.getByText(characterName, { selector: ".characterText strong" }).closest("button");
+      if (!characterButton) throw new Error(`${characterName} character card was not rendered`);
+      await user.click(characterButton);
+    }
+
+    const confirmButton = screen.getByRole("button", { name: "설정 확정" }) as HTMLButtonElement;
+    expect(confirmButton.disabled).toBe(false);
+    await user.click(confirmButton);
+
+    expect(core.propose).toHaveBeenLastCalledWith(expect.any(Object), {
+      type: "createGame",
+      payload: {
+        players: [
+          { seat: 1, name: "플레이어 1", actualCharacter: "washerwoman" },
+          { seat: 2, name: "플레이어 2", actualCharacter: "librarian" },
+          { seat: 3, name: "플레이어 3", actualCharacter: "chef" },
+          { seat: 4, name: "플레이어 4", actualCharacter: "poisoner" },
+          { seat: 5, name: "플레이어 5", actualCharacter: "imp" },
+        ],
+      },
+    });
+    expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
+    expect(screen.getByText("초기 설정 확정")).toBeTruthy();
+  });
+
   test("confirms a current step through Command, canonical event, replay, event log, and autosave", async () => {
     const currentStep = step({
       id: "firstNight:poisoner",
@@ -249,6 +305,72 @@ describe("ClocktowerApp live-play integration", () => {
       },
     });
     expect(await screen.findByRole("heading", { name: "지명과 투표 2" })).toBeTruthy();
+  });
+
+  test("skips a skippable phase step through its canonical event and replay path", async () => {
+    const currentStep = step({
+      id: "day:nomination:1",
+      kind: "nominationVote",
+      stepType: "nomination",
+      phase: "day",
+      canSkip: true,
+    });
+    const nextStep = step({ id: "day:execution", kind: "executionDecision", stepType: "execution", phase: "day" });
+    const canonicalEvent = event("event-skip", "지명 종료", "day");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, dayState: { nominations: [] } }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2, dayState: { nominations: [] } }),
+      proposal: proposal(canonicalEvent),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "지명과 투표 1" });
+    await user.click(screen.getByRole("button", { name: "지명 종료" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "skipStep",
+      payload: { stepId: "day:nomination:1", input: null },
+    });
+    expect(await screen.findByRole("heading", { name: "처형 확정" })).toBeTruthy();
+    expect(screen.getByText("지명 종료")).toBeTruthy();
+    await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2));
+  });
+
+  test("keeps the visible JSON export and import controls connected to game-file boundaries", async () => {
+    const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+    const createObjectURL = vi.fn(() => "blob:clocktower-export");
+    const revokeObjectURL = vi.fn();
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    await user.click(screen.getByRole("button", { name: "JSON 내보내기" }));
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(anchorClick).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:clocktower-export");
+
+    const imported = gameFile();
+    imported.game.id = "imported-game";
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!fileInput) throw new Error("JSON file input was not rendered");
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await user.upload(fileInput, new File([JSON.stringify(imported)], "clocktower.json", { type: "application/json" }));
+
+    await waitFor(() => expect(core.replay).toHaveBeenCalledWith(imported));
+    expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
 });
 

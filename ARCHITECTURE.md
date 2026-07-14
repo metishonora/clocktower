@@ -162,6 +162,56 @@ Do not add a routing library for MVP. Use app screen state for setup, play, reve
 
 Add routing only if URL-addressable screens become useful.
 
+### TypeScript Module Ownership
+
+Keep the production React entrypoint limited to application wiring and compose feature-owned components through explicit typed props. Feature components must not import `gameStore.ts`, call `useGameStore`, or reach into state owned by another feature. When two surfaces share draft state, one feature owns its type and lifecycle while `main.tsx` passes the resulting value and callbacks to both consumers.
+
+Organize the production UI using these responsibilities:
+
+```text
+web/src/
+  entry.tsx
+  main.tsx
+  gameStore.ts
+  gameStorage.ts
+  setupDraft.ts
+  voting.ts
+  reveal.tsx
+  components/
+    CharacterSelect.tsx
+    CoreFeedback.tsx
+  features/
+    setup/
+      SetupForm.tsx
+      ConfirmedSetup.tsx
+    grimoire/
+      Grimoire.tsx
+      SeatLayoutControls.tsx
+    phase-control/
+      PhaseControl.tsx
+      StepInputs.tsx
+      phaseInput.ts
+    voting/
+      NominationVoteInput.tsx
+      useNominationDraft.ts
+    event-log/
+      EventLog.tsx
+```
+
+- `entry.tsx` owns the browser DOM bootstrap and production adapter construction. It renders `App` and contains no game-flow UI.
+- `main.tsx` owns development prototype routing, the single `useGameStore` call, app-level Reveal and file-import state, import/export browser effects, and top-level setup/live-play composition. It passes narrow values and callbacks to feature components instead of passing the store.
+- `gameStore.ts` owns loaded confirmed events, setup draft coordination, replay/proposal state, persistence workflows, undo, import/export, and the confirmed Reveal lifecycle. It contains no feature rendering.
+- `gameStorage.ts` owns the browser persistence driver. `setupDraft.ts` and `voting.ts` own pure draft/domain-adjacent UI helpers shared by their corresponding feature components.
+- `reveal.tsx` owns player-facing Reveal rendering from `RevealPayload` only. Prototype TSX files remain isolated development-only surfaces and must not become production feature dependencies.
+- `components/CharacterSelect.tsx` owns the reusable character select control. `components/CoreFeedback.tsx` owns reusable replay/proposal/load status and warning rendering. Shared components receive display data and callbacks only; they do not own feature state.
+- `features/setup/SetupForm.tsx` owns the unconfirmed setup surface, draft Grimoire editing, character assignment, setup validation summary, and setup recovery actions. `features/setup/ConfirmedSetup.tsx` owns the compact confirmed-setup summary and undo/import/export/reset controls.
+- `features/grimoire/Grimoire.tsx` owns the confirmed seat map and its optional voting-selection projection. `features/grimoire/SeatLayoutControls.tsx` owns shared seat presets, overlap feedback, manual layout mode, and pointer-drag behavior used by setup and live play.
+- `features/phase-control/PhaseControl.tsx` owns current-step composition, phase overview, confirmed Reveal follow-up, and step-local draft reset. `features/phase-control/StepInputs.tsx` owns phase input controls. `features/phase-control/phaseInput.ts` owns phase labels plus input readiness and `PhaseStepInput` payload construction; keep these helpers colocated with phase control rather than app bootstrap.
+- `features/voting/useNominationDraft.ts` owns the nomination draft type, initialization, and reset-on-step-change lifecycle. `features/voting/NominationVoteInput.tsx` owns nominator/nominee selection and vote preview. `main.tsx` may share this feature-owned draft with Grimoire and phase control through typed props.
+- `features/event-log/EventLog.tsx` owns confirmed-event list rendering and composes shared core feedback for the log surface.
+
+Imports may point from `main.tsx` to features, from features to shared components and pure helpers, and from setup to shared seat-layout controls. Avoid feature-to-feature imports except for these deliberate UI collaborations: phase control may render voting input, setup may render the event log and shared seat-layout controls, and Grimoire may consume the voting draft type. Do not introduce a reverse dependency from a feature into `main.tsx` or `gameStore.ts`.
+
 ## Step Data
 
 Rust replay returns semantic step data for the current phase.
