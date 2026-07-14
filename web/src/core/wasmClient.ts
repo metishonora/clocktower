@@ -8,6 +8,12 @@ import type {
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
+import {
+  parseCoreResult,
+  parseProposal,
+  parseReplayState,
+  parseSetupDistribution,
+} from "./validation.js";
 import init, {
   propose as wasmPropose,
   replay as wasmReplay,
@@ -26,7 +32,7 @@ async function ensureWasm(): Promise<void> {
 
 export async function replay(gameFile: GameFile): Promise<CoreResult<ReplayState>> {
   await ensureWasm();
-  return JSON.parse(wasmReplay(JSON.stringify(gameFile)));
+  return parseCoreResult(JSON.parse(wasmReplay(JSON.stringify(gameFile))), parseReplayState);
 }
 
 export async function propose(
@@ -34,21 +40,30 @@ export async function propose(
   command: Command,
 ): Promise<CoreResult<Proposal>> {
   await ensureWasm();
-  return JSON.parse(wasmPropose(JSON.stringify(gameFile), JSON.stringify(command)));
+  return parseCoreResult(
+    JSON.parse(wasmPropose(JSON.stringify(gameFile), JSON.stringify(command))),
+    parseProposal,
+  );
 }
 
 export async function setupDistribution(
   request: SetupDistributionRequest,
 ): Promise<CoreResult<SetupDistribution>> {
   await ensureWasm();
-  return JSON.parse(wasmSetupDistribution(JSON.stringify(request)));
+  return parseCoreResult(
+    JSON.parse(wasmSetupDistribution(JSON.stringify(request))),
+    parseSetupDistribution,
+  );
 }
 
 export function setupDistributionSync(
   request: SetupDistributionRequest,
 ): CoreResult<SetupDistribution> | undefined {
   if (!initialized) return undefined;
-  return JSON.parse(wasmSetupDistribution(JSON.stringify(request)));
+  return parseCoreResult(
+    JSON.parse(wasmSetupDistribution(JSON.stringify(request))),
+    parseSetupDistribution,
+  );
 }
 
 export const wasmCoreAdapter: CoreAdapter = {

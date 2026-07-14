@@ -4,13 +4,18 @@ import type {
   CoreResult,
   CoreWarning,
   DayState,
+  GameEvent,
+  NumericReason,
+  Phase,
   PhaseOverviewItem,
   PhaseStep,
+  PhaseStepInput,
   Player,
   Proposal,
   RevealPayload,
   ReplayState,
   SetupDistribution,
+  StepType,
 } from "./core/types";
 import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
@@ -239,7 +244,7 @@ function SetupForm({
   replayResult?: CoreResult<ReplayState>;
   proposalResult?: CoreResult<Proposal>;
   loadError?: string;
-  events: unknown[];
+  events: GameEvent[];
   hasConfirmedEvents: boolean;
   setupConfirmed: boolean;
 }) {
@@ -657,7 +662,7 @@ function CurrentStepPane({
   onNominationDraftChange: (draft: NominationDraft) => void;
   revealPayload?: RevealPayload;
   busy: boolean;
-  onConfirm: (input?: unknown) => void;
+  onConfirm: (input?: PhaseStepInput) => void;
   onSkip: () => void;
   onShowReveal: (payload: RevealPayload) => void;
 }) {
@@ -965,7 +970,7 @@ function ExecutionDecisionActions({
   players: Player[];
   candidate?: DayState["executionCandidate"];
   busy: boolean;
-  onConfirm: (input?: unknown) => void;
+  onConfirm: (input?: PhaseStepInput) => void;
 }) {
   const candidatePlayer = candidate ? players.find((player) => player.id === candidate.nomineeId) : undefined;
 
@@ -1139,7 +1144,7 @@ function CharacterStepInput({
   );
 }
 
-function phaseLabel(phase: string): string {
+function phaseLabel(phase: Phase): string {
   if (phase === "firstNight") return "첫 밤";
   if (phase === "day") return "낮";
   if (phase === "night") return "밤";
@@ -1147,7 +1152,10 @@ function phaseLabel(phase: string): string {
 }
 
 function stepTitle(step: PhaseStep, player?: Player): string {
-  if (step.stepType === "phaseTransition") return `${phaseLabel(step.requiredInput.kind)} 시작`;
+  if (step.stepType === "phaseTransition") {
+    const nextPhase = step.requiredInput.kind;
+    if (nextPhase === "day" || nextPhase === "night") return `${phaseLabel(nextPhase)} 시작`;
+  }
   if (step.character) {
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
@@ -1158,7 +1166,7 @@ function stepTitle(step: PhaseStep, player?: Player): string {
   return step.id;
 }
 
-function stepTypeLabel(stepType: string): string {
+function stepTypeLabel(stepType: StepType): string {
   if (stepType === "character") return "캐릭터";
   if (stepType === "phaseTransition") return "전환";
   if (stepType === "announcement") return "발표";
@@ -1250,7 +1258,7 @@ function stepInputPayload(
   zeroOutsiders: boolean,
   numberValue: string,
   numberReason: string,
-): unknown {
+): PhaseStepInput {
   if (step.requiredInput.kind === "nominationVote") {
     return nominationDraft;
   }
@@ -1266,7 +1274,7 @@ function stepInputPayload(
   }
   if (step.requiredInput.kind === "number") {
     if (numberValue.trim().length === 0) return null;
-    return { value: Number(numberValue), reason: numberReason };
+    return { value: Number(numberValue), reason: numberReason as NumericReason };
   }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
     return { playerIds: selectedPlayerIds };
@@ -1301,7 +1309,7 @@ function EventLog({
   loadError,
   warnings,
 }: {
-  events: unknown[];
+  events: GameEvent[];
   replayResult?: CoreResult<ReplayState>;
   proposalResult?: CoreResult<Proposal>;
   loadError?: string;
@@ -1314,13 +1322,9 @@ function EventLog({
       <Warnings warnings={warnings} />
       <ol className="eventList">
         {events.length === 0 ? <li>확정된 이벤트 없음</li> : null}
-        {events.map((event, index) => {
-          const summary =
-            event && typeof event === "object" && "summary" in event
-              ? String(event.summary)
-              : `이벤트 ${index + 1}`;
-          return <li key={index}>{summary}</li>;
-        })}
+        {events.map((event) => (
+          <li key={event.id}>{event.summary}</li>
+        ))}
       </ol>
     </aside>
   );

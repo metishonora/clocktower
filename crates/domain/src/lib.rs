@@ -3,35 +3,49 @@ use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 struct GameFile {
     schema_version: u32,
     game: Game,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 struct Game {
     updated_at: Option<String>,
-    events: Vec<ConfirmedEvent>,
+    events: Vec<GameEvent>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ConfirmedEvent {
-    #[serde(rename = "type")]
-    event_type: String,
-    payload: Value,
+struct RawGameFile {
+    schema_version: u32,
+    game: RawGame,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Command {
+struct RawGame {
+    updated_at: Option<String>,
+    events: Vec<Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Discriminator {
     #[serde(rename = "type")]
-    command_type: String,
-    #[serde(default)]
-    payload: Value,
+    kind: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum Command {
+    #[serde(rename = "smoke")]
+    Smoke,
+    #[serde(rename = "createGame")]
+    CreateGame { payload: CreateGamePayload },
+    #[serde(rename = "confirmStep")]
+    ConfirmStep { payload: PhaseStepCommandPayload },
+    #[serde(rename = "skipStep")]
+    SkipStep { payload: PhaseStepCommandPayload },
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -91,7 +105,7 @@ struct CoreError {
 struct ReplayState {
     schema_version: u32,
     event_count: usize,
-    phase: &'static str,
+    phase: Phase,
     players: Vec<Player>,
     current_step: Option<PhaseStep>,
     phase_overview: Vec<PhaseOverviewItem>,
@@ -119,24 +133,208 @@ struct RevealPayload {
     preview_message_ko: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct GameEvent {
     id: String,
-    #[serde(rename = "type")]
-    event_type: String,
-    phase: String,
-    payload: Value,
+    #[serde(flatten)]
+    kind: GameEventKind,
+    phase: Phase,
     summary: String,
     created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+enum GameEventKind {
+    #[serde(rename = "smokeConfirmed")]
+    SmokeConfirmed { payload: SmokeEventPayload },
+    #[serde(rename = "setupConfirmed")]
+    SetupConfirmed { payload: SetupEventPayload },
+    #[serde(rename = "phaseStepConfirmed")]
+    PhaseStepConfirmed { payload: PhaseStepEventPayload },
+    #[serde(rename = "phaseStepSkipped")]
+    PhaseStepSkipped { payload: StepIdPayload },
+    #[serde(rename = "phaseStepNeedsFollowUp")]
+    PhaseStepNeedsFollowUp { payload: StepIdPayload },
+    #[serde(rename = "nominationVoteConfirmed")]
+    NominationVoteConfirmed { payload: NominationEventPayload },
+    #[serde(rename = "executionConfirmed")]
+    ExecutionConfirmed { payload: ExecutionEventPayload },
+    #[serde(rename = "noExecutionConfirmed")]
+    NoExecutionConfirmed { payload: ExecutionEventPayload },
+    #[serde(rename = "deathConfirmed")]
+    DeathConfirmed { payload: DeathEventPayload },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct SmokeEventPayload {
+    source: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct SetupEventPayload {
+    players: Vec<SetupPlayerInput>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct StepIdPayload {
+    step_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct PhaseStepEventPayload {
+    step_id: String,
+    #[serde(default)]
+    input: StepInput,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct NominationEventPayload {
+    step_id: String,
+    input: NominationRecord,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ExecutionEventPayload {
+    step_id: String,
+    input: ExecutionEventInput,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ExecutionEventInput {
+    execute: bool,
+    #[serde(default)]
+    player_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DeathEventPayload {
+    player_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+enum Phase {
+    #[serde(rename = "setup")]
+    Setup,
+    #[serde(rename = "firstNight")]
+    FirstNight,
+    #[serde(rename = "day")]
+    Day,
+    #[serde(rename = "night")]
+    Night,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+enum StepType {
+    #[serde(rename = "evilInfo")]
+    EvilInfo,
+    #[serde(rename = "character")]
+    Character,
+    #[serde(rename = "phaseTransition")]
+    PhaseTransition,
+    #[serde(rename = "announcement")]
+    Announcement,
+    #[serde(rename = "nomination")]
+    Nomination,
+    #[serde(rename = "execution")]
+    Execution,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+enum RequiredInputKind {
+    #[serde(rename = "none")]
+    None,
+    #[serde(rename = "playerIds")]
+    PlayerIds,
+    #[serde(rename = "characterIds")]
+    CharacterIds,
+    #[serde(rename = "setupInfo")]
+    SetupInfo,
+    #[serde(rename = "number")]
+    Number,
+    #[serde(rename = "nominationVote")]
+    NominationVote,
+    #[serde(rename = "executionDecision")]
+    ExecutionDecision,
+    #[serde(rename = "day")]
+    Day,
+    #[serde(rename = "night")]
+    Night,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+enum InputTarget {
+    Player,
+    Players,
+    Characters,
+    SetupInfo,
+    Number,
+    Nomination,
+    Execution,
+    Phase,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "lowercase")]
+enum NumericReason {
+    Drunk,
+    Poisoned,
+    Registration,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+enum SetupInfoKind {
+    Washerwoman,
+    Librarian,
+    Investigator,
+}
+
+type StepInput = Option<StepInputFields>;
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct StepInputFields {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    player_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    character_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    character_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    zero_outsiders: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    value: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    true_value: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    displayed_value: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    reason: Option<Option<NumericReason>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    nominator_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    nominee_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    voter_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    execute: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct PhaseStep {
     id: String,
-    phase: &'static str,
-    step_type: &'static str,
+    phase: Phase,
+    step_type: StepType,
     #[serde(skip_serializing_if = "Option::is_none")]
     character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -148,17 +346,17 @@ struct PhaseStep {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct RequiredInput {
-    kind: &'static str,
+    kind: RequiredInputKind,
     #[serde(skip_serializing_if = "Option::is_none")]
-    target: Option<&'static str>,
+    target: Option<InputTarget>,
     #[serde(skip_serializing_if = "Option::is_none")]
     min_selections: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     max_selections: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    setup_info: Option<&'static str>,
+    setup_info: Option<SetupInfoKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    character_kind: Option<&'static str>,
+    character_kind: Option<CharacterKind>,
     #[serde(skip_serializing_if = "is_false")]
     zero_allowed: bool,
     optional: bool,
@@ -172,15 +370,15 @@ fn is_false(value: &bool) -> bool {
 #[serde(rename_all = "camelCase")]
 struct PhaseOverviewItem {
     id: String,
-    phase: &'static str,
-    step_type: &'static str,
+    phase: Phase,
+    step_type: StepType,
     #[serde(skip_serializing_if = "Option::is_none")]
     character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     player_id: Option<String>,
     required_input: RequiredInput,
     can_skip: bool,
-    status: &'static str,
+    status: PhaseStepStatus,
 }
 
 #[derive(Debug, Deserialize)]
@@ -188,7 +386,7 @@ struct PhaseOverviewItem {
 struct PhaseStepCommandPayload {
     step_id: String,
     #[serde(default)]
-    input: Value,
+    input: StepInput,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,7 +474,7 @@ pub fn replay_json(game_file_json: &str) -> String {
         let players = replay_players(&game_file.game.events)?;
         let warnings = validate_setup_warnings(&players);
         let phase_state = replay_phase_state(&players, &game_file.game.events)?;
-        let day_state = if phase_state.phase == "day" {
+        let day_state = if phase_state.phase == Phase::Day {
             current_day_prefix(&phase_state)
                 .map(|prefix| replay_day_state(&game_file.game.events, &prefix))
                 .transpose()?
@@ -301,16 +499,18 @@ pub fn replay_json(game_file_json: &str) -> String {
 
 pub fn propose_json(game_file_json: &str, command_json: &str) -> String {
     let result = parse_game_file(game_file_json).and_then(|game_file| {
-        let command: Command = serde_json::from_str(command_json)
-            .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+        let command = parse_command(command_json)?;
 
-        match command.command_type.as_str() {
-            "smoke" => Ok(Proposal {
+        match command {
+            Command::Smoke => Ok(Proposal {
                 event: GameEvent {
                     id: "smoke-event".to_string(),
-                    event_type: "smokeConfirmed".to_string(),
-                    phase: "setup".to_string(),
-                    payload: serde_json::json!({ "source": "smoke" }),
+                    kind: GameEventKind::SmokeConfirmed {
+                        payload: SmokeEventPayload {
+                            source: "smoke".to_string(),
+                        },
+                    },
+                    phase: Phase::Setup,
                     summary: "스모크 명령 확인".to_string(),
                     created_at: "1970-01-01T00:00:00.000Z".to_string(),
                 },
@@ -319,10 +519,9 @@ pub fn propose_json(game_file_json: &str, command_json: &str) -> String {
                 preview: serde_json::json!({ "messageKo": "코어 계약 정상" }),
                 reveal_payload: None,
             }),
-            "createGame" => propose_create_game(&game_file, command.payload),
-            "confirmStep" => propose_phase_step(&game_file, command.payload, false),
-            "skipStep" => propose_phase_step(&game_file, command.payload, true),
-            _ => Err(error("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다.")),
+            Command::CreateGame { payload } => propose_create_game(&game_file, payload),
+            Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
+            Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
         }
     });
 
@@ -353,17 +552,66 @@ pub fn setup_distribution_json(request_json: &str) -> String {
 }
 
 fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
-    let game_file: GameFile = serde_json::from_str(json)
+    let raw: RawGameFile = serde_json::from_str(json)
         .map_err(|_| error("MALFORMED_GAME_FILE", "게임 파일 형식이 올바르지 않습니다."))?;
 
-    if game_file.schema_version != 1 {
+    if raw.schema_version != 1 {
         return Err(error(
             "UNSUPPORTED_SCHEMA_VERSION",
             "지원하지 않는 게임 파일 버전입니다.",
         ));
     }
 
-    Ok(game_file)
+    let events = raw
+        .game
+        .events
+        .into_iter()
+        .map(parse_event)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(GameFile {
+        schema_version: raw.schema_version,
+        game: Game {
+            updated_at: raw.game.updated_at,
+            events,
+        },
+    })
+}
+
+fn parse_command(json: &str) -> Result<Command, CoreError> {
+    let value: Value = serde_json::from_str(json)
+        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    let discriminator: Discriminator = serde_json::from_value(value.clone())
+        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    if !matches!(
+        discriminator.kind.as_str(),
+        "smoke" | "createGame" | "confirmStep" | "skipStep"
+    ) {
+        return Err(error("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."));
+    }
+    serde_json::from_value(value)
+        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))
+}
+
+fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
+    let discriminator: Discriminator = serde_json::from_value(value.clone())
+        .map_err(|_| error("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."))?;
+    if !matches!(
+        discriminator.kind.as_str(),
+        "smokeConfirmed"
+            | "setupConfirmed"
+            | "phaseStepConfirmed"
+            | "phaseStepSkipped"
+            | "phaseStepNeedsFollowUp"
+            | "nominationVoteConfirmed"
+            | "executionConfirmed"
+            | "noExecutionConfirmed"
+            | "deathConfirmed"
+    ) {
+        return Err(error("UNSUPPORTED_EVENT", "지원하지 않는 이벤트입니다."));
+    }
+    serde_json::from_value(value)
+        .map_err(|_| error("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."))
 }
 
 fn to_json<T: Serialize>(result: Result<T, CoreError>) -> String {
@@ -387,7 +635,10 @@ fn error(code: &'static str, message_ko: &'static str) -> CoreError {
     CoreError { code, message_ko }
 }
 
-fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal, CoreError> {
+fn propose_create_game(
+    game_file: &GameFile,
+    payload: CreateGamePayload,
+) -> Result<Proposal, CoreError> {
     if !game_file.game.events.is_empty() {
         return Err(error(
             "GAME_ALREADY_HAS_EVENTS",
@@ -395,8 +646,6 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
         ));
     }
 
-    let payload: CreateGamePayload = serde_json::from_value(payload)
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
     validate_setup_inputs(&payload.players)?;
 
     let players = payload
@@ -414,9 +663,10 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
     Ok(Proposal {
         event: GameEvent {
             id: format!("setup-{}", game_file.game.events.len() + 1),
-            event_type: "setupConfirmed".to_string(),
-            phase: "setup".to_string(),
-            payload: serde_json::json!({ "players": players }),
+            kind: GameEventKind::SetupConfirmed {
+                payload: SetupEventPayload { players },
+            },
+            phase: Phase::Setup,
             summary: format!("초기 설정 확정: {count}명"),
             created_at: game_file
                 .game
@@ -435,11 +685,9 @@ fn propose_create_game(game_file: &GameFile, payload: Value) -> Result<Proposal,
 
 fn propose_phase_step(
     game_file: &GameFile,
-    payload: Value,
+    payload: PhaseStepCommandPayload,
     skip: bool,
 ) -> Result<Proposal, CoreError> {
-    let payload: PhaseStepCommandPayload = serde_json::from_value(payload)
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
     let players = replay_players(&game_file.game.events)?;
     let phase_state = replay_phase_state(&players, &game_file.game.events)?;
     let Some(current_step) = phase_state.current_step else {
@@ -455,24 +703,19 @@ fn propose_phase_step(
             "건너뛸 수 없는 단계입니다.",
         ));
     }
-    if skip && current_step.step_type == "nomination" {
+    if skip && current_step.step_type == StepType::Nomination {
         return propose_nomination_closed(game_file, &current_step);
     }
     if !skip {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
     }
-    if !skip && current_step.step_type == "nomination" {
+    if !skip && current_step.step_type == StepType::Nomination {
         return propose_nomination_vote(game_file, &current_step, &players, payload.input);
     }
-    if !skip && current_step.step_type == "execution" {
+    if !skip && current_step.step_type == StepType::Execution {
         return propose_execution_decision(game_file, &current_step, &players, payload.input);
     }
 
-    let event_type = if skip {
-        "phaseStepSkipped"
-    } else {
-        "phaseStepConfirmed"
-    };
     let summary_action = if skip { "건너뜀" } else { "확정" };
     let event_count = game_file.game.events.len() + 1;
     let reveal_payload = if skip {
@@ -480,28 +723,41 @@ fn propose_phase_step(
     } else {
         phase_step_reveal_payload(&current_step, &players, &payload.input)
     };
-    let event_payload = if skip {
-        serde_json::json!({ "stepId": current_step.id })
+    let event_input = if skip {
+        None
     } else {
-        phase_step_event_payload(&current_step, &players, payload.input)
+        Some(phase_step_event_input(
+            &current_step,
+            &players,
+            payload.input,
+        ))
     };
     let summary = if skip {
         format!("단계 {summary_action}: {}", current_step.id)
     } else {
-        phase_step_summary(
-            &current_step,
-            &players,
-            event_payload.get("input").unwrap_or(&Value::Null),
-        )
-        .unwrap_or_else(|| format!("단계 {summary_action}: {}", current_step.id))
+        phase_step_summary(&current_step, &players, event_input.as_ref().unwrap())
+            .unwrap_or_else(|| format!("단계 {summary_action}: {}", current_step.id))
+    };
+    let kind = if let Some(input) = event_input {
+        GameEventKind::PhaseStepConfirmed {
+            payload: PhaseStepEventPayload {
+                step_id: current_step.id.clone(),
+                input,
+            },
+        }
+    } else {
+        GameEventKind::PhaseStepSkipped {
+            payload: StepIdPayload {
+                step_id: current_step.id.clone(),
+            },
+        }
     };
 
     Ok(Proposal {
         event: GameEvent {
             id: format!("phase-step-{event_count}"),
-            event_type: event_type.to_string(),
-            phase: current_step.phase.to_string(),
-            payload: event_payload,
+            kind,
+            phase: current_step.phase,
             summary,
             created_at: game_file
                 .game
@@ -527,9 +783,12 @@ fn propose_nomination_closed(
     Ok(Proposal {
         event: GameEvent {
             id: format!("nomination-closed-{event_count}"),
-            event_type: "phaseStepSkipped".to_string(),
-            phase: current_step.phase.to_string(),
-            payload: serde_json::json!({ "stepId": current_step.id }),
+            kind: GameEventKind::PhaseStepSkipped {
+                payload: StepIdPayload {
+                    step_id: current_step.id.clone(),
+                },
+            },
+            phase: current_step.phase,
             summary: "지명 종료".to_string(),
             created_at: game_file
                 .game
@@ -548,7 +807,7 @@ fn propose_nomination_vote(
     game_file: &GameFile,
     current_step: &PhaseStep,
     players: &[Player],
-    input: Value,
+    input: StepInput,
 ) -> Result<Proposal, CoreError> {
     let record = nomination_record(current_step, players, &input, &game_file.game.events)?;
     let event_count = game_file.game.events.len() + 1;
@@ -560,12 +819,13 @@ fn propose_nomination_vote(
     Ok(Proposal {
         event: GameEvent {
             id: format!("nomination-vote-{event_count}"),
-            event_type: "nominationVoteConfirmed".to_string(),
-            phase: current_step.phase.to_string(),
-            payload: serde_json::json!({
-                "stepId": current_step.id,
-                "input": record
-            }),
+            kind: GameEventKind::NominationVoteConfirmed {
+                payload: NominationEventPayload {
+                    step_id: current_step.id.clone(),
+                    input: record.clone(),
+                },
+            },
+            phase: current_step.phase,
             summary: format!(
                 "지명 투표 확정: {nominator} → {nominee}, {}표{}",
                 record.vote_count,
@@ -597,10 +857,14 @@ fn propose_execution_decision(
     game_file: &GameFile,
     current_step: &PhaseStep,
     players: &[Player],
-    input: Value,
+    input: StepInput,
 ) -> Result<Proposal, CoreError> {
-    let decision: ExecutionDecisionInput = serde_json::from_value(input)
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    let decision = ExecutionDecisionInput {
+        execute: input
+            .as_ref()
+            .and_then(|input| input.execute)
+            .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?,
+    };
     let prefix = step_prefix(&current_step.id)?;
     let day_state = replay_day_state(&game_file.game.events, &prefix)?;
     let event_count = game_file.game.events.len() + 1;
@@ -614,10 +878,26 @@ fn propose_execution_decision(
     } else {
         None
     };
-    let event_type = if player_id.is_some() {
-        "executionConfirmed"
+    let kind = if player_id.is_some() {
+        GameEventKind::ExecutionConfirmed {
+            payload: ExecutionEventPayload {
+                step_id: current_step.id.clone(),
+                input: ExecutionEventInput {
+                    execute: decision.execute,
+                    player_id: player_id.clone(),
+                },
+            },
+        }
     } else {
-        "noExecutionConfirmed"
+        GameEventKind::NoExecutionConfirmed {
+            payload: ExecutionEventPayload {
+                step_id: current_step.id.clone(),
+                input: ExecutionEventInput {
+                    execute: decision.execute,
+                    player_id: None,
+                },
+            },
+        }
     };
     let summary = if let Some(player_id) = &player_id {
         format!(
@@ -631,15 +911,8 @@ fn propose_execution_decision(
     Ok(Proposal {
         event: GameEvent {
             id: format!("execution-{event_count}"),
-            event_type: event_type.to_string(),
-            phase: current_step.phase.to_string(),
-            payload: serde_json::json!({
-                "stepId": current_step.id,
-                "input": {
-                    "execute": decision.execute,
-                    "playerId": player_id
-                }
-            }),
+            kind,
+            phase: current_step.phase,
             summary,
             created_at: game_file
                 .game
@@ -656,30 +929,28 @@ fn propose_execution_decision(
     })
 }
 
-fn phase_step_event_payload(step: &PhaseStep, players: &[Player], input: Value) -> Value {
+fn phase_step_event_input(step: &PhaseStep, players: &[Player], input: StepInput) -> StepInput {
     if step.character.as_deref() == Some("chef") {
         let true_value = evil_neighbor_pair_count(players);
         let displayed_value = numeric_input_value(&input).unwrap_or(true_value);
-        return serde_json::json!({
-            "stepId": step.id,
-            "input": {
-                "trueValue": true_value,
-                "displayedValue": displayed_value,
-                "reason": numeric_input_reason(&input)
-            }
+        return Some(StepInputFields {
+            true_value: Some(true_value),
+            displayed_value: Some(displayed_value),
+            reason: Some(numeric_input_reason(&input)),
+            ..StepInputFields::default()
         });
     }
 
-    serde_json::json!({ "stepId": step.id, "input": input })
+    input
 }
 
 fn phase_step_reveal_payload(
     step: &PhaseStep,
     players: &[Player],
-    input: &Value,
+    input: &StepInput,
 ) -> Option<RevealPayload> {
     match step.step_type {
-        "evilInfo" => return evil_info_reveal_payload(step, players, input),
+        StepType::EvilInfo => return evil_info_reveal_payload(step, players, input),
         _ => {}
     }
 
@@ -709,27 +980,25 @@ fn phase_step_reveal_payload(
     }
 }
 
-fn phase_step_summary(step: &PhaseStep, players: &[Player], input: &Value) -> Option<String> {
+fn phase_step_summary(step: &PhaseStep, players: &[Player], input: &StepInput) -> Option<String> {
     match step.character.as_deref()? {
         "washerwoman" | "librarian" | "investigator" => {
             setup_info_summary(step.character.as_deref()?, input, players)
         }
         "chef" => {
             let true_value = input
-                .get("trueValue")
-                .and_then(Value::as_u64)
-                .map(|value| value as usize)
+                .as_ref()
+                .and_then(|input| input.true_value)
                 .unwrap_or_else(|| evil_neighbor_pair_count(players));
             let displayed_value = input
-                .get("displayedValue")
-                .and_then(Value::as_u64)
-                .map(|value| value as usize)
+                .as_ref()
+                .and_then(|input| input.displayed_value)
                 .unwrap_or(true_value);
             Some(format!(
                 "요리사 정보 확정: 실제 {true_value}쌍, 표시 {displayed_value}쌍{}",
                 input
-                    .get("reason")
-                    .and_then(Value::as_str)
+                    .as_ref()
+                    .and_then(|input| input.reason.flatten())
                     .map(|reason| format!(" ({})", chef_reason_label(reason)))
                     .unwrap_or_default()
             ))
@@ -738,12 +1007,13 @@ fn phase_step_summary(step: &PhaseStep, players: &[Player], input: &Value) -> Op
     }
 }
 
-fn setup_info_summary(kind: &str, input: &Value, players: &[Player]) -> Option<String> {
-    if kind == "librarian" && input.get("zeroOutsiders").and_then(Value::as_bool) == Some(true) {
+fn setup_info_summary(kind: &str, input: &StepInput, players: &[Player]) -> Option<String> {
+    let input = input.as_ref()?;
+    if kind == "librarian" && input.zero_outsiders == Some(true) {
         return Some("사서 정보 확정: 외부인 0명".to_string());
     }
 
-    let character_id = input.get("characterId")?.as_str()?;
+    let character_id = input.character_id.as_deref()?;
     let candidates = setup_info_candidate_labels(input, players)?;
     Some(format!(
         "{} 정보 확정: {} 중 {}",
@@ -755,17 +1025,18 @@ fn setup_info_summary(kind: &str, input: &Value, players: &[Player]) -> Option<S
 
 fn setup_info_reveal_payload(
     kind: &str,
-    input: &Value,
+    input: &StepInput,
     players: &[Player],
 ) -> Option<RevealPayload> {
-    if kind == "librarian" && input.get("zeroOutsiders").and_then(Value::as_bool) == Some(true) {
+    let input = input.as_ref()?;
+    if kind == "librarian" && input.zero_outsiders == Some(true) {
         return Some(RevealPayload {
             message_ko: "사서 정보: 외부인은 0명입니다.".to_string(),
             preview_message_ko: None,
         });
     }
 
-    let character_id = input.get("characterId")?.as_str()?;
+    let character_id = input.character_id.as_deref()?;
     let candidates = setup_info_candidate_labels(input, players)?;
     Some(RevealPayload {
         message_ko: format!(
@@ -778,12 +1049,12 @@ fn setup_info_reveal_payload(
     })
 }
 
-fn setup_info_candidate_labels(input: &Value, players: &[Player]) -> Option<Vec<String>> {
+fn setup_info_candidate_labels(input: &StepInputFields, players: &[Player]) -> Option<Vec<String>> {
     input
-        .get("playerIds")?
-        .as_array()?
+        .player_ids
+        .as_ref()?
         .iter()
-        .filter_map(Value::as_str)
+        .map(String::as_str)
         .map(|player_id| player_label(players, player_id))
         .collect()
 }
@@ -791,7 +1062,7 @@ fn setup_info_candidate_labels(input: &Value, players: &[Player]) -> Option<Vec<
 fn evil_info_reveal_payload(
     step: &PhaseStep,
     players: &[Player],
-    input: &Value,
+    input: &StepInput,
 ) -> Option<RevealPayload> {
     let demons = players
         .iter()
@@ -826,13 +1097,12 @@ fn evil_info_reveal_payload(
     }
     if step.id.ends_with(":demonInfo") {
         let bluffs = input
-            .get("characterIds")
-            .and_then(Value::as_array)
+            .as_ref()
+            .and_then(|input| input.character_ids.as_ref())
             .map(|character_ids| {
                 character_ids
                     .iter()
-                    .filter_map(Value::as_str)
-                    .map(character_label)
+                    .map(|character| character_label(character))
                     .collect::<Vec<_>>()
                     .join(", ")
             })
@@ -890,25 +1160,20 @@ fn setup_info_label(kind: &str) -> &'static str {
     }
 }
 
-fn chef_reason_label(reason: &str) -> &'static str {
+fn chef_reason_label(reason: NumericReason) -> &'static str {
     match reason {
-        "drunk" => "술취함",
-        "poisoned" => "중독",
-        "registration" => "등록 판정",
-        _ => "표시값 조정",
+        NumericReason::Drunk => "술취함",
+        NumericReason::Poisoned => "중독",
+        NumericReason::Registration => "등록 판정",
     }
 }
 
-fn numeric_input_value(input: &Value) -> Option<usize> {
-    input
-        .get("value")
-        .or_else(|| input.get("displayedValue"))
-        .and_then(Value::as_u64)
-        .map(|value| value as usize)
+fn numeric_input_value(input: &StepInput) -> Option<usize> {
+    input.as_ref()?.value.or(input.as_ref()?.displayed_value)
 }
 
-fn numeric_input_reason(input: &Value) -> Option<&str> {
-    input.get("reason").and_then(Value::as_str)
+fn numeric_input_reason(input: &StepInput) -> Option<NumericReason> {
+    input.as_ref()?.reason.flatten()
 }
 
 fn evil_neighbor_pair_count(players: &[Player]) -> usize {
@@ -971,41 +1236,45 @@ fn seated_players(players: &[Player]) -> Vec<&Player> {
 
 fn validate_required_input(
     input: &RequiredInput,
-    value: &Value,
+    typed_value: &StepInput,
     players: &[Player],
 ) -> Result<(), CoreError> {
-    if input.kind == "setupInfo" {
-        return validate_setup_info_input(input.setup_info.unwrap_or_default(), value, players);
+    if input.kind == RequiredInputKind::SetupInfo {
+        return validate_setup_info_input(
+            input
+                .setup_info
+                .ok_or_else(|| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?,
+            typed_value,
+            players,
+        );
     }
-    if input.kind == "number" {
-        return validate_number_input(value);
+    if input.kind == RequiredInputKind::Number {
+        return validate_number_input(typed_value);
     }
-    if input.kind == "nominationVote" {
-        return validate_nomination_vote_input(value, players);
+    if input.kind == RequiredInputKind::NominationVote {
+        return validate_nomination_vote_input(typed_value, players);
     }
-    if input.kind == "executionDecision" {
-        return validate_execution_decision_input(value);
+    if input.kind == RequiredInputKind::ExecutionDecision {
+        return validate_execution_decision_input(typed_value);
     }
-    if input.target == Some("characters") {
-        return validate_character_selection(input, value);
+    if input.target == Some(InputTarget::Characters) {
+        return validate_character_selection(input, typed_value);
     }
-    if input.target != Some("player") && input.target != Some("players") {
+    if input.target != Some(InputTarget::Player) && input.target != Some(InputTarget::Players) {
         return Ok(());
     }
 
-    let player_ids = value
-        .get("playerIds")
-        .and_then(Value::as_array)
+    let player_ids = typed_value
+        .as_ref()
+        .and_then(|value| value.player_ids.as_ref())
         .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
-    if player_ids.iter().any(|player_id| !player_id.is_string()) {
-        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
-    }
     let mut unique_player_ids = HashSet::new();
     let roster_player_ids = players
         .iter()
         .map(|player| player.id.as_str())
         .collect::<HashSet<_>>();
-    for player_id in player_ids.iter().filter_map(Value::as_str) {
+    for player_id in player_ids {
+        let player_id = player_id.as_str();
         if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
             return Err(error(
                 "INVALID_STEP_INPUT",
@@ -1036,18 +1305,18 @@ fn validate_required_input(
 }
 
 struct PhaseReplayState {
-    phase: &'static str,
+    phase: Phase,
     current_step: Option<PhaseStep>,
     phase_overview: Vec<PhaseOverviewItem>,
 }
 
 fn replay_phase_state(
     players: &[Player],
-    events: &[ConfirmedEvent],
+    events: &[GameEvent],
 ) -> Result<PhaseReplayState, CoreError> {
     if players.is_empty() {
         return Ok(PhaseReplayState {
-            phase: "setup",
+            phase: Phase::Setup,
             current_step: None,
             phase_overview: Vec::new(),
         });
@@ -1071,11 +1340,13 @@ fn replay_phase_state(
             .into_iter()
             .map(|step| {
                 let status = match step_status(&step.id, &step_statuses) {
-                    StepStatus::Complete => "complete",
-                    StepStatus::Skipped => "skipped",
-                    StepStatus::NeedsFollowUp => "needsFollowUp",
-                    StepStatus::Open if Some(step.id.as_str()) == current_step_id => "current",
-                    StepStatus::Open => "waiting",
+                    PhaseStepStatus::Complete => PhaseStepStatus::Complete,
+                    PhaseStepStatus::Skipped => PhaseStepStatus::Skipped,
+                    PhaseStepStatus::NeedsFollowUp => PhaseStepStatus::NeedsFollowUp,
+                    PhaseStepStatus::Waiting if Some(step.id.as_str()) == current_step_id => {
+                        PhaseStepStatus::Current
+                    }
+                    PhaseStepStatus::Waiting | PhaseStepStatus::Current => PhaseStepStatus::Waiting,
                 };
 
                 PhaseOverviewItem {
@@ -1099,47 +1370,63 @@ fn replay_phase_state(
     }
 
     Ok(PhaseReplayState {
-        phase: "night",
+        phase: Phase::Night,
         current_step: None,
         phase_overview: Vec::new(),
     })
 }
 
-#[derive(Debug, Copy, Clone)]
-enum StepStatus {
-    Open,
+#[derive(Debug, Serialize, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+enum PhaseStepStatus {
+    Waiting,
+    Current,
     Complete,
     Skipped,
     NeedsFollowUp,
 }
 
-impl StepStatus {
+impl PhaseStepStatus {
     fn is_done(self) -> bool {
-        matches!(self, StepStatus::Complete | StepStatus::Skipped)
+        matches!(self, PhaseStepStatus::Complete | PhaseStepStatus::Skipped)
     }
 }
 
-fn step_status(step_id: &str, statuses: &HashMap<String, StepStatus>) -> StepStatus {
-    statuses.get(step_id).copied().unwrap_or(StepStatus::Open)
+fn step_status(step_id: &str, statuses: &HashMap<String, PhaseStepStatus>) -> PhaseStepStatus {
+    statuses
+        .get(step_id)
+        .copied()
+        .unwrap_or(PhaseStepStatus::Waiting)
 }
 
 fn phase_step_statuses(
-    events: &[ConfirmedEvent],
+    events: &[GameEvent],
     players: &[Player],
-) -> Result<HashMap<String, StepStatus>, CoreError> {
+) -> Result<HashMap<String, PhaseStepStatus>, CoreError> {
     let mut statuses = HashMap::new();
     for event in events {
-        let status = match event.event_type.as_str() {
-            "phaseStepConfirmed"
-            | "nominationVoteConfirmed"
-            | "executionConfirmed"
-            | "noExecutionConfirmed" => StepStatus::Complete,
-            "phaseStepSkipped" => StepStatus::Skipped,
-            "phaseStepNeedsFollowUp" => StepStatus::NeedsFollowUp,
+        let (status, step_id, event_input) = match &event.kind {
+            GameEventKind::PhaseStepConfirmed { payload } => (
+                PhaseStepStatus::Complete,
+                payload.step_id.as_str(),
+                Some(&payload.input),
+            ),
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
+            GameEventKind::ExecutionConfirmed { payload }
+            | GameEventKind::NoExecutionConfirmed { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
+            GameEventKind::PhaseStepSkipped { payload } => {
+                (PhaseStepStatus::Skipped, payload.step_id.as_str(), None)
+            }
+            GameEventKind::PhaseStepNeedsFollowUp { payload } => (
+                PhaseStepStatus::NeedsFollowUp,
+                payload.step_id.as_str(),
+                None,
+            ),
             _ => continue,
-        };
-        let Some(step_id) = event.payload.get("stepId").and_then(Value::as_str) else {
-            return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
         };
         let Some((_, _, Some(step))) = current_phase_steps(players, events.len() + 2, &statuses)
         else {
@@ -1148,15 +1435,14 @@ fn phase_step_statuses(
         if step.id != step_id {
             return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
         }
-        if matches!(status, StepStatus::Skipped) && !step.can_skip {
+        if matches!(status, PhaseStepStatus::Skipped) && !step.can_skip {
             return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
         }
-        if matches!(status, StepStatus::Complete) {
-            validate_required_input(
-                &step.required_input,
-                event.payload.get("input").unwrap_or(&Value::Null),
-                players,
-            )?;
+        if let Some(input) = event_input {
+            validate_required_input(&step.required_input, input, players)?;
+        }
+        if let GameEventKind::NominationVoteConfirmed { payload } = &event.kind {
+            validate_nomination_record_input(&payload.input, players)?;
         }
         statuses.insert(step_id.to_string(), status);
     }
@@ -1166,12 +1452,12 @@ fn phase_step_statuses(
 fn phase_sequences_with_statuses(
     players: &[Player],
     max_cycles: usize,
-    statuses: &HashMap<String, StepStatus>,
-) -> Vec<(&'static str, Vec<PhaseStep>)> {
-    let mut sequences = vec![("firstNight", first_night_steps(players))];
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> Vec<(Phase, Vec<PhaseStep>)> {
+    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players))];
     for cycle in 1..=max_cycles.max(1) {
-        sequences.push(("day", day_steps(cycle, statuses)));
-        sequences.push(("night", night_steps(players, cycle)));
+        sequences.push((Phase::Day, day_steps(cycle, statuses)));
+        sequences.push((Phase::Night, night_steps(players, cycle)));
     }
     sequences
 }
@@ -1179,8 +1465,8 @@ fn phase_sequences_with_statuses(
 fn current_phase_steps(
     players: &[Player],
     max_cycles: usize,
-    statuses: &HashMap<String, StepStatus>,
-) -> Option<(&'static str, Vec<PhaseStep>, Option<PhaseStep>)> {
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
     for (phase, steps) in phase_sequences_with_statuses(players, max_cycles, statuses) {
         let phase_complete = steps
             .iter()
@@ -1208,10 +1494,10 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         )
     }) {
         steps.push(simple_step(
-            "firstNight",
+            Phase::FirstNight,
             "firstNight",
             "minionInfo",
-            "evilInfo",
+            StepType::EvilInfo,
             required_none(),
             false,
         ));
@@ -1223,17 +1509,17 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         )
     }) {
         steps.push(simple_step(
-            "firstNight",
+            Phase::FirstNight,
             "firstNight",
             "demonInfo",
-            "evilInfo",
+            StepType::EvilInfo,
             required_characters(0, 3),
             false,
         ));
     }
 
     steps.extend(character_steps(
-        "firstNight",
+        Phase::FirstNight,
         "firstNight",
         players,
         &[
@@ -1249,21 +1535,21 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         ],
     ));
     steps.push(phase_transition_step(
-        "firstNight",
+        Phase::FirstNight,
         "firstNight",
         "toDay",
-        "day",
+        RequiredInputKind::Day,
     ));
     steps
 }
 
-fn day_steps(cycle: usize, statuses: &HashMap<String, StepStatus>) -> Vec<PhaseStep> {
+fn day_steps(cycle: usize, statuses: &HashMap<String, PhaseStepStatus>) -> Vec<PhaseStep> {
     let prefix = phase_prefix("day", cycle);
     let mut steps = vec![simple_step(
-        "day",
+        Phase::Day,
         &prefix,
         "announceDeaths",
-        "announcement",
+        StepType::Announcement,
         required_none(),
         false,
     )];
@@ -1272,15 +1558,17 @@ fn day_steps(cycle: usize, statuses: &HashMap<String, StepStatus>) -> Vec<PhaseS
     loop {
         let nomination_id = format!("{prefix}:nomination:{nomination_number}");
         match step_status(&nomination_id, statuses) {
-            StepStatus::Complete => {
+            PhaseStepStatus::Complete => {
                 steps.push(nomination_step(&prefix, nomination_number));
                 nomination_number += 1;
             }
-            StepStatus::Skipped => {
+            PhaseStepStatus::Skipped => {
                 steps.push(nomination_step(&prefix, nomination_number));
                 break;
             }
-            StepStatus::Open | StepStatus::NeedsFollowUp => {
+            PhaseStepStatus::Waiting
+            | PhaseStepStatus::Current
+            | PhaseStepStatus::NeedsFollowUp => {
                 steps.push(nomination_step(&prefix, nomination_number));
                 break;
             }
@@ -1288,13 +1576,13 @@ fn day_steps(cycle: usize, statuses: &HashMap<String, StepStatus>) -> Vec<PhaseS
     }
 
     steps.push(simple_step(
-        "day",
+        Phase::Day,
         &prefix,
         "execution",
-        "execution",
+        StepType::Execution,
         RequiredInput {
-            kind: "executionDecision",
-            target: Some("execution"),
+            kind: RequiredInputKind::ExecutionDecision,
+            target: Some(InputTarget::Execution),
             min_selections: None,
             max_selections: None,
             setup_info: None,
@@ -1304,20 +1592,25 @@ fn day_steps(cycle: usize, statuses: &HashMap<String, StepStatus>) -> Vec<PhaseS
         },
         false,
     ));
-    steps.push(phase_transition_step("day", &prefix, "toNight", "night"));
+    steps.push(phase_transition_step(
+        Phase::Day,
+        &prefix,
+        "toNight",
+        RequiredInputKind::Night,
+    ));
     steps
 }
 
 fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseStep {
     PhaseStep {
         id: format!("{prefix}:nomination:{nomination_number}"),
-        phase: "day",
-        step_type: "nomination",
+        phase: Phase::Day,
+        step_type: StepType::Nomination,
         character: None,
         player_id: None,
         required_input: RequiredInput {
-            kind: "nominationVote",
-            target: Some("players"),
+            kind: RequiredInputKind::NominationVote,
+            target: Some(InputTarget::Players),
             min_selections: Some(0),
             max_selections: None,
             setup_info: None,
@@ -1332,7 +1625,7 @@ fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseStep {
 fn night_steps(players: &[Player], cycle: usize) -> Vec<PhaseStep> {
     let prefix = phase_prefix("night", cycle);
     character_steps(
-        "night",
+        Phase::Night,
         &prefix,
         players,
         &[
@@ -1347,12 +1640,17 @@ fn night_steps(players: &[Player], cycle: usize) -> Vec<PhaseStep> {
         ],
     )
     .into_iter()
-    .chain([phase_transition_step("night", &prefix, "toDay", "day")])
+    .chain([phase_transition_step(
+        Phase::Night,
+        &prefix,
+        "toDay",
+        RequiredInputKind::Day,
+    )])
     .collect()
 }
 
 fn character_steps(
-    phase: &'static str,
+    phase: Phase,
     id_prefix: &str,
     players: &[Player],
     order: &[&str],
@@ -1375,7 +1673,7 @@ fn character_steps(
             Some(PhaseStep {
                 id: format!("{id_prefix}:{character}"),
                 phase,
-                step_type: "character",
+                step_type: StepType::Character,
                 character: Some((*character).to_string()),
                 player_id: waking_characters
                     .get(character)
@@ -1390,13 +1688,31 @@ fn character_steps(
 fn character_required_input(character: &str) -> RequiredInput {
     match character {
         "poisoner" | "monk" | "imp" | "ravenkeeper" | "butler" => required_players(1, 1),
-        "washerwoman" => required_setup_info("washerwoman", "Townsfolk", 2, 2, false),
-        "librarian" => required_setup_info("librarian", "Outsider", 0, 2, true),
-        "investigator" => required_setup_info("investigator", "Minion", 2, 2, false),
+        "washerwoman" => required_setup_info(
+            SetupInfoKind::Washerwoman,
+            CharacterKind::Townsfolk,
+            2,
+            2,
+            false,
+        ),
+        "librarian" => required_setup_info(
+            SetupInfoKind::Librarian,
+            CharacterKind::Outsider,
+            0,
+            2,
+            true,
+        ),
+        "investigator" => required_setup_info(
+            SetupInfoKind::Investigator,
+            CharacterKind::Minion,
+            2,
+            2,
+            false,
+        ),
         "fortuneTeller" => required_players(2, 2),
         "chef" => RequiredInput {
-            kind: "number",
-            target: Some("number"),
+            kind: RequiredInputKind::Number,
+            target: Some(InputTarget::Number),
             min_selections: Some(0),
             max_selections: None,
             setup_info: None,
@@ -1409,10 +1725,10 @@ fn character_required_input(character: &str) -> RequiredInput {
 }
 
 fn simple_step(
-    phase: &'static str,
+    phase: Phase,
     id_prefix: &str,
     name: &'static str,
-    step_type: &'static str,
+    step_type: StepType,
     required_input: RequiredInput,
     can_skip: bool,
 ) -> PhaseStep {
@@ -1428,20 +1744,20 @@ fn simple_step(
 }
 
 fn phase_transition_step(
-    phase: &'static str,
+    phase: Phase,
     id_prefix: &str,
     name: &'static str,
-    next_phase: &'static str,
+    next_phase: RequiredInputKind,
 ) -> PhaseStep {
     PhaseStep {
         id: format!("{id_prefix}:{name}"),
         phase,
-        step_type: "phaseTransition",
+        step_type: StepType::PhaseTransition,
         character: None,
         player_id: None,
         required_input: RequiredInput {
             kind: next_phase,
-            target: Some("phase"),
+            target: Some(InputTarget::Phase),
             min_selections: None,
             max_selections: None,
             setup_info: None,
@@ -1463,7 +1779,7 @@ fn phase_prefix(phase: &str, cycle: usize) -> String {
 
 fn required_none() -> RequiredInput {
     RequiredInput {
-        kind: "none",
+        kind: RequiredInputKind::None,
         target: None,
         min_selections: None,
         max_selections: None,
@@ -1476,8 +1792,12 @@ fn required_none() -> RequiredInput {
 
 fn required_players(min: u8, max: u8) -> RequiredInput {
     RequiredInput {
-        kind: if max == 1 { "playerIds" } else { "playerIds" },
-        target: Some(if max == 1 { "player" } else { "players" }),
+        kind: RequiredInputKind::PlayerIds,
+        target: Some(if max == 1 {
+            InputTarget::Player
+        } else {
+            InputTarget::Players
+        }),
         min_selections: Some(min),
         max_selections: Some(max),
         setup_info: None,
@@ -1489,8 +1809,8 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
 
 fn required_characters(min: u8, max: u8) -> RequiredInput {
     RequiredInput {
-        kind: "characterIds",
-        target: Some("characters"),
+        kind: RequiredInputKind::CharacterIds,
+        target: Some(InputTarget::Characters),
         min_selections: Some(min),
         max_selections: Some(max),
         setup_info: None,
@@ -1501,15 +1821,15 @@ fn required_characters(min: u8, max: u8) -> RequiredInput {
 }
 
 fn required_setup_info(
-    kind: &'static str,
-    character_kind: &'static str,
+    kind: SetupInfoKind,
+    character_kind: CharacterKind,
     min: u8,
     max: u8,
     zero_allowed: bool,
 ) -> RequiredInput {
     RequiredInput {
-        kind: "setupInfo",
-        target: Some("players"),
+        kind: RequiredInputKind::SetupInfo,
+        target: Some(InputTarget::Players),
         min_selections: Some(min),
         max_selections: Some(max),
         setup_info: Some(kind),
@@ -1520,17 +1840,15 @@ fn required_setup_info(
 }
 
 fn validate_setup_info_input(
-    setup_info: &str,
-    value: &Value,
+    setup_info: SetupInfoKind,
+    value: &StepInput,
     players: &[Player],
 ) -> Result<(), CoreError> {
-    if setup_info == "librarian"
-        && value.get("zeroOutsiders").and_then(Value::as_bool) == Some(true)
-    {
-        let player_count = value
-            .get("playerIds")
-            .and_then(Value::as_array)
-            .map_or(0, Vec::len);
+    let value = value
+        .as_ref()
+        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    if setup_info == SetupInfoKind::Librarian && value.zero_outsiders == Some(true) {
+        let player_count = value.player_ids.as_ref().map_or(0, Vec::len);
         if player_count == 0 {
             return Ok(());
         }
@@ -1540,7 +1858,7 @@ fn validate_setup_info_input(
         ));
     }
 
-    let player_ids = validate_player_ids(value, players)?;
+    let player_ids = validate_player_ids(value.player_ids.as_deref(), players)?;
     if player_ids.len() != 2 {
         return Err(error(
             "MISSING_STEP_INPUT",
@@ -1548,7 +1866,7 @@ fn validate_setup_info_input(
         ));
     }
 
-    let Some(character_id) = value.get("characterId").and_then(Value::as_str) else {
+    let Some(character_id) = value.character_id.as_deref() else {
         return Err(error(
             "MISSING_STEP_INPUT",
             "현재 단계에 필요한 입력이 없습니다.",
@@ -1559,10 +1877,9 @@ fn validate_setup_info_input(
     };
 
     let valid_kind = match setup_info {
-        "washerwoman" => matches!(kind, CharacterKind::Townsfolk),
-        "librarian" => matches!(kind, CharacterKind::Outsider),
-        "investigator" => matches!(kind, CharacterKind::Minion),
-        _ => false,
+        SetupInfoKind::Washerwoman => matches!(kind, CharacterKind::Townsfolk),
+        SetupInfoKind::Librarian => matches!(kind, CharacterKind::Outsider),
+        SetupInfoKind::Investigator => matches!(kind, CharacterKind::Minion),
     };
     if !valid_kind {
         return Err(error(
@@ -1574,23 +1891,15 @@ fn validate_setup_info_input(
     Ok(())
 }
 
-fn validate_number_input(value: &Value) -> Result<(), CoreError> {
-    if value.is_null() {
+fn validate_number_input(value: &StepInput) -> Result<(), CoreError> {
+    let Some(value) = value.as_ref() else {
         return Ok(());
-    }
+    };
 
-    let Some(number) = value.get("value").or_else(|| value.get("displayedValue")) else {
+    let Some(number) = value.value.or(value.displayed_value) else {
         return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
     };
-    if number.as_u64().filter(|number| *number <= 15).is_some() {
-        if let Some(reason) = value.get("reason").and_then(Value::as_str) {
-            if !matches!(reason, "drunk" | "poisoned" | "registration") {
-                return Err(error(
-                    "INVALID_STEP_INPUT",
-                    "현재 단계 입력이 올바르지 않습니다.",
-                ));
-            }
-        }
+    if number <= 15 {
         return Ok(());
     }
 
@@ -1600,20 +1909,15 @@ fn validate_number_input(value: &Value) -> Result<(), CoreError> {
     ))
 }
 
-fn validate_character_selection(input: &RequiredInput, value: &Value) -> Result<(), CoreError> {
+fn validate_character_selection(input: &RequiredInput, value: &StepInput) -> Result<(), CoreError> {
     let character_ids = value
-        .get("characterIds")
-        .and_then(Value::as_array)
+        .as_ref()
+        .and_then(|value| value.character_ids.as_ref())
         .cloned()
         .unwrap_or_default();
-    if character_ids
-        .iter()
-        .any(|character_id| !character_id.is_string())
-    {
-        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
-    }
     let mut unique_character_ids = HashSet::new();
-    for character_id in character_ids.iter().filter_map(Value::as_str) {
+    for character_id in &character_ids {
+        let character_id = character_id.as_str();
         if !unique_character_ids.insert(character_id) || character_kind(character_id).is_none() {
             return Err(error(
                 "INVALID_STEP_INPUT",
@@ -1643,21 +1947,20 @@ fn validate_character_selection(input: &RequiredInput, value: &Value) -> Result<
     Ok(())
 }
 
-fn validate_player_ids(value: &Value, players: &[Player]) -> Result<Vec<String>, CoreError> {
-    let player_ids = value
-        .get("playerIds")
-        .and_then(Value::as_array)
-        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
-    if player_ids.iter().any(|player_id| !player_id.is_string()) {
-        return Err(error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."));
-    }
+fn validate_player_ids(
+    player_ids: Option<&[String]>,
+    players: &[Player],
+) -> Result<Vec<String>, CoreError> {
+    let player_ids =
+        player_ids.ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
     let mut unique_player_ids = HashSet::new();
     let roster_player_ids = players
         .iter()
         .map(|player| player.id.as_str())
         .collect::<HashSet<_>>();
     let mut valid_ids = Vec::new();
-    for player_id in player_ids.iter().filter_map(Value::as_str) {
+    for player_id in player_ids {
+        let player_id = player_id.as_str();
         if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
             return Err(error(
                 "INVALID_STEP_INPUT",
@@ -1670,32 +1973,65 @@ fn validate_player_ids(value: &Value, players: &[Player]) -> Result<Vec<String>,
     Ok(valid_ids)
 }
 
-fn validate_nomination_vote_input(value: &Value, players: &[Player]) -> Result<(), CoreError> {
-    let input: NominationVoteInput = serde_json::from_value(value.clone())
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
-    let allowed_spent_ghost_ids = value
-        .get("ghostVoteSpentPlayerIds")
-        .and_then(Value::as_array)
-        .map(|ids| ids.iter().filter_map(Value::as_str).collect::<HashSet<_>>())
-        .unwrap_or_default();
+fn validate_nomination_vote_input(value: &StepInput, players: &[Player]) -> Result<(), CoreError> {
+    let input = nomination_input(value)?;
+    nomination_participants(&input, players, &HashSet::new())?;
+    Ok(())
+}
+
+fn validate_nomination_record_input(
+    record: &NominationRecord,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    let input = NominationVoteInput {
+        nominator_id: record.nominator_id.clone(),
+        nominee_id: record.nominee_id.clone(),
+        voter_ids: record.voter_ids.clone(),
+    };
+    let allowed_spent_ghost_ids = record
+        .ghost_vote_spent_player_ids
+        .iter()
+        .map(String::as_str)
+        .collect::<HashSet<_>>();
     nomination_participants(&input, players, &allowed_spent_ghost_ids)?;
     Ok(())
 }
 
-fn validate_execution_decision_input(value: &Value) -> Result<(), CoreError> {
-    serde_json::from_value::<ExecutionDecisionInput>(value.clone())
+fn validate_execution_decision_input(value: &StepInput) -> Result<(), CoreError> {
+    value
+        .as_ref()
+        .and_then(|value| value.execute)
         .map(|_| ())
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))
+        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))
+}
+
+fn nomination_input(value: &StepInput) -> Result<NominationVoteInput, CoreError> {
+    let value = value
+        .as_ref()
+        .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    Ok(NominationVoteInput {
+        nominator_id: value
+            .nominator_id
+            .clone()
+            .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?,
+        nominee_id: value
+            .nominee_id
+            .clone()
+            .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?,
+        voter_ids: value
+            .voter_ids
+            .clone()
+            .ok_or_else(|| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?,
+    })
 }
 
 fn nomination_record(
     step: &PhaseStep,
     players: &[Player],
-    input: &Value,
-    events: &[ConfirmedEvent],
+    typed_input: &StepInput,
+    events: &[GameEvent],
 ) -> Result<NominationRecord, CoreError> {
-    let input: NominationVoteInput = serde_json::from_value(input.clone())
-        .map_err(|_| error("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."))?;
+    let input = nomination_input(typed_input)?;
     let voter_ids = nomination_participants(&input, players, &HashSet::new())?;
     let ghost_vote_spent_player_ids = voter_ids
         .iter()
@@ -1779,23 +2115,25 @@ fn execution_vote_threshold(players: &[Player]) -> usize {
     (alive_count / 2) + 1
 }
 
-fn replay_day_state(events: &[ConfirmedEvent], prefix: &str) -> Result<DayState, CoreError> {
+fn replay_day_state(events: &[GameEvent], prefix: &str) -> Result<DayState, CoreError> {
     let mut nominations = Vec::new();
     let mut execution_candidate = None;
     let mut confirmed_execution = None;
 
     for event in events {
-        let step_id = event.payload.get("stepId").and_then(Value::as_str);
+        let step_id = match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload } => Some(payload.step_id.as_str()),
+            GameEventKind::ExecutionConfirmed { payload }
+            | GameEventKind::NoExecutionConfirmed { payload } => Some(payload.step_id.as_str()),
+            _ => None,
+        };
         if !step_id.is_some_and(|step_id| step_id.starts_with(prefix)) {
             continue;
         }
 
-        match event.event_type.as_str() {
-            "nominationVoteConfirmed" => {
-                let record: NominationRecord = serde_json::from_value(
-                    event.payload.get("input").cloned().unwrap_or(Value::Null),
-                )
-                .map_err(|_| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
+        match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                let record = payload.input.clone();
                 if record.updates_execution_candidate {
                     execution_candidate = Some(ExecutionCandidate {
                         nominee_id: record.nominee_id.clone(),
@@ -1804,19 +2142,16 @@ fn replay_day_state(events: &[ConfirmedEvent], prefix: &str) -> Result<DayState,
                 }
                 nominations.push(record);
             }
-            "executionConfirmed" => {
-                let player_id = event
-                    .payload
-                    .get("input")
-                    .and_then(|input| input.get("playerId"))
-                    .and_then(Value::as_str)
-                    .map(str::to_string)
-                    .ok_or_else(|| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
+            GameEventKind::ExecutionConfirmed { payload } => {
+                let player_id =
+                    payload.input.player_id.clone().ok_or_else(|| {
+                        error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다.")
+                    })?;
                 confirmed_execution = Some(ConfirmedExecution {
                     player_id: Some(player_id),
                 });
             }
-            "noExecutionConfirmed" => {
+            GameEventKind::NoExecutionConfirmed { .. } => {
                 confirmed_execution = Some(ConfirmedExecution { player_id: None });
             }
             _ => {}
@@ -1858,21 +2193,22 @@ fn awakening_character(player: &Player) -> Option<&str> {
     }
 }
 
-fn replay_players(events: &[ConfirmedEvent]) -> Result<Vec<Player>, CoreError> {
+fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
     if events.is_empty() {
         return Ok(Vec::new());
     };
-    if events[0].event_type != "setupConfirmed"
+    if !matches!(events[0].kind, GameEventKind::SetupConfirmed { .. })
         || events
             .iter()
             .skip(1)
-            .any(|event| event.event_type == "setupConfirmed")
+            .any(|event| matches!(event.kind, GameEventKind::SetupConfirmed { .. }))
     {
         return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
     }
 
-    let payload: CreateGamePayload = serde_json::from_value(events[0].payload.clone())
-        .map_err(|_| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
+    let GameEventKind::SetupConfirmed { payload } = &events[0].kind else {
+        return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
+    };
 
     validate_setup_inputs(&payload.players)?;
     let mut players = payload
@@ -1882,25 +2218,17 @@ fn replay_players(events: &[ConfirmedEvent]) -> Result<Vec<Player>, CoreError> {
         .collect::<Result<Vec<_>, _>>()?;
 
     for event in events.iter().skip(1) {
-        match event.event_type.as_str() {
-            "deathConfirmed" => {
-                let player_id = event
-                    .payload
-                    .get("playerId")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
+        match &event.kind {
+            GameEventKind::DeathConfirmed { payload } => {
+                let player_id = payload.player_id.as_str();
                 let Some(player) = players.iter_mut().find(|player| player.id == player_id) else {
                     return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
                 };
                 player.alive = false;
             }
-            "nominationVoteConfirmed" => {
-                let record: NominationRecord = serde_json::from_value(
-                    event.payload.get("input").cloned().unwrap_or(Value::Null),
-                )
-                .map_err(|_| error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."))?;
-                for player_id in record.ghost_vote_spent_player_ids {
-                    let Some(player) = players.iter_mut().find(|player| player.id == player_id)
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                for player_id in &payload.input.ghost_vote_spent_player_ids {
+                    let Some(player) = players.iter_mut().find(|player| &player.id == player_id)
                     else {
                         return Err(error("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."));
                     };
@@ -2168,7 +2496,8 @@ fn expected_distribution(player_count: usize, has_baron: bool) -> SetupDistribut
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "PascalCase")]
 enum CharacterKind {
     Townsfolk,
     Outsider,
@@ -2275,6 +2604,60 @@ mod tests {
         assert_eq!(actual["ok"], true);
         assert_eq!(actual["value"]["event"]["type"], "smokeConfirmed");
         assert_eq!(actual["value"]["preview"]["messageKo"], "코어 계약 정상");
+    }
+
+    #[test]
+    fn command_errors_distinguish_unsupported_and_malformed_payloads() {
+        let unsupported: Value =
+            serde_json::from_str(&propose_json(EMPTY_GAME, r#"{ "type": "notACommand" }"#))
+                .unwrap();
+        let malformed: Value = serde_json::from_str(&propose_json(
+            EMPTY_GAME,
+            r#"{ "type": "createGame", "payload": {} }"#,
+        ))
+        .unwrap();
+
+        assert_eq!(unsupported["error"]["code"], "UNSUPPORTED_COMMAND");
+        assert_eq!(malformed["error"]["code"], "MALFORMED_COMMAND");
+    }
+
+    #[test]
+    fn event_errors_distinguish_unsupported_and_malformed_payloads() {
+        let unsupported_game = game_with_events(json!([{
+            "id": "event-1",
+            "type": "notAnEvent",
+            "phase": "setup",
+            "payload": {},
+            "summary": "unsupported",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        }]));
+        let malformed_game = game_with_events(json!([{
+            "id": "event-1",
+            "type": "deathConfirmed",
+            "phase": "night",
+            "payload": {},
+            "summary": "malformed",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        }]));
+
+        let unsupported: Value =
+            serde_json::from_str(&replay_json(&unsupported_game.to_string())).unwrap();
+        let malformed: Value =
+            serde_json::from_str(&replay_json(&malformed_game.to_string())).unwrap();
+
+        assert_eq!(unsupported["error"]["code"], "UNSUPPORTED_EVENT");
+        assert_eq!(malformed["error"]["code"], "MALFORMED_EVENT");
+    }
+
+    #[test]
+    fn canonical_schema_v1_fixture_replays_without_wire_migration() {
+        let fixture = include_str!("../../../fixtures/schema-v1-game.json");
+        let actual: Value = serde_json::from_str(&replay_json(fixture)).unwrap();
+
+        assert_eq!(actual["ok"], true);
+        assert_eq!(actual["value"]["schemaVersion"], 1);
+        assert_eq!(actual["value"]["eventCount"], 8);
+        assert_eq!(actual["value"]["phase"], "day");
     }
 
     #[test]
@@ -2725,6 +3108,7 @@ mod tests {
             actual["value"]["revealPayload"]["messageKo"],
             "서로 이웃한 악 팀 쌍은 0쌍입니다."
         );
+        assert!(actual["value"]["event"]["payload"]["input"]["reason"].is_null());
 
         let mut events = game["game"]["events"].as_array().unwrap().clone();
         events.push(actual["value"]["event"].clone());
@@ -3270,7 +3654,7 @@ mod tests {
         let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
 
         assert_eq!(actual["ok"], false);
-        assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+        assert_eq!(actual["error"]["code"], "MALFORMED_EVENT");
     }
 
     #[test]

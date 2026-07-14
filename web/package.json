@@ -6,7 +6,7 @@
     "prototype:phase-control": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "test": "pnpm run test:unit && pnpm run test:integration",
-    "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js",
+    "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js .codex-tmp/web-tests/**/*.test.js",
     "test:integration": "tsc -p tsconfig.integration.json --noEmit && vitest run"
   },
   "dependencies": {

@@ -4,11 +4,15 @@ import type {
   CoreResult,
   GameEvent,
   GameFile,
+  InputTarget,
+  Phase,
   PhaseStep,
   Player,
   Proposal,
   ReplayState,
+  RequiredInputKind,
   SetupDistribution,
+  StepType,
 } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
 
@@ -22,7 +26,7 @@ const setupDistribution: SetupDistribution = {
 const emptyReplayState: ReplayState = {
   schemaVersion: 1,
   eventCount: 0,
-  phase: "empty",
+  phase: "setup",
   players: [],
   currentStep: null,
   phaseOverview: [],
@@ -76,9 +80,17 @@ export function gameFile(): GameFile {
       events: [
         {
           id: "event-setup",
-          type: "gameCreated",
+          type: "setupConfirmed",
           phase: "setup",
-          payload: {},
+          payload: {
+            players: players().map((player) => ({
+              id: player.id,
+              seat: player.seat,
+              name: player.name,
+              actualCharacter: player.actualCharacter,
+              shownCharacter: player.shownCharacter,
+            })),
+          },
           summary: "초기 설정 확정",
           createdAt: "2026-07-14T00:00:00.000Z",
         },
@@ -122,12 +134,12 @@ export function step({
   id: string;
   character?: string;
   playerId?: string;
-  kind?: string;
-  target?: string;
+  kind?: RequiredInputKind;
+  target?: InputTarget;
   minSelections?: number;
   maxSelections?: number;
-  stepType?: string;
-  phase?: string;
+  stepType?: StepType;
+  phase?: Phase;
 }): PhaseStep {
   return {
     id,
@@ -156,12 +168,12 @@ export function proposal(event: GameEvent, revealPayload?: Proposal["revealPaylo
   };
 }
 
-export function event(id: string, summary: string, phase = "firstNight"): GameEvent {
+export function event(id: string, summary: string, phase: Phase = "firstNight"): GameEvent {
   return {
     id,
-    type: "stepConfirmed",
+    type: "phaseStepConfirmed",
     phase,
-    payload: {},
+    payload: { stepId: id, input: null },
     summary,
     createdAt: "2026-07-14T00:01:00.000Z",
   };

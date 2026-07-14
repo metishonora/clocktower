@@ -16,7 +16,16 @@ const gameFile: GameFile = {
     name: "Trouble Brewing",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    events: [{ type: "setupConfirmed", summary: "초기 설정 확정: 5명" }],
+    events: [
+      {
+        id: "smoke-event",
+        type: "smokeConfirmed",
+        phase: "setup",
+        payload: { source: "smoke" },
+        summary: "스모크 명령 확인",
+        createdAt: "1970-01-01T00:00:00.000Z",
+      },
+    ],
   },
 };
 
