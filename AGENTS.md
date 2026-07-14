@@ -2,6 +2,7 @@
 
 ## Working style
 
+- Before starting work on an issue, create a dedicated Git worktree and branch for that issue, and perform all implementation, testing, review, commit, and push work there. If the current directory is already the issue's dedicated worktree, continue using it instead of creating another one.
 - When implementation needs a UI/product decision, confirm it with the user through a prototype before building the final version. Do not add UI behavior or product scope the user did not ask for.
 
 ## Code-change completion checklist
