@@ -90,6 +90,54 @@ web
 - `crates/wasm`: WebAssembly adapter for JSON in/out.
 - `web`: React/Vite PWA.
 
+### Rust Domain Module Ownership
+
+Keep the public Rust API limited to the three JSON entrypoints: `replay_json`, `propose_json`, and `setup_distribution_json`. Domain modules and their types stay crate-private unless an external Rust consumer is intentionally added.
+
+Organize `crates/domain/src` by cohesive domain responsibility:
+
+```text
+lib.rs
+boundary.rs
+contracts.rs
+error.rs
+model.rs
+proposal.rs
+replay.rs
+setup.rs
+phase.rs
+day.rs
+night.rs
+messages.rs
+characters/
+  mod.rs
+  trouble_brewing.rs
+```
+
+- `lib.rs` owns only the public JSON entrypoints and intentional module declarations.
+- `contracts.rs` owns the serde command, confirmed-event, payload, game-file, and JSON response contracts.
+- `model.rs` owns internal replay and rules state.
+- `boundary.rs` owns JSON parsing and result-envelope serialization.
+- `error.rs` owns stable domain error codes and compact Korean error messages.
+- `proposal.rs` validates and proposes canonical confirmed events from commands.
+- `replay.rs` composes reducers and rebuilds derived state from confirmed events.
+- `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
+- `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
+- `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
+
+### Character Script File Convention
+
+Group character catalogs and character-specific rules by Blood on the Clocktower script, not by individual character. Use a snake-case file name under `characters/`; Trouble Brewing belongs in `characters/trouble_brewing.rs`.
+
+- A script file owns that script's character catalog, alignment and kind lookup, wake order, required input rules, and deterministic character calculations.
+- Do not create one source file per character.
+- Do not import one script's private rules from another script file.
+- Add a new script by adding a new `characters/<script_name>.rs` file and connecting it through the narrow interface in `characters/mod.rs`; do not add script conditionals throughout the common engine.
+- Keep a rule in its script file when it has only one real caller. Extract shared behavior only after another script needs the same domain concept.
+- Keep generic setup, phase, day, night, replay, proposal, and message behavior outside script files.
+
+Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
+
 ## TypeScript App Structure
 
 Keep the TypeScript side thin and UI-focused.
