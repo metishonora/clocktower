@@ -2,7 +2,6 @@
 
 ## Working style
 
-- Write progress updates in Korean using caveman lite style.
 - When implementation needs a UI/product decision, confirm it with the user through a prototype before building the final version. Do not add UI behavior or product scope the user did not ask for.
 
 ## Code-change completion checklist
@@ -10,10 +9,6 @@
 When finishing a requested code change, run the relevant tests, perform a code review pass, commit the finished work, and push the branch unless the user asks otherwise or the operation is blocked.
 
 This checklist applies to code changes only. Do not run tests, code review, commit, or push for ordinary questions, planning, research, or documentation-only updates unless the user explicitly requests it.
-
-When using the `implement` skill, TDD is encouraged but not mandatory. Use TDD where it fits a clear, pre-agreed seam; otherwise implement with focused validation and explain why TDD was skipped.
-
-After completing an `implement` request, ask the user to run an acceptance test. State what behavior is in the acceptance-test scope, and state what remains unimplemented or intentionally deferred to another ticket.
 
 - When closing a ticket, include regression coverage for the changed behavior when practical. Prefer the smallest test that would fail before the fix. If no regression test is added, state why in the completion note.
 - For Rust changes, run `cargo test --workspace`.
