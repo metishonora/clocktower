@@ -14,12 +14,15 @@ test("prototype reopens the same confirmed Reveal until explicit continue", asyn
 
   await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
   const firstReveal = screen.getByLabelText("플레이어 공개 화면");
-  await user.click(within(firstReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  expect(within(firstReveal).getByRole("heading", { name: "서로 이웃한 악한 팀 쌍" })).toBeTruthy();
+  expect(within(firstReveal).getByText("1쌍")).toBeTruthy();
+  await user.click(within(firstReveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
 
   await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
   const reopenedReveal = screen.getByLabelText("플레이어 공개 화면");
-  expect(within(reopenedReveal).getByText("서로 이웃한 악한 팀 쌍은 1쌍입니다.")).toBeTruthy();
-  await user.click(within(reopenedReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  expect(within(reopenedReveal).getByRole("heading", { name: "서로 이웃한 악한 팀 쌍" })).toBeTruthy();
+  expect(within(reopenedReveal).getByText("1쌍")).toBeTruthy();
+  await user.click(within(reopenedReveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
 
   expect(screen.getByText("확정 이벤트 3개")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));

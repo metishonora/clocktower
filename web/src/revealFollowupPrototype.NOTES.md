@@ -12,6 +12,7 @@ Prototype decisions represented:
 - Replace only the current-step panel with the confirmed Reveal follow-up.
 - Allow `플레이어에게 공개` and `다음 단계로 계속` immediately.
 - Closing the player-facing Reveal returns to the same follow-up panel.
+- Present the information label above the result box, keep only the essential value inside it, and use larger label and close text.
 - Reopening and closing Reveal does not change the mocked event log.
 - Hide the replay-derived next-step content and inputs until explicit continue.
 - Continue clears only the pending Reveal presentation and exposes the already replayed next step.
