@@ -498,6 +498,57 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
+  test("submits one input-only editor for a Drunk Investigator delivery", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-1"
+        ? { ...player, actualCharacter: "drunk", shownCharacter: "investigator" }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:investigator",
+      character: "investigator",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "investigator",
+      characterKind: "Minion",
+      informationPrompt: {
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "drunk" }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("event-drunk-investigator", "술꾼 조사관 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "조사관: 1번 Ada" });
+    expect(screen.getAllByRole("combobox", { name: "보여줄 캐릭터" })).toHaveLength(1);
+    const candidates = screen.getByLabelText("단계 입력");
+    await user.click(within(candidates).getByRole("button", { name: /Bert/ }));
+    await user.click(within(candidates).getByRole("button", { name: /Cy/ }));
+    const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    expect(within(characterSelect).getByRole("option", { name: "남작" })).toBeTruthy();
+    await user.selectOptions(characterSelect, "baron");
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:investigator",
+        input: { playerIds: ["player-2", "player-3"], characterId: "baron" },
+      },
+    });
+  });
+
   test("expands one Investigator editor from a selected Recluse and submits its concrete witness", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-3"

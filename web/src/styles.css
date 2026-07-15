@@ -3445,7 +3445,7 @@ select {
   }
 }
 
-/* Issue #7 setup-information discretion prototype. */
+/* Issue #45 setup-information discretion prototype. */
 .setupInfoDiscretionPrototype {
   min-height: 100vh;
   padding: 14px;

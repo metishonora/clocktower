@@ -274,7 +274,19 @@ pub(crate) fn validate_confirmed_information(
 ) -> Result<(), CoreError> {
     let Some(information) = information else {
         // Explicit schema-version-1 compatibility rule: historical events did not persist
-        // Delivered Information, so replay validates the original step input only.
+        // Delivered Information. Setup-information still needs the rule that applied to the
+        // actor at the time: impaired actors could receive any ability-shaped result, while
+        // sober actors remain constrained to the computed roster truth.
+        if let Some(setup_info) = step.required_input.setup_info {
+            let valid = if active_delivery_reasons(step, players, prior_events).is_empty() {
+                setup_info_input_is_valid_normal(setup_info, input, players)
+            } else {
+                setup_info_input_is_valid_impaired(setup_info, input, players)
+            };
+            if !valid {
+                return Err(ErrorKind::InvalidStepInput.into_error());
+            }
+        }
         return Ok(());
     };
 
