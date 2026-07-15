@@ -123,15 +123,22 @@ pub(crate) struct Proposal {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct RevealPayload {
-    pub(crate) message_ko: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) label_ko: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) value_ko: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) preview_message_ko: Option<String>,
+#[serde(untagged)]
+pub(crate) enum RevealPayload {
+    Text {
+        #[serde(rename = "messageKo")]
+        message_ko: String,
+        #[serde(rename = "labelKo", skip_serializing_if = "Option::is_none")]
+        label_ko: Option<String>,
+        #[serde(rename = "valueKo", skip_serializing_if = "Option::is_none")]
+        value_ko: Option<String>,
+        #[serde(rename = "previewMessageKo", skip_serializing_if = "Option::is_none")]
+        preview_message_ko: Option<String>,
+    },
+    SpyGrimoire {
+        kind: &'static str,
+        players: Vec<crate::model::InformationPlayer>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

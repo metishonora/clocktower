@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import type { GameFile } from "../src/core/types";
+import type { GameFile, RevealPayload } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
   MemoryGameStorageDriver,
@@ -864,6 +864,76 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));
     expect(await screen.findByRole("heading", { name: "공감능력자: 3번 Cy" })).toBeTruthy();
     expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+  });
+
+  test("opens a Spy grimoire directly without a Storyteller preview and preserves it until continue", async () => {
+    const revealStep = step({
+      id: "firstNight:spy",
+      character: "spy",
+      playerId: "player-4",
+    });
+    const followUpStep = step({
+      id: "firstNight:toDay",
+      kind: "day",
+      stepType: "phaseTransition",
+    });
+    const playerRoster = players().map((player, index) => ({
+      ...player,
+      actualCharacter: index === 3 ? "spy" : player.actualCharacter,
+      shownCharacter: index === 3 ? "spy" : player.shownCharacter,
+    }));
+    const spyPayload = {
+      kind: "spyGrimoire",
+      players: playerRoster.map((player) => ({
+        playerId: player.id,
+        seat: player.seat,
+        name: player.name,
+        characterId: player.actualCharacter,
+        alive: player.alive,
+        ghostVoteUsed: player.ghostVoteUsed,
+        reminderTokens: player.seat === 2 ? ["poisoned", "protected"] : [],
+      })),
+    } as unknown as RevealPayload;
+    const canonicalEvent = event("event-spy", "스파이 정보 확정");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: revealStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep: followUpStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(canonicalEvent, spyPayload),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "스파이: 4번 Dae" });
+    await user.click(screen.getByRole("button", { name: "확정" }));
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    expect(within(followup).queryByLabelText("Reveal 미리보기")).toBeNull();
+    expect(within(followup).queryByText(`${playerRoster.length}명`)).toBeNull();
+    expect(within(followup).queryByText(/실제 캐릭터와 현재 상태|읽기 전용 공개/)).toBeNull();
+    const showButton = within(followup).getByRole("button", { name: "플레이어에게 공개" });
+
+    await user.click(showButton);
+    const revealScreen = screen.getByLabelText("플레이어 공개 화면");
+    expect(within(revealScreen).getByText("Dae")).toBeTruthy();
+    expect(screen.queryByText("Trouble Brewing")).toBeNull();
+    expect(screen.queryByLabelText("조정 가능한 그리모어 좌석 맵")).toBeNull();
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "낮 시작" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
+    await user.click(
+      within(screen.getByLabelText("플레이어 공개 화면")).getByRole("button", {
+        name: "확인했다면 눈을 감으세요.",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));
+
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(await screen.findByRole("heading", { name: "낮 시작" })).toBeTruthy();
+    expect(core.propose).toHaveBeenCalledTimes(1);
   });
 
   test("undoing the confirmed information clears its pending Reveal", async () => {
