@@ -22,6 +22,10 @@ pub(crate) enum StepType {
     PhaseTransition,
     #[serde(rename = "announcement")]
     Announcement,
+    #[serde(rename = "whisper")]
+    Whisper,
+    #[serde(rename = "discussion")]
+    Discussion,
     #[serde(rename = "nomination")]
     Nomination,
     #[serde(rename = "execution")]
@@ -334,6 +338,8 @@ pub(crate) struct ExecutionDecisionInput {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DayState {
     pub(crate) nominations: Vec<NominationRecord>,
+    pub(crate) execution_vote_threshold: usize,
+    pub(crate) highest_vote_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) execution_candidate: Option<ExecutionCandidate>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -349,7 +355,6 @@ pub(crate) struct NominationRecord {
     pub(crate) voter_ids: Vec<String>,
     pub(crate) vote_count: usize,
     pub(crate) ghost_vote_spent_player_ids: Vec<String>,
-    pub(crate) updates_execution_candidate: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

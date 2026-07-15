@@ -85,7 +85,7 @@ function validateGameFile(value: unknown): GameFile {
   if (!isRecord(value)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
-  if (value.schemaVersion !== 1) {
+  if (value.schemaVersion !== 2) {
     throw new Error("지원하지 않는 게임 파일 버전입니다.");
   }
   if (!isRecord(value.game)) {
@@ -102,7 +102,7 @@ function validateGameFile(value: unknown): GameFile {
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     game: {
       id: value.game.id,
       name: value.game.name,

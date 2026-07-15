@@ -237,6 +237,8 @@ fn phase_transition_confirmation_moves_from_night_to_next_day() {
         phase_event("phaseStepConfirmed", "firstNight:fortuneTeller"),
         phase_event("phaseStepConfirmed", "firstNight:toDay"),
         phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper"),
+        phase_event("phaseStepConfirmed", "day:discussion"),
         phase_event("phaseStepSkipped", "day:nomination:1"),
         no_execution_event("day:execution"),
         phase_event("phaseStepConfirmed", "day:toNight"),

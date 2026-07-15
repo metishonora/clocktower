@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    ConfirmedInformation, CoreWarning, DayState, InformationResult, NominationRecord, Phase,
-    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, StepInput,
+    ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase, PhaseOverviewItem,
+    PhaseStep, Player, RegistrationJudgment, StepInput,
 };
 
 pub(crate) struct GameFile {
@@ -218,10 +218,13 @@ pub(crate) struct PhaseStepEventPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct NominationEventPayload {
     pub(crate) step_id: String,
-    pub(crate) input: NominationRecord,
+    pub(crate) nominator_id: String,
+    pub(crate) nominee_id: String,
+    pub(crate) voter_ids: Vec<String>,
+    pub(crate) ghost_vote_spent_player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

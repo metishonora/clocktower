@@ -61,13 +61,8 @@ pub(crate) fn nomination_vote_event_summary(
     let nominator =
         player_label(players, &record.nominator_id).unwrap_or_else(|| "알 수 없음".to_string());
     format!(
-        "지명 투표 확정: {nominator} → {nominee}, {}표{}",
-        record.vote_count,
-        if record.updates_execution_candidate {
-            ", 처형 후보 갱신"
-        } else {
-            ""
-        }
+        "지명 투표 확정: {nominator} → {nominee}, {}표",
+        record.vote_count
     )
 }
 
@@ -75,8 +70,7 @@ pub(crate) fn nomination_vote_preview(record: &NominationRecord) -> Value {
     json!({
         "messageKo": format!("{}표로 지명 투표를 확정합니다.", record.vote_count),
         "voteCount": record.vote_count,
-        "ghostVoteSpentPlayerIds": &record.ghost_vote_spent_player_ids,
-        "updatesExecutionCandidate": record.updates_execution_candidate
+        "ghostVoteSpentPlayerIds": &record.ghost_vote_spent_player_ids
     })
 }
 

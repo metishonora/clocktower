@@ -24,6 +24,22 @@ pub(crate) fn day_steps(
         required_none(),
         false,
     )];
+    steps.push(simple_step(
+        Phase::Day,
+        &prefix,
+        "whisper",
+        StepType::Whisper,
+        required_none(),
+        false,
+    ));
+    steps.push(simple_step(
+        Phase::Day,
+        &prefix,
+        "discussion",
+        StepType::Discussion,
+        required_none(),
+        false,
+    ));
 
     let mut nomination_number = 1;
     loop {
@@ -117,12 +133,16 @@ pub(crate) fn nomination_record(
         .collect::<Vec<_>>();
     let vote_count = voter_ids.len();
     let prefix = step_prefix(&step.id)?;
-    let current_candidate = replay_day_state(events, &prefix)?.execution_candidate;
-    let majority = execution_vote_threshold(players);
-    let updates_execution_candidate = vote_count >= majority
-        && current_candidate
-            .as_ref()
-            .is_none_or(|candidate| vote_count > candidate.vote_count);
+    let prior = replay_day_state(events, players, &prefix)?;
+    if !players
+        .iter()
+        .any(|player| player.id == input.nominator_id && player.alive)
+        || prior.nominations.iter().any(|record| {
+            record.nominator_id == input.nominator_id || record.nominee_id == input.nominee_id
+        })
+    {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
 
     Ok(NominationRecord {
         step_id: step.id.clone(),
@@ -131,7 +151,6 @@ pub(crate) fn nomination_record(
         voter_ids,
         vote_count,
         ghost_vote_spent_player_ids,
-        updates_execution_candidate,
     })
 }
 
@@ -173,12 +192,15 @@ pub(crate) fn nomination_participants(
 
 pub(crate) fn execution_vote_threshold(players: &[Player]) -> usize {
     let alive_count = players.iter().filter(|player| player.alive).count();
-    (alive_count / 2) + 1
+    alive_count.div_ceil(2).max(1)
 }
 
-pub(crate) fn replay_day_state(events: &[GameEvent], prefix: &str) -> Result<DayState, CoreError> {
+pub(crate) fn replay_day_state(
+    events: &[GameEvent],
+    players: &[Player],
+    prefix: &str,
+) -> Result<DayState, CoreError> {
     let mut nominations = Vec::new();
-    let mut execution_candidate = None;
     let mut confirmed_execution = None;
 
     for event in events {
@@ -194,13 +216,14 @@ pub(crate) fn replay_day_state(events: &[GameEvent], prefix: &str) -> Result<Day
 
         match &event.kind {
             GameEventKind::NominationVoteConfirmed { payload } => {
-                let record = payload.input.clone();
-                if record.updates_execution_candidate {
-                    execution_candidate = Some(ExecutionCandidate {
-                        nominee_id: record.nominee_id.clone(),
-                        vote_count: record.vote_count,
-                    });
-                }
+                let record = NominationRecord {
+                    step_id: payload.step_id.clone(),
+                    nominator_id: payload.nominator_id.clone(),
+                    nominee_id: payload.nominee_id.clone(),
+                    voter_ids: payload.voter_ids.clone(),
+                    vote_count: payload.voter_ids.len(),
+                    ghost_vote_spent_player_ids: payload.ghost_vote_spent_player_ids.clone(),
+                };
                 nominations.push(record);
             }
             GameEventKind::ExecutionConfirmed { payload } => {
@@ -220,8 +243,29 @@ pub(crate) fn replay_day_state(events: &[GameEvent], prefix: &str) -> Result<Day
         }
     }
 
+    let highest_vote_count = nominations
+        .iter()
+        .map(|record| record.vote_count)
+        .max()
+        .unwrap_or(0);
+    let threshold = execution_vote_threshold(players);
+    let leaders = nominations
+        .iter()
+        .filter(|record| record.vote_count == highest_vote_count)
+        .collect::<Vec<_>>();
+    let execution_candidate = if highest_vote_count >= threshold && leaders.len() == 1 {
+        Some(ExecutionCandidate {
+            nominee_id: leaders[0].nominee_id.clone(),
+            vote_count: highest_vote_count,
+        })
+    } else {
+        None
+    };
+
     Ok(DayState {
         nominations,
+        execution_vote_threshold: threshold,
+        highest_vote_count,
         execution_candidate,
         confirmed_execution,
     })
@@ -233,21 +277,39 @@ pub(crate) fn step_prefix(step_id: &str) -> Result<String, CoreError> {
     };
     Ok(prefix.to_string())
 }
-pub(crate) fn validate_nomination_record_input(
-    record: &NominationRecord,
+pub(crate) fn validate_nomination_event_input(
+    payload: &crate::contracts::NominationEventPayload,
     players: &[Player],
 ) -> Result<(), CoreError> {
     let input = NominationVoteInput {
-        nominator_id: record.nominator_id.clone(),
-        nominee_id: record.nominee_id.clone(),
-        voter_ids: record.voter_ids.clone(),
+        nominator_id: payload.nominator_id.clone(),
+        nominee_id: payload.nominee_id.clone(),
+        voter_ids: payload.voter_ids.clone(),
     };
-    let allowed_spent_ghost_ids = record
+    let allowed_spent_ghost_ids = payload
         .ghost_vote_spent_player_ids
         .iter()
         .map(String::as_str)
         .collect::<HashSet<_>>();
     nomination_participants(&input, players, &allowed_spent_ghost_ids)?;
+    let expected = payload
+        .voter_ids
+        .iter()
+        .filter(|id| {
+            players
+                .iter()
+                .any(|player| &player.id == *id && !player.alive)
+        })
+        .cloned()
+        .collect::<HashSet<_>>();
+    let actual = payload
+        .ghost_vote_spent_player_ids
+        .iter()
+        .cloned()
+        .collect::<HashSet<_>>();
+    if expected != actual || actual.len() != payload.ghost_vote_spent_player_ids.len() {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
     Ok(())
 }
 

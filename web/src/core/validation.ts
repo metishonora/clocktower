@@ -22,6 +22,8 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "character",
   "phaseTransition",
   "announcement",
+  "whisper",
+  "discussion",
   "nomination",
   "execution",
 ]);
@@ -99,7 +101,24 @@ export function parseGameEvent(value: unknown): GameEvent {
       if (typeof payload.stepId !== "string") throw invalidEvent();
       break;
     case "nominationVoteConfirmed":
-      if (typeof payload.stepId !== "string" || !isNominationRecord(payload.input)) throw invalidEvent();
+      if (
+        !hasExactKeys(payload, [
+          "stepId",
+          "nominatorId",
+          "nomineeId",
+          "voterIds",
+          "ghostVoteSpentPlayerIds",
+        ]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.nominatorId !== "string" ||
+        typeof payload.nomineeId !== "string" ||
+        !Array.isArray(payload.voterIds) ||
+        !payload.voterIds.every(isString) ||
+        !Array.isArray(payload.ghostVoteSpentPlayerIds) ||
+        !payload.ghostVoteSpentPlayerIds.every(isString)
+      ) {
+        throw invalidEvent();
+      }
       break;
     case "executionConfirmed":
     case "noExecutionConfirmed":
@@ -125,7 +144,7 @@ export function parseGameEvent(value: unknown): GameEvent {
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
-    typeof value.schemaVersion !== "number" ||
+    value.schemaVersion !== 2 ||
     typeof value.eventCount !== "number" ||
     !isPhase(value.phase) ||
     !Array.isArray(value.players) ||
@@ -133,6 +152,7 @@ export function parseReplayState(value: unknown): ReplayState {
     !(value.currentStep === null || isPhaseStep(value.currentStep)) ||
     !Array.isArray(value.phaseOverview) ||
     !value.phaseOverview.every(isPhaseOverviewItem) ||
+    (value.dayState !== undefined && !isDayState(value.dayState)) ||
     !Array.isArray(value.warnings) ||
     !value.warnings.every(isWarning)
   ) {
@@ -486,6 +506,14 @@ function isSetupPlayer(value: unknown): boolean {
 function isNominationRecord(value: unknown): boolean {
   return (
     isRecord(value) &&
+    hasExactKeys(value, [
+      "stepId",
+      "nominatorId",
+      "nomineeId",
+      "voterIds",
+      "voteCount",
+      "ghostVoteSpentPlayerIds",
+    ]) &&
     typeof value.stepId === "string" &&
     typeof value.nominatorId === "string" &&
     typeof value.nomineeId === "string" &&
@@ -493,9 +521,49 @@ function isNominationRecord(value: unknown): boolean {
     value.voterIds.every(isString) &&
     typeof value.voteCount === "number" &&
     Array.isArray(value.ghostVoteSpentPlayerIds) &&
-    value.ghostVoteSpentPlayerIds.every(isString) &&
-    typeof value.updatesExecutionCandidate === "boolean"
+    value.ghostVoteSpentPlayerIds.every(isString)
   );
+}
+
+function isDayState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, [
+      "nominations",
+      "executionVoteThreshold",
+      "highestVoteCount",
+      "executionCandidate",
+      "confirmedExecution",
+    ]) &&
+    Array.isArray(value.nominations) &&
+    value.nominations.every(isNominationRecord) &&
+    typeof value.executionVoteThreshold === "number" &&
+    Number.isInteger(value.executionVoteThreshold) &&
+    value.executionVoteThreshold >= 1 &&
+    typeof value.highestVoteCount === "number" &&
+    Number.isInteger(value.highestVoteCount) &&
+    value.highestVoteCount >= 0 &&
+    (value.executionCandidate === undefined ||
+      (isRecord(value.executionCandidate) &&
+        hasExactKeys(value.executionCandidate, ["nomineeId", "voteCount"]) &&
+        typeof value.executionCandidate.nomineeId === "string" &&
+        typeof value.executionCandidate.voteCount === "number")) &&
+    (value.confirmedExecution === undefined ||
+      (isRecord(value.confirmedExecution) &&
+        hasOnlyKeys(value.confirmedExecution, ["playerId"]) &&
+        isOptionalNullableString(value.confirmedExecution.playerId)))
+  );
+}
+
+function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const allowed = new Set(keys);
+  return Object.keys(value).every((key) => allowed.has(key));
 }
 
 function isPlayer(value: unknown): boolean {

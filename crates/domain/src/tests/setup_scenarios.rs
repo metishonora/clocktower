@@ -171,7 +171,7 @@ fn propose_create_game_uses_baron_adjusted_distribution_warnings() {
 #[test]
 fn replay_uses_baron_adjusted_distribution_warnings() {
     let game = json!({
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "game": {
             "id": "game-1",
             "name": "Setup",
@@ -283,7 +283,7 @@ fn propose_create_game_rejects_non_townsfolk_shown_character_for_drunk() {
 #[test]
 fn replay_setup_confirmed_event_derives_player_state() {
     let game = json!({
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "game": {
             "id": "game-1",
             "name": "Setup",

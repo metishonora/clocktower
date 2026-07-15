@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import type { GameFile, RevealPayload } from "../src/core/types";
+import type { GameFile, ReplayState, RevealPayload } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
   MemoryGameStorageDriver,
@@ -23,6 +23,43 @@ afterEach(() => {
 });
 
 describe("ClocktowerApp live-play integration", () => {
+  test("rejects an invalid stored log as a whole and replaces it only after starting a new game", async () => {
+    const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    vi.mocked(core.replay).mockImplementation(async (candidate) =>
+      candidate.game.events.length > 0
+        ? { ok: false, error: { code: "REPLAY_FAILED", messageKo: "저장 로그 무효" } }
+        : {
+            ok: true,
+            value: {
+              schemaVersion: 2,
+              eventCount: 0,
+              phase: "setup",
+              players: [],
+              currentStep: null,
+              phaseOverview: [],
+              warnings: [],
+            },
+          },
+    );
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    expect((await screen.findAllByText("저장 로그 무효")).length).toBeGreaterThan(0);
+    expect(storage.savedGames).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "새 게임" }));
+
+    await waitFor(() => expect(storage.savedGames).toHaveLength(1));
+    expect(storage.savedGames[0]?.schemaVersion).toBe(2);
+    expect(storage.savedGames[0]?.game.events).toEqual([]);
+  });
+
   test("starts confirmed setup and Event Log collapsed and expands them independently", async () => {
     const currentStep = step({
       id: "firstNight:washerwoman",
@@ -1284,8 +1321,23 @@ describe("ClocktowerApp live-play integration", () => {
       phase: "day",
     });
     const canonicalEvent = event("event-vote", "1번 Ada가 5번 Eun을 지명 · 2표", "day");
+    const confirmedStanding = {
+      nominations: [
+        {
+          stepId: "day:nomination:0",
+          nominatorId: "player-4",
+          nomineeId: "player-5",
+          voterIds: ["player-1", "player-2", "player-4", "player-5"],
+          voteCount: 4,
+          ghostVoteSpentPlayerIds: ["player-2"],
+        },
+      ],
+      executionVoteThreshold: 2,
+      highestVoteCount: 4,
+      executionCandidate: { nomineeId: "player-5", voteCount: 4 },
+    } as ReplayState["dayState"];
     const core = createCoreHarness({
-      initialReplay: replayState({ currentStep: votingStep, dayState: { nominations: [] } }),
+      initialReplay: replayState({ currentStep: votingStep, dayState: confirmedStanding }),
       replayAfterProposal: replayState({
         currentStep: nextVotingStep,
         eventCount: 2,
@@ -1298,9 +1350,10 @@ describe("ClocktowerApp live-play integration", () => {
               voterIds: ["player-1", "player-2"],
               voteCount: 2,
               ghostVoteSpentPlayerIds: ["player-2"],
-              updatesExecutionCandidate: false,
             },
           ],
+          executionVoteThreshold: 2,
+          highestVoteCount: 2,
         },
       }),
       proposal: proposal(canonicalEvent),
@@ -1310,7 +1363,9 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    await screen.findByRole("heading", { name: "지명과 투표 1" });
+    await screen.findByRole("heading", { name: "지명 및 투표 1" });
+    expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
+    expect(screen.getByText("기준 2표 · 생존자 3명")).toBeTruthy();
     await user.selectOptions(screen.getByRole("combobox", { name: "지명자" }), "player-1");
     await user.selectOptions(screen.getByRole("combobox", { name: "피지명자" }), "player-5");
     const seatMap = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
@@ -1321,7 +1376,8 @@ describe("ClocktowerApp live-play integration", () => {
     if (!votePreview) throw new Error("vote preview was not rendered");
     expect(within(votePreview).getByText("2표")).toBeTruthy();
     expect(within(votePreview).getByText(/2번 Bert/)).toBeTruthy();
-    expect(within(votePreview).getByText("후보 갱신: 5번 Eun · 2표")).toBeTruthy();
+    expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
+    expect(screen.queryByText("확정된 투표만 반영")).toBeNull();
 
     const confirmButton = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
     expect(confirmButton.disabled).toBe(false);
@@ -1338,7 +1394,31 @@ describe("ClocktowerApp live-play integration", () => {
         },
       },
     });
-    expect(await screen.findByRole("heading", { name: "지명과 투표 2" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "지명 및 투표 2" })).toBeTruthy();
+  });
+
+  test("renders concise typed Day workflow actions for Whisper and Discussion", async () => {
+    const whisperStep = step({
+      id: "day:whisper",
+      stepType: "whisper" as never,
+      phase: "day",
+    });
+    const discussionStep = step({
+      id: "day:discussion",
+      stepType: "discussion" as never,
+      phase: "day",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: whisperStep }),
+      replayAfterProposal: replayState({ currentStep: discussionStep, eventCount: 2 }),
+      proposal: proposal(event("event-whisper", "밀담 종료", "day")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await user.click(await screen.findByRole("button", { name: "토론 시작" }));
+    expect(await screen.findByRole("button", { name: "지명 및 투표 시작" })).toBeTruthy();
   });
 
   test("skips a skippable phase step through its canonical event and replay path", async () => {
@@ -1352,8 +1432,15 @@ describe("ClocktowerApp live-play integration", () => {
     const nextStep = step({ id: "day:execution", kind: "executionDecision", stepType: "execution", phase: "day" });
     const canonicalEvent = event("event-skip", "지명 종료", "day");
     const core = createCoreHarness({
-      initialReplay: replayState({ currentStep, dayState: { nominations: [] } }),
-      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2, dayState: { nominations: [] } }),
+      initialReplay: replayState({
+        currentStep,
+        dayState: { nominations: [], executionVoteThreshold: 2, highestVoteCount: 0 },
+      }),
+      replayAfterProposal: replayState({
+        currentStep: nextStep,
+        eventCount: 2,
+        dayState: { nominations: [], executionVoteThreshold: 2, highestVoteCount: 0 },
+      }),
       proposal: proposal(canonicalEvent),
     });
     const storage = new MemoryGameStorageDriver(gameFile());
@@ -1361,7 +1448,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    await screen.findByRole("heading", { name: "지명과 투표 1" });
+    await screen.findByRole("heading", { name: "지명 및 투표 1" });
     await user.click(screen.getByRole("button", { name: "지명 종료" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {

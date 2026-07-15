@@ -10,7 +10,7 @@ import {
 import type { GameFile } from "./core/types.js";
 
 const gameFile: GameFile = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   game: {
     id: "game-1",
     name: "Trouble Brewing",
@@ -45,7 +45,7 @@ test("export writes schemaVersion and exportedAt into GameFile JSON", () => {
   const json = exportGameFileJson(gameFile, new Date("2026-07-10T00:00:00.000Z"));
   const parsed = JSON.parse(json);
 
-  equal(parsed.schemaVersion, 1);
+  equal(parsed.schemaVersion, 2);
   equal(parsed.exportedAt, "2026-07-10T00:00:00.000Z");
   deepEqual(parsed.game.events, gameFile.game.events);
 });
@@ -53,7 +53,7 @@ test("export writes schemaVersion and exportedAt into GameFile JSON", () => {
 test("import validates basic GameFile shape and schemaVersion", () => {
   deepEqual(importGameFileJson(JSON.stringify(gameFile)), gameFile);
   try {
-    importGameFileJson(JSON.stringify({ ...gameFile, schemaVersion: 2 }));
+    importGameFileJson(JSON.stringify({ ...gameFile, schemaVersion: 1 }));
     throw new Error("expected schema validation to fail");
   } catch (error) {
     equal(error instanceof Error ? error.message : "", "지원하지 않는 게임 파일 버전입니다.");

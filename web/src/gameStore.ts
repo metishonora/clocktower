@@ -33,7 +33,7 @@ export function createGameFile(events: GameEvent[] = []): GameFile {
   const now = new Date().toISOString();
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     game: {
       id: "local-game",
       name: "Trouble Brewing",
@@ -75,9 +75,19 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     let cancelled = false;
 
     loadLatestGame(storageDriver)
-      .then((storedGameFile) => {
+      .then(async (storedGameFile) => {
         if (cancelled) return;
-        if (storedGameFile) setGameFile(storedGameFile);
+        if (storedGameFile) {
+          const storedReplay = await core.replay(storedGameFile);
+          if (cancelled) return;
+          if (!storedReplay.ok) {
+            setStorageError(storedReplay.error.messageKo);
+            setStorageReady(true);
+            return;
+          }
+          setReplayResult(storedReplay);
+          setGameFile(storedGameFile);
+        }
         setStorageReady(true);
       })
       .catch((error: unknown) => {
@@ -89,7 +99,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     return () => {
       cancelled = true;
     };
-  }, [storageDriver]);
+  }, [core, storageDriver]);
 
   useEffect(() => {
     if (!storageReady || storageError) return;
@@ -332,6 +342,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       return;
     }
 
+    setStorageError(undefined);
+    setLoadError(undefined);
     setGameFile(createGameFile());
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
@@ -384,6 +396,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       }
       setReplayResult(importedReplay);
       setSetupDraft((current) => syncSetupDraftFromReplayState(current, importedReplay.value));
+      setStorageError(undefined);
       setGameFile(importedGameFile);
       setProposalResult(undefined);
       setPendingConfirmedReveal(undefined);

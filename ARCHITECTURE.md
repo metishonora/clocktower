@@ -369,10 +369,48 @@ only the confirmed `deliveredResult` plus the minimum information kind needed to
 must not read the full ReplayState, Grimoire, command draft, or `computedResult`. A Spy result uses
 a narrow Spy-specific delivered result rather than passing the general Grimoire model.
 
-Keep `schemaVersion: 1` for this additive event contract. A schema-version-1
-`phaseStepConfirmed` event without `information` is a legacy event and remains replayable. Do not
-invent or rewrite Delivered Information that was never persisted. Newly proposed supported
-information events always include the typed record, and import/export preserves it unchanged.
+Schema version 2 stores this information contract. A `phaseStepConfirmed` event omits
+`information` when its step produces no information; newly proposed supported information events
+include the typed record, and import/export preserves it unchanged.
+
+### Day and Nomination Contract
+
+Day remains one top-level phase with typed, replayable steps in this order:
+
+```text
+announceDeaths -> whisper -> discussion -> nomination:* -> execution -> toNight
+```
+
+`whisper` and `discussion` are `StepType` values. TypeScript renders their labels and actions from
+the typed step and does not infer behavior by parsing step IDs. Every transition still uses the
+normal command, proposal, confirmed-event, and replay path.
+
+Rust owns the confirmed nomination standing. It derives the execution threshold as
+`max(1, ceil(livingPlayers / 2))`, derives vote counts from unique confirmed voter IDs, and derives
+the highest count and execution candidate from every confirmed nomination in the current Day. A
+candidate exists only when exactly one nominee has the qualifying highest count; a top tie has no
+candidate. TypeScript renders this replay result and must not predict candidate or threshold changes
+from an unconfirmed draft.
+
+Schema-version-2 nomination events persist only canonical audit input:
+
+```ts
+type NominationVoteConfirmed = {
+  type: "nominationVoteConfirmed";
+  payload: {
+    stepId: string;
+    nominatorId: string;
+    nomineeId: string;
+    voterIds: string[];
+    ghostVoteSpentPlayerIds: string[];
+  };
+};
+```
+
+Replay derives `voteCount`; events do not persist a duplicate count or an incremental candidate
+flag. Nomination payloads reject unknown fields. Proposal and replay both enforce event order,
+known and unique voters, consistent ghost-vote spending, a living nominator, and no repeated
+same-Day nominator or nominee.
 
 Manual corrections use the same command/proposal/event flow.
 
@@ -405,7 +443,7 @@ value: GameFile
 
 ```ts
 type GameFile = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt?: string;
   game: {
     id: string;
@@ -421,7 +459,10 @@ IndexedDB stores one `GameFile` without `exportedAt`.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 
-Import reads a `GameFile`, checks the basic JSON shape and schema version, calls Rust `replay` to verify the event log, then replaces the stored game and opens it.
+Import reads a `GameFile`, checks the basic JSON shape and schema version, calls Rust `replay` to
+verify the complete event log, then replaces the stored game and opens it. Schema version 1 and an
+invalid version-2 log are rejected as whole files; import never installs a successfully replayed
+prefix or partial state.
 
 Only keep the latest stored game for MVP. Starting a new game or importing a game replaces the current stored game after user confirmation.
 

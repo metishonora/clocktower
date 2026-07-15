@@ -4,6 +4,7 @@ import type { RevealPayload } from "./core/types";
 import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
+import { DayVotingPrototype } from "./dayVotingPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
 import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
@@ -33,6 +34,10 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "day-voting") {
+    return <DayVotingPrototype />;
+  }
+
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "reveal-followup") {
     return <RevealFollowupPrototype />;
   }

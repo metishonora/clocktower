@@ -98,7 +98,6 @@ export function PlayerStepInput({
 export function StepInputFields({
   step,
   players,
-  dayState,
   nominationDraft,
   onNominationDraftChange,
   selectedPlayerIds,
@@ -117,7 +116,6 @@ export function StepInputFields({
 }: {
   step: PhaseStep;
   players: Player[];
-  dayState?: DayState;
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
   selectedPlayerIds: string[];
@@ -139,7 +137,6 @@ export function StepInputFields({
       {step.requiredInput.kind === "nominationVote" ? (
         <NominationVoteInput
           players={players}
-          dayState={dayState}
           draft={nominationDraft}
           onChange={onNominationDraftChange}
           busy={busy}

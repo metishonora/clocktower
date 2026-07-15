@@ -325,10 +325,12 @@ function CurrentStepPane({
                 </div>
               </section>
             ) : null}
+            {currentStep.stepType === "nomination" && dayState ? (
+              <ConfirmedExecutionStanding players={players} dayState={dayState} />
+            ) : null}
             <StepInputFields
               step={currentStep}
               players={players}
-              dayState={dayState}
               nominationDraft={nominationDraft}
               onNominationDraftChange={onNominationDraftChange}
               selectedPlayerIds={phaseInputDraft.selectedPlayerIds}
@@ -371,7 +373,11 @@ function CurrentStepPane({
                   }
                   disabled={busy || suggesting || !selectionValid}
                 >
-                  확정
+                  {currentStep.stepType === "whisper"
+                    ? "토론 시작"
+                    : currentStep.stepType === "discussion"
+                      ? "지명 및 투표 시작"
+                      : "확정"}
                 </button>
                 {currentStep.canSkip ? (
                   <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
@@ -399,5 +405,29 @@ function CurrentStepPane({
         </ol>
       </section>
     </>
+  );
+}
+
+function ConfirmedExecutionStanding({
+  players,
+  dayState,
+}: {
+  players: Player[];
+  dayState: DayState;
+}) {
+  const candidate = dayState.executionCandidate
+    ? players.find((player) => player.id === dayState.executionCandidate?.nomineeId)
+    : undefined;
+  const standing = candidate && dayState.executionCandidate
+    ? `${candidate.seat}번 ${candidate.name} — ${dayState.executionCandidate.voteCount}표`
+    : `후보 없음 — ${dayState.highestVoteCount}표`;
+  const aliveCount = players.filter((player) => player.alive).length;
+
+  return (
+    <section className="confirmedExecutionStanding" aria-label="현재 처형 후보">
+      <small>현재 처형 후보</small>
+      <strong>{standing}</strong>
+      <span>기준 {dayState.executionVoteThreshold}표 · 생존자 {aliveCount}명</span>
+    </section>
   );
 }
