@@ -231,6 +231,35 @@ test("validates typed confirmed information and derived information prompts", ()
   throws(() => parseReplayState(invalidAllowedCharacters), /코어 응답 형식/);
 });
 
+test("requires canonical nomination eligibility lists in Day replay state", () => {
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 12,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    dayState: {
+      nominations: [],
+      executionVoteThreshold: 1,
+      highestVoteCount: 0,
+      eligibleNominatorIds: ["player-1", "player-3"],
+      eligibleNomineeIds: ["player-1", "player-2"],
+    },
+    warnings: [],
+  };
+
+  deepEqual<unknown>(parseReplayState(replay).dayState, replay.dayState);
+
+  const missingNominators = structuredClone(replay);
+  delete (missingNominators.dayState as { eligibleNominatorIds?: string[] }).eligibleNominatorIds;
+  throws(() => parseReplayState(missingNominators), /코어 응답 형식/);
+
+  const malformedNominees = structuredClone(replay);
+  malformedNominees.dayState.eligibleNomineeIds = [1 as unknown as string];
+  throws(() => parseReplayState(malformedNominees), /코어 응답 형식/);
+});
+
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
   const setupPromptReplay = {
     schemaVersion: 2,

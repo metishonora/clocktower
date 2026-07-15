@@ -338,6 +338,8 @@ pub(crate) struct ExecutionDecisionInput {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DayState {
     pub(crate) nominations: Vec<NominationRecord>,
+    pub(crate) eligible_nominator_ids: Vec<String>,
+    pub(crate) eligible_nominee_ids: Vec<String>,
     pub(crate) execution_vote_threshold: usize,
     pub(crate) highest_vote_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]

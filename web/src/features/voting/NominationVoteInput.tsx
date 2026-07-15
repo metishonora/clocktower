@@ -8,17 +8,30 @@ import type { NominationDraft } from "./useNominationDraft";
 
 export function NominationVoteInput({
   players,
+  eligibleNominatorIds,
+  eligibleNomineeIds,
   draft,
   onChange,
   busy,
 }: {
   players: Player[];
+  eligibleNominatorIds: string[];
+  eligibleNomineeIds: string[];
   draft: NominationDraft;
   onChange: (draft: NominationDraft) => void;
   busy: boolean;
 }) {
   const ghostVoteSpentPlayers = ghostVotesSpentByDraft(players, draft);
   const validVotePlayers = validVotePlayersByDraft(players, draft);
+  const playersById = new Map(players.map((player) => [player.id, player]));
+  const eligibleNominators = eligibleNominatorIds.flatMap((id) => {
+    const player = playersById.get(id);
+    return player ? [player] : [];
+  });
+  const eligibleNominees = eligibleNomineeIds.flatMap((id) => {
+    const player = playersById.get(id);
+    return player ? [player] : [];
+  });
 
   return (
     <div className="nominationVoteInput">
@@ -31,7 +44,7 @@ export function NominationVoteInput({
             onChange={(event) => onChange({ ...draft, nominatorId: event.target.value })}
           >
             <option value="">선택</option>
-            {players.map((player) => (
+            {eligibleNominators.map((player) => (
               <option value={player.id} key={player.id}>
                 {seatPlayerLabel(player)}
               </option>
@@ -46,7 +59,7 @@ export function NominationVoteInput({
             onChange={(event) => onChange({ ...draft, nomineeId: event.target.value })}
           >
             <option value="">선택</option>
-            {players.map((player) => (
+            {eligibleNominees.map((player) => (
               <option value={player.id} key={player.id}>
                 {seatPlayerLabel(player)}
               </option>

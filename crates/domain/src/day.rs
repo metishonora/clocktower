@@ -134,15 +134,12 @@ pub(crate) fn nomination_record(
     let vote_count = voter_ids.len();
     let prefix = step_prefix(&step.id)?;
     let prior = replay_day_state(events, players, &prefix)?;
-    if !players
-        .iter()
-        .any(|player| player.id == input.nominator_id && player.alive)
-        || prior.nominations.iter().any(|record| {
-            record.nominator_id == input.nominator_id || record.nominee_id == input.nominee_id
-        })
-    {
-        return Err(ErrorKind::InvalidStepInput.into_error());
-    }
+    validate_nomination_roles(
+        players,
+        &prior.nominations,
+        &input.nominator_id,
+        &input.nominee_id,
+    )?;
 
     Ok(NominationRecord {
         step_id: step.id.clone(),
@@ -193,6 +190,49 @@ pub(crate) fn nomination_participants(
 pub(crate) fn execution_vote_threshold(players: &[Player]) -> usize {
     let alive_count = players.iter().filter(|player| player.alive).count();
     alive_count.div_ceil(2).max(1)
+}
+
+pub(crate) fn nomination_eligibility(
+    players: &[Player],
+    nominations: &[NominationRecord],
+) -> (Vec<String>, Vec<String>) {
+    let used_nominator_ids = nominations
+        .iter()
+        .map(|record| record.nominator_id.as_str())
+        .collect::<HashSet<_>>();
+    let used_nominee_ids = nominations
+        .iter()
+        .map(|record| record.nominee_id.as_str())
+        .collect::<HashSet<_>>();
+
+    let eligible_nominator_ids = players
+        .iter()
+        .filter(|player| player.alive && !used_nominator_ids.contains(player.id.as_str()))
+        .map(|player| player.id.clone())
+        .collect();
+    let eligible_nominee_ids = players
+        .iter()
+        .filter(|player| player.alive && !used_nominee_ids.contains(player.id.as_str()))
+        .map(|player| player.id.clone())
+        .collect();
+
+    (eligible_nominator_ids, eligible_nominee_ids)
+}
+
+pub(crate) fn validate_nomination_roles(
+    players: &[Player],
+    nominations: &[NominationRecord],
+    nominator_id: &str,
+    nominee_id: &str,
+) -> Result<(), CoreError> {
+    let (eligible_nominator_ids, eligible_nominee_ids) =
+        nomination_eligibility(players, nominations);
+    if !eligible_nominator_ids.iter().any(|id| id == nominator_id)
+        || !eligible_nominee_ids.iter().any(|id| id == nominee_id)
+    {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    Ok(())
 }
 
 pub(crate) fn replay_day_state(
@@ -262,8 +302,13 @@ pub(crate) fn replay_day_state(
         None
     };
 
+    let (eligible_nominator_ids, eligible_nominee_ids) =
+        nomination_eligibility(players, &nominations);
+
     Ok(DayState {
         nominations,
+        eligible_nominator_ids,
+        eligible_nominee_ids,
         execution_vote_threshold: threshold,
         highest_vote_count,
         execution_candidate,

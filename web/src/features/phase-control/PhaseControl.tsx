@@ -331,6 +331,7 @@ function CurrentStepPane({
             <StepInputFields
               step={currentStep}
               players={players}
+              dayState={dayState}
               nominationDraft={nominationDraft}
               onNominationDraftChange={onNominationDraftChange}
               selectedPlayerIds={phaseInputDraft.selectedPlayerIds}

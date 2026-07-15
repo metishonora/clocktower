@@ -392,6 +392,14 @@ candidate exists only when exactly one nominee has the qualifying highest count;
 candidate. TypeScript renders this replay result and must not predict candidate or threshold changes
 from an unconfirmed draft.
 
+Rust also owns nomination eligibility and exposes `DayState.eligibleNominatorIds` and
+`DayState.eligibleNomineeIds` in roster/seat order. Each list contains living Players who have not
+used that role during the current Day. The roles are independent, so a prior nominee may still
+nominate and a prior nominator may still be nominated; self-nomination is allowed when the Player is
+eligible for both roles. Eligibility resets with the Day step prefix. TypeScript uses these canonical
+ID lists for the two nomination selects and does not reconstruct eligibility from Players or
+nomination history.
+
 Schema-version-2 nomination events persist only canonical audit input:
 
 ```ts
@@ -409,8 +417,8 @@ type NominationVoteConfirmed = {
 
 Replay derives `voteCount`; events do not persist a duplicate count or an incremental candidate
 flag. Nomination payloads reject unknown fields. Proposal and replay both enforce event order,
-known and unique voters, consistent ghost-vote spending, a living nominator, and no repeated
-same-Day nominator or nominee.
+known and unique voters, consistent ghost-vote spending, living nominators and nominees, and no
+repeated same-Day use of either role.
 
 Manual corrections use the same command/proposal/event flow.
 
