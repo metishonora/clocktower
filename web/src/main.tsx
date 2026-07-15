@@ -7,6 +7,7 @@ import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
 import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
+import { SpyGrimoireRevealPrototype } from "./spyGrimoireRevealPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import { EventLog } from "./features/event-log/EventLog";
@@ -24,6 +25,10 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "spy-grimoire-reveal") {
+    return <SpyGrimoireRevealPrototype />;
+  }
+
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "reveal-followup") {
     return <RevealFollowupPrototype />;
   }

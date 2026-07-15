@@ -6,6 +6,7 @@
     "dev": "pnpm --dir web dev",
     "prototype:phase-control": "pnpm --dir web prototype:phase-control",
     "prototype:reveal-followup": "pnpm --dir web prototype:reveal-followup",
+    "prototype:spy-grimoire-reveal": "pnpm --dir web prototype:spy-grimoire-reveal",
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
     "test:web": "pnpm --dir web test"

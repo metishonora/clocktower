@@ -22,6 +22,461 @@
   --shadow: 0 18px 45px rgba(63, 51, 35, 0.1);
 }
 
+/* Issue #42 development-only Spy grimoire Reveal prototype. */
+.spyPrototypePreviewMount,
+.spyPrototypePreviewPortal {
+  display: contents;
+}
+
+.spyPrototypePreview,
+.spyPrototypeReveal {
+  --spy-ink: #f3ede2;
+  --spy-muted: #bfb4a4;
+  --spy-gold: #d7ac5a;
+  --spy-panel: rgba(30, 28, 27, 0.9);
+  min-height: 100dvh;
+  color: var(--spy-ink);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(113, 82, 42, 0.2), transparent 36rem),
+    linear-gradient(145deg, #1a1919, #0c0c0d 64%);
+  font-family: Inter, Pretendard, "Noto Sans KR", sans-serif;
+}
+
+.spyPrototypePreview {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 1.25rem;
+  width: 100%;
+  padding: clamp(1.5rem, 3vw, 3rem);
+}
+
+.spyPrototypePreview *,
+.spyPrototypeReveal * {
+  box-sizing: border-box;
+}
+
+.spyPrototypeHeader,
+.spyPrototypeScenario,
+.spyPrototypePreviewActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.spyPrototypeHeader h1,
+.spyPrototypeScenario h2,
+.spyPrototypeBoundary h2,
+.spyPrototypeRevealHeader h1 {
+  margin: 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  letter-spacing: -0.025em;
+}
+
+.spyPrototypeHeader h1 {
+  margin-top: 0.2rem;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+}
+
+.spyPrototypeHeader p:not(.spyPrototypeEyebrow),
+.spyPrototypeScenarioSummary,
+.spyPrototypePreviewActions span,
+.spyPrototypeRevealHeader p {
+  margin: 0.55rem 0 0;
+  color: var(--spy-muted);
+}
+
+.spyPrototypeEyebrow {
+  margin: 0;
+  color: var(--spy-gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.spyPrototypeEyebrow.allowed {
+  color: #89c6a4;
+}
+
+.spyPrototypeEyebrow.excluded {
+  color: #e49a92;
+}
+
+.spyPrototypeDevBadge {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(215, 172, 90, 0.45);
+  border-radius: 999px;
+  color: var(--spy-gold);
+  background: rgba(215, 172, 90, 0.08);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+
+.spyPrototypeScenario,
+.spyPrototypeBoundary article,
+.spyPrototypePreviewActions {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: var(--spy-panel);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.18);
+}
+
+.spyPrototypeScenario {
+  padding: 1.15rem 1.25rem;
+}
+
+.spyPrototypeScenario h2,
+.spyPrototypeBoundary h2 {
+  margin-top: 0.15rem;
+  font-size: 1.25rem;
+}
+
+.spyPrototypeScenarioPicker {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.3rem;
+  border-radius: 0.8rem;
+  background: #111;
+}
+
+.spyPrototypeScenarioPicker button,
+.spyPrototypePreviewActions button,
+.spyPrototypeClose {
+  appearance: none;
+  border: 0;
+  color: var(--spy-ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.spyPrototypeScenarioPicker button {
+  min-width: 4.5rem;
+  min-height: 2.65rem;
+  border-radius: 0.6rem;
+  background: transparent;
+}
+
+.spyPrototypeScenarioPicker button[aria-pressed="true"] {
+  color: #17130c;
+  background: var(--spy-gold);
+}
+
+.spyPrototypeScenarioSummary {
+  min-width: 18rem;
+  text-align: right;
+}
+
+.spyPrototypeBoundary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.spyPrototypeBoundary article {
+  padding: 1.35rem;
+}
+
+.spyPrototypeBoundary ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  margin: 1.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spyPrototypeBoundary li {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--spy-muted);
+  line-height: 1.4;
+}
+
+.spyPrototypeBoundary li::before {
+  position: absolute;
+  left: 0;
+  color: var(--spy-gold);
+  content: "·";
+}
+
+.spyPrototypePreviewActions {
+  padding: 1.1rem 1.25rem;
+}
+
+.spyPrototypePreviewActions div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.spyPrototypePreviewActions span {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.spyPrototypePreviewActions button,
+.spyPrototypeClose {
+  min-height: 3.25rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 0.75rem;
+  color: #17130c;
+  background: var(--spy-gold);
+  box-shadow: 0 0.7rem 1.8rem rgba(0, 0, 0, 0.28);
+}
+
+.spyPrototypeReveal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 1.2rem clamp(1.5rem, 3vw, 3rem) 1.4rem;
+}
+
+.spyPrototypeRevealHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  z-index: 2;
+}
+
+.spyPrototypeRevealHeader h1 {
+  margin-top: 0.1rem;
+  font-size: clamp(1.7rem, 3vw, 2.8rem);
+}
+
+.spyPrototypeRevealHeader p {
+  margin-bottom: 0.3rem;
+  font-weight: 700;
+}
+
+.spyPrototypeSeatMap {
+  position: relative;
+  align-self: stretch;
+  justify-self: center;
+  width: min(100%, 68rem);
+  min-height: 0;
+  margin: 0.3rem auto;
+  border: 1px solid rgba(215, 172, 90, 0.22);
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    ellipse at center,
+    transparent 0 5rem,
+    rgba(255, 255, 255, 0.025) 5.05rem 5.1rem
+  );
+}
+
+.spyPrototypeLegend {
+  color: var(--spy-muted);
+}
+
+.spyPrototypeLegend {
+  position: absolute;
+  right: 1.2rem;
+  bottom: 0.7rem;
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.45rem;
+  background: rgba(12, 12, 13, 0.72);
+  font-size: 0.72rem;
+}
+
+.spyPrototypeAccessibleTokens {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.spyPrototypeSeat {
+  position: absolute;
+  top: var(--spy-seat-y);
+  left: var(--spy-seat-x);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 0.1rem 0.3rem;
+  width: clamp(8.2rem, 12.5vw, 10.5rem);
+  min-height: 5.8rem;
+  padding: 0.55rem 0.62rem;
+  border: 1px solid rgba(215, 172, 90, 0.38);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, rgba(43, 40, 36, 0.98), rgba(19, 19, 20, 0.98));
+  box-shadow: 0 0.65rem 1.4rem rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, -50%);
+}
+
+.spyPrototypeSeat.isDead {
+  border-style: dashed;
+  border-color: rgba(200, 200, 200, 0.48);
+  background: linear-gradient(145deg, rgba(39, 39, 40, 0.95), rgba(14, 14, 15, 0.98));
+}
+
+.spyPrototypeSeatHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.spyPrototypeSeatHeading > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #17130c;
+  background: var(--spy-gold);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.spyPrototypeSeatHeading strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.86rem;
+  line-height: 1.12;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.spyPrototypeCharacter {
+  grid-column: 1;
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  color: #f4d59b;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spyPrototypeStatuses {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  color: #8fd2a9;
+  font-size: 0.8rem;
+}
+
+.isDead .spyPrototypeStatuses {
+  color: #c7c7c7;
+}
+
+.spyPrototypeTokens {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.spyPrototypeTokens span {
+  flex: 0 0 auto;
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0.16rem 0.34rem;
+  border: 1px solid rgba(199, 149, 79, 0.32);
+  border-radius: 999px;
+  color: #d9c8b2;
+  background: rgba(127, 79, 38, 0.2);
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spyPrototypeReveal.count15 .spyPrototypeSeat {
+  width: 10rem;
+  min-height: 6rem;
+  padding: 0.62rem 0.7rem;
+}
+
+.spyPrototypeReveal.count15 .spyPrototypeSeatHeading strong {
+  font-size: 0.95rem;
+}
+
+.spyPrototypeReveal.count15 .spyPrototypeCharacter {
+  font-size: 1.05rem;
+}
+
+.spyPrototypeReveal.count15 .spyPrototypeTokens span {
+  font-size: 0.72rem;
+}
+
+.spyPrototypeReveal.count5 .spyPrototypeSeat {
+  width: clamp(10rem, 15vw, 12.5rem);
+  min-height: 7rem;
+  padding: 0.8rem;
+}
+
+.spyPrototypeClose {
+  z-index: 2;
+  justify-self: center;
+  min-width: min(28rem, 90vw);
+}
+
+@media (max-width: 900px), (max-height: 760px) {
+  .spyPrototypePreview {
+    gap: 0.8rem;
+    padding: 1rem;
+  }
+
+  .spyPrototypeBoundary ul {
+    grid-template-columns: 1fr;
+  }
+
+  .spyPrototypeSeat,
+  .spyPrototypeReveal.count15 .spyPrototypeSeat {
+    width: 7.2rem;
+    min-height: 4.6rem;
+    padding: 0.35rem 0.42rem;
+  }
+
+  .spyPrototypeTokens span:nth-child(n + 2) {
+    display: none;
+  }
+
+  .spyPrototypeLegend {
+    right: 0.6rem;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .spyPrototypeHeader,
+  .spyPrototypeScenario,
+  .spyPrototypePreviewActions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .spyPrototypeScenarioSummary {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .spyPrototypeBoundary {
+    grid-template-columns: 1fr;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
