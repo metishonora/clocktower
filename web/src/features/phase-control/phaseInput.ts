@@ -172,6 +172,12 @@ export function setupInfoCharacterOptions(
   );
 }
 
+export function characterInputOptions(allowedCharacterIds?: string[]): typeof characters {
+  if (allowedCharacterIds === undefined) return characters;
+  const allowed = new Set(allowedCharacterIds);
+  return characters.filter((character) => allowed.has(character.id));
+}
+
 export function setupInfoZeroOutsidersAvailable(players: Player[]): boolean {
   return players.every((player) => characterKind(player.actualCharacter) !== "Outsider");
 }

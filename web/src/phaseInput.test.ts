@@ -2,10 +2,19 @@ import { deepEqual, equal } from "node:assert/strict";
 import test from "node:test";
 import type { PhaseStep, Player } from "./core/types.js";
 import {
+  characterInputOptions,
   setupInfoCharacterOptions,
   setupInfoZeroOutsidersAvailable,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("character input options honor an explicit allowlist in catalog order", () => {
+  deepEqual(
+    characterInputOptions(["saint", "librarian", "poisoner"]).map((character) => character.id),
+    ["librarian", "saint", "poisoner"],
+  );
+  deepEqual(characterInputOptions([]), []);
+});
 
 test("setup information options use candidate Actual Characters in catalog order", () => {
   const roster = [

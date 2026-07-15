@@ -23,6 +23,24 @@ fn replay_derives_current_step_and_phase_overview_after_setup() {
         actual["value"]["currentStep"]["requiredInput"]["maxSelections"],
         3
     );
+    assert_eq!(
+        actual["value"]["currentStep"]["requiredInput"]["allowedCharacterIds"],
+        json!([
+            "librarian",
+            "investigator",
+            "undertaker",
+            "monk",
+            "ravenkeeper",
+            "virgin",
+            "slayer",
+            "soldier",
+            "mayor",
+            "butler",
+            "drunk",
+            "recluse",
+            "saint"
+        ])
+    );
     assert_eq!(actual["value"]["currentStep"]["canSkip"], false);
     assert_eq!(
         actual["value"]["phaseOverview"][0]["id"],
@@ -30,6 +48,27 @@ fn replay_derives_current_step_and_phase_overview_after_setup() {
     );
     assert_eq!(actual["value"]["phaseOverview"][0]["status"], "current");
     assert_eq!(actual["value"]["phaseOverview"][1]["status"], "waiting");
+}
+
+#[test]
+fn demon_bluff_choices_use_actual_characters_and_keep_an_unused_drunk_shown_character() {
+    let game = game_with_events(json!([setup_event_with_players(json!([
+        { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "drunk", "shownCharacter": "librarian" },
+        { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+        { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+        { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+        { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+    ]))]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    let allowed = actual["value"]["currentStep"]["requiredInput"]["allowedCharacterIds"]
+        .as_array()
+        .unwrap();
+
+    assert!(allowed.contains(&json!("librarian")));
+    assert!(!allowed.contains(&json!("drunk")));
+    assert!(!allowed.contains(&json!("chef")));
+    assert!(!allowed.contains(&json!("imp")));
 }
 
 #[test]

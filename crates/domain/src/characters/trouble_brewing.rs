@@ -28,6 +28,28 @@ const NIGHT_ORDER: &[&str] = &[
     "spy",
 ];
 
+const TOWNSFOLK: &[&str] = &[
+    "washerwoman",
+    "librarian",
+    "investigator",
+    "chef",
+    "empath",
+    "fortuneTeller",
+    "undertaker",
+    "monk",
+    "ravenkeeper",
+    "virgin",
+    "slayer",
+    "soldier",
+    "mayor",
+];
+
+const OUTSIDERS: &[&str] = &["butler", "drunk", "recluse", "saint"];
+
+const MINIONS: &[&str] = &["poisoner", "spy", "scarletWoman", "baron"];
+
+const DEMONS: &[&str] = &["imp"];
+
 pub(crate) fn first_night_order() -> &'static [&'static str] {
     FIRST_NIGHT_ORDER
 }
@@ -40,6 +62,21 @@ pub(crate) fn has_actual_outsider(players: &[Player]) -> bool {
     players
         .iter()
         .any(|player| character_kind(&player.actual_character) == Some(CharacterKind::Outsider))
+}
+
+pub(crate) fn legal_demon_bluff_character_ids(players: &[Player]) -> Vec<String> {
+    let assigned_actual_characters = players
+        .iter()
+        .map(|player| player.actual_character.as_str())
+        .collect::<HashSet<_>>();
+
+    TOWNSFOLK
+        .iter()
+        .chain(OUTSIDERS)
+        .copied()
+        .filter(|character_id| !assigned_actual_characters.contains(character_id))
+        .map(str::to_string)
+        .collect()
 }
 
 pub(crate) fn setup_info_character_is_represented(
@@ -342,6 +379,7 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             max_selections: None,
             setup_info: None,
             character_kind: None,
+            allowed_character_ids: None,
             zero_allowed: false,
             optional: true,
         },
@@ -350,15 +388,16 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
 }
 
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
-    match character {
-        "washerwoman" | "librarian" | "investigator" | "chef" | "empath" | "fortuneTeller"
-        | "undertaker" | "monk" | "ravenkeeper" | "virgin" | "slayer" | "soldier" | "mayor" => {
-            Some(CharacterKind::Townsfolk)
-        }
-        "butler" | "drunk" | "recluse" | "saint" => Some(CharacterKind::Outsider),
-        "poisoner" | "spy" | "scarletWoman" | "baron" => Some(CharacterKind::Minion),
-        "imp" => Some(CharacterKind::Demon),
-        _ => None,
+    if TOWNSFOLK.contains(&character) {
+        Some(CharacterKind::Townsfolk)
+    } else if OUTSIDERS.contains(&character) {
+        Some(CharacterKind::Outsider)
+    } else if MINIONS.contains(&character) {
+        Some(CharacterKind::Minion)
+    } else if DEMONS.contains(&character) {
+        Some(CharacterKind::Demon)
+    } else {
+        None
     }
 }
 
@@ -374,6 +413,7 @@ fn required_none() -> RequiredInput {
         max_selections: None,
         setup_info: None,
         character_kind: None,
+        allowed_character_ids: None,
         zero_allowed: false,
         optional: false,
     }
@@ -391,6 +431,7 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         max_selections: Some(max),
         setup_info: None,
         character_kind: None,
+        allowed_character_ids: None,
         zero_allowed: false,
         optional: min == 0,
     }
@@ -410,6 +451,7 @@ fn required_setup_info(
         max_selections: Some(max),
         setup_info: Some(kind),
         character_kind: Some(character_kind),
+        allowed_character_ids: None,
         zero_allowed,
         optional: false,
     }

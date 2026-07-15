@@ -57,6 +57,7 @@ pub(crate) fn phase_transition_step(
             max_selections: None,
             setup_info: None,
             character_kind: None,
+            allowed_character_ids: None,
             zero_allowed: false,
             optional: false,
         },
@@ -81,12 +82,17 @@ pub(crate) fn required_none() -> RequiredInput {
         max_selections: None,
         setup_info: None,
         character_kind: None,
+        allowed_character_ids: None,
         zero_allowed: false,
         optional: false,
     }
 }
 
-pub(crate) fn required_characters(min: u8, max: u8) -> RequiredInput {
+pub(crate) fn required_characters(
+    min: u8,
+    max: u8,
+    allowed_character_ids: Option<Vec<String>>,
+) -> RequiredInput {
     RequiredInput {
         kind: RequiredInputKind::CharacterIds,
         target: Some(InputTarget::Characters),
@@ -94,6 +100,7 @@ pub(crate) fn required_characters(min: u8, max: u8) -> RequiredInput {
         max_selections: Some(max),
         setup_info: None,
         character_kind: None,
+        allowed_character_ids,
         zero_allowed: false,
         optional: min == 0,
     }
@@ -222,9 +229,20 @@ pub(crate) fn validate_character_selection(
         .cloned()
         .unwrap_or_default();
     let mut unique_character_ids = HashSet::new();
+    let allowed_character_ids = input.allowed_character_ids.as_ref().map(|character_ids| {
+        character_ids
+            .iter()
+            .map(String::as_str)
+            .collect::<HashSet<_>>()
+    });
     for character_id in &character_ids {
         let character_id = character_id.as_str();
-        if !unique_character_ids.insert(character_id) || character_kind(character_id).is_none() {
+        if !unique_character_ids.insert(character_id)
+            || character_kind(character_id).is_none()
+            || allowed_character_ids
+                .as_ref()
+                .is_some_and(|allowed| !allowed.contains(character_id))
+        {
             return Err(ErrorKind::InvalidStepInput.into_error());
         }
     }

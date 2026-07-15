@@ -251,6 +251,8 @@ pub(crate) struct RequiredInput {
     pub(crate) setup_info: Option<SetupInfoKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) character_kind: Option<CharacterKind>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) allowed_character_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) zero_allowed: bool,
     pub(crate) optional: bool,

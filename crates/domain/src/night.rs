@@ -1,5 +1,8 @@
 use crate::{
-    characters::{character_kind, character_steps, first_night_order, night_order},
+    characters::{
+        character_kind, character_steps, first_night_order, legal_demon_bluff_character_ids,
+        night_order,
+    },
     model::{CharacterKind, Phase, PhaseStep, Player, RequiredInputKind, StepType},
     phase::{phase_prefix, phase_transition_step, required_characters, required_none, simple_step},
 };
@@ -32,7 +35,7 @@ pub(crate) fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
             "firstNight",
             "demonInfo",
             StepType::EvilInfo,
-            required_characters(0, 3),
+            required_characters(0, 3, Some(legal_demon_bluff_character_ids(players))),
             false,
         ));
     }
