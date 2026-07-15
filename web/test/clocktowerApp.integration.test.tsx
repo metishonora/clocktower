@@ -253,6 +253,299 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(revealScreen).queryByText(/본인 인식:/)).toBeNull();
   });
 
+  test("suggests and atomically re-suggests a draft without persistence, then uses the existing confirm and Reveal path", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      supportsRandomSuggestion: true,
+    });
+    const nextStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+    const canonicalEvent = event("event-washerwoman-suggested", "세탁부 정보 확정");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(canonicalEvent, { messageKo: "세탁부 정보: 2번 Bert 또는 3번 Cy 중 한 명은 요리사입니다." }),
+    });
+    vi.mocked(core.suggestPhaseInput)
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          stepId: currentStep.id,
+          input: { playerIds: ["player-1", "player-2"], characterId: "washerwoman" },
+        },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          stepId: currentStep.id,
+          input: { playerIds: ["player-2", "player-3"], characterId: "librarian" },
+        },
+      });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} choiceTokenSource={() => 123} />);
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
+    const savesBeforeSuggestion = storage.savedGames.length;
+    const input = screen.getByLabelText("단계 입력");
+
+    await user.click(within(input).getByRole("button", { name: "무작위 추천" }));
+    expect(core.suggestPhaseInput).toHaveBeenLastCalledWith(expect.any(Object), {
+      stepId: currentStep.id,
+      currentInput: { playerIds: [], characterId: "" },
+      choiceToken: 123,
+    });
+    expect(within(input).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement).value).toBe("washerwoman");
+    expect(core.propose).not.toHaveBeenCalled();
+    expect(storage.savedGames).toHaveLength(savesBeforeSuggestion);
+
+    await user.click(within(input).getByRole("button", { name: "다시 추천" }));
+    expect(within(input).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(input).getByRole("button", { name: /Bert/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(input).getByRole("button", { name: /Cy/ }).getAttribute("aria-pressed")).toBe("true");
+    const character = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    expect((character as HTMLSelectElement).value).toBe("librarian");
+
+    await user.selectOptions(character, "chef");
+    expect((character as HTMLSelectElement).value).toBe("chef");
+    expect(storage.savedGames).toHaveLength(savesBeforeSuggestion);
+    await user.click(screen.getByRole("button", { name: "확정" }));
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: currentStep.id,
+        input: { playerIds: ["player-2", "player-3"], characterId: "chef" },
+      },
+    });
+
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    expect(within(screen.getByLabelText("플레이어 공개 화면")).getByText(/2번 Bert 또는 3번 Cy/)).toBeTruthy();
+  });
+
+  test("keeps the current manual draft when a suggestion request fails", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      supportsRandomSuggestion: true,
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+      suggestion: {
+        ok: false,
+        error: { code: "NO_VALID_DRAFT_SUGGESTION", messageKo: "Actual Character 배정을 확인하세요." },
+      },
+    });
+    const user = userEvent.setup();
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 9} />);
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const input = screen.getByLabelText("단계 입력");
+    await user.click(within(input).getByRole("button", { name: /Ada/ }));
+    await user.click(within(input).getByRole("button", { name: /Bert/ }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "보여줄 캐릭터" }), "washerwoman");
+
+    await user.click(within(input).getByRole("button", { name: "무작위 추천" }));
+    expect(screen.getByRole("alert").textContent).toContain("Actual Character 배정을 확인하세요.");
+    expect(within(input).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(input).getByRole("button", { name: /Bert/ }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement).value).toBe("washerwoman");
+    expect(core.propose).not.toHaveBeenCalled();
+  });
+
+  test("discards a deferred suggestion when the Grimoire draft changes during the request", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      supportsRandomSuggestion: true,
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const pending = deferred<Awaited<ReturnType<typeof core.suggestPhaseInput>>>();
+    vi.mocked(core.suggestPhaseInput).mockReturnValueOnce(pending.promise);
+    const user = userEvent.setup();
+    render(
+      <ClocktowerApp
+        coreAdapter={core}
+        storageDriver={new MemoryGameStorageDriver(gameFile())}
+        choiceTokenSource={() => 17}
+      />,
+    );
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+
+    await user.click(screen.getByRole("button", { name: "무작위 추천" }));
+    const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    await user.click(within(grimoire).getByRole("button", { name: /Ada/ }));
+    expect(within(grimoire).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
+
+    pending.resolve({
+      ok: true,
+      value: {
+        stepId: currentStep.id,
+        input: { playerIds: ["player-2", "player-3"], characterId: "librarian" },
+      },
+    });
+
+    await waitFor(() =>
+      expect((screen.getByRole("button", { name: "무작위 추천" }) as HTMLButtonElement).disabled).toBe(false),
+    );
+    expect(within(grimoire).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(grimoire).getByRole("button", { name: /Bert/ }).getAttribute("aria-pressed")).toBe("false");
+    expect((screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement).value).toBe("");
+  });
+
+  test("discards a deferred suggestion after importing another game at the same step ID", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      supportsRandomSuggestion: true,
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const pending = deferred<Awaited<ReturnType<typeof core.suggestPhaseInput>>>();
+    vi.mocked(core.suggestPhaseInput).mockReturnValueOnce(pending.promise);
+    const user = userEvent.setup();
+    render(
+      <ClocktowerApp
+        coreAdapter={core}
+        storageDriver={new MemoryGameStorageDriver(gameFile())}
+        choiceTokenSource={() => 23}
+      />,
+    );
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    await user.click(screen.getByRole("button", { name: "무작위 추천" }));
+
+    const imported = gameFile();
+    imported.game.id = "different-game-at-same-step";
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!fileInput) throw new Error("JSON file input was not rendered");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    await user.upload(
+      fileInput,
+      new File([JSON.stringify(imported)], "different-game.json", { type: "application/json" }),
+    );
+    await waitFor(() => expect(core.replay).toHaveBeenCalledWith(imported));
+
+    pending.resolve({
+      ok: true,
+      value: {
+        stepId: currentStep.id,
+        input: { playerIds: ["player-2", "player-3"], characterId: "librarian" },
+      },
+    });
+    await waitFor(() =>
+      expect((screen.getByRole("button", { name: "무작위 추천" }) as HTMLButtonElement).disabled).toBe(false),
+    );
+    const input = screen.getByLabelText("단계 입력");
+    expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
+    expect((screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement).value).toBe("");
+    confirm.mockRestore();
+  });
+
+  test("atomically applies zero-Outsider and exact-three Demon suggestions", async () => {
+    const librarianStep = step({
+      id: "firstNight:librarian",
+      character: "librarian",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 0,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+      supportsRandomSuggestion: true,
+    });
+    const librarianCore = createCoreHarness({
+      initialReplay: replayState({ currentStep: librarianStep }),
+      replayAfterProposal: replayState({ currentStep: librarianStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+      suggestion: {
+        ok: true,
+        value: { stepId: librarianStep.id, input: { zeroOutsiders: true } },
+      },
+    });
+    const user = userEvent.setup();
+    const librarianView = render(
+      <ClocktowerApp coreAdapter={librarianCore} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 1} />,
+    );
+    await screen.findByRole("heading", { name: "사서: 1번 Ada" });
+    await user.click(screen.getByRole("button", { name: "무작위 추천" }));
+    expect((screen.getByRole("checkbox", { name: "외부인 0명" }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(librarianCore.propose).not.toHaveBeenCalled();
+    librarianView.unmount();
+
+    const demonStep = step({
+      id: "firstNight:demonInfo",
+      kind: "characterIds",
+      target: "characters",
+      minSelections: 0,
+      maxSelections: 3,
+      stepType: "evilInfo",
+      allowedCharacterIds: ["librarian", "undertaker", "butler", "monk"],
+      supportsRandomSuggestion: true,
+    });
+    const demonCore = createCoreHarness({
+      initialReplay: replayState({ currentStep: demonStep }),
+      replayAfterProposal: replayState({ currentStep: demonStep, eventCount: 2 }),
+      proposal: proposal(event("unused-demon", "unused")),
+      suggestion: {
+        ok: true,
+        value: {
+          stepId: demonStep.id,
+          input: { characterIds: ["librarian", "undertaker", "butler"] },
+        },
+      },
+    });
+    render(<ClocktowerApp coreAdapter={demonCore} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 2} />);
+    const characterInput = await screen.findByLabelText("캐릭터 입력");
+    expect(screen.queryByText(/블러프 캐릭터/)).toBeNull();
+    await user.click(within(characterInput).getByRole("button", { name: "무작위 추천" }));
+    expect(within(characterInput).getAllByRole("button", { pressed: true })).toHaveLength(3);
+    await user.click(within(characterInput).getByRole("button", { name: /사서/ }));
+    expect(within(characterInput).getAllByRole("button", { pressed: true })).toHaveLength(2);
+    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(demonCore.propose).not.toHaveBeenCalled();
+  });
+
   test("shows only core-allowed Demon bluffs and confirms the selected safe Reveal", async () => {
     const currentStep = step({
       id: "firstNight:demonInfo",
@@ -1122,4 +1415,12 @@ function latestSavedGame(savedGames: GameFile[]): GameFile {
   const savedGame = savedGames.at(-1);
   if (!savedGame) throw new Error("game was not autosaved");
   return savedGame;
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }

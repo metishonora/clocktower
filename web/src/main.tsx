@@ -13,14 +13,23 @@ import { EventLog } from "./features/event-log/EventLog";
 import { Grimoire } from "./features/grimoire/Grimoire";
 import { PhaseControl } from "./features/phase-control/PhaseControl";
 import { usePhaseInputDraft } from "./features/phase-control/usePhaseInputDraft";
+import { browserCryptoChoiceToken, type ChoiceTokenSource } from "./features/phase-control/randomSuggestion";
 import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import "./styles.css";
 
+const DevFirstNightSuggestionPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./firstNightSuggestionPrototype");
+      return { default: module.FirstNightSuggestionPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
+  choiceTokenSource?: ChoiceTokenSource;
 };
 
 export function App(props: ClocktowerAppProps) {
@@ -40,10 +49,21 @@ export function App(props: ClocktowerAppProps) {
     return <SetupInfoDiscretionPrototype />;
   }
 
+  if (
+    DevFirstNightSuggestionPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "first-night-suggestion"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevFirstNightSuggestionPrototype />
+      </React.Suspense>
+    );
+  }
+
   return <ClocktowerApp {...props} />;
 }
 
-export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps) {
+export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = browserCryptoChoiceToken }: ClocktowerAppProps) {
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
@@ -134,6 +154,9 @@ export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps
                   onContinue={gameStore.continueAfterConfirmedReveal}
                   onConfirm={gameStore.confirmCurrentStep}
                   onSkip={gameStore.skipCurrentStep}
+                  onSuggest={gameStore.suggestPhaseInput}
+                  choiceTokenSource={choiceTokenSource}
+                  suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
                 />
               </section>
 

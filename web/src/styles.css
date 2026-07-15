@@ -1009,6 +1009,33 @@ select {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.randomSuggestionInputHeader {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.randomSuggestionButton {
+  flex: none;
+  margin-left: auto;
+  border-color: rgba(31, 111, 91, 0.45);
+  background: rgba(31, 111, 91, 0.08);
+}
+
+.randomSuggestionFailure {
+  margin: 0;
+  border: 1px solid rgba(185, 117, 20, 0.62);
+  border-radius: 7px;
+  background: rgba(185, 117, 20, 0.11);
+  color: #87520f;
+  padding: 9px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .playerStepInput button {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);

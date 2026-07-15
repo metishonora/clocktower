@@ -2,7 +2,7 @@ use crate::model::{
     Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
     NumberInformationChoice, Phase, PhaseStep, Player, RegistrationJudgment, RegistrationValue,
     RequiredInput, RequiredInputKind, SetupInfoKind, SetupInfoRegistrationOption, SpyReminderToken,
-    StepInput, StepType,
+    StepInput, StepInputFields, StepType,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -78,6 +78,78 @@ pub(crate) fn legal_demon_bluff_character_ids(players: &[Player]) -> Vec<String>
         .filter(|character_id| !assigned_actual_characters.contains(character_id))
         .map(str::to_string)
         .collect()
+}
+
+pub(crate) fn phase_input_suggestion_pool(
+    step: &PhaseStep,
+    players: &[Player],
+    impaired: bool,
+) -> Vec<StepInput> {
+    if step.id.ends_with(":demonInfo")
+        && step.required_input.kind == RequiredInputKind::CharacterIds
+    {
+        let legal = legal_demon_bluff_character_ids(players);
+        let mut suggestions = Vec::new();
+        for first in 0..legal.len() {
+            for second in (first + 1)..legal.len() {
+                for third in (second + 1)..legal.len() {
+                    suggestions.push(Some(StepInputFields {
+                        character_ids: Some(vec![
+                            legal[first].clone(),
+                            legal[second].clone(),
+                            legal[third].clone(),
+                        ]),
+                        ..StepInputFields::default()
+                    }));
+                }
+            }
+        }
+        return suggestions;
+    }
+
+    let Some(setup_info) = step.required_input.setup_info else {
+        return Vec::new();
+    };
+    let character_ids = match setup_info_kind(setup_info) {
+        CharacterKind::Townsfolk => TOWNSFOLK,
+        CharacterKind::Outsider => OUTSIDERS,
+        CharacterKind::Minion => MINIONS,
+        CharacterKind::Demon => DEMONS,
+    };
+    let mut suggestions = Vec::new();
+    if setup_info == SetupInfoKind::Librarian && (impaired || !has_actual_outsider(players)) {
+        suggestions.push(Some(StepInputFields {
+            zero_outsiders: Some(true),
+            ..StepInputFields::default()
+        }));
+        if !impaired {
+            return suggestions;
+        }
+    }
+
+    for character_id in character_ids {
+        for first in 0..players.len() {
+            for second in (first + 1)..players.len() {
+                if players[first].id == players[second].id {
+                    continue;
+                }
+                if impaired
+                    || players[first].actual_character == *character_id
+                    || players[second].actual_character == *character_id
+                {
+                    suggestions.push(Some(StepInputFields {
+                        player_ids: Some(vec![
+                            players[first].id.clone(),
+                            players[second].id.clone(),
+                        ]),
+                        character_id: Some((*character_id).to_string()),
+                        ..StepInputFields::default()
+                    }));
+                }
+            }
+        }
+    }
+    suggestions
 }
 
 pub(crate) fn setup_info_character_is_represented(
@@ -601,6 +673,7 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             character_kind: None,
             allowed_character_ids: None,
             zero_allowed: false,
+            supports_random_suggestion: false,
             optional: true,
         },
         _ => required_none(),
@@ -635,6 +708,7 @@ fn required_none() -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         zero_allowed: false,
+        supports_random_suggestion: false,
         optional: false,
     }
 }
@@ -653,6 +727,7 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         zero_allowed: false,
+        supports_random_suggestion: false,
         optional: min == 0,
     }
 }
@@ -673,6 +748,7 @@ fn required_setup_info(
         character_kind: Some(character_kind),
         allowed_character_ids: None,
         zero_allowed,
+        supports_random_suggestion: true,
         optional: false,
     }
 }

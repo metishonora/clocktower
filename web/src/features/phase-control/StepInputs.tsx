@@ -19,6 +19,7 @@ export function PlayerStepInput({
   onChange,
   busy,
   selectionDisabled = false,
+  randomSuggestion,
 }: {
   step: PhaseStep;
   players: Player[];
@@ -26,6 +27,7 @@ export function PlayerStepInput({
   onChange: (playerIds: string[]) => void;
   busy: boolean;
   selectionDisabled?: boolean;
+  randomSuggestion?: RandomSuggestionAction;
 }) {
   if (step.requiredInput.target !== "player" && step.requiredInput.target !== "players") return null;
   const max = step.requiredInput.maxSelections ?? players.length;
@@ -49,6 +51,14 @@ export function PlayerStepInput({
       className={`playerStepInput ${showsSetupInfoContext ? "setupInfoPlayerInput" : ""}`}
       aria-label="단계 입력"
     >
+      {showsSetupInfoContext && randomSuggestion ? (
+        <div className="randomSuggestionInputHeader">
+          <strong>후보 2명</strong>
+          <button type="button" className="secondaryAction randomSuggestionButton" disabled={randomSuggestion.disabled} onClick={randomSuggestion.onClick}>
+            {randomSuggestion.label}
+          </button>
+        </div>
+      ) : null}
       {players.map((player) => {
         const actualKind = characterKind(player.actualCharacter);
         const classNames = [
@@ -103,6 +113,7 @@ export function StepInputFields({
   onCharactersChange,
   onZeroOutsidersChange,
   onNumberChoiceChange,
+  randomSuggestion,
 }: {
   step: PhaseStep;
   players: Player[];
@@ -121,6 +132,7 @@ export function StepInputFields({
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
   onNumberChoiceChange: (choice: NumberChoice) => void;
+  randomSuggestion?: RandomSuggestionAction;
 }) {
   return (
     <>
@@ -140,6 +152,7 @@ export function StepInputFields({
           onChange={onSelectedPlayerIdsChange}
           busy={busy}
           selectionDisabled={Boolean(step.requiredInput.zeroAllowed && zeroOutsiders)}
+          randomSuggestion={randomSuggestion}
         />
       )}
       <StepSpecificInput
@@ -154,6 +167,7 @@ export function StepInputFields({
         onCharacterChange={onCharacterChange}
         onCharactersChange={onCharactersChange}
         onZeroOutsidersChange={onZeroOutsidersChange}
+        randomSuggestion={randomSuggestion}
       />
       <InformationDeliveryInput
         step={step}
@@ -218,6 +232,7 @@ function StepSpecificInput({
   onCharacterChange,
   onCharactersChange,
   onZeroOutsidersChange,
+  randomSuggestion,
 }: {
   step: PhaseStep;
   selectedCharacterId: string;
@@ -230,6 +245,7 @@ function StepSpecificInput({
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
+  randomSuggestion?: RandomSuggestionAction;
 }) {
   if (step.requiredInput.kind === "setupInfo") {
     const options = setupInfoCharacterOptions(
@@ -277,6 +293,7 @@ function StepSpecificInput({
         selectedCharacterIds={selectedCharacterIds}
         busy={busy}
         onChange={onCharactersChange}
+        randomSuggestion={randomSuggestion}
       />
     );
   }
@@ -399,11 +416,13 @@ function CharacterStepInput({
   selectedCharacterIds,
   busy,
   onChange,
+  randomSuggestion,
 }: {
   step: PhaseStep;
   selectedCharacterIds: string[];
   busy: boolean;
   onChange: (characterIds: string[]) => void;
+  randomSuggestion?: RandomSuggestionAction;
 }) {
   const options = characterInputOptions(step.requiredInput.allowedCharacterIds);
   const max = step.requiredInput.maxSelections ?? options.length;
@@ -419,6 +438,13 @@ function CharacterStepInput({
 
   return (
     <div className="characterStepInput" aria-label="캐릭터 입력">
+      {randomSuggestion ? (
+        <div className="randomSuggestionInputHeader">
+          <button type="button" className="secondaryAction randomSuggestionButton" disabled={randomSuggestion.disabled} onClick={randomSuggestion.onClick}>
+            {randomSuggestion.label}
+          </button>
+        </div>
+      ) : null}
       {options.map((character) => (
         <button
           type="button"
@@ -435,3 +461,9 @@ function CharacterStepInput({
     </div>
   );
 }
+
+type RandomSuggestionAction = {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+};

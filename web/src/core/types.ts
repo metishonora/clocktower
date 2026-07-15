@@ -106,6 +106,17 @@ export type PhaseStepConfirmation = {
 
 export type PhaseStepCommandPayload = PhaseStepConfirmation & { stepId: string };
 
+export type PhaseInputSuggestionRequest = {
+  stepId: string;
+  currentInput?: PhaseStepInput;
+  choiceToken: number;
+};
+
+export type PhaseInputSuggestion = {
+  stepId: string;
+  input: PhaseStepInput;
+};
+
 export type Command =
   | { type: "smoke" }
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
@@ -297,5 +308,6 @@ export type RequiredInput = {
   characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
   allowedCharacterIds?: string[];
   zeroAllowed?: boolean;
+  supportsRandomSuggestion?: boolean;
   optional: boolean;
 };

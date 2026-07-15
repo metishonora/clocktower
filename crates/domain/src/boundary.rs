@@ -3,7 +3,8 @@ use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, Discriminator, Game, GameEvent, GameFile, RawGameFile, SetupDistributionRequest,
+        Command, Discriminator, Game, GameEvent, GameFile, PhaseInputSuggestionRequest,
+        RawGameFile, SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
 };
@@ -24,6 +25,15 @@ pub(crate) fn setup_distribution_json(request_json: &str) -> String {
     let result = serde_json::from_str::<SetupDistributionRequest>(request_json)
         .map_err(|_| ErrorKind::MalformedRequest.into_error())
         .and_then(crate::setup::setup_distribution);
+    to_json(result)
+}
+
+pub(crate) fn suggest_phase_input_json(game_file_json: &str, request_json: &str) -> String {
+    let result = parse_game_file(game_file_json).and_then(|game_file| {
+        let request = serde_json::from_str::<PhaseInputSuggestionRequest>(request_json)
+            .map_err(|_| ErrorKind::MalformedRequest.into_error())?;
+        crate::suggestion::suggest_phase_input(game_file, request)
+    });
     to_json(result)
 }
 

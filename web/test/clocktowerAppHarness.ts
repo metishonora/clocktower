@@ -7,6 +7,7 @@ import type {
   InputTarget,
   InformationPrompt,
   Phase,
+  PhaseInputSuggestion,
   PhaseStep,
   Player,
   Proposal,
@@ -52,10 +53,12 @@ export function createCoreHarness({
   initialReplay,
   replayAfterProposal,
   proposal,
+  suggestion,
 }: {
   initialReplay: ReplayState;
   replayAfterProposal: ReplayState;
   proposal: Proposal;
+  suggestion?: CoreResult<PhaseInputSuggestion>;
 }) {
   const core: CoreAdapter = {
     replay: vi.fn(async (gameFile: GameFile): Promise<CoreResult<ReplayState>> => {
@@ -65,6 +68,12 @@ export function createCoreHarness({
     propose: vi.fn(async () => success(proposal)),
     setupDistribution: vi.fn(async () => success(setupDistribution)),
     setupDistributionSync: vi.fn(() => success(setupDistribution)),
+    suggestPhaseInput: vi.fn(async () =>
+      suggestion ?? {
+        ok: false as const,
+        error: { code: "UNSUPPORTED_DRAFT_SUGGESTION", messageKo: "추천 불가" },
+      },
+    ),
   };
 
   return core;
@@ -139,6 +148,7 @@ export function step({
   allowedCharacterIds,
   zeroAllowed,
   setupInfo,
+  supportsRandomSuggestion,
 }: {
   id: string;
   character?: string;
@@ -155,6 +165,7 @@ export function step({
   allowedCharacterIds?: string[];
   zeroAllowed?: boolean;
   setupInfo?: PhaseStep["requiredInput"]["setupInfo"];
+  supportsRandomSuggestion?: boolean;
 }): PhaseStep {
   return {
     id,
@@ -171,6 +182,7 @@ export function step({
       allowedCharacterIds,
       zeroAllowed,
       setupInfo,
+      supportsRandomSuggestion,
       optional: false,
     },
     canSkip,

@@ -4,6 +4,8 @@ import type {
   CoreResult,
   GameEvent,
   GameFile,
+  PhaseInputSuggestion,
+  PhaseInputSuggestionRequest,
   PhaseStep,
   PhaseStepConfirmation,
   Proposal,
@@ -146,6 +148,10 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const pendingConfirmedRevealReady = pendingConfirmedReveal
     ? replayState?.eventCount === pendingConfirmedReveal.confirmedEventCount
     : true;
+  const suggestionContextFingerprint = useMemo(
+    () => JSON.stringify([gameFile, replayState]),
+    [gameFile, replayState],
+  );
 
   useEffect(() => {
     if (!setupConfirmed) return;
@@ -246,6 +252,18 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
   async function skipCurrentStep() {
     await proposeCurrentStep("skipStep");
+  }
+
+  async function suggestPhaseInput(
+    request: PhaseInputSuggestionRequest,
+  ): Promise<CoreResult<PhaseInputSuggestion>> {
+    return core.suggestPhaseInput(gameFile, request).catch((error: unknown) => ({
+      ok: false,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "무작위 추천을 불러오지 못했습니다.",
+      },
+    }));
   }
 
   async function proposeCurrentStep(
@@ -396,9 +414,11 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setupExpectedCounts,
     setupHintsReady,
     shownWarnings,
+    suggestionContextFingerprint,
     confirmSetup,
     confirmCurrentStep,
     skipCurrentStep,
+    suggestPhaseInput,
     resetSetup,
     undoLatestEvent,
     clearProposalResult,

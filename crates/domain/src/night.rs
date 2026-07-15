@@ -35,7 +35,7 @@ pub(crate) fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
             "firstNight",
             "demonInfo",
             StepType::EvilInfo,
-            required_characters(0, 3, Some(legal_demon_bluff_character_ids(players))),
+            required_characters(0, 3, Some(legal_demon_bluff_character_ids(players)), true),
             false,
         ));
     }

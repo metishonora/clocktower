@@ -59,6 +59,7 @@ pub(crate) fn phase_transition_step(
             character_kind: None,
             allowed_character_ids: None,
             zero_allowed: false,
+            supports_random_suggestion: false,
             optional: false,
         },
         can_skip: false,
@@ -84,6 +85,7 @@ pub(crate) fn required_none() -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         zero_allowed: false,
+        supports_random_suggestion: false,
         optional: false,
     }
 }
@@ -92,6 +94,7 @@ pub(crate) fn required_characters(
     min: u8,
     max: u8,
     allowed_character_ids: Option<Vec<String>>,
+    supports_random_suggestion: bool,
 ) -> RequiredInput {
     RequiredInput {
         kind: RequiredInputKind::CharacterIds,
@@ -102,6 +105,7 @@ pub(crate) fn required_characters(
         character_kind: None,
         allowed_character_ids,
         zero_allowed: false,
+        supports_random_suggestion,
         optional: min == 0,
     }
 }
