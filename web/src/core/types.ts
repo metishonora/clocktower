@@ -1,5 +1,5 @@
 export type GameFile = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   game: {
     id: string;
     name: string;
@@ -128,7 +128,7 @@ export type CoreResult<T> =
   | { ok: false; error: { code: string; messageKo: string } };
 
 export type ReplayState = {
-  schemaVersion: number;
+  schemaVersion: 2;
   eventCount: number;
   phase: Phase;
   players: Player[];
@@ -199,7 +199,16 @@ export type GameEvent = EventCommon &
       }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
-    | { type: "nominationVoteConfirmed"; payload: { stepId: string; input: NominationRecord } }
+    | {
+        type: "nominationVoteConfirmed";
+        payload: {
+          stepId: string;
+          nominatorId: string;
+          nomineeId: string;
+          voterIds: string[];
+          ghostVoteSpentPlayerIds: string[];
+        };
+      }
     | {
         type: "executionConfirmed" | "noExecutionConfirmed";
         payload: { stepId: string; input: { execute: boolean; playerId?: string | null } };
@@ -214,6 +223,8 @@ export type StepType =
   | "character"
   | "phaseTransition"
   | "announcement"
+  | "whisper"
+  | "discussion"
   | "nomination"
   | "execution";
 
@@ -255,6 +266,8 @@ export type PhaseOverviewItem = PhaseStep & {
 
 export type DayState = {
   nominations: NominationRecord[];
+  executionVoteThreshold: number;
+  highestVoteCount: number;
   executionCandidate?: ExecutionCandidate;
   confirmedExecution?: ConfirmedExecution;
 };
@@ -266,7 +279,6 @@ export type NominationRecord = {
   voterIds: string[];
   voteCount: number;
   ghostVoteSpentPlayerIds: string[];
-  updatesExecutionCandidate: boolean;
 };
 
 export type ExecutionCandidate = {

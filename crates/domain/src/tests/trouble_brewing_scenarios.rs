@@ -806,21 +806,18 @@ fn normal_night_spy_snapshot_uses_only_current_confirmed_poison_and_protection()
         phase_event("phaseStepConfirmed", "firstNight:toDay"),
         death_event("player-1"),
         phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper"),
+        phase_event("phaseStepConfirmed", "day:discussion"),
         {
             "id": "evt-day:nomination:1",
             "type": "nominationVoteConfirmed",
             "phase": "day",
             "payload": {
                 "stepId": "day:nomination:1",
-                "input": {
-                    "stepId": "day:nomination:1",
-                    "nominatorId": "player-2",
-                    "nomineeId": "player-3",
-                    "voterIds": ["player-1", "player-2", "player-3", "player-4", "player-5", "player-6"],
-                    "voteCount": 6,
-                    "ghostVoteSpentPlayerIds": ["player-1"],
-                    "updatesExecutionCandidate": true
-                }
+                "nominatorId": "player-2",
+                "nomineeId": "player-3",
+                "voterIds": ["player-1", "player-2", "player-3", "player-4", "player-5", "player-6"],
+                "ghostVoteSpentPlayerIds": ["player-1"]
             },
             "summary": "지명 투표 확정",
             "createdAt": "2026-01-01T00:00:00.000Z"

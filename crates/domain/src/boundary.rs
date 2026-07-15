@@ -50,7 +50,7 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
 
-    if raw.schema_version != 1 {
+    if raw.schema_version != 2 {
         return Err(ErrorKind::UnsupportedSchemaVersion.into_error());
     }
 

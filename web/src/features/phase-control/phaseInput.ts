@@ -34,7 +34,9 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
   }
   if (step.id.endsWith(":announceDeaths")) return "사망 발표";
-  if (step.stepType === "nomination") return `지명과 투표 ${step.id.split(":").at(-1)}`;
+  if (step.stepType === "whisper") return "밀담";
+  if (step.stepType === "discussion") return "토론";
+  if (step.stepType === "nomination") return `지명 및 투표 ${step.id.split(":").at(-1)}`;
   if (step.id.endsWith(":execution")) return "처형 확정";
   return step.id;
 }
@@ -43,6 +45,8 @@ export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "character") return "캐릭터";
   if (stepType === "phaseTransition") return "전환";
   if (stepType === "announcement") return "발표";
+  if (stepType === "whisper") return "밀담";
+  if (stepType === "discussion") return "토론";
   if (stepType === "nomination") return "지명";
   if (stepType === "execution") return "처형";
   return stepType;

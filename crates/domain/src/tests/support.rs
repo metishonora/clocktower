@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 
 pub(super) const EMPTY_GAME: &str = r#"{
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "game": {
         "id": "game-1",
         "name": "Smoke",
@@ -13,7 +13,7 @@ pub(super) const EMPTY_GAME: &str = r#"{
 
 pub(super) fn game_with_events(events: Value) -> Value {
     json!({
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "game": {
             "id": "game-1",
             "name": "Setup",
@@ -73,22 +73,16 @@ pub(super) fn nomination_vote_event<const N: usize>(
     voter_ids: [&str; N],
 ) -> Value {
     let voter_ids = voter_ids.to_vec();
-    let vote_count = voter_ids.len();
     json!({
         "id": format!("evt-{step_id}"),
         "type": "nominationVoteConfirmed",
         "phase": "day",
         "payload": {
             "stepId": step_id,
-            "input": {
-                "stepId": step_id,
-                "nominatorId": nominator_id,
-                "nomineeId": nominee_id,
-                "voterIds": voter_ids,
-                "voteCount": vote_count,
-                "ghostVoteSpentPlayerIds": [],
-                "updatesExecutionCandidate": vote_count >= 3
-            }
+            "nominatorId": nominator_id,
+            "nomineeId": nominee_id,
+            "voterIds": voter_ids,
+            "ghostVoteSpentPlayerIds": []
         },
         "summary": "지명 투표 확정",
         "createdAt": "2026-01-01T00:00:00.000Z"

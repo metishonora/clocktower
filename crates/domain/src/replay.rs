@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{GameEvent, GameEventKind, GameFile, ReplayState},
-    day::{day_steps, replay_day_state, step_prefix, validate_nomination_record_input},
+    day::{day_steps, replay_day_state, step_prefix, validate_nomination_event_input},
     error::{CoreError, ErrorKind},
     information::{information_prompt, validate_confirmed_information},
     model::{Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RequiredInputKind},
@@ -17,7 +17,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let phase_state = replay_phase_state(&players, &game_file.game.events)?;
     let day_state = if phase_state.phase == Phase::Day {
         current_day_prefix(&phase_state)
-            .map(|prefix| replay_day_state(&game_file.game.events, &prefix))
+            .map(|prefix| replay_day_state(&game_file.game.events, &players, &prefix))
             .transpose()?
     } else {
         None
@@ -69,7 +69,7 @@ pub(crate) fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreEr
                 player.alive = false;
             }
             GameEventKind::NominationVoteConfirmed { payload } => {
-                for player_id in &payload.input.ghost_vote_spent_player_ids {
+                for player_id in &payload.ghost_vote_spent_player_ids {
                     let Some(player) = players.iter_mut().find(|player| &player.id == player_id)
                     else {
                         return Err(ErrorKind::ReplayFailed.into_error());
@@ -198,6 +198,9 @@ pub(crate) fn phase_step_statuses(
         if step.id != step_id {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
+        if event.phase != step.phase {
+            return Err(ErrorKind::ReplayFailed.into_error());
+        }
         if matches!(status, PhaseStepStatus::Skipped) && !step.can_skip {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
@@ -219,7 +222,22 @@ pub(crate) fn phase_step_statuses(
             }
         }
         if let GameEventKind::NominationVoteConfirmed { payload } = &event.kind {
-            validate_nomination_record_input(&payload.input, players)?;
+            let players_at_event = replay_players(&events[..event_index])?;
+            validate_nomination_event_input(payload, &players_at_event)?;
+            if !players_at_event
+                .iter()
+                .any(|player| player.id == payload.nominator_id && player.alive)
+            {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            let prefix = step_prefix(&payload.step_id)?;
+            let prior = replay_day_state(&events[..event_index], &players_at_event, &prefix)?;
+            if prior.nominations.iter().any(|record| {
+                record.nominator_id == payload.nominator_id
+                    || record.nominee_id == payload.nominee_id
+            }) {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
         }
         statuses.insert(step_id.to_string(), status);
     }

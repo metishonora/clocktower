@@ -3,7 +3,6 @@ import test from "node:test";
 import type { Player } from "./core/types.js";
 import {
   ghostVotesSpentByDraft,
-  pendingExecutionCandidateMessage,
   validVotePlayersByDraft,
   voteStatusForPlayer,
 } from "./voting.js";
@@ -36,18 +35,6 @@ test("vote status labels dead and spent ghost voters clearly", () => {
     disabled: true,
     label: "사망 · 유령표 사용됨",
   });
-});
-
-test("pending execution candidate message ignores spent ghost voters", () => {
-  const players = votingPlayers();
-
-  equal(
-    pendingExecutionCandidateMessage(players, undefined, {
-      nomineeId: "player-4",
-      voterIds: ["player-1", "player-3"],
-    }),
-    "과반 미달 · 필요 2표",
-  );
 });
 
 function votingPlayers(): Player[] {

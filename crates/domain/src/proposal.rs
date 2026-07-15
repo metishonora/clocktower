@@ -235,7 +235,10 @@ pub(crate) fn propose_nomination_vote(
             kind: GameEventKind::NominationVoteConfirmed {
                 payload: NominationEventPayload {
                     step_id: current_step.id.clone(),
-                    input: record.clone(),
+                    nominator_id: record.nominator_id.clone(),
+                    nominee_id: record.nominee_id.clone(),
+                    voter_ids: record.voter_ids.clone(),
+                    ghost_vote_spent_player_ids: record.ghost_vote_spent_player_ids.clone(),
                 },
             },
             phase: current_step.phase,
@@ -266,7 +269,7 @@ pub(crate) fn propose_execution_decision(
             .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?,
     };
     let prefix = step_prefix(&current_step.id)?;
-    let day_state = replay_day_state(&game_file.game.events, &prefix)?;
+    let day_state = replay_day_state(&game_file.game.events, players, &prefix)?;
     let event_count = game_file.game.events.len() + 1;
     let player_id = if decision.execute {
         Some(

@@ -917,6 +917,36 @@ select {
   overflow-wrap: anywhere;
 }
 
+.confirmedExecutionStanding {
+  display: grid;
+  gap: 7px;
+  min-height: 160px;
+  padding: 20px;
+  border: 1px solid #b8d1c8;
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.6), transparent 32%),
+    linear-gradient(145deg, #e3f0eb, #d6e8e1);
+}
+
+.confirmedExecutionStanding small,
+.confirmedExecutionStanding span {
+  color: #496059;
+  font-weight: 900;
+}
+
+.confirmedExecutionStanding strong {
+  align-self: center;
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.confirmedExecutionStanding span {
+  align-self: end;
+  font-size: 0.86rem;
+}
+
 .currentActor {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr);

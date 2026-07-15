@@ -11,7 +11,7 @@ fn replay_empty_game_file_returns_core_result() {
         json!({
             "ok": true,
             "value": {
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "eventCount": 0,
                 "phase": "setup",
                 "players": [],
@@ -110,21 +110,20 @@ fn malformed_delivered_information_is_rejected_at_json_boundaries() {
 }
 
 #[test]
-fn canonical_schema_v1_fixture_replays_without_wire_migration() {
+fn schema_v1_fixture_is_rejected_without_partial_replay() {
     let fixture = include_str!("../../../../fixtures/schema-v1-game.json");
     let actual: Value = serde_json::from_str(&replay_json(fixture)).unwrap();
 
-    assert_eq!(actual["ok"], true);
-    assert_eq!(actual["value"]["schemaVersion"], 1);
-    assert_eq!(actual["value"]["eventCount"], 8);
-    assert_eq!(actual["value"]["phase"], "day");
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "UNSUPPORTED_SCHEMA_VERSION");
+    assert!(actual.get("value").is_none());
 }
 
 #[test]
 fn public_json_entrypoints_keep_representative_wire_strings() {
     assert_eq!(
         replay_json(EMPTY_GAME),
-        r#"{"ok":true,"value":{"schemaVersion":1,"eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[]}}"#
+        r#"{"ok":true,"value":{"schemaVersion":2,"eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[]}}"#
     );
     assert_eq!(
         propose_json(EMPTY_GAME, r#"{ "type": "smoke" }"#),

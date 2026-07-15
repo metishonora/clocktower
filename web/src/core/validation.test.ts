@@ -2,16 +2,27 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
-import { parseCoreResult, parsePhaseInputSuggestion, parseProposal, parseReplayState } from "./validation.js";
+import {
+  parseCoreResult,
+  parseGameEvent,
+  parsePhaseInputSuggestion,
+  parseProposal,
+  parseReplayState,
+} from "./validation.js";
 
-test("imports the canonical schema-v1 fixture as typed GameEvent values", () => {
-  const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
-  const gameFile = importGameFileJson(fixture);
+test("imports schema-v2 events as typed GameEvent values", () => {
+  const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()));
 
-  equal(gameFile.schemaVersion, 1);
+  equal(gameFile.schemaVersion, 2);
   equal(gameFile.game.events.length, 8);
   equal(gameFile.game.events[0]?.type, "setupConfirmed");
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");
+});
+
+test("rejects the canonical schema-v1 fixture", () => {
+  const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
+
+  throws(() => importGameFileJson(fixture), /지원하지 않는 게임 파일 버전/);
 });
 
 test("validates complete phase-input suggestion results", () => {
@@ -45,7 +56,7 @@ test("validates complete phase-input suggestion results", () => {
 });
 
 test("rejects unsupported and malformed imported events", () => {
-  const fixture = JSON.parse(readFileSync("../fixtures/schema-v1-game.json", "utf8"));
+  const fixture = schemaV2Fixture();
   const unsupported = structuredClone(fixture);
   unsupported.game.events[0].type = "notAnEvent";
   const malformed = structuredClone(fixture);
@@ -54,6 +65,35 @@ test("rejects unsupported and malformed imported events", () => {
   throws(() => importGameFileJson(JSON.stringify(unsupported)), /지원하지 않는 이벤트/);
   throws(() => importGameFileJson(JSON.stringify(malformed)), /이벤트 형식/);
 });
+
+test("rejects non-canonical nomination payload fields", () => {
+  const event = {
+    id: "event-nomination",
+    type: "nominationVoteConfirmed",
+    phase: "day",
+    payload: {
+      stepId: "day:nomination:1",
+      nominatorId: "player-1",
+      nomineeId: "player-5",
+      voterIds: ["player-1", "player-3"],
+      ghostVoteSpentPlayerIds: [],
+      voteCount: 2,
+    },
+    summary: "지명 투표 확정",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+
+  throws(() => parseGameEvent(event), /이벤트 형식/);
+});
+
+function schemaV2Fixture(): {
+  schemaVersion: number;
+  game: { events: Array<{ type: string; payload: Record<string, unknown> }> };
+} {
+  const fixture = JSON.parse(readFileSync("../fixtures/schema-v1-game.json", "utf8"));
+  fixture.schemaVersion = 2;
+  return fixture;
+}
 
 test("validates Proposal.event at the Wasm JSON boundary", () => {
   const valid = {
@@ -127,7 +167,7 @@ test("validates typed confirmed information and derived information prompts", ()
   deepEqual<unknown>(parseProposal(proposal).event, event);
 
   const replay = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     eventCount: 1,
     phase: "firstNight",
     players: [],
@@ -193,7 +233,7 @@ test("validates typed confirmed information and derived information prompts", ()
 
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
   const setupPromptReplay = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     eventCount: 1,
     phase: "firstNight",
     players: [],

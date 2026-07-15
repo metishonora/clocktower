@@ -25,7 +25,7 @@ mod tests {
     use super::*;
 
     const EMPTY_GAME: &str = r#"{
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "game": {
         "id": "game-1",
         "name": "Smoke",
@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn wasm_adapter_returns_phase_input_suggestion_json() {
         let game = r#"{
-          "schemaVersion": 1,
+          "schemaVersion": 2,
           "game": {
             "id": "game-1",
             "name": "Suggestion",
