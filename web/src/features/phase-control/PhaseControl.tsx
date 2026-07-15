@@ -1,8 +1,12 @@
+import { useEffect, useRef, useState } from "react";
 import type {
+  CoreResult,
   DayState,
   PhaseOverviewItem,
   PhaseStep,
   PhaseStepConfirmation,
+  PhaseInputSuggestion,
+  PhaseInputSuggestionRequest,
   Player,
   RevealPayload,
 } from "../../core/types";
@@ -18,6 +22,7 @@ import {
   stepTitle,
 } from "./phaseInput";
 import { ExecutionDecisionActions, StepInputFields } from "./StepInputs";
+import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 
 type ConfirmedReveal = {
@@ -41,6 +46,9 @@ export function PhaseControl({
   onContinue,
   onConfirm,
   onSkip,
+  onSuggest,
+  choiceTokenSource,
+  suggestionContextFingerprint,
 }: {
   pendingReveal?: ConfirmedReveal;
   currentStep?: PhaseStep;
@@ -56,6 +64,9 @@ export function PhaseControl({
   onContinue: () => void;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
+  onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
+  choiceTokenSource: () => number;
+  suggestionContextFingerprint: string;
 }) {
   if (pendingReveal) {
     return (
@@ -82,6 +93,9 @@ export function PhaseControl({
       busy={busy}
       onConfirm={onConfirm}
       onSkip={onSkip}
+      onSuggest={onSuggest}
+      choiceTokenSource={choiceTokenSource}
+      suggestionContextFingerprint={suggestionContextFingerprint}
     />
   );
 }
@@ -156,6 +170,9 @@ function CurrentStepPane({
   busy,
   onConfirm,
   onSkip,
+  onSuggest,
+  choiceTokenSource,
+  suggestionContextFingerprint,
 }: {
   currentStep?: PhaseStep;
   phaseOverview: PhaseOverviewItem[];
@@ -167,7 +184,20 @@ function CurrentStepPane({
   busy: boolean;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
+  onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
+  choiceTokenSource: () => number;
+  suggestionContextFingerprint: string;
 }) {
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestionUsed, setSuggestionUsed] = useState(false);
+  const [suggestionError, setSuggestionError] = useState<string>();
+  const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
+  useEffect(() => {
+    activeSuggestionRequestRef.current = undefined;
+    setSuggesting(false);
+    setSuggestionUsed(false);
+    setSuggestionError(undefined);
+  }, [currentStep?.id, suggestionContextFingerprint]);
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
@@ -197,6 +227,42 @@ function CurrentStepPane({
       )
     : false;
   const selectionValid = baseSelectionValid;
+  const currentConfirmation = currentStep
+    ? phaseStepConfirmation(currentStep, phaseInputDraft, nominationDraft)
+    : {};
+  const currentSuggestionFingerprint = suggestionRequestFingerprint(
+    suggestionContextFingerprint,
+    currentConfirmation,
+  );
+  const currentSuggestionFingerprintRef = useRef(currentSuggestionFingerprint);
+  currentSuggestionFingerprintRef.current = currentSuggestionFingerprint;
+
+  async function suggestCurrentInput() {
+    if (!currentStep?.requiredInput.supportsRandomSuggestion || suggesting) return;
+    const requestedStepId = currentStep.id;
+    const requestedFingerprint = currentSuggestionFingerprint;
+    const requestIdentity = Symbol();
+    activeSuggestionRequestRef.current = requestIdentity;
+    setSuggesting(true);
+    setSuggestionError(undefined);
+    const currentInput = currentConfirmation.input;
+    const result = await onSuggest({
+      stepId: requestedStepId,
+      ...(currentInput === undefined ? {} : { currentInput }),
+      choiceToken: choiceTokenSource(),
+    });
+    if (activeSuggestionRequestRef.current !== requestIdentity) return;
+    activeSuggestionRequestRef.current = undefined;
+    setSuggesting(false);
+    if (currentSuggestionFingerprintRef.current !== requestedFingerprint) return;
+    if (!result.ok) {
+      setSuggestionError(result.error.messageKo);
+      return;
+    }
+    if (result.value.stepId !== requestedStepId) return;
+    phaseInputDraft.applySuggestion(result.value.input);
+    setSuggestionUsed(true);
+  }
 
   return (
     <>
@@ -237,13 +303,23 @@ function CurrentStepPane({
               zeroOutsiders={phaseInputDraft.zeroOutsiders}
               zeroOutsidersAvailable={phaseInputDraft.zeroOutsidersAvailable}
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
-              busy={busy}
+              busy={busy || suggesting}
               onSelectedPlayerIdsChange={phaseInputDraft.setSelectedPlayerIds}
               onCharacterChange={phaseInputDraft.setSelectedCharacterId}
               onCharactersChange={phaseInputDraft.setSelectedCharacterIds}
               onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
               onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
+              randomSuggestion={
+                currentStep.requiredInput.supportsRandomSuggestion
+                  ? {
+                      label: suggestionUsed ? "다시 추천" : "무작위 추천",
+                      disabled: busy || suggesting,
+                      onClick: suggestCurrentInput,
+                    }
+                  : undefined
+              }
             />
+            {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
             {currentStep.requiredInput.kind === "executionDecision" ? (
               <ExecutionDecisionActions
                 players={players}
@@ -257,9 +333,9 @@ function CurrentStepPane({
                   type="button"
                   className="primaryButton"
                   onClick={() =>
-                    onConfirm(phaseStepConfirmation(currentStep, phaseInputDraft, nominationDraft))
+                    onConfirm(currentConfirmation)
                   }
-                  disabled={busy || !selectionValid}
+                  disabled={busy || suggesting || !selectionValid}
                 >
                   확정
                 </button>

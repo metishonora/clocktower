@@ -35,6 +35,8 @@ pub(crate) enum ErrorKind {
     UnexpectedDeliveredInformation,
     InvalidDeliveredInformation,
     InvalidRegistrationJudgment,
+    UnsupportedDraftSuggestion,
+    NoValidDraftSuggestion,
 }
 
 impl ErrorKind {
@@ -97,6 +99,14 @@ impl ErrorKind {
             Self::InvalidRegistrationJudgment => (
                 "INVALID_REGISTRATION_JUDGMENT",
                 "현재 정보 확인에 적용할 수 없는 등록 판정입니다.",
+            ),
+            Self::UnsupportedDraftSuggestion => (
+                "UNSUPPORTED_DRAFT_SUGGESTION",
+                "현재 단계에서는 무작위 입력을 추천할 수 없습니다.",
+            ),
+            Self::NoValidDraftSuggestion => (
+                "NO_VALID_DRAFT_SUGGESTION",
+                "무작위 추천을 만들 수 없습니다. Actual Character 배정과 현재 단계 조건을 확인하세요.",
             ),
         };
         CoreError { code, message_ko }

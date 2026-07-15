@@ -6,6 +6,7 @@ import type {
   InformationPrompt,
   InformationResult,
   Phase,
+  PhaseInputSuggestion,
   PhaseStep,
   PhaseStepInput,
   Proposal,
@@ -166,6 +167,48 @@ export function parseSetupDistribution(value: unknown): SetupDistribution {
     throw invalidCoreResponse();
   }
   return value as SetupDistribution;
+}
+
+export function parsePhaseInputSuggestion(value: unknown): PhaseInputSuggestion {
+  if (
+    !isRecord(value) ||
+    typeof value.stepId !== "string" ||
+    !isCompleteSuggestedInput(value.input)
+  ) {
+    throw invalidCoreResponse();
+  }
+  return value as PhaseInputSuggestion;
+}
+
+function isCompleteSuggestedInput(value: unknown): value is PhaseInputSuggestion["input"] {
+  if (!isRecord(value)) return false;
+  if (value.zeroOutsiders === true) {
+    return (
+      (value.playerIds === undefined || (Array.isArray(value.playerIds) && value.playerIds.length === 0)) &&
+      value.characterId === undefined &&
+      value.characterIds === undefined
+    );
+  }
+  if (Array.isArray(value.playerIds)) {
+    return (
+      value.playerIds.length === 2 &&
+      value.playerIds.every(isString) &&
+      new Set(value.playerIds).size === 2 &&
+      typeof value.characterId === "string" &&
+      characterIds.has(value.characterId) &&
+      value.characterIds === undefined &&
+      value.zeroOutsiders !== true
+    );
+  }
+  return (
+    Array.isArray(value.characterIds) &&
+    value.characterIds.length === 3 &&
+    value.characterIds.every(isKnownCharacter) &&
+    new Set(value.characterIds).size === 3 &&
+    value.playerIds === undefined &&
+    value.characterId === undefined &&
+    value.zeroOutsiders !== true
+  );
 }
 
 function isPhaseStep(value: unknown): value is PhaseStep {
@@ -397,6 +440,7 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
     (value.allowedCharacterIds === undefined ||
       (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
+    (value.supportsRandomSuggestion === undefined || typeof value.supportsRandomSuggestion === "boolean") &&
     typeof value.optional === "boolean"
   );
 }

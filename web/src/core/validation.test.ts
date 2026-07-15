@@ -2,7 +2,7 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
-import { parseCoreResult, parseProposal, parseReplayState } from "./validation.js";
+import { parseCoreResult, parsePhaseInputSuggestion, parseProposal, parseReplayState } from "./validation.js";
 
 test("imports the canonical schema-v1 fixture as typed GameEvent values", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
@@ -12,6 +12,36 @@ test("imports the canonical schema-v1 fixture as typed GameEvent values", () => 
   equal(gameFile.game.events.length, 8);
   equal(gameFile.game.events[0]?.type, "setupConfirmed");
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");
+});
+
+test("validates complete phase-input suggestion results", () => {
+  deepEqual(
+    parseCoreResult(
+      {
+        ok: true,
+        value: {
+          stepId: "firstNight:washerwoman",
+          input: { playerIds: ["player-1", "player-2"], characterId: "chef" },
+        },
+      },
+      parsePhaseInputSuggestion,
+    ),
+    {
+      ok: true,
+      value: {
+        stepId: "firstNight:washerwoman",
+        input: { playerIds: ["player-1", "player-2"], characterId: "chef" },
+      },
+    },
+  );
+  throws(
+    () => parsePhaseInputSuggestion({ stepId: "firstNight:washerwoman", input: null }),
+    /코어 응답 형식/,
+  );
+  throws(
+    () => parsePhaseInputSuggestion({ stepId: "firstNight:washerwoman", input: { playerIds: ["player-1"] } }),
+    /코어 응답 형식/,
+  );
 });
 
 test("rejects unsupported and malformed imported events", () => {

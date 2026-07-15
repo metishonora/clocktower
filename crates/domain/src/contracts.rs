@@ -88,6 +88,22 @@ pub(crate) struct SetupDistributionRequest {
     pub(crate) actual_characters: Vec<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PhaseInputSuggestionRequest {
+    pub(crate) step_id: String,
+    #[serde(default)]
+    pub(crate) current_input: StepInput,
+    pub(crate) choice_token: u32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PhaseInputSuggestion {
+    pub(crate) step_id: String,
+    pub(crate) input: StepInput,
+}
+
 #[derive(Debug, Serialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct SetupDistribution {

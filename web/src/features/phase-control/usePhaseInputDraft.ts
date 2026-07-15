@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   NumberChoice,
   PhaseStep,
+  PhaseStepInput,
   Player,
   RegistrationJudgment,
 } from "../../core/types";
@@ -29,6 +30,7 @@ export type PhaseInputDraftController = PhaseInputDraft & {
   setZeroOutsiders: (checked: boolean) => void;
   setSelectedNumberChoice: (choice: NumberChoice) => void;
   reset: () => void;
+  applySuggestion: (input: PhaseStepInput) => void;
 };
 
 function emptyDraft(): PhaseInputDraft {
@@ -113,6 +115,30 @@ export function usePhaseInputDraft(
     }));
   }
 
+  function applySuggestion(input: PhaseStepInput) {
+    if (input && "characterIds" in input && Array.isArray(input.characterIds)) {
+      setDraft({ ...emptyDraft(), selectedCharacterIds: [...input.characterIds] });
+      return;
+    }
+    if (input && "zeroOutsiders" in input && input.zeroOutsiders === true) {
+      setDraft({ ...emptyDraft(), zeroOutsiders: true });
+      return;
+    }
+    if (
+      input &&
+      "playerIds" in input &&
+      Array.isArray(input.playerIds) &&
+      "characterId" in input &&
+      typeof input.characterId === "string"
+    ) {
+      setDraft({
+        ...emptyDraft(),
+        selectedPlayerIds: [...input.playerIds],
+        selectedCharacterId: input.characterId,
+      });
+    }
+  }
+
   return {
     ...draft,
     zeroOutsidersAvailable,
@@ -125,6 +151,7 @@ export function usePhaseInputDraft(
     setSelectedNumberChoice: (selectedNumberChoice) =>
       setDraft((current) => ({ ...current, selectedNumberChoice })),
     reset: () => setDraft(emptyDraft()),
+    applySuggestion,
   };
 }
 

@@ -277,6 +277,8 @@ pub(crate) struct RequiredInput {
     pub(crate) allowed_character_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) zero_allowed: bool,
+    #[serde(skip_serializing_if = "is_false")]
+    pub(crate) supports_random_suggestion: bool,
     pub(crate) optional: bool,
 }
 

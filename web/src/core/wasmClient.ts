@@ -2,6 +2,8 @@ import type {
   Command,
   CoreResult,
   GameFile,
+  PhaseInputSuggestion,
+  PhaseInputSuggestionRequest,
   Proposal,
   ReplayState,
   SetupDistribution,
@@ -11,6 +13,7 @@ import type { CoreAdapter } from "./coreAdapter.js";
 import {
   parseCoreResult,
   parseProposal,
+  parsePhaseInputSuggestion,
   parseReplayState,
   parseSetupDistribution,
 } from "./validation.js";
@@ -18,6 +21,7 @@ import init, {
   propose as wasmPropose,
   replay as wasmReplay,
   setup_distribution as wasmSetupDistribution,
+  suggest_phase_input as wasmSuggestPhaseInput,
 } from "../generated/clocktower_wasm/clocktower_wasm.js";
 
 let initPromise: Promise<void> | undefined;
@@ -66,9 +70,21 @@ export function setupDistributionSync(
   );
 }
 
+export async function suggestPhaseInput(
+  gameFile: GameFile,
+  request: PhaseInputSuggestionRequest,
+): Promise<CoreResult<PhaseInputSuggestion>> {
+  await ensureWasm();
+  return parseCoreResult(
+    JSON.parse(wasmSuggestPhaseInput(JSON.stringify(gameFile), JSON.stringify(request))),
+    parsePhaseInputSuggestion,
+  );
+}
+
 export const wasmCoreAdapter: CoreAdapter = {
   replay,
   propose,
   setupDistribution,
   setupDistributionSync,
+  suggestPhaseInput,
 };

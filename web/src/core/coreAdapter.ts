@@ -2,6 +2,8 @@ import type {
   Command,
   CoreResult,
   GameFile,
+  PhaseInputSuggestion,
+  PhaseInputSuggestionRequest,
   Proposal,
   ReplayState,
   SetupDistribution,
@@ -12,4 +14,8 @@ export type CoreAdapter = {
   propose(gameFile: GameFile, command: Command): Promise<CoreResult<Proposal>>;
   setupDistribution(request: SetupDistributionRequest): Promise<CoreResult<SetupDistribution>>;
   setupDistributionSync(request: SetupDistributionRequest): CoreResult<SetupDistribution> | undefined;
+  suggestPhaseInput(
+    gameFile: GameFile,
+    request: PhaseInputSuggestionRequest,
+  ): Promise<CoreResult<PhaseInputSuggestion>>;
 };

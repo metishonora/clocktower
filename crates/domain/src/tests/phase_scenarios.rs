@@ -51,6 +51,66 @@ fn replay_derives_current_step_and_phase_overview_after_setup() {
 }
 
 #[test]
+fn replay_marks_first_night_inputs_that_support_random_suggestions() {
+    let mut events = vec![
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "drunk", "shownCharacter": "empath" },
+            { "id": "player-6", "seat": 6, "name": "Fay", "actualCharacter": "baron", "shownCharacter": "baron" },
+            { "id": "player-7", "seat": 7, "name": "Gus", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+    ];
+    let observe_current_input = |events: &[Value]| {
+        let game = game_with_events(Value::Array(events.to_vec()));
+        let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+        let step = &replayed["value"]["currentStep"];
+        (
+            step["id"].as_str().unwrap().to_string(),
+            step["requiredInput"]
+                .get("supportsRandomSuggestion")
+                .cloned(),
+        )
+    };
+
+    let mut observed = vec![observe_current_input(&events)];
+    events.push(phase_event("phaseStepConfirmed", "firstNight:demonInfo"));
+    observed.push(observe_current_input(&events));
+    events.push(phase_event_with_input(
+        "phaseStepConfirmed",
+        "firstNight:washerwoman",
+        json!({ "playerIds": ["player-1", "player-2"], "characterId": "librarian" }),
+    ));
+    observed.push(observe_current_input(&events));
+    events.push(phase_event_with_input(
+        "phaseStepConfirmed",
+        "firstNight:librarian",
+        json!({ "playerIds": ["player-4", "player-5"], "characterId": "drunk" }),
+    ));
+    observed.push(observe_current_input(&events));
+    events.push(phase_event_with_input(
+        "phaseStepConfirmed",
+        "firstNight:investigator",
+        json!({ "playerIds": ["player-5", "player-6"], "characterId": "baron" }),
+    ));
+    observed.push(observe_current_input(&events));
+
+    assert_eq!(
+        observed,
+        vec![
+            ("firstNight:demonInfo".to_string(), Some(json!(true))),
+            ("firstNight:washerwoman".to_string(), Some(json!(true))),
+            ("firstNight:librarian".to_string(), Some(json!(true))),
+            ("firstNight:investigator".to_string(), Some(json!(true))),
+            ("firstNight:chef".to_string(), None),
+        ]
+    );
+}
+
+#[test]
 fn demon_bluff_choices_use_actual_characters_and_keep_an_unused_drunk_shown_character() {
     let game = game_with_events(json!([setup_event_with_players(json!([
         { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "drunk", "shownCharacter": "librarian" },

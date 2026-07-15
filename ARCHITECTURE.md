@@ -33,6 +33,7 @@ Keep the WebAssembly boundary small and JSON-based for MVP.
 core.propose(gameFileJson, commandJson) -> proposalJson
 core.replay(gameFileJson) -> stateJson
 core.setupDistribution(requestJson) -> distributionJson
+core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
@@ -40,6 +41,13 @@ core.setupDistribution(requestJson) -> distributionJson
 `replay` checks the schema version and rebuilds the current rules state, visible step overview, and warnings from confirmed events.
 
 `setupDistribution` is a read-only setup draft query. It owns Trouble Brewing setup distribution rules, including Baron adjustment, before the setup draft is complete enough to become a `createGame` command. Its draft input is limited to player count and assigned Actual Character IDs; Rust derives all rule effects from that input. Keep this API limited to deterministic setup guidance that has no confirmed event.
+
+`suggestPhaseInput` is a stateless read-only live-play draft query. Replay identifies the current
+step and its semantic `supportsRandomSuggestion` marker; the active script constructs complete valid
+input combinations and maps a caller-supplied unsigned 32-bit choice token onto that deterministic
+pool. The optional current input is used only to exclude a semantically identical complete draft
+when another exists. This query returns `PhaseStepInput` only and never constructs a Command,
+Proposal, Confirmed Event, persisted value, or Reveal payload.
 
 Keep the Rust WebAssembly API stateless for MVP. Calls that depend on confirmed game state receive the current `GameFile`; setup draft queries receive only their draft input.
 
@@ -92,7 +100,9 @@ web
 
 ### Rust Domain Module Ownership
 
-Keep the public Rust API limited to the three JSON entrypoints: `replay_json`, `propose_json`, and `setup_distribution_json`. Domain modules and their types stay crate-private unless an external Rust consumer is intentionally added.
+Keep the public Rust API limited to the four JSON entrypoints: `replay_json`, `propose_json`,
+`setup_distribution_json`, and `suggest_phase_input_json`. Domain modules and their types stay
+crate-private unless an external Rust consumer is intentionally added.
 
 Organize `crates/domain/src` by cohesive domain responsibility:
 
@@ -105,6 +115,7 @@ model.rs
 proposal.rs
 replay.rs
 information.rs
+suggestion.rs
 setup.rs
 phase.rs
 day.rs
@@ -124,6 +135,9 @@ characters/
 - `replay.rs` composes reducers and rebuilds derived state from confirmed events.
 - `information.rs` owns Delivered Information orchestration, discretion validation, legacy-event
   compatibility, and current-step information prompts.
+- `suggestion.rs` owns generic current-step verification, semantic current-draft exclusion, and
+  deterministic choice-token selection. Script-specific combination pools remain in
+  `characters/<script_name>.rs`.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
@@ -209,7 +223,14 @@ web/src/
 - `components/CharacterSelect.tsx` owns the reusable character select control. `components/CoreFeedback.tsx` owns reusable replay/proposal/load status and warning rendering. Shared components receive display data and callbacks only; they do not own feature state.
 - `features/setup/SetupForm.tsx` owns the unconfirmed setup surface, draft Grimoire editing, character assignment, setup validation summary, and setup recovery actions. `features/setup/ConfirmedSetup.tsx` owns the compact confirmed-setup summary and undo/import/export/reset controls.
 - `features/grimoire/Grimoire.tsx` owns the confirmed seat map and its optional voting-selection projection. `features/grimoire/SeatLayoutControls.tsx` owns shared seat presets, overlap feedback, manual layout mode, and pointer-drag behavior used by setup and live play.
-- `features/phase-control/PhaseControl.tsx` owns current-step composition, phase overview, confirmed Reveal follow-up, and step-local draft reset. `features/phase-control/StepInputs.tsx` owns phase input controls. `features/phase-control/phaseInput.ts` owns phase labels plus input readiness and `PhaseStepInput` payload construction; keep these helpers colocated with phase control rather than app bootstrap.
+- `features/phase-control/PhaseControl.tsx` owns current-step composition, phase overview, confirmed
+  Reveal follow-up, suggestion request pending/error state, and step-local draft reset.
+  `features/phase-control/StepInputs.tsx` owns phase input controls and the inline suggestion action.
+  `features/phase-control/usePhaseInputDraft.ts` applies a returned complete suggestion atomically.
+  `features/phase-control/randomSuggestion.ts` owns the injectable browser crypto choice-token
+  source. `features/phase-control/phaseInput.ts` owns phase labels plus input readiness and
+  `PhaseStepInput` payload construction; keep these helpers colocated with phase control rather than
+  app bootstrap.
 - `features/voting/useNominationDraft.ts` owns the nomination draft type, initialization, and reset-on-step-change lifecycle. `features/voting/NominationVoteInput.tsx` owns nominator/nominee selection and vote preview. `main.tsx` may share this feature-owned draft with Grimoire and phase control through typed props.
 - `features/event-log/EventLog.tsx` owns confirmed-event list rendering and composes shared core feedback for the log surface.
 
