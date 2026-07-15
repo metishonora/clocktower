@@ -123,7 +123,7 @@ pub(crate) fn phase_step_reveal_payload(
 ) -> Option<RevealPayload> {
     match delivered_result {
         InformationResult::Number { value: count } if step.character.as_deref() == Some("chef") => {
-            Some(RevealPayload {
+            Some(RevealPayload::Text {
                 message_ko: format!("서로 이웃한 악 팀 쌍은 {count}쌍입니다."),
                 label_ko: Some("서로 이웃한 악한 팀 쌍".to_string()),
                 value_ko: Some(format!("{count}쌍")),
@@ -133,7 +133,7 @@ pub(crate) fn phase_step_reveal_payload(
         InformationResult::Number { value: count }
             if step.character.as_deref() == Some("empath") =>
         {
-            Some(RevealPayload {
+            Some(RevealPayload::Text {
                 message_ko: format!("살아있는 양옆 이웃 중 악 팀은 {count}명입니다."),
                 label_ko: Some("살아있는 양옆 이웃 중 악한 팀".to_string()),
                 value_ko: Some(format!("{count}명")),
@@ -162,23 +162,9 @@ pub(crate) fn phase_step_reveal_payload(
             minion_player_ids,
             bluff_character_ids,
         ),
-        InformationResult::SpyGrimoire { players } => Some(RevealPayload {
-            message_ko: format!(
-                "스파이 그리모어:\n{}",
-                players
-                    .iter()
-                    .map(|player| format!(
-                        "{}번 {} - {}",
-                        player.seat,
-                        player.name,
-                        character_label(&player.character_id)
-                    ))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-            ),
-            label_ko: None,
-            value_ko: None,
-            preview_message_ko: Some("스파이 그리모어 Reveal 준비됨".to_string()),
+        InformationResult::SpyGrimoire { players } => Some(RevealPayload::SpyGrimoire {
+            kind: "spyGrimoire",
+            players: players.clone(),
         }),
         _ => None,
     }
@@ -255,7 +241,7 @@ fn setup_info_result_reveal_payload(
     players: &[Player],
 ) -> Option<RevealPayload> {
     if kind == "librarian" && zero_outsiders {
-        return Some(RevealPayload {
+        return Some(RevealPayload::Text {
             message_ko: "사서 정보: 외부인은 0명입니다.".to_string(),
             label_ko: None,
             value_ko: None,
@@ -267,7 +253,7 @@ fn setup_info_result_reveal_payload(
         .iter()
         .map(|player_id| player_label(players, player_id))
         .collect::<Option<Vec<_>>>()?;
-    Some(RevealPayload {
+    Some(RevealPayload::Text {
         message_ko: format!(
             "{} 정보: {} 중 한 명은 {}입니다.",
             setup_info_label(kind),
@@ -296,7 +282,7 @@ fn team_info_reveal_payload(
     let demons = player_character_labels(demon_player_ids);
     let minions = player_character_labels(minion_player_ids);
     if step.id.ends_with(":minionInfo") {
-        return Some(RevealPayload {
+        return Some(RevealPayload::Text {
             message_ko: format!(
                 "하수인 정보:\n악마: {}\n하수인: {}",
                 list_or_none(&demons),
@@ -312,7 +298,7 @@ fn team_info_reveal_payload(
             .iter()
             .map(|character| character_label(character).to_string())
             .collect::<Vec<_>>();
-        return Some(RevealPayload {
+        return Some(RevealPayload::Text {
             message_ko: format!(
                 "악마 정보:\n하수인: {}\n블러프: {}",
                 list_or_none(&minions),

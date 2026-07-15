@@ -204,9 +204,7 @@ pub(crate) fn phase_step_statuses(
         if let Some(input) = event_input {
             if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
                 let players_at_event = replay_players(&events[..event_index])?;
-                if step.required_input.kind != RequiredInputKind::SetupInfo
-                    || payload.information.is_none()
-                {
+                if step.required_input.kind != RequiredInputKind::SetupInfo {
                     validate_required_input(&step.required_input, input, &players_at_event)?;
                 }
                 validate_confirmed_information(

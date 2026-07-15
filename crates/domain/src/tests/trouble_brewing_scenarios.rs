@@ -759,14 +759,191 @@ fn spy_step_reveals_grimoire_only_through_reveal_payload() {
         .as_str()
         .unwrap()
         .contains("현재 단계를 확정합니다."));
-    assert!(actual["value"]["revealPayload"]["messageKo"]
-        .as_str()
-        .unwrap()
-        .contains("5번 Eve - 임프"));
+    let expected_players = json!([
+        { "playerId": "player-1", "seat": 1, "name": "Ada", "characterId": "chef", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
+        { "playerId": "player-2", "seat": 2, "name": "Bert", "characterId": "empath", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
+        { "playerId": "player-3", "seat": 3, "name": "Cora", "characterId": "fortuneTeller", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
+        { "playerId": "player-4", "seat": 4, "name": "Dev", "characterId": "spy", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
+        { "playerId": "player-5", "seat": 5, "name": "Eve", "characterId": "imp", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] }
+    ]);
     assert_eq!(
-        actual["value"]["revealPayload"]["previewMessageKo"],
-        "스파이 그리모어 Reveal 준비됨"
+        actual["value"]["revealPayload"],
+        json!({ "kind": "spyGrimoire", "players": expected_players })
     );
+    assert_eq!(
+        actual["value"]["event"]["payload"]["information"]["deliveredResult"],
+        json!({ "kind": "spyGrimoire", "players": expected_players })
+    );
+    assert!(actual["value"]["revealPayload"].get("messageKo").is_none());
+    assert!(actual["value"]["revealPayload"]
+        .get("previewMessageKo")
+        .is_none());
+}
+
+#[test]
+fn normal_night_spy_snapshot_uses_only_current_confirmed_poison_and_protection() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-2", "seat": 2, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "player-3", "seat": 3, "name": "Spy", "actualCharacter": "spy", "shownCharacter": "spy" },
+            { "id": "player-4", "seat": 4, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-5", "seat": 5, "name": "Fortune", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-6", "seat": 6, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-7", "seat": 7, "name": "Baron", "actualCharacter": "baron", "shownCharacter": "baron" },
+            { "id": "player-8", "seat": 8, "name": "Monk", "actualCharacter": "monk", "shownCharacter": "monk" },
+            { "id": "player-9", "seat": 9, "name": "Saint", "actualCharacter": "saint", "shownCharacter": "saint" },
+            { "id": "player-10", "seat": 10, "name": "Butler", "actualCharacter": "butler", "shownCharacter": "butler" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input("phaseStepConfirmed", "firstNight:poisoner", json!({ "playerIds": ["player-9"] })),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath"),
+        phase_event("phaseStepConfirmed", "firstNight:fortuneTeller"),
+        phase_event("phaseStepConfirmed", "firstNight:butler"),
+        phase_event("phaseStepConfirmed", "firstNight:spy"),
+        phase_event("phaseStepConfirmed", "firstNight:toDay"),
+        death_event("player-1"),
+        phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        {
+            "id": "evt-day:nomination:1",
+            "type": "nominationVoteConfirmed",
+            "phase": "day",
+            "payload": {
+                "stepId": "day:nomination:1",
+                "input": {
+                    "stepId": "day:nomination:1",
+                    "nominatorId": "player-2",
+                    "nomineeId": "player-3",
+                    "voterIds": ["player-1", "player-2", "player-3", "player-4", "player-5", "player-6"],
+                    "voteCount": 6,
+                    "ghostVoteSpentPlayerIds": ["player-1"],
+                    "updatesExecutionCandidate": true
+                }
+            },
+            "summary": "지명 투표 확정",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        },
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+        no_execution_event("day:execution"),
+        phase_event("phaseStepConfirmed", "day:toNight"),
+        phase_event_with_input("phaseStepConfirmed", "night:poisoner", json!({ "playerIds": ["player-4"] })),
+        phase_event_with_input("phaseStepConfirmed", "night:monk", json!({ "playerIds": ["player-4"] })),
+        phase_event_with_input("phaseStepConfirmed", "night:imp", json!({ "playerIds": ["player-9"] })),
+        phase_event("phaseStepConfirmed", "night:fortuneTeller"),
+        phase_event("phaseStepConfirmed", "night:butler")
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": { "stepId": "night:spy" }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    let players = actual["value"]["revealPayload"]["players"]
+        .as_array()
+        .expect("Spy Reveal must contain structured players");
+    assert_eq!(
+        players
+            .iter()
+            .map(|player| player["seat"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        (1..=10).collect::<Vec<_>>()
+    );
+    assert_eq!(players[0]["alive"], false);
+    assert_eq!(players[0]["ghostVoteUsed"], true);
+    assert_eq!(
+        players[3]["reminderTokens"],
+        json!(["poisoned", "protected"])
+    );
+    assert_eq!(players[8]["reminderTokens"], json!([]));
+    assert_eq!(
+        actual["value"]["event"]["payload"]["information"]["deliveredResult"],
+        actual["value"]["revealPayload"]
+    );
+}
+
+#[test]
+fn skipped_poisoner_step_does_not_add_a_spy_reminder() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-2", "seat": 2, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-3", "seat": 3, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-4", "seat": 4, "name": "Spy", "actualCharacter": "spy", "shownCharacter": "spy" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath")
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": { "stepId": "firstNight:spy" }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    assert!(actual["value"]["revealPayload"]["players"]
+        .as_array()
+        .expect("Spy Reveal must contain structured players")
+        .iter()
+        .all(|player| player["reminderTokens"] == json!([])));
+}
+
+#[test]
+fn replay_keeps_legacy_schema_v1_spy_information_compatible() {
+    let legacy_players = json!([
+        { "playerId": "player-1", "seat": 1, "name": "Ada", "characterId": "chef" },
+        { "playerId": "player-2", "seat": 2, "name": "Bert", "characterId": "empath" },
+        { "playerId": "player-3", "seat": 3, "name": "Cora", "characterId": "fortuneTeller" },
+        { "playerId": "player-4", "seat": 4, "name": "Dev", "characterId": "spy" },
+        { "playerId": "player-5", "seat": 5, "name": "Eve", "characterId": "imp" }
+    ]);
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "spy", "shownCharacter": "spy" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath"),
+        phase_event("phaseStepConfirmed", "firstNight:fortuneTeller"),
+        {
+            "id": "legacy-spy-event",
+            "type": "phaseStepConfirmed",
+            "phase": "firstNight",
+            "payload": {
+                "stepId": "firstNight:spy",
+                "input": null,
+                "information": {
+                    "actor": { "playerId": "player-4", "characterId": "spy" },
+                    "targetPlayerIds": [],
+                    "computedResult": { "kind": "spyGrimoire", "players": legacy_players },
+                    "deliveredResult": { "kind": "spyGrimoire", "players": legacy_players },
+                    "deliveryContext": { "type": "fixed" }
+                }
+            },
+            "summary": "스파이 정보 확정",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        }
+    ]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:toDay");
 }
 
 #[test]
@@ -1045,6 +1222,225 @@ fn drunk_investigator_accepts_any_two_players_and_any_minion_without_true_pair()
         actual["value"]["revealPayload"]["messageKo"],
         "조사관 정보: 2번 Good 또는 3번 Good 2 중 한 명은 남작입니다."
     );
+}
+
+#[test]
+fn drunk_setup_information_records_and_reveals_only_the_single_delivered_input() {
+    for (shown_character, input, delivered_result, reveal_message) in [
+        (
+            "washerwoman",
+            json!({
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "fortuneTeller"
+            }),
+            json!({
+                "kind": "setupInfo",
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "fortuneTeller",
+                "zeroOutsiders": false
+            }),
+            "세탁부 정보: 2번 Chef 또는 3번 Empath 중 한 명은 점쟁이입니다.",
+        ),
+        (
+            "librarian",
+            json!({ "zeroOutsiders": true }),
+            json!({
+                "kind": "setupInfo",
+                "playerIds": [],
+                "zeroOutsiders": true
+            }),
+            "사서 정보: 외부인은 0명입니다.",
+        ),
+    ] {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": shown_character },
+                { "id": "player-2", "seat": 2, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event_with_input(
+                "phaseStepConfirmed",
+                "firstNight:poisoner",
+                json!({ "playerIds": ["player-2"] })
+            )
+        ]));
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": format!("firstNight:{shown_character}"),
+                "input": input.clone()
+            }
+        });
+
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true, "{shown_character}: {actual}");
+        assert_eq!(actual["value"]["event"]["payload"]["input"], input);
+        let information = &actual["value"]["event"]["payload"]["information"];
+        assert!(information.get("computedResult").is_none());
+        assert_eq!(information["deliveredResult"], delivered_result);
+        assert_eq!(
+            information["deliveryContext"]["reasons"],
+            json!([{ "type": "drunk" }])
+        );
+        assert_eq!(
+            actual["value"]["revealPayload"],
+            json!({ "messageKo": reveal_message })
+        );
+    }
+}
+
+#[test]
+fn replay_preserves_legacy_drunk_investigator_delivery_without_information() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": "investigator" },
+            { "id": "player-2", "seat": 2, "name": "Good", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Good 2", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-2"] })
+        ),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:investigator",
+            json!({
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "baron"
+            })
+        )
+    ]));
+
+    let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(replayed["ok"], true, "{replayed}");
+    assert_eq!(replayed["value"]["currentStep"]["id"], "firstNight:chef");
+}
+
+#[test]
+fn replay_preserves_legacy_poisoned_librarian_zero_without_information() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Librarian", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+            { "id": "player-2", "seat": 2, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-1"] })
+        ),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:librarian",
+            json!({ "zeroOutsiders": true })
+        )
+    ]));
+
+    let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(replayed["ok"], true, "{replayed}");
+    assert_eq!(replayed["value"]["currentStep"]["id"], "firstNight:chef");
+}
+
+#[test]
+fn replay_rejects_malformed_legacy_impaired_setup_inputs() {
+    for invalid_input in [
+        json!({ "playerIds": ["player-2", "unknown"], "characterId": "saint" }),
+        json!({ "playerIds": ["player-2", "player-2"], "characterId": "saint" }),
+        json!({ "playerIds": ["player-2"], "characterId": "saint" }),
+        json!({ "playerIds": ["player-2", "player-3"], "characterId": "unknown" }),
+        json!({ "playerIds": ["player-2", "player-3"], "characterId": "chef" }),
+        json!({ "zeroOutsiders": true, "playerIds": ["player-2"] }),
+    ] {
+        let game = game_with_events(json!([
+            setup_event_with_players(json!([
+                { "id": "player-1", "seat": 1, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": "librarian" },
+                { "id": "player-2", "seat": 2, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+                { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+            ])),
+            phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+            phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+            phase_event_with_input(
+                "phaseStepConfirmed",
+                "firstNight:poisoner",
+                json!({ "playerIds": ["player-2"] })
+            ),
+            phase_event_with_input(
+                "phaseStepConfirmed",
+                "firstNight:librarian",
+                invalid_input.clone()
+            )
+        ]));
+
+        let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+        assert_eq!(replayed["ok"], false, "{invalid_input}");
+        assert_eq!(replayed["error"]["code"], "INVALID_STEP_INPUT");
+    }
+}
+
+#[test]
+fn replay_rejects_tampered_typed_drunk_setup_information() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": "investigator" },
+            { "id": "player-2", "seat": 2, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-2"] })
+        )
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:investigator",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "baron"
+            }
+        }
+    });
+    let proposed: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposed["ok"], true);
+    let mut tampered_event = proposed["value"]["event"].clone();
+    tampered_event["payload"]["information"]["deliveredResult"]["characterId"] =
+        json!("scarletWoman");
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(tampered_event);
+
+    let replayed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(replayed["ok"], false);
+    assert_eq!(replayed["error"]["code"], "REPLAY_FAILED");
 }
 
 #[test]

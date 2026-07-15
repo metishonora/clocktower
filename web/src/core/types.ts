@@ -48,6 +48,9 @@ export type InformationResult =
         seat: number;
         name: string;
         characterId: string;
+        alive?: boolean;
+        ghostVoteUsed?: boolean;
+        reminderTokens?: SpyReminderToken[];
       }>;
     };
 
@@ -143,12 +146,29 @@ export type Proposal = {
   revealPayload?: RevealPayload;
 };
 
-export type RevealPayload = {
+export type TextRevealPayload = {
   messageKo: string;
   previewMessageKo?: string;
   labelKo?: string;
   valueKo?: string;
 };
+
+export type SpyReminderToken = "poisoned" | "protected";
+
+export type SpyGrimoireRevealPayload = {
+  kind: "spyGrimoire";
+  players: Array<{
+    playerId: string;
+    seat: number;
+    name: string;
+    characterId: string;
+    alive: boolean;
+    ghostVoteUsed: boolean;
+    reminderTokens: SpyReminderToken[];
+  }>;
+};
+
+export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload;
 
 export type SetupDistributionRequest = {
   playerCount: number;

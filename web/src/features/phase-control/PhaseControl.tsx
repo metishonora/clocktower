@@ -10,6 +10,7 @@ import type {
   Player,
   RevealPayload,
 } from "../../core/types";
+import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
 import { RevealPreview } from "../../reveal";
 import { characterKind, characterLabel, characters, kindLabels } from "../../setupDraft";
 import type { NominationDraft } from "../voting/useNominationDraft";
@@ -115,6 +116,7 @@ function ConfirmedRevealFollowup({
   onShowReveal: (payload: RevealPayload) => void;
   onContinue: () => void;
 }) {
+  const isSpyGrimoire = isSpyGrimoireRevealPayload(pendingReveal.payload);
   const actor = pendingReveal.step.playerId
     ? players.find((player) => player.id === pendingReveal.step.playerId)
     : undefined;
@@ -133,21 +135,53 @@ function ConfirmedRevealFollowup({
       </div>
 
       <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
-        <div className="confirmedRevealActor">
-          <span>{actor?.seat ?? "•"}</span>
-          <div>
-            <strong>{actorTitle}</strong>
-            <small>{replayReady ? "이벤트 확정과 다음 상태 리플레이가 완료되었습니다." : "이벤트 확정 완료 · 다음 상태 재생 중"}</small>
+        {!isSpyGrimoire ? (
+          <div className="confirmedRevealActor">
+            <span>{actor?.seat ?? "•"}</span>
+            <div>
+              <strong>{actorTitle}</strong>
+              <small>
+                {replayReady
+                  ? "이벤트 확정과 다음 상태 리플레이가 완료되었습니다."
+                  : "이벤트 확정 완료 · 다음 상태 재생 중"}
+              </small>
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <RevealPreview payload={pendingReveal.payload} onShow={() => onShowReveal(pendingReveal.payload)} disabled={busy} />
+        {isSpyGrimoire ? (
+          <button
+            type="button"
+            className="primaryButton"
+            onClick={() => onShowReveal(pendingReveal.payload)}
+            disabled={busy}
+          >
+            플레이어에게 공개
+          </button>
+        ) : (
+          <RevealPreview
+            payload={pendingReveal.payload}
+            onShow={() => onShowReveal(pendingReveal.payload)}
+            disabled={busy}
+          />
+        )}
 
         <div className="confirmedRevealContinue">
-          <button type="button" className="secondaryButton" onClick={onContinue} disabled={busy || !replayReady}>
+          <button
+            type="button"
+            className="secondaryButton"
+            onClick={onContinue}
+            disabled={busy || !replayReady}
+          >
             다음 단계로 계속
           </button>
-          <p>{replayReady ? "Reveal을 다시 열 필요가 없을 때만 다음 단계 입력을 표시합니다." : "다음 상태 재생 중"}</p>
+          {!isSpyGrimoire ? (
+            <p>
+              {replayReady
+                ? "Reveal을 다시 열 필요가 없을 때만 다음 단계 입력을 표시합니다."
+                : "다음 상태 재생 중"}
+            </p>
+          ) : null}
         </div>
       </section>
 

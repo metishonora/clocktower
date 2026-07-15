@@ -104,6 +104,19 @@ pub(crate) struct InformationPlayer {
     pub(crate) seat: u8,
     pub(crate) name: String,
     pub(crate) character_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) alive: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) ghost_vote_used: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) reminder_tokens: Option<Vec<SpyReminderToken>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SpyReminderToken {
+    Poisoned,
+    Protected,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]

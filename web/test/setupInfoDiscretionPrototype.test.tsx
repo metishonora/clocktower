@@ -78,7 +78,7 @@ test("always shows actual Character context in the poisoned delivery editor", as
   expect(within(candidates).getByRole("button", { name: /가람.*실제: 은둔자/ })).toBeTruthy();
 });
 
-test("lets a Drunk choose one Investigator-shaped delivery without a baseline editor", async () => {
+test("lets a Drunk Investigator use the same single delivered-information flow as poisoning", async () => {
   window.history.replaceState(null, "", "/?prototype=setup-info-discretion&scenario=drunkInvestigator");
 
   render(<SetupInfoDiscretionPrototype />);
@@ -86,7 +86,8 @@ test("lets a Drunk choose one Investigator-shaped delivery without a baseline ed
   expect(screen.getByRole("heading", { name: "조사관: 3번 서연" })).toBeTruthy();
   expect(screen.getByText("실제 술꾼")).toBeTruthy();
   expect(screen.queryByLabelText("기준 설정 정보")).toBeNull();
-  const deliveredCharacter = within(screen.getByLabelText("전달 설정 정보")).getByRole("combobox", {
+  const delivered = screen.getByLabelText("전달 설정 정보");
+  const deliveredCharacter = within(delivered).getByRole("combobox", {
     name: "전달할 캐릭터",
   });
   expect(within(deliveredCharacter).getAllByRole("option").map((option) => option.textContent)).toEqual([
@@ -96,6 +97,7 @@ test("lets a Drunk choose one Investigator-shaped delivery without a baseline ed
     "남작",
   ]);
   expect((deliveredCharacter as HTMLSelectElement).value).toBe("scarletWoman");
+  expect(screen.queryByLabelText("정상 기준과 전달 결과 비교")).toBeNull();
 });
 
 test("expands the Investigator Character list when Recluse is in the single delivered pair", async () => {

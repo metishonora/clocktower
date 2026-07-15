@@ -12,7 +12,7 @@ import {
   type CharacterKind,
 } from "./setupDraft";
 
-// PROTOTYPE issue #7: confirm the baseline -> registration -> delivered-information
+// PROTOTYPE issue #45: confirm the Drunk delivered-information
 // interaction before changing the production phase-control flow.
 
 type ScenarioKey =
@@ -101,7 +101,7 @@ const scenarios: PrototypeScenario[] = [
     key: "drunkInvestigator",
     tabLabel: "술꾼 · 조사관",
     title: "조사관이라고 생각하는 술꾼",
-    description: "기준 정보 입력 없이 아무 두 명과 하수인 하나를 바로 선택합니다.",
+    description: "중독된 사서와 같은 방식으로, 아무 두 명과 하수인 하나를 한 번만 선택합니다.",
     actorId: "player-3",
     characterId: "investigator",
     characterKind: "Minion",
@@ -199,8 +199,8 @@ export function SetupInfoDiscretionPrototype() {
     <main className="setupInfoDiscretionPrototype">
       <header className="discretionPrototypeHeader">
         <div>
-          <p className="eyebrow">이슈 #7 프로토타입 · 이야기꾼 전용</p>
-          <h1>실제 정보와 전달 정보 분리</h1>
+          <p className="eyebrow">이슈 #45 프로토타입 · 이야기꾼 전용</p>
+          <h1>정상 기준 정보와 전달 정보 분리</h1>
           <p>이 화면은 상호작용 확인용이며 이벤트를 저장하거나 게임 상태를 변경하지 않습니다.</p>
         </div>
         <span className="phaseBadge">첫 번째 밤</span>
