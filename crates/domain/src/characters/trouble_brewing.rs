@@ -36,6 +36,32 @@ pub(crate) fn night_order() -> &'static [&'static str] {
     NIGHT_ORDER
 }
 
+pub(crate) fn has_actual_outsider(players: &[Player]) -> bool {
+    players
+        .iter()
+        .any(|player| character_kind(&player.actual_character) == Some(CharacterKind::Outsider))
+}
+
+pub(crate) fn setup_info_character_is_represented(
+    setup_info: SetupInfoKind,
+    character_id: &str,
+    candidate_player_ids: &[String],
+    players: &[Player],
+) -> bool {
+    let required_kind = match setup_info {
+        SetupInfoKind::Washerwoman => CharacterKind::Townsfolk,
+        SetupInfoKind::Librarian => CharacterKind::Outsider,
+        SetupInfoKind::Investigator => CharacterKind::Minion,
+    };
+    if character_kind(character_id) != Some(required_kind) {
+        return false;
+    }
+
+    players.iter().any(|player| {
+        player.actual_character == character_id && candidate_player_ids.contains(&player.id)
+    })
+}
+
 fn awakening_character(player: &Player) -> &str {
     if player.actual_character == "drunk" {
         player.shown_character.as_str()

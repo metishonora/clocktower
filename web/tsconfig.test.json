@@ -26,6 +26,7 @@
     "src/setupReadiness.test.ts",
     "src/reveal.tsx",
     "src/reveal.test.tsx",
+    "src/phaseInput.test.ts",
     "src/voting.ts",
     "src/voting.test.ts",
     "src/node-test.d.ts"

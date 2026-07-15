@@ -231,6 +231,27 @@ fn replay_rejects_phase_step_events_with_unknown_player_input() {
 }
 
 #[test]
+fn replay_rejects_setup_info_character_not_represented_by_candidates() {
+    let game = game_with_events(json!([
+        setup_event(),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:washerwoman",
+            json!({
+                "playerIds": ["player-1", "player-3"],
+                "characterId": "chef"
+            })
+        )
+    ]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+}
+
+#[test]
 fn replay_rejects_skipped_non_skippable_phase_transition_events() {
     let game = game_with_events(json!([
         setup_event(),

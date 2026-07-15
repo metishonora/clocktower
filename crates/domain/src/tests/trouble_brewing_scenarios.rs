@@ -140,6 +140,37 @@ fn confirming_washerwoman_information_logs_and_reveals_selected_setup_info() {
 }
 
 #[test]
+fn confirming_washerwoman_information_rejects_character_not_represented_by_candidates() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "drunk", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:washerwoman",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "chef"
+            }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    assert!(actual.get("value").is_none());
+}
+
+#[test]
 fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
@@ -180,6 +211,113 @@ fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
 }
 
 #[test]
+fn confirming_librarian_information_uses_actual_drunk_instead_of_shown_townsfolk() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "drunk", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-3"] })
+        )
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:librarian",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "drunk"
+            }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], true);
+    assert_eq!(
+        actual["value"]["revealPayload"]["messageKo"],
+        "사서 정보: 2번 Bert 또는 3번 Cora 중 한 명은 술꾼입니다."
+    );
+}
+
+#[test]
+fn confirming_librarian_zero_outsiders_rejects_actual_drunk() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "drunk", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-3"] })
+        )
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:librarian",
+            "input": { "zeroOutsiders": true }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    assert!(actual.get("value").is_none());
+}
+
+#[test]
+fn confirming_librarian_zero_outsiders_rejects_character_context() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "librarian", "shownCharacter": "librarian" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-2"] })
+        )
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:librarian",
+            "input": { "zeroOutsiders": true, "characterId": "drunk" }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    assert!(actual.get("value").is_none());
+}
+
+#[test]
 fn confirming_investigator_information_requires_minion_character_and_reveals_it() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
@@ -216,6 +354,43 @@ fn confirming_investigator_information_requires_minion_character_and_reveals_it(
         actual["value"]["revealPayload"]["messageKo"],
         "조사관 정보: 2번 Bert 또는 4번 Dev 중 한 명은 독살자입니다."
     );
+}
+
+#[test]
+fn confirming_investigator_information_rejects_minion_outside_selected_candidates() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+            { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:poisoner",
+            json!({ "playerIds": ["player-2"] })
+        )
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:investigator",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "poisoner"
+            }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    assert!(actual.get("value").is_none());
 }
 
 #[test]
@@ -374,7 +549,11 @@ fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
             "firstNight:poisoner",
             json!({ "playerIds": ["player-1"] })
         ),
-        phase_event("phaseStepConfirmed", "firstNight:washerwoman")
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:washerwoman",
+            json!({ "playerIds": ["player-2", "player-3"], "characterId": "empath" })
+        )
     ]));
     let command = json!({
         "type": "confirmStep",

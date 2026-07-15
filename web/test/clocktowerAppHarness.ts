@@ -104,16 +104,18 @@ export function replayState({
   currentStep,
   dayState,
   eventCount = 1,
+  playerRoster = players(),
 }: {
   currentStep: PhaseStep;
   dayState?: ReplayState["dayState"];
   eventCount?: number;
+  playerRoster?: Player[];
 }): ReplayState {
   return {
     schemaVersion: 1,
     eventCount,
     phase: currentStep.phase,
-    players: players(),
+    players: playerRoster,
     currentStep,
     phaseOverview: [{ ...currentStep, status: "current" }],
     dayState,
@@ -133,6 +135,9 @@ export function step({
   phase = "firstNight",
   canSkip = false,
   informationPrompt,
+  characterKind,
+  zeroAllowed,
+  setupInfo,
 }: {
   id: string;
   character?: string;
@@ -145,6 +150,9 @@ export function step({
   phase?: Phase;
   canSkip?: boolean;
   informationPrompt?: InformationPrompt;
+  characterKind?: PhaseStep["requiredInput"]["characterKind"];
+  zeroAllowed?: boolean;
+  setupInfo?: PhaseStep["requiredInput"]["setupInfo"];
 }): PhaseStep {
   return {
     id,
@@ -157,6 +165,9 @@ export function step({
       target,
       minSelections,
       maxSelections,
+      characterKind,
+      zeroAllowed,
+      setupInfo,
       optional: false,
     },
     canSkip,

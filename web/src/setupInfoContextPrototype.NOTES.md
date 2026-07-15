@@ -18,4 +18,11 @@ Shared behavior:
 - The safe Reveal contains only the two candidate labels and the delivered character. It does not receive or render Grimoire state, Actual Character, or Drunk Shown Character.
 - Spy/Recluse Registration Judgments are intentionally absent because they are per-check discretionary state, not candidate Shown Character.
 
-No final production direction has been selected yet.
+Final production direction:
+
+- Use variant A so every setup-information candidate shows Storyteller-only context before selection.
+- Tint candidate cards by the Actual Character kind, not by alignment: Townsfolk light blue,
+  Outsider light purple, Minion light brown/orange, and Demon light red.
+- Keep the selected state distinct with the existing green selection treatment.
+- A Drunk uses the Outsider tint because the tint and valid-character derivation both use
+  Actual Character. Shown Character remains explanatory text only.

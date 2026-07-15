@@ -1,9 +1,9 @@
 use crate::model::{
-    CharacterKind, InputTarget, Phase, PhaseStep, PhaseStepStatus, Player, RequiredInput,
-    RequiredInputKind, SetupInfoKind, StepInput, StepType,
+    InputTarget, Phase, PhaseStep, PhaseStepStatus, Player, RequiredInput, RequiredInputKind,
+    SetupInfoKind, StepInput, StepType,
 };
 use crate::{
-    characters::character_kind,
+    characters::{character_kind, has_actual_outsider, setup_info_character_is_represented},
     error::{CoreError, ErrorKind},
 };
 use std::collections::{HashMap, HashSet};
@@ -167,9 +167,13 @@ pub(crate) fn validate_setup_info_input(
     let value = value
         .as_ref()
         .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
-    if setup_info == SetupInfoKind::Librarian && value.zero_outsiders == Some(true) {
+    if value.zero_outsiders == Some(true) {
         let player_count = value.player_ids.as_ref().map_or(0, Vec::len);
-        if player_count == 0 {
+        if setup_info == SetupInfoKind::Librarian
+            && player_count == 0
+            && value.character_id.is_none()
+            && !has_actual_outsider(players)
+        {
             return Ok(());
         }
         return Err(ErrorKind::InvalidStepInput.into_error());
@@ -183,16 +187,10 @@ pub(crate) fn validate_setup_info_input(
     let Some(character_id) = value.character_id.as_deref() else {
         return Err(ErrorKind::MissingStepInput.into_error());
     };
-    let Some(kind) = character_kind(character_id) else {
+    if character_kind(character_id).is_none() {
         return Err(ErrorKind::UnknownCharacter.into_error());
-    };
-
-    let valid_kind = match setup_info {
-        SetupInfoKind::Washerwoman => matches!(kind, CharacterKind::Townsfolk),
-        SetupInfoKind::Librarian => matches!(kind, CharacterKind::Outsider),
-        SetupInfoKind::Investigator => matches!(kind, CharacterKind::Minion),
-    };
-    if !valid_kind {
+    }
+    if !setup_info_character_is_represented(setup_info, character_id, &player_ids, players) {
         return Err(ErrorKind::InvalidStepInput.into_error());
     }
 

@@ -8,7 +8,7 @@ import type {
   Player,
   RegistrationJudgment,
 } from "../../core/types";
-import { characters, kindLabels } from "../../setupDraft";
+import { characterKind, characterLabel, characters, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
@@ -31,6 +31,7 @@ export function PlayerStepInput({
 }) {
   if (step.requiredInput.target !== "player" && step.requiredInput.target !== "players") return null;
   const max = step.requiredInput.maxSelections ?? players.length;
+  const showsSetupInfoContext = step.requiredInput.kind === "setupInfo";
 
   function togglePlayer(playerId: string) {
     if (selectedPlayerIds.includes(playerId)) {
@@ -47,19 +48,38 @@ export function PlayerStepInput({
 
   return (
     <div className="playerStepInput" aria-label="단계 입력">
-      {players.map((player) => (
-        <button
-          type="button"
-          className={selectedPlayerIds.includes(player.id) ? "selected" : ""}
-          onClick={() => togglePlayer(player.id)}
-          aria-pressed={selectedPlayerIds.includes(player.id)}
-          disabled={busy || selectionDisabled}
-          key={player.id}
-        >
-          <span>{player.seat}</span>
-          <strong>{player.name}</strong>
-        </button>
-      ))}
+      {players.map((player) => {
+        const actualKind = characterKind(player.actualCharacter);
+        const classNames = [
+          selectedPlayerIds.includes(player.id) ? "selected" : "",
+          showsSetupInfoContext ? "setupInfoCandidate" : "",
+          showsSetupInfoContext && actualKind ? `character-kind-${actualKind.toLowerCase()}` : "",
+        ].filter(Boolean);
+
+        return (
+          <button
+            type="button"
+            className={classNames.join(" ")}
+            onClick={() => togglePlayer(player.id)}
+            aria-pressed={selectedPlayerIds.includes(player.id)}
+            disabled={busy || selectionDisabled}
+            key={player.id}
+          >
+            <span>{player.seat}</span>
+            {showsSetupInfoContext ? (
+              <span className="setupInfoCandidateDetails">
+                <strong>{player.name}</strong>
+                <small>실제: {characterLabel(player.actualCharacter)}</small>
+                {player.actualCharacter !== player.shownCharacter ? (
+                  <small>본인 인식: {characterLabel(player.shownCharacter)}</small>
+                ) : null}
+              </span>
+            ) : (
+              <strong>{player.name}</strong>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -74,6 +94,7 @@ export function StepInputFields({
   selectedCharacterId,
   selectedCharacterIds,
   zeroOutsiders,
+  zeroOutsidersAvailable,
   numberValue,
   registrationJudgments,
   busy,
@@ -93,6 +114,7 @@ export function StepInputFields({
   selectedCharacterId: string;
   selectedCharacterIds: string[];
   zeroOutsiders: boolean;
+  zeroOutsidersAvailable: boolean;
   numberValue: string;
   registrationJudgments: Record<string, "" | RegistrationJudgment["registeredAs"]>;
   busy: boolean;
@@ -130,7 +152,10 @@ export function StepInputFields({
         step={step}
         selectedCharacterId={selectedCharacterId}
         selectedCharacterIds={selectedCharacterIds}
+        selectedPlayerIds={selectedPlayerIds}
+        players={players}
         zeroOutsiders={zeroOutsiders}
+        zeroOutsidersAvailable={zeroOutsidersAvailable}
         busy={busy}
         onCharacterChange={onCharacterChange}
         onCharactersChange={onCharactersChange}
@@ -193,7 +218,10 @@ function StepSpecificInput({
   step,
   selectedCharacterId,
   selectedCharacterIds,
+  selectedPlayerIds,
+  players,
   zeroOutsiders,
+  zeroOutsidersAvailable,
   busy,
   onCharacterChange,
   onCharactersChange,
@@ -202,14 +230,21 @@ function StepSpecificInput({
   step: PhaseStep;
   selectedCharacterId: string;
   selectedCharacterIds: string[];
+  selectedPlayerIds: string[];
+  players: Player[];
   zeroOutsiders: boolean;
+  zeroOutsidersAvailable: boolean;
   busy: boolean;
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
 }) {
   if (step.requiredInput.kind === "setupInfo") {
-    const options = setupInfoCharacterOptions(step.requiredInput.characterKind);
+    const options = setupInfoCharacterOptions(
+      step.requiredInput.characterKind,
+      selectedPlayerIds,
+      players,
+    );
     return (
       <div className="stepSpecificInput">
         {step.requiredInput.zeroAllowed ? (
@@ -217,11 +252,14 @@ function StepSpecificInput({
             <input
               type="checkbox"
               checked={zeroOutsiders}
-              disabled={busy}
+              disabled={busy || !zeroOutsidersAvailable}
               onChange={(event) => onZeroOutsidersChange(event.target.checked)}
             />
             {step.requiredInput.characterKind ? `${kindLabels[step.requiredInput.characterKind]} 0명` : "0명"}
           </label>
+        ) : null}
+        {step.requiredInput.zeroAllowed && !zeroOutsidersAvailable ? (
+          <p className="setupInfoZeroUnavailable">실제 외부인이 있어 0명을 선택할 수 없습니다.</p>
         ) : null}
         {!zeroOutsiders ? (
           <label>

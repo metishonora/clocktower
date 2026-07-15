@@ -5,13 +5,14 @@ import type {
   PhaseStepInput,
   Player,
   StepType,
-} from "../../core/types";
+} from "../../core/types.js";
 import {
+  characterKind,
   characterLabel,
   characters,
   type CharacterKind,
-} from "../../setupDraft";
-import type { NominationDraft } from "../voting/useNominationDraft";
+} from "../../setupDraft.js";
+import type { NominationDraft } from "../voting/useNominationDraft.js";
 
 export function phaseLabel(phase: Phase): string {
   if (phase === "firstNight") return "첫 밤";
@@ -95,6 +96,7 @@ export function stepInputReady(
   nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
   numberValue: string,
+  zeroOutsidersAvailable = true,
 ): boolean {
   if (step.requiredInput.kind === "nominationVote") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
@@ -109,7 +111,9 @@ export function stepInputReady(
     if (!Number.isInteger(value) || value < 0 || value > 15) return false;
   }
   if (step.requiredInput.kind === "setupInfo") {
-    if (step.requiredInput.zeroAllowed && zeroOutsiders) return selectedCount === 0;
+    if (step.requiredInput.zeroAllowed && zeroOutsiders) {
+      return zeroOutsidersAvailable && selectedCount === 0;
+    }
     return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
   }
   if (step.requiredInput.target === "characters") {
@@ -152,9 +156,24 @@ function requiredSelectionCountValid(step: PhaseStep, selectedCount: number): bo
   return true;
 }
 
-export function setupInfoCharacterOptions(kind?: CharacterKind): typeof characters {
-  if (!kind) return characters;
-  return characters.filter((character) => character.kind === kind);
+export function setupInfoCharacterOptions(
+  kind: CharacterKind | undefined,
+  selectedPlayerIds: string[],
+  players: Player[],
+): typeof characters {
+  const selectedActualCharacters = new Set(
+    players
+      .filter((player) => selectedPlayerIds.includes(player.id))
+      .map((player) => player.actualCharacter),
+  );
+
+  return characters.filter(
+    (character) => selectedActualCharacters.has(character.id) && (!kind || character.kind === kind),
+  );
+}
+
+export function setupInfoZeroOutsidersAvailable(players: Player[]): boolean {
+  return players.every((player) => characterKind(player.actualCharacter) !== "Outsider");
 }
 
 export function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

@@ -15,6 +15,8 @@ import {
   inputKindLabel,
   inputShapeLabel,
   phaseLabel,
+  setupInfoCharacterOptions,
+  setupInfoZeroOutsidersAvailable,
   stepInputPayload,
   stepInputReady,
   stepStatusLabel,
@@ -177,6 +179,7 @@ function CurrentStepPane({
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
+  const zeroOutsidersAvailable = setupInfoZeroOutsidersAvailable(players);
   const baseSelectionValid = currentStep
     ? stepInputReady(
         currentStep,
@@ -186,6 +189,7 @@ function CurrentStepPane({
         nominationDraft,
         zeroOutsiders,
         numberValue,
+        zeroOutsidersAvailable,
       )
     : false;
   const registrationValid =
@@ -202,6 +206,10 @@ function CurrentStepPane({
     setNumberValue("");
     setRegistrationJudgments({});
   }, [currentStep?.id]);
+
+  useEffect(() => {
+    if (!zeroOutsidersAvailable) setZeroOutsiders(false);
+  }, [zeroOutsidersAvailable]);
 
   return (
     <>
@@ -244,10 +252,24 @@ function CurrentStepPane({
               selectedCharacterId={selectedCharacterId}
               selectedCharacterIds={selectedCharacterIds}
               zeroOutsiders={zeroOutsiders}
+              zeroOutsidersAvailable={zeroOutsidersAvailable}
               numberValue={numberValue}
               registrationJudgments={registrationJudgments}
               busy={busy}
-              onSelectedPlayerIdsChange={setSelectedPlayerIds}
+              onSelectedPlayerIdsChange={(playerIds) => {
+                setSelectedPlayerIds(playerIds);
+                if (currentStep.requiredInput.kind !== "setupInfo") return;
+                const validCharacterIds = new Set(
+                  setupInfoCharacterOptions(
+                    currentStep.requiredInput.characterKind,
+                    playerIds,
+                    players,
+                  ).map((character) => character.id),
+                );
+                setSelectedCharacterId((characterId) =>
+                  validCharacterIds.has(characterId) ? characterId : "",
+                );
+              }}
               onCharacterChange={setSelectedCharacterId}
               onCharactersChange={setSelectedCharacterIds}
               onZeroOutsidersChange={(checked) => {

@@ -9,6 +9,7 @@ import {
   event,
   gameFile,
   proposal,
+  players,
   replayState,
   step,
 } from "./clocktowerAppHarness";
@@ -99,6 +100,8 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "독살자: 4번 Dae" });
     expect(storage.loadLatestGame).toHaveBeenCalledTimes(1);
     const stepInput = screen.getByLabelText("단계 입력");
+    expect(stepInput.querySelector(".setupInfoCandidate")).toBeNull();
+    expect(within(stepInput).queryByText(/실제:/)).toBeNull();
     await user.click(within(stepInput).getByRole("button", { name: /Ada/ }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 
@@ -128,6 +131,164 @@ describe("ClocktowerApp live-play integration", () => {
     expect(core.replay).toHaveBeenCalledWith(
       expect.objectContaining({ game: expect.objectContaining({ events: [expect.any(Object), canonicalEvent] }) }),
     );
+  });
+
+  test("constrains setup-information context and character choices to candidate Actual Characters", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-3"
+        ? { ...player, actualCharacter: "drunk", shownCharacter: "librarian" }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+    });
+    const nextStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("event-washerwoman", "세탁부 정보 확정"), {
+        messageKo: "두 후보 중 한 명은 세탁부입니다.",
+      }),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const candidateInput = screen.getByLabelText("단계 입력");
+    const ada = within(candidateInput).getByRole("button", { name: /Ada/ });
+    const bert = within(candidateInput).getByRole("button", { name: /Bert/ });
+    const cy = within(candidateInput).getByRole("button", { name: /Cy/ });
+    const dae = within(candidateInput).getByRole("button", { name: /Dae/ });
+    const eun = within(candidateInput).getByRole("button", { name: /Eun/ });
+
+    expect(ada.classList.contains("setupInfoCandidate")).toBe(true);
+    expect(ada.classList.contains("character-kind-townsfolk")).toBe(true);
+    expect(cy.classList.contains("character-kind-outsider")).toBe(true);
+    expect(dae.classList.contains("character-kind-minion")).toBe(true);
+    expect(eun.classList.contains("character-kind-demon")).toBe(true);
+    expect(within(cy).getByText("실제: 술꾼")).toBeTruthy();
+    expect(within(cy).getByText("본인 인식: 사서")).toBeTruthy();
+
+    await user.click(ada);
+    await user.click(bert);
+    const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement;
+    expect(within(characterSelect).getByRole("option", { name: "세탁부" })).toBeTruthy();
+    expect(within(characterSelect).getByRole("option", { name: "요리사" })).toBeTruthy();
+    expect(within(characterSelect).queryByRole("option", { name: "사서" })).toBeNull();
+    await user.selectOptions(characterSelect, "chef");
+    expect(characterSelect.value).toBe("chef");
+
+    await user.click(bert);
+    expect(characterSelect.value).toBe("");
+    await user.click(cy);
+    expect(within(characterSelect).queryByRole("option", { name: "요리사" })).toBeNull();
+    expect(within(characterSelect).queryByRole("option", { name: "사서" })).toBeNull();
+    expect(within(characterSelect).queryByRole("option", { name: "술꾼" })).toBeNull();
+    await user.selectOptions(characterSelect, "washerwoman");
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:washerwoman",
+        input: { playerIds: ["player-1", "player-3"], characterId: "washerwoman" },
+      },
+    });
+
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    const revealScreen = screen.getByLabelText("플레이어 공개 화면");
+    expect(within(revealScreen).queryByText(/실제:/)).toBeNull();
+    expect(within(revealScreen).queryByText(/본인 인식:/)).toBeNull();
+  });
+
+  test("treats Drunk as an Actual Outsider for Librarian choices and disables zero Outsiders", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-3"
+        ? { ...player, actualCharacter: "drunk", shownCharacter: "chef" }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:librarian",
+      character: "librarian",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "사서: 1번 Ada" });
+    const zeroOutsiders = screen.getByRole("checkbox", { name: "외부인 0명" }) as HTMLInputElement;
+    expect(zeroOutsiders.disabled).toBe(true);
+    expect(screen.getByText("실제 외부인이 있어 0명을 선택할 수 없습니다.")).toBeTruthy();
+
+    const candidateInput = screen.getByLabelText("단계 입력");
+    await user.click(within(candidateInput).getByRole("button", { name: /Bert/ }));
+    await user.click(within(candidateInput).getByRole("button", { name: /Cy/ }));
+    const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    expect(within(characterSelect).getByRole("option", { name: "술꾼" })).toBeTruthy();
+    expect(within(characterSelect).queryByRole("option", { name: "요리사" })).toBeNull();
+  });
+
+  test("allows Librarian zero Outsiders only when the Actual roster has none", async () => {
+    const currentStep = step({
+      id: "firstNight:librarian",
+      character: "librarian",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+    });
+    const nextStep = step({ id: "firstNight:investigator", character: "investigator" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(event("event-librarian-zero", "사서 외부인 0명 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "사서: 1번 Ada" });
+    const zeroOutsiders = screen.getByRole("checkbox", { name: "외부인 0명" }) as HTMLInputElement;
+    expect(zeroOutsiders.disabled).toBe(false);
+    await user.click(zeroOutsiders);
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:librarian",
+        input: { zeroOutsiders: true },
+      },
+    });
   });
 
   test("shows fixed computed information without a delivered-information control", async () => {
