@@ -6,6 +6,7 @@ use crate::{
         number_result_with_registration_judgments, registration_candidate_player_ids,
         setup_info_input_is_valid_impaired, setup_info_input_is_valid_normal,
         setup_info_input_is_valid_registration, setup_info_registration_options,
+        spy_grimoire_result,
     },
     contracts::{GameEvent, GameEventKind},
     error::{CoreError, ErrorKind},
@@ -85,7 +86,12 @@ pub(crate) fn confirmed_information(
         .map(Some);
     }
 
-    let Some(computed_result) = computed_information_result(step, players, input) else {
+    let computed_result = if step.character.as_deref() == Some("spy") {
+        spy_information_result(step, players, events)
+    } else {
+        computed_information_result(step, players, input)
+    };
+    let Some(computed_result) = computed_result else {
         if delivered_result.is_some() || !registration_judgments.is_empty() {
             return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
         }
@@ -119,6 +125,57 @@ pub(crate) fn confirmed_information(
         delivered_result: computed_result,
         delivery_context: DeliveryContext::Fixed,
     }))
+}
+
+fn spy_information_result(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Option<InformationResult> {
+    let prefix = step.id.rsplit_once(':')?.0;
+    let current_cycle_start = if is_normal_night_prefix(prefix) {
+        events
+            .iter()
+            .rposition(|event| matches!(
+                &event.kind,
+                GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")
+            ))
+            .map_or(0, |index| index + 1)
+    } else {
+        0
+    };
+    let current_cycle = &events[current_cycle_start..];
+    let poisoned = confirmed_step_targets(current_cycle, &format!("{prefix}:poisoner"));
+    let protected = if is_normal_night_prefix(prefix) {
+        confirmed_step_targets(current_cycle, &format!("{prefix}:monk"))
+    } else {
+        Vec::new()
+    };
+    Some(spy_grimoire_result(players, &poisoned, &protected))
+}
+
+fn is_normal_night_prefix(prefix: &str) -> bool {
+    prefix.starts_with("night")
+}
+
+fn confirmed_step_targets(events: &[GameEvent], step_id: &str) -> Vec<String> {
+    events
+        .iter()
+        .rev()
+        .find_map(|event| match &event.kind {
+            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id == step_id => Some(
+                payload
+                    .input
+                    .as_ref()
+                    .and_then(|input| input.player_ids.clone())
+                    .unwrap_or_default(),
+            ),
+            GameEventKind::PhaseStepSkipped { payload } if payload.step_id == step_id => {
+                Some(Vec::new())
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
 }
 
 fn confirmed_number_information(
@@ -311,11 +368,53 @@ pub(crate) fn validate_confirmed_information(
         prior_events,
         input,
         information,
-    ) {
+    ) || legacy_spy_information_is_valid(step, players, input, information)
+    {
         Ok(())
     } else {
         Err(ErrorKind::ReplayFailed.into_error())
     }
+}
+
+fn legacy_spy_information_is_valid(
+    step: &PhaseStep,
+    players: &[Player],
+    input: &StepInput,
+    information: &ConfirmedInformation,
+) -> bool {
+    if step.character.as_deref() != Some("spy")
+        || information.actor != information_actor(step)
+        || information.target_player_ids != target_player_ids(input)
+        || information.delivery_context != DeliveryContext::Fixed
+    {
+        return false;
+    }
+    let expected = spy_grimoire_result(players, &[], &[]);
+    information
+        .computed_result
+        .as_ref()
+        .is_some_and(|result| legacy_spy_result_matches(result, &expected))
+        && legacy_spy_result_matches(&information.delivered_result, &expected)
+}
+
+fn legacy_spy_result_matches(actual: &InformationResult, expected: &InformationResult) -> bool {
+    let (
+        InformationResult::SpyGrimoire { players: actual },
+        InformationResult::SpyGrimoire { players: expected },
+    ) = (actual, expected)
+    else {
+        return false;
+    };
+    actual.len() == expected.len()
+        && actual.iter().zip(expected).all(|(actual, expected)| {
+            actual.player_id == expected.player_id
+                && actual.seat == expected.seat
+                && actual.name == expected.name
+                && actual.character_id == expected.character_id
+                && actual.alive.is_none()
+                && actual.ghost_vote_used.is_none()
+                && actual.reminder_tokens.is_none()
+        })
 }
 
 fn legacy_numeric_registration_information_is_valid(

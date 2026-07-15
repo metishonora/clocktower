@@ -301,15 +301,29 @@ function isInformationResult(value: unknown): value is InformationResult {
 }
 
 function isSpyGrimoirePlayer(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.playerId === "string" &&
-    typeof value.seat === "number" &&
-    Number.isInteger(value.seat) &&
-    typeof value.name === "string" &&
-    typeof value.characterId === "string" &&
-    characterIds.has(value.characterId)
-  );
+  if (
+    !(
+      isRecord(value) &&
+      typeof value.playerId === "string" &&
+      typeof value.seat === "number" &&
+      Number.isInteger(value.seat) &&
+      typeof value.name === "string" &&
+      typeof value.characterId === "string" &&
+      characterIds.has(value.characterId)
+    )
+  ) {
+    return false;
+  }
+  const hasSnapshotFields =
+    typeof value.alive === "boolean" &&
+    typeof value.ghostVoteUsed === "boolean" &&
+    Array.isArray(value.reminderTokens) &&
+    value.reminderTokens.every((token) => token === "poisoned" || token === "protected");
+  const isLegacy =
+    value.alive === undefined &&
+    value.ghostVoteUsed === undefined &&
+    value.reminderTokens === undefined;
+  return hasSnapshotFields || isLegacy;
 }
 
 function isDeliveryContext(value: unknown): boolean {

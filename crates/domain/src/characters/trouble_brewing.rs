@@ -1,8 +1,8 @@
 use crate::model::{
     Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
     NumberInformationChoice, Phase, PhaseStep, Player, RegistrationJudgment, RegistrationValue,
-    RequiredInput, RequiredInputKind, SetupInfoKind, SetupInfoRegistrationOption, StepInput,
-    StepType,
+    RequiredInput, RequiredInputKind, SetupInfoKind, SetupInfoRegistrationOption, SpyReminderToken,
+    StepInput, StepType,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -313,18 +313,38 @@ pub(crate) fn computed_information_result(
         "empath" => Some(InformationResult::Number {
             value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)?,
         }),
-        "spy" => Some(InformationResult::SpyGrimoire {
-            players: seated_players(players)
-                .into_iter()
-                .map(|player| InformationPlayer {
+        "spy" => Some(spy_grimoire_result(players, &[], &[])),
+        _ => None,
+    }
+}
+
+pub(crate) fn spy_grimoire_result(
+    players: &[Player],
+    poisoned_player_ids: &[String],
+    protected_player_ids: &[String],
+) -> InformationResult {
+    InformationResult::SpyGrimoire {
+        players: seated_players(players)
+            .into_iter()
+            .map(|player| {
+                let mut reminder_tokens = Vec::new();
+                if poisoned_player_ids.contains(&player.id) {
+                    reminder_tokens.push(SpyReminderToken::Poisoned);
+                }
+                if protected_player_ids.contains(&player.id) {
+                    reminder_tokens.push(SpyReminderToken::Protected);
+                }
+                InformationPlayer {
                     player_id: player.id.clone(),
                     seat: player.seat,
                     name: player.name.clone(),
                     character_id: player.actual_character.clone(),
-                })
-                .collect(),
-        }),
-        _ => None,
+                    alive: Some(player.alive),
+                    ghost_vote_used: Some(player.ghost_vote_used),
+                    reminder_tokens: Some(reminder_tokens),
+                }
+            })
+            .collect(),
     }
 }
 

@@ -4230,3 +4230,228 @@ select {
     max-height: 300px;
   }
 }
+
+.spyGrimoireReveal {
+  --spy-ink: #f3ede2;
+  --spy-muted: #bfb4a4;
+  --spy-gold: #d7ac5a;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  min-height: 100vh;
+  padding: 1.2rem clamp(1.5rem, 3vw, 3rem) 1.4rem;
+  color: var(--spy-ink);
+  background:
+    radial-gradient(circle at 50% 44%, rgba(111, 80, 39, 0.24), transparent 34%),
+    linear-gradient(145deg, #211f1d, #101011 72%);
+}
+
+.spyGrimoireRevealHeader {
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.spyGrimoireRevealHeader h1 {
+  margin: 0.1rem 0 0;
+  color: var(--spy-ink);
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.7rem, 3vw, 2.8rem);
+}
+
+.spyGrimoireRevealHeader > p {
+  margin-bottom: 0.3rem;
+  color: var(--spy-muted);
+  font-weight: 700;
+}
+
+.spyGrimoireEyebrow {
+  margin: 0;
+  color: var(--spy-gold);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.spyGrimoireSeatMap {
+  position: relative;
+  align-self: stretch;
+  justify-self: center;
+  width: min(100%, 68rem);
+  min-height: 0;
+  margin: 0.3rem auto;
+  border: 1px solid rgba(215, 172, 90, 0.22);
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    ellipse at center,
+    transparent 0 5rem,
+    rgba(255, 255, 255, 0.025) 5.05rem 5.1rem
+  );
+}
+
+.spyGrimoireLegend {
+  position: absolute;
+  right: 1.2rem;
+  bottom: 0.7rem;
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.45rem;
+  color: var(--spy-muted);
+  background: rgba(12, 12, 13, 0.72);
+  font-size: 0.72rem;
+}
+
+.spyGrimoireSeat {
+  position: absolute;
+  top: var(--spy-seat-y);
+  left: var(--spy-seat-x);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  gap: 0.12rem 0.35rem;
+  width: clamp(8.2rem, 12.5vw, 10.5rem);
+  min-height: 5.8rem;
+  padding: 0.55rem 0.62rem;
+  border: 1px solid rgba(215, 172, 90, 0.38);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, rgba(43, 40, 36, 0.98), rgba(19, 19, 20, 0.98));
+  box-shadow: 0 0.65rem 1.4rem rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, -50%);
+}
+
+.spyGrimoireSeat.isDead {
+  border-style: dashed;
+  border-color: rgba(200, 200, 200, 0.48);
+  background: linear-gradient(145deg, rgba(39, 39, 40, 0.95), rgba(14, 14, 15, 0.98));
+}
+
+.spyGrimoireSeatHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.spyGrimoireSeatHeading > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #17130c;
+  background: var(--spy-gold);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.spyGrimoireSeatHeading strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.86rem;
+  line-height: 1.12;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.spyGrimoireCharacter {
+  grid-column: 1;
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  color: #f4d59b;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spyGrimoireStatuses {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  color: #8fd2a9;
+  font-size: 0.8rem;
+}
+
+.spyGrimoireSeat.isDead .spyGrimoireStatuses {
+  color: #c7c7c7;
+}
+
+.spyGrimoireTokens {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.spyGrimoireTokens span {
+  padding: 0.16rem 0.38rem;
+  border: 1px solid rgba(199, 149, 79, 0.32);
+  border-radius: 999px;
+  color: #d9c8b2;
+  background: rgba(127, 79, 38, 0.2);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.spyGrimoireReveal.count15 .spyGrimoireSeat {
+  width: 10rem;
+  min-height: 6rem;
+  padding: 0.62rem 0.7rem;
+}
+
+.spyGrimoireReveal.count15 .spyGrimoireSeatHeading strong {
+  font-size: 0.95rem;
+}
+
+.spyGrimoireReveal.count15 .spyGrimoireCharacter {
+  font-size: 1.05rem;
+}
+
+.spyGrimoireReveal.count15 .spyGrimoireTokens span {
+  font-size: 0.72rem;
+}
+
+.spyGrimoireReveal.count5 .spyGrimoireSeat {
+  width: clamp(10rem, 15vw, 12.5rem);
+  min-height: 7rem;
+  padding: 0.8rem;
+}
+
+.spyGrimoireClose {
+  z-index: 2;
+  justify-self: center;
+  min-width: min(28rem, 90vw);
+  border: 1px solid #b78c3f;
+  border-radius: 10px;
+  padding: 0.8rem 1.4rem;
+  color: #17130c;
+  background: var(--spy-gold);
+  font-weight: 900;
+}
+
+@media (max-width: 900px), (max-height: 760px) {
+  .spyGrimoireSeat,
+  .spyGrimoireReveal.count15 .spyGrimoireSeat {
+    width: 7.2rem;
+    min-height: 4.6rem;
+    padding: 0.35rem 0.42rem;
+  }
+
+  .spyGrimoireLegend {
+    right: 0.6rem;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}
