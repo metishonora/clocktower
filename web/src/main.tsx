@@ -5,6 +5,7 @@ import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
+import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import { EventLog } from "./features/event-log/EventLog";
@@ -27,6 +28,10 @@ export function App(props: ClocktowerAppProps) {
 
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "phase-control") {
     return <PhaseControlPrototype />;
+  }
+
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "setup-info-context") {
+    return <SetupInfoContextPrototype />;
   }
 
   return <ClocktowerApp {...props} />;
