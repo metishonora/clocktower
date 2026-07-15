@@ -136,6 +136,7 @@ export function step({
   canSkip = false,
   informationPrompt,
   characterKind,
+  allowedCharacterIds,
   zeroAllowed,
   setupInfo,
 }: {
@@ -151,6 +152,7 @@ export function step({
   canSkip?: boolean;
   informationPrompt?: InformationPrompt;
   characterKind?: PhaseStep["requiredInput"]["characterKind"];
+  allowedCharacterIds?: string[];
   zeroAllowed?: boolean;
   setupInfo?: PhaseStep["requiredInput"]["setupInfo"];
 }): PhaseStep {
@@ -166,6 +168,7 @@ export function step({
       minSelections,
       maxSelections,
       characterKind,
+      allowedCharacterIds,
       zeroAllowed,
       setupInfo,
       optional: false,

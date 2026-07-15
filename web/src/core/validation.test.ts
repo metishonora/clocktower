@@ -105,7 +105,11 @@ test("validates typed confirmed information and derived information prompts", ()
       id: "firstNight:chef",
       phase: "firstNight",
       stepType: "character",
-      requiredInput: { kind: "none", optional: false },
+      requiredInput: {
+        kind: "none",
+        allowedCharacterIds: ["librarian", "butler"],
+        optional: false,
+      },
       canSkip: false,
       informationPrompt: {
         computedResult: { kind: "number", value: 0 },
@@ -130,4 +134,8 @@ test("validates typed confirmed information and derived information prompts", ()
   const invalidPrompt = structuredClone(replay);
   invalidPrompt.currentStep.informationPrompt.registrationCandidatePlayerIds = [1 as unknown as string];
   throws(() => parseReplayState(invalidPrompt), /코어 응답 형식/);
+
+  const invalidAllowedCharacters = structuredClone(replay);
+  invalidAllowedCharacters.currentStep.requiredInput.allowedCharacterIds = [1 as unknown as string];
+  throws(() => parseReplayState(invalidAllowedCharacters), /코어 응답 형식/);
 });

@@ -623,7 +623,7 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
         "type": "confirmStep",
         "payload": {
             "stepId": "firstNight:demonInfo",
-            "input": { "characterIds": ["washerwoman", "librarian", "chef"] }
+            "input": { "characterIds": ["librarian", "investigator", "undertaker"] }
         }
     });
     let demon_actual: Value = serde_json::from_str(&propose_json(
@@ -634,9 +634,94 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
 
     assert_eq!(demon_actual["ok"], true);
     assert_eq!(
-        demon_actual["value"]["revealPayload"]["messageKo"],
-        "악마 정보:\n하수인: 4번 Dev - 독살자\n블러프: 세탁부, 사서, 요리사"
+        demon_actual["value"]["event"]["payload"]["information"]["computedResult"],
+        json!({
+            "kind": "teamInfo",
+            "demonPlayerIds": ["player-5"],
+            "minionPlayerIds": ["player-4"],
+            "bluffCharacterIds": ["librarian", "investigator", "undertaker"]
+        })
     );
+    assert_eq!(
+        demon_actual["value"]["event"]["payload"]["information"]["deliveredResult"],
+        demon_actual["value"]["event"]["payload"]["information"]["computedResult"]
+    );
+    assert_eq!(
+        demon_actual["value"]["event"]["payload"]["information"]["deliveryContext"],
+        json!({ "type": "fixed" })
+    );
+    assert_eq!(
+        demon_actual["value"]["revealPayload"]["messageKo"],
+        "악마 정보:\n하수인: 4번 Dev - 독살자\n블러프: 사서, 조사관, 장의사"
+    );
+}
+
+#[test]
+fn demon_bluffs_accept_zero_through_three_unused_good_characters() {
+    let game = game_with_events(json!([
+        setup_event_with_minion(),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo")
+    ]));
+    let legal_bluffs = ["librarian", "investigator", "undertaker"];
+
+    for count in 0..=legal_bluffs.len() {
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:demonInfo",
+                "input": { "characterIds": &legal_bluffs[..count] }
+            }
+        });
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], true, "count {count} should be valid");
+        assert_eq!(
+            actual["value"]["event"]["payload"]["input"]["characterIds"],
+            json!(&legal_bluffs[..count])
+        );
+    }
+}
+
+#[test]
+fn demon_bluffs_reject_assigned_and_evil_characters() {
+    let game = game_with_events(json!([
+        setup_event_with_minion(),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo")
+    ]));
+
+    for illegal_bluff in ["washerwoman", "poisoner", "imp"] {
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:demonInfo",
+                "input": { "characterIds": [illegal_bluff] }
+            }
+        });
+        let actual: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+        assert_eq!(actual["ok"], false, "{illegal_bluff} should be rejected");
+        assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    }
+}
+
+#[test]
+fn replay_rejects_a_historical_event_with_an_illegal_demon_bluff() {
+    let game = game_with_events(json!([
+        setup_event_with_minion(),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event_with_input(
+            "phaseStepConfirmed",
+            "firstNight:demonInfo",
+            json!({ "characterIds": ["washerwoman"] })
+        )
+    ]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
 }
 
 #[test]

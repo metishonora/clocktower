@@ -260,6 +260,7 @@ export type RequiredInput = {
   maxSelections?: number;
   setupInfo?: "washerwoman" | "librarian" | "investigator";
   characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
+  allowedCharacterIds?: string[];
   zeroAllowed?: boolean;
   optional: boolean;
 };

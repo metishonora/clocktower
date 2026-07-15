@@ -312,6 +312,8 @@ function isRequiredInput(value: unknown): boolean {
       ["washerwoman", "librarian", "investigator"].includes(String(value.setupInfo))) &&
     (value.characterKind === undefined ||
       ["Townsfolk", "Outsider", "Minion", "Demon"].includes(String(value.characterKind))) &&
+    (value.allowedCharacterIds === undefined ||
+      (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isString))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     typeof value.optional === "boolean"
   );

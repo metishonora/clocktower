@@ -8,11 +8,11 @@ import type {
   Player,
   RegistrationJudgment,
 } from "../../core/types";
-import { characterKind, characterLabel, characters, kindLabels } from "../../setupDraft";
+import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
-import { setupInfoCharacterOptions } from "./phaseInput";
+import { characterInputOptions, setupInfoCharacterOptions } from "./phaseInput";
 
 export function PlayerStepInput({
   step,
@@ -399,7 +399,8 @@ function CharacterStepInput({
   busy: boolean;
   onChange: (characterIds: string[]) => void;
 }) {
-  const max = step.requiredInput.maxSelections ?? characters.length;
+  const options = characterInputOptions(step.requiredInput.allowedCharacterIds);
+  const max = step.requiredInput.maxSelections ?? options.length;
 
   function toggleCharacter(characterId: string) {
     if (selectedCharacterIds.includes(characterId)) {
@@ -412,7 +413,7 @@ function CharacterStepInput({
 
   return (
     <div className="characterStepInput" aria-label="캐릭터 입력">
-      {characters.map((character) => (
+      {options.map((character) => (
         <button
           type="button"
           className={selectedCharacterIds.includes(character.id) ? `selected ${character.kind}` : character.kind}

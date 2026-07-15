@@ -211,6 +211,66 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(revealScreen).queryByText(/본인 인식:/)).toBeNull();
   });
 
+  test("shows only core-allowed Demon bluffs and confirms the selected safe Reveal", async () => {
+    const currentStep = step({
+      id: "firstNight:demonInfo",
+      kind: "characterIds",
+      target: "characters",
+      minSelections: 0,
+      maxSelections: 3,
+      stepType: "evilInfo",
+      allowedCharacterIds: ["librarian", "undertaker", "butler"],
+    });
+    const nextStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+    });
+    const canonicalEvent = event("event-demon-info", "악마 정보 확정");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(canonicalEvent, {
+        messageKo: "악마 정보:\n블러프: 사서, 장의사, 집사",
+      }),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    const characterInput = await screen.findByLabelText("캐릭터 입력");
+    expect(within(characterInput).getByRole("button", { name: /사서/ })).toBeTruthy();
+    expect(within(characterInput).getByRole("button", { name: /장의사/ })).toBeTruthy();
+    expect(within(characterInput).getByRole("button", { name: /집사/ })).toBeTruthy();
+    expect(within(characterInput).queryByRole("button", { name: /세탁부/ })).toBeNull();
+    expect(within(characterInput).queryByRole("button", { name: /독살자/ })).toBeNull();
+    expect(within(characterInput).queryByRole("button", { name: /임프/ })).toBeNull();
+
+    await user.click(within(characterInput).getByRole("button", { name: /사서/ }));
+    await user.click(within(characterInput).getByRole("button", { name: /장의사/ }));
+    await user.click(within(characterInput).getByRole("button", { name: /집사/ }));
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:demonInfo",
+        input: { characterIds: ["librarian", "undertaker", "butler"] },
+      },
+    });
+    await waitFor(() => {
+      expect(latestSavedGame(storage.savedGames).game.events[1]).toEqual(canonicalEvent);
+    });
+
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    const revealScreen = screen.getByLabelText("플레이어 공개 화면");
+    expect(within(revealScreen).getByText(/블러프: 사서, 장의사, 집사/)).toBeTruthy();
+    expect(screen.queryByText("그리모어")).toBeNull();
+    expect(screen.queryByText("이벤트 로그")).toBeNull();
+  });
+
   test("treats Drunk as an Actual Outsider for Librarian choices and disables zero Outsiders", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-3"
