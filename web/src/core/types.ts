@@ -54,6 +54,7 @@ export type InformationResult =
 export type RegistrationJudgment = {
   playerId: string;
   registeredAs: "good" | "evil" | "townsfolk" | "outsider" | "minion" | "demon";
+  characterId?: string;
 };
 
 export type DeliveryReason =
@@ -68,16 +69,30 @@ export type DeliveryContext =
 export type ConfirmedInformation = {
   actor?: { playerId: string; characterId: string };
   targetPlayerIds: string[];
-  computedResult: InformationResult;
+  computedResult?: InformationResult;
   deliveredResult: InformationResult;
   deliveryContext: DeliveryContext;
 };
 
+export type NumberChoice = {
+  value: number;
+  isComputed: boolean;
+  registrationJudgments: RegistrationJudgment[];
+};
+
+export type SetupInfoRegistrationOption = {
+  playerId: string;
+  registeredAs: RegistrationJudgment["registeredAs"];
+  characterIds: string[];
+};
+
 export type InformationPrompt = {
-  computedResult: InformationResult;
+  computedResult?: InformationResult;
   deliveryMode: "fixed" | "selectable";
   activeReasons: DeliveryReason[];
   registrationCandidatePlayerIds: string[];
+  numberChoices: NumberChoice[];
+  setupInfoRegistrationOptions: SetupInfoRegistrationOption[];
 };
 
 export type PhaseStepConfirmation = {

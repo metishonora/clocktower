@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { GameFile } from "../src/core/types";
@@ -23,6 +23,35 @@ afterEach(() => {
 });
 
 describe("ClocktowerApp live-play integration", () => {
+  test("starts confirmed setup and Event Log collapsed and expands them independently", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const setupDetails = screen.getByText("설정 및 불러오기").closest("details") as HTMLDetailsElement;
+    const logDetails = screen.getByText("이벤트 로그").closest("details") as HTMLDetailsElement;
+    expect(setupDetails.open).toBe(false);
+    expect(logDetails.open).toBe(false);
+    expect(within(logDetails).getByText("1건")).toBeTruthy();
+
+    await user.click(within(setupDetails).getByText("설정 및 불러오기"));
+    expect(setupDetails.open).toBe(true);
+    expect(logDetails.open).toBe(false);
+    await user.click(within(logDetails).getByText("이벤트 로그"));
+    expect(setupDetails.open).toBe(true);
+    expect(logDetails.open).toBe(true);
+  });
+
   test("confirms a completed setup draft through the visible setup form", async () => {
     const firstStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
     const setupEvent = gameFile().game.events[0];
@@ -178,8 +207,21 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(cy).getByText("실제: 술꾼")).toBeTruthy();
     expect(within(cy).getByText("본인 인식: 사서")).toBeTruthy();
 
+    const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    const grimoireAda = within(grimoire).getByRole("button", { name: /Ada/ });
+    const grimoireBert = within(grimoire).getByRole("button", { name: /Bert/ });
+    const positionEditing = screen.getByRole("button", { name: "위치 조정" });
+    await user.click(positionEditing);
+    expect(grimoireAda.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(grimoireAda);
+    expect(ada.getAttribute("aria-pressed")).toBe("false");
+    await user.click(positionEditing);
     await user.click(ada);
-    await user.click(bert);
+    expect(grimoireAda.getAttribute("aria-pressed")).toBe("true");
+    await user.click(grimoireBert);
+    expect(bert.getAttribute("aria-pressed")).toBe("true");
+    await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
+    expect(cy.getAttribute("aria-pressed")).toBe("false");
     const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement;
     expect(within(characterSelect).getByRole("option", { name: "세탁부" })).toBeTruthy();
     expect(within(characterSelect).getByRole("option", { name: "요리사" })).toBeTruthy();
@@ -351,16 +393,189 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("shows fixed computed information without a delivered-information control", async () => {
+  test("lets a poisoned Librarian choose any pair and any Outsider without Actual representation", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-3"
+        ? { ...player, actualCharacter: "drunk", shownCharacter: "fortuneTeller" }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:librarian",
+      character: "librarian",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+      informationPrompt: {
+        deliveryMode: "selectable",
+        activeReasons: [
+          { type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "event-poison" },
+        ],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("event-librarian", "중독된 사서 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "사서: 1번 Ada" });
+    expect((screen.getByRole("checkbox", { name: "외부인 0명" }) as HTMLInputElement).disabled).toBe(false);
+    const candidates = screen.getByLabelText("단계 입력");
+    expect(
+      within(within(candidates).getByRole("button", { name: /Cy/ })).getByText(
+        "본인 인식: 점쟁이",
+      ),
+    ).toBeTruthy();
+    await user.click(within(candidates).getByRole("button", { name: /Bert/ }));
+    await user.click(within(candidates).getByRole("button", { name: /Cy/ }));
+    const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    expect(within(characterSelect).getByRole("option", { name: "성자" })).toBeTruthy();
+    expect(within(characterSelect).getByRole("option", { name: "술꾼" })).toBeTruthy();
+    expect(within(characterSelect).queryByRole("option", { name: "요리사" })).toBeNull();
+    await user.selectOptions(characterSelect, "saint");
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:librarian",
+        input: { playerIds: ["player-2", "player-3"], characterId: "saint" },
+      },
+    });
+  });
+
+  test("allows poisoned Librarian zero even when an Actual Outsider exists", async () => {
+    const currentStep = step({
+      id: "firstNight:librarian",
+      character: "librarian",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+      informationPrompt: {
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "drunk" }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("event-librarian-zero", "사서 외부인 0명 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "사서: 1번 Ada" });
+    const zero = screen.getByRole("checkbox", { name: "외부인 0명" });
+    await user.click(zero);
+    const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    expect(
+      within(grimoire).getByRole("button", { name: /Bert/ }).getAttribute("aria-disabled"),
+    ).toBe("true");
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "firstNight:librarian", input: { zeroOutsiders: true } },
+    });
+  });
+
+  test("expands one Investigator editor from a selected Recluse and submits its concrete witness", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-3"
+        ? { ...player, actualCharacter: "recluse", shownCharacter: "recluse" }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:investigator",
+      character: "investigator",
+      playerId: "player-1",
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "investigator",
+      characterKind: "Minion",
+      informationPrompt: {
+        computedResult: {
+          kind: "setupInfo",
+          playerIds: ["player-2", "player-3"],
+          characterId: "poisoner",
+          zeroOutsiders: false,
+        },
+        deliveryMode: "selectable",
+        activeReasons: [],
+        registrationCandidatePlayerIds: ["player-3"],
+        numberChoices: [],
+        setupInfoRegistrationOptions: [
+          {
+            playerId: "player-3",
+            registeredAs: "minion",
+            characterIds: ["poisoner", "spy", "baron", "scarletWoman"],
+          },
+        ],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("event-investigator", "조사관 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "조사관: 1번 Ada" });
+    const candidates = screen.getByLabelText("단계 입력");
+    await user.click(within(candidates).getByRole("button", { name: /Bert/ }));
+    await user.click(within(candidates).getByRole("button", { name: /Cy/ }));
+    const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    await user.selectOptions(characterSelect, "poisoner");
+    expect(screen.getAllByRole("combobox", { name: "보여줄 캐릭터" })).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:investigator",
+        input: { playerIds: ["player-2", "player-3"], characterId: "poisoner" },
+        registrationJudgments: [
+          { playerId: "player-3", registeredAs: "minion", characterId: "poisoner" },
+        ],
+      },
+    });
+  });
+
+  test("renders a fixed computed number as a truth button and submits no redundant delivery", async () => {
     const currentStep = step({
       id: "firstNight:chef",
       character: "chef",
       playerId: "player-2",
+      kind: "number",
       informationPrompt: {
         computedResult: { kind: "number", value: 0 },
         deliveryMode: "fixed",
         activeReasons: [],
         registrationCandidatePlayerIds: [],
+        numberChoices: [{ value: 0, isComputed: true, registrationJudgments: [] }],
+        setupInfoRegistrationOptions: [],
       },
     });
     const nextStep = step({ id: "firstNight:empath", character: "empath", playerId: "player-3" });
@@ -375,8 +590,12 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
     const delivery = screen.getByLabelText("전달 정보");
-    expect(within(delivery).getByText("0")).toBeTruthy();
-    expect(within(delivery).queryByRole("spinbutton", { name: "전달할 숫자" })).toBeNull();
+    const truth = within(delivery).getByRole("button", { name: /진실.*0/ });
+    expect(within(delivery).queryByRole("spinbutton")).toBeNull();
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    await user.click(truth);
+    expect(confirm.disabled).toBe(false);
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -385,20 +604,33 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("requires selectable delivered information and every registration judgment", async () => {
+  test("submits the exact hidden witness attached to a selected numeric choice", async () => {
     const currentStep = step({
       id: "firstNight:empath",
       character: "empath",
       playerId: "player-3",
+      kind: "number",
       informationPrompt: {
         computedResult: { kind: "number", value: 0 },
         deliveryMode: "selectable",
-        activeReasons: [{ type: "drunk" }],
+        activeReasons: [],
         registrationCandidatePlayerIds: ["player-4", "player-5"],
+        numberChoices: [
+          { value: 0, isComputed: true, registrationJudgments: [] },
+          {
+            value: 1,
+            isComputed: false,
+            registrationJudgments: [
+              { playerId: "player-4", registeredAs: "good" },
+              { playerId: "player-5", registeredAs: "evil" },
+            ],
+          },
+        ],
+        setupInfoRegistrationOptions: [],
       },
     });
     const nextStep = step({ id: "firstNight:toDay", stepType: "phaseTransition" });
-    const canonicalEvent = event("event-empath", "공감능력자가 1을 확인했습니다. (실제 0 · 술취함)");
+    const canonicalEvent = event("event-empath", "공감능력자가 1을 확인했습니다. (실제 0 · 등록 판정)");
     if (canonicalEvent.type !== "phaseStepConfirmed") throw new Error("unexpected event type");
     canonicalEvent.payload.information = {
       actor: { playerId: "player-3", characterId: "empath" },
@@ -408,7 +640,6 @@ describe("ClocktowerApp live-play integration", () => {
       deliveryContext: {
         type: "discretionary",
         reasons: [
-          { type: "drunk" },
           {
             type: "registrationJudgment",
             judgments: [
@@ -430,15 +661,12 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "공감능력자: 3번 Cy" });
-    expect(screen.getByText("전달 재량: 술취함")).toBeTruthy();
     const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
 
-    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "1");
-    expect(confirm.disabled).toBe(true);
-    await user.selectOptions(screen.getByRole("combobox", { name: "4번 Dae 등록 판정" }), "good");
-    expect(confirm.disabled).toBe(true);
-    await user.selectOptions(screen.getByRole("combobox", { name: "5번 Eun 등록 판정" }), "evil");
+    const choices = screen.getByLabelText("전달할 숫자");
+    expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
+    await user.click(within(choices).getByRole("button", { name: /거짓.*1/ }));
     expect(confirm.disabled).toBe(false);
     await user.click(confirm);
 
@@ -456,6 +684,68 @@ describe("ClocktowerApp live-play integration", () => {
     });
     await waitFor(() => {
       expect(latestSavedGame(storage.savedGames).game.events[1]).toEqual(canonicalEvent);
+    });
+  });
+
+  test("shows a Recluse and adjacent Demon before dynamic Chef truth and alternate buttons", async () => {
+    const playerRoster = players().map((player) =>
+      player.id === "player-4"
+        ? { ...player, actualCharacter: "recluse", shownCharacter: "recluse", alignment: "good" as const }
+        : player,
+    );
+    const currentStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
+      kind: "number",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 0 },
+        deliveryMode: "selectable",
+        activeReasons: [],
+        registrationCandidatePlayerIds: ["player-4"],
+        numberChoices: [
+          { value: 0, isComputed: true, registrationJudgments: [] },
+          {
+            value: 1,
+            isComputed: false,
+            registrationJudgments: [{ playerId: "player-4", registeredAs: "evil" }],
+          },
+          {
+            value: 2,
+            isComputed: false,
+            registrationJudgments: [{ playerId: "player-4", registeredAs: "evil" }],
+          },
+        ],
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep, playerRoster, eventCount: 2 }),
+      proposal: proposal(event("event-chef-recluse", "요리사 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    const neighbors = screen.getByLabelText("이웃 관계");
+    expect(within(neighbors).getByText("은둔자")).toBeTruthy();
+    expect(within(neighbors).getByText("임프")).toBeTruthy();
+    const choices = screen.getByLabelText("전달할 숫자");
+    expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
+    expect(within(choices).getByRole("button", { name: /거짓.*1/ })).toBeTruthy();
+    expect(within(choices).getByRole("button", { name: /거짓.*2/ })).toBeTruthy();
+    await user.click(within(choices).getByRole("button", { name: /거짓.*1/ }));
+    await user.click(screen.getByRole("button", { name: "확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:chef",
+        input: null,
+        deliveredResult: { kind: "number", value: 1 },
+        registrationJudgments: [{ playerId: "player-4", registeredAs: "evil" }],
+      },
     });
   });
 
@@ -555,6 +845,7 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
     await user.click(screen.getByRole("button", { name: "확정" }));
     await screen.findByLabelText("확정된 Reveal 후속 조치");
+    await user.click(screen.getByText("설정 및 불러오기"));
     await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
 
     expect(await screen.findByRole("heading", { name: "요리사: 2번 Bert" })).toBeTruthy();
@@ -686,6 +977,9 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const setupSummary = screen.getByText("설정 및 불러오기").closest("summary");
+    if (!setupSummary) throw new Error("setup summary was not rendered");
+    await user.click(setupSummary);
     await user.click(screen.getByRole("button", { name: "JSON 내보내기" }));
     expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
     expect(anchorClick).toHaveBeenCalledTimes(1);

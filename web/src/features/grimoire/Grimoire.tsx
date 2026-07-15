@@ -17,6 +17,7 @@ export function Grimoire({
   onDraftChange,
   busy,
   nominationVoting,
+  setupInformationSelection,
 }: {
   players: Player[];
   draft: SetupDraft;
@@ -25,6 +26,11 @@ export function Grimoire({
   nominationVoting?: {
     draft: NominationDraft;
     onChange: (draft: NominationDraft) => void;
+  };
+  setupInformationSelection?: {
+    selectedPlayerIds: string[];
+    disabled: boolean;
+    onTogglePlayer: (playerId: string) => void;
   };
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
@@ -61,8 +67,13 @@ export function Grimoire({
           const position = draft.seatPositions[seat.seat] ?? fallbackPositions[seat.seat];
           const playerId = confirmedPlayer?.id;
           const votingSelected = Boolean(playerId && nominationVoting?.draft.voterIds.includes(playerId));
+          const setupInformationSelected = Boolean(
+            playerId && setupInformationSelection?.selectedPlayerIds.includes(playerId),
+          );
           const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
           const votingDisabled = busy || layoutEditing || !playerId || Boolean(voteStatus?.disabled);
+          const setupInformationDisabled =
+            busy || layoutEditing || !playerId || Boolean(setupInformationSelection?.disabled);
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
@@ -72,6 +83,17 @@ export function Grimoire({
             nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
           }
 
+          function handleSeatClick() {
+            if (layoutEditing) return;
+            if (nominationVoting) {
+              toggleVote();
+              return;
+            }
+            if (playerId && setupInformationSelection && !setupInformationDisabled) {
+              setupInformationSelection.onTogglePlayer(playerId);
+            }
+          }
+
           return (
             <button
               type="button"
@@ -79,9 +101,11 @@ export function Grimoire({
                 overlapSeats.has(seat.seat) ? "overlap" : ""
               } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
                 voteStatus?.className ?? ""
+              } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
+                setupInformationSelection ? "setupInformationEnabled" : ""
               }`}
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
-              onClick={toggleVote}
+              onClick={handleSeatClick}
               onPointerDown={(event) =>
                 startSeatDrag({
                   event,
@@ -91,8 +115,20 @@ export function Grimoire({
                   onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
                 })
               }
-              aria-disabled={nominationVoting ? votingDisabled : true}
-              aria-pressed={nominationVoting ? votingSelected : undefined}
+              aria-disabled={
+                nominationVoting
+                  ? votingDisabled
+                  : setupInformationSelection
+                    ? setupInformationDisabled
+                    : true
+              }
+              aria-pressed={
+                nominationVoting
+                  ? votingSelected
+                  : setupInformationSelection
+                    ? setupInformationSelected
+                    : undefined
+              }
               key={seat.seat}
             >
               <span className="seatTokenNumber">{seat.seat}</span>

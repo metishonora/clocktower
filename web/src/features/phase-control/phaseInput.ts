@@ -1,9 +1,12 @@
 import type {
+  NumberChoice,
   Phase,
   PhaseOverviewItem,
   PhaseStep,
+  PhaseStepConfirmation,
   PhaseStepInput,
   Player,
+  RegistrationJudgment,
   StepType,
 } from "../../core/types.js";
 import {
@@ -95,20 +98,22 @@ export function stepInputReady(
   selectedCharacterId: string,
   nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
-  numberValue: string,
+  selectedNumberChoice: NumberChoice | undefined,
   zeroOutsidersAvailable = true,
 ): boolean {
   if (step.requiredInput.kind === "nominationVote") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
   }
   if (step.requiredInput.kind === "executionDecision") return true;
-  if (
-    step.informationPrompt?.deliveryMode === "selectable" &&
-    step.informationPrompt.computedResult.kind === "number"
-  ) {
-    if (numberValue.trim().length === 0) return false;
-    const value = Number(numberValue);
-    if (!Number.isInteger(value) || value < 0 || value > 15) return false;
+  if (step.informationPrompt?.numberChoices.length) {
+    if (!selectedNumberChoice) return false;
+    if (
+      !step.informationPrompt.numberChoices.some(
+        (choice) => choice.value === selectedNumberChoice.value,
+      )
+    ) {
+      return false;
+    }
   }
   if (step.requiredInput.kind === "setupInfo") {
     if (step.requiredInput.zeroAllowed && zeroOutsiders) {
@@ -160,16 +165,28 @@ export function setupInfoCharacterOptions(
   kind: CharacterKind | undefined,
   selectedPlayerIds: string[],
   players: Player[],
+  step?: PhaseStep,
 ): typeof characters {
+  if (step && setupInfoDeliveryIsImpaired(step)) {
+    return characters.filter((character) => !kind || character.kind === kind);
+  }
+
   const selectedActualCharacters = new Set(
     players
       .filter((player) => selectedPlayerIds.includes(player.id))
       .map((player) => player.actualCharacter),
   );
 
-  return characters.filter(
-    (character) => selectedActualCharacters.has(character.id) && (!kind || character.kind === kind),
+  const registeredCharacterIds = new Set(
+    step?.informationPrompt?.setupInfoRegistrationOptions
+      .filter((option) => selectedPlayerIds.includes(option.playerId))
+      .flatMap((option) => option.characterIds) ?? [],
   );
+
+  return characters.filter((character) => {
+    if (kind && character.kind !== kind) return false;
+    return selectedActualCharacters.has(character.id) || registeredCharacterIds.has(character.id);
+  });
 }
 
 export function characterInputOptions(allowedCharacterIds?: string[]): typeof characters {
@@ -178,8 +195,86 @@ export function characterInputOptions(allowedCharacterIds?: string[]): typeof ch
   return characters.filter((character) => allowed.has(character.id));
 }
 
-export function setupInfoZeroOutsidersAvailable(players: Player[]): boolean {
+export function setupInfoZeroOutsidersAvailable(players: Player[], step?: PhaseStep): boolean {
+  if (step && setupInfoDeliveryIsImpaired(step)) return true;
   return players.every((player) => characterKind(player.actualCharacter) !== "Outsider");
+}
+
+export function setupInfoDeliveryIsImpaired(step: PhaseStep): boolean {
+  return Boolean(
+    step.informationPrompt?.activeReasons.some(
+      (reason) => reason.type === "drunk" || reason.type === "poisoned",
+    ),
+  );
+}
+
+export function setupInfoRegistrationJudgments(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  selectedCharacterId: string,
+  players: Player[],
+): RegistrationJudgment[] {
+  if (step.requiredInput.kind !== "setupInfo" || !selectedCharacterId) return [];
+  const representedByActualCharacter = players.some(
+    (player) =>
+      selectedPlayerIds.includes(player.id) && player.actualCharacter === selectedCharacterId,
+  );
+  if (representedByActualCharacter) return [];
+
+  const option = step.informationPrompt?.setupInfoRegistrationOptions.find(
+    (candidate) =>
+      selectedPlayerIds.includes(candidate.playerId) &&
+      candidate.characterIds.includes(selectedCharacterId),
+  );
+  if (!option) return [];
+  return [
+    {
+      playerId: option.playerId,
+      registeredAs: option.registeredAs,
+      characterId: selectedCharacterId,
+    },
+  ];
+}
+
+export function phaseStepConfirmation(
+  step: PhaseStep,
+  draft: {
+    selectedPlayerIds: string[];
+    selectedCharacterId: string;
+    selectedCharacterIds: string[];
+    zeroOutsiders: boolean;
+    selectedNumberChoice?: NumberChoice;
+    registrationJudgments: RegistrationJudgment[];
+  },
+  nominationDraft: NominationDraft,
+): PhaseStepConfirmation {
+  const confirmation: PhaseStepConfirmation = {
+    input: stepInputPayload(
+      step,
+      draft.selectedPlayerIds,
+      draft.selectedCharacterId,
+      draft.selectedCharacterIds,
+      nominationDraft,
+      draft.zeroOutsiders,
+    ),
+  };
+
+  if (step.requiredInput.kind === "setupInfo" && draft.registrationJudgments.length) {
+    confirmation.registrationJudgments = draft.registrationJudgments;
+  }
+
+  const choice = step.informationPrompt?.numberChoices.find(
+    (candidate) => candidate.value === draft.selectedNumberChoice?.value,
+  );
+  if (!choice) return confirmation;
+  const impaired = setupInfoDeliveryIsImpaired(step);
+  if (!choice.isComputed || impaired) {
+    confirmation.deliveredResult = { kind: "number", value: choice.value };
+  }
+  if (!impaired && choice.registrationJudgments.length) {
+    confirmation.registrationJudgments = choice.registrationJudgments;
+  }
+  return confirmation;
 }
 
 export function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

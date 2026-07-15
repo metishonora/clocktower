@@ -1,29 +1,24 @@
-import { useEffect, useState } from "react";
 import type {
   DayState,
   PhaseOverviewItem,
   PhaseStep,
   PhaseStepConfirmation,
   Player,
-  RegistrationJudgment,
   RevealPayload,
 } from "../../core/types";
 import { RevealPreview } from "../../reveal";
-import { characterLabel } from "../../setupDraft";
+import { characterKind, characterLabel, characters, kindLabels } from "../../setupDraft";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import {
   inputKindLabel,
-  inputShapeLabel,
   phaseLabel,
-  setupInfoCharacterOptions,
-  setupInfoZeroOutsidersAvailable,
-  stepInputPayload,
+  phaseStepConfirmation,
   stepInputReady,
   stepStatusLabel,
   stepTitle,
-  stepTypeLabel,
 } from "./phaseInput";
 import { ExecutionDecisionActions, StepInputFields } from "./StepInputs";
+import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -39,6 +34,7 @@ export function PhaseControl({
   dayState,
   nominationDraft,
   onNominationDraftChange,
+  phaseInputDraft,
   replayReady,
   busy,
   onShowReveal,
@@ -53,6 +49,7 @@ export function PhaseControl({
   dayState?: DayState;
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
+  phaseInputDraft: PhaseInputDraftController;
   replayReady: boolean;
   busy: boolean;
   onShowReveal: (payload: RevealPayload) => void;
@@ -81,6 +78,7 @@ export function PhaseControl({
       dayState={dayState}
       nominationDraft={nominationDraft}
       onNominationDraftChange={onNominationDraftChange}
+      phaseInputDraft={phaseInputDraft}
       busy={busy}
       onConfirm={onConfirm}
       onSkip={onSkip}
@@ -154,6 +152,7 @@ function CurrentStepPane({
   dayState,
   nominationDraft,
   onNominationDraftChange,
+  phaseInputDraft,
   busy,
   onConfirm,
   onSkip,
@@ -164,52 +163,40 @@ function CurrentStepPane({
   dayState?: DayState;
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
+  phaseInputDraft: PhaseInputDraftController;
   busy: boolean;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
 }) {
-  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
-  const [selectedCharacterId, setSelectedCharacterId] = useState("");
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
-  const [zeroOutsiders, setZeroOutsiders] = useState(false);
-  const [numberValue, setNumberValue] = useState("");
-  const [registrationJudgments, setRegistrationJudgments] = useState<
-    Record<string, "" | RegistrationJudgment["registeredAs"]>
-  >({});
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
-  const zeroOutsidersAvailable = setupInfoZeroOutsidersAvailable(players);
+  const currentCharacter = currentStep?.character
+    ? characters.find((character) => character.id === currentStep.character)
+    : undefined;
+  const currentCharacterKind = currentStep?.character
+    ? characterKind(currentStep.character)
+    : undefined;
+  const registrationSensitive = Boolean(
+    currentStep?.informationPrompt &&
+      (currentStep.informationPrompt.setupInfoRegistrationOptions.length > 0 ||
+        currentStep.informationPrompt.numberChoices.some(
+          (choice) => choice.registrationJudgments.length > 0,
+        )),
+  );
   const baseSelectionValid = currentStep
     ? stepInputReady(
         currentStep,
-        selectedPlayerIds.length,
-        selectedCharacterIds.length,
-        selectedCharacterId,
+        phaseInputDraft.selectedPlayerIds.length,
+        phaseInputDraft.selectedCharacterIds.length,
+        phaseInputDraft.selectedCharacterId,
         nominationDraft,
-        zeroOutsiders,
-        numberValue,
-        zeroOutsidersAvailable,
+        phaseInputDraft.zeroOutsiders,
+        phaseInputDraft.selectedNumberChoice,
+        phaseInputDraft.zeroOutsidersAvailable,
       )
     : false;
-  const registrationValid =
-    currentStep?.informationPrompt?.registrationCandidatePlayerIds.every(
-      (playerId) => Boolean(registrationJudgments[playerId]),
-    ) ?? true;
-  const selectionValid = baseSelectionValid && registrationValid;
-
-  useEffect(() => {
-    setSelectedPlayerIds([]);
-    setSelectedCharacterId("");
-    setSelectedCharacterIds([]);
-    setZeroOutsiders(false);
-    setNumberValue("");
-    setRegistrationJudgments({});
-  }, [currentStep?.id]);
-
-  useEffect(() => {
-    if (!zeroOutsidersAvailable) setZeroOutsiders(false);
-  }, [zeroOutsidersAvailable]);
+  const selectionValid = baseSelectionValid;
 
   return (
     <>
@@ -224,65 +211,38 @@ function CurrentStepPane({
       <section className="currentStepCard" aria-label="현재 단계">
         {currentStep ? (
           <>
-            <dl>
-              <div>
-                <dt>단계</dt>
-                <dd>{stepTypeLabel(currentStep.stepType)}</dd>
-              </div>
-              <div>
-                <dt>입력</dt>
-                <dd>{inputShapeLabel(currentStep.requiredInput)}</dd>
-              </div>
-              {currentPlayer ? (
+            {currentPlayer ? (
+              <section className="currentActor" aria-label="현재 행동자">
+                <span aria-hidden="true">{currentCharacter?.icon ?? currentPlayer.seat}</span>
                 <div>
-                  <dt>대상</dt>
-                  <dd>
-                    {currentPlayer.seat}번 {currentPlayer.name}
-                  </dd>
+                  <small>현재 행동</small>
+                  <strong>{stepTitle(currentStep, currentPlayer)}</strong>
+                  <div className="currentActorTags">
+                    {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
+                    {registrationSensitive ? <em>등록 판정</em> : null}
+                  </div>
+                  {currentCharacter?.abilitySummary ? <p>{currentCharacter.abilitySummary}</p> : null}
                 </div>
-              ) : null}
-            </dl>
+              </section>
+            ) : null}
             <StepInputFields
               step={currentStep}
               players={players}
               dayState={dayState}
               nominationDraft={nominationDraft}
               onNominationDraftChange={onNominationDraftChange}
-              selectedPlayerIds={selectedPlayerIds}
-              selectedCharacterId={selectedCharacterId}
-              selectedCharacterIds={selectedCharacterIds}
-              zeroOutsiders={zeroOutsiders}
-              zeroOutsidersAvailable={zeroOutsidersAvailable}
-              numberValue={numberValue}
-              registrationJudgments={registrationJudgments}
+              selectedPlayerIds={phaseInputDraft.selectedPlayerIds}
+              selectedCharacterId={phaseInputDraft.selectedCharacterId}
+              selectedCharacterIds={phaseInputDraft.selectedCharacterIds}
+              zeroOutsiders={phaseInputDraft.zeroOutsiders}
+              zeroOutsidersAvailable={phaseInputDraft.zeroOutsidersAvailable}
+              selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
               busy={busy}
-              onSelectedPlayerIdsChange={(playerIds) => {
-                setSelectedPlayerIds(playerIds);
-                if (currentStep.requiredInput.kind !== "setupInfo") return;
-                const validCharacterIds = new Set(
-                  setupInfoCharacterOptions(
-                    currentStep.requiredInput.characterKind,
-                    playerIds,
-                    players,
-                  ).map((character) => character.id),
-                );
-                setSelectedCharacterId((characterId) =>
-                  validCharacterIds.has(characterId) ? characterId : "",
-                );
-              }}
-              onCharacterChange={setSelectedCharacterId}
-              onCharactersChange={setSelectedCharacterIds}
-              onZeroOutsidersChange={(checked) => {
-                setZeroOutsiders(checked);
-                if (checked) {
-                  setSelectedPlayerIds([]);
-                  setSelectedCharacterId("");
-                }
-              }}
-              onNumberChange={setNumberValue}
-              onRegistrationJudgmentChange={(playerId, value) =>
-                setRegistrationJudgments((current) => ({ ...current, [playerId]: value }))
-              }
+              onSelectedPlayerIdsChange={phaseInputDraft.setSelectedPlayerIds}
+              onCharacterChange={phaseInputDraft.setSelectedCharacterId}
+              onCharactersChange={phaseInputDraft.setSelectedCharacterIds}
+              onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
+              onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
             />
             {currentStep.requiredInput.kind === "executionDecision" ? (
               <ExecutionDecisionActions
@@ -297,31 +257,7 @@ function CurrentStepPane({
                   type="button"
                   className="primaryButton"
                   onClick={() =>
-                    onConfirm({
-                      input: stepInputPayload(
-                        currentStep,
-                        selectedPlayerIds,
-                        selectedCharacterId,
-                        selectedCharacterIds,
-                        nominationDraft,
-                        zeroOutsiders,
-                      ),
-                      ...(currentStep.informationPrompt?.deliveryMode === "selectable" &&
-                      currentStep.informationPrompt.computedResult.kind === "number"
-                        ? { deliveredResult: { kind: "number" as const, value: Number(numberValue) } }
-                        : {}),
-                      ...(currentStep.informationPrompt?.registrationCandidatePlayerIds.length
-                        ? {
-                            registrationJudgments:
-                              currentStep.informationPrompt.registrationCandidatePlayerIds.map(
-                                (playerId) => ({
-                                  playerId,
-                                  registeredAs: registrationJudgments[playerId] as RegistrationJudgment["registeredAs"],
-                                }),
-                              ),
-                          }
-                        : {}),
-                    })
+                    onConfirm(phaseStepConfirmation(currentStep, phaseInputDraft, nominationDraft))
                   }
                   disabled={busy || !selectionValid}
                 >

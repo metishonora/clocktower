@@ -114,8 +114,17 @@ test("validates typed confirmed information and derived information prompts", ()
       informationPrompt: {
         computedResult: { kind: "number", value: 0 },
         deliveryMode: "selectable",
-        activeReasons: [{ type: "drunk" }],
+        activeReasons: [],
         registrationCandidatePlayerIds: ["player-5"],
+        numberChoices: [
+          { value: 0, isComputed: true, registrationJudgments: [] },
+          {
+            value: 1,
+            isComputed: false,
+            registrationJudgments: [{ playerId: "player-5", registeredAs: "evil" }],
+          },
+        ],
+        setupInfoRegistrationOptions: [],
       },
     },
     phaseOverview: [],
@@ -135,7 +144,121 @@ test("validates typed confirmed information and derived information prompts", ()
   invalidPrompt.currentStep.informationPrompt.registrationCandidatePlayerIds = [1 as unknown as string];
   throws(() => parseReplayState(invalidPrompt), /코어 응답 형식/);
 
+  const impairedWithRegistrationWitness = {
+    ...replay,
+    currentStep: {
+      ...replay.currentStep,
+      informationPrompt: {
+        ...replay.currentStep.informationPrompt,
+        activeReasons: [{ type: "drunk" }],
+      },
+    },
+  };
+  throws(() => parseReplayState(impairedWithRegistrationWitness), /코어 응답 형식/);
+
   const invalidAllowedCharacters = structuredClone(replay);
   invalidAllowedCharacters.currentStep.requiredInput.allowedCharacterIds = [1 as unknown as string];
   throws(() => parseReplayState(invalidAllowedCharacters), /코어 응답 형식/);
+});
+
+test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
+  const setupPromptReplay = {
+    schemaVersion: 1,
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: {
+      id: "firstNight:librarian",
+      phase: "firstNight",
+      stepType: "character",
+      character: "librarian",
+      requiredInput: {
+        kind: "setupInfo",
+        target: "players",
+        minSelections: 2,
+        maxSelections: 2,
+        characterKind: "Outsider",
+        optional: false,
+      },
+      canSkip: false,
+      informationPrompt: {
+        deliveryMode: "fixed",
+        activeReasons: [],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        setupInfoRegistrationOptions: [],
+      },
+    },
+    phaseOverview: [],
+    warnings: [],
+  };
+  deepEqual<unknown>(parseReplayState(setupPromptReplay).currentStep, setupPromptReplay.currentStep);
+
+  const impairedEvent = {
+    id: "event-librarian",
+    type: "phaseStepConfirmed",
+    phase: "firstNight",
+    payload: {
+      stepId: "firstNight:librarian",
+      input: { zeroOutsiders: true },
+      information: {
+        actor: { playerId: "player-1", characterId: "librarian" },
+        targetPlayerIds: [],
+        deliveredResult: {
+          kind: "setupInfo",
+          playerIds: [],
+          zeroOutsiders: true,
+        },
+        deliveryContext: { type: "discretionary", reasons: [{ type: "drunk" }] },
+      },
+    },
+    summary: "중독된 사서 정보 확정",
+    createdAt: "2026-07-15T00:00:00.000Z",
+  };
+  const impairedProposal = {
+    event: impairedEvent,
+    warnings: [],
+    followUpSteps: [],
+    preview: null,
+  };
+  deepEqual<unknown>(parseProposal(impairedProposal).event, impairedEvent);
+
+  const fixedMissingComputed = structuredClone(impairedProposal);
+  fixedMissingComputed.event.payload.information.deliveryContext = { type: "fixed", reasons: [] };
+  throws(() => parseProposal(fixedMissingComputed), /이벤트 형식/);
+
+  const unknownConcreteRegistration = {
+    ...impairedProposal,
+    event: {
+      ...impairedEvent,
+      payload: {
+        ...impairedEvent.payload,
+        information: {
+          ...impairedEvent.payload.information,
+          computedResult: {
+            kind: "setupInfo",
+            playerIds: ["player-1", "player-2"],
+            characterId: "poisoner",
+            zeroOutsiders: false,
+          },
+          deliveryContext: {
+            type: "discretionary",
+            reasons: [
+              {
+                type: "registrationJudgment",
+                judgments: [
+                  {
+                    playerId: "player-2",
+                    registeredAs: "minion",
+                    characterId: "not-a-character",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    },
+  };
+  throws(() => parseProposal(unknownConcreteRegistration), /이벤트 형식/);
 });

@@ -307,10 +307,18 @@ these responsibilities:
 
 - `actor` and `targetPlayerIds` identify the rule check without parsing the Korean summary.
 - `computedResult` records the canonical result calculated from the replayed state before any
-  false-information delivery choice.
+  false-information delivery choice. It is omitted only for a drunk or poisoned setup-information
+  actor, because that flow records one ability-shaped delivered choice without fabricating an
+  unselected true pair.
 - `deliveredResult` records exactly what the Storyteller showed or told the Player.
 - `deliveryContext` is `fixed` when the two results must match, or `discretionary` with typed
   drunk, poisoned, and per-check Registration Judgment reasons.
+
+Numeric information prompts expose Rust-derived, sorted, deduplicated `numberChoices`. Each choice
+contains its value, whether it is the unmodified computed truth, and the exact per-check
+Registration Judgments needed to make a registration-only alternate legal. Setup-information
+prompts similarly expose concrete Spy/Recluse registration options; TypeScript does not reconstruct
+these rules.
 
 Use a tagged `InformationResult` union/enum for result values. Add result variants when a script
 implements a new kind of information; do not fall back to `serde_json::Value`, `unknown`, or a

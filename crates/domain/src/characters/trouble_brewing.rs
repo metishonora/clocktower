@@ -1,9 +1,10 @@
 use crate::model::{
-    Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget, Phase, PhaseStep,
-    Player, RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind,
-    SetupInfoKind, StepInput, StepType,
+    Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
+    NumberInformationChoice, Phase, PhaseStep, Player, RegistrationJudgment, RegistrationValue,
+    RequiredInput, RequiredInputKind, SetupInfoKind, SetupInfoRegistrationOption, StepInput,
+    StepType,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 const FIRST_NIGHT_ORDER: &[&str] = &[
     "poisoner",
@@ -97,6 +98,134 @@ pub(crate) fn setup_info_character_is_represented(
     players.iter().any(|player| {
         player.actual_character == character_id && candidate_player_ids.contains(&player.id)
     })
+}
+
+pub(crate) fn setup_info_registration_options(
+    step: &PhaseStep,
+    players: &[Player],
+) -> Vec<SetupInfoRegistrationOption> {
+    let Some(setup_info) = step.required_input.setup_info else {
+        return Vec::new();
+    };
+    let (actual_character, registered_as, character_ids) = match setup_info {
+        SetupInfoKind::Washerwoman => ("spy", RegistrationValue::Townsfolk, TOWNSFOLK),
+        SetupInfoKind::Librarian => ("spy", RegistrationValue::Outsider, OUTSIDERS),
+        SetupInfoKind::Investigator => ("recluse", RegistrationValue::Minion, MINIONS),
+    };
+
+    players
+        .iter()
+        .filter(|player| player.actual_character == actual_character)
+        .map(|player| SetupInfoRegistrationOption {
+            player_id: player.id.clone(),
+            registered_as,
+            character_ids: character_ids
+                .iter()
+                .map(|character_id| (*character_id).to_string())
+                .collect(),
+        })
+        .collect()
+}
+
+pub(crate) fn setup_info_input_is_valid_normal(
+    setup_info: SetupInfoKind,
+    input: &StepInput,
+    players: &[Player],
+) -> bool {
+    let Some(value) = input.as_ref() else {
+        return false;
+    };
+    if value.zero_outsiders == Some(true) {
+        return setup_info == SetupInfoKind::Librarian
+            && value.player_ids.as_ref().is_none_or(Vec::is_empty)
+            && value.character_id.is_none()
+            && !has_actual_outsider(players);
+    }
+    let Some(player_ids) = structurally_valid_setup_player_ids(value, players) else {
+        return false;
+    };
+    let Some(character_id) = value.character_id.as_deref() else {
+        return false;
+    };
+    setup_info_character_is_represented(setup_info, character_id, &player_ids, players)
+}
+
+pub(crate) fn setup_info_input_is_valid_impaired(
+    setup_info: SetupInfoKind,
+    input: &StepInput,
+    players: &[Player],
+) -> bool {
+    let Some(value) = input.as_ref() else {
+        return false;
+    };
+    if value.zero_outsiders == Some(true) {
+        return setup_info == SetupInfoKind::Librarian
+            && value.player_ids.as_ref().is_none_or(Vec::is_empty)
+            && value.character_id.is_none();
+    }
+    if structurally_valid_setup_player_ids(value, players).is_none() {
+        return false;
+    }
+    value.character_id.as_deref().is_some_and(|character_id| {
+        character_kind(character_id) == Some(setup_info_kind(setup_info))
+    })
+}
+
+pub(crate) fn setup_info_input_is_valid_registration(
+    step: &PhaseStep,
+    input: &StepInput,
+    players: &[Player],
+    judgments: &[RegistrationJudgment],
+) -> bool {
+    let Some(value) = input.as_ref() else {
+        return false;
+    };
+    if value.zero_outsiders == Some(true) || judgments.len() != 1 {
+        return false;
+    }
+    let Some(player_ids) = structurally_valid_setup_player_ids(value, players) else {
+        return false;
+    };
+    let Some(character_id) = value.character_id.as_deref() else {
+        return false;
+    };
+    let judgment = &judgments[0];
+    player_ids.contains(&judgment.player_id)
+        && judgment.character_id.as_deref() == Some(character_id)
+        && setup_info_registration_options(step, players)
+            .iter()
+            .any(|option| {
+                option.player_id == judgment.player_id
+                    && option.registered_as == judgment.registered_as
+                    && option.character_ids.iter().any(|id| id == character_id)
+            })
+}
+
+fn structurally_valid_setup_player_ids(
+    value: &crate::model::StepInputFields,
+    players: &[Player],
+) -> Option<Vec<String>> {
+    let player_ids = value.player_ids.as_ref()?;
+    let roster_ids = players
+        .iter()
+        .map(|player| player.id.as_str())
+        .collect::<HashSet<_>>();
+    let unique = player_ids
+        .iter()
+        .map(String::as_str)
+        .collect::<HashSet<_>>();
+    (player_ids.len() == 2
+        && unique.len() == 2
+        && player_ids.iter().all(|id| roster_ids.contains(id.as_str())))
+    .then(|| player_ids.clone())
+}
+
+fn setup_info_kind(setup_info: SetupInfoKind) -> CharacterKind {
+    match setup_info {
+        SetupInfoKind::Washerwoman => CharacterKind::Townsfolk,
+        SetupInfoKind::Librarian => CharacterKind::Outsider,
+        SetupInfoKind::Investigator => CharacterKind::Minion,
+    }
 }
 
 fn awakening_character(player: &Player) -> &str {
@@ -283,6 +412,77 @@ pub(crate) fn number_result_with_registration_judgments(
     }
 }
 
+pub(crate) fn legal_number_choices(
+    step: &PhaseStep,
+    players: &[Player],
+    impaired: bool,
+) -> Vec<NumberInformationChoice> {
+    let Some(InformationResult::Number { value: computed }) =
+        computed_information_result(step, players, &None)
+    else {
+        return Vec::new();
+    };
+
+    if impaired {
+        let max = match step.character.as_deref() {
+            Some("chef") => players.len(),
+            Some("empath") => {
+                let Some(actor_id) = step.player_id.as_deref() else {
+                    return Vec::new();
+                };
+                let seated = seated_players(players);
+                let Some(index) = seated.iter().position(|player| player.id == actor_id) else {
+                    return Vec::new();
+                };
+                alive_neighbor_indexes(&seated, index).len()
+            }
+            _ => return Vec::new(),
+        };
+        return (0..=max)
+            .map(|value| NumberInformationChoice {
+                value,
+                is_computed: value == computed,
+                registration_judgments: Vec::new(),
+            })
+            .collect();
+    }
+
+    let candidates = registration_candidate_player_ids(step, players);
+    let mut by_value = BTreeMap::<usize, Vec<RegistrationJudgment>>::new();
+    by_value.insert(computed, Vec::new());
+    for mask in 0..(1usize << candidates.len()) {
+        let judgments = candidates
+            .iter()
+            .enumerate()
+            .map(|(index, player_id)| RegistrationJudgment {
+                player_id: player_id.clone(),
+                registered_as: if mask & (1 << index) == 0 {
+                    RegistrationValue::Good
+                } else {
+                    RegistrationValue::Evil
+                },
+                character_id: None,
+            })
+            .collect::<Vec<_>>();
+        let Some(value) = number_result_with_registration_judgments(step, players, &judgments)
+        else {
+            continue;
+        };
+        if value != computed {
+            by_value.entry(value).or_insert(judgments);
+        }
+    }
+
+    by_value
+        .into_iter()
+        .map(|(value, registration_judgments)| NumberInformationChoice {
+            value,
+            is_computed: value == computed,
+            registration_judgments,
+        })
+        .collect()
+}
+
 pub(crate) fn alive_neighbor_indexes(players: &[&Player], index: usize) -> Vec<usize> {
     if players.len() < 2 {
         return Vec::new();
@@ -372,7 +572,7 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             false,
         ),
         "fortuneTeller" => required_players(2, 2),
-        "chef" => RequiredInput {
+        "chef" | "empath" => RequiredInput {
             kind: RequiredInputKind::Number,
             target: Some(InputTarget::Number),
             min_selections: Some(0),

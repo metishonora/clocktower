@@ -13,7 +13,9 @@ use crate::{
         phase_step_event_summary, phase_step_preview, phase_step_reveal_payload,
         setup_event_summary, setup_preview, smoke_event_summary, smoke_preview,
     },
-    model::{ExecutionDecisionInput, Phase, PhaseStep, Player, StepInput, StepType},
+    model::{
+        ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput, StepType,
+    },
     phase::validate_required_input,
     replay::{replay_phase_state, replay_players},
     setup::{
@@ -113,7 +115,7 @@ pub(crate) fn propose_phase_step(
     if skip && (payload.delivered_result.is_some() || !payload.registration_judgments.is_empty()) {
         return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
     }
-    if !skip {
+    if !skip && current_step.required_input.kind != RequiredInputKind::SetupInfo {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
     }
     if !skip && current_step.step_type == StepType::Nomination {

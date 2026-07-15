@@ -122,6 +122,8 @@ pub(crate) enum RegistrationValue {
 pub(crate) struct RegistrationJudgment {
     pub(crate) player_id: String,
     pub(crate) registered_as: RegistrationValue,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) character_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -161,7 +163,8 @@ pub(crate) struct ConfirmedInformation {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) actor: Option<InformationActor>,
     pub(crate) target_player_ids: Vec<String>,
-    pub(crate) computed_result: InformationResult,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) computed_result: Option<InformationResult>,
     pub(crate) delivered_result: InformationResult,
     pub(crate) delivery_context: DeliveryContext,
 }
@@ -176,10 +179,29 @@ pub(crate) enum InformationDeliveryMode {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InformationPrompt {
-    pub(crate) computed_result: InformationResult,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) computed_result: Option<InformationResult>,
     pub(crate) delivery_mode: InformationDeliveryMode,
     pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) registration_candidate_player_ids: Vec<String>,
+    pub(crate) number_choices: Vec<NumberInformationChoice>,
+    pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NumberInformationChoice {
+    pub(crate) value: usize,
+    pub(crate) is_computed: bool,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupInfoRegistrationOption {
+    pub(crate) player_id: String,
+    pub(crate) registered_as: RegistrationValue,
+    pub(crate) character_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]

@@ -13,6 +13,7 @@ import type {
   SetupDistribution,
 } from "./types.js";
 import { isRevealPayload } from "./revealPayload.js";
+import { characters } from "../setupDraft.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -44,6 +45,7 @@ const inputTargets = new Set([
   "execution",
   "phase",
 ]);
+const characterIds = new Set(characters.map((character) => character.id));
 
 export function parseCoreResult<T>(
   value: unknown,
@@ -177,19 +179,54 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     isOptionalString(value.playerId) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
-    (value.informationPrompt === undefined || isInformationPrompt(value.informationPrompt))
+    (value.informationPrompt === undefined ||
+      isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
   );
 }
 
-function isInformationPrompt(value: unknown): value is InformationPrompt {
+function isInformationPrompt(value: unknown, inputKind: unknown): value is InformationPrompt {
+  if (
+    !isRecord(value) ||
+    (value.deliveryMode !== "fixed" && value.deliveryMode !== "selectable") ||
+    !Array.isArray(value.activeReasons) ||
+    !value.activeReasons.every(isDeliveryReason) ||
+    !Array.isArray(value.registrationCandidatePlayerIds) ||
+    !value.registrationCandidatePlayerIds.every(isString) ||
+    !Array.isArray(value.numberChoices) ||
+    !value.numberChoices.every(isNumberChoice) ||
+    !Array.isArray(value.setupInfoRegistrationOptions) ||
+    !value.setupInfoRegistrationOptions.every(isSetupInfoRegistrationOption)
+  ) {
+    return false;
+  }
+
+  const impaired = value.activeReasons.some(
+    (reason) => isRecord(reason) && (reason.type === "drunk" || reason.type === "poisoned"),
+  );
+  if (
+    impaired &&
+    value.numberChoices.some(
+      (choice) =>
+        isRecord(choice) &&
+        Array.isArray(choice.registrationJudgments) &&
+        choice.registrationJudgments.length > 0,
+    )
+  ) {
+    return false;
+  }
+
+  if (value.computedResult === undefined) {
+    return inputKind === "setupInfo" && value.numberChoices.length === 0;
+  }
+  if (!isInformationResult(value.computedResult)) return false;
+  if (value.computedResult.kind !== "number") return value.numberChoices.length === 0;
+
+  const computedChoices = value.numberChoices.filter((choice) => choice.isComputed);
+  const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
   return (
-    isRecord(value) &&
-    isInformationResult(value.computedResult) &&
-    (value.deliveryMode === "fixed" || value.deliveryMode === "selectable") &&
-    Array.isArray(value.activeReasons) &&
-    value.activeReasons.every(isDeliveryReason) &&
-    Array.isArray(value.registrationCandidatePlayerIds) &&
-    value.registrationCandidatePlayerIds.every(isString)
+    computedChoices.length === 1 &&
+    computedChoices[0]?.value === value.computedResult.value &&
+    uniqueValues.size === value.numberChoices.length
   );
 }
 
@@ -199,9 +236,25 @@ function isConfirmedInformation(value: unknown): value is ConfirmedInformation {
     (value.actor === undefined || isInformationActor(value.actor)) &&
     Array.isArray(value.targetPlayerIds) &&
     value.targetPlayerIds.every(isString) &&
-    isInformationResult(value.computedResult) &&
+    isOptionalImpairedComputedResult(value.computedResult, value.deliveredResult, value.deliveryContext) &&
     isInformationResult(value.deliveredResult) &&
     isDeliveryContext(value.deliveryContext)
+  );
+}
+
+function isOptionalImpairedComputedResult(
+  computedResult: unknown,
+  deliveredResult: unknown,
+  deliveryContext: unknown,
+): boolean {
+  if (computedResult !== undefined) return isInformationResult(computedResult);
+  if (!isRecord(deliveredResult) || deliveredResult.kind !== "setupInfo") return false;
+  if (!isRecord(deliveryContext) || deliveryContext.type !== "discretionary") return false;
+  return (
+    Array.isArray(deliveryContext.reasons) &&
+    deliveryContext.reasons.some(
+      (reason) => isRecord(reason) && (reason.type === "drunk" || reason.type === "poisoned"),
+    )
   );
 }
 
@@ -209,7 +262,8 @@ function isInformationActor(value: unknown): boolean {
   return (
     isRecord(value) &&
     typeof value.playerId === "string" &&
-    typeof value.characterId === "string"
+    typeof value.characterId === "string" &&
+    characterIds.has(value.characterId)
   );
 }
 
@@ -227,7 +281,7 @@ function isInformationResult(value: unknown): value is InformationResult {
       return (
         Array.isArray(value.playerIds) &&
         value.playerIds.every(isString) &&
-        isOptionalString(value.characterId) &&
+        isOptionalKnownCharacter(value.characterId) &&
         typeof value.zeroOutsiders === "boolean"
       );
     case "teamInfo":
@@ -237,7 +291,7 @@ function isInformationResult(value: unknown): value is InformationResult {
         Array.isArray(value.minionPlayerIds) &&
         value.minionPlayerIds.every(isString) &&
         Array.isArray(value.bluffCharacterIds) &&
-        value.bluffCharacterIds.every(isString)
+        value.bluffCharacterIds.every(isKnownCharacter)
       );
     case "spyGrimoire":
       return Array.isArray(value.players) && value.players.every(isSpyGrimoirePlayer);
@@ -253,7 +307,8 @@ function isSpyGrimoirePlayer(value: unknown): boolean {
     typeof value.seat === "number" &&
     Number.isInteger(value.seat) &&
     typeof value.name === "string" &&
-    typeof value.characterId === "string"
+    typeof value.characterId === "string" &&
+    characterIds.has(value.characterId)
   );
 }
 
@@ -286,7 +341,34 @@ function isRegistrationJudgment(value: unknown): boolean {
     typeof value.playerId === "string" &&
     ["good", "evil", "townsfolk", "outsider", "minion", "demon"].includes(
       String(value.registeredAs),
-    )
+    ) &&
+    isOptionalKnownCharacter(value.characterId)
+  );
+}
+
+function isNumberChoice(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.value === "number" &&
+    Number.isInteger(value.value) &&
+    value.value >= 0 &&
+    value.value <= 15 &&
+    typeof value.isComputed === "boolean" &&
+    Array.isArray(value.registrationJudgments) &&
+    value.registrationJudgments.every(isRegistrationJudgment)
+  );
+}
+
+function isSetupInfoRegistrationOption(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.playerId === "string" &&
+    ["good", "evil", "townsfolk", "outsider", "minion", "demon"].includes(
+      String(value.registeredAs),
+    ) &&
+    Array.isArray(value.characterIds) &&
+    value.characterIds.length > 0 &&
+    value.characterIds.every(isKnownCharacter)
   );
 }
 
@@ -300,7 +382,7 @@ function isPhaseOverviewItem(value: unknown): boolean {
   );
 }
 
-function isRequiredInput(value: unknown): boolean {
+function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
   return (
     isRecord(value) &&
     typeof value.kind === "string" &&
@@ -313,7 +395,7 @@ function isRequiredInput(value: unknown): boolean {
     (value.characterKind === undefined ||
       ["Townsfolk", "Outsider", "Minion", "Demon"].includes(String(value.characterKind))) &&
     (value.allowedCharacterIds === undefined ||
-      (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isString))) &&
+      (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     typeof value.optional === "boolean"
   );
@@ -393,6 +475,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isKnownCharacter(value: unknown): value is string {
+  return typeof value === "string" && characterIds.has(value);
+}
+
+function isOptionalKnownCharacter(value: unknown): boolean {
+  return value === undefined || isKnownCharacter(value);
 }
 
 function isOptionalString(value: unknown): boolean {

@@ -205,7 +205,9 @@ fn numeric_information_summary(
     unit: &str,
     information: &ConfirmedInformation,
 ) -> Option<String> {
-    let InformationResult::Number { value: true_value } = information.computed_result else {
+    let Some(InformationResult::Number { value: true_value }) =
+        information.computed_result.as_ref()
+    else {
         return None;
     };
     let InformationResult::Number {

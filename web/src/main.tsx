@@ -6,11 +6,13 @@ import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
+import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import { EventLog } from "./features/event-log/EventLog";
 import { Grimoire } from "./features/grimoire/Grimoire";
 import { PhaseControl } from "./features/phase-control/PhaseControl";
+import { usePhaseInputDraft } from "./features/phase-control/usePhaseInputDraft";
 import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
@@ -34,6 +36,10 @@ export function App(props: ClocktowerAppProps) {
     return <SetupInfoContextPrototype />;
   }
 
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "setup-info-discretion") {
+    return <SetupInfoDiscretionPrototype />;
+  }
+
   return <ClocktowerApp {...props} />;
 }
 
@@ -42,6 +48,8 @@ export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id);
+  const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
+  const phaseInputDraft = usePhaseInputDraft(phaseInputStep, gameStore.players);
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
 
@@ -97,6 +105,15 @@ export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps
                 onDraftChange={gameStore.setSetupDraft}
                 busy={gameStore.busy}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
+                setupInformationSelection={
+                  !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
+                    ? {
+                        selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                        disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
+                        onTogglePlayer: phaseInputDraft.togglePlayer,
+                      }
+                    : undefined
+                }
               />
             </section>
 
@@ -110,6 +127,7 @@ export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps
                   dayState={gameStore.dayState}
                   nominationDraft={nominationDraft}
                   onNominationDraftChange={setNominationDraft}
+                  phaseInputDraft={phaseInputDraft}
                   replayReady={gameStore.pendingConfirmedRevealReady}
                   busy={gameStore.busy}
                   onShowReveal={showReveal}
@@ -119,26 +137,31 @@ export function ClocktowerApp({ coreAdapter, storageDriver }: ClocktowerAppProps
                 />
               </section>
 
-              <section className="panel setup">
-                <p className="eyebrow">설정</p>
-                <ConfirmedSetup
-                  players={gameStore.players}
-                  canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
-                  onUndo={gameStore.undoLatestEvent}
-                  onExport={exportLatestGame}
-                  onImport={() => importInputRef.current?.click()}
-                  onReset={gameStore.resetSetup}
-                />
-              </section>
-            </aside>
+              <details className="panel auxiliaryPanel setup">
+                <summary>
+                  <span>설정 및 불러오기</span>
+                  <small>{gameStore.players.length}명</small>
+                </summary>
+                <div className="auxiliaryPanelContent">
+                  <ConfirmedSetup
+                    players={gameStore.players}
+                    canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
+                    onUndo={gameStore.undoLatestEvent}
+                    onExport={exportLatestGame}
+                    onImport={() => importInputRef.current?.click()}
+                    onReset={gameStore.resetSetup}
+                  />
+                </div>
+              </details>
 
-            <EventLog
-              events={gameStore.gameFile.game.events}
-              replayResult={gameStore.replayResult}
-              proposalResult={gameStore.proposalResult}
-              loadError={gameStore.loadError}
-              warnings={gameStore.shownWarnings}
-            />
+              <EventLog
+                events={gameStore.gameFile.game.events}
+                replayResult={gameStore.replayResult}
+                proposalResult={gameStore.proposalResult}
+                loadError={gameStore.loadError}
+                warnings={gameStore.shownWarnings}
+              />
+            </aside>
           </>
         ) : (
           <SetupForm

@@ -5,7 +5,7 @@ use crate::{
     day::{day_steps, replay_day_state, step_prefix, validate_nomination_record_input},
     error::{CoreError, ErrorKind},
     information::{information_prompt, validate_confirmed_information},
-    model::{Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player},
+    model::{Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RequiredInputKind},
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
     setup::{player_from_setup_input, validate_setup_inputs, validate_setup_warnings},
@@ -202,9 +202,13 @@ pub(crate) fn phase_step_statuses(
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         if let Some(input) = event_input {
-            validate_required_input(&step.required_input, input, players)?;
             if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
                 let players_at_event = replay_players(&events[..event_index])?;
+                if step.required_input.kind != RequiredInputKind::SetupInfo
+                    || payload.information.is_none()
+                {
+                    validate_required_input(&step.required_input, input, &players_at_event)?;
+                }
                 validate_confirmed_information(
                     &step,
                     &players_at_event,
@@ -212,6 +216,8 @@ pub(crate) fn phase_step_statuses(
                     input,
                     payload.information.as_ref(),
                 )?;
+            } else {
+                validate_required_input(&step.required_input, input, players)?;
             }
         }
         if let GameEventKind::NominationVoteConfirmed { payload } = &event.kind {

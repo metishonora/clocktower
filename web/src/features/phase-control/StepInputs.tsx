@@ -1,12 +1,10 @@
 import { CharacterSelect } from "../../components/CharacterSelect";
 import type {
   DayState,
-  DeliveryReason,
-  InformationResult,
+  NumberChoice,
   PhaseStep,
   PhaseStepConfirmation,
   Player,
-  RegistrationJudgment,
 } from "../../core/types";
 import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
@@ -47,7 +45,10 @@ export function PlayerStepInput({
   }
 
   return (
-    <div className="playerStepInput" aria-label="단계 입력">
+    <div
+      className={`playerStepInput ${showsSetupInfoContext ? "setupInfoPlayerInput" : ""}`}
+      aria-label="단계 입력"
+    >
       {players.map((player) => {
         const actualKind = characterKind(player.actualCharacter);
         const classNames = [
@@ -95,15 +96,13 @@ export function StepInputFields({
   selectedCharacterIds,
   zeroOutsiders,
   zeroOutsidersAvailable,
-  numberValue,
-  registrationJudgments,
+  selectedNumberChoice,
   busy,
   onSelectedPlayerIdsChange,
   onCharacterChange,
   onCharactersChange,
   onZeroOutsidersChange,
-  onNumberChange,
-  onRegistrationJudgmentChange,
+  onNumberChoiceChange,
 }: {
   step: PhaseStep;
   players: Player[];
@@ -115,18 +114,13 @@ export function StepInputFields({
   selectedCharacterIds: string[];
   zeroOutsiders: boolean;
   zeroOutsidersAvailable: boolean;
-  numberValue: string;
-  registrationJudgments: Record<string, "" | RegistrationJudgment["registeredAs"]>;
+  selectedNumberChoice?: NumberChoice;
   busy: boolean;
   onSelectedPlayerIdsChange: (playerIds: string[]) => void;
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
-  onNumberChange: (value: string) => void;
-  onRegistrationJudgmentChange: (
-    playerId: string,
-    value: "" | RegistrationJudgment["registeredAs"],
-  ) => void;
+  onNumberChoiceChange: (choice: NumberChoice) => void;
 }) {
   return (
     <>
@@ -164,11 +158,9 @@ export function StepInputFields({
       <InformationDeliveryInput
         step={step}
         players={players}
-        numberValue={numberValue}
-        registrationJudgments={registrationJudgments}
+        selectedNumberChoice={selectedNumberChoice}
         busy={busy}
-        onNumberChange={onNumberChange}
-        onRegistrationJudgmentChange={onRegistrationJudgmentChange}
+        onNumberChoiceChange={onNumberChoiceChange}
       />
     </>
   );
@@ -244,6 +236,7 @@ function StepSpecificInput({
       step.requiredInput.characterKind,
       selectedPlayerIds,
       players,
+      step,
     );
     return (
       <div className="stepSpecificInput">
@@ -294,98 +287,111 @@ function StepSpecificInput({
 function InformationDeliveryInput({
   step,
   players,
-  numberValue,
-  registrationJudgments,
+  selectedNumberChoice,
   busy,
-  onNumberChange,
-  onRegistrationJudgmentChange,
+  onNumberChoiceChange,
 }: {
   step: PhaseStep;
   players: Player[];
-  numberValue: string;
-  registrationJudgments: Record<string, "" | RegistrationJudgment["registeredAs"]>;
+  selectedNumberChoice?: NumberChoice;
   busy: boolean;
-  onNumberChange: (value: string) => void;
-  onRegistrationJudgmentChange: (
-    playerId: string,
-    value: "" | RegistrationJudgment["registeredAs"],
-  ) => void;
+  onNumberChoiceChange: (choice: NumberChoice) => void;
 }) {
   const prompt = step.informationPrompt;
-  if (!prompt) return null;
-
-  const registrationCandidates = prompt.registrationCandidatePlayerIds.flatMap((playerId) => {
-    const player = players.find((candidate) => candidate.id === playerId);
-    return player ? [player] : [];
-  });
+  if (!prompt || prompt.numberChoices.length === 0) return null;
 
   return (
     <div className="stepSpecificInput informationDeliveryInput" aria-label="전달 정보">
-      <label>
-        계산된 실제 정보
-        <output>{informationResultLabel(prompt.computedResult)}</output>
-      </label>
-      {prompt.deliveryMode === "selectable" && prompt.computedResult.kind === "number" ? (
-        <label>
-          전달할 숫자
-          <input
-            type="number"
-            min="0"
-            max="15"
-            inputMode="numeric"
-            value={numberValue}
-            disabled={busy}
-            onChange={(event) => onNumberChange(event.target.value)}
-          />
-        </label>
-      ) : null}
-      {prompt.activeReasons.length > 0 ? (
-        <p className="informationReasons">전달 재량: {prompt.activeReasons.map(deliveryReasonLabel).join(", ")}</p>
-      ) : null}
-      {registrationCandidates.length > 0 ? (
-        <div className="registrationJudgment" aria-label="등록 판정">
-          {registrationCandidates.map((player) => (
-            <label key={player.id}>
-              {player.seat}번 {player.name} 등록 판정
-              <select
-                aria-label={`${player.seat}번 ${player.name} 등록 판정`}
-                value={registrationJudgments[player.id] ?? ""}
-                disabled={busy}
-                onChange={(event) =>
-                  onRegistrationJudgmentChange(
-                    player.id,
-                    event.target.value as "" | RegistrationJudgment["registeredAs"],
-                  )
-                }
-              >
-                <option value="">선택</option>
-                <option value="good">선</option>
-                <option value="evil">악</option>
-              </select>
-            </label>
-          ))}
-        </div>
-      ) : null}
+      <NeighborVisualization step={step} players={players} />
+      <div className="numberChoiceButtons" aria-label="전달할 숫자">
+        {prompt.numberChoices.map((choice) => {
+          const selected = selectedNumberChoice?.value === choice.value;
+          return (
+            <button
+              type="button"
+              className={`${choice.isComputed ? "truth" : "falsehood"} ${selected ? "selected" : ""}`}
+              aria-pressed={selected}
+              disabled={busy}
+              onClick={() => onNumberChoiceChange(choice)}
+              key={choice.value}
+            >
+              <small>{choice.isComputed ? "진실" : "거짓"}</small>
+              <strong>{choice.value}</strong>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function informationResultLabel(result: InformationResult): string {
-  if (result.kind === "number") return String(result.value);
-  if (result.kind === "setupInfo") {
-    if (result.zeroOutsiders) return "아웃사이더 0명";
-    return `${result.playerIds.length}명${result.characterId ? ` · ${result.characterId}` : ""}`;
-  }
-  if (result.kind === "teamInfo") {
-    return `악마 ${result.demonPlayerIds.length}명 · 하수인 ${result.minionPlayerIds.length}명 · 블러프 ${result.bluffCharacterIds.length}개`;
-  }
-  return `플레이어 ${result.players.length}명`;
+function NeighborVisualization({ step, players }: { step: PhaseStep; players: Player[] }) {
+  const pairs = relevantNeighborPairs(step, players);
+  if (pairs.length === 0) return null;
+  return (
+    <section className="neighborVisualization" aria-label="이웃 관계">
+      {pairs.map(([left, right]) => (
+        <div className="neighborPair" key={`${left.id}:${right.id}`}>
+          <PlayerNeighbor player={left} />
+          <span className="neighborLine">이웃</span>
+          <PlayerNeighbor player={right} />
+        </div>
+      ))}
+    </section>
+  );
 }
 
-function deliveryReasonLabel(reason: DeliveryReason): string {
-  if (reason.type === "drunk") return "술취함";
-  if (reason.type === "poisoned") return "중독";
-  return "등록 판정";
+function PlayerNeighbor({ player }: { player: Player }) {
+  return (
+    <div className={`neighborPlayer ${player.alignment}`}>
+      <span>{player.seat}</span>
+      <strong>{player.name}</strong>
+      <small>{characterLabel(player.actualCharacter)}</small>
+    </div>
+  );
+}
+
+function relevantNeighborPairs(step: PhaseStep, players: Player[]): Array<[Player, Player]> {
+  const sortedPlayers = [...players].sort((left, right) => left.seat - right.seat);
+  if (sortedPlayers.length < 2) return [];
+  if (step.character === "empath" && step.playerId) {
+    const livingPlayers = sortedPlayers.filter((player) => player.alive);
+    const actorIndex = livingPlayers.findIndex((player) => player.id === step.playerId);
+    if (actorIndex < 0 || livingPlayers.length < 2) return [];
+    const actor = livingPlayers[actorIndex];
+    const left = livingPlayers[(actorIndex - 1 + livingPlayers.length) % livingPlayers.length];
+    const right = livingPlayers[(actorIndex + 1) % livingPlayers.length];
+    if (!actor || !left || !right) return [];
+    return left.id === right.id ? [[actor, left]] : [[left, actor], [actor, right]];
+  }
+  if (step.character !== "chef") return [];
+
+  const registrationPlayerIds = new Set(
+    step.informationPrompt?.numberChoices.flatMap((choice) =>
+      choice.registrationJudgments.map((judgment) => judgment.playerId),
+    ) ?? [],
+  );
+  if (registrationPlayerIds.size === 0) return [];
+  const seen = new Set<string>();
+  const pairs: Array<[Player, Player]> = [];
+  for (const playerId of registrationPlayerIds) {
+    const index = sortedPlayers.findIndex((player) => player.id === playerId);
+    if (index < 0) continue;
+    for (const neighborIndex of [
+      (index - 1 + sortedPlayers.length) % sortedPlayers.length,
+      (index + 1) % sortedPlayers.length,
+    ]) {
+      const player = sortedPlayers[index];
+      const neighbor = sortedPlayers[neighborIndex];
+      if (!player || !neighbor) continue;
+      if (neighbor.alignment !== "evil" && !registrationPlayerIds.has(neighbor.id)) continue;
+      const key = [player.id, neighbor.id].sort().join(":");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push([player, neighbor]);
+    }
+  }
+  return pairs;
 }
 
 function CharacterStepInput({

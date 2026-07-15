@@ -35,7 +35,6 @@ pub(crate) enum ErrorKind {
     UnexpectedDeliveredInformation,
     InvalidDeliveredInformation,
     InvalidRegistrationJudgment,
-    MissingRegistrationJudgment,
 }
 
 impl ErrorKind {
@@ -98,10 +97,6 @@ impl ErrorKind {
             Self::InvalidRegistrationJudgment => (
                 "INVALID_REGISTRATION_JUDGMENT",
                 "현재 정보 확인에 적용할 수 없는 등록 판정입니다.",
-            ),
-            Self::MissingRegistrationJudgment => (
-                "MISSING_REGISTRATION_JUDGMENT",
-                "현재 정보 확인에 적용할 등록 판정을 명시해야 합니다.",
             ),
         };
         CoreError { code, message_ko }

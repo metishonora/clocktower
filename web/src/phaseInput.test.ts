@@ -3,7 +3,9 @@ import test from "node:test";
 import type { PhaseStep, Player } from "./core/types.js";
 import {
   characterInputOptions,
+  phaseStepConfirmation,
   setupInfoCharacterOptions,
+  setupInfoRegistrationJudgments,
   setupInfoZeroOutsidersAvailable,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
@@ -64,8 +66,154 @@ test("setup information readiness rejects stale zero-Outsider state", () => {
   };
   const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
 
-  equal(stepInputReady(step, 0, 0, "", nominationDraft, true, "", true), true);
-  equal(stepInputReady(step, 0, 0, "", nominationDraft, true, "", false), false);
+  equal(stepInputReady(step, 0, 0, "", nominationDraft, true, undefined, true), true);
+  equal(stepInputReady(step, 0, 0, "", nominationDraft, true, undefined, false), false);
+});
+
+test("impaired setup information exposes every ability-shaped Character and zero", () => {
+  const step: PhaseStep = {
+    id: "firstNight:librarian",
+    phase: "firstNight",
+    stepType: "character",
+    character: "librarian",
+    playerId: "librarian",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "librarian",
+      characterKind: "Outsider",
+      zeroAllowed: true,
+      optional: false,
+    },
+    canSkip: false,
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "drunk" }],
+      registrationCandidatePlayerIds: [],
+      numberChoices: [],
+      setupInfoRegistrationOptions: [],
+    },
+  };
+  const roster = [player("chef", "chef"), player("imp", "imp")];
+  deepEqual(
+    setupInfoCharacterOptions("Outsider", ["chef", "imp"], roster, step).map(
+      (character) => character.id,
+    ),
+    ["butler", "drunk", "recluse", "saint"],
+  );
+  equal(setupInfoZeroOutsidersAvailable([player("drunk", "drunk")], step), true);
+});
+
+test("setup registration expands one editor and builds a concrete judgment", () => {
+  const step: PhaseStep = {
+    id: "firstNight:investigator",
+    phase: "firstNight",
+    stepType: "character",
+    character: "investigator",
+    playerId: "investigator",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "investigator",
+      characterKind: "Minion",
+      optional: false,
+    },
+    canSkip: false,
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["recluse"],
+      numberChoices: [],
+      setupInfoRegistrationOptions: [
+        {
+          playerId: "recluse",
+          registeredAs: "minion",
+          characterIds: ["poisoner", "spy"],
+        },
+      ],
+    },
+  };
+  const roster = [player("chef", "chef"), player("recluse", "recluse")];
+  deepEqual(
+    setupInfoCharacterOptions("Minion", ["chef", "recluse"], roster, step).map(
+      (character) => character.id,
+    ),
+    ["poisoner", "spy"],
+  );
+  deepEqual(
+    setupInfoRegistrationJudgments(step, ["chef", "recluse"], "poisoner", roster),
+    [{ playerId: "recluse", registeredAs: "minion", characterId: "poisoner" }],
+  );
+});
+
+test("numeric confirmation submits Rust witness only for an alternate choice", () => {
+  const step: PhaseStep = {
+    id: "firstNight:empath",
+    phase: "firstNight",
+    stepType: "character",
+    character: "empath",
+    playerId: "empath",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    canSkip: false,
+    informationPrompt: {
+      computedResult: { kind: "number", value: 2 },
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["recluse"],
+      numberChoices: [
+        { value: 1, isComputed: false, registrationJudgments: [{ playerId: "recluse", registeredAs: "evil" }] },
+        { value: 2, isComputed: true, registrationJudgments: [] },
+      ],
+      setupInfoRegistrationOptions: [],
+    },
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+  const baseDraft = {
+    selectedPlayerIds: [],
+    selectedCharacterId: "",
+    selectedCharacterIds: [],
+    zeroOutsiders: false,
+    registrationJudgments: [],
+  };
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: step.informationPrompt?.numberChoices[1] },
+      nominationDraft,
+    ),
+    { input: null },
+  );
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: step.informationPrompt?.numberChoices[0] },
+      nominationDraft,
+    ),
+    {
+      input: null,
+      deliveredResult: { kind: "number", value: 1 },
+      registrationJudgments: [{ playerId: "recluse", registeredAs: "evil" }],
+    },
+  );
+
+  const impairedStep: PhaseStep = {
+    ...step,
+    informationPrompt: step.informationPrompt
+      ? { ...step.informationPrompt, activeReasons: [{ type: "drunk" }] }
+      : undefined,
+  };
+  deepEqual(
+    phaseStepConfirmation(
+      impairedStep,
+      { ...baseDraft, selectedNumberChoice: impairedStep.informationPrompt?.numberChoices[0] },
+      nominationDraft,
+    ),
+    { input: null, deliveredResult: { kind: "number", value: 1 } },
+  );
 });
 
 function player(id: string, actualCharacter: string, shownCharacter = actualCharacter): Player {

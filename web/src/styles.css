@@ -78,8 +78,9 @@ select:focus-visible {
 
 .confirmedShell {
   display: grid;
-  grid-template-columns: minmax(520px, 1.1fr) minmax(320px, 0.7fr) minmax(260px, 0.55fr);
+  grid-template-columns: minmax(520px, 1.1fr) minmax(340px, 0.7fr);
   gap: 14px;
+  align-items: start;
 }
 
 .panel {
@@ -106,6 +107,12 @@ select:focus-visible {
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+
+.confirmedShell > .grimoire {
+  position: sticky;
+  top: 14px;
+  align-self: start;
 }
 
 .sectionHeader {
@@ -367,6 +374,10 @@ select {
   cursor: pointer;
 }
 
+.confirmedSeatToken.setupInformationEnabled[aria-disabled="false"] {
+  cursor: pointer;
+}
+
 .seatToken.selected {
   border-color: var(--primary);
   box-shadow:
@@ -423,6 +434,10 @@ select {
 
 .seatToken.voteSelected {
   background: rgba(31, 111, 91, 0.1);
+}
+
+.seatToken.setupInformationSelected {
+  background: rgba(31, 111, 91, 0.12);
 }
 
 .seatToken.deadSeat {
@@ -902,6 +917,72 @@ select {
   overflow-wrap: anywhere;
 }
 
+.currentActor {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.currentActor > span {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 2px solid var(--townsfolk);
+  border-radius: 50%;
+  color: var(--townsfolk);
+  font-size: 1.35rem;
+  font-weight: 1000;
+}
+
+.currentActor > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.currentActor small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.currentActor strong,
+.currentActor p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.currentActor strong {
+  font-size: 1.05rem;
+}
+
+.currentActor p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.currentActorTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.currentActorTags em {
+  border-radius: 999px;
+  background: rgba(31, 111, 91, 0.1);
+  color: var(--primary-dark);
+  padding: 3px 7px;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .stepActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -924,6 +1005,10 @@ select {
   gap: 8px;
 }
 
+.playerStepInput.setupInfoPlayerInput {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .playerStepInput button {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -936,6 +1021,10 @@ select {
   color: var(--ink);
   padding: 8px;
   text-align: left;
+}
+
+.playerStepInput button > * {
+  min-width: 0;
 }
 
 .playerStepInput button.selected {
@@ -992,13 +1081,191 @@ select {
   color: var(--ink);
   font-size: inherit;
   font-weight: inherit;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .setupInfoCandidateDetails small {
+  display: block;
+  min-width: 0;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 800;
   overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.informationDeliveryInput {
+  min-width: 0;
+}
+
+.numberChoiceButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  gap: 8px;
+}
+
+.numberChoiceButtons button {
+  display: grid;
+  min-width: 0;
+  min-height: 76px;
+  place-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--ink);
+}
+
+.numberChoiceButtons button.truth {
+  border-color: rgba(39, 107, 159, 0.48);
+  background: rgba(39, 107, 159, 0.08);
+  color: var(--townsfolk);
+}
+
+.numberChoiceButtons button.falsehood {
+  border-color: rgba(177, 123, 38, 0.48);
+  background: rgba(177, 123, 38, 0.08);
+  color: #8a5c17;
+}
+
+.numberChoiceButtons button.selected {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.numberChoiceButtons small {
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.numberChoiceButtons strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.neighborVisualization {
+  display: grid;
+  gap: 8px;
+}
+
+.neighborPair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(50px, 0.65fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: rgba(54, 43, 28, 0.045);
+  padding: 10px;
+}
+
+.neighborPlayer {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.neighborPlayer > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.neighborPlayer.good {
+  color: var(--outsider);
+}
+
+.neighborPlayer.evil {
+  color: var(--demon);
+}
+
+.neighborPlayer strong,
+.neighborPlayer small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.neighborPlayer strong {
+  color: var(--ink);
+}
+
+.neighborPlayer small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.neighborLine {
+  position: relative;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.neighborLine::before {
+  position: absolute;
+  right: 0;
+  bottom: -5px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--demon), var(--outsider));
+  content: "";
+}
+
+.auxiliaryPanel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.auxiliaryPanel > summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.auxiliaryPanel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.auxiliaryPanel > summary::after {
+  color: var(--primary);
+  content: "＋";
+  font-weight: 1000;
+}
+
+.auxiliaryPanel[open] > summary::after {
+  content: "−";
+}
+
+.auxiliaryPanel > summary span {
+  min-width: 0;
+  font-weight: 1000;
+  overflow-wrap: anywhere;
+}
+
+.auxiliaryPanel > summary small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.auxiliaryPanelContent {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 14px 16px 16px;
 }
 
 .stepSpecificInput {
@@ -2894,10 +3161,6 @@ select {
 }
 
 @media (max-width: 1180px) {
-  .confirmedShell {
-    grid-template-columns: 1fr;
-  }
-
   .phasePrototypeVariantA,
   .phasePrototypeVariantB,
   .phasePrototypeScriptLayout {
@@ -2910,6 +3173,14 @@ select {
 }
 
 @media (max-width: 900px) {
+  .confirmedShell {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmedShell > .grimoire {
+    position: static;
+  }
+
   .setupShell {
     grid-template-columns: 1fr;
   }
@@ -3171,5 +3442,791 @@ select {
   .cleanPrototypeSwitcher {
     width: calc(100vw - 20px);
     grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+}
+
+/* Issue #7 setup-information discretion prototype. */
+.setupInfoDiscretionPrototype {
+  min-height: 100vh;
+  padding: 14px;
+  background: var(--bg);
+}
+
+.discretionPrototypeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.discretionPrototypeHeader p:not(.eyebrow) {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.discretionScenarioTabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.discretionScenarioTabs button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 8px 10px;
+  font-weight: 900;
+}
+
+.discretionScenarioTabs button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.1);
+  color: var(--primary-dark);
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 91, 0.16);
+}
+
+.discretionUtilityPanels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.discretionUtilityPanels details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.discretionUtilityPanels summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.discretionUtilityPanels summary::-webkit-details-marker {
+  display: none;
+}
+
+.discretionUtilityPanels summary::after {
+  content: "＋";
+  color: var(--primary);
+  font-weight: 1000;
+}
+
+.discretionUtilityPanels details[open] summary::after {
+  content: "−";
+}
+
+.discretionUtilityPanels summary span {
+  font-weight: 1000;
+}
+
+.discretionUtilityPanels summary small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.discretionUtilityPanels details > div,
+.discretionUtilityPanels details > ol {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 10px;
+}
+
+.discretionUtilityPanels details > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.discretionUtilityPanels details > ol {
+  padding-left: 30px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.discretionScenarioSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+  border-left: 4px solid var(--primary);
+  background: rgba(31, 111, 91, 0.075);
+  padding: 10px 12px;
+}
+
+.discretionScenarioSummary > div {
+  display: grid;
+  gap: 3px;
+}
+
+.discretionScenarioSummary > div span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.discretionReadiness {
+  flex: 0 0 auto;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.discretionReadiness.ready {
+  border-color: rgba(35, 123, 88, 0.3);
+  background: rgba(35, 123, 88, 0.1);
+  color: var(--ok);
+}
+
+.discretionReadiness.incomplete {
+  border-color: rgba(185, 117, 20, 0.32);
+  background: rgba(185, 117, 20, 0.1);
+  color: #85520d;
+}
+
+.discretionPrototypeWorkspace {
+  display: grid;
+  grid-template-columns: minmax(520px, 1.12fr) minmax(430px, 0.78fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.discretionPrototypeGrimoire {
+  position: sticky;
+  top: 14px;
+  min-height: calc(100vh - 164px);
+}
+
+.discretionPrototypeGrimoire .seatMap {
+  min-height: 620px;
+}
+
+.discretionActionPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.discretionActorCard {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.discretionActorToken {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2px solid var(--townsfolk);
+  border-radius: 50%;
+  background: rgba(39, 107, 159, 0.1);
+  color: var(--townsfolk);
+  font-size: 1.35rem;
+  font-weight: 1000;
+}
+
+.discretionActorToken.character-kind-outsider {
+  border-color: var(--outsider);
+  background: rgba(118, 84, 160, 0.1);
+  color: var(--outsider);
+}
+
+.discretionActorToken.character-kind-minion {
+  border-color: var(--minion);
+  background: rgba(154, 81, 51, 0.1);
+  color: var(--minion);
+}
+
+.discretionActorCard > div {
+  display: grid;
+  gap: 5px;
+}
+
+.discretionActorCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.discretionActorBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.discretionActorBadges span {
+  border-radius: 999px;
+  background: var(--panel-soft);
+  padding: 4px 7px;
+  color: var(--ink);
+  font-size: 0.73rem;
+  font-weight: 900;
+}
+
+.discretionActorBadges span.warning {
+  background: rgba(185, 117, 20, 0.13);
+  color: #85520d;
+}
+
+.discretionInfoEditor,
+.discretionRegistrationEditor,
+.fixedDeliveryNote,
+.discretionConfirmedPreview {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 11px;
+}
+
+.discretionInfoEditor > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.discretionInfoEditor > header > div,
+.discretionRegistrationEditor > div {
+  display: grid;
+  gap: 3px;
+}
+
+.discretionInfoEditor > header span,
+.discretionRegistrationEditor > div span,
+.fixedDeliveryNote span,
+.discretionConfirmedPreview span {
+  color: var(--primary-dark);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.discretionInfoEditor > header small,
+.discretionRegistrationEditor small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.discretionInfoEditor > header strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  padding: 4px 7px;
+  font-size: 0.76rem;
+}
+
+.discretionCandidateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 246px;
+  overflow: auto;
+  padding: 1px;
+}
+
+.discretionCandidateGrid > button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 7px;
+  text-align: left;
+}
+
+.discretionCandidateGrid > button.selected {
+  border-color: var(--primary);
+  background: rgba(31, 111, 91, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 91, 0.15);
+}
+
+.discretionCandidateGrid > button.character-kind-townsfolk {
+  background: rgba(39, 107, 159, 0.08);
+}
+
+.discretionCandidateGrid > button.character-kind-outsider {
+  background: rgba(118, 84, 160, 0.09);
+}
+
+.discretionCandidateGrid > button.character-kind-minion {
+  background: rgba(154, 81, 51, 0.09);
+}
+
+.discretionCandidateGrid > button.character-kind-demon {
+  background: rgba(143, 40, 49, 0.09);
+}
+
+.discretionCandidateGrid > button.selected.character-kind-townsfolk,
+.discretionCandidateGrid > button.selected.character-kind-outsider,
+.discretionCandidateGrid > button.selected.character-kind-minion,
+.discretionCandidateGrid > button.selected.character-kind-demon {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(31, 111, 91, 0.22);
+}
+
+.discretionCandidateGrid > button.registrationCandidate:not(.selected) {
+  border-style: dashed;
+  border-color: rgba(185, 117, 20, 0.62);
+}
+
+.discretionCandidateGrid > button b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--panel);
+  font-size: 0.72rem;
+}
+
+.discretionCandidateGrid > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.discretionCandidateGrid small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discretionCharacterChoice,
+.discretionRegistrationEditor label {
+  display: grid;
+  gap: 5px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.discretionCharacterChoice select,
+.discretionRegistrationEditor select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 7px 9px;
+}
+
+.discretionZeroChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.discretionZeroChoices button {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 10px;
+  text-align: left;
+}
+
+.discretionZeroChoices button span {
+  font-weight: 1000;
+}
+
+.discretionZeroChoices button small {
+  color: var(--muted);
+}
+
+.discretionZeroChoices button.selected {
+  border-color: var(--primary);
+  background: rgba(39, 107, 159, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(39, 107, 159, 0.18);
+}
+
+.discretionZeroChoices button.selected.alternate {
+  border-color: #b98520;
+  background: rgba(185, 133, 32, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(185, 133, 32, 0.2);
+}
+
+.discretionRegistrationEditor {
+  border-color: rgba(185, 117, 20, 0.4);
+  background: rgba(185, 117, 20, 0.06);
+}
+
+.fixedDeliveryNote {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-color: rgba(35, 123, 88, 0.25);
+  background: rgba(35, 123, 88, 0.06);
+}
+
+.fixedDeliveryNote strong {
+  font-size: 0.82rem;
+}
+
+.discretionPrototypeActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.discretionConfirmedPreview {
+  border-color: rgba(35, 123, 88, 0.32);
+  background: rgba(35, 123, 88, 0.07);
+}
+
+.discretionConfirmedPreview > div {
+  display: grid;
+  gap: 3px;
+}
+
+.discretionConfirmedPreview > div + div {
+  border-top: 1px solid rgba(35, 123, 88, 0.18);
+  padding-top: 8px;
+}
+
+.discretionConfirmedPreview small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.informationFlowPreview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.informationFlowPreview > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.informationFlowPreview > div span {
+  font-size: 0.75rem;
+  font-weight: 1000;
+}
+
+.informationFlowPreview > div strong {
+  line-height: 1.35;
+}
+
+.informationFlowPreview > div small {
+  color: var(--muted);
+}
+
+.informationFlowPreview .truth {
+  border-color: rgba(39, 107, 159, 0.34);
+  background: rgba(39, 107, 159, 0.08);
+}
+
+.informationFlowPreview .truth span {
+  color: var(--townsfolk);
+}
+
+.informationFlowPreview .delivered {
+  border-color: rgba(185, 133, 32, 0.45);
+  background: rgba(185, 133, 32, 0.09);
+}
+
+.informationFlowPreview .delivered span {
+  color: #85520d;
+}
+
+.informationFlowArrow {
+  align-self: center;
+  color: #9c7120;
+  font-size: 1.3rem;
+  font-weight: 1000;
+}
+
+.chefNeighborPanel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(185, 133, 32, 0.34);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(39, 23, 64, 0.035), rgba(185, 133, 32, 0.07));
+  padding: 12px;
+}
+
+.chefNeighborPanel > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chefNeighborPanel > header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.chefNeighborPanel > header span,
+.chefResultChoices > p {
+  margin: 0;
+  color: #85520d;
+  font-size: 0.8rem;
+  font-weight: 1000;
+}
+
+.chefNeighborPanel > header small {
+  color: var(--muted);
+}
+
+.chefNeighborPanel > header strong {
+  border-radius: 999px;
+  background: rgba(39, 23, 64, 0.08);
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.chefNeighborDiagram {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(74px, 0.7fr) minmax(90px, 1fr);
+  align-items: center;
+  gap: 8px;
+  border-radius: 9px;
+  background: rgba(39, 23, 64, 0.055);
+  padding: 13px;
+}
+
+.chefPlayerPortrait {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+
+.chefPlayerPortrait > span {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 2px solid;
+  border-radius: 50%;
+  background: #fffdf8;
+  font-size: 1.35rem;
+}
+
+.chefPlayerPortrait.character-kind-demon > span {
+  border-color: var(--demon);
+  background: rgba(143, 40, 49, 0.1);
+  color: var(--demon);
+}
+
+.chefPlayerPortrait.character-kind-outsider > span {
+  border-color: var(--outsider);
+  background: rgba(118, 84, 160, 0.1);
+  color: var(--outsider);
+}
+
+.chefPlayerPortrait small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.neighborConnector {
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  color: #9c7120;
+  font-size: 0.72rem;
+  font-weight: 1000;
+}
+
+.neighborConnector i {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--demon), #c79a3b, var(--outsider));
+  box-shadow: 0 0 0 3px rgba(199, 154, 59, 0.11);
+}
+
+.chefTruthCallout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
+  border-left: 4px solid var(--townsfolk);
+  border-radius: 7px;
+  background: rgba(39, 107, 159, 0.08);
+  padding: 9px 10px;
+}
+
+.chefTruthCallout span {
+  color: var(--townsfolk);
+  font-size: 0.76rem;
+  font-weight: 1000;
+}
+
+.chefTruthCallout strong {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  color: var(--townsfolk);
+  font-size: 1.5rem;
+}
+
+.chefTruthCallout small {
+  color: var(--muted);
+}
+
+.chefResultChoices {
+  display: grid;
+  gap: 7px;
+}
+
+.chefResultChoices > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chefResultChoices button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 10px;
+  text-align: left;
+}
+
+.chefResultChoices button span,
+.chefResultChoices button small {
+  min-width: 0;
+}
+
+.chefResultChoices button span {
+  font-size: 0.76rem;
+  font-weight: 1000;
+}
+
+.chefResultChoices button strong {
+  grid-row: 1;
+  grid-column: 2;
+  font-size: 1.65rem;
+}
+
+.chefResultChoices button small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.chefResultChoices button.truth span,
+.chefResultChoices button.truth strong {
+  color: var(--townsfolk);
+}
+
+.chefResultChoices button.alternate span,
+.chefResultChoices button.alternate strong {
+  color: #9a6812;
+}
+
+.chefResultChoices button.selected {
+  border-color: #bd8b2e;
+  background: rgba(189, 139, 46, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(189, 139, 46, 0.18);
+}
+
+.chefSelectionExplanation {
+  margin: 0;
+  border-radius: 7px;
+  background: rgba(189, 139, 46, 0.1);
+  padding: 9px 10px;
+  color: #70450b;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+@media (max-width: 980px) {
+  .discretionPrototypeWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .discretionPrototypeGrimoire {
+    position: static;
+    min-height: auto;
+  }
+
+  .discretionScenarioTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .setupInfoDiscretionPrototype {
+    padding: 10px;
+  }
+
+  .discretionPrototypeHeader,
+  .discretionScenarioSummary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .discretionScenarioTabs,
+  .discretionUtilityPanels,
+  .discretionPrototypeActions,
+  .fixedDeliveryNote {
+    grid-template-columns: 1fr;
+  }
+
+  .discretionUtilityPanels details > div {
+    grid-template-columns: 1fr;
+  }
+
+  .informationFlowPreview {
+    grid-template-columns: 1fr;
+  }
+
+  .informationFlowArrow {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .discretionCandidateGrid {
+    max-height: 300px;
   }
 }
