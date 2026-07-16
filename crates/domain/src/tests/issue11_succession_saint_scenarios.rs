@@ -111,7 +111,8 @@ fn confirmed_healthy_saint_execution_adds_undoable_warning_without_ending_game()
         .contains(&json!({
             "code": "SAINT_EXECUTED_EVIL_WIN",
             "severity": "warning",
-            "messageKo": "성자 처형 사망: 악 승리 확인 필요"
+            "messageKo": "성자 처형 사망: 악 승리 확인 필요",
+            "winningTeam": "evil"
         })));
     assert_eq!(after["value"]["phase"], "day");
     assert!(after["value"].get("gameEnded").is_none());

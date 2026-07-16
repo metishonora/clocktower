@@ -139,7 +139,8 @@ export type Command =
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | { type: "skipStep"; payload: { stepId: string; input?: null } }
-  | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload };
+  | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
+  | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } };
 
 export type UseSlayerAbilityPayload = {
   discussionStepId: string;
@@ -163,6 +164,12 @@ export type ReplayState = {
   dayState?: DayState;
   ruleState: RuleState;
   warnings: CoreWarning[];
+  gameEnd?: GameEndState | null;
+};
+
+export type GameEndState = {
+  eventId: string;
+  winningTeam: "good" | "evil";
 };
 
 export type RuleState = {
@@ -319,6 +326,7 @@ export type GameEvent = EventCommon &
           source: "scarletWoman" | "impSelfKill";
         };
       }
+    | { type: "gameEnded"; payload: { winningTeam: "good" | "evil" } }
   );
 
 export type VirginImpairmentContext =
@@ -381,6 +389,7 @@ export type CoreWarning = {
   code: string;
   severity: "warning" | "info";
   messageKo: string;
+  winningTeam?: "good" | "evil";
 };
 
 export type PhaseStep = {

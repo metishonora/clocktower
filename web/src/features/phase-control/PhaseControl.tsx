@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type {
   CoreResult,
+  CoreWarning,
   DayState,
+  GameEndState,
   PhaseOverviewItem,
   PhaseStep,
   PhaseStepConfirmation,
@@ -28,6 +30,7 @@ import {
 import { ExecutionDeathActions, ExecutionDecisionActions, StepInputFields } from "./StepInputs";
 import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
+import { GameEndControls } from "../game-end/GameEndControls";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -56,6 +59,10 @@ export function PhaseControl({
   onSuggest,
   choiceTokenSource,
   suggestionContextFingerprint,
+  warnings,
+  gameEnd,
+  onEndGame,
+  onRequestUndoGameEnd,
 }: {
   pendingReveal?: ConfirmedReveal;
   dayRuntime?: string;
@@ -77,6 +84,10 @@ export function PhaseControl({
   onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
   choiceTokenSource: () => number;
   suggestionContextFingerprint: string;
+  warnings: CoreWarning[];
+  gameEnd?: GameEndState | null;
+  onEndGame: (winningTeam: "good" | "evil") => void;
+  onRequestUndoGameEnd: (trigger: HTMLButtonElement) => void;
 }) {
   if (pendingReveal) {
     return (
@@ -89,6 +100,24 @@ export function PhaseControl({
         onShowReveal={onShowReveal}
         onContinue={onContinue}
       />
+    );
+  }
+
+  if (gameEnd) {
+    return (
+      <>
+        <div className="sectionHeader compact">
+          <div><p className="eyebrow">게임 종료</p><h2>최종 결과</h2></div>
+          <span className="phaseBadge">종료됨</span>
+        </div>
+        <GameEndControls
+          warnings={warnings}
+          gameEnd={gameEnd}
+          busy={busy}
+          onEndGame={onEndGame}
+          onRequestUndo={onRequestUndoGameEnd}
+        />
+      </>
     );
   }
 
@@ -110,6 +139,9 @@ export function PhaseControl({
       onSuggest={onSuggest}
       choiceTokenSource={choiceTokenSource}
       suggestionContextFingerprint={suggestionContextFingerprint}
+      warnings={warnings}
+      onEndGame={onEndGame}
+      onRequestUndoGameEnd={onRequestUndoGameEnd}
     />
   );
 }
@@ -279,6 +311,9 @@ function CurrentStepPane({
   onSuggest,
   choiceTokenSource,
   suggestionContextFingerprint,
+  warnings,
+  onEndGame,
+  onRequestUndoGameEnd,
 }: {
   currentStep?: PhaseStep;
   dayRuntime?: string;
@@ -296,6 +331,9 @@ function CurrentStepPane({
   onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
   choiceTokenSource: () => number;
   suggestionContextFingerprint: string;
+  warnings: CoreWarning[];
+  onEndGame: (winningTeam: "good" | "evil") => void;
+  onRequestUndoGameEnd: (trigger: HTMLButtonElement) => void;
 }) {
   const [suggesting, setSuggesting] = useState(false);
   const [suggestionUsed, setSuggestionUsed] = useState(false);
@@ -396,6 +434,12 @@ function CurrentStepPane({
         {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>
 
+      <GameEndControls
+        warnings={warnings}
+        busy={busy}
+        onEndGame={onEndGame}
+        onRequestUndo={onRequestUndoGameEnd}
+      >
       <section className="currentStepCard" aria-label="현재 단계">
         {currentStep ? (
           <>
@@ -504,6 +548,7 @@ function CurrentStepPane({
           <p className="emptyStep">진행할 단계 없음</p>
         )}
       </section>
+      </GameEndControls>
 
       <section className="phaseOverview" aria-label="단계 개요">
         <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>

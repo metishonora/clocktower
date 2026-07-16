@@ -527,7 +527,7 @@ pub(crate) struct Player {
     pub(crate) notes: String,
 }
 
-#[derive(Debug, Serialize, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum Alignment {
     Good,
@@ -540,6 +540,8 @@ pub(crate) struct CoreWarning {
     pub(crate) code: String,
     pub(crate) severity: &'static str,
     pub(crate) message_ko: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) winning_team: Option<Alignment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]

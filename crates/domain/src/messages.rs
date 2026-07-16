@@ -121,6 +121,7 @@ pub(crate) fn setup_distribution_warning(expected: &SetupDistribution) -> CoreWa
             "Trouble Brewing 권장 구성은 마을주민 {}, 외부인 {}, 하수인 {}, 악마 {}명입니다.",
             expected.townsfolk, expected.outsider, expected.minion, expected.demon
         ),
+        winning_team: None,
     }
 }
 
@@ -129,6 +130,7 @@ pub(crate) fn duplicate_actual_character_warning() -> CoreWarning {
         code: "DUPLICATE_ACTUAL_CHARACTER".to_string(),
         severity: "warning",
         message_ko: "중복된 Actual Character가 있습니다.".to_string(),
+        winning_team: None,
     }
 }
 

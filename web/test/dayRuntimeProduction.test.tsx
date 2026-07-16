@@ -44,6 +44,7 @@ test("keeps one wall-clock runtime through Day steps and foreground catch-up wit
   render(<ClocktowerApp {...props} />);
 
   expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("낮 경과 00:00");
+  await waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
 
   now += 5 * 60_000 + 7_000;
   await act(async () => vi.advanceTimersByTime(1_000));

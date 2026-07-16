@@ -12,6 +12,25 @@ use crate::model::{
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+pub(crate) fn demon_dead_without_successor(players: &[Player], succession_pending: bool) -> bool {
+    !succession_pending
+        && !players
+            .iter()
+            .any(|player| player.alive && player.actual_character == "imp")
+}
+
+pub(crate) fn mayor_win_eligible(
+    players: &[Player],
+    active_poison: Option<&ActiveRuleEffect>,
+) -> bool {
+    players.iter().filter(|player| player.alive).count() == 3
+        && players.iter().any(|player| {
+            player.alive
+                && player.actual_character == "mayor"
+                && active_poison.is_none_or(|poison| poison.player_id != player.id)
+        })
+}
+
 pub(crate) fn virgin_resolution(
     players: &[Player],
     nominator_id: &str,

@@ -128,3 +128,42 @@ test("an unresolved Undo replay blocks overlap and setup recovery appears only a
   expect(result.current.latestLiveUndoEvent).toBeUndefined();
   expect(result.current.canRecoverConfirmedSetup).toBe(true);
 });
+
+test("store proposes an explicit game end and exposes replayed ended state", async () => {
+  const storedGame = gameFile();
+  const endedEvent = {
+    id: "game-ended-2",
+    type: "gameEnded" as const,
+    phase: "firstNight" as const,
+    payload: { winningTeam: "evil" as const },
+    summary: "게임 종료 · 악팀 승리",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+  const core = coreForReplay(vi.fn(async (candidate: GameFile) => {
+    const currentStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+    const value = replayState({ currentStep, eventCount: candidate.game.events.length });
+    if (candidate.game.events.length === 2) {
+      value.currentStep = null;
+      value.phaseOverview = [];
+      value.gameEnd = { eventId: endedEvent.id, winningTeam: "evil" };
+    }
+    return { ok: true as const, value };
+  }));
+  core.propose = vi.fn(async () => ({
+    ok: true as const,
+    value: { event: endedEvent, warnings: [], followUpSteps: [], preview: {} },
+  }));
+  const { result } = renderHook(() =>
+    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+  );
+
+  await waitFor(() => expect(result.current.currentStep?.id).toBe("firstNight:chef"));
+  act(() => { void result.current.endGame("evil"); });
+
+  await waitFor(() => expect(result.current.gameEnd).toEqual({ eventId: endedEvent.id, winningTeam: "evil" }));
+  expect(core.propose).toHaveBeenCalledWith(
+    expect.anything(),
+    { type: "endGame", payload: { winningTeam: "evil", expectedEventCount: 1 } },
+  );
+  expect(result.current.gameFile.game.events.at(-1)).toEqual(endedEvent);
+});

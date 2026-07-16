@@ -14,3 +14,4 @@ mod spy_reveal_regressions;
 mod suggestion_scenarios;
 mod support;
 mod trouble_brewing_scenarios;
+mod win_game_scenarios;

@@ -1,13 +1,14 @@
 use crate::{
     contracts::{
         Command, CreateGamePayload, DeathEventPayload, DemonSuccessionConfirmedPayload,
-        ExecutionEventInput, ExecutionEventPayload, ExecutionSurvivalEventPayload, GameEvent,
-        GameEventKind, GameFile, ImpAttackOutcome, ImpNoDeathReason, NightActionResolution,
-        NightActionResolvedPayload, NightDeathsAnnouncedPayload, NominationEventPayload,
-        NominationStartedPayload, PhaseStepCommandPayload, PhaseStepEventPayload, Proposal,
-        RedHerringAssignedPayload, RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload,
-        SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload,
-        StepIdPayload, UseSlayerAbilityCommandPayload, VirginResolution,
+        EndGameCommandPayload, ExecutionEventInput, ExecutionEventPayload,
+        ExecutionSurvivalEventPayload, GameEndedPayload, GameEvent, GameEventKind, GameFile,
+        ImpAttackOutcome, ImpNoDeathReason, NightActionResolution, NightActionResolvedPayload,
+        NightDeathsAnnouncedPayload, NominationEventPayload, NominationStartedPayload,
+        PhaseStepCommandPayload, PhaseStepEventPayload, Proposal, RedHerringAssignedPayload,
+        RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload, SlayerImpairmentContext,
+        SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload, StepIdPayload,
+        UseSlayerAbilityCommandPayload, VirginResolution,
     },
     day::{
         execution_standing, nomination_record, nomination_start_input, replay_day_state,
@@ -23,7 +24,8 @@ use crate::{
         setup_event_summary, setup_preview, smoke_event_summary, smoke_preview,
     },
     model::{
-        ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput, StepType,
+        Alignment, ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput,
+        StepType,
     },
     phase::validate_required_input,
     replay::{pending_demon_succession, replay_phase_state, replay_players, replay_rule_state},
@@ -35,6 +37,14 @@ use crate::{
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
+    if game_file
+        .game
+        .events
+        .iter()
+        .any(|event| matches!(event.kind, GameEventKind::GameEnded { .. }))
+    {
+        return Err(ErrorKind::GameAlreadyEnded.into_error());
+    }
     match command {
         Command::Smoke => Ok(Proposal {
             event: GameEvent {
@@ -57,7 +67,47 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
         Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
         Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
+        Command::EndGame { payload } => propose_end_game(&game_file, payload),
     }
+}
+
+fn propose_end_game(
+    game_file: &GameFile,
+    payload: EndGameCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    if game_file.game.events.is_empty() {
+        return Err(ErrorKind::NoCurrentStep.into_error());
+    }
+    let players = replay_players(&game_file.game.events)?;
+    let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
+    let team_label = match payload.winning_team {
+        Alignment::Good => "선팀",
+        Alignment::Evil => "악팀",
+    };
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("game-ended-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::GameEnded {
+                payload: GameEndedPayload {
+                    winning_team: payload.winning_team,
+                },
+            },
+            phase,
+            summary: format!("게임 종료 · {team_label} 승리"),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": format!("게임 종료 · {team_label} 승리") }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_slayer_ability(
@@ -552,6 +602,7 @@ fn night_action_proposal(
                     code: "DEMON_ATTACK_PREVENTED".into(),
                     severity: "warning",
                     message_ko: "수도승 보호로 사망하지 않았습니다.".into(),
+                    winning_team: None,
                 });
                 format!("임프 공격: {label} · 사망 없음 (수도승 보호)")
             }
@@ -560,6 +611,7 @@ fn night_action_proposal(
                     code: "DEMON_ATTACK_PREVENTED".into(),
                     severity: "warning",
                     message_ko: "군인 보호로 사망하지 않았습니다.".into(),
+                    winning_team: None,
                 });
                 format!("임프 공격: {label} · 사망 없음 (군인 보호)")
             }
@@ -570,6 +622,7 @@ fn night_action_proposal(
                     code: "DEMON_ATTACK_TARGET_ALREADY_DEAD".into(),
                     severity: "warning",
                     message_ko: "이미 사망한 대상입니다.".into(),
+                    winning_team: None,
                 });
                 format!("임프 공격: {label} · 사망 없음 (이미 사망)")
             }
@@ -580,6 +633,7 @@ fn night_action_proposal(
                     code: "NIGHT_ACTION_NO_EFFECT".into(),
                     severity: "warning",
                     message_ko: "중독 또는 술취함으로 효과가 없습니다.".into(),
+                    winning_team: None,
                 });
                 format!("임프 공격: {label} · 사망 없음 ({actor_label} 중독)")
             }
@@ -590,6 +644,7 @@ fn night_action_proposal(
                     code: "NIGHT_ACTION_NO_EFFECT".into(),
                     severity: "warning",
                     message_ko: "실제 캐릭터 능력이 아니어서 효과가 없습니다.".into(),
+                    winning_team: None,
                 });
                 format!("임프 공격: {label} · 사망 없음 ({actor_label} 실제 임프 아님)")
             }
@@ -600,6 +655,7 @@ fn night_action_proposal(
                 code: "NIGHT_ACTION_NO_EFFECT".into(),
                 severity: "warning",
                 message_ko: "행동이 기록되었지만 효과가 없습니다.".into(),
+                winning_team: None,
             });
             format!("{} · 효과 없음", step.id)
         }
