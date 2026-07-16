@@ -266,6 +266,8 @@ export type PhaseOverviewItem = PhaseStep & {
 
 export type DayState = {
   nominations: NominationRecord[];
+  eligibleNominatorIds: string[];
+  eligibleNomineeIds: string[];
   executionVoteThreshold: number;
   highestVoteCount: number;
   executionCandidate?: ExecutionCandidate;

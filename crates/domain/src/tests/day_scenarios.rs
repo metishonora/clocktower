@@ -483,6 +483,178 @@ fn proposal_rejects_repeated_nominators_nominees_and_dead_nominators() {
     }
 }
 
+#[test]
+fn proposal_rejects_a_dead_nominee_with_invalid_step_input() {
+    let game = game_with_events(Value::Array(five_player_day_events_with_dead_player_two()));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:nomination:1",
+            "input": {
+                "nominatorId": "player-1",
+                "nomineeId": "player-2",
+                "voterIds": ["player-1", "player-3"]
+            }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false, "dead nominee was accepted as {actual}");
+    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+}
+
+#[test]
+fn replay_rejects_a_dead_nominee_without_returning_partial_state() {
+    let mut events = five_player_day_events_with_dead_player_two();
+    events.push(nomination_event_with_ghost_spending(
+        1,
+        "player-1",
+        "player-2",
+        &["player-1", "player-3"],
+        &[],
+    ));
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(actual["ok"], false, "dead nominee replayed as {actual}");
+    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    assert!(
+        actual.get("value").is_none(),
+        "partial replay leaked as {actual}"
+    );
+}
+
+#[test]
+fn day_state_exposes_independent_nomination_role_eligibility_in_seat_order() {
+    let mut events = five_player_day_events_with_dead_player_two();
+    events.push(nomination_event_with_ghost_spending(
+        1,
+        "player-1",
+        "player-5",
+        &["player-1", "player-3"],
+        &[],
+    ));
+    let game = game_with_events(Value::Array(events));
+
+    let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(
+        replayed["ok"], true,
+        "valid nomination failed as {replayed}"
+    );
+    assert_eq!(
+        replayed["value"]["dayState"]["eligibleNominatorIds"],
+        json!(["player-3", "player-4", "player-5"])
+    );
+    assert_eq!(
+        replayed["value"]["dayState"]["eligibleNomineeIds"],
+        json!(["player-1", "player-3", "player-4"])
+    );
+
+    let swapped_roles = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:nomination:2",
+            "input": {
+                "nominatorId": "player-5",
+                "nomineeId": "player-1",
+                "voterIds": []
+            }
+        }
+    });
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &swapped_roles.to_string())).unwrap();
+    assert_eq!(
+        proposal["ok"], true,
+        "independent roles failed as {proposal}"
+    );
+}
+
+#[test]
+fn self_nomination_is_allowed_and_uses_both_roles_for_the_day() {
+    let game = game_with_events(Value::Array(five_player_day_events_with_dead_player_two()));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:nomination:1",
+            "input": {
+                "nominatorId": "player-3",
+                "nomineeId": "player-3",
+                "voterIds": []
+            }
+        }
+    });
+
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposal["ok"], true, "self-nomination failed as {proposal}");
+
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(proposal["value"]["event"].clone());
+    let replayed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(replayed["ok"], true);
+    assert_eq!(
+        replayed["value"]["dayState"]["eligibleNominatorIds"],
+        json!(["player-1", "player-4", "player-5"])
+    );
+    assert_eq!(
+        replayed["value"]["dayState"]["eligibleNomineeIds"],
+        json!(["player-1", "player-4", "player-5"])
+    );
+}
+
+#[test]
+fn nomination_role_eligibility_resets_on_the_next_day() {
+    let mut events = day_events(
+        setup_event_with_players(five_players()),
+        &five_player_first_night_steps(),
+        &[],
+    );
+    events.extend([
+        nomination_event_with_ghost_spending(1, "player-1", "player-5", &[], &[]),
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+        no_execution_event("day:execution"),
+        phase_event("phaseStepConfirmed", "day:toNight"),
+        phase_event("phaseStepConfirmed", "night:imp"),
+        phase_event("phaseStepConfirmed", "night:fortuneTeller"),
+        phase_event("phaseStepConfirmed", "night:toDay"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:announceDeaths"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:whisper"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:discussion"),
+    ]);
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    let all_players = json!(["player-1", "player-2", "player-3", "player-4", "player-5"]);
+
+    assert_eq!(actual["ok"], true, "next Day failed to replay as {actual}");
+    assert_eq!(actual["value"]["currentStep"]["id"], "day2:nomination:1");
+    assert_eq!(
+        actual["value"]["dayState"]["eligibleNominatorIds"],
+        all_players
+    );
+    assert_eq!(
+        actual["value"]["dayState"]["eligibleNomineeIds"],
+        all_players
+    );
+}
+
+fn day_cycle_phase_event(event_type: &str, step_id: &str) -> Value {
+    let mut event = phase_event(event_type, step_id);
+    event["phase"] = json!("day");
+    event
+}
+
 fn confirm_and_replay(game: Value, step_id: &str) -> (Value, Value) {
     let command = json!({
         "type": "confirmStep",

@@ -1320,7 +1320,7 @@ describe("ClocktowerApp live-play integration", () => {
       stepType: "nomination",
       phase: "day",
     });
-    const canonicalEvent = event("event-vote", "1번 Ada가 5번 Eun을 지명 · 2표", "day");
+    const canonicalEvent = event("event-vote", "1번 Ada가 4번 Dae를 지명 · 2표", "day");
     const confirmedStanding = {
       nominations: [
         {
@@ -1335,7 +1335,9 @@ describe("ClocktowerApp live-play integration", () => {
       executionVoteThreshold: 2,
       highestVoteCount: 4,
       executionCandidate: { nomineeId: "player-5", voteCount: 4 },
-    } as ReplayState["dayState"];
+      eligibleNominatorIds: ["player-1", "player-5"],
+      eligibleNomineeIds: ["player-1", "player-4"],
+    } as unknown as ReplayState["dayState"];
     const core = createCoreHarness({
       initialReplay: replayState({ currentStep: votingStep, dayState: confirmedStanding }),
       replayAfterProposal: replayState({
@@ -1344,17 +1346,28 @@ describe("ClocktowerApp live-play integration", () => {
         dayState: {
           nominations: [
             {
+              stepId: "day:nomination:0",
+              nominatorId: "player-4",
+              nomineeId: "player-5",
+              voterIds: ["player-1", "player-2", "player-4", "player-5"],
+              voteCount: 4,
+              ghostVoteSpentPlayerIds: ["player-2"],
+            },
+            {
               stepId: votingStep.id,
               nominatorId: "player-1",
-              nomineeId: "player-5",
+              nomineeId: "player-4",
               voterIds: ["player-1", "player-2"],
               voteCount: 2,
               ghostVoteSpentPlayerIds: ["player-2"],
             },
           ],
           executionVoteThreshold: 2,
-          highestVoteCount: 2,
-        },
+          highestVoteCount: 4,
+          executionCandidate: { nomineeId: "player-5", voteCount: 4 },
+          eligibleNominatorIds: ["player-5"],
+          eligibleNomineeIds: ["player-1"],
+        } as unknown as ReplayState["dayState"],
       }),
       proposal: proposal(canonicalEvent),
     });
@@ -1367,7 +1380,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
     expect(screen.getByText("기준 2표 · 생존자 3명")).toBeTruthy();
     await user.selectOptions(screen.getByRole("combobox", { name: "지명자" }), "player-1");
-    await user.selectOptions(screen.getByRole("combobox", { name: "피지명자" }), "player-5");
+    await user.selectOptions(screen.getByRole("combobox", { name: "피지명자" }), "player-4");
     const seatMap = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
     await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
     await user.click(within(seatMap).getByRole("button", { name: /Bert/ }));
@@ -1389,12 +1402,60 @@ describe("ClocktowerApp live-play integration", () => {
         stepId: "day:nomination:1",
         input: {
           nominatorId: "player-1",
-          nomineeId: "player-5",
+          nomineeId: "player-4",
           voterIds: ["player-1", "player-2"],
         },
       },
     });
     expect(await screen.findByRole("heading", { name: "지명 및 투표 2" })).toBeTruthy();
+  });
+
+  test("offers only each core-derived nomination role list while preserving self-selection", async () => {
+    const votingStep = step({
+      id: "day:nomination:2",
+      kind: "nominationVote",
+      stepType: "nomination",
+      phase: "day",
+    });
+    const dayState = {
+      nominations: [
+        {
+          stepId: "day:nomination:1",
+          nominatorId: "player-4",
+          nomineeId: "player-1",
+          voterIds: [],
+          voteCount: 0,
+          ghostVoteSpentPlayerIds: [],
+        },
+      ],
+      executionVoteThreshold: 2,
+      highestVoteCount: 0,
+      eligibleNominatorIds: ["player-1", "player-5"],
+      eligibleNomineeIds: ["player-4", "player-5"],
+    } as unknown as ReplayState["dayState"];
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: votingStep, dayState }),
+      replayAfterProposal: replayState({ currentStep: votingStep, dayState, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused", "day")),
+    });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "지명 및 투표 2" });
+    const nominators = screen.getByRole("combobox", { name: "지명자" });
+    const nominees = screen.getByRole("combobox", { name: "피지명자" });
+    expect(within(nominators).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "선택",
+      "1번 Ada",
+      "5번 Eun",
+    ]);
+    expect(within(nominees).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "선택",
+      "4번 Dae",
+      "5번 Eun",
+    ]);
+    expect(within(nominators).getByRole("option", { name: "5번 Eun" })).toBeTruthy();
+    expect(within(nominees).getByRole("option", { name: "5번 Eun" })).toBeTruthy();
   });
 
   test("renders concise typed Day workflow actions for Whisper and Discussion", async () => {
@@ -1434,12 +1495,24 @@ describe("ClocktowerApp live-play integration", () => {
     const core = createCoreHarness({
       initialReplay: replayState({
         currentStep,
-        dayState: { nominations: [], executionVoteThreshold: 2, highestVoteCount: 0 },
+        dayState: {
+          nominations: [],
+          executionVoteThreshold: 2,
+          highestVoteCount: 0,
+          eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+          eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+        } as unknown as ReplayState["dayState"],
       }),
       replayAfterProposal: replayState({
         currentStep: nextStep,
         eventCount: 2,
-        dayState: { nominations: [], executionVoteThreshold: 2, highestVoteCount: 0 },
+        dayState: {
+          nominations: [],
+          executionVoteThreshold: 2,
+          highestVoteCount: 0,
+          eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+          eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+        } as unknown as ReplayState["dayState"],
       }),
       proposal: proposal(canonicalEvent),
     });

@@ -530,6 +530,8 @@ function isDayState(value: unknown): boolean {
     isRecord(value) &&
     hasOnlyKeys(value, [
       "nominations",
+      "eligibleNominatorIds",
+      "eligibleNomineeIds",
       "executionVoteThreshold",
       "highestVoteCount",
       "executionCandidate",
@@ -537,6 +539,10 @@ function isDayState(value: unknown): boolean {
     ]) &&
     Array.isArray(value.nominations) &&
     value.nominations.every(isNominationRecord) &&
+    Array.isArray(value.eligibleNominatorIds) &&
+    value.eligibleNominatorIds.every(isString) &&
+    Array.isArray(value.eligibleNomineeIds) &&
+    value.eligibleNomineeIds.every(isString) &&
     typeof value.executionVoteThreshold === "number" &&
     Number.isInteger(value.executionVoteThreshold) &&
     value.executionVoteThreshold >= 1 &&
