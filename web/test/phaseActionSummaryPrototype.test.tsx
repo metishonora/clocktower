@@ -52,7 +52,7 @@ test("switches between information, targeting, drunk, and mayor-bounce examples"
   await user.click(within(prototype).getByRole("button", { name: "대상 정보" }));
   expect(
     within(prototype).getByText(
-      "4번 도윤(점쟁이)가 1번 민지(세탁부), 6번 현우(임프)를 확인: 예",
+      "4번 도윤(점쟁이)가 1번 민지(세탁부), 6번 현우(임프)를 확인: 악마 있음",
     ),
   ).toBeTruthy();
 

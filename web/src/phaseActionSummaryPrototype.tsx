@@ -54,11 +54,11 @@ const scenarios: SummaryScenario[] = [
     phase: "두 번째 밤 · 점쟁이",
     title: "두 플레이어를 확인한 정보 행동",
     current: "단계 확정: night:fortuneTeller",
-    proposed: "4번 도윤(점쟁이)가 1번 민지(세탁부), 6번 현우(임프)를 확인: 예",
+    proposed: "4번 도윤(점쟁이)가 1번 민지(세탁부), 6번 현우(임프)를 확인: 악마 있음",
     parts: [
       { label: "행동자", value: "4번 도윤(점쟁이)" },
       { label: "대상", value: "1번 민지(세탁부), 6번 현우(임프)" },
-      { label: "전달 결과", value: "예" },
+      { label: "전달 결과", value: "악마 있음" },
     ],
   },
   {
