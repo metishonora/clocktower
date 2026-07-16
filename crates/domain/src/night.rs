@@ -3,11 +3,15 @@ use crate::{
         character_kind, character_steps, first_night_order, legal_demon_bluff_character_ids,
         night_order,
     },
-    model::{CharacterKind, Phase, PhaseStep, Player, RequiredInputKind, StepType},
+    contracts::{GameEvent, GameEventKind, ImpAttackOutcome, NightActionResolution},
+    model::{
+        CharacterKind, InputTarget, Phase, PhaseStep, Player, RequiredInput, RequiredInputKind,
+        StepType,
+    },
     phase::{phase_prefix, phase_transition_step, required_characters, required_none, simple_step},
 };
 
-pub(crate) fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
+pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
     let mut steps = Vec::new();
     if players.iter().any(|player| {
         matches!(
@@ -40,12 +44,75 @@ pub(crate) fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         ));
     }
 
-    steps.extend(character_steps(
+    let mut character_steps = character_steps(
         Phase::FirstNight,
         "firstNight",
         players,
         first_night_order(),
-    ));
+    );
+    enrich_targets(&mut character_steps, players);
+    if let Some(index) = character_steps.iter().position(|step| {
+        step.character.as_deref() == Some("fortuneTeller")
+            && step.player_id.as_ref().is_some_and(|id| {
+                players
+                    .iter()
+                    .any(|p| p.id == *id && p.actual_character == "fortuneTeller")
+            })
+    }) {
+        let assigned = events
+            .iter()
+            .any(|event| matches!(event.kind, GameEventKind::RedHerringAssigned { .. }));
+        if !assigned {
+            let actor = character_steps[index].player_id.clone();
+            character_steps.insert(
+                index,
+                PhaseStep {
+                    id: "firstNight:fortuneTellerRedHerring".into(),
+                    phase: Phase::FirstNight,
+                    step_type: StepType::RedHerringAssignment,
+                    character: Some("fortuneTeller".into()),
+                    player_id: actor,
+                    required_input: RequiredInput {
+                        kind: RequiredInputKind::PlayerIds,
+                        target: Some(InputTarget::Player),
+                        min_selections: Some(1),
+                        max_selections: Some(1),
+                        setup_info: None,
+                        character_kind: None,
+                        allowed_character_ids: None,
+                        allowed_player_ids: Some(
+                            players
+                                .iter()
+                                .filter(|p| {
+                                    p.alignment == crate::model::Alignment::Good
+                                        || p.actual_character == "spy"
+                                })
+                                .map(|p| p.id.clone())
+                                .collect(),
+                        ),
+                        player_registration_options: Some(
+                            players
+                                .iter()
+                                .filter(|p| p.actual_character == "spy")
+                                .map(|p| crate::model::RegistrationJudgment {
+                                    player_id: p.id.clone(),
+                                    registered_as: crate::model::RegistrationValue::Good,
+                                    character_id: None,
+                                })
+                                .collect(),
+                        ),
+                        zero_allowed: false,
+                        supports_random_suggestion: false,
+                        execution_survival_allowed: false,
+                        optional: false,
+                    },
+                    can_skip: false,
+                    information_prompt: None,
+                },
+            );
+        }
+    }
+    steps.extend(character_steps);
     steps.push(phase_transition_step(
         Phase::FirstNight,
         "firstNight",
@@ -55,9 +122,108 @@ pub(crate) fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
     steps
 }
 
-pub(crate) fn night_steps(players: &[Player], cycle: usize) -> Vec<PhaseStep> {
+pub(crate) fn night_steps(
+    players: &[Player],
+    events: &[GameEvent],
+    cycle: usize,
+) -> Vec<PhaseStep> {
     let prefix = phase_prefix("night", cycle);
-    character_steps(Phase::Night, &prefix, players, night_order())
+    let mut steps = character_steps(Phase::Night, &prefix, players, night_order());
+    steps.retain(|step| {
+        step.player_id
+            .as_ref()
+            .is_none_or(|id| players.iter().any(|p| p.id == *id && p.alive))
+    });
+    steps.retain(|step| step.character.as_deref() != Some("ravenkeeper"));
+    if !events
+        .iter()
+        .any(|e| matches!(e.kind, GameEventKind::RedHerringAssigned { .. }))
+    {
+        if let Some(pos) = steps.iter().position(|s| {
+            s.character.as_deref() == Some("fortuneTeller")
+                && s.player_id.as_ref().is_some_and(|id| {
+                    players
+                        .iter()
+                        .any(|p| p.id == *id && p.actual_character == "fortuneTeller")
+                })
+        }) {
+            let actor = steps[pos].player_id.clone();
+            steps.insert(
+                pos,
+                PhaseStep {
+                    id: format!("{prefix}:fortuneTellerRedHerring"),
+                    phase: Phase::Night,
+                    step_type: StepType::RedHerringAssignment,
+                    character: Some("fortuneTeller".into()),
+                    player_id: actor,
+                    required_input: RequiredInput {
+                        kind: RequiredInputKind::PlayerIds,
+                        target: Some(InputTarget::Player),
+                        min_selections: Some(1),
+                        max_selections: Some(1),
+                        setup_info: None,
+                        character_kind: None,
+                        allowed_character_ids: None,
+                        allowed_player_ids: Some(
+                            players
+                                .iter()
+                                .filter(|p| {
+                                    p.alignment == crate::model::Alignment::Good
+                                        || p.actual_character == "spy"
+                                })
+                                .map(|p| p.id.clone())
+                                .collect(),
+                        ),
+                        player_registration_options: Some(
+                            players
+                                .iter()
+                                .filter(|p| p.actual_character == "spy")
+                                .map(|p| crate::model::RegistrationJudgment {
+                                    player_id: p.id.clone(),
+                                    registered_as: crate::model::RegistrationValue::Good,
+                                    character_id: None,
+                                })
+                                .collect(),
+                        ),
+                        zero_allowed: false,
+                        supports_random_suggestion: false,
+                        execution_survival_allowed: false,
+                        optional: false,
+                    },
+                    can_skip: false,
+                    information_prompt: None,
+                },
+            );
+        }
+    }
+    let executed_dead = previous_executed_death(events, cycle);
+    steps.retain(|step| step.character.as_deref() != Some("undertaker") || executed_dead.is_some());
+    let raven_id = events.iter().find_map(|event| match &event.kind {
+        GameEventKind::NightActionResolved { payload } if payload.step_id.starts_with(&prefix) => {
+            match &payload.resolution {
+                NightActionResolution::ImpAttack {
+                    outcome: ImpAttackOutcome::Death { player_id },
+                    ..
+                } if players
+                    .iter()
+                    .any(|p| p.id == *player_id && p.actual_character == "ravenkeeper") =>
+                {
+                    Some(player_id.clone())
+                }
+                _ => None,
+            }
+        }
+        _ => None,
+    });
+    if let Some(raven_id) = raven_id {
+        let pos = steps
+            .iter()
+            .position(|s| s.character.as_deref() == Some("imp"))
+            .map_or(0, |pos| pos + 1);
+        steps.insert(pos, custom_character_step(&prefix, "ravenkeeper", raven_id));
+    }
+    enrich_targets(&mut steps, players);
+    steps
         .into_iter()
         .chain([phase_transition_step(
             Phase::Night,
@@ -66,4 +232,45 @@ pub(crate) fn night_steps(players: &[Player], cycle: usize) -> Vec<PhaseStep> {
             RequiredInputKind::Day,
         )])
         .collect()
+}
+
+fn custom_character_step(prefix: &str, character: &str, player_id: String) -> PhaseStep {
+    PhaseStep {
+        id: format!("{prefix}:{character}"),
+        phase: Phase::Night,
+        step_type: StepType::Character,
+        character: Some(character.into()),
+        player_id: Some(player_id),
+        required_input: crate::characters::character_required_input(character),
+        can_skip: true,
+        information_prompt: None,
+    }
+}
+
+pub(crate) fn previous_executed_death(events: &[GameEvent], cycle: usize) -> Option<String> {
+    let prefix = phase_prefix("day", cycle);
+    let executed = events.iter().find_map(|e| match &e.kind {
+        GameEventKind::ExecutionConfirmed { payload }
+            if payload.step_id == format!("{prefix}:execution") =>
+        {
+            payload.input.player_id.clone()
+        }
+        _ => None,
+    })?;
+    events.iter().any(|e| matches!(&e.kind, GameEventKind::DeathConfirmed { payload } if payload.step_id.as_deref() == Some(format!("{prefix}:executionDeath").as_str()) && payload.player_id == executed)).then_some(executed)
+}
+
+fn enrich_targets(steps: &mut [PhaseStep], players: &[Player]) {
+    for step in steps {
+        if matches!(
+            step.required_input.target,
+            Some(InputTarget::Player | InputTarget::Players)
+        ) {
+            let mut ids = players.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
+            if step.character.as_deref() == Some("monk") {
+                ids.retain(|id| Some(id.as_str()) != step.player_id.as_deref());
+            }
+            step.required_input.allowed_player_ids = Some(ids);
+        }
+    }
 }

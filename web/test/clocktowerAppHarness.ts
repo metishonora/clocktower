@@ -32,6 +32,7 @@ const emptyReplayState: ReplayState = {
   players: [],
   currentStep: null,
   phaseOverview: [],
+  ruleState: emptyRuleState(),
   warnings: [],
 };
 
@@ -128,8 +129,13 @@ export function replayState({
     currentStep,
     phaseOverview: [{ ...currentStep, status: "current" }],
     dayState,
+    ruleState: emptyRuleState(),
     warnings: [],
   };
+}
+
+function emptyRuleState() {
+  return { unannouncedNightDeathPlayerIds: [] };
 }
 
 export function step({

@@ -24,7 +24,8 @@ pub(crate) fn information_prompt(
 ) -> Option<InformationPrompt> {
     let is_number = step.required_input.kind == RequiredInputKind::Number;
     let is_setup_info = step.required_input.kind == RequiredInputKind::SetupInfo;
-    if !is_number && !is_setup_info {
+    let target_checks = crate::characters::target_information_checks(step, players, events);
+    if !is_number && !is_setup_info && target_checks.is_empty() {
         return None;
     }
 
@@ -47,6 +48,7 @@ pub(crate) fn information_prompt(
     let delivery_mode = if active_reasons.is_empty()
         && number_choices.len() <= 1
         && setup_info_registration_options.is_empty()
+        && target_checks.iter().all(|check| check.choices.len() <= 1)
     {
         InformationDeliveryMode::Fixed
     } else {
@@ -60,6 +62,7 @@ pub(crate) fn information_prompt(
         registration_candidate_player_ids,
         number_choices,
         setup_info_registration_options,
+        target_checks,
     })
 }
 
@@ -71,6 +74,60 @@ pub(crate) fn confirmed_information(
     delivered_result: Option<InformationResult>,
     registration_judgments: Vec<RegistrationJudgment>,
 ) -> Result<Option<ConfirmedInformation>, CoreError> {
+    let target_checks = crate::characters::target_information_checks(step, players, events);
+    if !target_checks.is_empty() {
+        let targets = if step.character.as_deref() == Some("undertaker") {
+            target_checks[0].target_player_ids.clone()
+        } else {
+            target_player_ids(input)
+        };
+        let check = target_checks
+            .iter()
+            .find(|check| check.target_player_ids == targets)
+            .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+        let choice = if let Some(delivered) = delivered_result {
+            check
+                .choices
+                .iter()
+                .find(|choice| {
+                    choice.result == delivered
+                        && choice.registration_judgments == registration_judgments
+                })
+                .ok_or_else(|| {
+                    if registration_judgments.is_empty() {
+                        ErrorKind::InvalidDeliveredInformation.into_error()
+                    } else {
+                        ErrorKind::InvalidRegistrationJudgment.into_error()
+                    }
+                })?
+        } else {
+            check
+                .choices
+                .iter()
+                .find(|choice| choice.is_computed && choice.registration_judgments.is_empty())
+                .ok_or_else(|| ErrorKind::MissingDeliveredInformation.into_error())?
+        };
+        let context = if choice.is_computed && choice.registration_judgments.is_empty() {
+            DeliveryContext::Fixed
+        } else {
+            DeliveryContext::Discretionary {
+                reasons: if choice.registration_judgments.is_empty() {
+                    active_delivery_reasons(step, players, events)
+                } else {
+                    vec![DeliveryReason::RegistrationJudgment {
+                        judgments: choice.registration_judgments.clone(),
+                    }]
+                },
+            }
+        };
+        return Ok(Some(ConfirmedInformation {
+            actor: information_actor(step),
+            target_player_ids: targets,
+            computed_result: Some(check.computed_result.clone()),
+            delivered_result: choice.result.clone(),
+            delivery_context: context,
+        }));
+    }
     if step.required_input.kind == RequiredInputKind::SetupInfo {
         let selected_result = computed_information_result(step, players, input)
             .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
@@ -524,6 +581,14 @@ fn active_delivery_reasons(
     reasons
 }
 
+pub(crate) fn actor_is_impaired(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+) -> bool {
+    !active_delivery_reasons(step, players, events).is_empty()
+}
+
 fn poison_reason(
     step: &PhaseStep,
     actor_id: &str,
@@ -534,21 +599,45 @@ fn poison_reason(
     let poisoner = players
         .iter()
         .find(|player| player.actual_character == "poisoner")?;
-    events.iter().rev().find_map(|event| {
-        let GameEventKind::PhaseStepConfirmed { payload } = &event.kind else {
-            return None;
-        };
-        if payload.step_id != format!("{prefix}:poisoner") {
-            return None;
-        }
-        let targets_actor = payload
-            .input
-            .as_ref()
-            .and_then(|input| input.player_ids.as_ref())
-            .is_some_and(|player_ids| player_ids.iter().any(|player_id| player_id == actor_id));
-        targets_actor.then(|| DeliveryReason::Poisoned {
-            poisoner_player_id: poisoner.id.clone(),
-            poison_event_id: event.id.clone(),
+    let last_to_night = events.iter().rposition(|event| matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
+    events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(index, event)| match &event.kind {
+            GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+                crate::contracts::NightActionResolution::Poison {
+                    target_player_id,
+                    applied: true,
+                    ..
+                } if target_player_id == actor_id
+                    && last_to_night.is_none_or(|boundary| index > boundary)
+                    && players.iter().any(|player| {
+                        player.id == payload.actor_player_id
+                            && player.alive
+                            && player.actual_character == "poisoner"
+                    }) =>
+                {
+                    Some(DeliveryReason::Poisoned {
+                        poisoner_player_id: payload.actor_player_id.clone(),
+                        poison_event_id: event.id.clone(),
+                    })
+                }
+                _ => None,
+            },
+            GameEventKind::PhaseStepConfirmed { payload }
+                if payload.step_id == format!("{prefix}:poisoner") =>
+            {
+                payload
+                    .input
+                    .as_ref()
+                    .and_then(|input| input.player_ids.as_ref())
+                    .is_some_and(|ids| ids.iter().any(|id| id == actor_id))
+                    .then(|| DeliveryReason::Poisoned {
+                        poisoner_player_id: poisoner.id.clone(),
+                        poison_event_id: event.id.clone(),
+                    })
+            }
+            _ => None,
         })
-    })
 }

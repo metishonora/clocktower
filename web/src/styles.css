@@ -3241,12 +3241,30 @@ select {
 }
 
 @media (max-width: 900px) {
-  .confirmedShell {
+  .shell.confirmedShell {
     grid-template-columns: 1fr;
+    padding-bottom: calc(48dvh + 24px);
   }
 
   .confirmedShell > .grimoire {
     position: static;
+  }
+
+  .confirmedShell .setupRail > .phasePanel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    max-height: 48dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -14px 38px rgba(0, 0, 0, 0.32);
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .setupShell {
@@ -4507,6 +4525,78 @@ select {
   color: #17130c;
   background: var(--spy-gold);
   font-weight: 900;
+}
+
+.ruleEffectBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.2rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.ruleEffectBadge.poisonBadge {
+  color: #b785ff;
+  background: rgba(112, 56, 170, 0.24);
+}
+
+.ruleEffectBadge.protectionBadge {
+  color: #73bfff;
+  background: rgba(37, 112, 170, 0.24);
+}
+
+.nightActionResult {
+  margin: 0.8rem 0 0;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.75rem 0.9rem;
+  font-weight: 750;
+}
+
+.fortuneTellerResult {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.fortuneTellerResult h3,
+.fortuneTellerResult p {
+  margin: 0;
+}
+
+.fortuneTellerResult p {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.8rem 0.9rem;
+}
+
+.nightDeathAnnouncement {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.nightDeathAnnouncement > div {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  border-radius: 0.75rem;
+  background: rgba(143, 29, 38, 0.2);
+  padding: 0.75rem 0.9rem;
+}
+
+.targetInformationChoices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.5rem;
 }
 
 @media (max-width: 900px), (max-height: 760px) {

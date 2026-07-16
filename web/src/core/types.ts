@@ -30,6 +30,8 @@ export type PhaseStepInput =
 
 export type InformationResult =
   | { kind: "number"; value: number }
+  | { kind: "boolean"; value: boolean }
+  | { kind: "character"; characterId: string }
   | {
       kind: "setupInfo";
       playerIds: string[];
@@ -97,6 +99,17 @@ export type InformationPrompt = {
   registrationCandidatePlayerIds: string[];
   numberChoices: NumberChoice[];
   setupInfoRegistrationOptions: SetupInfoRegistrationOption[];
+  targetChecks?: TargetCheck[];
+};
+
+export type TargetCheck = {
+  targetPlayerIds: string[];
+  computedResult: InformationResult;
+  choices: Array<{
+    result: InformationResult;
+    isComputed: boolean;
+    registrationJudgments: RegistrationJudgment[];
+  }>;
 };
 
 export type PhaseStepConfirmation = {
@@ -136,7 +149,21 @@ export type ReplayState = {
   currentStep: PhaseStep | null;
   phaseOverview: PhaseOverviewItem[];
   dayState?: DayState;
+  ruleState: RuleState;
   warnings: CoreWarning[];
+};
+
+export type RuleState = {
+  redHerringPlayerId?: string;
+  activePoison?: ActiveRuleEffect;
+  activeProtection?: ActiveRuleEffect;
+  unannouncedNightDeathPlayerIds: string[];
+};
+
+export type ActiveRuleEffect = {
+  playerId: string;
+  sourcePlayerId: string;
+  sourceEventId: string;
 };
 
 export type Proposal = {
@@ -219,7 +246,35 @@ export type GameEvent = EventCommon &
         type: "executionSurvivalConfirmed";
         payload: { stepId: string; playerId: string };
       }
+    | {
+        type: "redHerringAssigned";
+        payload: { stepId: string; playerId: string; registrationJudgments: RegistrationJudgment[] };
+      }
+    | {
+        type: "nightActionResolved";
+        payload: { stepId: string; actorPlayerId: string; resolution: NightActionResolution };
+      }
+    | {
+        type: "nightDeathsAnnounced";
+        payload: { stepId: string; playerIds: string[] };
+      }
   );
+
+export type NightActionResolution =
+  | {
+      kind: "poison" | "monkProtection";
+      targetPlayerId: string;
+      applied: boolean;
+      noEffectReason?: "actorImpaired" | "notActualCharacter";
+    }
+  | {
+      kind: "impAttack";
+      targetPlayerId: string;
+      outcome:
+        | { kind: "death"; playerId: string }
+        | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
+        | { kind: "noDeath"; reason: "alreadyDead" | "actorImpaired" | "notActualCharacter" };
+    };
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
 
@@ -232,7 +287,8 @@ export type StepType =
   | "discussion"
   | "nomination"
   | "execution"
-  | "executionDeath";
+  | "executionDeath"
+  | "redHerringAssignment";
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
 
@@ -328,6 +384,8 @@ export type RequiredInput = {
   setupInfo?: "washerwoman" | "librarian" | "investigator";
   characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
   allowedCharacterIds?: string[];
+  allowedPlayerIds?: string[];
+  playerRegistrationOptions?: RegistrationJudgment[];
   zeroAllowed?: boolean;
   supportsRandomSuggestion?: boolean;
   executionSurvivalAllowed?: boolean;

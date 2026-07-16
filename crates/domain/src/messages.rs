@@ -138,6 +138,18 @@ pub(crate) fn phase_step_reveal_payload(
     players: &[Player],
 ) -> Option<RevealPayload> {
     match delivered_result {
+        InformationResult::Boolean { value } => Some(RevealPayload::Text {
+            message_ko: if *value { "예" } else { "아니요" }.to_string(),
+            label_ko: None,
+            value_ko: Some(if *value { "예" } else { "아니요" }.to_string()),
+            preview_message_ko: None,
+        }),
+        InformationResult::Character { character_id } => Some(RevealPayload::Text {
+            message_ko: character_label(character_id).to_string(),
+            label_ko: None,
+            value_ko: Some(character_label(character_id).to_string()),
+            preview_message_ko: None,
+        }),
         InformationResult::Number { value: count } if step.character.as_deref() == Some("chef") => {
             Some(RevealPayload::Text {
                 message_ko: format!("서로 이웃한 악 팀 쌍은 {count}쌍입니다."),

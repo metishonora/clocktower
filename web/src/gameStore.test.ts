@@ -123,6 +123,7 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
     players: basePlayers.slice(0, playerCount),
     currentStep: null,
     phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
     warnings: [],
   };
 }

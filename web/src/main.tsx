@@ -4,6 +4,7 @@ import type { RevealPayload } from "./core/types";
 import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
+import { OngoingNightPrototype } from "./ongoingNightPrototype";
 import { DayVotingPrototype } from "./dayVotingPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
@@ -34,6 +35,9 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "ongoing-night") {
+    return <OngoingNightPrototype />;
+  }
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "day-voting") {
     return <DayVotingPrototype />;
   }
@@ -74,7 +78,11 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id);
   const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
-  const phaseInputDraft = usePhaseInputDraft(phaseInputStep, gameStore.players);
+  const phaseInputDraft = usePhaseInputDraft(
+    phaseInputStep,
+    gameStore.players,
+    gameStore.suggestionContextFingerprint,
+  );
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
 
@@ -128,13 +136,24 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
                 players={gameStore.players}
                 draft={gameStore.setupDraft}
                 onDraftChange={gameStore.setSetupDraft}
-                busy={gameStore.busy}
+                busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
+                ruleState={gameStore.ruleState}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
                 setupInformationSelection={
                   !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
                     ? {
                         selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
                         disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
+                        onTogglePlayer: phaseInputDraft.togglePlayer,
+                      }
+                    : undefined
+                }
+                phasePlayerSelection={
+                  !votingStepActive && phaseInputStep?.requiredInput.kind === "playerIds"
+                    ? {
+                        selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                        allowedPlayerIds: phaseInputStep.requiredInput.allowedPlayerIds,
+                        disabled: gameStore.busy,
                         onTogglePlayer: phaseInputDraft.togglePlayer,
                       }
                     : undefined
@@ -150,6 +169,8 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
                   phaseOverview={gameStore.phaseOverview}
                   players={gameStore.players}
                   dayState={gameStore.dayState}
+                  ruleState={gameStore.ruleState}
+                  latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
                   nominationDraft={nominationDraft}
                   onNominationDraftChange={setNominationDraft}
                   phaseInputDraft={phaseInputDraft}

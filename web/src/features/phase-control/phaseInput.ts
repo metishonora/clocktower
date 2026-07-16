@@ -8,6 +8,7 @@ import type {
   Player,
   RegistrationJudgment,
   StepType,
+  TargetCheck,
 } from "../../core/types.js";
 import {
   characterKind,
@@ -253,6 +254,7 @@ export function phaseStepConfirmation(
     zeroOutsiders: boolean;
     selectedNumberChoice?: NumberChoice;
     registrationJudgments: RegistrationJudgment[];
+    selectedTargetChoice?: TargetCheck["choices"][number];
   },
   nominationDraft: NominationDraft,
 ): PhaseStepConfirmation {
@@ -270,6 +272,20 @@ export function phaseStepConfirmation(
   if (step.requiredInput.kind === "setupInfo" && draft.registrationJudgments.length) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
+  if (step.requiredInput.kind !== "setupInfo" && draft.registrationJudgments.length) {
+    confirmation.registrationJudgments = draft.registrationJudgments;
+  }
+
+  const targetCheck = targetCheckForSelection(step, draft.selectedPlayerIds);
+  const targetChoice = draft.selectedTargetChoice ?? (targetCheck?.choices.length === 1 ? targetCheck.choices[0] : undefined);
+  if (targetChoice) {
+    if (!targetChoice.isComputed || step.informationPrompt?.deliveryMode === "selectable") {
+      confirmation.deliveredResult = targetChoice.result;
+    }
+    if (targetChoice.registrationJudgments.length) {
+      confirmation.registrationJudgments = targetChoice.registrationJudgments;
+    }
+  }
 
   const choice = step.informationPrompt?.numberChoices.find(
     (candidate) => candidate.value === draft.selectedNumberChoice?.value,
@@ -283,6 +299,22 @@ export function phaseStepConfirmation(
     confirmation.registrationJudgments = choice.registrationJudgments;
   }
   return confirmation;
+}
+
+export function targetCheckForSelection(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+): TargetCheck | undefined {
+  const checks = step.informationPrompt?.targetChecks;
+  if (!checks?.length) return undefined;
+  if (step.requiredInput.target !== "player" && step.requiredInput.target !== "players") {
+    return checks.length === 1 ? checks[0] : undefined;
+  }
+  return checks.find(
+    (check) =>
+      check.targetPlayerIds.length === selectedPlayerIds.length &&
+      check.targetPlayerIds.every((id) => selectedPlayerIds.includes(id)),
+  );
 }
 
 export function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

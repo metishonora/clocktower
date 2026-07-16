@@ -27,6 +27,7 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "nomination",
   "execution",
   "executionDeath",
+  "redHerringAssignment",
 ]);
 const inputKinds = new Set([
   "none",
@@ -151,6 +152,31 @@ export function parseGameEvent(value: unknown): GameEvent {
         throw invalidEvent();
       }
       break;
+    case "redHerringAssigned":
+      if (
+        !hasExactKeys(payload, ["stepId", "playerId", "registrationJudgments"]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.playerId !== "string" ||
+        !Array.isArray(payload.registrationJudgments) ||
+        !payload.registrationJudgments.every(isRegistrationJudgment)
+      ) throw invalidEvent();
+      break;
+    case "nightActionResolved":
+      if (
+        !hasExactKeys(payload, ["stepId", "actorPlayerId", "resolution"]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.actorPlayerId !== "string" ||
+        !isNightActionResolution(payload.resolution)
+      ) throw invalidEvent();
+      break;
+    case "nightDeathsAnnounced":
+      if (
+        !hasExactKeys(payload, ["stepId", "playerIds"]) ||
+        typeof payload.stepId !== "string" ||
+        !Array.isArray(payload.playerIds) ||
+        !payload.playerIds.every(isString)
+      ) throw invalidEvent();
+      break;
     default:
       throw new Error("지원하지 않는 이벤트입니다.");
   }
@@ -170,6 +196,7 @@ export function parseReplayState(value: unknown): ReplayState {
     !Array.isArray(value.phaseOverview) ||
     !value.phaseOverview.every(isPhaseOverviewItem) ||
     (value.dayState !== undefined && !isDayState(value.dayState)) ||
+    !isRuleState(value.ruleState) ||
     !Array.isArray(value.warnings) ||
     !value.warnings.every(isWarning)
   ) {
@@ -275,7 +302,9 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     !Array.isArray(value.numberChoices) ||
     !value.numberChoices.every(isNumberChoice) ||
     !Array.isArray(value.setupInfoRegistrationOptions) ||
-    !value.setupInfoRegistrationOptions.every(isSetupInfoRegistrationOption)
+    !value.setupInfoRegistrationOptions.every(isSetupInfoRegistrationOption) ||
+    (value.targetChecks !== undefined &&
+      (!Array.isArray(value.targetChecks) || !value.targetChecks.every(isTargetCheck)))
   ) {
     return false;
   }
@@ -295,6 +324,9 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     return false;
   }
 
+  if (value.targetChecks && value.targetChecks.length > 0) {
+    return value.computedResult === undefined && value.numberChoices.length === 0;
+  }
   if (value.computedResult === undefined) {
     return inputKind === "setupInfo" && value.numberChoices.length === 0;
   }
@@ -357,6 +389,10 @@ function isInformationResult(value: unknown): value is InformationResult {
         value.value >= 0 &&
         value.value <= 15
       );
+    case "boolean":
+      return typeof value.value === "boolean";
+    case "character":
+      return isKnownCharacter(value.characterId);
     case "setupInfo":
       return (
         Array.isArray(value.playerIds) &&
@@ -490,11 +526,71 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
       ["Townsfolk", "Outsider", "Minion", "Demon"].includes(String(value.characterKind))) &&
     (value.allowedCharacterIds === undefined ||
       (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
+    (value.allowedPlayerIds === undefined ||
+      (Array.isArray(value.allowedPlayerIds) && value.allowedPlayerIds.every(isString))) &&
+    (value.playerRegistrationOptions === undefined ||
+      (Array.isArray(value.playerRegistrationOptions) &&
+        value.playerRegistrationOptions.every(isRegistrationJudgment))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     (value.supportsRandomSuggestion === undefined || typeof value.supportsRandomSuggestion === "boolean") &&
     (value.executionSurvivalAllowed === undefined || typeof value.executionSurvivalAllowed === "boolean") &&
     typeof value.optional === "boolean"
   );
+}
+
+function isTargetCheck(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices"]) &&
+    Array.isArray(value.targetPlayerIds) &&
+    value.targetPlayerIds.every(isString) &&
+    isInformationResult(value.computedResult) &&
+    Array.isArray(value.choices) &&
+    value.choices.length > 0 &&
+    value.choices.every((choice) =>
+      isRecord(choice) &&
+      hasExactKeys(choice, ["result", "isComputed", "registrationJudgments"]) &&
+      isInformationResult(choice.result) &&
+      typeof choice.isComputed === "boolean" &&
+      Array.isArray(choice.registrationJudgments) &&
+      choice.registrationJudgments.every(isRegistrationJudgment)
+    )
+  );
+}
+
+function isRuleState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasOnlyKeys(value, ["redHerringPlayerId", "activePoison", "activeProtection", "unannouncedNightDeathPlayerIds"]) &&
+    isOptionalString(value.redHerringPlayerId) &&
+    (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
+    (value.activeProtection === undefined || isActiveRuleEffect(value.activeProtection)) &&
+    Array.isArray(value.unannouncedNightDeathPlayerIds) &&
+    value.unannouncedNightDeathPlayerIds.every(isString)
+  );
+}
+
+function isActiveRuleEffect(value: unknown): boolean {
+  return isRecord(value) && hasExactKeys(value, ["playerId", "sourcePlayerId", "sourceEventId"]) &&
+    typeof value.playerId === "string" && typeof value.sourcePlayerId === "string" &&
+    typeof value.sourceEventId === "string";
+}
+
+function isNightActionResolution(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "poison" || value.kind === "monkProtection") {
+    return hasOnlyKeys(value, ["kind", "targetPlayerId", "applied", "noEffectReason"]) &&
+      typeof value.targetPlayerId === "string" && typeof value.applied === "boolean" &&
+      (value.noEffectReason === undefined || value.noEffectReason === "actorImpaired" || value.noEffectReason === "notActualCharacter");
+  }
+  if (value.kind !== "impAttack" || !hasExactKeys(value, ["kind", "targetPlayerId", "outcome"]) ||
+      typeof value.targetPlayerId !== "string" || !isRecord(value.outcome)) return false;
+  const outcome = value.outcome;
+  if (outcome.kind === "death") return hasExactKeys(outcome, ["kind", "playerId"]) && typeof outcome.playerId === "string";
+  if (outcome.kind === "prevented") return hasExactKeys(outcome, ["kind", "reason", "sourceEventId"]) &&
+    outcome.reason === "monkProtection" && typeof outcome.sourceEventId === "string";
+  return outcome.kind === "noDeath" && hasExactKeys(outcome, ["kind", "reason"]) &&
+    ["alreadyDead", "actorImpaired", "notActualCharacter"].includes(String(outcome.reason));
 }
 
 function isPhaseStepInput(value: unknown): value is PhaseStepInput {

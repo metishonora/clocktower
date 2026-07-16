@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Player } from "../../core/types";
+import type { Player, RuleState } from "../../core/types";
 import {
   characterLabel,
   findOverlappingSeats,
@@ -18,6 +18,8 @@ export function Grimoire({
   busy,
   nominationVoting,
   setupInformationSelection,
+  phasePlayerSelection,
+  ruleState,
 }: {
   players: Player[];
   draft: SetupDraft;
@@ -32,6 +34,13 @@ export function Grimoire({
     disabled: boolean;
     onTogglePlayer: (playerId: string) => void;
   };
+  phasePlayerSelection?: {
+    selectedPlayerIds: string[];
+    allowedPlayerIds?: string[];
+    disabled: boolean;
+    onTogglePlayer: (playerId: string) => void;
+  };
+  ruleState?: RuleState;
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
   const seats = players.length > 0 ? players : draft.players;
@@ -70,10 +79,15 @@ export function Grimoire({
           const setupInformationSelected = Boolean(
             playerId && setupInformationSelection?.selectedPlayerIds.includes(playerId),
           );
+          const phaseSelected = Boolean(playerId && phasePlayerSelection?.selectedPlayerIds.includes(playerId));
+          const phaseAllowed = Boolean(
+            playerId && (!phasePlayerSelection?.allowedPlayerIds || phasePlayerSelection.allowedPlayerIds.includes(playerId)),
+          );
           const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
           const votingDisabled = busy || layoutEditing || !playerId || Boolean(voteStatus?.disabled);
           const setupInformationDisabled =
             busy || layoutEditing || !playerId || Boolean(setupInformationSelection?.disabled);
+          const phaseSelectionDisabled = busy || layoutEditing || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
@@ -91,6 +105,10 @@ export function Grimoire({
             }
             if (playerId && setupInformationSelection && !setupInformationDisabled) {
               setupInformationSelection.onTogglePlayer(playerId);
+              return;
+            }
+            if (playerId && phasePlayerSelection && !phaseSelectionDisabled) {
+              phasePlayerSelection.onTogglePlayer(playerId);
             }
           }
 
@@ -103,7 +121,7 @@ export function Grimoire({
                 voteStatus?.className ?? ""
               } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
                 setupInformationSelection ? "setupInformationEnabled" : ""
-              }`}
+              } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""}`}
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
               onClick={handleSeatClick}
               onPointerDown={(event) =>
@@ -120,6 +138,8 @@ export function Grimoire({
                   ? votingDisabled
                   : setupInformationSelection
                     ? setupInformationDisabled
+                    : phasePlayerSelection
+                      ? phaseSelectionDisabled
                     : true
               }
               aria-pressed={
@@ -127,6 +147,8 @@ export function Grimoire({
                   ? votingSelected
                   : setupInformationSelection
                     ? setupInformationSelected
+                    : phasePlayerSelection
+                      ? phaseSelected
                     : undefined
               }
               key={seat.seat}
@@ -137,6 +159,12 @@ export function Grimoire({
               {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
               {showShownCharacter ? (
                 <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
+              ) : null}
+              {playerId === ruleState?.activePoison?.playerId ? (
+                <span className="ruleEffectBadge poisonBadge">중독</span>
+              ) : null}
+              {playerId === ruleState?.activeProtection?.playerId ? (
+                <span className="ruleEffectBadge protectionBadge">보호</span>
               ) : null}
             </button>
           );

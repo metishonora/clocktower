@@ -42,6 +42,7 @@ describe("ClocktowerApp live-play integration", () => {
               players: [],
               currentStep: null,
               phaseOverview: [],
+              ruleState: { unannouncedNightDeathPlayerIds: [] },
               warnings: [],
             },
           },

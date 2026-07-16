@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "pnpm --workspace-root build:wasm && vite --host 127.0.0.1",
     "prototype:phase-control": "vite --host 0.0.0.0",
+    "prototype:ongoing-night": "vite --host 0.0.0.0",
     "prototype:reveal-followup": "vite --host 0.0.0.0",
     "prototype:setup-info-context": "vite --host 0.0.0.0",
     "prototype:setup-info-discretion": "vite --host 0.0.0.0",

@@ -274,6 +274,126 @@ it remain valid state-only events, while a matching step-linked Death also compl
 execution-Death step. `executionSurvivalConfirmed` is a known strict v2 event for future scripts,
 but replay rejects it unless the generated step explicitly permits execution survival.
 
+### Ongoing Night Contract
+
+Rust owns ongoing-night target legality. `RequiredInput.allowedPlayerIds` contains the canonical
+seat-ordered allowlist for newly generated Player-selection steps, and React must use it instead of
+reconstructing self-selection, dead-target, or distinct-target rules. Optional
+`playerRegistrationOptions` carries the exact per-check witness needed when a target is legal only
+through Registration, such as assigning a Spy as the Fortune Teller's Red Herring.
+
+An actual Fortune Teller creates a Storyteller-only `redHerringAssignment` step before the first
+Fortune Teller check. `redHerringAssigned` persists the chosen Player and any Registration Judgment;
+replay keeps that choice fixed. A legacy game that already confirmed Fortune Teller information
+without the assignment retains its prior events and receives a one-time recovery assignment before
+its next unconfirmed Fortune Teller check.
+
+State-changing Poisoner, Monk, and Imp steps use `nightActionResolved`, whose strict typed resolution
+records the actor, target, whether poison or protection applied, or the deterministic Imp outcome.
+The baseline Imp outcomes are Death, Monk-prevented, already-dead target, impaired actor, and
+non-actual Character. An Imp Death is atomic with the confirmed attack and updates life state before
+later night steps. It does not append a second `deathConfirmed`; that event remains the separate Day
+execution-Death contract. Soldier, Mayor bounce, Scarlet Woman transfer, and win handling extend
+this seam in their owning follow-up issues.
+
+Use these schema-version-2 wire shapes:
+
+```ts
+type RedHerringAssigned = {
+  type: "redHerringAssigned";
+  payload: {
+    stepId: string;
+    playerId: string;
+    registrationJudgments: RegistrationJudgment[];
+  };
+};
+
+type NightActionResolved = {
+  type: "nightActionResolved";
+  payload: {
+    stepId: string;
+    actorPlayerId: string;
+    resolution:
+      | {
+          kind: "poison";
+          targetPlayerId: string;
+          applied: boolean;
+          noEffectReason?: "actorImpaired" | "notActualCharacter";
+        }
+      | {
+          kind: "monkProtection";
+          targetPlayerId: string;
+          applied: boolean;
+          noEffectReason?: "actorImpaired" | "notActualCharacter";
+        }
+      | {
+          kind: "impAttack";
+          targetPlayerId: string;
+          outcome:
+            | { kind: "death"; playerId: string }
+            | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
+            | {
+                kind: "noDeath";
+                reason: "alreadyDead" | "actorImpaired" | "notActualCharacter";
+              };
+        };
+  };
+};
+
+type NightDeathsAnnounced = {
+  type: "nightDeathsAnnounced";
+  payload: { stepId: string; playerIds: string[] };
+};
+```
+
+A night Death is not a public announcement. The following Day's `announceDeaths` step derives the
+complete ordered unannounced-night-Death list and confirms it as `nightDeathsAnnounced`. Replay marks
+those deaths announced without creating another Death. Execution Death is already public and never
+enters this list.
+
+Imp proposals use these stable warning codes and operational event-summary templates, where
+`{target}` and `{actor}` use the existing `seat번 name` Player label:
+
+- prevented by Monk: warning `DEMON_ATTACK_PREVENTED`, summary
+  `임프 공격: {target} · 사망 없음 (수도승 보호)`;
+- already dead: warning `DEMON_ATTACK_TARGET_ALREADY_DEAD`, summary
+  `임프 공격: {target} · 사망 없음 (이미 사망)`;
+- impaired actor: warning `NIGHT_ACTION_NO_EFFECT`, summary
+  `임프 공격: {target} · 사망 없음 ({actor} 중독)`;
+- non-actual Imp: warning `NIGHT_ACTION_NO_EFFECT`, summary
+  `임프 공격: {target} · 사망 없음 ({actor} 실제 임프 아님)`;
+- Death: no warning, summary `임프 공격: {target} · 사망`.
+
+When an Imp Death creates the dynamic Ravenkeeper follow-up, the Proposal includes this transient
+hint while replay remains authoritative:
+
+```json
+[{ "kind": "ravenkeeperReveal", "stepId": "night:ravenkeeper", "playerId": "player-id" }]
+```
+
+Ravenkeeper is not an unconditional wake-order step. Replay inserts `nightN:ravenkeeper`
+immediately after any typed night Death kills that Ravenkeeper, completes or skips the follow-up,
+then resumes later wake-order steps. Undertaker is similarly conditional: it appears only when the
+immediately preceding Day has the same Player in `executionConfirmed` and its matching step-linked
+`deathConfirmed`. Empath runs after earlier night Death and Ravenkeeper resolution so its nearest
+living-neighbor calculation uses current replayed state.
+
+Replay exposes a derived `ruleState` projection containing the fixed Red Herring, active poison,
+active protection, and unannounced night-Death Player IDs. Effect entries identify their source
+Player and source event. This projection is never persisted. Poison remains active for its selected
+night and following Day, expires before the next night's Poisoner choice, and ends early if its
+source loses the ability. Monk protection expires on entry to Day. React may render compact
+read-only badges from this projection; manual token editing remains separate.
+
+```ts
+type RuleState = {
+  redHerringPlayerId?: string;
+  activePoison?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
+  activeProtection?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
+  unannouncedNightDeathPlayerIds: string[];
+};
+```
+
 ## Messages and Warnings
 
 Rust may return short Korean messages for MVP.
@@ -353,11 +473,23 @@ Registration Judgments needed to make a registration-only alternate legal. Setup
 prompts similarly expose concrete Spy/Recluse registration options; TypeScript does not reconstruct
 these rules.
 
+Target-dependent Fortune Teller, Undertaker, and Ravenkeeper prompts expose Rust-derived
+`targetChecks`. Each check identifies the exact target Player IDs, its computed typed result, and
+the legal delivered-result choices with their Registration witnesses. Fortune Teller enumerates
+seat-ordered two-Player combinations, Ravenkeeper one check per selectable target, and Undertaker
+one check for its replay-derived executed-dead target. React selects an exact check and never
+calculates Demon, Red Herring, Character, impairment, or Registration results.
+
 Use a tagged `InformationResult` union/enum for result values. Add result variants when a script
 implements a new kind of information; do not fall back to `serde_json::Value`, `unknown`, or a
 Korean message as the persisted value. Registration Judgments identify the affected Player and
 the alignment or character-kind value used for that specific check. They are not global Player
 state.
+
+Ongoing Fortune Teller information uses a typed Boolean result. Undertaker and Ravenkeeper use a
+typed Character result. Under impairment, their legal ability-shaped choices are both booleans or
+the Trouble Brewing Character catalog respectively; normal Registration-adjusted alternatives keep
+the unmodified computed result and persist the exact per-check witness in `deliveryContext`.
 
 Replay may derive an `informationPrompt` for the current `PhaseStep`. This prompt is transient
 rules guidance containing the computed result and whether Delivered Information is fixed or must

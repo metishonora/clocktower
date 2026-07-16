@@ -125,6 +125,27 @@ pub(crate) struct ReplayState {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) day_state: Option<DayState>,
     pub(crate) warnings: Vec<CoreWarning>,
+    pub(crate) rule_state: RuleState,
+}
+
+#[derive(Debug, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RuleState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) red_herring_player_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) active_poison: Option<ActiveRuleEffect>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) active_protection: Option<ActiveRuleEffect>,
+    pub(crate) unannounced_night_death_player_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ActiveRuleEffect {
+    pub(crate) player_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_event_id: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -193,6 +214,102 @@ pub(crate) enum GameEventKind {
     ExecutionSurvivalConfirmed {
         payload: ExecutionSurvivalEventPayload,
     },
+    #[serde(rename = "redHerringAssigned")]
+    RedHerringAssigned { payload: RedHerringAssignedPayload },
+    #[serde(rename = "nightActionResolved")]
+    NightActionResolved { payload: NightActionResolvedPayload },
+    #[serde(rename = "nightDeathsAnnounced")]
+    NightDeathsAnnounced {
+        payload: NightDeathsAnnouncedPayload,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct RedHerringAssignedPayload {
+    pub(crate) step_id: String,
+    pub(crate) player_id: String,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct NightActionResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) resolution: NightActionResolution,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum NightActionResolution {
+    Poison {
+        target_player_id: String,
+        applied: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        no_effect_reason: Option<NightActionNoEffectReason>,
+    },
+    MonkProtection {
+        target_player_id: String,
+        applied: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        no_effect_reason: Option<NightActionNoEffectReason>,
+    },
+    ImpAttack {
+        target_player_id: String,
+        outcome: ImpAttackOutcome,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum NightActionNoEffectReason {
+    ActorImpaired,
+    NotActualCharacter,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum ImpAttackOutcome {
+    Death {
+        player_id: String,
+    },
+    Prevented {
+        reason: ImpPreventionReason,
+        source_event_id: String,
+    },
+    NoDeath {
+        reason: ImpNoDeathReason,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ImpPreventionReason {
+    MonkProtection,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ImpNoDeathReason {
+    AlreadyDead,
+    ActorImpaired,
+    NotActualCharacter,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct NightDeathsAnnouncedPayload {
+    pub(crate) step_id: String,
+    pub(crate) player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

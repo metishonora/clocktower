@@ -1,5 +1,9 @@
 mod contracts_scenarios;
 mod day_scenarios;
+mod night_action_contracts;
+mod ongoing_night_acceptance_scenarios;
+mod ongoing_night_actions_scenarios;
+mod ongoing_night_lifetime_scenarios;
 mod phase_scenarios;
 mod setup_scenarios;
 mod spy_reveal_regressions;

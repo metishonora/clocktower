@@ -23,8 +23,9 @@ const NIGHT_ORDER: &[&str] = &[
     "monk",
     "imp",
     "ravenkeeper",
-    "undertaker",
+    "empath",
     "fortuneTeller",
+    "undertaker",
     "butler",
     "spy",
 ];
@@ -639,6 +640,235 @@ pub(crate) fn character_steps(
         .collect()
 }
 
+pub(crate) fn target_information_checks(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[crate::contracts::GameEvent],
+) -> Vec<crate::model::TargetInformationCheck> {
+    use crate::model::{TargetInformationCheck, TargetInformationChoice};
+    let last_to_night = events.iter().rposition(|event| matches!(&event.kind, crate::contracts::GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
+    let impaired = step.player_id.as_ref().is_some_and(|actor| {
+        players.iter().any(|p| p.id == *actor && p.actual_character == "drunk")
+            || events.iter().enumerate().rev().any(|(index, e)| matches!(&e.kind, crate::contracts::GameEventKind::NightActionResolved { payload }
+                if matches!(&payload.resolution, crate::contracts::NightActionResolution::Poison { target_player_id, applied: true, .. } if target_player_id == actor)
+                && last_to_night.is_none_or(|boundary| index > boundary)
+                && players.iter().any(|p| p.id == payload.actor_player_id && p.alive && p.actual_character == "poisoner")))
+    });
+    let fixed = |target_player_ids: Vec<String>, computed_result: InformationResult| {
+        TargetInformationCheck {
+            target_player_ids,
+            choices: vec![TargetInformationChoice {
+                result: computed_result.clone(),
+                is_computed: true,
+                registration_judgments: vec![],
+            }],
+            computed_result,
+        }
+    };
+    match step.character.as_deref() {
+        Some("fortuneTeller") => {
+            let red = events.iter().find_map(|e| match &e.kind {
+                crate::contracts::GameEventKind::RedHerringAssigned { payload } => {
+                    Some(payload.player_id.as_str())
+                }
+                _ => None,
+            });
+            let demon = players
+                .iter()
+                .find(|p| p.actual_character == "imp")
+                .map(|p| p.id.as_str());
+            let mut result = vec![];
+            for i in 0..players.len() {
+                for j in i + 1..players.len() {
+                    let ids = vec![players[i].id.clone(), players[j].id.clone()];
+                    let yes = ids
+                        .iter()
+                        .any(|id| Some(id.as_str()) == demon || Some(id.as_str()) == red);
+                    let mut check = fixed(ids.clone(), InformationResult::Boolean { value: yes });
+                    if impaired {
+                        check.choices = [false, true]
+                            .into_iter()
+                            .map(|value| TargetInformationChoice {
+                                result: InformationResult::Boolean { value },
+                                is_computed: value == yes,
+                                registration_judgments: vec![],
+                            })
+                            .collect();
+                    } else if !yes {
+                        for p in players
+                            .iter()
+                            .filter(|p| p.actual_character == "recluse" && ids.contains(&p.id))
+                        {
+                            check.choices.push(TargetInformationChoice {
+                                result: InformationResult::Boolean { value: true },
+                                is_computed: false,
+                                registration_judgments: vec![RegistrationJudgment {
+                                    player_id: p.id.clone(),
+                                    registered_as: RegistrationValue::Demon,
+                                    character_id: None,
+                                }],
+                            });
+                        }
+                    }
+                    result.push(check);
+                }
+            }
+            result
+        }
+        Some("ravenkeeper") => players
+            .iter()
+            .map(|p| {
+                let mut check = fixed(
+                    vec![p.id.clone()],
+                    InformationResult::Character {
+                        character_id: p.actual_character.clone(),
+                    },
+                );
+                if impaired {
+                    check.choices = TOWNSFOLK
+                        .iter()
+                        .chain(OUTSIDERS)
+                        .chain(MINIONS)
+                        .chain(DEMONS)
+                        .map(|id| TargetInformationChoice {
+                            result: InformationResult::Character {
+                                character_id: (*id).into(),
+                            },
+                            is_computed: *id == p.actual_character,
+                            registration_judgments: vec![],
+                        })
+                        .collect();
+                } else if p.actual_character == "spy" {
+                    check
+                        .choices
+                        .extend(TOWNSFOLK.iter().map(|id| TargetInformationChoice {
+                            result: InformationResult::Character {
+                                character_id: (*id).into(),
+                            },
+                            is_computed: false,
+                            registration_judgments: vec![RegistrationJudgment {
+                                player_id: p.id.clone(),
+                                registered_as: RegistrationValue::Townsfolk,
+                                character_id: Some((*id).into()),
+                            }],
+                        }));
+                } else if p.actual_character == "recluse" {
+                    check
+                        .choices
+                        .extend(MINIONS.iter().map(|id| TargetInformationChoice {
+                            result: InformationResult::Character {
+                                character_id: (*id).into(),
+                            },
+                            is_computed: false,
+                            registration_judgments: vec![RegistrationJudgment {
+                                player_id: p.id.clone(),
+                                registered_as: RegistrationValue::Minion,
+                                character_id: Some((*id).into()),
+                            }],
+                        }));
+                    check
+                        .choices
+                        .extend(DEMONS.iter().map(|id| TargetInformationChoice {
+                            result: InformationResult::Character {
+                                character_id: (*id).into(),
+                            },
+                            is_computed: false,
+                            registration_judgments: vec![RegistrationJudgment {
+                                player_id: p.id.clone(),
+                                registered_as: RegistrationValue::Demon,
+                                character_id: Some((*id).into()),
+                            }],
+                        }));
+                }
+                check
+            })
+            .collect(),
+        Some("undertaker") => {
+            let cycle = if step.id.starts_with("night:") {
+                1
+            } else {
+                step.id
+                    .trim_start_matches("night")
+                    .split(':')
+                    .next()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(1)
+            };
+            crate::night::previous_executed_death(events, cycle)
+                .and_then(|id| {
+                    players.iter().find(|p| p.id == id).map(|p| {
+                        let mut check = fixed(
+                            vec![id],
+                            InformationResult::Character {
+                                character_id: p.actual_character.clone(),
+                            },
+                        );
+                        if impaired {
+                            check.choices = TOWNSFOLK
+                                .iter()
+                                .chain(OUTSIDERS)
+                                .chain(MINIONS)
+                                .chain(DEMONS)
+                                .map(|id| TargetInformationChoice {
+                                    result: InformationResult::Character {
+                                        character_id: (*id).into(),
+                                    },
+                                    is_computed: *id == p.actual_character,
+                                    registration_judgments: vec![],
+                                })
+                                .collect();
+                        } else if p.actual_character == "spy" {
+                            check.choices.extend(TOWNSFOLK.iter().map(|character_id| {
+                                TargetInformationChoice {
+                                    result: InformationResult::Character {
+                                        character_id: (*character_id).into(),
+                                    },
+                                    is_computed: false,
+                                    registration_judgments: vec![RegistrationJudgment {
+                                        player_id: p.id.clone(),
+                                        registered_as: RegistrationValue::Townsfolk,
+                                        character_id: Some((*character_id).into()),
+                                    }],
+                                }
+                            }));
+                        } else if p.actual_character == "recluse" {
+                            check.choices.extend(MINIONS.iter().map(|character_id| {
+                                TargetInformationChoice {
+                                    result: InformationResult::Character {
+                                        character_id: (*character_id).into(),
+                                    },
+                                    is_computed: false,
+                                    registration_judgments: vec![RegistrationJudgment {
+                                        player_id: p.id.clone(),
+                                        registered_as: RegistrationValue::Minion,
+                                        character_id: Some((*character_id).into()),
+                                    }],
+                                }
+                            }));
+                            check.choices.extend(DEMONS.iter().map(|character_id| {
+                                TargetInformationChoice {
+                                    result: InformationResult::Character {
+                                        character_id: (*character_id).into(),
+                                    },
+                                    is_computed: false,
+                                    registration_judgments: vec![RegistrationJudgment {
+                                        player_id: p.id.clone(),
+                                        registered_as: RegistrationValue::Demon,
+                                        character_id: Some((*character_id).into()),
+                                    }],
+                                }
+                            }));
+                        }
+                        check
+                    })
+                })
+                .into_iter()
+                .collect()
+        }
+        _ => vec![],
+    }
+}
+
 pub(crate) fn character_required_input(character: &str) -> RequiredInput {
     match character {
         "poisoner" | "monk" | "imp" | "ravenkeeper" | "butler" => required_players(1, 1),
@@ -672,6 +902,8 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
+            allowed_player_ids: None,
+            player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
             execution_survival_allowed: false,
@@ -708,6 +940,8 @@ fn required_none() -> RequiredInput {
         setup_info: None,
         character_kind: None,
         allowed_character_ids: None,
+        allowed_player_ids: None,
+        player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
         execution_survival_allowed: false,
@@ -728,6 +962,8 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         setup_info: None,
         character_kind: None,
         allowed_character_ids: None,
+        allowed_player_ids: None,
+        player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
         execution_survival_allowed: false,
@@ -750,6 +986,8 @@ fn required_setup_info(
         setup_info: Some(kind),
         character_kind: Some(character_kind),
         allowed_character_ids: None,
+        allowed_player_ids: None,
+        player_registration_options: None,
         zero_allowed,
         supports_random_suggestion: true,
         execution_survival_allowed: false,
