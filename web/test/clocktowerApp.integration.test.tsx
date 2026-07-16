@@ -90,6 +90,114 @@ describe("ClocktowerApp live-play integration", () => {
     expect(logDetails.open).toBe(true);
   });
 
+  test("shows the latest event Undo beside the collapsed log and cancellation changes nothing", async () => {
+    const currentStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+    const latestEvent = event("event-poisoner", "독살자가 2번 Bert를 선택함");
+    const storedGame = gameFile();
+    storedGame.game.events.push(latestEvent);
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const storage = new MemoryGameStorageDriver(storedGame);
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    const logDetails = screen.getByText("이벤트 로그").closest("details") as HTMLDetailsElement;
+    expect(logDetails.open).toBe(false);
+    expect(screen.queryByRole("button", { name: "설정 다시 수정" })).toBeNull();
+    expect(screen.getAllByText(latestEvent.summary).length).toBeGreaterThan(0);
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect((undo as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2));
+    const replayCallsBefore = vi.mocked(core.replay).mock.calls.length;
+    const savesBefore = storage.savedGames.length;
+
+    await user.click(undo);
+    const dialog = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
+    expect(within(dialog).getByText(`되돌릴 항목: ${latestEvent.summary}`)).toBeTruthy();
+    await user.click(within(dialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.queryByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(undo));
+    expect(screen.getAllByText(latestEvent.summary).length).toBeGreaterThan(0);
+    expect(vi.mocked(core.replay).mock.calls).toHaveLength(replayCallsBefore);
+    expect(storage.savedGames).toHaveLength(savesBefore);
+    expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2);
+  });
+
+  test("each confirmed Undo removes one latest live event, replays, autosaves, then exposes setup recovery", async () => {
+    const currentStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+    const firstLiveEvent = event("event-poisoner", "독살자가 2번 Bert를 선택함");
+    const secondLiveEvent = event("event-chef", "요리사 정보 확정 · 1쌍 공개");
+    const storedGame = gameFile();
+    storedGame.game.events.push(firstLiveEvent, secondLiveEvent);
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 3 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    vi.mocked(core.replay).mockImplementation(async (candidate) => ({
+      ok: true,
+      value: replayState({ currentStep, eventCount: candidate.game.events.length }),
+    }));
+    const storage = new MemoryGameStorageDriver(storedGame);
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    await waitFor(() => expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(false));
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText(`되돌릴 항목: ${secondLiveEvent.summary}`)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "되돌리기" }));
+    await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2));
+    expect(latestSavedGame(storage.savedGames).game.events.at(-1)).toEqual(firstLiveEvent);
+    expect(screen.queryByText(secondLiveEvent.summary)).toBeNull();
+    await waitFor(() => expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(false));
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText(`되돌릴 항목: ${firstLiveEvent.summary}`)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "되돌리기" }));
+    await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(1));
+
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+    await user.click(screen.getByText("설정 및 불러오기"));
+    expect(screen.getByRole("button", { name: "설정 다시 수정" })).toBeTruthy();
+    expect(vi.mocked(core.replay).mock.calls.some(([candidate]) => candidate.game.events.length === 2)).toBe(true);
+    expect(vi.mocked(core.replay).mock.calls.some(([candidate]) => candidate.game.events.length === 1)).toBe(true);
+  });
+
+  test("setup recovery remains separate, restores the confirmed Players, replays, and autosaves", async () => {
+    const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const confirmSetupRecovery = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+    await user.click(screen.getByText("설정 및 불러오기"));
+    await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
+
+    expect(confirmSetupRecovery).toHaveBeenCalledWith("설정 확정을 되돌리고 다시 수정할까요?");
+    expect(await screen.findByText("그리모어 초안")).toBeTruthy();
+    expect(screen.getByDisplayValue("Ada")).toBeTruthy();
+    await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(0));
+    expect(vi.mocked(core.replay).mock.calls.some(([candidate]) => candidate.game.events.length === 0)).toBe(true);
+    confirmSetupRecovery.mockRestore();
+  });
+
   test("confirms a completed setup draft through the visible setup form", async () => {
     const firstStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
     const setupEvent = gameFile().game.events[0];
@@ -184,7 +292,7 @@ describe("ClocktowerApp live-play integration", () => {
       },
     );
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-    expect(screen.getByText("중독자가 1번 Ada를 선택함")).toBeTruthy();
+    expect(screen.getAllByText("중독자가 1번 Ada를 선택함").length).toBeGreaterThan(0);
 
     await waitFor(() => {
       const savedGame = latestSavedGame(storage.savedGames);
@@ -1267,7 +1375,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(core.propose).toHaveBeenCalledTimes(1);
   });
 
-  test("undoing the confirmed information clears its pending Reveal", async () => {
+  test("Undo remains discoverable beside a pending Reveal and clears it after confirmation", async () => {
     const revealStep = step({
       id: "firstNight:chef",
       character: "chef",
@@ -1289,7 +1397,6 @@ describe("ClocktowerApp live-play integration", () => {
       }),
     });
     const storage = new MemoryGameStorageDriver(gameFile());
-    const confirmDialog = vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
@@ -1297,15 +1404,17 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
     await user.click(screen.getByRole("button", { name: "확정" }));
     await screen.findByLabelText("확정된 Reveal 후속 조치");
-    await user.click(screen.getByText("설정 및 불러오기"));
-    await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect((undo as HTMLButtonElement).disabled).toBe(false));
+    await user.click(undo);
+    expect(screen.getByText(`되돌릴 항목: ${canonicalEvent.summary}`)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
     expect(await screen.findByRole("heading", { name: "요리사: 2번 Bert" })).toBeTruthy();
     expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
     await waitFor(() => {
       expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(1);
     });
-    confirmDialog.mockRestore();
   });
 
   test("selects nominator, nominee, and seat-map voters through the visible vote preview and confirm path", async () => {
@@ -1585,7 +1694,7 @@ describe("ClocktowerApp live-play integration", () => {
       payload: { stepId: "day:nomination:1", input: null },
     });
     expect(await screen.findByRole("heading", { name: "처형 확정" })).toBeTruthy();
-    expect(screen.getByText("지명 종료")).toBeTruthy();
+    expect(screen.getAllByText("지명 종료").length).toBeGreaterThan(0);
     await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2));
   });
 

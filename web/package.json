@@ -11,6 +11,7 @@
     "prototype:first-night-suggestion": "vite --host 0.0.0.0",
     "prototype:day-voting": "vite --host 0.0.0.0",
     "prototype:slayer-ability": "vite --host 0.0.0.0",
+    "prototype:live-play-undo": "vite --host 0.0.0.0",
     "prototype:day-runtime": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "test": "pnpm run test:unit && pnpm run test:integration",
