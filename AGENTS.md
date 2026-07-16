@@ -9,11 +9,17 @@
 
 ## Test-first behavior changes
 
-- Use a sequential test-first handoff for non-trivial changes to domain rules, state transitions, voting or win conditions, persistence, undo/replay, WASM contracts, and user-visible workflows.
-- Sol must finalize the acceptance criteria and stable public contract before delegation. The test worker may use the approved requirements, project specs, existing public interfaces, and test conventions, but must not receive a proposed implementation design or edit production source.
-- The test worker writes the smallest black-box behavioral or regression test at a stable seam and demonstrates that it fails for the intended reason; environment, harness, and unrelated failures do not count. Sol reviews this result before implementation starts.
-- A separate implementation worker then changes production code and may add implementation-coupled unit tests, but must not weaken, delete, or rewrite the approved behavioral test without Sol approval.
-- Skip this handoff for documentation-only work and trivial mechanical changes. Keep both workers in the issue worktree and do not run test and source implementation in parallel.
+- Apply test-first development to non-trivial changes in domain rules, state transitions, voting or win conditions, persistence, undo/replay, WASM contracts, and user-visible workflows.
+- Finalize the acceptance criteria and stable public contract, then write the smallest black-box behavioral or regression test at a stable seam before editing production code.
+- Run the new test and confirm that it fails for the intended behavioral reason; environment, harness, and unrelated failures do not count.
+- Implement the smallest production change without weakening, deleting, or rewriting the approved behavioral test. If the test must change, first explain the requirement or test error that makes the change necessary.
+- Refactor only after the test passes, then run the relevant regression checks and review the diff. Skip this workflow for documentation-only work and trivial mechanical changes.
+
+## Test server lifecycle
+
+- When the user requests a test server, run it as a detached background process bound to `0.0.0.0`, record its PID, and keep it running after the response.
+- Provide an explicit clickable `http://<tailscale-ip>:<port>` link using the machine's current Tailscale IPv4 address, not `localhost`.
+- At the start of the next user turn, stop the recorded test server before doing other work unless the user explicitly asks to keep it running.
 
 ## Code-change completion checklist
 
