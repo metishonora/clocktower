@@ -45,7 +45,7 @@ const revealPayload = {
 };
 
 export function DayRuntimePrototype() {
-  const [variant, setVariant] = useState<RuntimeVariant>("A");
+  const [variant, setVariant] = useState<RuntimeVariant>("B");
   const [runtime, setRuntime] = useState<(typeof runtimeValues)[number]>("12:34");
   const [surface, setSurface] = useState<PrototypeSurface>("whisper");
   const [returnSurface, setReturnSurface] = useState<PrototypeSurface>("discussion");

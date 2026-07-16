@@ -30,9 +30,11 @@ test("compares both compact day-runtime placements across representative live-pl
   render(<App coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
   const prototype = await screen.findByRole("main", { name: "낮 경과 시간 배치 프로토타입" });
-  expect(within(prototype).getByLabelText("헤더 우측 낮 경과 시간").textContent).toContain("12:34");
+  expect(within(prototype).getByLabelText("제목 아래 낮 경과 시간").textContent).toContain("12:34");
   expect(within(prototype).getByText("입력 없음")).toBeTruthy();
 
+  await user.click(within(prototype).getByRole("button", { name: "A · 헤더 우측" }));
+  expect(within(prototype).getByLabelText("헤더 우측 낮 경과 시간").textContent).toContain("12:34");
   await user.click(within(prototype).getByRole("button", { name: "B · 제목 아래" }));
   expect(within(prototype).getByLabelText("제목 아래 낮 경과 시간").textContent).toContain("12:34");
 

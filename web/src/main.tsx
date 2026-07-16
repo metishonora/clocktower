@@ -21,6 +21,11 @@ import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
+import {
+  browserDayRuntimeClock,
+  type DayRuntimeClock,
+} from "./features/phase-control/dayRuntime";
+import { useDayRuntime } from "./features/phase-control/useDayRuntime";
 import "./styles.css";
 
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
@@ -41,6 +46,7 @@ export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
   choiceTokenSource?: ChoiceTokenSource;
+  dayRuntimeClock?: DayRuntimeClock;
 };
 
 export function App(props: ClocktowerAppProps) {
@@ -96,7 +102,12 @@ export function App(props: ClocktowerAppProps) {
   return <ClocktowerApp {...props} />;
 }
 
-export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = browserCryptoChoiceToken }: ClocktowerAppProps) {
+export function ClocktowerApp({
+  coreAdapter,
+  storageDriver,
+  choiceTokenSource = browserCryptoChoiceToken,
+  dayRuntimeClock = browserDayRuntimeClock,
+}: ClocktowerAppProps) {
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
@@ -111,6 +122,11 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
   );
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
+  const dayRuntime = useDayRuntime({
+    phase: gameStore.phase,
+    gameSessionRevision: gameStore.gameSessionRevision,
+    clock: dayRuntimeClock,
+  });
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
@@ -197,6 +213,7 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
               <section className="panel phasePanel">
                 <PhaseControl
                   pendingReveal={gameStore.pendingConfirmedReveal}
+                  dayRuntime={dayRuntime}
                   currentStep={gameStore.currentStep}
                   phaseOverview={gameStore.phaseOverview}
                   players={gameStore.players}
