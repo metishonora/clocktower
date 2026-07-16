@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     contracts::{
         ActiveRuleEffect, DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource,
-        GameEvent, GameEventKind, GameFile, ImpAttackOutcome, MayorAttackContext,
+        GameEndState, GameEvent, GameEventKind, GameFile, ImpAttackOutcome, MayorAttackContext,
         NightActionNoEffectReason, NightActionResolution, ReplayState, RuleState,
         SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
         SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
@@ -15,9 +15,9 @@ use crate::{
     error::{CoreError, ErrorKind},
     information::{actor_is_impaired, information_prompt, validate_confirmed_information},
     model::{
-        DemonSuccessionPrompt, InputTarget, MayorDecisionInput, Phase, PhaseOverviewItem,
-        PhaseStep, PhaseStepStatus, Player, RegistrationJudgment, RequiredInput, RequiredInputKind,
-        SlayerAbilityState, StepType, VirginAbilityState,
+        Alignment, DemonSuccessionPrompt, InputTarget, MayorDecisionInput, Phase,
+        PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RegistrationJudgment, RequiredInput,
+        RequiredInputKind, SlayerAbilityState, StepType, VirginAbilityState,
     },
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
@@ -25,25 +25,41 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
-    let players = replay_players(&game_file.game.events)?;
+    let events = &game_file.game.events;
+    let ended_positions = events
+        .iter()
+        .enumerate()
+        .filter_map(|(index, event)| {
+            matches!(event.kind, GameEventKind::GameEnded { .. }).then_some(index)
+        })
+        .collect::<Vec<_>>();
+    if ended_positions.len() > 1
+        || ended_positions
+            .first()
+            .is_some_and(|index| *index != events.len().saturating_sub(1))
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    let active_events = ended_positions
+        .first()
+        .map_or(events.as_slice(), |index| &events[..*index]);
+    let players = replay_players(active_events)?;
     let mut warnings = validate_setup_warnings(&players);
-    let phase_state = replay_phase_state(&players, &game_file.game.events)?;
+    let phase_state = replay_phase_state(&players, active_events)?;
     let day_state = if phase_state.phase == Phase::Day {
         current_day_prefix(&phase_state)
-            .map(|prefix| replay_day_state(&game_file.game.events, &players, &prefix))
+            .map(|prefix| replay_day_state(active_events, &players, &prefix))
             .transpose()?
     } else {
         None
     };
 
-    let mut rule_state = replay_rule_state(&game_file.game.events, &players);
+    let mut rule_state = replay_rule_state(active_events, &players);
     if let Some(actor) = players
         .iter()
         .find(|player| player.actual_character == "slayer")
     {
-        let spent = game_file
-            .game
-            .events
+        let spent = active_events
             .iter()
             .any(|event| matches!(event.kind, GameEventKind::SlayerAbilityUsed { .. }));
         let can_use_now = actor.alive
@@ -63,21 +79,14 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         .find(|player| player.actual_character == "virgin")
     {
         let spent_by_nomination_event_id =
-            game_file
-                .game
-                .events
-                .iter()
-                .find_map(|event| match &event.kind {
-                    GameEventKind::NominationStarted { payload }
-                        if !matches!(
-                            payload.virgin_resolution,
-                            VirginResolution::NotApplicable
-                        ) =>
-                    {
-                        Some(event.id.clone())
-                    }
-                    _ => None,
-                });
+            active_events.iter().find_map(|event| match &event.kind {
+                GameEventKind::NominationStarted { payload }
+                    if !matches!(payload.virgin_resolution, VirginResolution::NotApplicable) =>
+                {
+                    Some(event.id.clone())
+                }
+                _ => None,
+            });
         rule_state.virgin_ability = Some(VirginAbilityState {
             actor_player_id: actor.id.clone(),
             spent: spent_by_nomination_event_id.is_some(),
@@ -89,26 +98,111 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             code: "NIGHT_DEATH_UNANNOUNCED".into(),
             severity: "warning",
             message_ko: "공개하지 않은 밤 사망이 있습니다.".into(),
+            winning_team: None,
         });
     }
-    if saint_executed_with_ability(&game_file.game.events)? {
+    if saint_executed_with_ability(active_events)? {
         warnings.push(crate::model::CoreWarning {
             code: "SAINT_EXECUTED_EVIL_WIN".into(),
             severity: "warning",
             message_ko: "성자 처형 사망: 악 승리 확인 필요".into(),
+            winning_team: Some(Alignment::Evil),
         });
     }
+    if !players.is_empty()
+        && crate::characters::demon_dead_without_successor(
+            &players,
+            pending_demon_succession(active_events)?.is_some(),
+        )
+    {
+        warnings.push(crate::model::CoreWarning {
+            code: "DEMON_DEAD_GOOD_WIN".into(),
+            severity: "warning",
+            message_ko: "악마 사망: 선 승리 확인 필요".into(),
+            winning_team: Some(Alignment::Good),
+        });
+    }
+    if !players.is_empty() && players.iter().filter(|player| player.alive).count() <= 2 {
+        warnings.push(crate::model::CoreWarning {
+            code: "TWO_LIVING_PLAYERS_EVIL_WIN".into(),
+            severity: "warning",
+            message_ko: "생존자 2명: 악 승리 확인 필요".into(),
+            winning_team: Some(Alignment::Evil),
+        });
+    }
+    if mayor_win_condition_occurred(active_events)? {
+        warnings.push(crate::model::CoreWarning {
+            code: "MAYOR_GOOD_WIN".into(),
+            severity: "warning",
+            message_ko: "시장 무처형 조건: 선 승리 확인 필요".into(),
+            winning_team: Some(Alignment::Good),
+        });
+    }
+    let game_end = ended_positions
+        .first()
+        .map(|index| {
+            let event = &events[*index];
+            let GameEventKind::GameEnded { payload } = &event.kind else {
+                unreachable!()
+            };
+            if event.phase != phase_state.phase {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            Ok(GameEndState {
+                event_id: event.id.clone(),
+                winning_team: payload.winning_team,
+            })
+        })
+        .transpose()?;
+    let (current_step, phase_overview) = if game_end.is_some() {
+        (None, vec![])
+    } else {
+        (phase_state.current_step, phase_state.phase_overview)
+    };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        event_count: game_file.game.events.len(),
+        event_count: events.len(),
         phase: phase_state.phase,
         players,
-        current_step: phase_state.current_step,
-        phase_overview: phase_state.phase_overview,
+        current_step,
+        phase_overview,
         day_state,
         warnings,
         rule_state,
+        game_end,
     })
+}
+
+fn mayor_win_condition_occurred(events: &[GameEvent]) -> Result<bool, CoreError> {
+    for (event_index, event) in events.iter().enumerate() {
+        let GameEventKind::NoExecutionConfirmed { payload } = &event.kind else {
+            continue;
+        };
+        let players = replay_players(&events[..event_index])?;
+        let rule_state = replay_rule_state(&events[..event_index], &players);
+        if !crate::characters::mayor_win_eligible(&players, rule_state.active_poison.as_ref()) {
+            continue;
+        }
+        let prefix = step_prefix(&payload.step_id)?;
+        let execution_occurred =
+            events[..event_index]
+                .iter()
+                .any(|candidate| match &candidate.kind {
+                    GameEventKind::ExecutionConfirmed { payload } => {
+                        payload.step_id.starts_with(&prefix)
+                    }
+                    GameEventKind::DeathConfirmed { payload } => {
+                        payload.step_id.as_deref().is_some_and(|step_id| {
+                            step_id.starts_with(&prefix) && step_id.ends_with(":virginDeath")
+                        })
+                    }
+                    _ => false,
+                });
+        if !execution_occurred {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn saint_executed_with_ability(events: &[GameEvent]) -> Result<bool, CoreError> {

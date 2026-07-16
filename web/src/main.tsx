@@ -57,6 +57,13 @@ const DevDayRuntimePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevWinGamePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./winGamePrototype");
+      return { default: module.WinGamePrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -65,6 +72,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevWinGamePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "win-game"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevWinGamePrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevDayRuntimePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "day-runtime"
@@ -214,6 +232,14 @@ export function ClocktowerApp({
     queueMicrotask(() => liveUndoTriggerRef.current?.focus());
   }
 
+  function requestLiveUndo(
+    event: NonNullable<typeof gameStore.latestLiveUndoEvent>,
+    trigger: HTMLButtonElement,
+  ) {
+    liveUndoTriggerRef.current = trigger;
+    setLiveUndoDialogEvent(event);
+  }
+
   if (activeRevealPayload) {
     return <RevealScreen payload={activeRevealPayload} onClose={() => setActiveRevealPayload(undefined)} />;
   }
@@ -290,6 +316,14 @@ export function ClocktowerApp({
                   onSuggest={gameStore.suggestPhaseInput}
                   choiceTokenSource={choiceTokenSource}
                   suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
+                  warnings={gameStore.shownWarnings}
+                  gameEnd={gameStore.gameEnd}
+                  onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
+                  onRequestUndoGameEnd={(trigger) => {
+                    if (gameStore.latestLiveUndoEvent) {
+                      requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
+                    }
+                  }}
                 />
               </section>
 
@@ -318,10 +352,7 @@ export function ClocktowerApp({
                 warnings={gameStore.shownWarnings}
                 latestUndoEvent={gameStore.latestLiveUndoEvent}
                 undoDisabled={!gameStore.canUndoLatestLiveEvent}
-                onRequestUndo={(event, trigger) => {
-                  liveUndoTriggerRef.current = trigger;
-                  setLiveUndoDialogEvent(event);
-                }}
+                onRequestUndo={requestLiveUndo}
               />
             </aside>
           </>

@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase, PhaseOverviewItem,
-    PhaseStep, Player, RegistrationJudgment, StepInput,
+    Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase,
+    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, StepInput,
 };
 
 pub(crate) struct GameFile {
@@ -52,6 +52,15 @@ pub(crate) enum Command {
     UseSlayerAbility {
         payload: UseSlayerAbilityCommandPayload,
     },
+    #[serde(rename = "endGame")]
+    EndGame { payload: EndGameCommandPayload },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct EndGameCommandPayload {
+    pub(crate) winning_team: Alignment,
+    pub(crate) expected_event_count: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -152,6 +161,14 @@ pub(crate) struct ReplayState {
     pub(crate) day_state: Option<DayState>,
     pub(crate) warnings: Vec<CoreWarning>,
     pub(crate) rule_state: RuleState,
+    pub(crate) game_end: Option<GameEndState>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GameEndState {
+    pub(crate) event_id: String,
+    pub(crate) winning_team: Alignment,
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -267,6 +284,14 @@ pub(crate) enum GameEventKind {
     DemonSuccessionConfirmed {
         payload: DemonSuccessionConfirmedPayload,
     },
+    #[serde(rename = "gameEnded")]
+    GameEnded { payload: GameEndedPayload },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct GameEndedPayload {
+    pub(crate) winning_team: Alignment,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

@@ -77,7 +77,7 @@ pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
         .map_err(|_| ErrorKind::MalformedCommand.into_error())?;
     if !matches!(
         discriminator.kind.as_str(),
-        "smoke" | "createGame" | "confirmStep" | "skipStep" | "useSlayerAbility"
+        "smoke" | "createGame" | "confirmStep" | "skipStep" | "useSlayerAbility" | "endGame"
     ) {
         return Err(ErrorKind::UnsupportedCommand.into_error());
     }
@@ -105,6 +105,7 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "nightDeathsAnnounced"
             | "slayerAbilityUsed"
             | "demonSuccessionConfirmed"
+            | "gameEnded"
     ) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }

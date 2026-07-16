@@ -149,6 +149,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const phaseOverview = replayState?.phaseOverview ?? [];
   const dayState = replayState?.dayState;
   const ruleState = replayState?.ruleState;
+  const gameEnd = replayState?.gameEnd;
   const setupConfirmed = players.length > 0;
   const transitionBusy = busy || undoReplayPending;
   const replayCaughtUp = replayState?.eventCount === gameFile.game.events.length;
@@ -303,6 +304,28 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         targetRegistration,
       },
     }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "학살자 능력 확정 실패" } }));
+    setProposalResult(result);
+    setBusy(false);
+    if (result.ok) appendProposalEvent(result.value);
+  }
+
+  async function endGame(winningTeam: "good" | "evil") {
+    if (!setupConfirmed || gameEnd) return;
+    setBusy(true);
+    setLoadError(undefined);
+    const result = await core.propose(gameFile, {
+      type: "endGame",
+      payload: {
+        winningTeam,
+        expectedEventCount: gameFile.game.events.length,
+      },
+    }).catch((error: unknown): CoreResult<Proposal> => ({
+      ok: false,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "게임 종료 확정 실패",
+      },
+    }));
     setProposalResult(result);
     setBusy(false);
     if (result.ok) appendProposalEvent(result.value);
@@ -504,6 +527,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     phaseOverview,
     dayState,
     ruleState,
+    gameEnd,
     setupConfirmed,
     latestLiveUndoEvent,
     canUndoLatestLiveEvent,
@@ -517,6 +541,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     skipCurrentStep,
     suggestPhaseInput,
     useSlayerAbility,
+    endGame,
     resetSetup,
     undoLatestLiveEvent,
     recoverConfirmedSetup,

@@ -184,6 +184,12 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
       break;
+    case "gameEnded":
+      if (
+        !hasExactKeys(payload, ["winningTeam"]) ||
+        (payload.winningTeam !== "good" && payload.winningTeam !== "evil")
+      ) throw invalidEvent();
+      break;
     default:
       throw new Error("지원하지 않는 이벤트입니다.");
   }
@@ -205,7 +211,12 @@ export function parseReplayState(value: unknown): ReplayState {
     (value.dayState !== undefined && !isDayState(value.dayState)) ||
     !isRuleState(value.ruleState) ||
     !Array.isArray(value.warnings) ||
-    !value.warnings.every(isWarning)
+    !value.warnings.every(isWarning) ||
+    !(
+      value.gameEnd === undefined ||
+      value.gameEnd === null ||
+      isGameEndState(value.gameEnd)
+    )
   ) {
     throw invalidCoreResponse();
   }
@@ -861,8 +872,16 @@ function isWarning(value: unknown): boolean {
     isRecord(value) &&
     typeof value.code === "string" &&
     (value.severity === "warning" || value.severity === "info") &&
-    typeof value.messageKo === "string"
+    typeof value.messageKo === "string" &&
+    (value.winningTeam === undefined || value.winningTeam === "good" || value.winningTeam === "evil")
   );
+}
+
+function isGameEndState(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["eventId", "winningTeam"]) &&
+    typeof value.eventId === "string" &&
+    (value.winningTeam === "good" || value.winningTeam === "evil");
 }
 
 function isPhase(value: unknown): value is Phase {

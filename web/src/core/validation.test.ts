@@ -190,6 +190,43 @@ test("validates Proposal.event at the Wasm JSON boundary", () => {
   throws(() => parseCoreResult(incompleteReveal, parseProposal), /코어 응답 형식/);
 });
 
+test("validates win warnings and the canonical game-ended contract", () => {
+  const event = {
+    id: "game-ended-12",
+    type: "gameEnded",
+    phase: "day",
+    payload: { winningTeam: "evil" },
+    summary: "게임 종료 · 악팀 승리",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "gameEnded");
+
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 12,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [{
+      code: "SAINT_EXECUTED_EVIL_WIN",
+      severity: "warning",
+      messageKo: "성자 처형 사망: 악 승리 확인 필요",
+      winningTeam: "evil",
+    }],
+    gameEnd: { eventId: "game-ended-12", winningTeam: "evil" },
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const malformedEvent = structuredClone(event);
+  malformedEvent.payload.winningTeam = "neither";
+  throws(() => parseGameEvent(malformedEvent), /이벤트 형식/);
+  const malformedWarning = structuredClone(replay);
+  malformedWarning.warnings[0].winningTeam = "neither";
+  throws(() => parseReplayState(malformedWarning), /코어 응답 형식/);
+});
+
 test("validates typed confirmed information and derived information prompts", () => {
   const information = {
     actor: { playerId: "player-2", characterId: "chef" },
