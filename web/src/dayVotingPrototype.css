@@ -171,7 +171,7 @@
 
 .prototypeGrimoire > button em {
   grid-area: status;
-  color: #9a552f;
+  color: #47645b;
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 900;
@@ -185,11 +185,31 @@
 
 .prototypeGrimoire > button.dead:not(.selected) {
   border-style: dashed;
-  background: #f0ede7;
+  border-color: #b88162;
+  background: #f3e9df;
+}
+
+.prototypeGrimoire > button.dead em {
+  color: #914a2e;
+}
+
+.prototypeGrimoire > button.ghostSpent {
+  border-color: #aaa49a;
+  background: #e7e3dc;
+  color: #777269;
+}
+
+.prototypeGrimoire > button.ghostSpent em {
+  color: #6f6b64;
 }
 
 .prototypeGrimoire > button:disabled {
-  opacity: 0.78;
+  cursor: default;
+  opacity: 1;
+}
+
+.prototypeGrimoire > button.ghostSpent:disabled {
+  opacity: 0.62;
 }
 
 .prototypeMapHint {
@@ -339,7 +359,8 @@
 }
 
 .prototypeNominationActions button,
-.prototypeStageCard button {
+.prototypeStageCard button,
+.prototypeResultCard button {
   min-height: 44px;
   border-radius: 10px;
   font-weight: 1000;
@@ -352,7 +373,8 @@
 }
 
 .prototypeNominationActions .primary,
-.prototypeStageCard button {
+.prototypeStageCard button,
+.prototypeResultCard .primary {
   border: 1px solid #1f6f5b;
   color: #fff;
   background: #1f6f5b;
@@ -368,6 +390,69 @@
   border: 1px solid #d8d3c8;
   border-radius: 17px;
   background: #faf8f2;
+}
+
+.prototypeResultCard {
+  display: grid;
+  align-content: center;
+  gap: 13px;
+  min-height: 360px;
+  padding: 28px;
+  border: 1px solid #d8d3c8;
+  border-radius: 17px;
+  background: #faf8f2;
+}
+
+.prototypeResultCard > span {
+  color: #777269;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.prototypeResultCard > strong {
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  line-height: 1.05;
+}
+
+.prototypeResultCard > small {
+  color: #60716a;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.prototypeResultActions {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.prototypeResultCard .secondary {
+  border: 1px solid #d2cec2;
+  color: #57534c;
+  background: #fff;
+}
+
+.prototypeResultCard .survivalDisabled:disabled {
+  border-color: #d8d3ca;
+  color: #aaa49a;
+  background: #ebe8e1;
+  opacity: 1;
+}
+
+.prototypeResultCard .deathConfirm {
+  border-color: #9a3f32;
+  background: #9a3f32;
+}
+
+.postDeathCard {
+  border-color: #d3b9a8;
+  background: linear-gradient(145deg, #f5ece4, #eee1d6);
+}
+
+.postDeathCard > small {
+  color: #914a2e;
 }
 
 .prototypeStageCard > span {

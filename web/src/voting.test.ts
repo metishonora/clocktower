@@ -27,9 +27,14 @@ test("vote draft counts living voters and unspent ghost voters only", () => {
 test("vote status labels dead and spent ghost voters clearly", () => {
   const players = votingPlayers();
 
-  equal(voteStatusForPlayer(players[0], false).label, "미투표");
-  equal(voteStatusForPlayer(players[1], false).label, "사망 · 유령표 있음");
-  equal(voteStatusForPlayer(players[1], true).label, "유령표 투표");
+  for (const selected of [false, true]) {
+    deepEqual(players.slice(0, 3).map((player) => voteStatusForPlayer(player, selected).label), [
+      "생존",
+      "사망 · 유령표 남음",
+      "사망 · 유령표 사용됨",
+    ]);
+  }
+  equal(voteStatusForPlayer(players[1], false).disabled, false);
   deepEqual(voteStatusForPlayer(players[2], false), {
     className: "voteUnavailable",
     disabled: true,

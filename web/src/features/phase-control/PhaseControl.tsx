@@ -22,7 +22,7 @@ import {
   stepStatusLabel,
   stepTitle,
 } from "./phaseInput";
-import { ExecutionDecisionActions, StepInputFields } from "./StepInputs";
+import { ExecutionDeathActions, ExecutionDecisionActions, StepInputFields } from "./StepInputs";
 import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 
@@ -361,6 +361,13 @@ function CurrentStepPane({
               <ExecutionDecisionActions
                 players={players}
                 candidate={dayState?.executionCandidate}
+                busy={busy}
+                onConfirm={onConfirm}
+              />
+            ) : currentStep.requiredInput.kind === "executionDeathDecision" ? (
+              <ExecutionDeathActions
+                step={currentStep}
+                player={currentPlayer}
                 busy={busy}
                 onConfirm={onConfirm}
               />

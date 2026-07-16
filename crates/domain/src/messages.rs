@@ -1,8 +1,8 @@
 use crate::{
     contracts::{RevealPayload, SetupDistribution},
     model::{
-        ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, InformationResult,
-        NominationRecord, PhaseStep, Player, StepInput, StepInputFields,
+        ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
+        InformationResult, NominationRecord, PhaseStep, Player, StepInput, StepInputFields,
     },
 };
 use serde_json::{json, Value};
@@ -66,12 +66,34 @@ pub(crate) fn nomination_vote_event_summary(
     )
 }
 
-pub(crate) fn nomination_vote_preview(record: &NominationRecord) -> Value {
+pub(crate) fn nomination_vote_preview(
+    record: &NominationRecord,
+    execution_standing: &ExecutionStanding,
+) -> Value {
     json!({
         "messageKo": format!("{}표로 지명 투표를 확정합니다.", record.vote_count),
         "voteCount": record.vote_count,
-        "ghostVoteSpentPlayerIds": &record.ghost_vote_spent_player_ids
+        "ghostVoteSpentPlayerIds": &record.ghost_vote_spent_player_ids,
+        "executionStanding": execution_standing,
     })
+}
+
+pub(crate) fn execution_death_event_summary(players: &[Player], player_id: &str) -> String {
+    format!(
+        "사망 확정: {}",
+        player_label(players, player_id).unwrap_or_else(|| player_id.to_string())
+    )
+}
+
+pub(crate) fn execution_death_preview() -> Value {
+    json!({ "messageKo": "처형된 플레이어의 사망을 확정합니다." })
+}
+
+pub(crate) fn execution_survival_event_summary(players: &[Player], player_id: &str) -> String {
+    format!(
+        "처형 후 생존 확정: {}",
+        player_label(players, player_id).unwrap_or_else(|| player_id.to_string())
+    )
 }
 
 pub(crate) fn execution_event_summary(players: &[Player], player_id: Option<&str>) -> String {

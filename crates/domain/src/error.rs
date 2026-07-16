@@ -31,6 +31,7 @@ pub(crate) enum ErrorKind {
     StaleStep,
     StepCannotBeSkipped,
     NoExecutionCandidate,
+    ExecutionSurvivalNotAllowed,
     MissingDeliveredInformation,
     UnexpectedDeliveredInformation,
     InvalidDeliveredInformation,
@@ -84,6 +85,10 @@ impl ErrorKind {
             Self::StaleStep => ("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."),
             Self::StepCannotBeSkipped => ("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."),
             Self::NoExecutionCandidate => ("NO_EXECUTION_CANDIDATE", "처형 후보가 없습니다."),
+            Self::ExecutionSurvivalNotAllowed => (
+                "EXECUTION_SURVIVAL_NOT_ALLOWED",
+                "현재 스크립트에서는 처형 후 생존을 확정할 수 없습니다.",
+            ),
             Self::MissingDeliveredInformation => (
                 "MISSING_DELIVERED_INFORMATION",
                 "전달할 정보를 명시해야 합니다.",

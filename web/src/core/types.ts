@@ -25,7 +25,8 @@ export type PhaseStepInput =
   | { value: number; reason?: NumericReason | null }
   | { trueValue: number; displayedValue: number; reason?: NumericReason | null }
   | { nominatorId: string; nomineeId: string; voterIds: string[] }
-  | { execute: boolean };
+  | { execute: boolean }
+  | { died: boolean };
 
 export type InformationResult =
   | { kind: "number"; value: number }
@@ -213,7 +214,11 @@ export type GameEvent = EventCommon &
         type: "executionConfirmed" | "noExecutionConfirmed";
         payload: { stepId: string; input: { execute: boolean; playerId?: string | null } };
       }
-    | { type: "deathConfirmed"; payload: { playerId: string } }
+    | { type: "deathConfirmed"; payload: { playerId: string; stepId?: string } }
+    | {
+        type: "executionSurvivalConfirmed";
+        payload: { stepId: string; playerId: string };
+      }
   );
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
@@ -226,7 +231,8 @@ export type StepType =
   | "whisper"
   | "discussion"
   | "nomination"
-  | "execution";
+  | "execution"
+  | "executionDeath";
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
 
@@ -300,6 +306,7 @@ export type RequiredInputKind =
   | "number"
   | "nominationVote"
   | "executionDecision"
+  | "executionDeathDecision"
   | "day"
   | "night";
 
@@ -323,5 +330,6 @@ export type RequiredInput = {
   allowedCharacterIds?: string[];
   zeroAllowed?: boolean;
   supportsRandomSuggestion?: boolean;
+  executionSurvivalAllowed?: boolean;
   optional: boolean;
 };

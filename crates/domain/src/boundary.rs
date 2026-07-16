@@ -98,6 +98,7 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "executionConfirmed"
             | "noExecutionConfirmed"
             | "deathConfirmed"
+            | "executionSurvivalConfirmed"
     ) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }

@@ -26,6 +26,7 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "discussion",
   "nomination",
   "execution",
+  "executionDeath",
 ]);
 const inputKinds = new Set([
   "none",
@@ -35,6 +36,7 @@ const inputKinds = new Set([
   "number",
   "nominationVote",
   "executionDecision",
+  "executionDeathDecision",
   "day",
   "night",
 ]);
@@ -132,7 +134,22 @@ export function parseGameEvent(value: unknown): GameEvent {
       }
       break;
     case "deathConfirmed":
-      if (typeof payload.playerId !== "string") throw invalidEvent();
+      if (
+        !hasOnlyKeys(payload, ["playerId", "stepId"]) ||
+        typeof payload.playerId !== "string" ||
+        (payload.stepId !== undefined && typeof payload.stepId !== "string")
+      ) {
+        throw invalidEvent();
+      }
+      break;
+    case "executionSurvivalConfirmed":
+      if (
+        !hasExactKeys(payload, ["stepId", "playerId"]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.playerId !== "string"
+      ) {
+        throw invalidEvent();
+      }
       break;
     default:
       throw new Error("지원하지 않는 이벤트입니다.");
@@ -475,6 +492,7 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
       (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     (value.supportsRandomSuggestion === undefined || typeof value.supportsRandomSuggestion === "boolean") &&
+    (value.executionSurvivalAllowed === undefined || typeof value.executionSurvivalAllowed === "boolean") &&
     typeof value.optional === "boolean"
   );
 }
@@ -488,6 +506,7 @@ function isPhaseStepInput(value: unknown): value is PhaseStepInput {
     return Array.isArray(value.voterIds) && value.voterIds.every(isString);
   }
   if (typeof value.execute === "boolean") return true;
+  if (typeof value.died === "boolean") return true;
   if (value.zeroOutsiders === true) return true;
   return [value.value, value.trueValue, value.displayedValue].some((item) => typeof item === "number");
 }

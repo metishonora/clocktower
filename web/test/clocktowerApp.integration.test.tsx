@@ -1410,6 +1410,61 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "지명 및 투표 2" })).toBeTruthy();
   });
 
+  test("always exposes concise life and ghost-vote state on confirmed Grimoire seats", async () => {
+    const currentStep = step({ id: "day:whisper", stepType: "whisper" as never, phase: "day" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused", "day")),
+    });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "밀담" });
+    const seatMap = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    expect(within(seatMap).getByRole("button", { name: /Ada.*생존/ })).toBeTruthy();
+    expect(within(seatMap).getByRole("button", { name: /Bert.*사망 · 유령표 남음/ })).toBeTruthy();
+    expect(within(seatMap).getByRole("button", { name: /Cy.*사망 · 유령표 사용됨/ })).toBeTruthy();
+  });
+
+  test("confirms Trouble Brewing execution death while showing survival as unavailable", async () => {
+    const executionDeathStep = {
+      ...step({ id: "day:executionDeath", phase: "day" }),
+      stepType: "executionDeath",
+      playerId: "player-5",
+      requiredInput: {
+        kind: "executionDeathDecision",
+        target: "execution",
+        executionSurvivalAllowed: false,
+        optional: false,
+      },
+    } as unknown as NonNullable<ReplayState["currentStep"]>;
+    const nextStep = step({ id: "day:toNight", kind: "night", stepType: "phaseTransition", phase: "day" });
+    const canonicalEvent = event("event-execution-death", "5번 Eun 사망 확정", "day");
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: executionDeathStep }),
+      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      proposal: proposal(canonicalEvent),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    const deathButton = await screen.findByRole("button", { name: "사망 확정" }) as HTMLButtonElement;
+    const survivalButton = screen.getByRole("button", { name: "사망하지 않음" }) as HTMLButtonElement;
+    expect(deathButton.disabled).toBe(false);
+    expect(survivalButton.disabled).toBe(true);
+    await user.click(deathButton);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "day:executionDeath",
+        input: { died: true },
+      },
+    });
+  });
+
   test("offers only each core-derived nomination role list while preserving self-selection", async () => {
     const votingStep = step({
       id: "day:nomination:2",
