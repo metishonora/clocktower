@@ -64,6 +64,13 @@ const DevWinGamePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue27CurrentActionPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue27CurrentActionPrototype");
+      return { default: module.Issue27CurrentActionPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -72,6 +79,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue27CurrentActionPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-27-instructions"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue27CurrentActionPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevWinGamePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "win-game"
