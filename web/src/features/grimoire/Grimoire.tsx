@@ -20,6 +20,7 @@ export function Grimoire({
   setupInformationSelection,
   phasePlayerSelection,
   ruleState,
+  slayerAbility,
 }: {
   players: Player[];
   draft: SetupDraft;
@@ -41,6 +42,12 @@ export function Grimoire({
     onTogglePlayer: (playerId: string) => void;
   };
   ruleState?: RuleState;
+  slayerAbility?: {
+    actorPlayerId: string;
+    enabled: boolean;
+    spent: boolean;
+    onUse: (button: HTMLButtonElement) => void;
+  };
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
   const seats = players.length > 0 ? players : draft.players;
@@ -88,6 +95,7 @@ export function Grimoire({
           const setupInformationDisabled =
             busy || layoutEditing || !playerId || Boolean(setupInformationSelection?.disabled);
           const phaseSelectionDisabled = busy || layoutEditing || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
+          const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
@@ -113,60 +121,73 @@ export function Grimoire({
           }
 
           return (
-            <button
-              type="button"
-              className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
-                overlapSeats.has(seat.seat) ? "overlap" : ""
-              } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
-                voteStatus?.className ?? ""
-              } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
-                setupInformationSelection ? "setupInformationEnabled" : ""
-              } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""}`}
-              style={{ left: `${position.x}%`, top: `${position.y}%` }}
-              onClick={handleSeatClick}
-              onPointerDown={(event) =>
-                startSeatDrag({
-                  event,
-                  enabled: layoutEditing,
-                  busy,
-                  initialPosition: position,
-                  onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
-                })
-              }
-              aria-disabled={
-                nominationVoting
-                  ? votingDisabled
-                  : setupInformationSelection
-                    ? setupInformationDisabled
-                    : phasePlayerSelection
-                      ? phaseSelectionDisabled
-                    : true
-              }
-              aria-pressed={
-                nominationVoting
-                  ? votingSelected
-                  : setupInformationSelection
-                    ? setupInformationSelected
-                    : phasePlayerSelection
-                      ? phaseSelected
-                    : undefined
-              }
-              key={seat.seat}
-            >
-              <span className="seatTokenNumber">{seat.seat}</span>
-              <strong>{seat.name}</strong>
-              <small>{characterLabel(actualCharacter)}</small>
-              {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
-              {showShownCharacter ? (
-                <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
+            <div className="seatTokenSlot" key={seat.seat}>
+              <button
+                type="button"
+                className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
+                  overlapSeats.has(seat.seat) ? "overlap" : ""
+                } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
+                  voteStatus?.className ?? ""
+                } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
+                  setupInformationSelection ? "setupInformationEnabled" : ""
+                } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""}`}
+                style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                onClick={handleSeatClick}
+                onPointerDown={(event) =>
+                  startSeatDrag({
+                    event,
+                    enabled: layoutEditing,
+                    busy,
+                    initialPosition: position,
+                    onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
+                  })
+                }
+                aria-disabled={
+                  nominationVoting
+                    ? votingDisabled
+                    : setupInformationSelection
+                      ? setupInformationDisabled
+                      : phasePlayerSelection
+                        ? phaseSelectionDisabled
+                        : true
+                }
+                aria-pressed={
+                  nominationVoting
+                    ? votingSelected
+                    : setupInformationSelection
+                      ? setupInformationSelected
+                      : phasePlayerSelection
+                        ? phaseSelected
+                        : undefined
+                }
+              >
+                <span className="seatTokenNumber">{seat.seat}</span>
+                <strong>{seat.name}</strong>
+                <small>{characterLabel(actualCharacter)}</small>
+                {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
+                {showShownCharacter ? (
+                  <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
+                ) : null}
+                {playerId === ruleState?.activePoison?.playerId ? (
+                  <span className="ruleEffectBadge poisonBadge">중독</span>
+                ) : null}
+                {playerId === ruleState?.activeProtection?.playerId ? (
+                  <span className="ruleEffectBadge protectionBadge">보호</span>
+                ) : null}
+              </button>
+              {currentSlayerAbility ? (
+                <button
+                  type="button"
+                  className={`slayerAbilityIcon ${currentSlayerAbility.spent ? "spent" : ""}`}
+                  style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                  aria-label={`${seat.seat}번 ${seat.name} 학살자 능력 사용`}
+                  disabled={!currentSlayerAbility.enabled || busy || layoutEditing}
+                  onClick={(event) => currentSlayerAbility.onUse(event.currentTarget)}
+                >
+                  S
+                </button>
               ) : null}
-              {playerId === ruleState?.activePoison?.playerId ? (
-                <span className="ruleEffectBadge poisonBadge">중독</span>
-              ) : null}
-              {playerId === ruleState?.activeProtection?.playerId ? (
-                <span className="ruleEffectBadge protectionBadge">보호</span>
-              ) : null}
-            </button>
+            </div>
           );
         })}
       </div>

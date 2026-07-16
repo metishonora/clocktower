@@ -1,3 +1,5 @@
+use crate::contracts::{SlayerRegistrationContext, SlayerTargetRegistration};
+use crate::error::ErrorKind;
 use crate::model::{
     Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
     NumberInformationChoice, Phase, PhaseStep, Player, RegistrationJudgment, RegistrationValue,
@@ -5,6 +7,38 @@ use crate::model::{
     StepInput, StepInputFields, StepType,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+pub(crate) fn slayer_registration(
+    target: &Player,
+    choice: &SlayerTargetRegistration,
+) -> Result<SlayerRegistrationContext, crate::error::CoreError> {
+    match (target.actual_character.as_str(), choice) {
+        ("recluse", SlayerTargetRegistration::Canonical) => {
+            Ok(SlayerRegistrationContext::RecluseDecision {
+                registered_as_demon: false,
+                registered_character_id: None,
+            })
+        }
+        (
+            "recluse",
+            SlayerTargetRegistration::RecluseAsDemon {
+                registered_character_id,
+            },
+        ) if registered_character_id == "imp" => Ok(SlayerRegistrationContext::RecluseDecision {
+            registered_as_demon: true,
+            registered_character_id: Some("imp".into()),
+        }),
+        ("recluse", _) | (_, SlayerTargetRegistration::RecluseAsDemon { .. }) => {
+            Err(ErrorKind::InvalidSlayerRegistration.into_error())
+        }
+        ("imp", SlayerTargetRegistration::Canonical) => Ok(SlayerRegistrationContext::Canonical {
+            registered_as_demon: true,
+        }),
+        (_, SlayerTargetRegistration::Canonical) => Ok(SlayerRegistrationContext::Canonical {
+            registered_as_demon: false,
+        }),
+    }
+}
 
 const FIRST_NIGHT_ORDER: &[&str] = &[
     "poisoner",
@@ -906,6 +940,8 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            player_id: None,
+            survival_allowed: None,
             execution_survival_allowed: false,
             optional: true,
         },
@@ -944,6 +980,8 @@ fn required_none() -> RequiredInput {
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        player_id: None,
+        survival_allowed: None,
         execution_survival_allowed: false,
         optional: false,
     }
@@ -966,6 +1004,8 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        player_id: None,
+        survival_allowed: None,
         execution_survival_allowed: false,
         optional: min == 0,
     }
@@ -990,6 +1030,8 @@ fn required_setup_info(
         player_registration_options: None,
         zero_allowed,
         supports_random_suggestion: true,
+        player_id: None,
+        survival_allowed: None,
         execution_survival_allowed: false,
         optional: false,
     }

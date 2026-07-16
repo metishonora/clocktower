@@ -48,6 +48,32 @@ pub(crate) enum Command {
     ConfirmStep { payload: PhaseStepCommandPayload },
     #[serde(rename = "skipStep")]
     SkipStep { payload: PhaseStepCommandPayload },
+    #[serde(rename = "useSlayerAbility")]
+    UseSlayerAbility {
+        payload: UseSlayerAbilityCommandPayload,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct UseSlayerAbilityCommandPayload {
+    pub(crate) discussion_step_id: String,
+    pub(crate) expected_event_count: usize,
+    pub(crate) actor_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) target_registration: SlayerTargetRegistration,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SlayerTargetRegistration {
+    Canonical,
+    RecluseAsDemon { registered_character_id: String },
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -138,6 +164,8 @@ pub(crate) struct RuleState {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) active_protection: Option<ActiveRuleEffect>,
     pub(crate) unannounced_night_death_player_ids: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) slayer_ability: Option<crate::model::SlayerAbilityState>,
 }
 
 #[derive(Debug, Serialize)]
@@ -222,6 +250,72 @@ pub(crate) enum GameEventKind {
     NightDeathsAnnounced {
         payload: NightDeathsAnnouncedPayload,
     },
+    #[serde(rename = "slayerAbilityUsed")]
+    SlayerAbilityUsed { payload: SlayerAbilityUsedPayload },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct SlayerAbilityUsedPayload {
+    pub(crate) discussion_step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) impairment_context: SlayerImpairmentContext,
+    pub(crate) registration_context: SlayerRegistrationContext,
+    pub(crate) outcome: SlayerOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SlayerImpairmentContext {
+    Healthy,
+    Poisoned {
+        source_player_id: String,
+        source_event_id: String,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SlayerRegistrationContext {
+    Canonical {
+        registered_as_demon: bool,
+    },
+    RecluseDecision {
+        registered_as_demon: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        registered_character_id: Option<String>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SlayerOutcome {
+    NoEffect { reason: SlayerNoEffectReason },
+    DeathPending { player_id: String },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SlayerNoEffectReason {
+    ActorPoisoned,
+    TargetNotDemon,
+    TargetAlreadyDead,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

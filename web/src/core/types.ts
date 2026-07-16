@@ -135,7 +135,16 @@ export type Command =
   | { type: "smoke" }
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
-  | { type: "skipStep"; payload: { stepId: string; input?: null } };
+  | { type: "skipStep"; payload: { stepId: string; input?: null } }
+  | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload };
+
+export type UseSlayerAbilityPayload = {
+  discussionStepId: string;
+  expectedEventCount: number;
+  actorPlayerId: string;
+  targetPlayerId: string;
+  targetRegistration: { kind: "canonical" } | { kind: "recluseAsDemon"; registeredCharacterId: "imp" };
+};
 
 export type CoreResult<T> =
   | { ok: true; value: T }
@@ -158,6 +167,7 @@ export type RuleState = {
   activePoison?: ActiveRuleEffect;
   activeProtection?: ActiveRuleEffect;
   unannouncedNightDeathPlayerIds: string[];
+  slayerAbility?: { actorPlayerId: string; spent: boolean; canUseNow: boolean };
 };
 
 export type ActiveRuleEffect = {
@@ -258,6 +268,17 @@ export type GameEvent = EventCommon &
         type: "nightDeathsAnnounced";
         payload: { stepId: string; playerIds: string[] };
       }
+    | {
+        type: "slayerAbilityUsed";
+        payload: {
+          discussionStepId: string;
+          actorPlayerId: string;
+          targetPlayerId: string;
+          impairmentContext: { kind: "healthy" } | { kind: "poisoned"; sourcePlayerId: string; sourceEventId: string };
+          registrationContext: { kind: "canonical"; registeredAsDemon: boolean } | { kind: "recluseDecision"; registeredAsDemon: boolean; registeredCharacterId?: "imp" };
+          outcome: { kind: "noEffect"; reason: "actorPoisoned" | "targetNotDemon" | "targetAlreadyDead" } | { kind: "deathPending"; playerId: string };
+        };
+      }
   );
 
 export type NightActionResolution =
@@ -288,6 +309,7 @@ export type StepType =
   | "nomination"
   | "execution"
   | "executionDeath"
+  | "slayerDeath"
   | "redHerringAssignment";
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
@@ -363,6 +385,7 @@ export type RequiredInputKind =
   | "nominationVote"
   | "executionDecision"
   | "executionDeathDecision"
+  | "slayerDeathDecision"
   | "day"
   | "night";
 
@@ -389,5 +412,7 @@ export type RequiredInput = {
   zeroAllowed?: boolean;
   supportsRandomSuggestion?: boolean;
   executionSurvivalAllowed?: boolean;
+  playerId?: string;
+  survivalAllowed?: boolean;
   optional: boolean;
 };

@@ -86,6 +86,33 @@ test("rejects non-canonical nomination payload fields", () => {
   throws(() => parseGameEvent(event), /이벤트 형식/);
 });
 
+test("validates the strict Slayer audit event used by import and export", () => {
+  const event = {
+    id: "event-slayer",
+    type: "slayerAbilityUsed",
+    phase: "day",
+    payload: {
+      discussionStepId: "day:discussion",
+      actorPlayerId: "player-1",
+      targetPlayerId: "player-3",
+      impairmentContext: { kind: "healthy" },
+      registrationContext: {
+        kind: "recluseDecision",
+        registeredAsDemon: true,
+        registeredCharacterId: "imp",
+      },
+      outcome: { kind: "deathPending", playerId: "player-3" },
+    },
+    summary: "학살자: 1번 Ada → 3번 Cy · 사망 확인 필요",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+
+  equal(parseGameEvent(event).type, "slayerAbilityUsed");
+  const invalid = structuredClone(event);
+  invalid.payload.registrationContext.registeredCharacterId = "spy";
+  throws(() => parseGameEvent(invalid), /이벤트 형식/);
+});
+
 function schemaV2Fixture(): {
   schemaVersion: number;
   game: { events: Array<{ type: string; payload: Record<string, unknown> }> };

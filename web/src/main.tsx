@@ -9,6 +9,7 @@ import { DayVotingPrototype } from "./dayVotingPrototype";
 import { RevealFollowupPrototype } from "./revealFollowupPrototype";
 import { SetupInfoContextPrototype } from "./setupInfoContextPrototype";
 import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
+import { SlayerPublicAbilityPrototype } from "./slayerPublicAbilityPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import { EventLog } from "./features/event-log/EventLog";
@@ -19,6 +20,7 @@ import { browserCryptoChoiceToken, type ChoiceTokenSource } from "./features/pha
 import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
+import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import "./styles.css";
 
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
@@ -58,6 +60,10 @@ export function App(props: ClocktowerAppProps) {
     return <SetupInfoDiscretionPrototype />;
   }
 
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "slayer-ability") {
+    return <SlayerPublicAbilityPrototype />;
+  }
+
   if (
     DevFirstNightSuggestionPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "first-night-suggestion"
@@ -76,6 +82,8 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
+  const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id);
   const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
   const phaseInputDraft = usePhaseInputDraft(
@@ -138,6 +146,12 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
                 onDraftChange={gameStore.setSetupDraft}
                 busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
                 ruleState={gameStore.ruleState}
+                slayerAbility={gameStore.ruleState?.slayerAbility ? {
+                  actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
+                  enabled: gameStore.ruleState.slayerAbility.canUseNow,
+                  spent: gameStore.ruleState.slayerAbility.spent,
+                  onUse: (button) => { slayerTriggerRef.current = button; setSlayerDialogOpen(true); },
+                } : undefined}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
                 setupInformationSelection={
                   !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
@@ -235,6 +249,13 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
           />
         )}
       </main>
+      {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
+        actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
+        players={gameStore.players}
+        busy={gameStore.busy}
+        onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
+        onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
+      /> : null}
     </>
   );
 }

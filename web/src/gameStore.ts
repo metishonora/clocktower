@@ -261,6 +261,26 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     await proposeCurrentStep("confirmStep", confirmation);
   }
 
+  async function useSlayerAbility(targetPlayerId: string, targetRegistration: import("./core/types").UseSlayerAbilityPayload["targetRegistration"]) {
+    const ability = ruleState?.slayerAbility;
+    if (!currentStep || !ability) return;
+    setBusy(true);
+    setLoadError(undefined);
+    const result = await core.propose(gameFile, {
+      type: "useSlayerAbility",
+      payload: {
+        discussionStepId: currentStep.id,
+        expectedEventCount: gameFile.game.events.length,
+        actorPlayerId: ability.actorPlayerId,
+        targetPlayerId,
+        targetRegistration,
+      },
+    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "학살자 능력 확정 실패" } }));
+    setProposalResult(result);
+    setBusy(false);
+    if (result.ok) appendProposalEvent(result.value);
+  }
+
   async function skipCurrentStep() {
     await proposeCurrentStep("skipStep");
   }
@@ -434,6 +454,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     confirmCurrentStep,
     skipCurrentStep,
     suggestPhaseInput,
+    useSlayerAbility,
     resetSetup,
     undoLatestEvent,
     clearProposalResult,

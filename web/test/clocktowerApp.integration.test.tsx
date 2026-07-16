@@ -1625,6 +1625,131 @@ describe("ClocktowerApp live-play integration", () => {
     await waitFor(() => expect(core.replay).toHaveBeenCalledWith(imported));
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
+
+  test("uses the living Slayer icon to resolve an explicit Recluse shot into a death confirmation", async () => {
+    const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
+    const slayerDeathStep = {
+      ...step({
+        id: "day:discussion:slayerDeath",
+        stepType: "slayerDeath" as never,
+        phase: "day",
+        playerId: "player-3",
+        kind: "slayerDeathDecision" as never,
+      }),
+      requiredInput: {
+        kind: "slayerDeathDecision",
+        playerId: "player-3",
+        survivalAllowed: false,
+        optional: false,
+      },
+    } as unknown as NonNullable<ReplayState["currentStep"]>;
+    const playerRoster = players().map((player) => {
+      if (player.id === "player-1") {
+        return { ...player, actualCharacter: "slayer", shownCharacter: "slayer", alive: true };
+      }
+      if (player.id === "player-3") {
+        return { ...player, actualCharacter: "recluse", shownCharacter: "recluse", alive: true };
+      }
+      if (player.id === "player-4") {
+        return { ...player, actualCharacter: "spy", shownCharacter: "spy", alive: true };
+      }
+      return player;
+    });
+    const initialReplay = {
+      ...replayState({ currentStep: discussionStep, playerRoster }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: false, canUseNow: true },
+      },
+    } as unknown as ReplayState;
+    const replayAfterProposal = {
+      ...replayState({ currentStep: slayerDeathStep, playerRoster, eventCount: 2 }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: true, canUseNow: false },
+      },
+    } as unknown as ReplayState;
+    const slayerEvent = {
+      id: "event-slayer-shot",
+      type: "slayerAbilityUsed",
+      phase: "day",
+      payload: {
+        discussionStepId: "day:discussion",
+        actorPlayerId: "player-1",
+        targetPlayerId: "player-3",
+        impairmentContext: { kind: "healthy" },
+        registrationContext: {
+          kind: "recluseDecision",
+          registeredAsDemon: true,
+          registeredCharacterId: "imp",
+        },
+        outcome: { kind: "deathPending", playerId: "player-3" },
+      },
+      summary: "학살자가 3번 Cy를 선택함",
+      createdAt: "2026-07-14T00:01:00.000Z",
+    } as unknown as GameFile["game"]["events"][number];
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal,
+      proposal: proposal(slayerEvent),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await user.click(await screen.findByRole("button", { name: "1번 Ada 학살자 능력 사용" }));
+    const dialog = screen.getByRole("dialog", { name: "학살자 능력 사용" });
+    expect(within(dialog).getByText("확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.")).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /2번 Bert/ })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /4번 Dae/ })).toBeTruthy();
+
+    await user.click(within(dialog).getByRole("button", { name: /3번 Cy/ }));
+    const confirm = within(dialog).getByRole("button", { name: "학살자 사용 확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    await user.click(within(dialog).getByRole("button", { name: "악마로 등록" }));
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "useSlayerAbility",
+      payload: {
+        discussionStepId: "day:discussion",
+        expectedEventCount: 1,
+        actorPlayerId: "player-1",
+        targetPlayerId: "player-3",
+        targetRegistration: { kind: "recluseAsDemon", registeredCharacterId: "imp" },
+      },
+    });
+    expect(await screen.findByText("사망 확인")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "사망 확정" })).toBeTruthy();
+  });
+
+  test("keeps the actual Slayer icon disabled when Rust marks the action unavailable", async () => {
+    const whisperStep = step({ id: "day:whisper", stepType: "whisper" as never, phase: "day" });
+    const playerRoster = players().map((player) =>
+      player.id === "player-1"
+        ? { ...player, actualCharacter: "slayer", shownCharacter: "slayer", alive: true }
+        : player,
+    );
+    const initialReplay = {
+      ...replayState({ currentStep: whisperStep, playerRoster }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: false, canUseNow: false },
+      },
+    } as unknown as ReplayState;
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal: initialReplay,
+      proposal: proposal(event("unused", "unused", "day")),
+    });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    const icon = await screen.findByRole("button", { name: "1번 Ada 학살자 능력 사용" });
+    expect((icon as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("dialog", { name: "학살자 능력 사용" })).toBeNull();
+  });
 });
 
 function latestSavedGame(savedGames: GameFile[]): GameFile {
