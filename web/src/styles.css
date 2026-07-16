@@ -155,6 +155,30 @@ h3 {
   font-size: 0.94rem;
 }
 
+.dayRuntime {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 5px;
+  color: #743142;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dayRuntime span {
+  font-size: 0.69rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.dayRuntime strong {
+  min-width: 5ch;
+  font-family: var(--serif);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
 .phaseBadge {
   flex: 0 0 auto;
   border: 1px solid rgba(31, 111, 91, 0.28);

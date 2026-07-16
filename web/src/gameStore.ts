@@ -72,6 +72,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const [loadError, setLoadError] = useState<string>();
   const [storageReady, setStorageReady] = useState(false);
   const [storageError, setStorageError] = useState<string>();
+  const [gameSessionRevision, setGameSessionRevision] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,6 +143,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
   const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
+  const phase = replayState?.phase;
   const players = replayState?.players ?? [];
   const currentStep = replayState?.currentStep ?? undefined;
   const phaseOverview = replayState?.phaseOverview ?? [];
@@ -473,6 +475,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       undoReplayTargetEventCount.current = undefined;
       setUndoReplayPending(false);
       setGameFile(importedGameFile);
+      setGameSessionRevision((current) => current + 1);
       setProposalResult(undefined);
       setPendingConfirmedReveal(undefined);
     } catch (error) {
@@ -496,6 +499,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     hasConfirmedEvents,
     players,
     currentStep,
+    phase,
+    gameSessionRevision,
     phaseOverview,
     dayState,
     ruleState,
