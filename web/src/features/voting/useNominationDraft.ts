@@ -14,13 +14,13 @@ export function emptyNominationDraft(): NominationDraft {
   };
 }
 
-export function useNominationDraft(stepId: string | undefined) {
+export function useNominationDraft(stepId: string | undefined, resetRevision = 0) {
   const nominationDraftState = useState<NominationDraft>(() => emptyNominationDraft());
   const [, setNominationDraft] = nominationDraftState;
 
   useEffect(() => {
     setNominationDraft(emptyNominationDraft());
-  }, [stepId, setNominationDraft]);
+  }, [stepId, resetRevision, setNominationDraft]);
 
   return nominationDraftState;
 }

@@ -4,15 +4,15 @@ import { countCharacterKinds } from "../../setupDraft";
 
 export function ConfirmedSetup({
   players,
-  canUndo,
-  onUndo,
+  canRecoverSetup,
+  onRecoverSetup,
   onExport,
   onImport,
   onReset,
 }: {
   players: Player[];
-  canUndo: boolean;
-  onUndo: () => void;
+  canRecoverSetup: boolean;
+  onRecoverSetup: () => void;
   onExport: () => void;
   onImport: () => void;
   onReset: () => void;
@@ -41,9 +41,11 @@ export function ConfirmedSetup({
         </div>
       </dl>
       <div className="confirmedActions">
-        <button type="button" className="secondaryButton" onClick={onUndo} disabled={!canUndo}>
-          설정 다시 수정
-        </button>
+        {canRecoverSetup ? (
+          <button type="button" className="secondaryButton" onClick={onRecoverSetup}>
+            설정 다시 수정
+          </button>
+        ) : null}
         <button type="button" className="secondaryButton" onClick={onExport}>
           JSON 내보내기
         </button>

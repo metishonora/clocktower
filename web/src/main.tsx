@@ -13,6 +13,7 @@ import { SlayerPublicAbilityPrototype } from "./slayerPublicAbilityPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
 import { EventLog } from "./features/event-log/EventLog";
+import { LiveUndoDialog } from "./features/event-log/LiveUndoDialog";
 import { Grimoire } from "./features/grimoire/Grimoire";
 import { PhaseControl } from "./features/phase-control/PhaseControl";
 import { usePhaseInputDraft } from "./features/phase-control/usePhaseInputDraft";
@@ -102,12 +103,16 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
   const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
-  const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id);
+  const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
+  const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
+  const [undoResetRevision, setUndoResetRevision] = useState(0);
+  const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
   const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
   const phaseInputDraft = usePhaseInputDraft(
     phaseInputStep,
     gameStore.players,
     gameStore.suggestionContextFingerprint,
+    undoResetRevision,
   );
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
@@ -138,6 +143,23 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
   function showReveal(payload: RevealPayload) {
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
+  }
+
+  function closeLiveUndoDialog() {
+    setLiveUndoDialogEvent(undefined);
+    queueMicrotask(() => liveUndoTriggerRef.current?.focus());
+  }
+
+  function confirmLiveUndo() {
+    if (!liveUndoDialogEvent) return;
+    const removed = gameStore.undoLatestLiveEvent(liveUndoDialogEvent.id);
+    setLiveUndoDialogEvent(undefined);
+    if (removed) {
+      setUndoResetRevision((current) => current + 1);
+      setActiveRevealPayload(undefined);
+      setSlayerDialogOpen(false);
+    }
+    queueMicrotask(() => liveUndoTriggerRef.current?.focus());
   }
 
   if (activeRevealPayload) {
@@ -226,8 +248,8 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
                 <div className="auxiliaryPanelContent">
                   <ConfirmedSetup
                     players={gameStore.players}
-                    canUndo={gameStore.gameFile.game.events.length > 0 && !gameStore.busy}
-                    onUndo={gameStore.undoLatestEvent}
+                    canRecoverSetup={gameStore.canRecoverConfirmedSetup}
+                    onRecoverSetup={gameStore.recoverConfirmedSetup}
                     onExport={exportLatestGame}
                     onImport={() => importInputRef.current?.click()}
                     onReset={gameStore.resetSetup}
@@ -241,6 +263,12 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
                 proposalResult={gameStore.proposalResult}
                 loadError={gameStore.loadError}
                 warnings={gameStore.shownWarnings}
+                latestUndoEvent={gameStore.latestLiveUndoEvent}
+                undoDisabled={!gameStore.canUndoLatestLiveEvent}
+                onRequestUndo={(event, trigger) => {
+                  liveUndoTriggerRef.current = trigger;
+                  setLiveUndoDialogEvent(event);
+                }}
               />
             </aside>
           </>
@@ -274,6 +302,13 @@ export function ClocktowerApp({ coreAdapter, storageDriver, choiceTokenSource = 
         onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
         onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
       /> : null}
+      {liveUndoDialogEvent ? (
+        <LiveUndoDialog
+          event={liveUndoDialogEvent}
+          onCancel={closeLiveUndoDialog}
+          onConfirm={confirmLiveUndo}
+        />
+      ) : null}
     </>
   );
 }

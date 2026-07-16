@@ -186,7 +186,7 @@ function UndoSurface({
     <section className={`liveUndoAction liveUndoAction${label === "현재 행동" ? "A" : "B"}`} aria-label={label}>
       <span>{label}</span>
       <strong>{event.summary}</strong>
-      <button ref={triggerRef} type="button" disabled={disabled} onClick={onUndo}>최근 행동 되돌리기</button>
+      <button ref={triggerRef} type="button" disabled={disabled} onClick={onUndo}>Undo</button>
     </section>
   );
 }

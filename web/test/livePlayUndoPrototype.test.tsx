@@ -20,7 +20,7 @@ test.each([
 
   const surface = screen.getByLabelText(surfaceLabel);
   expect(within(surface).getByText("요리사 정보 확정 · 1쌍 공개")).toBeTruthy();
-  expect(within(surface).getByRole("button", { name: "최근 행동 되돌리기" })).toBeTruthy();
+  expect(within(surface).getByRole("button", { name: "Undo" })).toBeTruthy();
 });
 
 test("keeps Undo discoverable while a confirmed Reveal follow-up is pending", async () => {
@@ -30,7 +30,7 @@ test("keeps Undo discoverable while a confirmed Reveal follow-up is pending", as
   await user.click(screen.getByRole("button", { name: "Reveal 후속" }));
 
   expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
-  expect(screen.getByRole("button", { name: "최근 행동 되돌리기" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
   expect(screen.queryByLabelText("현재 단계 입력")).toBeNull();
 });
 
@@ -39,7 +39,7 @@ test("identifies the latest event and cancellation leaves prototype state unchan
   render(<LivePlayUndoPrototype />);
   const before = prototypeState();
 
-  await user.click(screen.getByRole("button", { name: "최근 행동 되돌리기" }));
+  await user.click(screen.getByRole("button", { name: "Undo" }));
   const dialog = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
   expect(within(dialog).getByText("되돌릴 항목: 요리사 정보 확정 · 1쌍 공개")).toBeTruthy();
   await user.click(within(dialog).getByRole("button", { name: "취소" }));
@@ -53,7 +53,7 @@ test("mock confirmation removes only the latest item and returns to replayed pri
   const user = userEvent.setup();
   render(<LivePlayUndoPrototype />);
 
-  await user.click(screen.getByRole("button", { name: "최근 행동 되돌리기" }));
+  await user.click(screen.getByRole("button", { name: "Undo" }));
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "되돌리기" }));
 
   expect(screen.queryByText("요리사 정보 확정 · 1쌍 공개")).toBeNull();
@@ -67,11 +67,11 @@ test("hides generic Undo for setup-only and shows an eligible disabled action wh
   render(<LivePlayUndoPrototype />);
 
   await user.click(screen.getByRole("button", { name: "설정만 확정" }));
-  expect(screen.queryByRole("button", { name: "최근 행동 되돌리기" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   expect(screen.getByRole("button", { name: "설정 다시 수정" })).toBeTruthy();
 
   await user.click(screen.getByRole("button", { name: "전환 중" }));
-  const undo = screen.getByRole("button", { name: "최근 행동 되돌리기" }) as HTMLButtonElement;
+  const undo = screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement;
   expect(undo.disabled).toBe(true);
   expect(screen.getByText("다음 상태 재생 중")).toBeTruthy();
 });

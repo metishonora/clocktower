@@ -52,6 +52,7 @@ export function usePhaseInputDraft(
   step: PhaseStep | undefined,
   players: Player[],
   contextFingerprint = "",
+  resetRevision = 0,
 ): PhaseInputDraftController {
   const [draft, setDraft] = useState<PhaseInputDraft>(emptyDraft);
   const zeroOutsidersAvailable = useMemo(
@@ -61,7 +62,7 @@ export function usePhaseInputDraft(
 
   useEffect(() => {
     setDraft(emptyDraft());
-  }, [step?.id, contextFingerprint]);
+  }, [step?.id, contextFingerprint, resetRevision]);
 
   useEffect(() => {
     if (!zeroOutsidersAvailable) {
