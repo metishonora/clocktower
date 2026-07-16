@@ -134,7 +134,7 @@ export function Grimoire({
               <span className="seatTokenNumber">{seat.seat}</span>
               <strong>{seat.name}</strong>
               <small>{characterLabel(actualCharacter)}</small>
-              {nominationVoting && voteStatus ? <small>{voteStatus.label}</small> : null}
+              {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
               {showShownCharacter ? (
                 <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
               ) : null}

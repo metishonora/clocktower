@@ -189,6 +189,10 @@ pub(crate) enum GameEventKind {
     NoExecutionConfirmed { payload: ExecutionEventPayload },
     #[serde(rename = "deathConfirmed")]
     DeathConfirmed { payload: DeathEventPayload },
+    #[serde(rename = "executionSurvivalConfirmed")]
+    ExecutionSurvivalConfirmed {
+        payload: ExecutionSurvivalEventPayload,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -243,7 +247,16 @@ pub(crate) struct ExecutionEventInput {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct DeathEventPayload {
+    pub(crate) player_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) step_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ExecutionSurvivalEventPayload {
+    pub(crate) step_id: String,
     pub(crate) player_id: String,
 }

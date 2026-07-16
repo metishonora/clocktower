@@ -100,6 +100,14 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     assert!(proposal["value"]["preview"]
         .get("updatesExecutionCandidate")
         .is_none());
+    assert_eq!(
+        proposal["value"]["preview"]["executionStanding"],
+        json!({
+            "executionVoteThreshold": 2,
+            "highestVoteCount": 3,
+            "executionCandidate": { "nomineeId": "player-5", "voteCount": 3 }
+        })
+    );
 
     let mut events = game["game"]["events"].as_array().unwrap().clone();
     events.push(proposal["value"]["event"].clone());
@@ -126,6 +134,12 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
         json!({ "nomineeId": "player-5", "voteCount": 3 })
     );
     assert_eq!(replayed["value"]["currentStep"]["id"], "day:nomination:2");
+
+    let without_latest_nomination = game_with_events(game["game"]["events"].clone());
+    let undone: Value =
+        serde_json::from_str(&replay_json(&without_latest_nomination.to_string())).unwrap();
+    assert_eq!(undone["ok"], true);
+    assert_eq!(undone["value"]["players"][1]["ghostVoteUsed"], false);
 }
 
 #[test]
@@ -176,6 +190,223 @@ fn execution_confirmation_is_separate_from_death_state() {
         "player-5"
     );
     assert_eq!(replayed["value"]["players"][4]["alive"], true);
+    assert_eq!(replayed["value"]["currentStep"]["id"], "day:executionDeath");
+    assert_eq!(
+        replayed["value"]["currentStep"]["stepType"],
+        "executionDeath"
+    );
+    assert_eq!(
+        replayed["value"]["currentStep"]["requiredInput"]["kind"],
+        "executionDeathDecision"
+    );
+    assert_eq!(
+        replayed["value"]["currentStep"]["requiredInput"]["target"],
+        "execution"
+    );
+    assert_eq!(replayed["value"]["currentStep"]["playerId"], "player-5");
+    assert_ne!(
+        replayed["value"]["currentStep"]["requiredInput"]["executionSurvivalAllowed"],
+        true
+    );
+}
+
+#[test]
+fn execution_death_confirmation_has_its_own_event_and_is_undoable() {
+    let (game, after_execution) = confirmed_execution_game();
+    assert_eq!(after_execution["value"]["players"][4]["alive"], true);
+
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:executionDeath",
+            "input": { "died": true }
+        }
+    });
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(proposal["ok"], true);
+    assert_eq!(proposal["value"]["event"]["type"], "deathConfirmed");
+    assert_eq!(
+        proposal["value"]["event"]["payload"],
+        json!({ "stepId": "day:executionDeath", "playerId": "player-5" })
+    );
+
+    let mut confirmed_events = game["game"]["events"].as_array().unwrap().clone();
+    confirmed_events.push(proposal["value"]["event"].clone());
+    let confirmed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(confirmed_events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(confirmed["ok"], true);
+    assert_eq!(confirmed["value"]["players"][4]["alive"], false);
+    assert_eq!(confirmed["value"]["currentStep"]["id"], "day:toNight");
+
+    let undone: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    assert_eq!(undone["ok"], true);
+    assert_eq!(undone["value"]["players"][4]["alive"], true);
+    assert_eq!(undone["value"]["currentStep"]["id"], "day:executionDeath");
+}
+
+#[test]
+fn trouble_brewing_rejects_execution_survival_as_a_proposal_or_imported_event() {
+    let (game, _) = confirmed_execution_game();
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:executionDeath",
+            "input": { "died": false }
+        }
+    });
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposal["ok"], false);
+    assert!(proposal.get("value").is_none());
+
+    let mut imported_events = game["game"]["events"].as_array().unwrap().clone();
+    imported_events.push(json!({
+        "id": "evt-day-execution-survival",
+        "type": "executionSurvivalConfirmed",
+        "phase": "day",
+        "payload": { "stepId": "day:executionDeath", "playerId": "player-5" },
+        "summary": "처형 후 생존 확정",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    }));
+    let imported: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(imported_events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(imported["ok"], false);
+    assert_eq!(imported["error"]["code"], "REPLAY_FAILED");
+    assert!(imported.get("value").is_none());
+}
+
+#[test]
+fn replay_rejects_execution_confirmed_with_a_false_execute_flag() {
+    assert_replay_rejects_execution_event("executionConfirmed", false, Some("player-5"));
+}
+
+#[test]
+fn replay_rejects_execution_confirmed_for_a_player_other_than_the_candidate() {
+    assert_replay_rejects_execution_event("executionConfirmed", true, Some("player-4"));
+}
+
+#[test]
+fn replay_rejects_execution_confirmed_without_a_player() {
+    assert_replay_rejects_execution_event("executionConfirmed", true, None);
+}
+
+#[test]
+fn replay_rejects_no_execution_confirmed_with_a_true_execute_flag() {
+    assert_replay_rejects_execution_event("noExecutionConfirmed", true, None);
+}
+
+#[test]
+fn replay_rejects_no_execution_confirmed_with_a_player() {
+    assert_replay_rejects_execution_event("noExecutionConfirmed", false, Some("player-5"));
+}
+
+#[test]
+fn replay_allows_no_execution_even_when_an_execution_candidate_exists() {
+    let game = execution_ready_game();
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(execution_event("noExecutionConfirmed", false, None));
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(actual["ok"], true, "valid no-execution failed as {actual}");
+    assert_eq!(actual["value"]["currentStep"]["id"], "day:toNight");
+}
+
+#[test]
+fn replay_rejects_execution_confirmed_using_the_current_nomination_step_id() {
+    assert_replay_rejects_execution_event_at_current_nomination(
+        "executionConfirmed",
+        true,
+        Some("player-5"),
+    );
+}
+
+#[test]
+fn replay_rejects_no_execution_confirmed_using_the_current_nomination_step_id() {
+    assert_replay_rejects_execution_event_at_current_nomination(
+        "noExecutionConfirmed",
+        false,
+        None,
+    );
+}
+
+#[test]
+fn replay_rejects_execution_survival_for_a_player_dead_at_the_event_time() {
+    let (game, _) = confirmed_execution_game();
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.extend([
+        death_event("player-5"),
+        json!({
+            "id": "evt-dead-player-survival",
+            "type": "executionSurvivalConfirmed",
+            "phase": "day",
+            "payload": { "stepId": "day:executionDeath", "playerId": "player-5" },
+            "summary": "이미 사망한 플레이어의 처형 후 생존",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        }),
+    ]);
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    assert!(actual.get("value").is_none());
+}
+
+#[test]
+fn later_day_execution_death_step_keeps_the_cycle_prefix() {
+    let mut events = day_events(
+        setup_event_with_players(five_players()),
+        &five_player_first_night_steps(),
+        &[],
+    );
+    events.extend([
+        nomination_event(1, "player-1", "player-5", 3),
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+        no_execution_event("day:execution"),
+        phase_event("phaseStepConfirmed", "day:toNight"),
+        phase_event("phaseStepConfirmed", "night:imp"),
+        phase_event("phaseStepConfirmed", "night:fortuneTeller"),
+        phase_event("phaseStepConfirmed", "night:toDay"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:announceDeaths"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:whisper"),
+        day_cycle_phase_event("phaseStepConfirmed", "day2:discussion"),
+        nomination_event_for_step("day2:nomination:1", "player-1", "player-5", 3),
+        day_cycle_phase_event("phaseStepSkipped", "day2:nomination:2"),
+    ]);
+    let game = game_with_events(Value::Array(events));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day2:execution",
+            "input": { "execute": true }
+        }
+    });
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(proposal["value"]["event"].clone());
+    let replayed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(replayed["ok"], true, "replay failed as {replayed}");
+    assert_eq!(
+        replayed["value"]["currentStep"]["id"],
+        "day2:executionDeath"
+    );
 }
 
 #[test]
@@ -206,6 +437,91 @@ fn no_execution_requires_explicit_confirmation() {
 
     assert_eq!(actual["ok"], true);
     assert_eq!(actual["value"]["event"]["type"], "noExecutionConfirmed");
+
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(actual["value"]["event"].clone());
+    let replayed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(replayed["ok"], true);
+    assert_eq!(replayed["value"]["currentStep"]["id"], "day:toNight");
+}
+
+#[test]
+fn nomination_preview_and_replay_share_tied_and_new_high_execution_standing() {
+    for (existing, nomination_number, nominee_id, vote_count, expected) in [
+        (
+            vec![nomination_event(1, "player-1", "player-5", 5)],
+            2,
+            "player-6",
+            5,
+            json!({
+                "executionVoteThreshold": 4,
+                "highestVoteCount": 5,
+                "executionCandidate": null
+            }),
+        ),
+        (
+            vec![
+                nomination_event(1, "player-1", "player-5", 5),
+                nomination_event(2, "player-2", "player-6", 3),
+            ],
+            3,
+            "player-7",
+            6,
+            json!({
+                "executionVoteThreshold": 4,
+                "highestVoteCount": 6,
+                "executionCandidate": { "nomineeId": "player-7", "voteCount": 6 }
+            }),
+        ),
+    ] {
+        let mut events = day_events(
+            setup_event_with_players(seven_players()),
+            &seven_player_first_night_steps(),
+            &[],
+        );
+        events.extend(existing);
+        let game = game_with_events(Value::Array(events));
+        let voter_ids = (1..=vote_count)
+            .map(|seat| format!("player-{seat}"))
+            .collect::<Vec<_>>();
+        let command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": format!("day:nomination:{nomination_number}"),
+                "input": {
+                    "nominatorId": format!("player-{nomination_number}"),
+                    "nomineeId": nominee_id,
+                    "voterIds": voter_ids
+                }
+            }
+        });
+        let proposal: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+        assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+        assert_eq!(proposal["value"]["preview"]["executionStanding"], expected);
+
+        let mut confirmed_events = game["game"]["events"].as_array().unwrap().clone();
+        confirmed_events.push(proposal["value"]["event"].clone());
+        let replayed: Value = serde_json::from_str(&replay_json(
+            &game_with_events(Value::Array(confirmed_events)).to_string(),
+        ))
+        .unwrap();
+        assert_eq!(replayed["ok"], true, "replay failed as {replayed}");
+        assert_eq!(
+            json!({
+                "executionVoteThreshold": replayed["value"]["dayState"]["executionVoteThreshold"],
+                "highestVoteCount": replayed["value"]["dayState"]["highestVoteCount"],
+                "executionCandidate": replayed["value"]["dayState"]
+                    .get("executionCandidate")
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            }),
+            expected
+        );
+    }
 }
 
 #[test]
@@ -655,6 +971,105 @@ fn day_cycle_phase_event(event_type: &str, step_id: &str) -> Value {
     event
 }
 
+fn confirmed_execution_game() -> (Value, Value) {
+    let game = execution_ready_game();
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:execution",
+            "input": { "execute": true }
+        }
+    });
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposal["ok"], true);
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(proposal["value"]["event"].clone());
+    let game = game_with_events(Value::Array(events));
+    let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    (game, replayed)
+}
+
+fn execution_ready_game() -> Value {
+    let mut events = day_events(
+        setup_event_with_players(five_players()),
+        &five_player_first_night_steps(),
+        &[],
+    );
+    events.extend([
+        nomination_event(1, "player-1", "player-5", 3),
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+    ]);
+    game_with_events(Value::Array(events))
+}
+
+fn assert_replay_rejects_execution_event_at_current_nomination(
+    event_type: &str,
+    execute: bool,
+    player_id: Option<&str>,
+) {
+    let mut events = day_events(
+        setup_event_with_players(five_players()),
+        &five_player_first_night_steps(),
+        &[],
+    );
+    events.extend([
+        nomination_event(1, "player-1", "player-5", 3),
+        execution_event_for_step(event_type, "day:nomination:2", execute, player_id),
+    ]);
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        actual["ok"], false,
+        "{event_type} incorrectly completed the nomination step: {actual}"
+    );
+    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    assert!(actual.get("value").is_none());
+}
+
+fn assert_replay_rejects_execution_event(event_type: &str, execute: bool, player_id: Option<&str>) {
+    let game = execution_ready_game();
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(execution_event(event_type, execute, player_id));
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        actual["ok"], false,
+        "manipulated {event_type} execute={execute} player={player_id:?} replayed as {actual}"
+    );
+    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
+    assert!(actual.get("value").is_none());
+}
+
+fn execution_event(event_type: &str, execute: bool, player_id: Option<&str>) -> Value {
+    execution_event_for_step(event_type, "day:execution", execute, player_id)
+}
+
+fn execution_event_for_step(
+    event_type: &str,
+    step_id: &str,
+    execute: bool,
+    player_id: Option<&str>,
+) -> Value {
+    json!({
+        "id": format!("evt-manipulated-{event_type}-{execute}-{player_id:?}"),
+        "type": event_type,
+        "phase": "day",
+        "payload": {
+            "stepId": step_id,
+            "input": { "execute": execute, "playerId": player_id }
+        },
+        "summary": "조작된 처형 이벤트",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    })
+}
+
 fn confirm_and_replay(game: Value, step_id: &str) -> (Value, Value) {
     let command = json!({
         "type": "confirmStep",
@@ -720,6 +1135,31 @@ fn nomination_event(
         &voter_ids.iter().map(String::as_str).collect::<Vec<_>>(),
         &[],
     )
+}
+
+fn nomination_event_for_step(
+    step_id: &str,
+    nominator_id: &str,
+    nominee_id: &str,
+    vote_count: usize,
+) -> Value {
+    let voter_ids = (1..=vote_count)
+        .map(|seat| format!("player-{seat}"))
+        .collect::<Vec<_>>();
+    json!({
+        "id": format!("evt-{step_id}"),
+        "type": "nominationVoteConfirmed",
+        "phase": "day",
+        "payload": {
+            "stepId": step_id,
+            "nominatorId": nominator_id,
+            "nomineeId": nominee_id,
+            "voterIds": voter_ids,
+            "ghostVoteSpentPlayerIds": []
+        },
+        "summary": "지명 투표 확정",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    })
 }
 
 fn nomination_event_with_ghost_spending(

@@ -19,7 +19,7 @@ export function validVotePlayersByDraft(players: Player[], draft: VoteDraft): Pl
     .filter((player): player is Player => Boolean(player && (player.alive || !player.ghostVoteUsed)));
 }
 
-export function voteStatusForPlayer(player: Player, selected: boolean): {
+export function voteStatusForPlayer(player: Player, _selected: boolean): {
   className: string;
   disabled: boolean;
   label: string;
@@ -35,12 +35,12 @@ export function voteStatusForPlayer(player: Player, selected: boolean): {
     return {
       className: "deadSeat",
       disabled: false,
-      label: selected ? "유령표 투표" : "사망 · 유령표 있음",
+      label: "사망 · 유령표 남음",
     };
   }
   return {
     className: "",
     disabled: false,
-    label: selected ? "투표" : "미투표",
+    label: "생존",
   };
 }

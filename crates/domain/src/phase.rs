@@ -60,6 +60,7 @@ pub(crate) fn phase_transition_step(
             allowed_character_ids: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            execution_survival_allowed: false,
             optional: false,
         },
         can_skip: false,
@@ -86,6 +87,7 @@ pub(crate) fn required_none() -> RequiredInput {
         allowed_character_ids: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        execution_survival_allowed: false,
         optional: false,
     }
 }
@@ -106,6 +108,7 @@ pub(crate) fn required_characters(
         allowed_character_ids,
         zero_allowed: false,
         supports_random_suggestion,
+        execution_survival_allowed: false,
         optional: min == 0,
     }
 }
@@ -128,7 +131,9 @@ pub(crate) fn validate_required_input(
     }
     if matches!(
         input.kind,
-        RequiredInputKind::NominationVote | RequiredInputKind::ExecutionDecision
+        RequiredInputKind::NominationVote
+            | RequiredInputKind::ExecutionDecision
+            | RequiredInputKind::ExecutionDeathDecision
     ) {
         return Ok(());
     }

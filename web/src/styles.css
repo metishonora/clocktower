@@ -448,6 +448,11 @@ select {
 .seatToken.voteUnavailable {
   background: #eee8dc;
   color: var(--muted);
+  opacity: 0.68;
+}
+
+.seatToken .lifeVoteStatus {
+  font-weight: 900;
 }
 
 .seatToken strong,
@@ -1331,7 +1336,8 @@ select {
 }
 
 .nominationVoteInput,
-.executionDecision {
+.executionDecision,
+.executionDeathDecision {
   display: grid;
   gap: 10px;
 }
@@ -1362,11 +1368,16 @@ select {
 
 .votePreview dd,
 .executionDecision p,
+.executionDeathDecision p,
 .nominationHint {
   min-width: 0;
   margin: 0;
   font-weight: 800;
   overflow-wrap: anywhere;
+}
+
+.executionSurvivalButton:disabled {
+  opacity: 0.45;
 }
 
 .nominationHint {

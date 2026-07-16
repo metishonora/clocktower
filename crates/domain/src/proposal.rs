@@ -1,14 +1,16 @@
 use crate::{
     contracts::{
-        Command, CreateGamePayload, ExecutionEventInput, ExecutionEventPayload, GameEvent,
-        GameEventKind, GameFile, NominationEventPayload, PhaseStepCommandPayload,
-        PhaseStepEventPayload, Proposal, SetupEventPayload, SmokeEventPayload, StepIdPayload,
+        Command, CreateGamePayload, DeathEventPayload, ExecutionEventInput, ExecutionEventPayload,
+        ExecutionSurvivalEventPayload, GameEvent, GameEventKind, GameFile, NominationEventPayload,
+        PhaseStepCommandPayload, PhaseStepEventPayload, Proposal, SetupEventPayload,
+        SmokeEventPayload, StepIdPayload,
     },
-    day::{nomination_record, replay_day_state, step_prefix},
+    day::{execution_standing, nomination_record, replay_day_state, step_prefix},
     error::{CoreError, ErrorKind},
     information::confirmed_information,
     messages::{
-        execution_event_summary, execution_preview, nomination_closed_event_summary,
+        execution_death_event_summary, execution_death_preview, execution_event_summary,
+        execution_preview, execution_survival_event_summary, nomination_closed_event_summary,
         nomination_closed_preview, nomination_vote_event_summary, nomination_vote_preview,
         phase_step_event_summary, phase_step_preview, phase_step_reveal_payload,
         setup_event_summary, setup_preview, smoke_event_summary, smoke_preview,
@@ -124,6 +126,9 @@ pub(crate) fn propose_phase_step(
     if !skip && current_step.step_type == StepType::Execution {
         return propose_execution_decision(game_file, &current_step, &players, payload.input);
     }
+    if !skip && current_step.step_type == StepType::ExecutionDeath {
+        return propose_execution_death(game_file, &current_step, &players, payload.input);
+    }
 
     let event_count = game_file.game.events.len() + 1;
     let information = if skip {
@@ -227,6 +232,11 @@ pub(crate) fn propose_nomination_vote(
     input: StepInput,
 ) -> Result<Proposal, CoreError> {
     let record = nomination_record(current_step, players, &input, &game_file.game.events)?;
+    let prefix = step_prefix(&current_step.id)?;
+    let mut projected_nominations =
+        replay_day_state(&game_file.game.events, players, &prefix)?.nominations;
+    projected_nominations.push(record.clone());
+    let standing = execution_standing(players, &projected_nominations);
     let event_count = game_file.game.events.len() + 1;
 
     Ok(Proposal {
@@ -251,7 +261,71 @@ pub(crate) fn propose_nomination_vote(
         },
         warnings: Vec::new(),
         follow_up_steps: Vec::new(),
-        preview: nomination_vote_preview(&record),
+        preview: nomination_vote_preview(&record, &standing),
+        reveal_payload: None,
+    })
+}
+
+pub(crate) fn propose_execution_death(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    input: StepInput,
+) -> Result<Proposal, CoreError> {
+    let died = input
+        .as_ref()
+        .and_then(|input| input.died)
+        .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+    let player_id = current_step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let player = players
+        .iter()
+        .find(|player| player.id == player_id && player.alive)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    if !died && !current_step.required_input.execution_survival_allowed {
+        return Err(ErrorKind::ExecutionSurvivalNotAllowed.into_error());
+    }
+
+    let event_count = game_file.game.events.len() + 1;
+    let (kind, summary) = if died {
+        (
+            GameEventKind::DeathConfirmed {
+                payload: DeathEventPayload {
+                    player_id: player.id.clone(),
+                    step_id: Some(current_step.id.clone()),
+                },
+            },
+            execution_death_event_summary(players, &player.id),
+        )
+    } else {
+        (
+            GameEventKind::ExecutionSurvivalConfirmed {
+                payload: ExecutionSurvivalEventPayload {
+                    step_id: current_step.id.clone(),
+                    player_id: player.id.clone(),
+                },
+            },
+            execution_survival_event_summary(players, &player.id),
+        )
+    };
+
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("execution-death-{event_count}"),
+            kind,
+            phase: current_step.phase,
+            summary,
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
+        },
+        warnings: Vec::new(),
+        follow_up_steps: Vec::new(),
+        preview: execution_death_preview(),
         reveal_payload: None,
     })
 }

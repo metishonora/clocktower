@@ -30,6 +30,8 @@ pub(crate) enum StepType {
     Nomination,
     #[serde(rename = "execution")]
     Execution,
+    #[serde(rename = "executionDeath")]
+    ExecutionDeath,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -48,6 +50,8 @@ pub(crate) enum RequiredInputKind {
     NominationVote,
     #[serde(rename = "executionDecision")]
     ExecutionDecision,
+    #[serde(rename = "executionDeathDecision")]
+    ExecutionDeathDecision,
     #[serde(rename = "day")]
     Day,
     #[serde(rename = "night")]
@@ -258,6 +262,8 @@ pub(crate) struct StepInputFields {
     pub(crate) voter_ids: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) execute: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) died: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -296,6 +302,8 @@ pub(crate) struct RequiredInput {
     pub(crate) zero_allowed: bool,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) supports_random_suggestion: bool,
+    #[serde(skip_serializing_if = "is_false")]
+    pub(crate) execution_survival_allowed: bool,
     pub(crate) optional: bool,
 }
 
@@ -364,6 +372,14 @@ pub(crate) struct NominationRecord {
 pub(crate) struct ExecutionCandidate {
     pub(crate) nominee_id: String,
     pub(crate) vote_count: usize,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ExecutionStanding {
+    pub(crate) execution_vote_threshold: usize,
+    pub(crate) highest_vote_count: usize,
+    pub(crate) execution_candidate: Option<ExecutionCandidate>,
 }
 
 #[derive(Debug, Serialize)]

@@ -262,6 +262,18 @@ TypeScript maps semantic step data to Korean labels and instructions.
 
 Do not persist generated step lists. Replay should derive `currentStep` and `phaseOverview` from confirmed events.
 
+Day execution uses two semantic steps. Confirming `execution` records the selected execution but
+does not change life state. When a Player was executed, replay derives a following
+`executionDeath` step whose `playerId` comes from that confirmed execution. Its
+`executionDeathDecision` input includes the Rust-owned `executionSurvivalAllowed` capability, so
+the UI does not infer script rules. Trouble Brewing leaves that capability false and rejects the
+survival outcome; confirming Death creates the separate step-linked `deathConfirmed` event.
+
+Schema-version-2 `deathConfirmed` payloads may include an optional `stepId`. Death events without
+it remain valid state-only events, while a matching step-linked Death also completes the generated
+execution-Death step. `executionSurvivalConfirmed` is a known strict v2 event for future scripts,
+but replay rejects it unless the generated step explicitly permits execution survival.
+
 ## Messages and Warnings
 
 Rust may return short Korean messages for MVP.

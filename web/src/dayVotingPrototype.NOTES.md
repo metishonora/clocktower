@@ -1,6 +1,6 @@
 # Day Voting Prototype Notes
 
-Issue: #33
+Issues: #33 baseline, #9 execution/Death and ghost-vote rework
 
 Run `pnpm prototype:day-voting`, then open:
 
@@ -17,6 +17,14 @@ Run `pnpm prototype:day-voting`, then open:
   `후보 없음 — n표`.
 - The standing shows operational context as `기준 4표 · 생존자 8명` without explanatory prose.
 - Whisper and Discussion have explicit forward actions and no timer or auxiliary input.
+- Confirmed seats always expose `생존`, `사망 · 유령표 남음`, or
+  `사망 · 유령표 사용됨`.
+- An unspent dead Player remains selectable during voting while a spent ghost voter is visibly
+  unavailable.
+- Execution confirmation is followed by a separate Death confirmation state.
+- Trouble Brewing shows `사망하지 않음` as a dimmed disabled action while `사망 확정` remains
+  enabled.
+- The post-Death state updates the executed Player's seat before the Night transition.
 
 ## Scenario controls
 

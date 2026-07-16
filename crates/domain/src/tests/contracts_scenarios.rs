@@ -75,6 +75,24 @@ fn event_errors_distinguish_unsupported_and_malformed_payloads() {
 }
 
 #[test]
+fn execution_survival_is_a_known_v2_event_with_a_strict_payload_contract() {
+    let malformed_game = game_with_events(json!([{
+        "id": "event-1",
+        "type": "executionSurvivalConfirmed",
+        "phase": "day",
+        "payload": { "stepId": "day:executionDeath" },
+        "summary": "malformed execution survival",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    }]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&malformed_game.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "MALFORMED_EVENT");
+    assert!(actual.get("value").is_none());
+}
+
+#[test]
 fn malformed_delivered_information_is_rejected_at_json_boundaries() {
     let malformed_command = json!({
         "type": "confirmStep",

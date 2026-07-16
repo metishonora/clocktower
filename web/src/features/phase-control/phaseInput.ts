@@ -38,6 +38,7 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.stepType === "discussion") return "토론";
   if (step.stepType === "nomination") return `지명 및 투표 ${step.id.split(":").at(-1)}`;
   if (step.id.endsWith(":execution")) return "처형 확정";
+  if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   return step.id;
 }
 
@@ -49,6 +50,7 @@ export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "discussion") return "토론";
   if (stepType === "nomination") return "지명";
   if (stepType === "execution") return "처형";
+  if (stepType === "executionDeath") return "처형 결과";
   return stepType;
 }
 
@@ -60,6 +62,7 @@ export function inputKindLabel(inputKind: string): string {
   if (inputKind === "number") return "숫자";
   if (inputKind === "nominationVote") return "지명 투표";
   if (inputKind === "executionDecision") return "처형 결정";
+  if (inputKind === "executionDeathDecision") return "처형 결과";
   if (inputKind === "day") return "낮";
   if (inputKind === "night") return "밤";
   return inputKind;
@@ -109,6 +112,7 @@ export function stepInputReady(
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
   }
   if (step.requiredInput.kind === "executionDecision") return true;
+  if (step.requiredInput.kind === "executionDeathDecision") return true;
   if (step.informationPrompt?.numberChoices.length) {
     if (!selectedNumberChoice) return false;
     if (

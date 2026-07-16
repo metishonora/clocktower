@@ -221,6 +221,42 @@ export function ExecutionDecisionActions({
   );
 }
 
+export function ExecutionDeathActions({
+  step,
+  player,
+  busy,
+  onConfirm,
+}: {
+  step: PhaseStep;
+  player?: Player;
+  busy: boolean;
+  onConfirm: (confirmation: PhaseStepConfirmation) => void;
+}) {
+  return (
+    <div className="executionDeathDecision">
+      {player ? <p>{seatPlayerLabel(player)}</p> : null}
+      <div className="stepActions">
+        <button
+          type="button"
+          className="primaryButton"
+          onClick={() => onConfirm({ input: { died: true } })}
+          disabled={busy || !player}
+        >
+          사망 확정
+        </button>
+        <button
+          type="button"
+          className="secondaryButton executionSurvivalButton"
+          onClick={() => onConfirm({ input: { died: false } })}
+          disabled={busy || !player || !step.requiredInput.executionSurvivalAllowed}
+        >
+          사망하지 않음
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StepSpecificInput({
   step,
   selectedCharacterId,

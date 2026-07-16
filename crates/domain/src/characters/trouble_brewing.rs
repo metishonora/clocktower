@@ -674,6 +674,7 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             allowed_character_ids: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            execution_survival_allowed: false,
             optional: true,
         },
         _ => required_none(),
@@ -709,6 +710,7 @@ fn required_none() -> RequiredInput {
         allowed_character_ids: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        execution_survival_allowed: false,
         optional: false,
     }
 }
@@ -728,6 +730,7 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         allowed_character_ids: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        execution_survival_allowed: false,
         optional: min == 0,
     }
 }
@@ -749,6 +752,7 @@ fn required_setup_info(
         allowed_character_ids: None,
         zero_allowed,
         supports_random_suggestion: true,
+        execution_survival_allowed: false,
         optional: false,
     }
 }

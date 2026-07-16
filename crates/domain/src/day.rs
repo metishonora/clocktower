@@ -4,9 +4,9 @@ use crate::{
     contracts::{GameEvent, GameEventKind},
     error::{CoreError, ErrorKind},
     model::{
-        ConfirmedExecution, DayState, ExecutionCandidate, InputTarget, NominationRecord,
-        NominationVoteInput, Phase, PhaseStep, PhaseStepStatus, Player, RequiredInput,
-        RequiredInputKind, StepInput, StepType,
+        ConfirmedExecution, DayState, ExecutionCandidate, ExecutionStanding, InputTarget,
+        NominationRecord, NominationVoteInput, Phase, PhaseStep, PhaseStepStatus, Player,
+        RequiredInput, RequiredInputKind, StepInput, StepType,
     },
     phase::{phase_prefix, phase_transition_step, required_none, simple_step, step_status},
 };
@@ -14,6 +14,7 @@ use crate::{
 pub(crate) fn day_steps(
     cycle: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
+    executed_player_id: Option<String>,
 ) -> Vec<PhaseStep> {
     let prefix = phase_prefix("day", cycle);
     let mut steps = vec![simple_step(
@@ -77,10 +78,33 @@ pub(crate) fn day_steps(
             allowed_character_ids: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            execution_survival_allowed: false,
             optional: false,
         },
         false,
     ));
+    steps.push(PhaseStep {
+        id: format!("{prefix}:executionDeath"),
+        phase: Phase::Day,
+        step_type: StepType::ExecutionDeath,
+        character: None,
+        player_id: executed_player_id,
+        required_input: RequiredInput {
+            kind: RequiredInputKind::ExecutionDeathDecision,
+            target: Some(InputTarget::Execution),
+            min_selections: None,
+            max_selections: None,
+            setup_info: None,
+            character_kind: None,
+            allowed_character_ids: None,
+            zero_allowed: false,
+            supports_random_suggestion: false,
+            execution_survival_allowed: false,
+            optional: false,
+        },
+        can_skip: false,
+        information_prompt: None,
+    });
     steps.push(phase_transition_step(
         Phase::Day,
         &prefix,
@@ -107,6 +131,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
             allowed_character_ids: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            execution_survival_allowed: false,
             optional: true,
         },
         can_skip: true,
@@ -190,6 +215,37 @@ pub(crate) fn nomination_participants(
 pub(crate) fn execution_vote_threshold(players: &[Player]) -> usize {
     let alive_count = players.iter().filter(|player| player.alive).count();
     alive_count.div_ceil(2).max(1)
+}
+
+pub(crate) fn execution_standing(
+    players: &[Player],
+    nominations: &[NominationRecord],
+) -> ExecutionStanding {
+    let highest_vote_count = nominations
+        .iter()
+        .map(|record| record.vote_count)
+        .max()
+        .unwrap_or(0);
+    let execution_vote_threshold = execution_vote_threshold(players);
+    let leaders = nominations
+        .iter()
+        .filter(|record| record.vote_count == highest_vote_count)
+        .collect::<Vec<_>>();
+    let execution_candidate =
+        if highest_vote_count >= execution_vote_threshold && leaders.len() == 1 {
+            Some(ExecutionCandidate {
+                nominee_id: leaders[0].nominee_id.clone(),
+                vote_count: highest_vote_count,
+            })
+        } else {
+            None
+        };
+
+    ExecutionStanding {
+        execution_vote_threshold,
+        highest_vote_count,
+        execution_candidate,
+    }
 }
 
 pub(crate) fn nomination_eligibility(
@@ -283,24 +339,7 @@ pub(crate) fn replay_day_state(
         }
     }
 
-    let highest_vote_count = nominations
-        .iter()
-        .map(|record| record.vote_count)
-        .max()
-        .unwrap_or(0);
-    let threshold = execution_vote_threshold(players);
-    let leaders = nominations
-        .iter()
-        .filter(|record| record.vote_count == highest_vote_count)
-        .collect::<Vec<_>>();
-    let execution_candidate = if highest_vote_count >= threshold && leaders.len() == 1 {
-        Some(ExecutionCandidate {
-            nominee_id: leaders[0].nominee_id.clone(),
-            vote_count: highest_vote_count,
-        })
-    } else {
-        None
-    };
+    let standing = execution_standing(players, &nominations);
 
     let (eligible_nominator_ids, eligible_nominee_ids) =
         nomination_eligibility(players, &nominations);
@@ -309,9 +348,9 @@ pub(crate) fn replay_day_state(
         nominations,
         eligible_nominator_ids,
         eligible_nominee_ids,
-        execution_vote_threshold: threshold,
-        highest_vote_count,
-        execution_candidate,
+        execution_vote_threshold: standing.execution_vote_threshold,
+        highest_vote_count: standing.highest_vote_count,
+        execution_candidate: standing.execution_candidate,
         confirmed_execution,
     })
 }
