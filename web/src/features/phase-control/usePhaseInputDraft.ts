@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   NumberChoice,
+  MayorDecisionInput,
   PhaseStep,
   PhaseStepInput,
   Player,
@@ -21,6 +22,7 @@ export type PhaseInputDraft = {
   selectedNumberChoice?: NumberChoice;
   registrationJudgments: RegistrationJudgment[];
   selectedTargetChoice?: TargetCheck["choices"][number];
+  mayorDecision?: MayorDecisionInput;
 };
 
 export type PhaseInputDraftController = PhaseInputDraft & {
@@ -32,6 +34,8 @@ export type PhaseInputDraftController = PhaseInputDraft & {
   setZeroOutsiders: (checked: boolean) => void;
   setSelectedNumberChoice: (choice: NumberChoice) => void;
   setSelectedTargetChoice: (choice: TargetCheck["choices"][number]) => void;
+  setMayorDecision: (decision: MayorDecisionInput | undefined) => void;
+  setRegistrationJudgments: (judgments: RegistrationJudgment[]) => void;
   reset: () => void;
   applySuggestion: (input: PhaseStepInput) => void;
 };
@@ -45,6 +49,7 @@ function emptyDraft(): PhaseInputDraft {
     selectedNumberChoice: undefined,
     registrationJudgments: [],
     selectedTargetChoice: undefined,
+    mayorDecision: undefined,
   };
 }
 
@@ -158,6 +163,9 @@ export function usePhaseInputDraft(
       setDraft((current) => ({ ...current, selectedNumberChoice })),
     setSelectedTargetChoice: (selectedTargetChoice) =>
       setDraft((current) => ({ ...current, selectedTargetChoice })),
+    setMayorDecision: (mayorDecision) => setDraft((current) => ({ ...current, mayorDecision })),
+    setRegistrationJudgments: (registrationJudgments) =>
+      setDraft((current) => ({ ...current, registrationJudgments })),
     reset: () => setDraft(emptyDraft()),
     applySuggestion,
   };
@@ -176,6 +184,9 @@ function updatePlayerSelection(
     return {
       ...draft,
       selectedPlayerIds,
+      mayorDecision: step?.requiredInput.mayorDecision?.mayorPlayerId === selectedPlayerIds[0]
+        ? draft.mayorDecision
+        : undefined,
       selectedTargetChoice: check?.choices.length === 1 ? check.choices[0] : undefined,
       registrationJudgments: registrationWitnessForPlayers(step, selectedPlayerIds),
     };

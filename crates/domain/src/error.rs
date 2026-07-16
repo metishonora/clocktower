@@ -44,6 +44,8 @@ pub(crate) enum ErrorKind {
     SlayerAlreadyUsed,
     InvalidSlayerTarget,
     InvalidSlayerRegistration,
+    MissingMayorDecision,
+    InvalidMayorDecision,
 }
 
 impl ErrorKind {
@@ -125,6 +127,8 @@ impl ErrorKind {
             Self::SlayerAlreadyUsed => ("SLAYER_ALREADY_USED", "학살자 능력을 이미 사용했습니다."),
             Self::InvalidSlayerTarget => ("INVALID_SLAYER_TARGET", "학살자 대상을 찾을 수 없습니다."),
             Self::InvalidSlayerRegistration => ("INVALID_SLAYER_REGISTRATION", "대상의 악마 등록 판정이 올바르지 않습니다."),
+            Self::MissingMayorDecision => ("MISSING_MAYOR_DECISION", "시장 사망 또는 튕김 결정을 선택해야 합니다."),
+            Self::InvalidMayorDecision => ("INVALID_MAYOR_DECISION", "현재 공격에 적용할 수 없는 시장 결정입니다."),
         };
         CoreError { code, message_ko }
     }

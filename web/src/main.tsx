@@ -36,6 +36,13 @@ const DevFirstNightSuggestionPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue11EdgeRulesPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue11EdgeRulesPrototype");
+      return { default: module.Issue11EdgeRulesPrototype };
+    })
+  : undefined;
+
 const DevLivePlayUndoPrototype = import.meta.env.DEV
   ? React.lazy(async () => {
       const module = await import("./livePlayUndoPrototype");
@@ -94,6 +101,17 @@ export function App(props: ClocktowerAppProps) {
 
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "slayer-ability") {
     return <SlayerPublicAbilityPrototype />;
+  }
+
+  if (
+    DevIssue11EdgeRulesPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-11-edge-rules"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue11EdgeRulesPrototype />
+      </React.Suspense>
+    );
   }
 
   if (

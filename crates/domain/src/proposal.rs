@@ -1,14 +1,18 @@
 use crate::{
     contracts::{
-        Command, CreateGamePayload, DeathEventPayload, ExecutionEventInput, ExecutionEventPayload,
-        ExecutionSurvivalEventPayload, GameEvent, GameEventKind, GameFile, ImpAttackOutcome,
-        ImpNoDeathReason, ImpPreventionReason, NightActionResolution, NightActionResolvedPayload,
-        NightDeathsAnnouncedPayload, NominationEventPayload, PhaseStepCommandPayload,
-        PhaseStepEventPayload, Proposal, RedHerringAssignedPayload, SetupEventPayload,
-        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
-        SmokeEventPayload, StepIdPayload, UseSlayerAbilityCommandPayload,
+        Command, CreateGamePayload, DeathEventPayload, DemonSuccessionConfirmedPayload,
+        ExecutionEventInput, ExecutionEventPayload, ExecutionSurvivalEventPayload, GameEvent,
+        GameEventKind, GameFile, ImpAttackOutcome, ImpNoDeathReason, NightActionResolution,
+        NightActionResolvedPayload, NightDeathsAnnouncedPayload, NominationEventPayload,
+        NominationStartedPayload, PhaseStepCommandPayload, PhaseStepEventPayload, Proposal,
+        RedHerringAssignedPayload, RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload,
+        SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload,
+        StepIdPayload, UseSlayerAbilityCommandPayload, VirginResolution,
     },
-    day::{execution_standing, nomination_record, replay_day_state, step_prefix},
+    day::{
+        execution_standing, nomination_record, nomination_start_input, replay_day_state,
+        step_prefix, validate_nomination_start_roles,
+    },
     error::{CoreError, ErrorKind},
     information::{actor_is_impaired, confirmed_information},
     messages::{
@@ -22,7 +26,7 @@ use crate::{
         ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput, StepType,
     },
     phase::validate_required_input,
-    replay::{replay_phase_state, replay_players, replay_rule_state},
+    replay::{pending_demon_succession, replay_phase_state, replay_players, replay_rule_state},
     setup::{
         normalized_setup_player, player_from_setup_input, validate_setup_inputs,
         validate_setup_warnings,
@@ -242,8 +246,20 @@ pub(crate) fn propose_phase_step(
     if !skip && current_step.required_input.kind != RequiredInputKind::SetupInfo {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
     }
-    if !skip && current_step.step_type == StepType::Nomination {
+    if !skip && current_step.required_input.kind == RequiredInputKind::Nomination {
+        return propose_nomination_started(
+            game_file,
+            &current_step,
+            &players,
+            payload.input,
+            payload.registration_judgments,
+        );
+    }
+    if !skip && current_step.required_input.kind == RequiredInputKind::NominationVote {
         return propose_nomination_vote(game_file, &current_step, &players, payload.input);
+    }
+    if !skip && current_step.step_type == StepType::DemonSuccession {
+        return propose_demon_succession(game_file, &current_step, &players, payload.input);
     }
     if !skip && current_step.step_type == StepType::Execution {
         return propose_execution_decision(game_file, &current_step, &players, payload.input);
@@ -365,59 +381,21 @@ pub(crate) fn propose_phase_step(
                 }
             }
             Some("imp") => {
-                let alive = players.iter().any(|p| p.id == target && p.alive);
-                let current_night_start = game_file.game.events.iter().rposition(|event| matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
-                let protection =
-                    game_file
-                        .game
-                        .events
-                        .iter()
-                        .enumerate()
-                        .rev()
-                        .find_map(|(index, e)| match &e.kind {
-                            GameEventKind::NightActionResolved { payload } => {
-                                match &payload.resolution {
-                                    NightActionResolution::MonkProtection {
-                                        target_player_id,
-                                        applied: true,
-                                        ..
-                                    } if target_player_id == &target
-                                        && current_night_start
-                                            .is_some_and(|boundary| index > boundary) =>
-                                    {
-                                        Some(e.id.clone())
-                                    }
-                                    _ => None,
-                                }
-                            }
-                            _ => None,
-                        });
-                let outcome = if actual != Some("imp") {
-                    ImpAttackOutcome::NoDeath {
-                        reason: ImpNoDeathReason::NotActualCharacter,
-                    }
-                } else if impaired {
-                    ImpAttackOutcome::NoDeath {
-                        reason: ImpNoDeathReason::ActorImpaired,
-                    }
-                } else if !alive {
-                    ImpAttackOutcome::NoDeath {
-                        reason: ImpNoDeathReason::AlreadyDead,
-                    }
-                } else if let Some(source_event_id) = protection {
-                    ImpAttackOutcome::Prevented {
-                        reason: ImpPreventionReason::MonkProtection,
-                        source_event_id,
-                    }
-                } else {
-                    ImpAttackOutcome::Death {
-                        player_id: target.clone(),
-                    }
-                };
-                NightActionResolution::ImpAttack {
-                    target_player_id: target,
-                    outcome,
-                }
+                let active_poison =
+                    crate::night::active_night_poison(&game_file.game.events, &players);
+                let active_protection =
+                    crate::night::active_night_protection(&game_file.game.events, &players);
+                crate::characters::resolve_imp_attack(
+                    &players,
+                    &actor,
+                    &target,
+                    payload
+                        .input
+                        .as_ref()
+                        .and_then(|input| input.mayor_decision.as_ref()),
+                    active_poison.as_ref(),
+                    active_protection.as_ref(),
+                )?
             }
             _ => unreachable!(),
         };
@@ -529,10 +507,22 @@ fn night_action_proposal(
         }
         | NightActionResolution::MonkProtection {
             target_player_id, ..
-        }
-        | NightActionResolution::ImpAttack {
-            target_player_id, ..
         } => target_player_id,
+        NightActionResolution::ImpAttack {
+            target_player_id,
+            mayor_context,
+            outcome,
+        } => match outcome {
+            ImpAttackOutcome::Death { player_id }
+            | ImpAttackOutcome::SoldierProtected { player_id } => player_id,
+            _ => match mayor_context {
+                crate::contracts::MayorAttackContext::Bounced {
+                    bounce_target_player_id,
+                    ..
+                } => bounce_target_player_id,
+                _ => target_player_id,
+            },
+        },
     };
     let label = players
         .iter()
@@ -564,6 +554,14 @@ fn night_action_proposal(
                     message_ko: "수도승 보호로 사망하지 않았습니다.".into(),
                 });
                 format!("임프 공격: {label} · 사망 없음 (수도승 보호)")
+            }
+            ImpAttackOutcome::SoldierProtected { .. } => {
+                warnings.push(crate::model::CoreWarning {
+                    code: "DEMON_ATTACK_PREVENTED".into(),
+                    severity: "warning",
+                    message_ko: "군인 보호로 사망하지 않았습니다.".into(),
+                });
+                format!("임프 공격: {label} · 사망 없음 (군인 보호)")
             }
             ImpAttackOutcome::NoDeath {
                 reason: ImpNoDeathReason::AlreadyDead,
@@ -661,13 +659,93 @@ pub(crate) fn propose_nomination_closed(
     })
 }
 
+pub(crate) fn propose_nomination_started(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    input: StepInput,
+    registration_judgments: Vec<crate::model::RegistrationJudgment>,
+) -> Result<Proposal, CoreError> {
+    let input = nomination_start_input(&input)?;
+    let prefix = step_prefix(&current_step.id)?;
+    validate_nomination_start_roles(
+        players,
+        &game_file.game.events,
+        &prefix,
+        &input.nominator_id,
+        &input.nominee_id,
+    )?;
+    let rule_state = replay_rule_state(&game_file.game.events, players);
+    let already_spent = game_file.game.events.iter().any(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::NominationStarted { payload }
+                if !matches!(payload.virgin_resolution, VirginResolution::NotApplicable)
+        )
+    });
+    let virgin_resolution = crate::characters::virgin_resolution(
+        players,
+        &input.nominator_id,
+        &input.nominee_id,
+        &registration_judgments,
+        already_spent,
+        rule_state.active_poison.as_ref(),
+    )?;
+    let event_count = game_file.game.events.len() + 1;
+    let event_id = format!("nomination-started-{event_count}");
+    let immediate_execution = matches!(
+        virgin_resolution,
+        VirginResolution::SpentAndNominatorExecuted { .. }
+    );
+
+    Ok(Proposal {
+        event: GameEvent {
+            id: event_id,
+            kind: GameEventKind::NominationStarted {
+                payload: NominationStartedPayload {
+                    step_id: current_step.id.clone(),
+                    nominator_id: input.nominator_id.clone(),
+                    nominee_id: input.nominee_id.clone(),
+                    registration_judgments,
+                    virgin_resolution,
+                },
+            },
+            phase: current_step.phase,
+            summary: format!("지명 확정: {} → {}", input.nominator_id, input.nominee_id),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
+        },
+        warnings: Vec::new(),
+        follow_up_steps: if immediate_execution {
+            vec![json!({
+                "kind": "virginDeath",
+                "stepId": format!("{}:virginDeath", current_step.id),
+                "playerId": input.nominator_id
+            })]
+        } else {
+            vec![json!({
+                "kind": "nominationVote",
+                "stepId": format!("{}:vote", current_step.id)
+            })]
+        },
+        preview: json!({
+            "messageKo": if immediate_execution { "지명자를 즉시 처형합니다." } else { "지명을 확정하고 투표로 이동합니다." }
+        }),
+        reveal_payload: None,
+    })
+}
+
 pub(crate) fn propose_nomination_vote(
     game_file: &GameFile,
     current_step: &PhaseStep,
     players: &[Player],
     input: StepInput,
 ) -> Result<Proposal, CoreError> {
-    let record = nomination_record(current_step, players, &input, &game_file.game.events)?;
+    let (record, active) =
+        nomination_record(current_step, players, &input, &game_file.game.events)?;
     let prefix = step_prefix(&current_step.id)?;
     let mut projected_nominations =
         replay_day_state(&game_file.game.events, players, &prefix)?.nominations;
@@ -681,8 +759,9 @@ pub(crate) fn propose_nomination_vote(
             kind: GameEventKind::NominationVoteConfirmed {
                 payload: NominationEventPayload {
                     step_id: current_step.id.clone(),
-                    nominator_id: record.nominator_id.clone(),
-                    nominee_id: record.nominee_id.clone(),
+                    nomination_event_id: Some(active.event_id),
+                    nominator_id: None,
+                    nominee_id: None,
                     voter_ids: record.voter_ids.clone(),
                     ghost_vote_spent_player_ids: record.ghost_vote_spent_player_ids.clone(),
                 },
@@ -699,6 +778,71 @@ pub(crate) fn propose_nomination_vote(
         follow_up_steps: Vec::new(),
         preview: nomination_vote_preview(&record, &standing),
         reveal_payload: None,
+    })
+}
+
+fn propose_demon_succession(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    input: StepInput,
+) -> Result<Proposal, CoreError> {
+    let pending = pending_demon_succession(&game_file.game.events)?
+        .ok_or_else(|| ErrorKind::StaleStep.into_error())?;
+    if current_step.id != format!("{}:demonSuccession", pending.trigger_event_id) {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+    let successor_player_id = input
+        .as_ref()
+        .and_then(|input| input.successor_player_id.clone())
+        .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let allowed = match &pending.prompt {
+        crate::model::DemonSuccessionPrompt::Fixed {
+            successor_player_id: fixed,
+            ..
+        } => fixed == &successor_player_id,
+        crate::model::DemonSuccessionPrompt::Selectable {
+            allowed_player_ids, ..
+        } => allowed_player_ids.contains(&successor_player_id),
+    };
+    let successor = players
+        .iter()
+        .find(|player| player.id == successor_player_id && player.alive)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    if !allowed {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    let event_count = game_file.game.events.len() + 1;
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("demon-succession-{event_count}"),
+            kind: GameEventKind::DemonSuccessionConfirmed {
+                payload: DemonSuccessionConfirmedPayload {
+                    trigger_imp_death_event_id: pending.trigger_event_id,
+                    death_cause: pending.death_cause,
+                    previous_imp_player_id: pending.previous_imp_player_id,
+                    successor_player_id: successor.id.clone(),
+                    successor_previous_actual_character: successor.actual_character.clone(),
+                    new_character: "imp".into(),
+                    source: pending.source,
+                },
+            },
+            phase: pending.phase,
+            summary: format!("악마 승계 확정: {}", successor.id),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": "새 임프를 확정합니다." }),
+        reveal_payload: Some(RevealPayload::NewImp {
+            kind: "newImp",
+            player_id: successor.id.clone(),
+            character_id: "imp",
+        }),
     })
 }
 

@@ -74,6 +74,7 @@ export function Grimoire({
         </div>
         <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
         {seats.map((seat) => {
+          const virginAbility = ruleState?.virginAbility;
           const confirmedPlayer = "id" in seat ? (seat as Player) : undefined;
           const actualCharacter = "actualCharacter" in seat ? seat.actualCharacter : undefined;
           const shownCharacter = "shownCharacter" in seat ? seat.shownCharacter : undefined;
@@ -186,6 +187,13 @@ export function Grimoire({
                 >
                   S
                 </button>
+              ) : null}
+              {virginAbility && playerId === virginAbility.actorPlayerId ? (
+                <span
+                  className={`virginAbilityIcon ${virginAbility.spent ? "spent" : ""}`}
+                  style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                  aria-label={`${seat.seat}번 ${seat.name} 처녀 능력 ${virginAbility.spent ? "소모" : "사용 가능"}`}
+                >V</span>
               ) : null}
             </div>
           );

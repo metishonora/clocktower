@@ -34,6 +34,8 @@ pub(crate) enum StepType {
     ExecutionDeath,
     #[serde(rename = "slayerDeath")]
     SlayerDeath,
+    #[serde(rename = "demonSuccession")]
+    DemonSuccession,
     #[serde(rename = "redHerringAssignment")]
     RedHerringAssignment,
 }
@@ -52,12 +54,16 @@ pub(crate) enum RequiredInputKind {
     Number,
     #[serde(rename = "nominationVote")]
     NominationVote,
+    #[serde(rename = "nomination")]
+    Nomination,
     #[serde(rename = "executionDecision")]
     ExecutionDecision,
     #[serde(rename = "executionDeathDecision")]
     ExecutionDeathDecision,
     #[serde(rename = "slayerDeathDecision")]
     SlayerDeathDecision,
+    #[serde(rename = "demonSuccession")]
+    DemonSuccession,
     #[serde(rename = "day")]
     Day,
     #[serde(rename = "night")]
@@ -294,6 +300,22 @@ pub(crate) struct StepInputFields {
     pub(crate) execute: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) died: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) mayor_decision: Option<MayorDecisionInput>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) successor_player_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum MayorDecisionInput {
+    MayorDies,
+    Bounce { target_player_id: String },
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -342,7 +364,35 @@ pub(crate) struct RequiredInput {
     pub(crate) survival_allowed: Option<bool>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) execution_survival_allowed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) mayor_decision: Option<MayorDecisionPrompt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) demon_succession: Option<DemonSuccessionPrompt>,
     pub(crate) optional: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum DemonSuccessionPrompt {
+    Fixed {
+        trigger_event_id: String,
+        successor_player_id: String,
+    },
+    Selectable {
+        trigger_event_id: String,
+        allowed_player_ids: Vec<String>,
+    },
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MayorDecisionPrompt {
+    pub(crate) mayor_player_id: String,
+    pub(crate) bounce_target_player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -351,6 +401,15 @@ pub(crate) struct SlayerAbilityState {
     pub(crate) actor_player_id: String,
     pub(crate) spent: bool,
     pub(crate) can_use_now: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct VirginAbilityState {
+    pub(crate) actor_player_id: String,
+    pub(crate) spent: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) spent_by_nomination_event_id: Option<String>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -384,6 +443,13 @@ pub(crate) struct NominationVoteInput {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct NominationInput {
+    pub(crate) nominator_id: String,
+    pub(crate) nominee_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ExecutionDecisionInput {
     pub(crate) execute: bool,
 }
@@ -400,6 +466,17 @@ pub(crate) struct DayState {
     pub(crate) execution_candidate: Option<ExecutionCandidate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) confirmed_execution: Option<ConfirmedExecution>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) active_nomination: Option<ActiveNomination>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ActiveNomination {
+    pub(crate) event_id: String,
+    pub(crate) step_id: String,
+    pub(crate) nominator_id: String,
+    pub(crate) nominee_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

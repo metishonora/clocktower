@@ -95,6 +95,7 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "phaseStepSkipped"
             | "phaseStepNeedsFollowUp"
             | "nominationVoteConfirmed"
+            | "nominationStarted"
             | "executionConfirmed"
             | "noExecutionConfirmed"
             | "deathConfirmed"
@@ -103,6 +104,7 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "nightActionResolved"
             | "nightDeathsAnnounced"
             | "slayerAbilityUsed"
+            | "demonSuccessionConfirmed"
     ) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }

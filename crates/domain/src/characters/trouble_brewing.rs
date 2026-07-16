@@ -1,12 +1,288 @@
-use crate::contracts::{SlayerRegistrationContext, SlayerTargetRegistration};
+use crate::contracts::{
+    ActiveRuleEffect, ImpAttackOutcome, ImpNoDeathReason, ImpPreventionReason, MayorAttackContext,
+    NightActionResolution, SlayerRegistrationContext, SlayerTargetRegistration,
+    VirginImpairmentContext, VirginResolution,
+};
 use crate::error::ErrorKind;
 use crate::model::{
     Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
-    NumberInformationChoice, Phase, PhaseStep, Player, RegistrationJudgment, RegistrationValue,
-    RequiredInput, RequiredInputKind, SetupInfoKind, SetupInfoRegistrationOption, SpyReminderToken,
-    StepInput, StepInputFields, StepType,
+    MayorDecisionInput, MayorDecisionPrompt, NumberInformationChoice, Phase, PhaseStep, Player,
+    RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind, SetupInfoKind,
+    SetupInfoRegistrationOption, SpyReminderToken, StepInput, StepInputFields, StepType,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+pub(crate) fn virgin_resolution(
+    players: &[Player],
+    nominator_id: &str,
+    nominee_id: &str,
+    judgments: &[RegistrationJudgment],
+    already_spent: bool,
+    active_poison: Option<&ActiveRuleEffect>,
+) -> Result<VirginResolution, crate::error::CoreError> {
+    let nominator = players
+        .iter()
+        .find(|player| player.id == nominator_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let nominee = players
+        .iter()
+        .find(|player| player.id == nominee_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    if nominee.actual_character != "virgin" || already_spent {
+        if !judgments.is_empty() {
+            return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
+        }
+        return Ok(VirginResolution::NotApplicable);
+    }
+
+    let spy_registered_as_townsfolk = if nominator.actual_character == "spy" {
+        match judgments {
+            [] => false,
+            [judgment]
+                if judgment.player_id == nominator.id
+                    && judgment.registered_as == RegistrationValue::Townsfolk
+                    && judgment.character_id.is_none() =>
+            {
+                true
+            }
+            _ => return Err(ErrorKind::InvalidRegistrationJudgment.into_error()),
+        }
+    } else {
+        if !judgments.is_empty() {
+            return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
+        }
+        false
+    };
+    let impairment_context = active_poison
+        .filter(|poison| poison.player_id == nominee.id)
+        .map(|poison| VirginImpairmentContext::Poisoned {
+            source_player_id: poison.source_player_id.clone(),
+            source_event_id: poison.source_event_id.clone(),
+        })
+        .unwrap_or(VirginImpairmentContext::Healthy);
+    let nominator_is_townsfolk = character_kind(&nominator.actual_character)
+        == Some(CharacterKind::Townsfolk)
+        || spy_registered_as_townsfolk;
+    if nominator_is_townsfolk && matches!(impairment_context, VirginImpairmentContext::Healthy) {
+        Ok(VirginResolution::SpentAndNominatorExecuted {
+            virgin_player_id: nominee.id.clone(),
+            impairment_context,
+        })
+    } else {
+        Ok(VirginResolution::SpentNoExecution {
+            virgin_player_id: nominee.id.clone(),
+            impairment_context,
+        })
+    }
+}
+
+pub(crate) fn mayor_decision_prompt(
+    players: &[Player],
+    active_poison: Option<&ActiveRuleEffect>,
+    active_protection: Option<&ActiveRuleEffect>,
+) -> Option<MayorDecisionPrompt> {
+    let mayor = players.iter().find(|player| {
+        player.alive
+            && player.actual_character == "mayor"
+            && active_poison.is_none_or(|poison| poison.player_id != player.id)
+            && active_protection.is_none_or(|protection| protection.player_id != player.id)
+    })?;
+    Some(MayorDecisionPrompt {
+        mayor_player_id: mayor.id.clone(),
+        bounce_target_player_ids: players
+            .iter()
+            .filter(|player| player.id != mayor.id)
+            .map(|player| player.id.clone())
+            .collect(),
+    })
+}
+
+pub(crate) fn scarlet_woman_successor<'a>(
+    players: &'a [Player],
+    active_poison: Option<&ActiveRuleEffect>,
+) -> Option<&'a Player> {
+    (players.iter().filter(|player| player.alive).count() >= 5)
+        .then(|| {
+            players.iter().find(|player| {
+                player.alive
+                    && player.actual_character == "scarletWoman"
+                    && active_poison.is_none_or(|poison| poison.player_id != player.id)
+            })
+        })
+        .flatten()
+}
+
+pub(crate) fn imp_self_kill_successor_ids(players: &[Player]) -> Vec<String> {
+    players
+        .iter()
+        .filter(|player| {
+            player.alive && character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+        })
+        .map(|player| player.id.clone())
+        .collect()
+}
+
+pub(crate) fn resolve_imp_attack(
+    players: &[Player],
+    actor_player_id: &str,
+    target_player_id: &str,
+    mayor_decision: Option<&MayorDecisionInput>,
+    active_poison: Option<&ActiveRuleEffect>,
+    active_protection: Option<&ActiveRuleEffect>,
+) -> Result<NightActionResolution, crate::error::CoreError> {
+    let actor = players
+        .iter()
+        .find(|player| player.id == actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let not_applicable = MayorAttackContext::NotApplicable;
+    if actor.actual_character != "imp" {
+        reject_unnecessary_mayor_decision(mayor_decision)?;
+        return Ok(imp_attack(
+            target_player_id,
+            not_applicable,
+            ImpAttackOutcome::NoDeath {
+                reason: ImpNoDeathReason::NotActualCharacter,
+            },
+        ));
+    }
+    if is_poisoned(active_poison, actor_player_id) {
+        reject_unnecessary_mayor_decision(mayor_decision)?;
+        return Ok(imp_attack(
+            target_player_id,
+            not_applicable,
+            ImpAttackOutcome::NoDeath {
+                reason: ImpNoDeathReason::ActorImpaired,
+            },
+        ));
+    }
+    if !target.alive {
+        reject_unnecessary_mayor_decision(mayor_decision)?;
+        return Ok(imp_attack(
+            target_player_id,
+            not_applicable,
+            ImpAttackOutcome::NoDeath {
+                reason: ImpNoDeathReason::AlreadyDead,
+            },
+        ));
+    }
+    if let Some(protection) = protection_for(active_protection, target_player_id) {
+        reject_unnecessary_mayor_decision(mayor_decision)?;
+        return Ok(imp_attack(
+            target_player_id,
+            not_applicable,
+            ImpAttackOutcome::Prevented {
+                reason: ImpPreventionReason::MonkProtection,
+                source_event_id: protection.source_event_id.clone(),
+            },
+        ));
+    }
+    if target.actual_character == "soldier" && !is_poisoned(active_poison, target_player_id) {
+        reject_unnecessary_mayor_decision(mayor_decision)?;
+        return Ok(imp_attack(
+            target_player_id,
+            not_applicable,
+            ImpAttackOutcome::SoldierProtected {
+                player_id: target.id.clone(),
+            },
+        ));
+    }
+    if target.actual_character == "mayor" && !is_poisoned(active_poison, target_player_id) {
+        let decision =
+            mayor_decision.ok_or_else(|| ErrorKind::MissingMayorDecision.into_error())?;
+        return match decision {
+            MayorDecisionInput::MayorDies => Ok(imp_attack(
+                target_player_id,
+                MayorAttackContext::MayorDies {
+                    mayor_player_id: target.id.clone(),
+                },
+                ImpAttackOutcome::Death {
+                    player_id: target.id.clone(),
+                },
+            )),
+            MayorDecisionInput::Bounce {
+                target_player_id: bounce_target_player_id,
+            } => {
+                let bounce_target = players
+                    .iter()
+                    .find(|player| player.id == *bounce_target_player_id)
+                    .filter(|player| player.id != target.id)
+                    .ok_or_else(|| ErrorKind::InvalidMayorDecision.into_error())?;
+                let context = MayorAttackContext::Bounced {
+                    mayor_player_id: target.id.clone(),
+                    bounce_target_player_id: bounce_target.id.clone(),
+                };
+                let outcome = if !bounce_target.alive {
+                    ImpAttackOutcome::NoDeath {
+                        reason: ImpNoDeathReason::AlreadyDead,
+                    }
+                } else if let Some(protection) =
+                    protection_for(active_protection, &bounce_target.id)
+                {
+                    ImpAttackOutcome::Prevented {
+                        reason: ImpPreventionReason::MonkProtection,
+                        source_event_id: protection.source_event_id.clone(),
+                    }
+                } else if bounce_target.actual_character == "soldier"
+                    && !is_poisoned(active_poison, &bounce_target.id)
+                {
+                    ImpAttackOutcome::SoldierProtected {
+                        player_id: bounce_target.id.clone(),
+                    }
+                } else {
+                    ImpAttackOutcome::Death {
+                        player_id: bounce_target.id.clone(),
+                    }
+                };
+                Ok(imp_attack(target_player_id, context, outcome))
+            }
+        };
+    }
+    reject_unnecessary_mayor_decision(mayor_decision)?;
+    Ok(imp_attack(
+        target_player_id,
+        not_applicable,
+        ImpAttackOutcome::Death {
+            player_id: target.id.clone(),
+        },
+    ))
+}
+
+fn imp_attack(
+    target_player_id: &str,
+    mayor_context: MayorAttackContext,
+    outcome: ImpAttackOutcome,
+) -> NightActionResolution {
+    NightActionResolution::ImpAttack {
+        target_player_id: target_player_id.into(),
+        mayor_context,
+        outcome,
+    }
+}
+
+fn reject_unnecessary_mayor_decision(
+    decision: Option<&MayorDecisionInput>,
+) -> Result<(), crate::error::CoreError> {
+    if decision.is_some() {
+        Err(ErrorKind::InvalidMayorDecision.into_error())
+    } else {
+        Ok(())
+    }
+}
+
+fn is_poisoned(active_poison: Option<&ActiveRuleEffect>, player_id: &str) -> bool {
+    active_poison.is_some_and(|poison| poison.player_id == player_id)
+}
+
+fn protection_for<'a>(
+    active_protection: Option<&'a ActiveRuleEffect>,
+    player_id: &str,
+) -> Option<&'a ActiveRuleEffect> {
+    active_protection.filter(|protection| protection.player_id == player_id)
+}
 
 pub(crate) fn slayer_registration(
     target: &Player,
@@ -943,6 +1219,8 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             player_id: None,
             survival_allowed: None,
             execution_survival_allowed: false,
+            mayor_decision: None,
+            demon_succession: None,
             optional: true,
         },
         _ => required_none(),
@@ -983,6 +1261,8 @@ fn required_none() -> RequiredInput {
         player_id: None,
         survival_allowed: None,
         execution_survival_allowed: false,
+        mayor_decision: None,
+        demon_succession: None,
         optional: false,
     }
 }
@@ -1007,6 +1287,8 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         player_id: None,
         survival_allowed: None,
         execution_survival_allowed: false,
+        mayor_decision: None,
+        demon_succession: None,
         optional: min == 0,
     }
 }
@@ -1033,6 +1315,8 @@ fn required_setup_info(
         player_id: None,
         survival_allowed: None,
         execution_survival_allowed: false,
+        mayor_decision: None,
+        demon_succession: None,
         optional: false,
     }
 }

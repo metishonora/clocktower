@@ -24,7 +24,10 @@ export type PhaseStepInput =
   | { characterIds: string[] }
   | { value: number; reason?: NumericReason | null }
   | { trueValue: number; displayedValue: number; reason?: NumericReason | null }
-  | { nominatorId: string; nomineeId: string; voterIds: string[] }
+  | { nominatorId: string; nomineeId: string }
+  | { voterIds: string[] }
+  | { playerIds: string[]; mayorDecision: MayorDecisionInput }
+  | { successorPlayerId: string }
   | { execute: boolean }
   | { died: boolean };
 
@@ -168,6 +171,11 @@ export type RuleState = {
   activeProtection?: ActiveRuleEffect;
   unannouncedNightDeathPlayerIds: string[];
   slayerAbility?: { actorPlayerId: string; spent: boolean; canUseNow: boolean };
+  virginAbility?: {
+    actorPlayerId: string;
+    spent: boolean;
+    spentByNominationEventId?: string;
+  };
 };
 
 export type ActiveRuleEffect = {
@@ -206,7 +214,13 @@ export type SpyGrimoireRevealPayload = {
   }>;
 };
 
-export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload;
+export type NewImpRevealPayload = {
+  kind: "newImp";
+  playerId: string;
+  characterId: "imp";
+};
+
+export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | NewImpRevealPayload;
 
 export type SetupDistributionRequest = {
   playerCount: number;
@@ -241,10 +255,24 @@ export type GameEvent = EventCommon &
         type: "nominationVoteConfirmed";
         payload: {
           stepId: string;
-          nominatorId: string;
-          nomineeId: string;
+          nominationEventId?: string;
+          nominatorId?: string;
+          nomineeId?: string;
           voterIds: string[];
           ghostVoteSpentPlayerIds: string[];
+        };
+      }
+    | {
+        type: "nominationStarted";
+        payload: {
+          stepId: string;
+          nominatorId: string;
+          nomineeId: string;
+          registrationJudgments: RegistrationJudgment[];
+          virginResolution:
+            | { kind: "notApplicable" }
+            | { kind: "spentNoExecution"; virginPlayerId: string; impairmentContext: VirginImpairmentContext }
+            | { kind: "spentAndNominatorExecuted"; virginPlayerId: string; impairmentContext: VirginImpairmentContext };
         };
       }
     | {
@@ -279,7 +307,23 @@ export type GameEvent = EventCommon &
           outcome: { kind: "noEffect"; reason: "actorPoisoned" | "targetNotDemon" | "targetAlreadyDead" } | { kind: "deathPending"; playerId: string };
         };
       }
+    | {
+        type: "demonSuccessionConfirmed";
+        payload: {
+          triggerImpDeathEventId: string;
+          deathCause: "execution" | "slayer" | "impSelfKill";
+          previousImpPlayerId: string;
+          successorPlayerId: string;
+          successorPreviousActualCharacter: string;
+          newCharacter: string;
+          source: "scarletWoman" | "impSelfKill";
+        };
+      }
   );
+
+export type VirginImpairmentContext =
+  | { kind: "healthy" }
+  | { kind: "poisoned"; sourcePlayerId: string; sourceEventId: string };
 
 export type NightActionResolution =
   | {
@@ -291,9 +335,14 @@ export type NightActionResolution =
   | {
       kind: "impAttack";
       targetPlayerId: string;
+      mayorContext?:
+        | { kind: "notApplicable" }
+        | { kind: "mayorDies"; mayorPlayerId: string }
+        | { kind: "bounced"; mayorPlayerId: string; bounceTargetPlayerId: string };
       outcome:
         | { kind: "death"; playerId: string }
         | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
+        | { kind: "soldierProtected"; playerId: string }
         | { kind: "noDeath"; reason: "alreadyDead" | "actorImpaired" | "notActualCharacter" };
     };
 
@@ -310,6 +359,7 @@ export type StepType =
   | "execution"
   | "executionDeath"
   | "slayerDeath"
+  | "demonSuccession"
   | "redHerringAssignment";
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
@@ -356,6 +406,7 @@ export type DayState = {
   highestVoteCount: number;
   executionCandidate?: ExecutionCandidate;
   confirmedExecution?: ConfirmedExecution;
+  activeNomination?: { eventId: string; stepId: string; nominatorId: string; nomineeId: string };
 };
 
 export type NominationRecord = {
@@ -383,9 +434,11 @@ export type RequiredInputKind =
   | "setupInfo"
   | "number"
   | "nominationVote"
+  | "nomination"
   | "executionDecision"
   | "executionDeathDecision"
   | "slayerDeathDecision"
+  | "demonSuccession"
   | "day"
   | "night";
 
@@ -414,5 +467,20 @@ export type RequiredInput = {
   executionSurvivalAllowed?: boolean;
   playerId?: string;
   survivalAllowed?: boolean;
+  mayorDecision?: MayorDecisionPrompt;
+  demonSuccession?: DemonSuccessionPrompt;
   optional: boolean;
 };
+
+export type MayorDecisionInput =
+  | { kind: "mayorDies" }
+  | { kind: "bounce"; targetPlayerId: string };
+
+export type MayorDecisionPrompt = {
+  mayorPlayerId: string;
+  bounceTargetPlayerIds: string[];
+};
+
+export type DemonSuccessionPrompt =
+  | { kind: "fixed"; triggerEventId: string; successorPlayerId: string }
+  | { kind: "selectable"; triggerEventId: string; allowedPlayerIds: string[] };

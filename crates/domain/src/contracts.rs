@@ -166,6 +166,8 @@ pub(crate) struct RuleState {
     pub(crate) unannounced_night_death_player_ids: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) slayer_ability: Option<crate::model::SlayerAbilityState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) virgin_ability: Option<crate::model::VirginAbilityState>,
 }
 
 #[derive(Debug, Serialize)]
@@ -204,6 +206,13 @@ pub(crate) enum RevealPayload {
         kind: &'static str,
         players: Vec<crate::model::InformationPlayer>,
     },
+    NewImp {
+        kind: &'static str,
+        #[serde(rename = "playerId")]
+        player_id: String,
+        #[serde(rename = "characterId")]
+        character_id: &'static str,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -232,6 +241,8 @@ pub(crate) enum GameEventKind {
     PhaseStepNeedsFollowUp { payload: StepIdPayload },
     #[serde(rename = "nominationVoteConfirmed")]
     NominationVoteConfirmed { payload: NominationEventPayload },
+    #[serde(rename = "nominationStarted")]
+    NominationStarted { payload: NominationStartedPayload },
     #[serde(rename = "executionConfirmed")]
     ExecutionConfirmed { payload: ExecutionEventPayload },
     #[serde(rename = "noExecutionConfirmed")]
@@ -252,6 +263,37 @@ pub(crate) enum GameEventKind {
     },
     #[serde(rename = "slayerAbilityUsed")]
     SlayerAbilityUsed { payload: SlayerAbilityUsedPayload },
+    #[serde(rename = "demonSuccessionConfirmed")]
+    DemonSuccessionConfirmed {
+        payload: DemonSuccessionConfirmedPayload,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct DemonSuccessionConfirmedPayload {
+    pub(crate) trigger_imp_death_event_id: String,
+    pub(crate) death_cause: DemonDeathCause,
+    pub(crate) previous_imp_player_id: String,
+    pub(crate) successor_player_id: String,
+    pub(crate) successor_previous_actual_character: String,
+    pub(crate) new_character: String,
+    pub(crate) source: DemonSuccessionSource,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum DemonDeathCause {
+    Execution,
+    Slayer,
+    ImpSelfKill,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum DemonSuccessionSource {
+    ScarletWoman,
+    ImpSelfKill,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -355,7 +397,28 @@ pub(crate) enum NightActionResolution {
     },
     ImpAttack {
         target_player_id: String,
+        #[serde(default)]
+        mayor_context: MayorAttackContext,
         outcome: ImpAttackOutcome,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum MayorAttackContext {
+    #[default]
+    NotApplicable,
+    MayorDies {
+        mayor_player_id: String,
+    },
+    Bounced {
+        mayor_player_id: String,
+        bounce_target_player_id: String,
     },
 }
 
@@ -379,6 +442,9 @@ pub(crate) enum ImpAttackOutcome {
     Prevented {
         reason: ImpPreventionReason,
         source_event_id: String,
+    },
+    SoldierProtected {
+        player_id: String,
     },
     NoDeath {
         reason: ImpNoDeathReason,
@@ -436,10 +502,58 @@ pub(crate) struct PhaseStepEventPayload {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct NominationEventPayload {
     pub(crate) step_id: String,
-    pub(crate) nominator_id: String,
-    pub(crate) nominee_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) nomination_event_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) nominator_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) nominee_id: Option<String>,
     pub(crate) voter_ids: Vec<String>,
     pub(crate) ghost_vote_spent_player_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct NominationStartedPayload {
+    pub(crate) step_id: String,
+    pub(crate) nominator_id: String,
+    pub(crate) nominee_id: String,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+    pub(crate) virgin_resolution: VirginResolution,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum VirginResolution {
+    NotApplicable,
+    SpentNoExecution {
+        virgin_player_id: String,
+        impairment_context: VirginImpairmentContext,
+    },
+    SpentAndNominatorExecuted {
+        virgin_player_id: String,
+        impairment_context: VirginImpairmentContext,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum VirginImpairmentContext {
+    Healthy,
+    Poisoned {
+        source_player_id: String,
+        source_event_id: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

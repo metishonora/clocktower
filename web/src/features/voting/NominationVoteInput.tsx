@@ -7,19 +7,23 @@ import {
 import type { NominationDraft } from "./useNominationDraft";
 
 export function NominationVoteInput({
+  mode,
   players,
   eligibleNominatorIds,
   eligibleNomineeIds,
   draft,
   onChange,
   busy,
+  activeNomination,
 }: {
+  mode: "nomination" | "vote" | "legacyCombined";
   players: Player[];
   eligibleNominatorIds: string[];
   eligibleNomineeIds: string[];
   draft: NominationDraft;
   onChange: (draft: NominationDraft) => void;
   busy: boolean;
+  activeNomination?: { nominatorId: string; nomineeId: string };
 }) {
   const ghostVoteSpentPlayers = ghostVotesSpentByDraft(players, draft);
   const validVotePlayers = validVotePlayersByDraft(players, draft);
@@ -32,6 +36,25 @@ export function NominationVoteInput({
     const player = playersById.get(id);
     return player ? [player] : [];
   });
+
+  if (mode === "vote") {
+    const nominator = playersById.get(activeNomination?.nominatorId ?? "");
+    const nominee = playersById.get(activeNomination?.nomineeId ?? "");
+    return (
+      <div className="nominationVoteInput">
+        <p className="nominationPair">
+          <strong>{nominator ? seatPlayerLabel(nominator) : "지명자"}</strong>
+          <span> → </span>
+          <strong>{nominee ? seatPlayerLabel(nominee) : "피지명자"}</strong>
+        </p>
+        <dl className="votePreview">
+          <div><dt>현재 표</dt><dd>{validVotePlayers.length}표</dd></div>
+          <div><dt>소비될 유령표</dt><dd>{ghostVoteSpentPlayers.length > 0 ? ghostVoteSpentPlayers.map(seatPlayerLabel).join(", ") : "없음"}</dd></div>
+        </dl>
+        <p className="nominationHint">투표자는 Grimoire 좌석을 눌러 선택합니다.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="nominationVoteInput">
@@ -67,17 +90,15 @@ export function NominationVoteInput({
           </select>
         </label>
       </div>
-      <dl className="votePreview">
-        <div>
-          <dt>현재 표</dt>
-          <dd>{validVotePlayers.length}표</dd>
-        </div>
-        <div>
-          <dt>소비될 유령표</dt>
-          <dd>{ghostVoteSpentPlayers.length > 0 ? ghostVoteSpentPlayers.map(seatPlayerLabel).join(", ") : "없음"}</dd>
-        </div>
-      </dl>
-      <p className="nominationHint">투표자는 Grimoire 좌석을 눌러 선택합니다.</p>
+      {mode === "legacyCombined" ? (
+        <>
+          <dl className="votePreview">
+            <div><dt>현재 표</dt><dd>{validVotePlayers.length}표</dd></div>
+            <div><dt>소비될 유령표</dt><dd>{ghostVoteSpentPlayers.length > 0 ? ghostVoteSpentPlayers.map(seatPlayerLabel).join(", ") : "없음"}</dd></div>
+          </dl>
+          <p className="nominationHint">투표자는 Grimoire 좌석을 눌러 선택합니다.</p>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,9 @@ use crate::{
         character_kind, character_steps, first_night_order, legal_demon_bluff_character_ids,
         night_order,
     },
-    contracts::{GameEvent, GameEventKind, ImpAttackOutcome, NightActionResolution},
+    contracts::{
+        ActiveRuleEffect, GameEvent, GameEventKind, ImpAttackOutcome, NightActionResolution,
+    },
     model::{
         CharacterKind, InputTarget, Phase, PhaseStep, Player, RequiredInput, RequiredInputKind,
         StepType,
@@ -50,7 +52,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
         players,
         first_night_order(),
     );
-    enrich_targets(&mut character_steps, players);
+    enrich_targets(&mut character_steps, players, events);
     if let Some(index) = character_steps.iter().position(|step| {
         step.character.as_deref() == Some("fortuneTeller")
             && step.player_id.as_ref().is_some_and(|id| {
@@ -106,6 +108,8 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                         player_id: None,
                         survival_allowed: None,
                         execution_survival_allowed: false,
+                        mayor_decision: None,
+                        demon_succession: None,
                         optional: false,
                     },
                     can_skip: false,
@@ -192,6 +196,8 @@ pub(crate) fn night_steps(
                         player_id: None,
                         survival_allowed: None,
                         execution_survival_allowed: false,
+                        mayor_decision: None,
+                        demon_succession: None,
                         optional: false,
                     },
                     can_skip: false,
@@ -226,7 +232,7 @@ pub(crate) fn night_steps(
             .map_or(0, |pos| pos + 1);
         steps.insert(pos, custom_character_step(&prefix, "ravenkeeper", raven_id));
     }
-    enrich_targets(&mut steps, players);
+    enrich_targets(&mut steps, players, events);
     steps
         .into_iter()
         .chain([phase_transition_step(
@@ -253,18 +259,52 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
 
 pub(crate) fn previous_executed_death(events: &[GameEvent], cycle: usize) -> Option<String> {
     let prefix = phase_prefix("day", cycle);
-    let executed = events.iter().find_map(|e| match &e.kind {
+    let normal_execution = events.iter().find_map(|e| match &e.kind {
         GameEventKind::ExecutionConfirmed { payload }
             if payload.step_id == format!("{prefix}:execution") =>
         {
             payload.input.player_id.clone()
         }
         _ => None,
-    })?;
-    events.iter().any(|e| matches!(&e.kind, GameEventKind::DeathConfirmed { payload } if payload.step_id.as_deref() == Some(format!("{prefix}:executionDeath").as_str()) && payload.player_id == executed)).then_some(executed)
+    });
+    if let Some(executed) = normal_execution {
+        if events.iter().any(|e| matches!(&e.kind, GameEventKind::DeathConfirmed { payload } if payload.step_id.as_deref() == Some(format!("{prefix}:executionDeath").as_str()) && payload.player_id == executed)) {
+            return Some(executed);
+        }
+    }
+
+    events.iter().find_map(|event| {
+        let GameEventKind::NominationStarted { payload } = &event.kind else {
+            return None;
+        };
+        if !payload
+            .step_id
+            .starts_with(format!("{prefix}:nomination:").as_str())
+            || !matches!(
+                payload.virgin_resolution,
+                crate::contracts::VirginResolution::SpentAndNominatorExecuted { .. }
+            )
+        {
+            return None;
+        }
+        let death_step_id = format!("{}:virginDeath", payload.step_id);
+        events
+            .iter()
+            .any(|candidate| {
+                matches!(
+                    &candidate.kind,
+                    GameEventKind::DeathConfirmed { payload: death }
+                        if death.step_id.as_deref() == Some(death_step_id.as_str())
+                            && death.player_id == payload.nominator_id
+                )
+            })
+            .then(|| payload.nominator_id.clone())
+    })
 }
 
-fn enrich_targets(steps: &mut [PhaseStep], players: &[Player]) {
+fn enrich_targets(steps: &mut [PhaseStep], players: &[Player], events: &[GameEvent]) {
+    let active_poison = active_night_poison(events, players);
+    let active_protection = active_night_protection(events, players);
     for step in steps {
         if matches!(
             step.required_input.target,
@@ -276,5 +316,103 @@ fn enrich_targets(steps: &mut [PhaseStep], players: &[Player]) {
             }
             step.required_input.allowed_player_ids = Some(ids);
         }
+        if step.character.as_deref() == Some("imp") {
+            step.required_input.mayor_decision = crate::characters::mayor_decision_prompt(
+                players,
+                active_poison.as_ref(),
+                active_protection.as_ref(),
+            );
+        }
     }
+}
+
+pub(crate) fn active_night_poison(
+    events: &[GameEvent],
+    players: &[Player],
+) -> Option<ActiveRuleEffect> {
+    let last_to_night = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")
+        )
+    });
+    events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(index, event)| match &event.kind {
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::Poison { applied: true, .. }
+                ) && last_to_night.is_none_or(|boundary| index > boundary)
+                    && players.iter().any(|player| {
+                        player.id == payload.actor_player_id
+                            && player.alive
+                            && player.actual_character == "poisoner"
+                    }) =>
+            {
+                let NightActionResolution::Poison {
+                    target_player_id, ..
+                } = &payload.resolution
+                else {
+                    unreachable!()
+                };
+                Some(ActiveRuleEffect {
+                    player_id: target_player_id.clone(),
+                    source_player_id: payload.actor_player_id.clone(),
+                    source_event_id: event.id.clone(),
+                })
+            }
+            _ => None,
+        })
+}
+
+pub(crate) fn active_night_protection(
+    events: &[GameEvent],
+    players: &[Player],
+) -> Option<ActiveRuleEffect> {
+    let last_to_night = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")
+        )
+    });
+    let last_to_day = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toDay")
+        )
+    });
+    events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(index, event)| match &event.kind {
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::MonkProtection { applied: true, .. }
+                ) && last_to_night.is_some_and(|boundary| index > boundary)
+                    && last_to_day.is_none_or(|boundary| index > boundary)
+                    && players.iter().any(|player| {
+                        player.id == payload.actor_player_id
+                            && player.alive
+                            && player.actual_character == "monk"
+                    }) =>
+            {
+                let NightActionResolution::MonkProtection {
+                    target_player_id, ..
+                } = &payload.resolution
+                else {
+                    unreachable!()
+                };
+                Some(ActiveRuleEffect {
+                    player_id: target_player_id.clone(),
+                    source_player_id: payload.actor_player_id.clone(),
+                    source_event_id: event.id.clone(),
+                })
+            }
+            _ => None,
+        })
 }

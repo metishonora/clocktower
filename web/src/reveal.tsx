@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { RevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
-import { isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
+import type { NewImpRevealPayload, RevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
+import { isNewImpRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
 import { characterLabel } from "./setupDraft.js";
 import { spySeatPosition } from "./spyGrimoireLayout.js";
 
@@ -14,6 +14,14 @@ export function RevealPreview({
   disabled?: boolean;
 }) {
   if (isSpyGrimoireRevealPayload(payload)) return null;
+  if (isNewImpRevealPayload(payload)) {
+    return (
+      <section className="revealPreview" aria-label="Reveal 미리보기">
+        <p className="revealPreviewMessage">새 임프 역할 변경</p>
+        <button type="button" className="primaryButton" onClick={onShow} disabled={disabled}>새 임프에게 공개</button>
+      </section>
+    );
+  }
   return (
     <section className="revealPreview" aria-label="Reveal 미리보기">
       <div className="sectionHeader compact">
@@ -34,7 +42,20 @@ export function RevealScreen({ payload, onClose }: { payload: RevealPayload; onC
   if (isSpyGrimoireRevealPayload(payload)) {
     return <SpyGrimoireReveal payload={payload} onClose={onClose} />;
   }
+  if (isNewImpRevealPayload(payload)) return <NewImpReveal payload={payload} onClose={onClose} />;
   return <TextReveal payload={payload} onClose={onClose} />;
+}
+
+function NewImpReveal({ payload, onClose }: { payload: NewImpRevealPayload; onClose: () => void }) {
+  return (
+    <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.playerId}>
+      <section className="revealCard structuredRevealCard">
+        <h1 className="revealPlayerLabel">새 역할</h1>
+        <p>당신은 임프입니다</p>
+        <button type="button" className="revealCloseButton" onClick={onClose}>확인했다면 눈을 감으세요.</button>
+      </section>
+    </main>
+  );
 }
 
 function TextReveal({ payload, onClose }: { payload: TextRevealPayload; onClose: () => void }) {

@@ -7,6 +7,7 @@ import type {
   PhaseStepInput,
   Player,
   RegistrationJudgment,
+  MayorDecisionInput,
   StepType,
   TargetCheck,
 } from "../../core/types.js";
@@ -38,6 +39,7 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
   if (step.stepType === "nomination") return `지명 및 투표 ${step.id.split(":").at(-1)}`;
+  if (step.stepType === "demonSuccession") return "새 임프 선택";
   if (step.id.endsWith(":execution")) return "처형 확정";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   if (step.stepType === "slayerDeath") return player ? `학살자 결과: ${player.seat}번 ${player.name}` : "학살자 결과";
@@ -54,6 +56,7 @@ export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "execution") return "처형";
   if (stepType === "executionDeath") return "처형 결과";
   if (stepType === "slayerDeath") return "사망 확인";
+  if (stepType === "demonSuccession") return "임프 승계";
   return stepType;
 }
 
@@ -64,9 +67,11 @@ export function inputKindLabel(inputKind: string): string {
   if (inputKind === "characterIds") return "캐릭터";
   if (inputKind === "number") return "숫자";
   if (inputKind === "nominationVote") return "지명 투표";
+  if (inputKind === "nomination") return "지명 확인";
   if (inputKind === "executionDecision") return "처형 결정";
   if (inputKind === "executionDeathDecision") return "처형 결과";
   if (inputKind === "slayerDeathDecision") return "사망 결정";
+  if (inputKind === "demonSuccession") return "새 임프";
   if (inputKind === "day") return "낮";
   if (inputKind === "night") return "밤";
   return inputKind;
@@ -111,9 +116,21 @@ export function stepInputReady(
   zeroOutsiders: boolean,
   selectedNumberChoice: NumberChoice | undefined,
   zeroOutsidersAvailable = true,
+  mayorDecision?: MayorDecisionInput,
+  selectedPlayerIds: string[] = [],
 ): boolean {
-  if (step.requiredInput.kind === "nominationVote") {
+  if (step.requiredInput.kind === "nomination") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
+  }
+  if (step.requiredInput.kind === "nominationVote") {
+    return step.id.endsWith(":vote") ||
+      (nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0);
+  }
+  if (step.requiredInput.kind === "demonSuccession") {
+    return step.requiredInput.demonSuccession?.kind === "fixed" || selectedCount === 1;
+  }
+  if (step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId)) {
+    return Boolean(mayorDecision);
   }
   if (step.requiredInput.kind === "executionDecision") return true;
   if (step.requiredInput.kind === "executionDeathDecision") return true;
@@ -149,8 +166,22 @@ export function stepInputPayload(
   selectedCharacterIds: string[],
   nominationDraft: NominationDraft,
   zeroOutsiders: boolean,
+  mayorDecision?: MayorDecisionInput,
 ): PhaseStepInput {
-  if (step.requiredInput.kind === "nominationVote") return nominationDraft;
+  if (step.requiredInput.kind === "nomination") {
+    return { nominatorId: nominationDraft.nominatorId, nomineeId: nominationDraft.nomineeId };
+  }
+  if (step.requiredInput.kind === "nominationVote") {
+    return step.id.endsWith(":vote")
+      ? { voterIds: nominationDraft.voterIds }
+      : nominationDraft;
+  }
+  if (step.requiredInput.kind === "demonSuccession") {
+    const fixedSuccessor = step.requiredInput.demonSuccession?.kind === "fixed"
+      ? step.requiredInput.demonSuccession.successorPlayerId
+      : undefined;
+    return { successorPlayerId: fixedSuccessor ?? selectedPlayerIds[0] ?? "" };
+  }
   if (step.requiredInput.kind === "executionDecision") return { execute: true };
   if (step.requiredInput.kind === "setupInfo") {
     if (step.requiredInput.zeroAllowed && zeroOutsiders) return { zeroOutsiders: true };
@@ -161,7 +192,9 @@ export function stepInputPayload(
     return null;
   }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
-    return { playerIds: selectedPlayerIds };
+    return mayorDecision
+      ? { playerIds: selectedPlayerIds, mayorDecision }
+      : { playerIds: selectedPlayerIds };
   }
   return null;
 }
@@ -258,6 +291,7 @@ export function phaseStepConfirmation(
     selectedNumberChoice?: NumberChoice;
     registrationJudgments: RegistrationJudgment[];
     selectedTargetChoice?: TargetCheck["choices"][number];
+    mayorDecision?: MayorDecisionInput;
   },
   nominationDraft: NominationDraft,
 ): PhaseStepConfirmation {
@@ -269,6 +303,7 @@ export function phaseStepConfirmation(
       draft.selectedCharacterIds,
       nominationDraft,
       draft.zeroOutsiders,
+      draft.mayorDecision,
     ),
   };
 
