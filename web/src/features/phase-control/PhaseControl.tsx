@@ -212,11 +212,18 @@ function ConfirmedRevealFollowup({
 function ImpActionResult({ proposal, players }: { proposal: Proposal; players: Player[] }) {
   if (proposal.event.type !== "nightActionResolved" || proposal.event.payload.resolution.kind !== "impAttack") return null;
   const resolution = proposal.event.payload.resolution;
-  const target = players.find((player) => player.id === resolution.targetPlayerId);
+  const mayorContext = resolution.mayorContext ?? { kind: "notApplicable" as const };
+  const finalTargetId = resolution.outcome.kind === "death" || resolution.outcome.kind === "soldierProtected"
+    ? resolution.outcome.playerId
+    : mayorContext.kind === "bounced"
+      ? mayorContext.bounceTargetPlayerId
+      : resolution.targetPlayerId;
+  const target = players.find((player) => player.id === finalTargetId);
   if (!target) return null;
   let outcome: string;
   if (resolution.outcome.kind === "death") outcome = "사망";
   else if (resolution.outcome.kind === "prevented") outcome = "수도승에 의해 보호됨";
+  else if (resolution.outcome.kind === "soldierProtected") outcome = "군인 능력으로 생존";
   else if (resolution.outcome.reason === "alreadyDead") outcome = "이미 사망";
   else outcome = "효과 없음";
   return <p className="nightActionResult" aria-label="밤 행동 결과">{target.seat}번 {target.name} - {outcome}</p>;
@@ -309,6 +316,8 @@ function CurrentStepPane({
         phaseInputDraft.zeroOutsiders,
         phaseInputDraft.selectedNumberChoice,
         phaseInputDraft.zeroOutsidersAvailable,
+        phaseInputDraft.mayorDecision,
+        phaseInputDraft.selectedPlayerIds,
       )
     : false;
   const selectionValid = baseSelectionValid;
@@ -405,6 +414,8 @@ function CurrentStepPane({
               zeroOutsidersAvailable={phaseInputDraft.zeroOutsidersAvailable}
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
               selectedTargetChoice={phaseInputDraft.selectedTargetChoice}
+              mayorDecision={phaseInputDraft.mayorDecision}
+              registrationJudgments={phaseInputDraft.registrationJudgments}
               busy={busy || suggesting}
               onSelectedPlayerIdsChange={phaseInputDraft.setSelectedPlayerIds}
               onCharacterChange={phaseInputDraft.setSelectedCharacterId}
@@ -412,6 +423,8 @@ function CurrentStepPane({
               onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
               onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
               onTargetChoiceChange={phaseInputDraft.setSelectedTargetChoice}
+              onMayorDecisionChange={phaseInputDraft.setMayorDecision}
+              onRegistrationJudgmentsChange={phaseInputDraft.setRegistrationJudgments}
               randomSuggestion={
                 currentStep.requiredInput.supportsRandomSuggestion
                   ? {

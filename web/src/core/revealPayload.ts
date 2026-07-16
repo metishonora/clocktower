@@ -1,4 +1,4 @@
-import type { Proposal, RevealPayload, SpyGrimoireRevealPayload } from "./types.js";
+import type { NewImpRevealPayload, Proposal, RevealPayload, SpyGrimoireRevealPayload } from "./types.js";
 import { characters } from "../setupDraft.js";
 
 const characterIds = new Set(characters.map((character) => character.id));
@@ -21,11 +21,18 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
-  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload);
+  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isNewImpRevealPayload(payload);
   if (!nonEmptyString(payload.messageKo)) return false;
   if (!optionalNonEmptyString(payload.previewMessageKo)) return false;
   if (!optionalNonEmptyString(payload.labelKo) || !optionalNonEmptyString(payload.valueKo)) return false;
   return (payload.labelKo === undefined) === (payload.valueKo === undefined);
+}
+
+export function isNewImpRevealPayload(value: unknown): value is NewImpRevealPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Record<string, unknown>;
+  return payload.kind === "newImp" && payload.characterId === "imp" && nonEmptyString(payload.playerId)
+    && hasExactKeys(payload, ["characterId", "kind", "playerId"]);
 }
 
 export function isSpyGrimoireRevealPayload(value: unknown): value is SpyGrimoireRevealPayload {

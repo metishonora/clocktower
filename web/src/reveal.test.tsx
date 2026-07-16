@@ -1,7 +1,7 @@
 import { equal } from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { RevealScreen } from "./reveal.js";
+import { RevealPreview, RevealScreen } from "./reveal.js";
 import type { RevealPayload } from "./core/types.js";
 
 test("RevealScreen renders from RevealPayload alone", () => {
@@ -19,6 +19,17 @@ test("RevealScreen renders from RevealPayload alone", () => {
   equal(html.includes("actualCharacter"), false);
   equal(html.includes("eventList"), false);
   equal(html.includes("그리모어"), false);
+});
+
+test("New Imp RevealScreen identifies the successor without exposing Grimoire state", () => {
+  const payload = { kind: "newImp" as const, playerId: "poisoner", characterId: "imp" as const };
+  const html = renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />);
+
+  equal(html.includes("당신은 임프입니다"), true);
+  equal(html.includes("그리모어"), false);
+  equal(html.includes("확인했다면 눈을 감으세요."), true);
+  const preview = renderToStaticMarkup(<RevealPreview payload={payload} onShow={() => undefined} />);
+  equal(preview.includes("새 임프에게 공개"), true);
 });
 
 for (const playerCount of [5, 10, 15]) {

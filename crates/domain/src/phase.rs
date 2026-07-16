@@ -65,6 +65,8 @@ pub(crate) fn phase_transition_step(
             player_id: None,
             survival_allowed: None,
             execution_survival_allowed: false,
+            mayor_decision: None,
+            demon_succession: None,
             optional: false,
         },
         can_skip: false,
@@ -96,6 +98,8 @@ pub(crate) fn required_none() -> RequiredInput {
         player_id: None,
         survival_allowed: None,
         execution_survival_allowed: false,
+        mayor_decision: None,
+        demon_succession: None,
         optional: false,
     }
 }
@@ -121,6 +125,8 @@ pub(crate) fn required_characters(
         player_id: None,
         survival_allowed: None,
         execution_survival_allowed: false,
+        mayor_decision: None,
+        demon_succession: None,
         optional: min == 0,
     }
 }
@@ -143,10 +149,12 @@ pub(crate) fn validate_required_input(
     }
     if matches!(
         input.kind,
-        RequiredInputKind::NominationVote
+        RequiredInputKind::Nomination
+            | RequiredInputKind::NominationVote
             | RequiredInputKind::ExecutionDecision
             | RequiredInputKind::ExecutionDeathDecision
             | RequiredInputKind::SlayerDeathDecision
+            | RequiredInputKind::DemonSuccession
     ) {
         return Ok(());
     }

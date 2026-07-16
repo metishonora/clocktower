@@ -2,20 +2,22 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{
-        ActiveRuleEffect, GameEvent, GameEventKind, GameFile, ImpAttackOutcome, ImpNoDeathReason,
-        ImpPreventionReason, NightActionNoEffectReason, NightActionResolution, ReplayState,
-        RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason,
-        SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration,
+        ActiveRuleEffect, DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource,
+        GameEvent, GameEventKind, GameFile, ImpAttackOutcome, MayorAttackContext,
+        NightActionNoEffectReason, NightActionResolution, ReplayState, RuleState,
+        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
+        SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
-        validate_nomination_roles,
+        validate_nomination_roles, validate_nomination_start_roles,
     },
     error::{CoreError, ErrorKind},
     information::{actor_is_impaired, information_prompt, validate_confirmed_information},
     model::{
-        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RegistrationJudgment,
-        RequiredInput, RequiredInputKind, SlayerAbilityState, StepType,
+        DemonSuccessionPrompt, InputTarget, MayorDecisionInput, Phase, PhaseOverviewItem,
+        PhaseStep, PhaseStepStatus, Player, RegistrationJudgment, RequiredInput, RequiredInputKind,
+        SlayerAbilityState, StepType, VirginAbilityState,
     },
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
@@ -56,11 +58,44 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             can_use_now,
         });
     }
+    if let Some(actor) = players
+        .iter()
+        .find(|player| player.actual_character == "virgin")
+    {
+        let spent_by_nomination_event_id =
+            game_file
+                .game
+                .events
+                .iter()
+                .find_map(|event| match &event.kind {
+                    GameEventKind::NominationStarted { payload }
+                        if !matches!(
+                            payload.virgin_resolution,
+                            VirginResolution::NotApplicable
+                        ) =>
+                    {
+                        Some(event.id.clone())
+                    }
+                    _ => None,
+                });
+        rule_state.virgin_ability = Some(VirginAbilityState {
+            actor_player_id: actor.id.clone(),
+            spent: spent_by_nomination_event_id.is_some(),
+            spent_by_nomination_event_id,
+        });
+    }
     if !rule_state.unannounced_night_death_player_ids.is_empty() {
         warnings.push(crate::model::CoreWarning {
             code: "NIGHT_DEATH_UNANNOUNCED".into(),
             severity: "warning",
             message_ko: "공개하지 않은 밤 사망이 있습니다.".into(),
+        });
+    }
+    if saint_executed_with_ability(&game_file.game.events)? {
+        warnings.push(crate::model::CoreWarning {
+            code: "SAINT_EXECUTED_EVIL_WIN".into(),
+            severity: "warning",
+            message_ko: "성자 처형 사망: 악 승리 확인 필요".into(),
         });
     }
     Ok(ReplayState {
@@ -74,6 +109,34 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         warnings,
         rule_state,
     })
+}
+
+fn saint_executed_with_ability(events: &[GameEvent]) -> Result<bool, CoreError> {
+    for (event_index, event) in events.iter().enumerate() {
+        let GameEventKind::DeathConfirmed { payload } = &event.kind else {
+            continue;
+        };
+        if !payload.step_id.as_deref().is_some_and(|step_id| {
+            step_id.ends_with(":executionDeath") || step_id.ends_with(":virginDeath")
+        }) {
+            continue;
+        }
+        let players_before = replay_players(&events[..event_index])?;
+        let Some(saint) = players_before.iter().find(|player| {
+            player.id == payload.player_id && player.alive && player.actual_character == "saint"
+        }) else {
+            continue;
+        };
+        let rule_state = replay_rule_state(&events[..event_index], &players_before);
+        if rule_state
+            .active_poison
+            .as_ref()
+            .is_none_or(|poison| poison.player_id != saint.id)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub(crate) fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
@@ -137,6 +200,17 @@ pub(crate) fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreEr
                     player.ghost_vote_used = true;
                 }
             }
+            GameEventKind::DemonSuccessionConfirmed { payload } => {
+                let Some(successor) = players
+                    .iter_mut()
+                    .find(|player| player.id == payload.successor_player_id)
+                else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                successor.actual_character = "imp".into();
+                successor.shown_character = "imp".into();
+                successor.alignment = crate::model::Alignment::Evil;
+            }
             _ => {}
         }
     }
@@ -147,6 +221,193 @@ pub(crate) struct PhaseReplayState {
     pub(crate) phase: Phase,
     pub(crate) current_step: Option<PhaseStep>,
     pub(crate) phase_overview: Vec<PhaseOverviewItem>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PendingDemonSuccession {
+    pub(crate) trigger_event_id: String,
+    pub(crate) phase: Phase,
+    pub(crate) death_cause: DemonDeathCause,
+    pub(crate) previous_imp_player_id: String,
+    pub(crate) prompt: DemonSuccessionPrompt,
+    pub(crate) source: DemonSuccessionSource,
+}
+
+pub(crate) fn pending_demon_succession(
+    events: &[GameEvent],
+) -> Result<Option<PendingDemonSuccession>, CoreError> {
+    for (event_index, event) in events.iter().enumerate() {
+        if events.iter().any(|candidate| {
+            matches!(
+                &candidate.kind,
+                GameEventKind::DemonSuccessionConfirmed { payload }
+                    if payload.trigger_imp_death_event_id == event.id
+            )
+        }) {
+            continue;
+        }
+        let players_before = replay_players(&events[..event_index])?;
+        let trigger = match &event.kind {
+            GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+                NightActionResolution::ImpAttack {
+                    target_player_id,
+                    outcome: ImpAttackOutcome::Death { player_id },
+                    ..
+                } if target_player_id == &payload.actor_player_id
+                    && player_id == &payload.actor_player_id
+                    && players_before.iter().any(|player| {
+                        player.id == payload.actor_player_id
+                            && player.actual_character == "imp"
+                            && player.alive
+                    }) =>
+                {
+                    Some((DemonDeathCause::ImpSelfKill, player_id.clone()))
+                }
+                _ => None,
+            },
+            GameEventKind::DeathConfirmed { payload } => {
+                let cause = if payload
+                    .step_id
+                    .as_deref()
+                    .is_some_and(|step_id| step_id.ends_with(":slayerDeath"))
+                {
+                    Some(DemonDeathCause::Slayer)
+                } else if payload.step_id.as_deref().is_some_and(|step_id| {
+                    step_id.ends_with(":executionDeath") || step_id.ends_with(":virginDeath")
+                }) {
+                    Some(DemonDeathCause::Execution)
+                } else {
+                    None
+                };
+                cause.and_then(|cause| {
+                    players_before
+                        .iter()
+                        .any(|player| {
+                            player.id == payload.player_id
+                                && player.actual_character == "imp"
+                                && player.alive
+                        })
+                        .then(|| (cause, payload.player_id.clone()))
+                })
+            }
+            _ => None,
+        };
+        let Some((death_cause, previous_imp_player_id)) = trigger else {
+            continue;
+        };
+        let rule_state = replay_rule_state(&events[..event_index], &players_before);
+        let fixed_scarlet_woman = crate::characters::scarlet_woman_successor(
+            &players_before,
+            rule_state.active_poison.as_ref(),
+        );
+        if let Some(successor) = fixed_scarlet_woman {
+            return Ok(Some(PendingDemonSuccession {
+                trigger_event_id: event.id.clone(),
+                phase: event.phase,
+                death_cause,
+                previous_imp_player_id,
+                prompt: DemonSuccessionPrompt::Fixed {
+                    trigger_event_id: event.id.clone(),
+                    successor_player_id: successor.id.clone(),
+                },
+                source: DemonSuccessionSource::ScarletWoman,
+            }));
+        }
+        if death_cause == DemonDeathCause::ImpSelfKill {
+            let allowed_player_ids =
+                crate::characters::imp_self_kill_successor_ids(&players_before);
+            if !allowed_player_ids.is_empty() {
+                return Ok(Some(PendingDemonSuccession {
+                    trigger_event_id: event.id.clone(),
+                    phase: event.phase,
+                    death_cause,
+                    previous_imp_player_id,
+                    prompt: DemonSuccessionPrompt::Selectable {
+                        trigger_event_id: event.id.clone(),
+                        allowed_player_ids,
+                    },
+                    source: DemonSuccessionSource::ImpSelfKill,
+                }));
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
+    let (allowed_player_ids, player_id) = match &pending.prompt {
+        DemonSuccessionPrompt::Fixed {
+            successor_player_id,
+            ..
+        } => (
+            vec![successor_player_id.clone()],
+            Some(successor_player_id.clone()),
+        ),
+        DemonSuccessionPrompt::Selectable {
+            allowed_player_ids, ..
+        } => (allowed_player_ids.clone(), None),
+    };
+    PhaseStep {
+        id: format!("{}:demonSuccession", pending.trigger_event_id),
+        phase: pending.phase,
+        step_type: StepType::DemonSuccession,
+        character: Some("imp".into()),
+        player_id,
+        required_input: RequiredInput {
+            kind: RequiredInputKind::DemonSuccession,
+            target: Some(InputTarget::Player),
+            min_selections: Some(1),
+            max_selections: Some(1),
+            setup_info: None,
+            character_kind: None,
+            allowed_character_ids: None,
+            allowed_player_ids: Some(allowed_player_ids),
+            player_registration_options: None,
+            zero_allowed: false,
+            supports_random_suggestion: false,
+            player_id: None,
+            survival_allowed: None,
+            execution_survival_allowed: false,
+            mayor_decision: None,
+            demon_succession: Some(pending.prompt.clone()),
+            optional: false,
+        },
+        can_skip: false,
+        information_prompt: None,
+    }
+}
+
+fn validate_demon_succession_event(
+    payload: &DemonSuccessionConfirmedPayload,
+    prefix: &[GameEvent],
+) -> Result<(), CoreError> {
+    let pending =
+        pending_demon_succession(prefix)?.ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let players = replay_players(prefix)?;
+    let successor = players
+        .iter()
+        .find(|player| player.id == payload.successor_player_id && player.alive)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let allowed = match &pending.prompt {
+        DemonSuccessionPrompt::Fixed {
+            successor_player_id,
+            ..
+        } => successor_player_id == &payload.successor_player_id,
+        DemonSuccessionPrompt::Selectable {
+            allowed_player_ids, ..
+        } => allowed_player_ids.contains(&payload.successor_player_id),
+    };
+    if !allowed
+        || payload.trigger_imp_death_event_id != pending.trigger_event_id
+        || payload.death_cause != pending.death_cause
+        || payload.previous_imp_player_id != pending.previous_imp_player_id
+        || payload.successor_previous_actual_character != successor.actual_character
+        || payload.new_character != "imp"
+        || payload.source != pending.source
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    Ok(())
 }
 
 pub(crate) fn replay_phase_state(
@@ -162,6 +423,24 @@ pub(crate) fn replay_phase_state(
     }
 
     let step_statuses = phase_step_statuses(events)?;
+    if let Some(pending) = pending_demon_succession(events)? {
+        let step = demon_succession_step(&pending);
+        return Ok(PhaseReplayState {
+            phase: pending.phase,
+            current_step: Some(step.clone()),
+            phase_overview: vec![PhaseOverviewItem {
+                id: step.id,
+                phase: step.phase,
+                step_type: step.step_type,
+                character: step.character,
+                player_id: step.player_id,
+                required_input: step.required_input,
+                can_skip: false,
+                information_prompt: None,
+                status: PhaseStepStatus::Current,
+            }],
+        });
+    }
     if let Some((discussion_step_id, player_id)) = pending_slayer_death(events) {
         let step = slayer_death_step(&discussion_step_id, &player_id);
         return Ok(PhaseReplayState {
@@ -244,6 +523,15 @@ pub(crate) fn phase_step_statuses(
 ) -> Result<HashMap<String, PhaseStepStatus>, CoreError> {
     let mut statuses = HashMap::new();
     for (event_index, event) in events.iter().enumerate() {
+        if let GameEventKind::DemonSuccessionConfirmed { payload } = &event.kind {
+            validate_demon_succession_event(payload, &events[..event_index])?;
+            let pending = pending_demon_succession(&events[..event_index])?
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            if event.phase != pending.phase {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            continue;
+        }
         if let GameEventKind::SlayerAbilityUsed { payload } = &event.kind {
             validate_slayer_event(payload, event.phase, &events[..event_index], &statuses)?;
             continue;
@@ -331,6 +619,9 @@ pub(crate) fn phase_step_statuses(
             GameEventKind::NominationVoteConfirmed { payload } => {
                 (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
             }
+            GameEventKind::NominationStarted { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
             GameEventKind::ExecutionConfirmed { payload }
             | GameEventKind::NoExecutionConfirmed { payload } => {
                 (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
@@ -381,6 +672,39 @@ pub(crate) fn phase_step_statuses(
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         match &event.kind {
+            GameEventKind::NominationStarted { payload } => {
+                let prefix = step_prefix(&payload.step_id)?;
+                validate_nomination_start_roles(
+                    &players_at_event,
+                    &events[..event_index],
+                    &prefix,
+                    &payload.nominator_id,
+                    &payload.nominee_id,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                let already_spent = events[..event_index].iter().any(|event| {
+                    matches!(
+                        &event.kind,
+                        GameEventKind::NominationStarted { payload }
+                            if !matches!(payload.virgin_resolution, VirginResolution::NotApplicable)
+                    )
+                });
+                let rule_state = replay_rule_state(&events[..event_index], &players_at_event);
+                let expected = crate::characters::virgin_resolution(
+                    &players_at_event,
+                    &payload.nominator_id,
+                    &payload.nominee_id,
+                    &payload.registration_judgments,
+                    already_spent,
+                    rule_state.active_poison.as_ref(),
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                if step.required_input.kind != RequiredInputKind::Nomination
+                    || payload.virgin_resolution != expected
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
             GameEventKind::RedHerringAssigned { payload } => {
                 let expected_judgments = if players_at_event
                     .iter()
@@ -454,54 +778,40 @@ pub(crate) fn phase_step_statuses(
                         }
                     }
                     Some("imp") => {
-                        let alive = players_at_event.iter().any(|p| p.id == *target && p.alive);
-                        let current_night_start = events[..event_index].iter().rposition(|event| matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
-                        let protection = events[..event_index].iter().enumerate().rev().find_map(
-                            |(index, e)| match &e.kind {
-                                GameEventKind::NightActionResolved { payload } => {
-                                    match &payload.resolution {
-                                        NightActionResolution::MonkProtection {
-                                            target_player_id,
-                                            applied: true,
-                                            ..
-                                        } if target_player_id == target
-                                            && current_night_start
-                                                .is_some_and(|boundary| index > boundary) =>
-                                        {
-                                            Some(e.id.clone())
-                                        }
-                                        _ => None,
-                                    }
-                                }
-                                _ => None,
-                            },
-                        );
-                        let outcome = if actual != Some("imp") {
-                            ImpAttackOutcome::NoDeath {
-                                reason: ImpNoDeathReason::NotActualCharacter,
-                            }
-                        } else if impaired {
-                            ImpAttackOutcome::NoDeath {
-                                reason: ImpNoDeathReason::ActorImpaired,
-                            }
-                        } else if !alive {
-                            ImpAttackOutcome::NoDeath {
-                                reason: ImpNoDeathReason::AlreadyDead,
-                            }
-                        } else if let Some(source_event_id) = protection {
-                            ImpAttackOutcome::Prevented {
-                                reason: ImpPreventionReason::MonkProtection,
-                                source_event_id,
-                            }
-                        } else {
-                            ImpAttackOutcome::Death {
-                                player_id: target.clone(),
-                            }
+                        let NightActionResolution::ImpAttack { mayor_context, .. } =
+                            &payload.resolution
+                        else {
+                            unreachable!()
                         };
-                        NightActionResolution::ImpAttack {
-                            target_player_id: target.clone(),
-                            outcome,
-                        }
+                        let mayor_decision = match mayor_context {
+                            MayorAttackContext::NotApplicable => None,
+                            MayorAttackContext::MayorDies { .. } => {
+                                Some(MayorDecisionInput::MayorDies)
+                            }
+                            MayorAttackContext::Bounced {
+                                bounce_target_player_id,
+                                ..
+                            } => Some(MayorDecisionInput::Bounce {
+                                target_player_id: bounce_target_player_id.clone(),
+                            }),
+                        };
+                        let active_poison = crate::night::active_night_poison(
+                            &events[..event_index],
+                            &players_at_event,
+                        );
+                        let active_protection = crate::night::active_night_protection(
+                            &events[..event_index],
+                            &players_at_event,
+                        );
+                        crate::characters::resolve_imp_attack(
+                            &players_at_event,
+                            &payload.actor_player_id,
+                            target,
+                            mayor_decision.as_ref(),
+                            active_poison.as_ref(),
+                            active_protection.as_ref(),
+                        )
+                        .map_err(|_| ErrorKind::ReplayFailed.into_error())?
                     }
                     _ => return Err(ErrorKind::ReplayFailed.into_error()),
                 };
@@ -612,16 +922,24 @@ pub(crate) fn phase_step_statuses(
             }
         }
         if let GameEventKind::NominationVoteConfirmed { payload } = &event.kind {
-            validate_nomination_event_input(payload, &players_at_event)?;
-            let prefix = step_prefix(&payload.step_id)?;
-            let prior = replay_day_state(&events[..event_index], &players_at_event, &prefix)?;
-            validate_nomination_roles(
-                &players_at_event,
-                &prior.nominations,
-                &payload.nominator_id,
-                &payload.nominee_id,
-            )
-            .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            validate_nomination_event_input(payload, &players_at_event, &events[..event_index])?;
+            if payload.nomination_event_id.is_none() {
+                let prefix = step_prefix(&payload.step_id)?;
+                let prior = replay_day_state(&events[..event_index], &players_at_event, &prefix)?;
+                validate_nomination_roles(
+                    &players_at_event,
+                    &prior.nominations,
+                    payload
+                        .nominator_id
+                        .as_deref()
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+                    payload
+                        .nominee_id
+                        .as_deref()
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
         }
         statuses.insert(step_id.to_string(), status);
         if let GameEventKind::NoExecutionConfirmed { payload } = &event.kind {
@@ -674,6 +992,8 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
             player_id: Some(player_id.into()),
             survival_allowed: Some(false),
             execution_survival_allowed: false,
+            mayor_decision: None,
+            demon_succession: None,
             optional: false,
         },
     }
@@ -874,6 +1194,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         active_protection,
         unannounced_night_death_player_ids,
         slayer_ability: None,
+        virgin_ability: None,
     }
 }
 
@@ -894,7 +1215,10 @@ pub(crate) fn phase_sequences_with_statuses(
             }
             _ => None,
         });
-        sequences.push((Phase::Day, day_steps(cycle, statuses, executed_player_id)));
+        sequences.push((
+            Phase::Day,
+            day_steps(cycle, statuses, executed_player_id, events, players),
+        ));
         sequences.push((Phase::Night, night_steps(players, events, cycle)));
     }
     sequences

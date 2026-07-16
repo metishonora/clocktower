@@ -1,5 +1,8 @@
 mod contracts_scenarios;
 mod day_scenarios;
+mod issue11_imp_attack_scenarios;
+mod issue11_succession_saint_scenarios;
+mod issue11_virgin_scenarios;
 mod night_action_contracts;
 mod ongoing_night_acceptance_scenarios;
 mod ongoing_night_actions_scenarios;

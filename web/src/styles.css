@@ -388,6 +388,25 @@ select {
 .slayerAbilityIcon:disabled { border-color: #c9c5bc; background: #98958d; box-shadow: none; opacity: 0.72; }
 .slayerAbilityIcon.spent { filter: grayscale(1); }
 
+.virginAbilityIcon {
+  position: absolute;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  transform: translate(-58px, -43px);
+  display: grid;
+  place-items: center;
+  border: 2px solid #d7b25b;
+  border-radius: 50%;
+  background: var(--townsfolk);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.virginAbilityIcon.spent { filter: grayscale(1); opacity: 0.68; }
+
 .slayerDialogBackdrop {
   position: fixed;
   z-index: 100;
@@ -1420,6 +1439,20 @@ select {
   display: grid;
   gap: 10px;
 }
+
+.ruleDecisionInput {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.ruleDecisionInput legend { color: var(--muted); font-size: 0.76rem; font-weight: 900; }
+.ruleDecisionInput button { text-align: left; }
+.ruleDecisionInput button.selected { border-color: var(--primary); background: var(--panel-soft); }
+.nominationPair { margin: 0; }
 
 .nominationSelectors {
   display: grid;

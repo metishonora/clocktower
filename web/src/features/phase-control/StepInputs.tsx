@@ -2,9 +2,11 @@ import { CharacterSelect } from "../../components/CharacterSelect";
 import type {
   DayState,
   NumberChoice,
+  MayorDecisionInput,
   PhaseStep,
   PhaseStepConfirmation,
   Player,
+  RegistrationJudgment,
   TargetCheck,
 } from "../../core/types";
 import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
@@ -110,6 +112,8 @@ export function StepInputFields({
   zeroOutsidersAvailable,
   selectedNumberChoice,
   selectedTargetChoice,
+  mayorDecision,
+  registrationJudgments = [],
   busy,
   onSelectedPlayerIdsChange,
   onCharacterChange,
@@ -117,6 +121,8 @@ export function StepInputFields({
   onZeroOutsidersChange,
   onNumberChoiceChange,
   onTargetChoiceChange,
+  onMayorDecisionChange,
+  onRegistrationJudgmentsChange,
   randomSuggestion,
 }: {
   step: PhaseStep;
@@ -131,6 +137,8 @@ export function StepInputFields({
   zeroOutsidersAvailable: boolean;
   selectedNumberChoice?: NumberChoice;
   selectedTargetChoice?: TargetCheck["choices"][number];
+  mayorDecision?: MayorDecisionInput;
+  registrationJudgments?: RegistrationJudgment[];
   busy: boolean;
   onSelectedPlayerIdsChange: (playerIds: string[]) => void;
   onCharacterChange: (characterId: string) => void;
@@ -138,18 +146,29 @@ export function StepInputFields({
   onZeroOutsidersChange: (checked: boolean) => void;
   onNumberChoiceChange: (choice: NumberChoice) => void;
   onTargetChoiceChange: (choice: TargetCheck["choices"][number]) => void;
+  onMayorDecisionChange: (decision: MayorDecisionInput | undefined) => void;
+  onRegistrationJudgmentsChange: (judgments: RegistrationJudgment[]) => void;
   randomSuggestion?: RandomSuggestionAction;
 }) {
   return (
     <>
-      {step.requiredInput.kind === "nominationVote" ? (
+      {step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote" ? (
         <NominationVoteInput
+          mode={step.requiredInput.kind === "nomination"
+            ? "nomination"
+            : dayState?.activeNomination || step.id.endsWith(":vote")
+              ? "vote"
+              : "legacyCombined"}
           players={players}
           eligibleNominatorIds={dayState?.eligibleNominatorIds ?? []}
           eligibleNomineeIds={dayState?.eligibleNomineeIds ?? []}
           draft={nominationDraft}
-          onChange={onNominationDraftChange}
+          onChange={(draft) => {
+            if (draft.nominatorId !== nominationDraft.nominatorId) onRegistrationJudgmentsChange([]);
+            onNominationDraftChange(draft);
+          }}
           busy={busy}
+          activeNomination={dayState?.activeNomination}
         />
       ) : (
         <PlayerStepInput
@@ -162,6 +181,33 @@ export function StepInputFields({
           randomSuggestion={randomSuggestion}
         />
       )}
+      {step.requiredInput.kind === "nomination" ? (
+        <RegistrationDecision
+          step={step}
+          nominatorId={nominationDraft.nominatorId}
+          busy={busy}
+          value={registrationJudgments}
+          onChange={onRegistrationJudgmentsChange}
+        />
+      ) : null}
+      {step.requiredInput.kind === "demonSuccession" ? (
+        <DemonSuccessionInput
+          step={step}
+          players={players}
+          selectedPlayerIds={selectedPlayerIds}
+          busy={busy}
+          onChange={onSelectedPlayerIdsChange}
+        />
+      ) : null}
+      {step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId) ? (
+        <MayorDecisionChoices
+          prompt={step.requiredInput.mayorDecision}
+          players={players}
+          value={mayorDecision}
+          busy={busy}
+          onChange={onMayorDecisionChange}
+        />
+      ) : null}
       <StepSpecificInput
         step={step}
         selectedCharacterId={selectedCharacterId}
@@ -191,6 +237,116 @@ export function StepInputFields({
         onChange={onTargetChoiceChange}
       />
     </>
+  );
+}
+
+function RegistrationDecision({
+  step,
+  nominatorId,
+  busy,
+  value,
+  onChange,
+}: {
+  step: PhaseStep;
+  nominatorId: string;
+  busy: boolean;
+  value: RegistrationJudgment[];
+  onChange: (judgments: RegistrationJudgment[]) => void;
+}) {
+  const option = step.requiredInput.playerRegistrationOptions?.find(
+    (candidate) => candidate.playerId === nominatorId && candidate.registeredAs === "townsfolk",
+  );
+  if (!option) return null;
+  const registeredAsTownsfolk = value.some(
+    (judgment) => judgment.playerId === option.playerId && judgment.registeredAs === "townsfolk",
+  );
+  return (
+    <fieldset className="ruleDecisionInput">
+      <legend>스파이 등록</legend>
+      <button type="button" className={!registeredAsTownsfolk ? "selected" : ""} aria-pressed={!registeredAsTownsfolk} disabled={busy} onClick={() => onChange([])}>악한 팀 그대로</button>
+      <button type="button" className={registeredAsTownsfolk ? "selected" : ""} aria-pressed={registeredAsTownsfolk} disabled={busy} onClick={() => onChange([option])}>마을 주민으로 등록</button>
+    </fieldset>
+  );
+}
+
+function MayorDecisionChoices({
+  prompt,
+  players,
+  value,
+  busy,
+  onChange,
+}: {
+  prompt: NonNullable<PhaseStep["requiredInput"]["mayorDecision"]>;
+  players: Player[];
+  value?: MayorDecisionInput;
+  busy: boolean;
+  onChange: (decision: MayorDecisionInput | undefined) => void;
+}) {
+  const bounceTargets = prompt.bounceTargetPlayerIds.flatMap((id) => {
+    const player = players.find((candidate) => candidate.id === id);
+    return player ? [player] : [];
+  });
+  return (
+    <fieldset className="ruleDecisionInput">
+      <legend>시장 공격 결과</legend>
+      <button
+        type="button"
+        className={value?.kind === "mayorDies" ? "selected" : ""}
+        aria-pressed={value?.kind === "mayorDies"}
+        disabled={busy}
+        onClick={() => onChange({ kind: "mayorDies" })}
+      >시장이 사망</button>
+      {bounceTargets.map((player) => {
+        const selected = value?.kind === "bounce" && value.targetPlayerId === player.id;
+        return (
+          <button
+            type="button"
+            className={selected ? "selected" : ""}
+            aria-pressed={selected}
+            disabled={busy}
+            onClick={() => onChange({ kind: "bounce", targetPlayerId: player.id })}
+            key={player.id}
+          >{seatPlayerLabel(player)}에게 튕김{player.alive ? "" : " · 사망"}</button>
+        );
+      })}
+    </fieldset>
+  );
+}
+
+function DemonSuccessionInput({
+  step,
+  players,
+  selectedPlayerIds,
+  busy,
+  onChange,
+}: {
+  step: PhaseStep;
+  players: Player[];
+  selectedPlayerIds: string[];
+  busy: boolean;
+  onChange: (playerIds: string[]) => void;
+}) {
+  const prompt = step.requiredInput.demonSuccession;
+  if (!prompt) return null;
+  const allowedIds = prompt.kind === "fixed" ? [prompt.successorPlayerId] : prompt.allowedPlayerIds;
+  return (
+    <div className="ruleDecisionInput" aria-label="새 임프 선택">
+      {allowedIds.flatMap((id) => {
+        const player = players.find((candidate) => candidate.id === id);
+        if (!player) return [];
+        const selected = prompt.kind === "fixed" || selectedPlayerIds.includes(id);
+        return [(
+          <button
+            type="button"
+            className={selected ? "selected" : ""}
+            aria-pressed={selected}
+            disabled={busy || prompt.kind === "fixed"}
+            onClick={() => onChange([id])}
+            key={id}
+          >{seatPlayerLabel(player)} → 임프</button>
+        )];
+      })}
+    </div>
   );
 }
 

@@ -7,8 +7,102 @@ import {
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
   setupInfoZeroOutsidersAvailable,
+  stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("issue 11 phase inputs keep nomination, vote, Mayor, and succession contracts separate", () => {
+  const nominationDraft = { nominatorId: "spy", nomineeId: "virgin", voterIds: ["chef"] };
+  const nominationStep: PhaseStep = {
+    id: "day1:nomination:1",
+    phase: "day",
+    stepType: "nomination",
+    requiredInput: { kind: "nomination", target: "nomination", optional: false },
+    canSkip: false,
+  };
+  const voteStep: PhaseStep = {
+    ...nominationStep,
+    id: "day1:nomination:1:vote",
+    requiredInput: { kind: "nominationVote", target: "nomination", optional: false },
+  };
+  const mayorStep: PhaseStep = {
+    id: "night1:imp",
+    phase: "night",
+    stepType: "character",
+    character: "imp",
+    playerId: "imp",
+    requiredInput: {
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+      mayorDecision: { mayorPlayerId: "mayor", bounceTargetPlayerIds: ["chef", "dead"] },
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const successionStep: PhaseStep = {
+    id: "day1:demonSuccession:event-1",
+    phase: "day",
+    stepType: "demonSuccession",
+    requiredInput: {
+      kind: "demonSuccession",
+      demonSuccession: {
+        kind: "selectable",
+        triggerEventId: "event-1",
+        allowedPlayerIds: ["poisoner", "baron"],
+      },
+      optional: false,
+    },
+    canSkip: false,
+  };
+
+  deepEqual(stepInputPayload(nominationStep, [], "", [], nominationDraft, false), {
+    nominatorId: "spy",
+    nomineeId: "virgin",
+  });
+  deepEqual(stepInputPayload(voteStep, [], "", [], nominationDraft, false), {
+    voterIds: ["chef"],
+  });
+  deepEqual(
+    stepInputPayload(mayorStep, ["mayor"], "", [], nominationDraft, false, {
+      kind: "bounce",
+      targetPlayerId: "dead",
+    }),
+    {
+      playerIds: ["mayor"],
+      mayorDecision: { kind: "bounce", targetPlayerId: "dead" },
+    },
+  );
+  deepEqual(
+    stepInputPayload(successionStep, ["baron"], "", [], nominationDraft, false),
+    { successorPlayerId: "baron" },
+  );
+});
+
+test("Mayor decision is required only when the Imp actually selects the Mayor", () => {
+  const step: PhaseStep = {
+    id: "night1:imp",
+    phase: "night",
+    stepType: "character",
+    character: "imp",
+    playerId: "imp",
+    requiredInput: {
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+      mayorDecision: { mayorPlayerId: "mayor", bounceTargetPlayerIds: ["chef"] },
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
+  equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["chef"]), true);
+  equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["mayor"]), false);
+  equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, { kind: "mayorDies" }, ["mayor"]), true);
+});
 
 test("character input options honor an explicit allowlist in catalog order", () => {
   deepEqual(

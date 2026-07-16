@@ -142,6 +142,7 @@ fn imp_attack_atomically_kills_a_living_ravenkeeper_and_inserts_its_follow_up() 
             "resolution": {
                 "kind": "impAttack",
                 "targetPlayerId": "player-1",
+                "mayorContext": { "kind": "notApplicable" },
                 "outcome": { "kind": "death", "playerId": "player-1" }
             }
         })

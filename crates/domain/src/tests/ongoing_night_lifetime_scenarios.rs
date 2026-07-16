@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 fn monk_protection_does_not_prevent_an_attack_on_the_following_night() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
-            { "id": "player-1", "seat": 1, "name": "Target", "actualCharacter": "soldier", "shownCharacter": "soldier" },
+            { "id": "player-1", "seat": 1, "name": "Target", "actualCharacter": "slayer", "shownCharacter": "slayer" },
             { "id": "player-2", "seat": 2, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
             { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
             { "id": "player-4", "seat": 4, "name": "Monk", "actualCharacter": "monk", "shownCharacter": "monk" },

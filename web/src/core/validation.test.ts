@@ -86,6 +86,41 @@ test("rejects non-canonical nomination payload fields", () => {
   throws(() => parseGameEvent(event), /이벤트 형식/);
 });
 
+test("accepts issue 11 nomination, attack, and succession audit contracts", () => {
+  const common = { phase: "day", summary: "확정", createdAt: "2026-07-16T00:00:00.000Z" };
+  const events = [
+    {
+      ...common,
+      id: "nomination-started-1",
+      type: "nominationStarted",
+      payload: {
+        stepId: "day:nomination:1",
+        nominatorId: "spy",
+        nomineeId: "virgin",
+        registrationJudgments: [{ playerId: "spy", registeredAs: "townsfolk" }],
+        virginResolution: { kind: "spentAndNominatorExecuted", virginPlayerId: "virgin", impairmentContext: { kind: "healthy" } },
+      },
+    },
+    {
+      ...common,
+      id: "vote-1",
+      type: "nominationVoteConfirmed",
+      payload: { stepId: "day:nomination:1:vote", nominationEventId: "nomination-started-1", voterIds: [], ghostVoteSpentPlayerIds: [] },
+    },
+    {
+      ...common,
+      id: "succession-1",
+      type: "demonSuccessionConfirmed",
+      payload: {
+        triggerImpDeathEventId: "death-1", deathCause: "impSelfKill", previousImpPlayerId: "imp",
+        successorPlayerId: "poisoner", successorPreviousActualCharacter: "poisoner", newCharacter: "imp", source: "impSelfKill",
+      },
+    },
+  ];
+
+  for (const event of events) equal(parseGameEvent(event).type, event.type);
+});
+
 test("validates the strict Slayer audit event used by import and export", () => {
   const event = {
     id: "event-slayer",

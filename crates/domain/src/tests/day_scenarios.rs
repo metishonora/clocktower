@@ -43,7 +43,7 @@ fn day_advances_through_typed_whisper_and_discussion_steps_before_nominations() 
     );
     assert_eq!(
         after_discussion["value"]["currentStep"]["requiredInput"]["kind"],
-        "nominationVote"
+        "nomination"
     );
 }
 
@@ -62,20 +62,34 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
         phase_event("phaseStepConfirmed", "day:whisper"),
         phase_event("phaseStepConfirmed", "day:discussion")
     ]));
-    let command = json!({
+    let start_command = json!({
         "type": "confirmStep",
         "payload": {
             "stepId": "day:nomination:1",
             "input": {
                 "nominatorId": "player-1",
-                "nomineeId": "player-5",
-                "voterIds": ["player-1", "player-2", "player-3"]
+                "nomineeId": "player-5"
             }
         }
     });
-
-    let proposal: Value =
-        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    let started: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &start_command.to_string())).unwrap();
+    assert_eq!(started["ok"], true, "start failed as {started}");
+    let mut started_events = game["game"]["events"].as_array().unwrap().clone();
+    started_events.push(started["value"]["event"].clone());
+    let started_game = game_with_events(Value::Array(started_events));
+    let vote_command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:nomination:1:vote",
+            "input": { "voterIds": ["player-1", "player-2", "player-3"] }
+        }
+    });
+    let proposal: Value = serde_json::from_str(&propose_json(
+        &started_game.to_string(),
+        &vote_command.to_string(),
+    ))
+    .unwrap();
 
     assert_eq!(proposal["ok"], true);
     assert_eq!(
@@ -85,9 +99,8 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     assert_eq!(
         proposal["value"]["event"]["payload"],
         json!({
-            "stepId": "day:nomination:1",
-            "nominatorId": "player-1",
-            "nomineeId": "player-5",
+            "stepId": "day:nomination:1:vote",
+            "nominationEventId": started["value"]["event"]["id"],
             "voterIds": ["player-1", "player-2", "player-3"],
             "ghostVoteSpentPlayerIds": ["player-2"]
         })
@@ -109,7 +122,7 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
         })
     );
 
-    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    let mut events = started_game["game"]["events"].as_array().unwrap().clone();
     events.push(proposal["value"]["event"].clone());
     let replayed: Value = serde_json::from_str(&replay_json(
         &game_with_events(Value::Array(events)).to_string(),
@@ -135,7 +148,7 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     );
     assert_eq!(replayed["value"]["currentStep"]["id"], "day:nomination:2");
 
-    let without_latest_nomination = game_with_events(game["game"]["events"].clone());
+    let without_latest_nomination = game_with_events(started_game["game"]["events"].clone());
     let undone: Value =
         serde_json::from_str(&replay_json(&without_latest_nomination.to_string())).unwrap();
     assert_eq!(undone["ok"], true);
@@ -487,23 +500,39 @@ fn nomination_preview_and_replay_share_tied_and_new_high_execution_standing() {
         let voter_ids = (1..=vote_count)
             .map(|seat| format!("player-{seat}"))
             .collect::<Vec<_>>();
-        let command = json!({
+        let start_command = json!({
             "type": "confirmStep",
             "payload": {
                 "stepId": format!("day:nomination:{nomination_number}"),
                 "input": {
                     "nominatorId": format!("player-{nomination_number}"),
-                    "nomineeId": nominee_id,
-                    "voterIds": voter_ids
+                    "nomineeId": nominee_id
                 }
             }
         });
-        let proposal: Value =
-            serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+        let started: Value =
+            serde_json::from_str(&propose_json(&game.to_string(), &start_command.to_string()))
+                .unwrap();
+        assert_eq!(started["ok"], true, "start failed as {started}");
+        let mut started_events = game["game"]["events"].as_array().unwrap().clone();
+        started_events.push(started["value"]["event"].clone());
+        let started_game = game_with_events(Value::Array(started_events));
+        let vote_command = json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": format!("day:nomination:{nomination_number}:vote"),
+                "input": { "voterIds": voter_ids }
+            }
+        });
+        let proposal: Value = serde_json::from_str(&propose_json(
+            &started_game.to_string(),
+            &vote_command.to_string(),
+        ))
+        .unwrap();
         assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
         assert_eq!(proposal["value"]["preview"]["executionStanding"], expected);
 
-        let mut confirmed_events = game["game"]["events"].as_array().unwrap().clone();
+        let mut confirmed_events = started_game["game"]["events"].as_array().unwrap().clone();
         confirmed_events.push(proposal["value"]["event"].clone());
         let replayed: Value = serde_json::from_str(&replay_json(
             &game_with_events(Value::Array(confirmed_events)).to_string(),
