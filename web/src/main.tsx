@@ -30,6 +30,13 @@ const DevFirstNightSuggestionPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevDayRuntimePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./dayRuntimePrototype");
+      return { default: module.DayRuntimePrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -37,6 +44,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevDayRuntimePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "day-runtime"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevDayRuntimePrototype />
+      </React.Suspense>
+    );
+  }
+
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "ongoing-night") {
     return <OngoingNightPrototype />;
   }
