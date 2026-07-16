@@ -14,8 +14,9 @@ Representative cases:
 - Chef: information-only action with an exact delivered-number prompt and disabled
   confirmation until a number is selected.
 - Fortune Teller: exact two-player prompt.
-- Execution result: affected player is labeled as the confirmation subject, not an
-  actor.
+- Execution result: show the affected Player and Character with one confirmation
+  action. Do not ask the Storyteller to choose a rule-derived death outcome or add
+  a generic instruction when no special effect applies.
 
 Proposed production rule:
 

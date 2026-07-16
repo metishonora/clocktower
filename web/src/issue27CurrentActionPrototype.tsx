@@ -9,7 +9,7 @@ type Scenario = {
   tab: string;
   phase: string;
   action: string;
-  prompt: string;
+  prompt?: string;
   actorId?: string;
   characterId?: string;
   subjectId?: string;
@@ -64,8 +64,7 @@ const scenarios: Scenario[] = [
     key: "execution",
     tab: "처형 · 결과 대상",
     phase: "낮 · 처형 결과",
-    action: "처형 결과 확인",
-    prompt: "처형된 플레이어가 사망했는지 확인하세요.",
+    action: "처형 결과",
     subjectId: "p5",
   },
 ];
@@ -180,20 +179,21 @@ export function Issue27CurrentActionPrototype() {
           ) : null}
 
           {subject ? (
-            <article className="i27SubjectCard">
-              <small>확인 대상</small>
+            <article className="i27SubjectCard" aria-label="처형 대상">
               <strong>{subject.seat}번 {subject.name}</strong>
               <span>{characterName(subject.characterId)}</span>
             </article>
           ) : null}
 
-          <section className="i27Instruction" aria-label="필요한 입력">
-            <small>지금 할 일</small>
-            <p>{scenario.prompt}</p>
-            {scenario.targetCount !== undefined ? (
-              <strong className={ready ? "ready" : ""}>{selectedTargets.length}/{scenario.targetCount}명 선택</strong>
-            ) : null}
-          </section>
+          {scenario.prompt ? (
+            <section className="i27Instruction" aria-label="필요한 입력">
+              <small>지금 할 일</small>
+              <p>{scenario.prompt}</p>
+              {scenario.targetCount !== undefined ? (
+                <strong className={ready ? "ready" : ""}>{selectedTargets.length}/{scenario.targetCount}명 선택</strong>
+              ) : null}
+            </section>
+          ) : null}
 
           {scenario.numberChoices ? (
             <section className="i27NumberInput" aria-label="전달 정보">
@@ -224,10 +224,7 @@ export function Issue27CurrentActionPrototype() {
           ) : null}
 
           {scenario.key === "execution" ? (
-            <div className="i27OutcomeActions">
-              <button type="button">생존 확정</button>
-              <button type="button" className="danger">사망 확정</button>
-            </div>
+            <button type="button" className="i27Confirm">확정</button>
           ) : (
             <button type="button" className="i27Confirm" disabled={!ready}>확정</button>
           )}

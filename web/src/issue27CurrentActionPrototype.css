@@ -124,14 +124,13 @@
 
 .i27ActorCard { display: grid; grid-template-columns: 58px 1fr; gap: 12px; border-radius: 13px; background: #edf5f2; padding: 13px; }
 .i27Token { display: grid; width: 54px; height: 54px; place-items: center; border: 2px solid #1f6f5b; border-radius: 50%; color: #1f6f5b; font-size: 1.3rem; font-weight: 1000; }
-.i27ActorCard small, .i27SubjectCard small, .i27Instruction small { color: #66736e; font-size: .67rem; font-weight: 900; letter-spacing: .04em; }
+.i27ActorCard small, .i27Instruction small { color: #66736e; font-size: .67rem; font-weight: 900; letter-spacing: .04em; }
 .i27ActorCard h3 { margin: 1px 0 0; font-size: 1.05rem; }
 .i27ActorCard strong { display: block; margin-top: 1px; font-size: .8rem; }
 .i27ActorCard p { margin: 7px 0 0; color: #4e5c57; font-size: .77rem; font-weight: 700; line-height: 1.45; }
 
-.i27SubjectCard { display: grid; grid-template-columns: 1fr auto; align-items: end; border-radius: 13px; background: #f8ece7; padding: 14px; }
-.i27SubjectCard small { grid-column: 1 / -1; }
-.i27SubjectCard strong { margin-top: 4px; font-size: 1.05rem; }
+.i27SubjectCard { display: grid; grid-template-columns: 1fr auto; align-items: center; border-radius: 13px; background: #f8ece7; padding: 14px; }
+.i27SubjectCard strong { font-size: 1.05rem; }
 .i27SubjectCard span { color: #805744; font-size: .76rem; font-weight: 900; }
 
 .i27Instruction { display: grid; gap: 5px; border-left: 4px solid #bf841f; border-radius: 7px; background: #fff6dc; padding: 12px; }
@@ -147,11 +146,8 @@
 .i27NumberInput button { width: 34px; height: 34px; border: 1px solid #bcb4a7; border-radius: 8px; background: white; font-weight: 900; }
 .i27NumberInput button.selected { border-color: #1f6f5b; background: #1f6f5b; color: white; }
 
-.i27Confirm, .i27OutcomeActions button { min-height: 46px; border: 0; border-radius: 10px; background: #1f6f5b; color: white; font-weight: 950; }
+.i27Confirm { min-height: 46px; border: 0; border-radius: 10px; background: #1f6f5b; color: white; font-weight: 950; }
 .i27Confirm:disabled { background: #c8c5be; color: #74736f; }
-.i27OutcomeActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.i27OutcomeActions button:first-child { border: 1px solid #9db3ac; background: white; color: #1f6f5b; }
-.i27OutcomeActions button.danger { background: #9f482f; }
 
 @media (max-width: 760px) {
   .i27Topbar { padding: 11px 14px; }

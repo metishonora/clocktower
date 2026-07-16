@@ -26,7 +26,12 @@ test("shows representative verbose current-action instructions and gates require
   expect(chefConfirm.disabled).toBe(false);
 
   await user.click(within(prototype).getByRole("button", { name: "처형 · 결과 대상" }));
-  expect(within(prototype).getByText("확인 대상")).toBeTruthy();
-  expect(within(prototype).getByText("처형된 플레이어가 사망했는지 확인하세요.")).toBeTruthy();
+  const subject = within(prototype).getByLabelText("처형 대상");
+  expect(within(subject).getByText("5번 하린")).toBeTruthy();
+  expect(within(subject).getByText("은둔자")).toBeTruthy();
   expect(within(prototype).queryByText("행동자")).toBeNull();
+  expect(within(prototype).queryByText("처형된 플레이어가 사망했는지 확인하세요.")).toBeNull();
+  expect(within(prototype).queryByRole("button", { name: "생존 확정" })).toBeNull();
+  expect(within(prototype).queryByRole("button", { name: "사망 확정" })).toBeNull();
+  expect(within(prototype).getByRole("button", { name: "확정" })).toBeTruthy();
 });
