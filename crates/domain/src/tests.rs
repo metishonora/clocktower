@@ -6,6 +6,7 @@ mod ongoing_night_actions_scenarios;
 mod ongoing_night_lifetime_scenarios;
 mod phase_scenarios;
 mod setup_scenarios;
+mod slayer_ability_scenarios;
 mod spy_reveal_regressions;
 mod suggestion_scenarios;
 mod support;

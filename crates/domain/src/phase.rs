@@ -62,6 +62,8 @@ pub(crate) fn phase_transition_step(
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
+            player_id: None,
+            survival_allowed: None,
             execution_survival_allowed: false,
             optional: false,
         },
@@ -91,6 +93,8 @@ pub(crate) fn required_none() -> RequiredInput {
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
+        player_id: None,
+        survival_allowed: None,
         execution_survival_allowed: false,
         optional: false,
     }
@@ -114,6 +118,8 @@ pub(crate) fn required_characters(
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion,
+        player_id: None,
+        survival_allowed: None,
         execution_survival_allowed: false,
         optional: min == 0,
     }
@@ -140,6 +146,7 @@ pub(crate) fn validate_required_input(
         RequiredInputKind::NominationVote
             | RequiredInputKind::ExecutionDecision
             | RequiredInputKind::ExecutionDeathDecision
+            | RequiredInputKind::SlayerDeathDecision
     ) {
         return Ok(());
     }

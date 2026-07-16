@@ -364,7 +364,7 @@ function CurrentStepPane({
       <div className="sectionHeader compact">
         <div>
           <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
-          <h2>{currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
+          <h2>{currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
         </div>
         {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>
@@ -425,6 +425,9 @@ function CurrentStepPane({
             {latestProposal?.event.type === "nightActionResolved" ? (
               <ImpActionResult proposal={latestProposal} players={players} />
             ) : null}
+            {latestProposal?.event.type === "slayerAbilityUsed" && latestProposal.event.payload.outcome.kind === "noEffect" ? (
+              <p className="nightActionResult" aria-label="학살자 능력 결과">아무 일도 일어나지 않음</p>
+            ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
             {currentStep.requiredInput.kind === "executionDecision" ? (
               <ExecutionDecisionActions
@@ -433,7 +436,7 @@ function CurrentStepPane({
                 busy={busy}
                 onConfirm={onConfirm}
               />
-            ) : currentStep.requiredInput.kind === "executionDeathDecision" ? (
+            ) : currentStep.requiredInput.kind === "executionDeathDecision" || currentStep.requiredInput.kind === "slayerDeathDecision" ? (
               <ExecutionDeathActions
                 step={currentStep}
                 player={currentPlayer}

@@ -27,6 +27,7 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "nomination",
   "execution",
   "executionDeath",
+  "slayerDeath",
   "redHerringAssignment",
 ]);
 const inputKinds = new Set([
@@ -38,6 +39,7 @@ const inputKinds = new Set([
   "nominationVote",
   "executionDecision",
   "executionDeathDecision",
+  "slayerDeathDecision",
   "day",
   "night",
 ]);
@@ -176,6 +178,9 @@ export function parseGameEvent(value: unknown): GameEvent {
         !Array.isArray(payload.playerIds) ||
         !payload.playerIds.every(isString)
       ) throw invalidEvent();
+      break;
+    case "slayerAbilityUsed":
+      if (!isSlayerAbilityPayload(payload)) throw invalidEvent();
       break;
     default:
       throw new Error("지원하지 않는 이벤트입니다.");
@@ -534,6 +539,8 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     (value.supportsRandomSuggestion === undefined || typeof value.supportsRandomSuggestion === "boolean") &&
     (value.executionSurvivalAllowed === undefined || typeof value.executionSurvivalAllowed === "boolean") &&
+    (value.playerId === undefined || typeof value.playerId === "string") &&
+    (value.survivalAllowed === undefined || typeof value.survivalAllowed === "boolean") &&
     typeof value.optional === "boolean"
   );
 }
@@ -561,12 +568,24 @@ function isTargetCheck(value: unknown): boolean {
 function isRuleState(value: unknown): boolean {
   return (
     isRecord(value) &&
-    hasOnlyKeys(value, ["redHerringPlayerId", "activePoison", "activeProtection", "unannouncedNightDeathPlayerIds"]) &&
+    hasOnlyKeys(value, [
+      "redHerringPlayerId",
+      "activePoison",
+      "activeProtection",
+      "unannouncedNightDeathPlayerIds",
+      "slayerAbility",
+    ]) &&
     isOptionalString(value.redHerringPlayerId) &&
     (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
     (value.activeProtection === undefined || isActiveRuleEffect(value.activeProtection)) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) &&
-    value.unannouncedNightDeathPlayerIds.every(isString)
+    value.unannouncedNightDeathPlayerIds.every(isString) &&
+    (value.slayerAbility === undefined ||
+      (isRecord(value.slayerAbility) &&
+        hasExactKeys(value.slayerAbility, ["actorPlayerId", "spent", "canUseNow"]) &&
+        typeof value.slayerAbility.actorPlayerId === "string" &&
+        typeof value.slayerAbility.spent === "boolean" &&
+        typeof value.slayerAbility.canUseNow === "boolean"))
   );
 }
 
@@ -574,6 +593,48 @@ function isActiveRuleEffect(value: unknown): boolean {
   return isRecord(value) && hasExactKeys(value, ["playerId", "sourcePlayerId", "sourceEventId"]) &&
     typeof value.playerId === "string" && typeof value.sourcePlayerId === "string" &&
     typeof value.sourceEventId === "string";
+}
+
+function isSlayerAbilityPayload(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "discussionStepId",
+      "actorPlayerId",
+      "targetPlayerId",
+      "impairmentContext",
+      "registrationContext",
+      "outcome",
+    ]) ||
+    typeof value.discussionStepId !== "string" ||
+    typeof value.actorPlayerId !== "string" ||
+    typeof value.targetPlayerId !== "string" ||
+    !isRecord(value.impairmentContext) ||
+    !isRecord(value.registrationContext) ||
+    !isRecord(value.outcome)
+  ) return false;
+  const impairment = value.impairmentContext;
+  const impairmentValid = impairment.kind === "healthy"
+    ? hasExactKeys(impairment, ["kind"])
+    : impairment.kind === "poisoned" &&
+      hasExactKeys(impairment, ["kind", "sourcePlayerId", "sourceEventId"]) &&
+      typeof impairment.sourcePlayerId === "string" &&
+      typeof impairment.sourceEventId === "string";
+  const registration = value.registrationContext;
+  const registrationValid = registration.kind === "canonical"
+    ? hasExactKeys(registration, ["kind", "registeredAsDemon"]) &&
+      typeof registration.registeredAsDemon === "boolean"
+    : registration.kind === "recluseDecision" &&
+      hasOnlyKeys(registration, ["kind", "registeredAsDemon", "registeredCharacterId"]) &&
+      typeof registration.registeredAsDemon === "boolean" &&
+      (registration.registeredCharacterId === undefined || registration.registeredCharacterId === "imp");
+  const outcome = value.outcome;
+  const outcomeValid = outcome.kind === "deathPending"
+    ? hasExactKeys(outcome, ["kind", "playerId"]) && typeof outcome.playerId === "string"
+    : outcome.kind === "noEffect" &&
+      hasExactKeys(outcome, ["kind", "reason"]) &&
+      ["actorPoisoned", "targetNotDemon", "targetAlreadyDead"].includes(String(outcome.reason));
+  return impairmentValid && registrationValid && outcomeValid;
 }
 
 function isNightActionResolution(value: unknown): boolean {

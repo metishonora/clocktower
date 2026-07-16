@@ -32,6 +32,8 @@ pub(crate) enum StepType {
     Execution,
     #[serde(rename = "executionDeath")]
     ExecutionDeath,
+    #[serde(rename = "slayerDeath")]
+    SlayerDeath,
     #[serde(rename = "redHerringAssignment")]
     RedHerringAssignment,
 }
@@ -54,6 +56,8 @@ pub(crate) enum RequiredInputKind {
     ExecutionDecision,
     #[serde(rename = "executionDeathDecision")]
     ExecutionDeathDecision,
+    #[serde(rename = "slayerDeathDecision")]
+    SlayerDeathDecision,
     #[serde(rename = "day")]
     Day,
     #[serde(rename = "night")]
@@ -332,9 +336,21 @@ pub(crate) struct RequiredInput {
     pub(crate) zero_allowed: bool,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) supports_random_suggestion: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) player_id: Option<String>,
+    #[serde(rename = "survivalAllowed", skip_serializing_if = "Option::is_none")]
+    pub(crate) survival_allowed: Option<bool>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) execution_survival_allowed: bool,
     pub(crate) optional: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SlayerAbilityState {
+    pub(crate) actor_player_id: String,
+    pub(crate) spent: bool,
+    pub(crate) can_use_now: bool,
 }
 
 fn is_false(value: &bool) -> bool {

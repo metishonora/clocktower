@@ -40,6 +40,7 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.stepType === "nomination") return `지명 및 투표 ${step.id.split(":").at(-1)}`;
   if (step.id.endsWith(":execution")) return "처형 확정";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
+  if (step.stepType === "slayerDeath") return player ? `학살자 결과: ${player.seat}번 ${player.name}` : "학살자 결과";
   return step.id;
 }
 
@@ -52,6 +53,7 @@ export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "nomination") return "지명";
   if (stepType === "execution") return "처형";
   if (stepType === "executionDeath") return "처형 결과";
+  if (stepType === "slayerDeath") return "사망 확인";
   return stepType;
 }
 
@@ -64,6 +66,7 @@ export function inputKindLabel(inputKind: string): string {
   if (inputKind === "nominationVote") return "지명 투표";
   if (inputKind === "executionDecision") return "처형 결정";
   if (inputKind === "executionDeathDecision") return "처형 결과";
+  if (inputKind === "slayerDeathDecision") return "사망 결정";
   if (inputKind === "day") return "낮";
   if (inputKind === "night") return "밤";
   return inputKind;

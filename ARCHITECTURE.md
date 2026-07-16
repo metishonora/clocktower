@@ -198,6 +198,8 @@ web/src/
     CharacterSelect.tsx
     CoreFeedback.tsx
   features/
+    public-actions/
+      SlayerAbilityDialog.tsx
     setup/
       SetupForm.tsx
       ConfirmedSetup.tsx
@@ -231,6 +233,10 @@ web/src/
   source. `features/phase-control/phaseInput.ts` owns phase labels plus input readiness and
   `PhaseStepInput` payload construction; keep these helpers colocated with phase control rather than
   app bootstrap.
+- `features/public-actions/SlayerAbilityDialog.tsx` owns the popup-local target and per-check
+  registration draft for the Trouble Brewing Slayer. The Grimoire receives only Rust-derived
+  availability and an open callback; the dialog sends its confirmed draft through the app-owned
+  game-store command path and never creates a canonical event itself.
 - `features/voting/useNominationDraft.ts` owns the nomination draft type, initialization, and reset-on-step-change lifecycle. `features/voting/NominationVoteInput.tsx` owns nominator/nominee selection and vote preview. `main.tsx` may share this feature-owned draft with Grimoire and phase control through typed props.
 - `features/event-log/EventLog.tsx` owns confirmed-event list rendering and composes shared core feedback for the log surface.
 
@@ -268,6 +274,20 @@ does not change life state. When a Player was executed, replay derives a followi
 `executionDeathDecision` input includes the Rust-owned `executionSurvivalAllowed` capability, so
 the UI does not infer script rules. Trouble Brewing leaves that capability false and rejects the
 survival outcome; confirming Death creates the separate step-linked `deathConfirmed` event.
+
+### Slayer Public Action Contract
+
+Discussion may host a canonical public action without completing the Discussion step. The actual
+living Slayer's once-per-game action uses a dedicated `useSlayerAbility` Command containing the
+Discussion step ID and expected event count, because a miss leaves that same step current. Rust
+owns timing, actor and target validation, poison, explicit per-shot Recluse registration, the
+computed outcome, and the derived spent/available projection.
+
+`slayerAbilityUsed` is the auditable ability-spend event. It preserves actor, target, impairment,
+registration, and outcome but never mutates life state. A successful shot generates a typed
+`slayerDeath` follow-up; the target becomes dead only through a separate step-linked
+`deathConfirmed` event. Replay recomputes every stored context from the prior event prefix and
+restores both spent state and a pending Death after undo, reload, export, or import.
 
 Schema-version-2 `deathConfirmed` payloads may include an optional `stepId`. Death events without
 it remain valid state-only events, while a matching step-linked Death also completes the generated

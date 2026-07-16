@@ -5,7 +5,8 @@ use crate::{
         ImpNoDeathReason, ImpPreventionReason, NightActionResolution, NightActionResolvedPayload,
         NightDeathsAnnouncedPayload, NominationEventPayload, PhaseStepCommandPayload,
         PhaseStepEventPayload, Proposal, RedHerringAssignedPayload, SetupEventPayload,
-        SmokeEventPayload, StepIdPayload,
+        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
+        SmokeEventPayload, StepIdPayload, UseSlayerAbilityCommandPayload,
     },
     day::{execution_standing, nomination_record, replay_day_state, step_prefix},
     error::{CoreError, ErrorKind},
@@ -21,7 +22,7 @@ use crate::{
         ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput, StepType,
     },
     phase::validate_required_input,
-    replay::{replay_phase_state, replay_players},
+    replay::{replay_phase_state, replay_players, replay_rule_state},
     setup::{
         normalized_setup_player, player_from_setup_input, validate_setup_inputs,
         validate_setup_warnings,
@@ -51,7 +52,125 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::CreateGame { payload } => propose_create_game(&game_file, payload),
         Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
         Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
+        Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
     }
+}
+
+fn propose_slayer_ability(
+    game_file: &GameFile,
+    payload: UseSlayerAbilityCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    let players = replay_players(&game_file.game.events)?;
+    let phase = replay_phase_state(&players, &game_file.game.events)?;
+    let Some(step) = phase.current_step else {
+        return Err(ErrorKind::SlayerWrongPhase.into_error());
+    };
+    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+        return Err(ErrorKind::SlayerWrongPhase.into_error());
+    }
+    if game_file
+        .game
+        .events
+        .iter()
+        .any(|event| matches!(event.kind, GameEventKind::SlayerAbilityUsed { .. }))
+    {
+        return Err(ErrorKind::SlayerAlreadyUsed.into_error());
+    }
+    let actor = players
+        .iter()
+        .find(|player| {
+            player.id == payload.actor_player_id
+                && player.alive
+                && player.actual_character == "slayer"
+        })
+        .ok_or_else(|| ErrorKind::InvalidSlayerActor.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == payload.target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidSlayerTarget.into_error())?;
+    let registration_context =
+        crate::characters::slayer_registration(target, &payload.target_registration)?;
+    let rule_state = replay_rule_state(&game_file.game.events, &players);
+    let impairment_context = rule_state
+        .active_poison
+        .as_ref()
+        .filter(|poison| poison.player_id == actor.id)
+        .map(|poison| SlayerImpairmentContext::Poisoned {
+            source_player_id: poison.source_player_id.clone(),
+            source_event_id: poison.source_event_id.clone(),
+        })
+        .unwrap_or(SlayerImpairmentContext::Healthy);
+    let registered_as_demon = match &registration_context {
+        crate::contracts::SlayerRegistrationContext::Canonical {
+            registered_as_demon,
+        }
+        | crate::contracts::SlayerRegistrationContext::RecluseDecision {
+            registered_as_demon,
+            ..
+        } => *registered_as_demon,
+    };
+    let outcome = if matches!(impairment_context, SlayerImpairmentContext::Poisoned { .. }) {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::ActorPoisoned,
+        }
+    } else if !target.alive {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::TargetAlreadyDead,
+        }
+    } else if !registered_as_demon {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::TargetNotDemon,
+        }
+    } else {
+        SlayerOutcome::DeathPending {
+            player_id: target.id.clone(),
+        }
+    };
+    let actor_label = format!("{}번 {}", actor.seat, actor.name);
+    let target_label = format!("{}번 {}", target.seat, target.name);
+    let pending = matches!(outcome, SlayerOutcome::DeathPending { .. });
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("slayer-ability-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::SlayerAbilityUsed {
+                payload: SlayerAbilityUsedPayload {
+                    discussion_step_id: payload.discussion_step_id,
+                    actor_player_id: actor.id.clone(),
+                    target_player_id: target.id.clone(),
+                    impairment_context,
+                    registration_context,
+                    outcome,
+                },
+            },
+            phase: Phase::Day,
+            summary: format!(
+                "학살자: {actor_label} → {target_label} · {}",
+                if pending {
+                    "사망 확인 필요"
+                } else {
+                    "아무 일도 없음"
+                }
+            ),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: if pending {
+            vec![
+                json!({ "kind": "slayerDeath", "stepId": format!("{}:slayerDeath", step.id), "playerId": target.id }),
+            ]
+        } else {
+            vec![]
+        },
+        preview: json!({ "messageKo": if pending { "사망 확인 필요" } else { "아무 일도 일어나지 않음" } }),
+        reveal_payload: None,
+    })
 }
 
 pub(crate) fn propose_create_game(
@@ -129,7 +248,12 @@ pub(crate) fn propose_phase_step(
     if !skip && current_step.step_type == StepType::Execution {
         return propose_execution_decision(game_file, &current_step, &players, payload.input);
     }
-    if !skip && current_step.step_type == StepType::ExecutionDeath {
+    if !skip
+        && matches!(
+            current_step.step_type,
+            StepType::ExecutionDeath | StepType::SlayerDeath
+        )
+    {
         return propose_execution_death(game_file, &current_step, &players, payload.input);
     }
     if !skip

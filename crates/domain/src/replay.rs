@@ -4,7 +4,8 @@ use crate::{
     contracts::{
         ActiveRuleEffect, GameEvent, GameEventKind, GameFile, ImpAttackOutcome, ImpNoDeathReason,
         ImpPreventionReason, NightActionNoEffectReason, NightActionResolution, ReplayState,
-        RuleState,
+        RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason,
+        SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -14,7 +15,7 @@ use crate::{
     information::{actor_is_impaired, information_prompt, validate_confirmed_information},
     model::{
         Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RegistrationJudgment,
-        RequiredInputKind, StepType,
+        RequiredInput, RequiredInputKind, SlayerAbilityState, StepType,
     },
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
@@ -33,7 +34,28 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         None
     };
 
-    let rule_state = replay_rule_state(&game_file.game.events, &players);
+    let mut rule_state = replay_rule_state(&game_file.game.events, &players);
+    if let Some(actor) = players
+        .iter()
+        .find(|player| player.actual_character == "slayer")
+    {
+        let spent = game_file
+            .game
+            .events
+            .iter()
+            .any(|event| matches!(event.kind, GameEventKind::SlayerAbilityUsed { .. }));
+        let can_use_now = actor.alive
+            && !spent
+            && phase_state
+                .current_step
+                .as_ref()
+                .is_some_and(|step| step.step_type == StepType::Discussion);
+        rule_state.slayer_ability = Some(SlayerAbilityState {
+            actor_player_id: actor.id.clone(),
+            spent,
+            can_use_now,
+        });
+    }
     if !rule_state.unannounced_night_death_player_ids.is_empty() {
         warnings.push(crate::model::CoreWarning {
             code: "NIGHT_DEATH_UNANNOUNCED".into(),
@@ -140,6 +162,24 @@ pub(crate) fn replay_phase_state(
     }
 
     let step_statuses = phase_step_statuses(events)?;
+    if let Some((discussion_step_id, player_id)) = pending_slayer_death(events) {
+        let step = slayer_death_step(&discussion_step_id, &player_id);
+        return Ok(PhaseReplayState {
+            phase: Phase::Day,
+            current_step: Some(step.clone()),
+            phase_overview: vec![PhaseOverviewItem {
+                id: step.id,
+                phase: step.phase,
+                step_type: step.step_type,
+                character: None,
+                player_id: step.player_id,
+                required_input: step.required_input,
+                can_skip: false,
+                information_prompt: None,
+                status: PhaseStepStatus::Current,
+            }],
+        });
+    }
     for (phase, steps) in
         phase_sequences_with_statuses(players, events, events.len() + 2, &step_statuses)
     {
@@ -204,6 +244,34 @@ pub(crate) fn phase_step_statuses(
 ) -> Result<HashMap<String, PhaseStepStatus>, CoreError> {
     let mut statuses = HashMap::new();
     for (event_index, event) in events.iter().enumerate() {
+        if let GameEventKind::SlayerAbilityUsed { payload } = &event.kind {
+            validate_slayer_event(payload, event.phase, &events[..event_index], &statuses)?;
+            continue;
+        }
+        if let GameEventKind::DeathConfirmed { payload } = &event.kind {
+            if payload
+                .step_id
+                .as_deref()
+                .is_some_and(|id| id.ends_with(":slayerDeath"))
+            {
+                let Some((discussion_step_id, player_id)) =
+                    pending_slayer_death(&events[..event_index])
+                else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                if payload.step_id.as_deref()
+                    != Some(format!("{discussion_step_id}:slayerDeath").as_str())
+                    || payload.player_id != player_id
+                    || event.phase != Phase::Day
+                    || !replay_players(&events[..event_index])?
+                        .iter()
+                        .any(|player| player.id == player_id && player.alive)
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                continue;
+            }
+        }
         // Schema-v2 compatibility: older logs may already contain a Fortune Teller check,
         // or may have closed a night, before issue #8 introduced these generated steps.
         let incoming_step_id = match &event.kind {
@@ -564,7 +632,152 @@ pub(crate) fn phase_step_statuses(
     Ok(statuses)
 }
 
-fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> RuleState {
+fn pending_slayer_death(events: &[GameEvent]) -> Option<(String, String)> {
+    let (index, payload) =
+        events
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, event)| match &event.kind {
+                GameEventKind::SlayerAbilityUsed { payload } => Some((index, payload)),
+                _ => None,
+            })?;
+    let SlayerOutcome::DeathPending { player_id } = &payload.outcome else {
+        return None;
+    };
+    let step_id = format!("{}:slayerDeath", payload.discussion_step_id);
+    (!events[index + 1..].iter().any(|event| matches!(&event.kind, GameEventKind::DeathConfirmed { payload } if payload.step_id.as_deref() == Some(step_id.as_str()))))
+        .then(|| (payload.discussion_step_id.clone(), player_id.clone()))
+}
+
+fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
+    PhaseStep {
+        id: format!("{discussion_step_id}:slayerDeath"),
+        phase: Phase::Day,
+        step_type: StepType::SlayerDeath,
+        character: None,
+        player_id: Some(player_id.into()),
+        can_skip: false,
+        information_prompt: None,
+        required_input: RequiredInput {
+            kind: RequiredInputKind::SlayerDeathDecision,
+            target: None,
+            min_selections: None,
+            max_selections: None,
+            setup_info: None,
+            character_kind: None,
+            allowed_character_ids: None,
+            allowed_player_ids: None,
+            player_registration_options: None,
+            zero_allowed: false,
+            supports_random_suggestion: false,
+            player_id: Some(player_id.into()),
+            survival_allowed: Some(false),
+            execution_survival_allowed: false,
+            optional: false,
+        },
+    }
+}
+
+fn validate_slayer_event(
+    payload: &SlayerAbilityUsedPayload,
+    phase: Phase,
+    prefix: &[GameEvent],
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> Result<(), CoreError> {
+    if prefix
+        .iter()
+        .any(|event| matches!(event.kind, GameEventKind::SlayerAbilityUsed { .. }))
+        || phase != Phase::Day
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    let players = replay_players(prefix)?;
+    let Some((_, _, Some(step))) =
+        current_phase_steps(&players, prefix, prefix.len() + 2, statuses)
+    else {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    };
+    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    let actor = players
+        .iter()
+        .find(|player| {
+            player.id == payload.actor_player_id
+                && player.alive
+                && player.actual_character == "slayer"
+        })
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == payload.target_player_id)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let choice = match &payload.registration_context {
+        SlayerRegistrationContext::Canonical { .. } => SlayerTargetRegistration::Canonical,
+        SlayerRegistrationContext::RecluseDecision {
+            registered_as_demon: true,
+            registered_character_id: Some(id),
+        } => SlayerTargetRegistration::RecluseAsDemon {
+            registered_character_id: id.clone(),
+        },
+        SlayerRegistrationContext::RecluseDecision {
+            registered_as_demon: false,
+            registered_character_id: None,
+        } => SlayerTargetRegistration::Canonical,
+        _ => return Err(ErrorKind::ReplayFailed.into_error()),
+    };
+    let expected_registration = crate::characters::slayer_registration(target, &choice)
+        .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+    let rule = replay_rule_state(prefix, &players);
+    let expected_impairment = rule
+        .active_poison
+        .as_ref()
+        .filter(|poison| poison.player_id == actor.id)
+        .map(|poison| SlayerImpairmentContext::Poisoned {
+            source_player_id: poison.source_player_id.clone(),
+            source_event_id: poison.source_event_id.clone(),
+        })
+        .unwrap_or(SlayerImpairmentContext::Healthy);
+    let demon = match expected_registration {
+        SlayerRegistrationContext::Canonical {
+            registered_as_demon,
+        }
+        | SlayerRegistrationContext::RecluseDecision {
+            registered_as_demon,
+            ..
+        } => registered_as_demon,
+    };
+    let expected_outcome = if matches!(
+        expected_impairment,
+        SlayerImpairmentContext::Poisoned { .. }
+    ) {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::ActorPoisoned,
+        }
+    } else if !target.alive {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::TargetAlreadyDead,
+        }
+    } else if !demon {
+        SlayerOutcome::NoEffect {
+            reason: SlayerNoEffectReason::TargetNotDemon,
+        }
+    } else {
+        SlayerOutcome::DeathPending {
+            player_id: target.id.clone(),
+        }
+    };
+    if payload.impairment_context != expected_impairment
+        || payload.registration_context != expected_registration
+        || payload.outcome != expected_outcome
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    Ok(())
+}
+
+pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> RuleState {
     let red_herring_player_id = events.iter().find_map(|e| match &e.kind {
         GameEventKind::RedHerringAssigned { payload } => Some(payload.player_id.clone()),
         _ => None,
@@ -660,6 +873,7 @@ fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> RuleState {
         active_poison,
         active_protection,
         unannounced_night_death_player_ids,
+        slayer_ability: None,
     }
 }
 
