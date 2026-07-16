@@ -1,0 +1,198 @@
+.phaseSummaryPrototype {
+  min-height: 100vh;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(31, 111, 91, 0.12), transparent 30%),
+    var(--bg);
+}
+
+.phaseSummaryHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.phaseSummaryHeader span {
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.phaseSummaryHeader h1 {
+  margin-top: 4px;
+}
+
+.phaseSummaryHeader p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.phaseSummaryHeader > strong {
+  border: 1px solid rgba(31, 111, 91, 0.32);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(31, 111, 91, 0.08);
+  color: var(--primary-dark);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.phaseSummaryScenarios {
+  display: flex;
+  max-width: 1280px;
+  gap: 8px;
+  margin: 18px auto 0;
+  padding: 4px;
+  overflow-x: auto;
+}
+
+.phaseSummaryScenarios button {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.phaseSummaryScenarios button.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.phaseSummaryContext {
+  display: grid;
+  max-width: 1280px;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.3fr);
+  gap: 18px;
+  margin: 14px auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: rgba(255, 253, 248, 0.76);
+}
+
+.phaseSummaryContext > div > span {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.phaseSummaryContext h2 {
+  margin-top: 5px;
+}
+
+.phaseSummaryContext dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.phaseSummaryContext dl div {
+  display: grid;
+  min-width: 140px;
+  flex: 1 1 180px;
+  gap: 3px;
+  border-left: 3px solid rgba(31, 111, 91, 0.28);
+  padding: 5px 10px;
+}
+
+.phaseSummaryContext dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.phaseSummaryContext dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.phaseSummaryComparison {
+  display: grid;
+  max-width: 1280px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 auto;
+}
+
+.phaseSummaryLog {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(238, 232, 220, 0.58);
+}
+
+.phaseSummaryLog.proposed {
+  border-color: rgba(31, 111, 91, 0.5);
+  background: rgba(31, 111, 91, 0.07);
+}
+
+.phaseSummaryLog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 10px;
+}
+
+.phaseSummaryLog > header span {
+  font-size: 0.9rem;
+  font-weight: 1000;
+}
+
+.phaseSummaryLog > header strong {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phaseSummaryLog.proposed > header strong {
+  color: var(--primary);
+}
+
+.phaseSummaryLog .panel {
+  box-shadow: none;
+}
+
+.phaseSummaryLog .eventList li:last-child {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.phaseSummaryLog.proposed .eventList li:last-child {
+  color: var(--primary-dark);
+}
+
+@media (max-width: 760px) {
+  .phaseSummaryPrototype {
+    padding: 14px;
+  }
+
+  .phaseSummaryHeader,
+  .phaseSummaryContext {
+    grid-template-columns: 1fr;
+  }
+
+  .phaseSummaryHeader {
+    display: grid;
+  }
+
+  .phaseSummaryHeader > strong {
+    justify-self: start;
+  }
+
+  .phaseSummaryComparison {
+    grid-template-columns: 1fr;
+  }
+}

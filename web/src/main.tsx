@@ -64,6 +64,13 @@ const DevWinGamePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevPhaseActionSummaryPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./phaseActionSummaryPrototype");
+      return { default: module.PhaseActionSummaryPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -72,6 +79,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevPhaseActionSummaryPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "phase-action-summaries"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevPhaseActionSummaryPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevWinGamePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "win-game"
