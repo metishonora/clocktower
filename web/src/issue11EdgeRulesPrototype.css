@@ -1,0 +1,98 @@
+.issue11Prototype {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 14px;
+  color: #19241f;
+  background: radial-gradient(circle at 12% 5%, rgba(191, 134, 43, .13), transparent 27%), #f1efe8;
+}
+
+.issue11Prototype *, .issue11Prototype *::before, .issue11Prototype *::after { box-sizing: border-box; }
+.issue11Prototype button, .issue11Prototype select { font: inherit; }
+.issue11Header, .issue11PanelHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.issue11Header { min-height: 58px; margin-bottom: 12px; }
+.issue11Header p, .issue11PanelHeading p, .issue11ActionCard > p, .newImpRevealCard > p {
+  margin: 0 0 3px; color: #777169; font-size: .72rem; font-weight: 950; letter-spacing: .11em;
+}
+.issue11Header h1, .issue11PanelHeading h2, .newImpRevealCard h2 { margin: 0; }
+.issue11Header h1 { white-space: nowrap; }
+.issue11Header label { display: flex; align-items: center; justify-content: flex-end; gap: 10px; color: #68645d; font-size: .78rem; font-weight: 900; }
+.issue11Header select { width: 310px; min-height: 42px; padding: 7px 36px 7px 11px; border: 1px solid #cbc5b9; border-radius: 10px; background: #fffefa; color: #252824; font-weight: 900; }
+
+.issue11Shell { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(390px, .72fr); gap: 12px; min-height: calc(100vh - 98px); }
+.issue11GrimoirePanel, .issue11Rail { border: 1px solid #d4cec2; border-radius: 18px; background: rgba(255, 254, 249, .96); box-shadow: 0 14px 34px rgba(43, 42, 37, .08); }
+.issue11GrimoirePanel { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; padding: 18px; }
+.issue11Rail { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 17px; }
+.issue11PanelHeading > span { padding: 7px 11px; border-radius: 999px; background: #e2efe9; color: #145142; font-weight: 950; }
+.issue11PanelHeading.compact h2 { max-width: 280px; font-size: 1.3rem; }
+
+.issue11Grimoire { position: relative; min-height: 690px; margin: 0 12px; }
+.issue11TableCenter { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 250px; height: 155px; border: 1px solid #cec5b5; border-radius: 50%; background: #f5eddf; transform: translate(-50%, -50%); box-shadow: inset 0 0 0 12px rgba(255,255,255,.33); }
+.issue11TableCenter small { align-self: end; color: #777169; font-weight: 850; }
+.issue11TableCenter strong { align-self: start; font-size: 1.55rem; }
+.issue11Seat { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 3px 7px; width: 156px; min-height: 72px; padding: 9px; border: 2px solid #cfd8d8; border-top: 5px solid #2f6f9f; border-radius: 14px; background: #fffefa; transform: translate(-50%, -50%); box-shadow: 0 8px 17px rgba(48,46,40,.09); }
+.issue11Seat.evil { border-color: #dbc5c0; border-top-color: #a34336; }
+.issue11Seat.dead { border-style: dashed; background: #f2e5db; opacity: .8; }
+.issue11Seat > b { grid-row: 1 / span 2; align-self: center; color: #155242; font-size: 1.3rem; text-align: center; }
+.issue11Seat.evil > b { color: #923b31; }
+.issue11Seat > div { display: grid; min-width: 0; }
+.issue11Seat > div strong, .issue11Seat > div small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.issue11Seat > div small { color: #777169; font-weight: 750; }
+.issue11Seat > em, .virginAbility, .successorMarker { grid-column: 1 / -1; font-size: .71rem; font-style: normal; font-weight: 950; text-align: center; }
+.issue11Seat > em { color: #914331; }
+.issue11Seat.virgin { border-color: #a9cabc; border-top-color: #1d7059; box-shadow: 0 0 0 4px rgba(29,112,89,.08), 0 8px 17px rgba(48,46,40,.09); }
+.virginAbility { margin: 3px -3px -3px; padding: 5px; border-radius: 6px; }
+.virginAbility.available { background: #dff0e8; color: #155a47; }
+.virginAbility.spent { background: #ece8e1; color: #706b63; }
+.issue11Seat.successor { border-color: #d0a548; box-shadow: 0 0 0 4px rgba(208,165,72,.18), 0 8px 17px rgba(48,46,40,.09); }
+.successorMarker { color: #8d631c; }
+
+.issue11ActionCard { display: grid; align-content: start; gap: 12px; padding: 17px; border: 1px solid #d7d1c6; border-radius: 15px; background: #faf8f2; }
+.issue11ActionCard > strong { font-size: 1.52rem; letter-spacing: -.02em; }
+.issue11ActionCard > span { color: #6e6961; font-weight: 850; }
+.issue11ActionCard.danger { border-color: #dfb8b0; background: #f9e9e5; }
+.issue11ActionCard.success { border-color: #b6d1c7; background: #e9f3ef; }
+.issue11ActionCard fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.issue11ActionCard legend { margin-bottom: 7px; color: #69645c; font-size: .77rem; font-weight: 950; }
+.registrationChoice, .mayorDecision, .successorChoices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.registrationChoice legend, .mayorDecision legend, .successorChoices legend { grid-column: 1 / -1; }
+.registrationChoice button, .mayorDecision button, .successorChoices button, .bounceTargets button { min-height: 44px; padding: 8px; border: 1px solid #d3cec4; border-radius: 9px; background: #fff; color: #383a36; font-weight: 850; }
+.registrationChoice button.selected, .mayorDecision button.selected, .successorChoices button.selected, .bounceTargets button.selected { border-color: #1f6f5b; background: #e3f0eb; color: #155242; box-shadow: inset 0 0 0 1px rgba(31,111,91,.14); }
+.resultPreview { display: grid; gap: 3px; padding: 11px 12px; border-radius: 10px; background: #eeeae2; }
+.resultPreview small { color: #777169; font-size: .72rem; font-weight: 900; }
+.resultPreview span { font-weight: 950; }
+.resultPreview.prominent { background: #e2efe9; color: #155242; }
+.primary, .secondary { min-height: 48px; border-radius: 9px; font-weight: 950; }
+.primary { border: 0; background: #1f6f5b; color: #fff; }
+.primary:disabled { background: #aaa79f; color: #eeece7; }
+.secondary { border: 1px solid #b9b3a8; background: transparent; color: #57534c; }
+.dangerButton { background: #a44336; }
+.voteMeter { display: flex; justify-content: space-between; gap: 10px; padding: 12px; border-radius: 10px; background: #ede9e1; color: #646059; }
+.voteMeter b { color: #155242; }
+
+.bounceTargets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; max-height: 238px; overflow: auto; }
+.bounceTargets legend { grid-column: 1 / -1; }
+.bounceTargets button { display: grid; grid-template-columns: 26px 1fr; gap: 2px 7px; text-align: left; }
+.bounceTargets button b { grid-row: 1 / span 2; align-self: center; }
+.bounceTargets button small { color: #777169; }
+.fixedSuccessor { display: flex; align-items: center; gap: 10px; padding: 13px; border: 1px solid #d6b971; border-radius: 11px; background: #f6edd9; }
+.fixedSuccessor > span { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: #a34336; color: white; font-weight: 950; }
+.fixedSuccessor > div { display: grid; gap: 2px; }
+.fixedSuccessor small { color: #746b5b; font-weight: 800; }
+
+.issue11Overview { display: grid; gap: 7px; margin: auto 0 0; padding: 0; list-style: none; }
+.issue11Overview li { padding: 10px 12px; border-left: 4px solid #d2cdc3; color: #777169; font-weight: 850; }
+.issue11Overview li.complete { border-left-color: #8db8a9; }
+.issue11Overview li.current { border-left-color: #1f6f5b; background: #eaf2ee; color: #155242; }
+
+.newImpReveal { position: fixed; z-index: 60; inset: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at center, #7d2e28, #241817 72%); }
+.newImpRevealCard { display: grid; justify-items: center; gap: 13px; width: min(520px, calc(100vw - 48px)); padding: 48px 34px 34px; border: 1px solid rgba(236,196,119,.45); border-radius: 24px; background: rgba(31,20,19,.86); color: #fff7e8; box-shadow: 0 28px 90px rgba(0,0,0,.42); text-align: center; }
+.newImpRevealCard > p { color: #d9b773; }
+.newImpRevealCard h2 { font-size: 2.3rem; }
+.newImpRevealCard > strong { color: #e2c486; font-size: 1.25rem; }
+.newImpSigil { display: grid; width: 108px; height: 108px; place-items: center; border: 2px solid #d7b061; border-radius: 50%; background: #a43a31; font-family: Georgia, serif; font-size: 4rem; }
+.newImpRevealCard button { width: 100%; min-height: 54px; margin-top: 14px; border: 0; border-radius: 10px; background: #efe5d0; color: #31201d; font-weight: 950; }
+
+@media (max-width: 980px) {
+  .issue11Shell { grid-template-columns: 1fr; }
+  .issue11Grimoire { min-height: 670px; }
+}
