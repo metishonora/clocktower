@@ -17,7 +17,8 @@ fn replay_empty_game_file_returns_core_result() {
                 "players": [],
                 "currentStep": null,
                 "phaseOverview": [],
-                "warnings": []
+                "warnings": [],
+                "ruleState": { "unannouncedNightDeathPlayerIds": [] }
             }
         })
     );
@@ -141,7 +142,7 @@ fn schema_v1_fixture_is_rejected_without_partial_replay() {
 fn public_json_entrypoints_keep_representative_wire_strings() {
     assert_eq!(
         replay_json(EMPTY_GAME),
-        r#"{"ok":true,"value":{"schemaVersion":2,"eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[]}}"#
+        r#"{"ok":true,"value":{"schemaVersion":2,"eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[],"ruleState":{"unannouncedNightDeathPlayerIds":[]}}}"#
     );
     assert_eq!(
         propose_json(EMPTY_GAME, r#"{ "type": "smoke" }"#),

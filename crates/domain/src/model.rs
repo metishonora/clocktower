@@ -32,6 +32,8 @@ pub(crate) enum StepType {
     Execution,
     #[serde(rename = "executionDeath")]
     ExecutionDeath,
+    #[serde(rename = "redHerringAssignment")]
+    RedHerringAssignment,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -86,6 +88,12 @@ pub(crate) enum NumericReason {
     rename_all_fields = "camelCase"
 )]
 pub(crate) enum InformationResult {
+    Boolean {
+        value: bool,
+    },
+    Character {
+        character_id: String,
+    },
     Number {
         value: usize,
     },
@@ -207,6 +215,24 @@ pub(crate) struct InformationPrompt {
     pub(crate) registration_candidate_player_ids: Vec<String>,
     pub(crate) number_choices: Vec<NumberInformationChoice>,
     pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) target_checks: Vec<TargetInformationCheck>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct TargetInformationCheck {
+    pub(crate) target_player_ids: Vec<String>,
+    pub(crate) computed_result: InformationResult,
+    pub(crate) choices: Vec<TargetInformationChoice>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct TargetInformationChoice {
+    pub(crate) result: InformationResult,
+    pub(crate) is_computed: bool,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -298,6 +324,10 @@ pub(crate) struct RequiredInput {
     pub(crate) character_kind: Option<CharacterKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) allowed_character_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) allowed_player_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) player_registration_options: Option<Vec<RegistrationJudgment>>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) zero_allowed: bool,
     #[serde(skip_serializing_if = "is_false")]

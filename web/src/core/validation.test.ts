@@ -198,6 +198,7 @@ test("validates typed confirmed information and derived information prompts", ()
       },
     },
     phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
     warnings: [],
   };
   deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
@@ -231,6 +232,161 @@ test("validates typed confirmed information and derived information prompts", ()
   throws(() => parseReplayState(invalidAllowedCharacters), /코어 응답 형식/);
 });
 
+test("validates the narrow ongoing-night replay, target-check, and typed-event contracts", () => {
+  const player = {
+    id: "player-1",
+    seat: 1,
+    name: "지우",
+    actualCharacter: "fortuneTeller",
+    shownCharacter: "fortuneTeller",
+    alignment: "good",
+    alive: true,
+    ghostVoteUsed: false,
+    deathAnnounced: false,
+    notes: "",
+  };
+  const fortuneTellerStep = {
+    id: "night1:fortuneTeller",
+    phase: "night",
+    stepType: "character",
+    character: "fortuneTeller",
+    playerId: "player-1",
+    requiredInput: {
+      kind: "playerIds",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      allowedPlayerIds: ["player-1", "player-2"],
+      playerRegistrationOptions: [],
+      optional: false,
+    },
+    canSkip: false,
+    informationPrompt: {
+      deliveryMode: "fixed",
+      activeReasons: [],
+      registrationCandidatePlayerIds: [],
+      numberChoices: [],
+      setupInfoRegistrationOptions: [],
+      targetChecks: [
+        {
+          targetPlayerIds: ["player-1", "player-2"],
+          computedResult: { kind: "boolean", value: true },
+          choices: [
+            {
+              result: { kind: "boolean", value: true },
+              isComputed: true,
+              registrationJudgments: [],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 3,
+    phase: "night",
+    players: [player],
+    currentStep: fortuneTellerStep,
+    phaseOverview: [{ ...fortuneTellerStep, status: "current" }],
+    ruleState: {
+      redHerringPlayerId: "player-2",
+      activePoison: {
+        playerId: "player-1",
+        sourcePlayerId: "player-4",
+        sourceEventId: "event-poison",
+      },
+      activeProtection: {
+        playerId: "player-2",
+        sourcePlayerId: "player-3",
+        sourceEventId: "event-protection",
+      },
+      unannouncedNightDeathPlayerIds: ["player-5"],
+    },
+    warnings: [],
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+  const missingRuleState = structuredClone(replay);
+  delete (missingRuleState as { ruleState?: unknown }).ruleState;
+  throws(() => parseReplayState(missingRuleState), /코어 응답 형식/);
+
+  const events = [
+    {
+      id: "event-red-herring",
+      type: "redHerringAssigned",
+      phase: "firstNight",
+      payload: {
+        stepId: "firstNight:fortuneTellerRedHerring",
+        playerId: "player-4",
+        registrationJudgments: [
+          { playerId: "player-4", registeredAs: "good" },
+        ],
+      },
+      summary: "레드 헤링 지정",
+      createdAt: "2026-07-16T00:00:00.000Z",
+    },
+    {
+      id: "event-imp",
+      type: "nightActionResolved",
+      phase: "night",
+      payload: {
+        stepId: "night1:imp",
+        actorPlayerId: "player-5",
+        resolution: {
+          kind: "impAttack",
+          targetPlayerId: "player-3",
+          outcome: {
+            kind: "prevented",
+            reason: "monkProtection",
+            sourceEventId: "event-protection",
+          },
+        },
+      },
+      summary: "임프 공격: 3번 서연 · 사망 없음 (수도승 보호)",
+      createdAt: "2026-07-16T00:01:00.000Z",
+    },
+    {
+      id: "event-announcement",
+      type: "nightDeathsAnnounced",
+      phase: "day",
+      payload: { stepId: "day2:announceDeaths", playerIds: ["player-5"] },
+      summary: "밤 사망 발표",
+      createdAt: "2026-07-16T00:02:00.000Z",
+    },
+    {
+      id: "event-undertaker",
+      type: "phaseStepConfirmed",
+      phase: "night",
+      payload: {
+        stepId: "night1:undertaker",
+        input: null,
+        information: {
+          actor: { playerId: "player-2", characterId: "undertaker" },
+          targetPlayerIds: ["player-3"],
+          computedResult: { kind: "character", characterId: "librarian" },
+          deliveredResult: { kind: "character", characterId: "spy" },
+          deliveryContext: {
+            type: "discretionary",
+            reasons: [
+              {
+                type: "registrationJudgment",
+                judgments: [
+                  { playerId: "player-3", registeredAs: "good", characterId: "librarian" },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      summary: "장의사 정보 확정",
+      createdAt: "2026-07-16T00:03:00.000Z",
+    },
+  ];
+
+  for (const event of events) deepEqual<unknown>(parseGameEvent(event), event);
+});
+
 test("requires canonical nomination eligibility lists in Day replay state", () => {
   const replay = {
     schemaVersion: 2,
@@ -246,6 +402,7 @@ test("requires canonical nomination eligibility lists in Day replay state", () =
       eligibleNominatorIds: ["player-1", "player-3"],
       eligibleNomineeIds: ["player-1", "player-2"],
     },
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
     warnings: [],
   };
 
@@ -289,6 +446,7 @@ test("allows computedResult omission only at setup prompt or impaired setup audi
       },
     },
     phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
     warnings: [],
   };
   deepEqual<unknown>(parseReplayState(setupPromptReplay).currentStep, setupPromptReplay.currentStep);

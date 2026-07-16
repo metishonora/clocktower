@@ -216,6 +216,102 @@ test("numeric confirmation submits Rust witness only for an alternate choice", (
   );
 });
 
+test("target-check confirmation persists the selected typed result and its exact witness", () => {
+  const witness = [{ playerId: "recluse", registeredAs: "demon" as const }];
+  const alternate = {
+    result: { kind: "boolean" as const, value: true },
+    isComputed: false,
+    registrationJudgments: witness,
+  };
+  const step: PhaseStep = {
+    id: "night1:fortuneTeller",
+    phase: "night",
+    stepType: "character",
+    character: "fortuneTeller",
+    playerId: "fortuneTeller",
+    requiredInput: { kind: "playerIds", target: "players", minSelections: 2, maxSelections: 2, optional: false },
+    canSkip: false,
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["recluse"],
+      numberChoices: [],
+      setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: ["chef", "recluse"],
+        computedResult: { kind: "boolean", value: false },
+        choices: [
+          { result: { kind: "boolean", value: false }, isComputed: true, registrationJudgments: [] },
+          alternate,
+        ],
+      }],
+    },
+  };
+
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      {
+        selectedPlayerIds: ["recluse", "chef"],
+        selectedCharacterId: "",
+        selectedCharacterIds: [],
+        zeroOutsiders: false,
+        registrationJudgments: [],
+        selectedTargetChoice: alternate,
+      },
+      { nominatorId: "", nomineeId: "", voterIds: [] },
+    ),
+    {
+      input: { playerIds: ["recluse", "chef"] },
+      deliveredResult: { kind: "boolean", value: true },
+      registrationJudgments: witness,
+    },
+  );
+});
+
+test("a single derived target-check confirms without Player input or a delivered override", () => {
+  const step: PhaseStep = {
+    id: "night1:undertaker",
+    phase: "night",
+    stepType: "character",
+    character: "undertaker",
+    playerId: "undertaker",
+    requiredInput: { kind: "none", optional: false },
+    canSkip: false,
+    informationPrompt: {
+      deliveryMode: "fixed",
+      activeReasons: [],
+      registrationCandidatePlayerIds: [],
+      numberChoices: [],
+      setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: ["executed"],
+        computedResult: { kind: "character", characterId: "chef" },
+        choices: [{
+          result: { kind: "character", characterId: "chef" },
+          isComputed: true,
+          registrationJudgments: [],
+        }],
+      }],
+    },
+  };
+
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      {
+        selectedPlayerIds: [],
+        selectedCharacterId: "",
+        selectedCharacterIds: [],
+        zeroOutsiders: false,
+        registrationJudgments: [],
+      },
+      { nominatorId: "", nomineeId: "", voterIds: [] },
+    ),
+    { input: null },
+  );
+});
+
 function player(id: string, actualCharacter: string, shownCharacter = actualCharacter): Player {
   return {
     id,

@@ -5,6 +5,7 @@ import type {
   PhaseStepInput,
   Player,
   RegistrationJudgment,
+  TargetCheck,
 } from "../../core/types";
 import {
   setupInfoCharacterOptions,
@@ -19,6 +20,7 @@ export type PhaseInputDraft = {
   zeroOutsiders: boolean;
   selectedNumberChoice?: NumberChoice;
   registrationJudgments: RegistrationJudgment[];
+  selectedTargetChoice?: TargetCheck["choices"][number];
 };
 
 export type PhaseInputDraftController = PhaseInputDraft & {
@@ -29,6 +31,7 @@ export type PhaseInputDraftController = PhaseInputDraft & {
   setSelectedCharacterIds: (characterIds: string[]) => void;
   setZeroOutsiders: (checked: boolean) => void;
   setSelectedNumberChoice: (choice: NumberChoice) => void;
+  setSelectedTargetChoice: (choice: TargetCheck["choices"][number]) => void;
   reset: () => void;
   applySuggestion: (input: PhaseStepInput) => void;
 };
@@ -41,12 +44,14 @@ function emptyDraft(): PhaseInputDraft {
     zeroOutsiders: false,
     selectedNumberChoice: undefined,
     registrationJudgments: [],
+    selectedTargetChoice: undefined,
   };
 }
 
 export function usePhaseInputDraft(
   step: PhaseStep | undefined,
   players: Player[],
+  contextFingerprint = "",
 ): PhaseInputDraftController {
   const [draft, setDraft] = useState<PhaseInputDraft>(emptyDraft);
   const zeroOutsidersAvailable = useMemo(
@@ -56,7 +61,7 @@ export function usePhaseInputDraft(
 
   useEffect(() => {
     setDraft(emptyDraft());
-  }, [step?.id]);
+  }, [step?.id, contextFingerprint]);
 
   useEffect(() => {
     if (!zeroOutsidersAvailable) {
@@ -150,6 +155,8 @@ export function usePhaseInputDraft(
     setZeroOutsiders,
     setSelectedNumberChoice: (selectedNumberChoice) =>
       setDraft((current) => ({ ...current, selectedNumberChoice })),
+    setSelectedTargetChoice: (selectedTargetChoice) =>
+      setDraft((current) => ({ ...current, selectedTargetChoice })),
     reset: () => setDraft(emptyDraft()),
     applySuggestion,
   };
@@ -162,7 +169,15 @@ function updatePlayerSelection(
   players: Player[],
 ): PhaseInputDraft {
   if (!step || step.requiredInput.kind !== "setupInfo") {
-    return { ...draft, selectedPlayerIds };
+    const check = step?.informationPrompt?.targetChecks?.find(
+      (candidate) => samePlayerIds(candidate.targetPlayerIds, selectedPlayerIds),
+    );
+    return {
+      ...draft,
+      selectedPlayerIds,
+      selectedTargetChoice: check?.choices.length === 1 ? check.choices[0] : undefined,
+      registrationJudgments: registrationWitnessForPlayers(step, selectedPlayerIds),
+    };
   }
   const validCharacterIds = new Set(
     setupInfoCharacterOptions(
@@ -186,4 +201,13 @@ function updatePlayerSelection(
       players,
     ),
   };
+}
+
+function registrationWitnessForPlayers(step: PhaseStep | undefined, playerIds: string[]): RegistrationJudgment[] {
+  if (!step) return [];
+  return step.requiredInput.playerRegistrationOptions?.filter((option) => playerIds.includes(option.playerId)) ?? [];
+}
+
+function samePlayerIds(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((id) => right.includes(id));
 }

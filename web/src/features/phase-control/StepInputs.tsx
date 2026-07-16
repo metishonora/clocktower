@@ -5,12 +5,13 @@ import type {
   PhaseStep,
   PhaseStepConfirmation,
   Player,
+  TargetCheck,
 } from "../../core/types";
 import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
-import { characterInputOptions, setupInfoCharacterOptions } from "./phaseInput";
+import { characterInputOptions, setupInfoCharacterOptions, targetCheckForSelection } from "./phaseInput";
 
 export function PlayerStepInput({
   step,
@@ -60,6 +61,7 @@ export function PlayerStepInput({
         </div>
       ) : null}
       {players.map((player) => {
+        const allowed = !step.requiredInput.allowedPlayerIds || step.requiredInput.allowedPlayerIds.includes(player.id);
         const actualKind = characterKind(player.actualCharacter);
         const classNames = [
           selectedPlayerIds.includes(player.id) ? "selected" : "",
@@ -73,7 +75,7 @@ export function PlayerStepInput({
             className={classNames.join(" ")}
             onClick={() => togglePlayer(player.id)}
             aria-pressed={selectedPlayerIds.includes(player.id)}
-            disabled={busy || selectionDisabled}
+            disabled={busy || selectionDisabled || !allowed}
             key={player.id}
           >
             <span>{player.seat}</span>
@@ -107,12 +109,14 @@ export function StepInputFields({
   zeroOutsiders,
   zeroOutsidersAvailable,
   selectedNumberChoice,
+  selectedTargetChoice,
   busy,
   onSelectedPlayerIdsChange,
   onCharacterChange,
   onCharactersChange,
   onZeroOutsidersChange,
   onNumberChoiceChange,
+  onTargetChoiceChange,
   randomSuggestion,
 }: {
   step: PhaseStep;
@@ -126,12 +130,14 @@ export function StepInputFields({
   zeroOutsiders: boolean;
   zeroOutsidersAvailable: boolean;
   selectedNumberChoice?: NumberChoice;
+  selectedTargetChoice?: TargetCheck["choices"][number];
   busy: boolean;
   onSelectedPlayerIdsChange: (playerIds: string[]) => void;
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
   onNumberChoiceChange: (choice: NumberChoice) => void;
+  onTargetChoiceChange: (choice: TargetCheck["choices"][number]) => void;
   randomSuggestion?: RandomSuggestionAction;
 }) {
   return (
@@ -177,8 +183,55 @@ export function StepInputFields({
         busy={busy}
         onNumberChoiceChange={onNumberChoiceChange}
       />
+      <TargetInformationDeliveryInput
+        step={step}
+        selectedPlayerIds={selectedPlayerIds}
+        selectedChoice={selectedTargetChoice}
+        busy={busy}
+        onChange={onTargetChoiceChange}
+      />
     </>
   );
+}
+
+function TargetInformationDeliveryInput({
+  step,
+  selectedPlayerIds,
+  selectedChoice,
+  busy,
+  onChange,
+}: {
+  step: PhaseStep;
+  selectedPlayerIds: string[];
+  selectedChoice?: TargetCheck["choices"][number];
+  busy: boolean;
+  onChange: (choice: TargetCheck["choices"][number]) => void;
+}) {
+  const check = targetCheckForSelection(step, selectedPlayerIds);
+  if (!check || check.choices.length <= 1) return null;
+  return (
+    <div className="targetInformationChoices" aria-label="전달 정보">
+      {check.choices.map((choice, index) => (
+        <button
+          type="button"
+          className={selectedChoice === choice ? "selected" : ""}
+          aria-pressed={selectedChoice === choice}
+          disabled={busy}
+          onClick={() => onChange(choice)}
+          key={`${informationResultLabel(choice.result)}-${index}`}
+        >
+          {informationResultLabel(choice.result)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function informationResultLabel(result: TargetCheck["computedResult"]): string {
+  if (result.kind === "boolean") return result.value ? "악마 있음" : "악마 없음";
+  if (result.kind === "character") return characterLabel(result.characterId);
+  if (result.kind === "number") return String(result.value);
+  return "정보";
 }
 
 export function ExecutionDecisionActions({

@@ -1,15 +1,20 @@
 use std::collections::HashMap;
 
 use crate::{
-    contracts::{GameEvent, GameEventKind, GameFile, ReplayState},
+    contracts::{
+        ActiveRuleEffect, GameEvent, GameEventKind, GameFile, ImpAttackOutcome, ImpNoDeathReason,
+        ImpPreventionReason, NightActionNoEffectReason, NightActionResolution, ReplayState,
+        RuleState,
+    },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
         validate_nomination_roles,
     },
     error::{CoreError, ErrorKind},
-    information::{information_prompt, validate_confirmed_information},
+    information::{actor_is_impaired, information_prompt, validate_confirmed_information},
     model::{
-        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RequiredInputKind, StepType,
+        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, Player, RegistrationJudgment,
+        RequiredInputKind, StepType,
     },
     night::{first_night_steps, night_steps},
     phase::{step_status, validate_required_input},
@@ -18,7 +23,7 @@ use crate::{
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let players = replay_players(&game_file.game.events)?;
-    let warnings = validate_setup_warnings(&players);
+    let mut warnings = validate_setup_warnings(&players);
     let phase_state = replay_phase_state(&players, &game_file.game.events)?;
     let day_state = if phase_state.phase == Phase::Day {
         current_day_prefix(&phase_state)
@@ -28,6 +33,14 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         None
     };
 
+    let rule_state = replay_rule_state(&game_file.game.events, &players);
+    if !rule_state.unannounced_night_death_player_ids.is_empty() {
+        warnings.push(crate::model::CoreWarning {
+            code: "NIGHT_DEATH_UNANNOUNCED".into(),
+            severity: "warning",
+            message_ko: "공개하지 않은 밤 사망이 있습니다.".into(),
+        });
+    }
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         event_count: game_file.game.events.len(),
@@ -37,6 +50,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         phase_overview: phase_state.phase_overview,
         day_state,
         warnings,
+        rule_state,
     })
 }
 
@@ -72,6 +86,22 @@ pub(crate) fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreEr
                     return Err(ErrorKind::ReplayFailed.into_error());
                 };
                 player.alive = false;
+            }
+            GameEventKind::NightActionResolved { payload } => {
+                if let NightActionResolution::ImpAttack {
+                    outcome: ImpAttackOutcome::Death { player_id },
+                    ..
+                } = &payload.resolution
+                {
+                    let Some(player) = players.iter_mut().find(|player| &player.id == player_id)
+                    else {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    };
+                    if !player.alive {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    player.alive = false;
+                }
             }
             GameEventKind::NominationVoteConfirmed { payload } => {
                 for player_id in &payload.ghost_vote_spent_player_ids {
@@ -174,6 +204,56 @@ pub(crate) fn phase_step_statuses(
 ) -> Result<HashMap<String, PhaseStepStatus>, CoreError> {
     let mut statuses = HashMap::new();
     for (event_index, event) in events.iter().enumerate() {
+        // Schema-v2 compatibility: older logs may already contain a Fortune Teller check,
+        // or may have closed a night, before issue #8 introduced these generated steps.
+        let incoming_step_id = match &event.kind {
+            GameEventKind::PhaseStepConfirmed { payload } => Some(payload.step_id.as_str()),
+            GameEventKind::PhaseStepSkipped { payload } => Some(payload.step_id.as_str()),
+            _ => None,
+        };
+        if incoming_step_id.is_some_and(|id| id.ends_with(":fortuneTeller")) {
+            let prefix = incoming_step_id.unwrap().rsplit_once(':').unwrap().0;
+            statuses
+                .entry(format!("{prefix}:fortuneTellerRedHerring"))
+                .or_insert(PhaseStepStatus::Skipped);
+        }
+        if incoming_step_id.is_some_and(|id| {
+            id.starts_with("night")
+                && matches!(
+                    id.rsplit_once(':').map(|p| p.1),
+                    Some("fortuneTeller" | "butler" | "spy" | "toDay")
+                )
+        }) {
+            if let Some(prefix) = incoming_step_id.and_then(|id| id.rsplit_once(':').map(|p| p.0)) {
+                let legacy_imp = events[..event_index].iter().any(|event| matches!(&event.kind,
+                    GameEventKind::PhaseStepConfirmed { payload } if payload.step_id == format!("{prefix}:imp")));
+                if legacy_imp {
+                    statuses
+                        .entry(format!("{prefix}:empath"))
+                        .or_insert(PhaseStepStatus::Skipped);
+                }
+            }
+        }
+        if incoming_step_id.is_some_and(|id| id.starts_with("night") && id.ends_with(":undertaker"))
+        {
+            let cycle = incoming_step_id
+                .and_then(|id| id.split(':').next())
+                .map(|p| {
+                    if p == "night" {
+                        1
+                    } else {
+                        p.trim_start_matches("night").parse().unwrap_or(1)
+                    }
+                })
+                .unwrap_or(1);
+            if crate::night::previous_executed_death(&events[..event_index], cycle).is_none() {
+                statuses.insert(
+                    incoming_step_id.unwrap().to_string(),
+                    PhaseStepStatus::Complete,
+                );
+                continue;
+            }
+        }
         let (status, step_id, event_input) = match &event.kind {
             GameEventKind::PhaseStepConfirmed { payload } => (
                 PhaseStepStatus::Complete,
@@ -203,6 +283,15 @@ pub(crate) fn phase_step_statuses(
                 payload.step_id.as_str(),
                 None,
             ),
+            GameEventKind::RedHerringAssigned { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
+            GameEventKind::NightActionResolved { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
+            GameEventKind::NightDeathsAnnounced { payload } => {
+                (PhaseStepStatus::Complete, payload.step_id.as_str(), None)
+            }
             _ => continue,
         };
         let players_at_event = replay_players(&events[..event_index])?;
@@ -224,6 +313,171 @@ pub(crate) fn phase_step_statuses(
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         match &event.kind {
+            GameEventKind::RedHerringAssigned { payload } => {
+                let expected_judgments = if players_at_event
+                    .iter()
+                    .any(|p| p.id == payload.player_id && p.actual_character == "spy")
+                {
+                    vec![RegistrationJudgment {
+                        player_id: payload.player_id.clone(),
+                        registered_as: crate::model::RegistrationValue::Good,
+                        character_id: None,
+                    }]
+                } else {
+                    vec![]
+                };
+                if step.step_type != StepType::RedHerringAssignment
+                    || payload.registration_judgments != expected_judgments
+                    || !step
+                        .required_input
+                        .allowed_player_ids
+                        .as_ref()
+                        .is_some_and(|ids| ids.contains(&payload.player_id))
+                    || events[..event_index]
+                        .iter()
+                        .any(|e| matches!(e.kind, GameEventKind::RedHerringAssigned { .. }))
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
+            GameEventKind::NightActionResolved { payload } => {
+                if step.player_id.as_deref() != Some(payload.actor_player_id.as_str()) {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                let target = match &payload.resolution {
+                    NightActionResolution::Poison {
+                        target_player_id, ..
+                    }
+                    | NightActionResolution::MonkProtection {
+                        target_player_id, ..
+                    }
+                    | NightActionResolution::ImpAttack {
+                        target_player_id, ..
+                    } => target_player_id,
+                };
+                let actual = players_at_event
+                    .iter()
+                    .find(|p| p.id == payload.actor_player_id)
+                    .map(|p| p.actual_character.as_str());
+                let impaired = actor_is_impaired(&step, &players_at_event, &events[..event_index]);
+                let expected = match step.character.as_deref() {
+                    Some("poisoner") => {
+                        let applied = actual == Some("poisoner") && !impaired;
+                        NightActionResolution::Poison {
+                            target_player_id: target.clone(),
+                            applied,
+                            no_effect_reason: (!applied).then_some(if actual == Some("poisoner") {
+                                NightActionNoEffectReason::ActorImpaired
+                            } else {
+                                NightActionNoEffectReason::NotActualCharacter
+                            }),
+                        }
+                    }
+                    Some("monk") => {
+                        let applied = actual == Some("monk") && !impaired;
+                        NightActionResolution::MonkProtection {
+                            target_player_id: target.clone(),
+                            applied,
+                            no_effect_reason: (!applied).then_some(if actual == Some("monk") {
+                                NightActionNoEffectReason::ActorImpaired
+                            } else {
+                                NightActionNoEffectReason::NotActualCharacter
+                            }),
+                        }
+                    }
+                    Some("imp") => {
+                        let alive = players_at_event.iter().any(|p| p.id == *target && p.alive);
+                        let current_night_start = events[..event_index].iter().rposition(|event| matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
+                        let protection = events[..event_index].iter().enumerate().rev().find_map(
+                            |(index, e)| match &e.kind {
+                                GameEventKind::NightActionResolved { payload } => {
+                                    match &payload.resolution {
+                                        NightActionResolution::MonkProtection {
+                                            target_player_id,
+                                            applied: true,
+                                            ..
+                                        } if target_player_id == target
+                                            && current_night_start
+                                                .is_some_and(|boundary| index > boundary) =>
+                                        {
+                                            Some(e.id.clone())
+                                        }
+                                        _ => None,
+                                    }
+                                }
+                                _ => None,
+                            },
+                        );
+                        let outcome = if actual != Some("imp") {
+                            ImpAttackOutcome::NoDeath {
+                                reason: ImpNoDeathReason::NotActualCharacter,
+                            }
+                        } else if impaired {
+                            ImpAttackOutcome::NoDeath {
+                                reason: ImpNoDeathReason::ActorImpaired,
+                            }
+                        } else if !alive {
+                            ImpAttackOutcome::NoDeath {
+                                reason: ImpNoDeathReason::AlreadyDead,
+                            }
+                        } else if let Some(source_event_id) = protection {
+                            ImpAttackOutcome::Prevented {
+                                reason: ImpPreventionReason::MonkProtection,
+                                source_event_id,
+                            }
+                        } else {
+                            ImpAttackOutcome::Death {
+                                player_id: target.clone(),
+                            }
+                        };
+                        NightActionResolution::ImpAttack {
+                            target_player_id: target.clone(),
+                            outcome,
+                        }
+                    }
+                    _ => return Err(ErrorKind::ReplayFailed.into_error()),
+                };
+                if payload.resolution != expected {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                if !step
+                    .required_input
+                    .allowed_player_ids
+                    .as_ref()
+                    .is_some_and(|ids| ids.contains(target))
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
+            GameEventKind::NightDeathsAnnounced { payload } => {
+                let announced = events[..event_index]
+                    .iter()
+                    .flat_map(|e| match &e.kind {
+                        GameEventKind::NightDeathsAnnounced { payload } => {
+                            payload.player_ids.clone()
+                        }
+                        _ => vec![],
+                    })
+                    .collect::<Vec<_>>();
+                let expected = events[..event_index]
+                    .iter()
+                    .filter_map(|e| match &e.kind {
+                        GameEventKind::NightActionResolved { payload } => match &payload.resolution
+                        {
+                            NightActionResolution::ImpAttack {
+                                outcome: ImpAttackOutcome::Death { player_id },
+                                ..
+                            } => Some(player_id.clone()),
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+                    .filter(|id| !announced.contains(id))
+                    .collect::<Vec<_>>();
+                if payload.player_ids != expected {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
             GameEventKind::ExecutionConfirmed { payload } => {
                 let prefix = step_prefix(&payload.step_id)?;
                 let prior = replay_day_state(&events[..event_index], &players_at_event, &prefix)
@@ -310,13 +564,112 @@ pub(crate) fn phase_step_statuses(
     Ok(statuses)
 }
 
+fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> RuleState {
+    let red_herring_player_id = events.iter().find_map(|e| match &e.kind {
+        GameEventKind::RedHerringAssigned { payload } => Some(payload.player_id.clone()),
+        _ => None,
+    });
+    let last_to_night = events.iter().rposition(|e| matches!(&e.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
+    let last_to_day = events.iter().rposition(|e| matches!(&e.kind, GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toDay")));
+    let active_poison = events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(i, e)| match &e.kind {
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::Poison { applied: true, .. }
+                ) && last_to_night.is_none_or(|boundary| i > boundary) =>
+            {
+                let NightActionResolution::Poison {
+                    target_player_id, ..
+                } = &payload.resolution
+                else {
+                    unreachable!()
+                };
+                players
+                    .iter()
+                    .any(|p| {
+                        p.id == payload.actor_player_id
+                            && p.alive
+                            && p.actual_character == "poisoner"
+                    })
+                    .then(|| ActiveRuleEffect {
+                        player_id: target_player_id.clone(),
+                        source_player_id: payload.actor_player_id.clone(),
+                        source_event_id: e.id.clone(),
+                    })
+            }
+            _ => None,
+        });
+    let active_protection = events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(i, e)| match &e.kind {
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::MonkProtection { applied: true, .. }
+                ) && last_to_night.is_some_and(|boundary| i > boundary)
+                    && last_to_day.is_none_or(|boundary| i > boundary) =>
+            {
+                let NightActionResolution::MonkProtection {
+                    target_player_id, ..
+                } = &payload.resolution
+                else {
+                    unreachable!()
+                };
+                players
+                    .iter()
+                    .any(|p| {
+                        p.id == payload.actor_player_id && p.alive && p.actual_character == "monk"
+                    })
+                    .then(|| ActiveRuleEffect {
+                        player_id: target_player_id.clone(),
+                        source_player_id: payload.actor_player_id.clone(),
+                        source_event_id: e.id.clone(),
+                    })
+            }
+            _ => None,
+        });
+    let announced = events
+        .iter()
+        .flat_map(|e| match &e.kind {
+            GameEventKind::NightDeathsAnnounced { payload } => payload.player_ids.clone(),
+            _ => vec![],
+        })
+        .collect::<Vec<_>>();
+    let unannounced_night_death_player_ids = events
+        .iter()
+        .filter_map(|e| match &e.kind {
+            GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+                NightActionResolution::ImpAttack {
+                    outcome: ImpAttackOutcome::Death { player_id },
+                    ..
+                } => Some(player_id.clone()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .filter(|id| !announced.contains(id))
+        .collect();
+    RuleState {
+        red_herring_player_id,
+        active_poison,
+        active_protection,
+        unannounced_night_death_player_ids,
+    }
+}
+
 pub(crate) fn phase_sequences_with_statuses(
     players: &[Player],
     events: &[GameEvent],
     max_cycles: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
 ) -> Vec<(Phase, Vec<PhaseStep>)> {
-    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players))];
+    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players, events))];
     for cycle in 1..=max_cycles.max(1) {
         let prefix = crate::phase::phase_prefix("day", cycle);
         let executed_player_id = events.iter().find_map(|event| match &event.kind {
@@ -328,7 +681,7 @@ pub(crate) fn phase_sequences_with_statuses(
             _ => None,
         });
         sequences.push((Phase::Day, day_steps(cycle, statuses, executed_player_id)));
-        sequences.push((Phase::Night, night_steps(players, cycle)));
+        sequences.push((Phase::Night, night_steps(players, events, cycle)));
     }
     sequences
 }

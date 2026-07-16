@@ -8,6 +8,8 @@ import type {
   PhaseInputSuggestion,
   PhaseInputSuggestionRequest,
   Player,
+  Proposal,
+  RuleState,
   RevealPayload,
 } from "../../core/types";
 import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
@@ -21,6 +23,7 @@ import {
   stepInputReady,
   stepStatusLabel,
   stepTitle,
+  targetCheckForSelection,
 } from "./phaseInput";
 import { ExecutionDeathActions, ExecutionDecisionActions, StepInputFields } from "./StepInputs";
 import { suggestionRequestFingerprint } from "./randomSuggestion";
@@ -38,6 +41,8 @@ export function PhaseControl({
   phaseOverview,
   players,
   dayState,
+  ruleState,
+  latestProposal,
   nominationDraft,
   onNominationDraftChange,
   phaseInputDraft,
@@ -56,6 +61,8 @@ export function PhaseControl({
   phaseOverview: PhaseOverviewItem[];
   players: Player[];
   dayState?: DayState;
+  ruleState?: RuleState;
+  latestProposal?: Proposal;
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
   phaseInputDraft: PhaseInputDraftController;
@@ -91,6 +98,8 @@ export function PhaseControl({
       nominationDraft={nominationDraft}
       onNominationDraftChange={onNominationDraftChange}
       phaseInputDraft={phaseInputDraft}
+      ruleState={ruleState}
+      latestProposal={latestProposal}
       busy={busy}
       onConfirm={onConfirm}
       onSkip={onSkip}
@@ -123,6 +132,7 @@ function ConfirmedRevealFollowup({
   const actorTitle = actor
     ? `${actor.name}${pendingReveal.step.character ? ` · ${characterLabel(pendingReveal.step.character)}` : ""}`
     : stepTitle(pendingReveal.step);
+  const fortuneTeller = pendingReveal.step.character === "fortuneTeller" && !isSpyGrimoire;
 
   return (
     <>
@@ -135,7 +145,7 @@ function ConfirmedRevealFollowup({
       </div>
 
       <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
-        {!isSpyGrimoire ? (
+        {!isSpyGrimoire && !fortuneTeller ? (
           <div className="confirmedRevealActor">
             <span>{actor?.seat ?? "•"}</span>
             <div>
@@ -149,7 +159,13 @@ function ConfirmedRevealFollowup({
           </div>
         ) : null}
 
-        {isSpyGrimoire ? (
+        {fortuneTeller ? (
+          <section className="fortuneTellerResult" aria-label="점쟁이 결과">
+            <h3>점쟁이 결과</h3>
+            <p><span>결과</span><strong>{"valueKo" in pendingReveal.payload && pendingReveal.payload.valueKo === "예" ? "악마 있음" : "악마 없음"}</strong></p>
+            <button type="button" className="primaryButton" onClick={() => onShowReveal(pendingReveal.payload)} disabled={busy}>Reveal</button>
+          </section>
+        ) : isSpyGrimoire ? (
           <button
             type="button"
             className="primaryButton"
@@ -193,6 +209,37 @@ function ConfirmedRevealFollowup({
   );
 }
 
+function ImpActionResult({ proposal, players }: { proposal: Proposal; players: Player[] }) {
+  if (proposal.event.type !== "nightActionResolved" || proposal.event.payload.resolution.kind !== "impAttack") return null;
+  const resolution = proposal.event.payload.resolution;
+  const target = players.find((player) => player.id === resolution.targetPlayerId);
+  if (!target) return null;
+  let outcome: string;
+  if (resolution.outcome.kind === "death") outcome = "사망";
+  else if (resolution.outcome.kind === "prevented") outcome = "수도승에 의해 보호됨";
+  else if (resolution.outcome.reason === "alreadyDead") outcome = "이미 사망";
+  else outcome = "효과 없음";
+  return <p className="nightActionResult" aria-label="밤 행동 결과">{target.seat}번 {target.name} - {outcome}</p>;
+}
+
+function NightDeathAnnouncement({ players, playerIds }: { players: Player[]; playerIds: string[] }) {
+  const deaths = playerIds.flatMap((id) => {
+    const player = players.find((candidate) => candidate.id === id);
+    return player ? [player] : [];
+  });
+  return (
+    <section className="nightDeathAnnouncement" aria-label="밤 사망 발표">
+      {deaths.map((player) => (
+        <div key={player.id}>
+          <span role="img" aria-label="사망">†</span>
+          <strong>{player.seat}번</strong>
+          <span>{player.name}</span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function CurrentStepPane({
   currentStep,
   phaseOverview,
@@ -201,6 +248,8 @@ function CurrentStepPane({
   nominationDraft,
   onNominationDraftChange,
   phaseInputDraft,
+  ruleState,
+  latestProposal,
   busy,
   onConfirm,
   onSkip,
@@ -215,6 +264,8 @@ function CurrentStepPane({
   nominationDraft: NominationDraft;
   onNominationDraftChange: (draft: NominationDraft) => void;
   phaseInputDraft: PhaseInputDraftController;
+  ruleState?: RuleState;
+  latestProposal?: Proposal;
   busy: boolean;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
   onSkip: () => void;
@@ -261,6 +312,16 @@ function CurrentStepPane({
       )
     : false;
   const selectionValid = baseSelectionValid;
+  const hasTargetChecks = Boolean(currentStep?.informationPrompt?.targetChecks?.length);
+  const selectedTargetCheck = currentStep
+    ? targetCheckForSelection(currentStep, phaseInputDraft.selectedPlayerIds)
+    : undefined;
+  const targetChoiceReady =
+    !hasTargetChecks ||
+    Boolean(
+      selectedTargetCheck &&
+        (selectedTargetCheck.choices.length === 1 || phaseInputDraft.selectedTargetChoice),
+    );
   const currentConfirmation = currentStep
     ? phaseStepConfirmation(currentStep, phaseInputDraft, nominationDraft)
     : {};
@@ -311,6 +372,9 @@ function CurrentStepPane({
       <section className="currentStepCard" aria-label="현재 단계">
         {currentStep ? (
           <>
+            {currentStep.stepType === "announcement" ? (
+              <NightDeathAnnouncement players={players} playerIds={ruleState?.unannouncedNightDeathPlayerIds ?? []} />
+            ) : null}
             {currentPlayer ? (
               <section className="currentActor" aria-label="현재 행동자">
                 <span aria-hidden="true">{currentCharacter?.icon ?? currentPlayer.seat}</span>
@@ -340,12 +404,14 @@ function CurrentStepPane({
               zeroOutsiders={phaseInputDraft.zeroOutsiders}
               zeroOutsidersAvailable={phaseInputDraft.zeroOutsidersAvailable}
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
+              selectedTargetChoice={phaseInputDraft.selectedTargetChoice}
               busy={busy || suggesting}
               onSelectedPlayerIdsChange={phaseInputDraft.setSelectedPlayerIds}
               onCharacterChange={phaseInputDraft.setSelectedCharacterId}
               onCharactersChange={phaseInputDraft.setSelectedCharacterIds}
               onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
               onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
+              onTargetChoiceChange={phaseInputDraft.setSelectedTargetChoice}
               randomSuggestion={
                 currentStep.requiredInput.supportsRandomSuggestion
                   ? {
@@ -356,6 +422,9 @@ function CurrentStepPane({
                   : undefined
               }
             />
+            {latestProposal?.event.type === "nightActionResolved" ? (
+              <ImpActionResult proposal={latestProposal} players={players} />
+            ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
             {currentStep.requiredInput.kind === "executionDecision" ? (
               <ExecutionDecisionActions
@@ -379,13 +448,15 @@ function CurrentStepPane({
                   onClick={() =>
                     onConfirm(currentConfirmation)
                   }
-                  disabled={busy || suggesting || !selectionValid}
+                  disabled={busy || suggesting || !selectionValid || !targetChoiceReady}
                 >
                   {currentStep.stepType === "whisper"
                     ? "토론 시작"
                     : currentStep.stepType === "discussion"
                       ? "지명 및 투표 시작"
-                      : "확정"}
+                      : currentStep.stepType === "announcement" && currentStep.id.includes("announceDeaths")
+                        ? "발표 확정"
+                        : "확정"}
                 </button>
                 {currentStep.canSkip ? (
                   <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>

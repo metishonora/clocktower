@@ -58,6 +58,8 @@ pub(crate) fn phase_transition_step(
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
+            allowed_player_ids: None,
+            player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
             execution_survival_allowed: false,
@@ -85,6 +87,8 @@ pub(crate) fn required_none() -> RequiredInput {
         setup_info: None,
         character_kind: None,
         allowed_character_ids: None,
+        allowed_player_ids: None,
+        player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
         execution_survival_allowed: false,
@@ -106,6 +110,8 @@ pub(crate) fn required_characters(
         setup_info: None,
         character_kind: None,
         allowed_character_ids,
+        allowed_player_ids: None,
+        player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion,
         execution_survival_allowed: false,
@@ -156,6 +162,13 @@ pub(crate) fn validate_required_input(
     for player_id in player_ids {
         let player_id = player_id.as_str();
         if !unique_player_ids.insert(player_id) || !roster_player_ids.contains(player_id) {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        if input
+            .allowed_player_ids
+            .as_ref()
+            .is_some_and(|allowed| !allowed.iter().any(|id| id == player_id))
+        {
             return Err(ErrorKind::InvalidStepInput.into_error());
         }
     }
