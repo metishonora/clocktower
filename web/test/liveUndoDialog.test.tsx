@@ -1,0 +1,27 @@
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expect, test, vi } from "vitest";
+import { LiveUndoDialog } from "../src/features/event-log/LiveUndoDialog";
+
+test("live Undo dialog starts on the safe action, traps focus, and cancels with Escape", async () => {
+  const onCancel = vi.fn();
+  const user = userEvent.setup();
+  render(
+    <LiveUndoDialog
+      event={{ id: "event-chef", summary: "요리사 정보 확정 · 1쌍 공개" }}
+      onCancel={onCancel}
+      onConfirm={vi.fn()}
+    />,
+  );
+  const dialog = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
+  const cancel = within(dialog).getByRole("button", { name: "취소" });
+  const confirm = within(dialog).getByRole("button", { name: "되돌리기" });
+
+  await waitFor(() => expect(document.activeElement).toBe(cancel));
+  await user.tab({ shift: true });
+  expect(document.activeElement).toBe(confirm);
+  await user.tab();
+  expect(document.activeElement).toBe(cancel);
+  await user.keyboard("{Escape}");
+  expect(onCancel).toHaveBeenCalledTimes(1);
+});

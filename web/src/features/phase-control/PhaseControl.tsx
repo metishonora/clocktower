@@ -37,6 +37,7 @@ type ConfirmedReveal = {
 
 export function PhaseControl({
   pendingReveal,
+  dayRuntime,
   currentStep,
   phaseOverview,
   players,
@@ -57,6 +58,7 @@ export function PhaseControl({
   suggestionContextFingerprint,
 }: {
   pendingReveal?: ConfirmedReveal;
+  dayRuntime?: string;
   currentStep?: PhaseStep;
   phaseOverview: PhaseOverviewItem[];
   players: Player[];
@@ -80,6 +82,7 @@ export function PhaseControl({
     return (
       <ConfirmedRevealFollowup
         pendingReveal={pendingReveal}
+        dayRuntime={dayRuntime}
         players={players}
         replayReady={replayReady}
         busy={busy}
@@ -92,6 +95,7 @@ export function PhaseControl({
   return (
     <CurrentStepPane
       currentStep={currentStep}
+      dayRuntime={dayRuntime}
       phaseOverview={phaseOverview}
       players={players}
       dayState={dayState}
@@ -112,6 +116,7 @@ export function PhaseControl({
 
 function ConfirmedRevealFollowup({
   pendingReveal,
+  dayRuntime,
   players,
   replayReady,
   busy,
@@ -119,6 +124,7 @@ function ConfirmedRevealFollowup({
   onContinue,
 }: {
   pendingReveal: ConfirmedReveal;
+  dayRuntime?: string;
   players: Player[];
   replayReady: boolean;
   busy: boolean;
@@ -140,6 +146,7 @@ function ConfirmedRevealFollowup({
         <div>
           <p className="eyebrow">{phaseLabel(pendingReveal.step.phase)} · 후속 조치</p>
           <h2>확정된 정보 공개</h2>
+          {dayRuntime ? <DayRuntimeValue value={dayRuntime} /> : null}
         </div>
         <span className="phaseBadge confirmedRevealBadge">확정됨</span>
       </div>
@@ -229,6 +236,14 @@ function ImpActionResult({ proposal, players }: { proposal: Proposal; players: P
   return <p className="nightActionResult" aria-label="밤 행동 결과">{target.seat}번 {target.name} - {outcome}</p>;
 }
 
+function DayRuntimeValue({ value }: { value: string }) {
+  return (
+    <span className="dayRuntime" aria-label="낮 경과 시간">
+      <span>낮 경과</span>{" "}<strong>{value}</strong>
+    </span>
+  );
+}
+
 function NightDeathAnnouncement({ players, playerIds }: { players: Player[]; playerIds: string[] }) {
   const deaths = playerIds.flatMap((id) => {
     const player = players.find((candidate) => candidate.id === id);
@@ -249,6 +264,7 @@ function NightDeathAnnouncement({ players, playerIds }: { players: Player[]; pla
 
 function CurrentStepPane({
   currentStep,
+  dayRuntime,
   phaseOverview,
   players,
   dayState,
@@ -265,6 +281,7 @@ function CurrentStepPane({
   suggestionContextFingerprint,
 }: {
   currentStep?: PhaseStep;
+  dayRuntime?: string;
   phaseOverview: PhaseOverviewItem[];
   players: Player[];
   dayState?: DayState;
@@ -374,6 +391,7 @@ function CurrentStepPane({
         <div>
           <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
           <h2>{currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
+          {dayRuntime ? <DayRuntimeValue value={dayRuntime} /> : null}
         </div>
         {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>

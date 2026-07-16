@@ -155,6 +155,30 @@ h3 {
   font-size: 0.94rem;
 }
 
+.dayRuntime {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 5px;
+  color: #743142;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dayRuntime span {
+  font-size: 0.69rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.dayRuntime strong {
+  min-width: 5ch;
+  font-family: var(--serif);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
 .phaseBadge {
   flex: 0 0 auto;
   border: 1px solid rgba(31, 111, 91, 0.28);
@@ -1426,6 +1450,105 @@ select {
   gap: 12px;
   border-top: 1px solid var(--line);
   padding: 14px 16px 16px;
+}
+
+.eventLogSurface {
+  display: grid;
+  gap: 8px;
+}
+
+.latestEventUndo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.latestEventUndo > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.latestEventUndo span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.latestEventUndo strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latestEventUndo button {
+  min-width: 68px;
+  border: 1px solid rgba(183, 55, 44, 0.42);
+  border-radius: 6px;
+  background: #fff7f5;
+  color: #9f2e26;
+  padding: 9px 11px;
+  font-weight: 950;
+}
+
+.latestEventUndo button:disabled {
+  opacity: 0.48;
+}
+
+.confirmedUndoDialogBackdrop {
+  position: fixed;
+  z-index: 110;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(25, 31, 28, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.confirmedUndoDialog {
+  display: grid;
+  width: min(480px, calc(100vw - 48px));
+  gap: 16px;
+  border: 1px solid #c9c3b8;
+  border-radius: 16px;
+  background: #fffefa;
+  box-shadow: 0 26px 70px rgba(20, 27, 24, 0.32);
+  color: var(--ink);
+  padding: 22px;
+}
+
+.confirmedUndoDialog h2 {
+  margin: 0;
+}
+
+.confirmedUndoDialog > strong {
+  border-radius: 8px;
+  background: var(--panel-soft);
+  padding: 12px;
+  line-height: 1.4;
+}
+
+.confirmedUndoDialog footer {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 8px;
+}
+
+.confirmedUndoDialog footer button {
+  min-height: 48px;
+  border-radius: 7px;
+  font-weight: 950;
+}
+
+.confirmedUndoButton {
+  border: 0;
+  background: #a7352d;
+  color: #fff;
 }
 
 .stepSpecificInput {

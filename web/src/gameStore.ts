@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter.js";
 import type {
   CoreResult,
@@ -67,9 +67,12 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     counts: SetupDistribution;
   }>();
   const [busy, setBusy] = useState(false);
+  const [undoReplayPending, setUndoReplayPending] = useState(false);
+  const undoReplayTargetEventCount = useRef<number | undefined>(undefined);
   const [loadError, setLoadError] = useState<string>();
   const [storageReady, setStorageReady] = useState(false);
   const [storageError, setStorageError] = useState<string>();
+  const [gameSessionRevision, setGameSessionRevision] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,10 +119,21 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
     core.replay(gameFile)
       .then((result) => {
-        if (!cancelled) setReplayResult(result);
+        if (cancelled) return;
+        setReplayResult(result);
+        if (
+          undoReplayTargetEventCount.current !== undefined &&
+          (!result.ok || result.value.eventCount === undoReplayTargetEventCount.current)
+        ) {
+          undoReplayTargetEventCount.current = undefined;
+          setUndoReplayPending(false);
+        }
       })
       .catch((error: unknown) => {
-        if (!cancelled) setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
+        if (cancelled) return;
+        undoReplayTargetEventCount.current = undefined;
+        setUndoReplayPending(false);
+        setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
       });
 
     return () => {
@@ -129,12 +143,25 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
   const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
+  const phase = replayState?.phase;
   const players = replayState?.players ?? [];
   const currentStep = replayState?.currentStep ?? undefined;
   const phaseOverview = replayState?.phaseOverview ?? [];
   const dayState = replayState?.dayState;
   const ruleState = replayState?.ruleState;
   const setupConfirmed = players.length > 0;
+  const transitionBusy = busy || undoReplayPending;
+  const replayCaughtUp = replayState?.eventCount === gameFile.game.events.length;
+  const latestEvent = gameFile.game.events.at(-1);
+  const latestLiveUndoEvent = latestEvent && latestEvent.type !== "setupConfirmed"
+    ? { id: latestEvent.id, summary: latestEvent.summary }
+    : undefined;
+  const canUndoLatestLiveEvent = Boolean(latestLiveUndoEvent) && !transitionBusy && replayCaughtUp;
+  const canRecoverConfirmedSetup =
+    gameFile.game.events.length === 1 &&
+    latestEvent?.type === "setupConfirmed" &&
+    !transitionBusy &&
+    replayCaughtUp;
   const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
   const setupDistributionRequest = useMemo(
     () => ({
@@ -363,6 +390,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       return;
     }
 
+    undoReplayTargetEventCount.current = undefined;
+    setUndoReplayPending(false);
     setStorageError(undefined);
     setLoadError(undefined);
     setGameFile(createGameFile());
@@ -371,25 +400,50 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setSetupDraft(createSetupDraft());
   }
 
-  function undoLatestEvent() {
-    if (!window.confirm("설정 확정을 되돌리고 다시 수정할까요?")) return;
-
-    if (players.length > 0) {
-      setSetupDraft(createSetupDraftFromConfirmedPlayers(players));
+  function removeLatestEvent(expectedEventId: string, expectedType: "live" | "setup"): boolean {
+    const currentLatestEvent = gameFile.game.events.at(-1);
+    const typeMatches = expectedType === "setup"
+      ? currentLatestEvent?.type === "setupConfirmed" && gameFile.game.events.length === 1
+      : currentLatestEvent?.type !== "setupConfirmed";
+    if (
+      transitionBusy ||
+      !replayCaughtUp ||
+      !currentLatestEvent ||
+      currentLatestEvent.id !== expectedEventId ||
+      !typeMatches
+    ) {
+      setLoadError("최근 행동이 변경되어 되돌리지 않았습니다.");
+      return false;
     }
+
+    const nextEventCount = gameFile.game.events.length - 1;
+    undoReplayTargetEventCount.current = nextEventCount;
+    setUndoReplayPending(true);
+    setStorageError(undefined);
+    setLoadError(undefined);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
-    setGameFile((current) => {
-      if (current.game.events.length === 0) return current;
-      return {
-        ...current,
-        game: {
-          ...current.game,
-          updatedAt: new Date().toISOString(),
-          events: current.game.events.slice(0, -1),
-        },
-      };
-    });
+    setGameFile((current) => ({
+      ...current,
+      game: {
+        ...current.game,
+        updatedAt: new Date().toISOString(),
+        events: current.game.events.slice(0, -1),
+      },
+    }));
+    return true;
+  }
+
+  function undoLatestLiveEvent(expectedEventId: string): boolean {
+    return removeLatestEvent(expectedEventId, "live");
+  }
+
+  function recoverConfirmedSetup() {
+    if (!canRecoverConfirmedSetup || !latestEvent) return;
+    if (!window.confirm("설정 확정을 되돌리고 다시 수정할까요?")) return;
+    if (removeLatestEvent(latestEvent.id, "setup") && players.length > 0) {
+      setSetupDraft(createSetupDraftFromConfirmedPlayers(players));
+    }
   }
 
   function clearProposalResult() {
@@ -418,7 +472,10 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       setReplayResult(importedReplay);
       setSetupDraft((current) => syncSetupDraftFromReplayState(current, importedReplay.value));
       setStorageError(undefined);
+      undoReplayTargetEventCount.current = undefined;
+      setUndoReplayPending(false);
       setGameFile(importedGameFile);
+      setGameSessionRevision((current) => current + 1);
       setProposalResult(undefined);
       setPendingConfirmedReveal(undefined);
     } catch (error) {
@@ -436,16 +493,21 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     proposalResult,
     pendingConfirmedReveal,
     pendingConfirmedRevealReady,
-    busy,
+    busy: transitionBusy,
     loadError: loadError ?? storageError,
     storageReady,
     hasConfirmedEvents,
     players,
     currentStep,
+    phase,
+    gameSessionRevision,
     phaseOverview,
     dayState,
     ruleState,
     setupConfirmed,
+    latestLiveUndoEvent,
+    canUndoLatestLiveEvent,
+    canRecoverConfirmedSetup,
     setupExpectedCounts,
     setupHintsReady,
     shownWarnings,
@@ -456,7 +518,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     suggestPhaseInput,
     useSlayerAbility,
     resetSetup,
-    undoLatestEvent,
+    undoLatestLiveEvent,
+    recoverConfirmedSetup,
     clearProposalResult,
     continueAfterConfirmedReveal,
     importGameFile,
