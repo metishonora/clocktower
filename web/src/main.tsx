@@ -30,6 +30,13 @@ const DevFirstNightSuggestionPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevLivePlayUndoPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./livePlayUndoPrototype");
+      return { default: module.LivePlayUndoPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -62,6 +69,17 @@ export function App(props: ClocktowerAppProps) {
 
   if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("prototype") === "slayer-ability") {
     return <SlayerPublicAbilityPrototype />;
+  }
+
+  if (
+    DevLivePlayUndoPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "live-play-undo"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevLivePlayUndoPrototype />
+      </React.Suspense>
+    );
   }
 
   if (

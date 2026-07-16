@@ -1,0 +1,26 @@
+.liveUndoPrototype { min-height: 100vh; padding: 18px; background: #f4efe5; color: #27231d; font-family: ui-sans-serif, system-ui, sans-serif; }
+.liveUndoPrototype button { font: inherit; }
+.liveUndoPrototypeHeader, .liveUndoScenarioSwitcher, .liveUndoPanel, .liveUndoGrimoire { border: 1px solid #d4c8b5; border-radius: 14px; background: #fffdf8; box-shadow: 0 8px 28px #4b3e2a14; }
+.liveUndoPrototypeHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; }
+.liveUndoPrototypeHeader p, .liveUndoPanel p, .liveUndoAction span { margin: 0; color: #746957; font-size: .76rem; font-weight: 750; letter-spacing: .04em; }
+.liveUndoPrototypeHeader h1 { margin: 3px 0 0; font-size: 1.35rem; }
+.liveUndoPrototypeHeader nav, .liveUndoScenarioSwitcher { display: flex; flex-wrap: wrap; gap: 7px; }
+.liveUndoPrototypeHeader button, .liveUndoScenarioSwitcher button { border: 1px solid #cfc4b2; border-radius: 999px; padding: 8px 12px; background: #fff; color: #5c5140; }
+.liveUndoPrototypeHeader button.selected, .liveUndoScenarioSwitcher button.selected { border-color: #315f53; background: #e4eee9; color: #244a41; }
+.liveUndoScenarioSwitcher { margin: 12px 0; padding: 9px; }
+.liveUndoWorkspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .7fr); gap: 12px; }
+.liveUndoGrimoire { position: relative; min-height: 590px; overflow: hidden; background: radial-gradient(circle, #f4ecd9 0 36%, #e3d5bd 37% 39%, #fbf8f0 40%); }
+.liveUndoTable { position: absolute; inset: 50% auto auto 50%; display: grid; width: 160px; translate: -50% -50%; text-align: center; }
+.liveUndoTable span, .liveUndoTable small { color: #746957; }
+.liveUndoTable strong { margin: 4px 0; font-size: 1.35rem; }
+.liveUndoSeat { position: absolute; display: grid; min-width: 94px; padding: 8px; translate: -50% -50%; border: 1px solid #d0c3ae; border-radius: 12px; background: #fffdf9; text-align: center; }
+.liveUndoSeat span { color: #8a6b2e; font-size: .72rem; }.liveUndoSeat small { color: #776c5b; }.seat1 { left: 50%; top: 8%; }.seat2 { left: 82%; top: 24%; }.seat3 { left: 82%; top: 76%; }.seat4 { left: 50%; top: 92%; }.seat5 { left: 18%; top: 76%; }.seat6 { left: 18%; top: 24%; }
+.liveUndoRail { display: grid; align-content: start; gap: 12px; }.liveUndoPanel { padding: 15px; }.liveUndoPanel h2 { margin: 4px 0 14px; font-size: 1.1rem; }
+.liveUndoCurrentStep button, .liveUndoRevealFollowup button, .liveUndoSetup button, .liveUndoAction button, .liveUndoDialog button { border: 1px solid #c9bdab; border-radius: 9px; padding: 9px 12px; background: #fff; }
+.liveUndoRevealFollowup { display: grid; gap: 9px; }.liveUndoRevealFollowup h2 { margin-bottom: 3px; }.liveUndoRevealFollowup button:first-of-type { background: #315f53; color: #fff; }
+.liveUndoAction { display: grid; gap: 6px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #e3dace; }.liveUndoAction button { color: #9c342e; border-color: #d9aaa5; background: #fff8f7; }.liveUndoAction button:disabled { opacity: .45; }
+.liveUndoSetup { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }.liveUndoSetup p { width: 100%; }.liveUndoSetup strong { flex: 1 1 100%; }
+.liveUndoEventLog > div { display: flex; justify-content: space-between; }.liveUndoEventLog ol { margin: 12px 0 0; padding-left: 22px; }.liveUndoEventLog li { margin: 7px 0; }.liveUndoEventLog .liveUndoAction { margin-top: 3px; padding-top: 0; border: 0; }
+.liveUndoPrototypeState { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.liveUndoDialogBackdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: #211c17a6; z-index: 20; }.liveUndoDialog { width: min(440px, 100%); padding: 22px; border-radius: 15px; background: #fffdf8; box-shadow: 0 24px 80px #0006; }.liveUndoDialog p { margin: 0; color: #9c342e; font-size: .76rem; font-weight: 750; }.liveUndoDialog h2 { margin: 5px 0 16px; }.liveUndoDialog > strong { display: block; padding: 12px; border-radius: 9px; background: #f4efe5; }.liveUndoDialog > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }.liveUndoDialog button.destructive { border-color: #a73831; background: #a73831; color: #fff; }
+@media (max-width: 760px) { .liveUndoPrototypeHeader { align-items: flex-start; flex-direction: column; }.liveUndoWorkspace { grid-template-columns: 1fr; }.liveUndoGrimoire { min-height: 480px; } }
