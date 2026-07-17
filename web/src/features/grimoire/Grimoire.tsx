@@ -9,6 +9,7 @@ import {
 } from "../../setupDraft";
 import { voteStatusForPlayer } from "../../voting";
 import type { NominationDraft } from "../voting/useNominationDraft";
+import { CharacterIcon } from "../../components/CharacterIcon";
 import { SeatLayoutControls, startSeatDrag } from "./SeatLayoutControls";
 import { PlayerAnnotationsDialog } from "./PlayerAnnotationsDialog";
 import { playerAnnotationBadges } from "./playerAnnotations";
@@ -205,6 +206,7 @@ export function Grimoire({
                         : undefined
                 }
               >
+                <CharacterIcon characterId={actualCharacter} className="seatCharacterIcon" />
                 <span className="seatTokenNumber">{seat.seat}</span>
                 <strong>{seat.name}</strong>
                 <small>{characterLabel(actualCharacter)}</small>

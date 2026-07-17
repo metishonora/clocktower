@@ -1,0 +1,163 @@
+.officialAssetsPrototype {
+  min-height: 100vh;
+  padding: 14px;
+  background: #eee9df;
+  color: #20231f;
+}
+
+.officialAssetsPrototype * { box-sizing: border-box; }
+.officialAssetsPrototype button { min-height: 44px; font: inherit; }
+
+.officialAssetsHeader,
+.officialAssetsNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #d2c9ba;
+  border-radius: 12px;
+  background: #fffdf8;
+  padding: 12px 16px;
+}
+
+.officialAssetsHeader { margin-bottom: 12px; }
+.officialAssetsHeader p,
+.officialAssetsHeader h1,
+.officialAssetsSectionTitle p,
+.officialAssetsSectionTitle h2 { margin: 0; }
+.officialAssetsHeader p,
+.officialAssetsSectionTitle p { color: #246853; font-size: .74rem; font-weight: 900; letter-spacing: .05em; }
+.officialAssetsHeader h1 { margin-top: 3px; font-size: 1.55rem; }
+.officialAssetsHeader nav { display: flex; gap: 6px; }
+.officialAssetsHeader nav button { border: 1px solid #c9c1b3; border-radius: 8px; background: #f8f4ec; padding: 8px 14px; color: #343a34; font-weight: 900; }
+.officialAssetsHeader nav button.selected { border-color: #236a55; background: #dcebe4; color: #164b3b; }
+
+.officialAssetsWorkspace {
+  display: grid;
+  grid-template-columns: minmax(620px, 1.35fr) minmax(360px, .65fr);
+  min-height: calc(100vh - 196px);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.officialAssetsGrimoire,
+.officialAssetsSidePanel {
+  border: 1px solid #d2c9ba;
+  border-radius: 12px;
+  background: #fffdf8;
+}
+
+.officialAssetsGrimoire {
+  position: relative;
+  min-height: 620px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(35, 106, 85, .07) 0 24%, transparent 24.3%),
+    repeating-radial-gradient(circle at center, transparent 0 15%, rgba(112, 98, 76, .1) 15.2% 15.4%),
+    #faf7f0;
+}
+
+.officialAssetsTableCenter {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  width: 170px;
+  height: 138px;
+  place-content: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #cbbfa9;
+  border-radius: 50%;
+  background: rgba(255, 253, 248, .94);
+  text-align: center;
+}
+.officialAssetsTableCenter span { color: #697067; font-size: .78rem; font-weight: 850; }
+.officialAssetsTableCenter strong { font-size: 1.2rem; }
+
+.officialAssetSeat {
+  --team: #3d739d;
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  width: 184px;
+  min-height: 94px;
+  align-items: center;
+  gap: 7px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--team);
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 9px 22px rgba(55, 42, 24, .14);
+  padding: 8px;
+}
+.officialAssetSeat.alignment-e { --team: #98483f; }
+.officialAssetSeat > img { width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(38, 29, 20, .2)); }
+.officialAssetSeat > div { display: grid; min-width: 0; gap: 1px; }
+.officialAssetSeat span { color: #687068; font-size: .68rem; font-weight: 850; }
+.officialAssetSeat strong { overflow-wrap: anywhere; font-size: .94rem; }
+.officialAssetSeat small { color: var(--team); font-weight: 900; }
+
+.officialAssetsSidePanel { display: grid; align-content: start; gap: 14px; padding: 16px; }
+.officialAssetsSectionTitle { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.officialAssetsSectionTitle h2 { margin-top: 3px; font-size: 1.25rem; }
+.officialAssetsSectionTitle > span { border-radius: 999px; background: #eee8dc; padding: 7px 9px; color: #596158; font-size: .74rem; font-weight: 900; }
+
+.officialAssetsCharacterGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.officialAssetsCharacterGrid button,
+.officialAssetsTargets button {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d3cabc;
+  border-radius: 10px;
+  background: #faf7f0;
+  color: #20231f;
+  padding: 7px;
+  text-align: left;
+}
+.officialAssetsCharacterGrid img { width: 54px; height: 54px; object-fit: contain; }
+.officialAssetsCharacterGrid span { display: grid; min-width: 0; }
+.officialAssetsCharacterGrid strong { overflow-wrap: anywhere; }
+.officialAssetsCharacterGrid small { color: #697169; font-weight: 800; }
+
+.officialAssetsActor { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 12px; border: 1px solid #cfc4b4; border-radius: 12px; background: #f8f4ec; padding: 12px; }
+.officialAssetsActor img { width: 88px; height: 88px; object-fit: contain; }
+.officialAssetsActor div { display: grid; min-width: 0; gap: 3px; }
+.officialAssetsActor span { color: #687068; font-size: .75rem; font-weight: 900; }
+.officialAssetsActor strong { color: #8f332f; font-size: 1.2rem; }
+.officialAssetsActor small { line-height: 1.35; }
+.officialAssetsPrompt { margin: 0; border-left: 5px solid #9a4a37; border-radius: 8px; background: #fff0e4; padding: 13px; font-weight: 900; }
+.officialAssetsTargets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.officialAssetsTargets img { width: 48px; height: 48px; object-fit: contain; }
+.officialAssetsTargets span { font-weight: 850; }
+.officialAssetsConfirm { border: 0; border-radius: 9px; background: #1f6f5b; color: white; font-weight: 950; }
+
+.officialAssetsNotice { justify-content: flex-start; }
+.officialAssetsNotice > img { width: 112px; height: 54px; object-fit: contain; }
+.officialAssetsNotice > div { display: grid; flex: 1; gap: 3px; }
+.officialAssetsNotice span { color: #687068; font-size: .78rem; font-weight: 750; }
+.officialAssetsNotice a { color: #1f6f5b; font-size: .8rem; font-weight: 900; }
+
+@media (max-width: 900px) {
+  .officialAssetsWorkspace { grid-template-columns: 1fr; }
+  .officialAssetsGrimoire { min-height: 590px; }
+}
+
+@media (max-width: 620px) {
+  .officialAssetsPrototype { padding: 10px; }
+  .officialAssetsHeader { display: grid; }
+  .officialAssetsHeader nav button { flex: 1; }
+  .officialAssetsHeader nav { width: 100%; }
+  .officialAssetsGrimoire { min-height: 540px; }
+  .officialAssetSeat { grid-template-columns: 48px minmax(0, 1fr); width: 128px; min-height: 76px; padding: 6px; }
+  .officialAssetSeat > img { width: 46px; height: 46px; }
+  .officialAssetSeat span { display: none; }
+  .officialAssetsCharacterGrid,
+  .officialAssetsTargets { grid-template-columns: 1fr; }
+  .officialAssetsNotice { align-items: flex-start; flex-wrap: wrap; }
+  .officialAssetsNotice > div { min-width: 190px; }
+}

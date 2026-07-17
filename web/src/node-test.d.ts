@@ -7,6 +7,8 @@ declare module "node:assert/strict" {
   export function equal<T>(actual: T, expected: T, message?: string): void;
   export function deepEqual<T>(actual: T, expected: T, message?: string): void;
   export function notEqual<T>(actual: T, expected: T, message?: string): void;
+  export function ok(value: unknown, message?: string): asserts value;
+  export function match(actual: string, expected: RegExp, message?: string): void;
   export function throws(fn: () => unknown, expected?: RegExp): void;
 }
 
