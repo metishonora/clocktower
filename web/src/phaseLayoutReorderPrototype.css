@@ -1,0 +1,153 @@
+.phaseReorderPrototype {
+  min-height: 100vh;
+  padding: 18px;
+  background: #e8e2d7;
+  color: #20231f;
+}
+
+.phaseReorderPrototype button { min-height: 42px; }
+
+.phaseReorderPrototypeHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1440px;
+  margin: 0 auto 16px;
+}
+
+.phaseReorderPrototypeHeader p,
+.phaseReorderPrototypeHeader h1 { margin: 0; }
+.phaseReorderPrototypeHeader p { color: #1f6f5b; font-size: .74rem; font-weight: 900; }
+.phaseReorderPrototypeHeader h1 { margin-top: 5px; font-size: clamp(1.45rem, 3vw, 2.25rem); }
+.phaseReorderPrototypeControls { display: grid; gap: 8px; justify-items: end; }
+.phaseReorderPrototypeControls nav { display: flex; gap: 6px; }
+.phaseReorderPrototypeControls button {
+  border: 1px solid #c6bdaf;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 8px 12px;
+  color: #4f554d;
+  font-weight: 850;
+}
+.phaseReorderPrototypeControls button.selected { border-color: #1f6f5b; background: #1f6f5b; color: white; }
+
+.phaseReorderPreviewFrame {
+  max-width: 1440px;
+  min-height: 790px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 8px solid #292d29;
+  border-radius: 24px;
+  background: #f4f0e8;
+  box-shadow: 0 24px 60px rgba(38, 34, 28, .2);
+  transition: max-width .2s ease;
+}
+
+.phaseReorderPrototype.view-mobile .phaseReorderPreviewFrame { max-width: 430px; min-height: 820px; }
+.phaseReorderAppShell { display: grid; grid-template-columns: minmax(520px, 1.1fr) minmax(340px, .7fr); gap: 14px; padding: 14px; }
+.phaseReorderGrimoire,
+.phaseReorderPanel,
+.phaseReorderAuxiliary { border: 1px solid #d6cdbf; border-radius: 9px; background: #fffdf8; box-shadow: 0 12px 34px rgba(63, 51, 35, .09); }
+.phaseReorderGrimoire { min-height: 746px; padding: 16px; }
+.phaseReorderGrimoire > header,
+.phaseReorderPhaseHeader { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+.phaseReorderGrimoire header p,
+.phaseReorderGrimoire header h2,
+.phaseReorderPhaseHeader p,
+.phaseReorderPhaseHeader h2 { margin: 0; }
+.phaseReorderGrimoire header p,
+.phaseReorderPhaseHeader p { margin-bottom: 5px; color: #1f6f5b; font-size: .72rem; font-weight: 900; }
+.phaseReorderGrimoire header > span,
+.phaseReorderPhaseHeader > span { border: 1px solid #b9d1ca; border-radius: 7px; background: #e8f2ee; padding: 8px 10px; color: #164f42; font-size: .78rem; font-weight: 900; }
+
+.phaseReorderTable { position: relative; display: grid; min-height: 650px; place-items: center; margin-top: 14px; }
+.phaseReorderTable::before { position: absolute; width: min(78%, 490px); aspect-ratio: 1; border: 2px solid #c9bda9; border-radius: 50%; background: #f8f4ec; content: ""; }
+.phaseReorderTable > strong { z-index: 1; display: grid; width: 122px; aspect-ratio: 1; place-items: center; border: 1px solid #cdbf9f; border-radius: 50%; background: #fffdf8; color: #164f42; }
+.phaseReorderTable article {
+  --angle: calc(var(--seat-index) * 45deg - 90deg);
+  position: absolute;
+  z-index: 2;
+  left: calc(50% + cos(var(--angle)) * min(31%, 210px));
+  top: calc(50% + sin(var(--angle)) * 260px);
+  display: grid;
+  width: 94px;
+  min-height: 70px;
+  translate: -50% -50%;
+  border: 1px solid #cbbfac;
+  border-radius: 9px;
+  background: #fffdf8;
+  padding: 7px;
+  text-align: center;
+}
+.phaseReorderTable article.active { border: 3px solid #a7472e; background: #faeee9; }
+.phaseReorderTable article span { font-size: .72rem; font-weight: 900; }
+.phaseReorderTable article small { color: #687064; }
+
+.phaseReorderRail { display: grid; align-content: start; gap: 14px; }
+.phaseReorderPanel { display: grid; gap: 14px; padding: 16px; }
+.phaseReorderAuxiliary { display: flex; justify-content: space-between; padding: 14px 16px; font-weight: 850; }
+.phaseReorderAuxiliary small { color: #687064; }
+
+.phaseReorderOverview { display: grid; gap: 8px; }
+.phaseReorderOverview > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.phaseReorderOverview h3 { margin: 0; }
+.phaseReorderOverview > header span { color: #687064; font-size: .76rem; font-weight: 900; }
+.phaseReorderOverview ol { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.phaseReorderOverview li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 7px; align-items: center; border: 1px solid #d6cdbf; border-left: 4px solid #b8b1a5; border-radius: 8px; background: white; padding: 7px 8px; }
+.phaseReorderOverview li i { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: #eee8dc; font-size: .7rem; font-style: normal; font-weight: 900; }
+.phaseReorderOverview li span { min-width: 0; font-size: .82rem; font-weight: 800; overflow-wrap: anywhere; }
+.phaseReorderOverview li strong { color: #687064; font-size: .66rem; }
+.phaseReorderOverview li.complete { border-left-color: #237b58; }
+.phaseReorderOverview li.complete i { background: #dcede5; color: #176344; }
+.phaseReorderOverview li.current { border-left-color: #a7472e; background: #faeee9; }
+.phaseReorderOverview li.current i { background: #a7472e; color: white; }
+
+.phaseReorderOverview.compact ol { grid-template-columns: repeat(6, minmax(50px, 1fr)); gap: 5px; }
+.phaseReorderOverview.compact li { grid-template-columns: 1fr; align-content: start; justify-items: center; min-height: 82px; border-left-width: 1px; border-bottom: 4px solid #b8b1a5; padding: 7px 4px; text-align: center; }
+.phaseReorderOverview.compact li.complete { border-bottom-color: #237b58; }
+.phaseReorderOverview.compact li.current { border-bottom-color: #a7472e; }
+.phaseReorderOverview.compact li span { display: -webkit-box; overflow: hidden; font-size: .68rem; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.phaseReorderOverview.compact li strong { display: none; }
+
+.phaseReorderCurrentAction { display: grid; gap: 11px; border: 1px solid #d6cdbf; border-radius: 9px; background: #f8f4ec; padding: 12px; }
+.phaseReorderActor { display: grid; grid-template-columns: 54px 1fr; gap: 10px; align-items: start; }
+.phaseReorderActor > span { display: grid; width: 54px; aspect-ratio: 1; place-items: center; border-radius: 50%; background: #276b9f; color: white; font-size: 1.25rem; font-weight: 900; }
+.phaseReorderActor small { color: #687064; font-weight: 800; }
+.phaseReorderActor h3,
+.phaseReorderActor p { margin: 2px 0; }
+.phaseReorderActor p { color: #687064; font-size: .76rem; line-height: 1.35; }
+.phaseReorderPrompt { display: grid; gap: 4px; border-left: 4px solid #1f6f5b; border-radius: 6px; background: white; padding: 10px; }
+.phaseReorderPrompt small { color: #1f6f5b; font-weight: 900; }
+.phaseReorderChoices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.phaseReorderChoices button,
+.phaseReorderActions button { border: 1px solid #c7bdae; border-radius: 7px; background: white; font-weight: 900; }
+.phaseReorderChoices button.selected { border-color: #1f6f5b; background: #e4f0ec; color: #164f42; }
+.phaseReorderActions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px; }
+.phaseReorderActions .primary { border-color: #1f6f5b; background: #1f6f5b; color: white; }
+
+.phaseReorderDisclosure { border: 1px solid #d6cdbf; border-radius: 9px; background: white; }
+.phaseReorderDisclosure summary { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; cursor: pointer; font-weight: 900; list-style: none; }
+.phaseReorderDisclosure summary::-webkit-details-marker { display: none; }
+.phaseReorderDisclosure summary::before { content: "＋"; color: #1f6f5b; }
+.phaseReorderDisclosure[open] summary::before { content: "－"; }
+.phaseReorderDisclosure summary span { flex: 1; }
+.phaseReorderDisclosure summary small { color: #687064; }
+.phaseReorderDisclosure .phaseReorderOverview { border-top: 1px solid #d6cdbf; padding: 10px; }
+.phaseReorderDisclosure .phaseReorderOverview > header { display: none; }
+.phaseReorderPrototypeState { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.phaseReorderPrototype.view-mobile .phaseReorderAppShell { display: block; min-height: 804px; padding: 10px; }
+.phaseReorderPrototype.view-mobile .phaseReorderGrimoire { min-height: 470px; }
+.phaseReorderPrototype.view-mobile .phaseReorderTable { min-height: 390px; }
+.phaseReorderPrototype.view-mobile .phaseReorderTable article { display: none; }
+.phaseReorderPrototype.view-mobile .phaseReorderRail { position: absolute; right: 26px; bottom: 8px; left: 26px; z-index: 3; }
+.phaseReorderPrototype.view-mobile .phaseReorderPanel { max-height: 430px; overflow-y: auto; border-radius: 18px 18px 0 0; box-shadow: 0 -14px 38px rgba(0, 0, 0, .25); }
+.phaseReorderPrototype.view-mobile .phaseReorderAuxiliary { display: none; }
+.phaseReorderPrototype.view-mobile .phaseReorderOverview.compact ol { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 850px) {
+  .phaseReorderPrototypeHeader { align-items: stretch; flex-direction: column; }
+  .phaseReorderPrototypeControls { justify-items: stretch; }
+  .phaseReorderPrototypeControls nav { display: grid; grid-template-columns: 1fr 1fr; }
+}

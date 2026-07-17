@@ -71,6 +71,13 @@ const DevPhaseActionSummaryPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevPhaseLayoutReorderPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./phaseLayoutReorderPrototype");
+      return { default: module.PhaseLayoutReorderPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -79,6 +86,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevPhaseLayoutReorderPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "phase-layout-reorder"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevPhaseLayoutReorderPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevPhaseActionSummaryPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "phase-action-summaries"

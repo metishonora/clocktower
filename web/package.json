@@ -15,6 +15,7 @@
     "prototype:live-play-undo": "vite --host 0.0.0.0",
     "prototype:day-runtime": "vite --host 0.0.0.0",
     "prototype:phase-action-summaries": "vite --host 0.0.0.0",
+    "prototype:phase-layout-reorder": "vite --host 0.0.0.0",
     "prototype:win-game": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "test": "pnpm run test:unit && pnpm run test:integration",
