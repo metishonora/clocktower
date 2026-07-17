@@ -32,6 +32,7 @@ import { ExecutionDeathActions, ExecutionDecisionActions, StepInputFields } from
 import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
+import { CharacterIcon } from "../../components/CharacterIcon";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -501,7 +502,7 @@ function CurrentStepPane({
             ) : null}
             {currentPlayer && !resultSubject ? (
               <section className="currentActor" aria-label="현재 행동자">
-                <span aria-hidden="true">{currentCharacter?.icon ?? currentPlayer.seat}</span>
+                <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
                 <div>
                   <small>행동자</small>
                   <h3>{currentCharacter?.label ?? currentStep.character}</h3>

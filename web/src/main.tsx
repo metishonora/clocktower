@@ -27,6 +27,7 @@ import {
   type DayRuntimeClock,
 } from "./features/phase-control/dayRuntime";
 import { useDayRuntime } from "./features/phase-control/useDayRuntime";
+import { CommunityContentNotice } from "./components/CommunityContentNotice";
 import "./styles.css";
 
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
@@ -78,6 +79,13 @@ const DevManualTokensNotesPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevOfficialAssetsPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./officialAssetsPrototype");
+      return { default: module.OfficialAssetsPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -86,6 +94,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevOfficialAssetsPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "official-assets"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevOfficialAssetsPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevManualTokensNotesPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "manual-tokens-notes"
@@ -416,6 +435,7 @@ export function ClocktowerApp({
           />
         )}
       </main>
+      <CommunityContentNotice />
       {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CharacterSelect } from "../../components/CharacterSelect";
+import { CharacterIcon } from "../../components/CharacterIcon";
 import { Status, Warnings } from "../../components/CoreFeedback";
 import type {
   CoreResult,
@@ -260,6 +261,7 @@ function DraftGrimoireCircle({
               disabled={busy}
               key={player.seat}
             >
+              <CharacterIcon characterId={player.actualCharacter} className="seatCharacterIcon" />
               <span className="seatTokenNumber">{player.seat}</span>
               <strong>{player.name}</strong>
               <small>{characterLabel(player.actualCharacter)}</small>
@@ -321,9 +323,7 @@ function CharacterPool({
                       disabled={busy}
                       key={character.id}
                     >
-                      <span className="characterIcon" aria-hidden="true">
-                        {character.icon}
-                      </span>
+                      <CharacterIcon characterId={character.id} className="characterIcon" />
                       <span className="characterText">
                         <strong>{character.label}</strong>
                         <small>{character.abilitySummary}</small>
