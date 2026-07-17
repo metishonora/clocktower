@@ -15,6 +15,12 @@ const overviewSteps: OverviewStep[] = [
   { id: "chef", label: "요리사: 2번 준호", status: "complete" },
   { id: "empath", label: "공감능력자: 3번 서연", status: "current" },
   { id: "fortune-teller", label: "점쟁이: 4번 도윤", status: "upcoming" },
+  { id: "washerwoman", label: "세탁부: 1번 민지", status: "upcoming" },
+  { id: "librarian", label: "사서: 5번 하린", status: "upcoming" },
+  { id: "investigator", label: "조사관: 9번 지우", status: "upcoming" },
+  { id: "spy", label: "스파이: 10번 수빈", status: "upcoming" },
+  { id: "butler", label: "집사: 11번 건우", status: "upcoming" },
+  { id: "ravenkeeper", label: "까마귀지기: 12번 나연", status: "upcoming" },
   { id: "monk", label: "수도승: 8번 유나", status: "upcoming" },
   { id: "imp", label: "임프: 7번 태오", status: "upcoming" },
 ];
@@ -24,16 +30,20 @@ const seats = [
   ["2", "준호", "요리사"],
   ["3", "서연", "공감능력자"],
   ["4", "도윤", "점쟁이"],
-  ["5", "하린", "은둔자"],
+  ["5", "하린", "사서"],
   ["6", "현우", "독살자"],
   ["7", "태오", "임프"],
   ["8", "유나", "수도승"],
+  ["9", "지우", "조사관"],
+  ["10", "수빈", "스파이"],
+  ["11", "건우", "집사"],
+  ["12", "나연", "까마귀지기"],
 ];
 
 export function PhaseLayoutReorderPrototype() {
   const params = new URLSearchParams(window.location.search);
   const [variant, setVariant] = useState<PrototypeVariant>(
-    params.get("variant") === "compact" ? "compact" : "vertical",
+    params.get("variant") === "vertical" ? "vertical" : "compact",
   );
   const [view, setView] = useState<PrototypeView>(params.get("view") === "mobile" ? "mobile" : "desktop");
   const [overviewOpen, setOverviewOpen] = useState(false);
@@ -99,9 +109,9 @@ export function PhaseLayoutReorderPrototype() {
                 >
                   <summary>
                     <span>첫 번째 밤 순서</span>
-                    <small>2 / 6 완료</small>
+                    <small>2 / 12 완료</small>
                   </summary>
-                  <PhaseOverview variant={variant} />
+                  <PhaseOverview variant="vertical" />
                 </details>
               ) : (
                 <PhaseOverview variant={variant} />
@@ -109,7 +119,7 @@ export function PhaseLayoutReorderPrototype() {
 
               <CurrentAction />
             </section>
-            <section className="phaseReorderAuxiliary"><span>설정 및 불러오기</span><small>8명</small></section>
+            <section className="phaseReorderAuxiliary"><span>설정 및 불러오기</span><small>12명</small></section>
             <section className="phaseReorderAuxiliary"><span>이벤트 로그</span><small>3건</small></section>
           </aside>
         </div>
@@ -123,9 +133,10 @@ export function PhaseLayoutReorderPrototype() {
 }
 
 function PhaseOverview({ variant }: { variant: PrototypeVariant }) {
+  const layout = variant === "compact" ? "horizontal-scroll" : "vertical";
   return (
-    <section className={`phaseReorderOverview ${variant}`} aria-label="첫 번째 밤 순서">
-      <header><h3>첫 번째 밤 순서</h3><span>2 / 6 완료</span></header>
+    <section className={`phaseReorderOverview ${variant}`} aria-label="첫 번째 밤 순서" data-layout={layout}>
+      <header><h3>첫 번째 밤 순서</h3><span>2 / 12 완료{variant === "compact" ? " · 좌우 스크롤" : ""}</span></header>
       <ol>
         {overviewSteps.map((step, index) => (
           <li className={step.status} key={step.id}>
@@ -173,7 +184,11 @@ function PrototypeGrimoire() {
       <div className="phaseReorderTable">
         <strong>첫 번째 밤</strong>
         {seats.map(([seat, name, character], index) => (
-          <article className={seat === "3" ? "active" : ""} style={{ "--seat-index": index } as React.CSSProperties} key={seat}>
+          <article
+            className={seat === "3" ? "active" : ""}
+            style={{ "--seat-index": index, "--seat-count": seats.length } as React.CSSProperties}
+            key={seat}
+          >
             <span>{seat}</span><strong>{name}</strong><small>{character}</small>
           </article>
         ))}

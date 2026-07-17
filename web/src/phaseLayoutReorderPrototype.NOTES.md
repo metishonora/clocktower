@@ -7,9 +7,9 @@ Run `pnpm prototype:phase-layout-reorder`, then open:
 This development-only prototype compares the phase overview above the current action:
 
 - Variant A keeps the existing vertical overview list.
-- Variant B uses a compact horizontal progress treatment.
-- The Mobile preview makes the overview a disclosure, collapsed by default so the action remains
-  immediately available in the fixed bottom sheet.
+- Variant B uses a single-row horizontal progress strip that scrolls when the phase has many jobs.
+- The Mobile preview always uses Variant A's vertical list inside a disclosure, collapsed by default
+  so the action remains immediately available in the fixed bottom sheet.
 
 The prototype uses local display state only. Confirm and Skip do not send Commands, replay, or
 persist a GameFile. Pending Reveal and game-end surfaces are intentionally out of scope.

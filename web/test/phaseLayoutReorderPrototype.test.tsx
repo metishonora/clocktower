@@ -10,9 +10,9 @@ function prototypeState() {
 beforeEach(() => window.history.replaceState(null, "", "/?prototype=phase-layout-reorder"));
 
 test.each([
-  ["Variant A · 세로 목록", "vertical"],
-  ["Variant B · 압축 진행표시", "compact"],
-])("%s places the phase overview before the current action", async (variantLabel, variant) => {
+  ["Variant A · 세로 목록", "vertical", "vertical"],
+  ["Variant B · 압축 진행표시", "compact", "horizontal-scroll"],
+])("%s places the phase overview before the current action", async (variantLabel, variant, layout) => {
   const user = userEvent.setup();
   render(<PhaseLayoutReorderPrototype />);
 
@@ -22,13 +22,26 @@ test.each([
   const overview = within(panel).getByLabelText("첫 번째 밤 순서");
   const action = within(panel).getByLabelText("현재 단계");
   expect(overview.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(overview.getAttribute("data-layout")).toBe(layout);
   expect(prototypeState()).toMatchObject({ view: "desktop", variant });
+});
+
+test("iPad Variant B keeps a long phase order in one horizontal-scroll strip", async () => {
+  const user = userEvent.setup();
+  render(<PhaseLayoutReorderPrototype />);
+
+  await user.click(screen.getByRole("button", { name: "Variant B · 압축 진행표시" }));
+
+  const overview = screen.getByLabelText("첫 번째 밤 순서");
+  expect(overview.getAttribute("data-layout")).toBe("horizontal-scroll");
+  expect(within(overview).getAllByRole("listitem")).toHaveLength(12);
 });
 
 test("mobile keeps the overview collapsed by default and the current action immediately usable", async () => {
   const user = userEvent.setup();
   render(<PhaseLayoutReorderPrototype />);
 
+  await user.click(screen.getByRole("button", { name: "Variant B · 압축 진행표시" }));
   await user.click(screen.getByRole("button", { name: "모바일" }));
 
   const disclosure = screen.getByLabelText("첫 번째 밤 순서 접기") as HTMLDetailsElement;
@@ -40,6 +53,8 @@ test("mobile keeps the overview collapsed by default and the current action imme
   await user.click(within(disclosure).getByText("첫 번째 밤 순서", { selector: "summary span" }));
 
   expect(disclosure.open).toBe(true);
-  expect(within(disclosure).getByText("공감능력자: 3번 서연")).toBeTruthy();
+  const mobileOverview = within(disclosure).getByLabelText("첫 번째 밤 순서");
+  expect(mobileOverview.getAttribute("data-layout")).toBe("vertical");
+  expect(within(mobileOverview).getByText("공감능력자: 3번 서연")).toBeTruthy();
   expect(prototypeState()).toMatchObject({ view: "mobile", overviewOpen: true });
 });

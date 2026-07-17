@@ -65,13 +65,13 @@
 .phaseReorderTable::before { position: absolute; width: min(78%, 490px); aspect-ratio: 1; border: 2px solid #c9bda9; border-radius: 50%; background: #f8f4ec; content: ""; }
 .phaseReorderTable > strong { z-index: 1; display: grid; width: 122px; aspect-ratio: 1; place-items: center; border: 1px solid #cdbf9f; border-radius: 50%; background: #fffdf8; color: #164f42; }
 .phaseReorderTable article {
-  --angle: calc(var(--seat-index) * 45deg - 90deg);
+  --angle: calc(var(--seat-index) * (360deg / var(--seat-count)) - 90deg);
   position: absolute;
   z-index: 2;
   left: calc(50% + cos(var(--angle)) * min(31%, 210px));
   top: calc(50% + sin(var(--angle)) * 260px);
   display: grid;
-  width: 94px;
+  width: 84px;
   min-height: 70px;
   translate: -50% -50%;
   border: 1px solid #cbbfac;
@@ -103,8 +103,18 @@
 .phaseReorderOverview li.current { border-left-color: #a7472e; background: #faeee9; }
 .phaseReorderOverview li.current i { background: #a7472e; color: white; }
 
-.phaseReorderOverview.compact ol { grid-template-columns: repeat(6, minmax(50px, 1fr)); gap: 5px; }
+.phaseReorderOverview.compact ol {
+  grid-template-columns: none;
+  grid-auto-columns: 94px;
+  grid-auto-flow: column;
+  gap: 5px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 9px;
+  scroll-snap-type: x proximity;
+}
 .phaseReorderOverview.compact li { grid-template-columns: 1fr; align-content: start; justify-items: center; min-height: 82px; border-left-width: 1px; border-bottom: 4px solid #b8b1a5; padding: 7px 4px; text-align: center; }
+.phaseReorderOverview.compact li { scroll-snap-align: start; }
 .phaseReorderOverview.compact li.complete { border-bottom-color: #237b58; }
 .phaseReorderOverview.compact li.current { border-bottom-color: #a7472e; }
 .phaseReorderOverview.compact li span { display: -webkit-box; overflow: hidden; font-size: .68rem; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -144,7 +154,6 @@
 .phaseReorderPrototype.view-mobile .phaseReorderRail { position: absolute; right: 26px; bottom: 8px; left: 26px; z-index: 3; }
 .phaseReorderPrototype.view-mobile .phaseReorderPanel { max-height: 430px; overflow-y: auto; border-radius: 18px 18px 0 0; box-shadow: 0 -14px 38px rgba(0, 0, 0, .25); }
 .phaseReorderPrototype.view-mobile .phaseReorderAuxiliary { display: none; }
-.phaseReorderPrototype.view-mobile .phaseReorderOverview.compact ol { grid-template-columns: repeat(3, 1fr); }
 
 @media (max-width: 850px) {
   .phaseReorderPrototypeHeader { align-items: stretch; flex-direction: column; }
