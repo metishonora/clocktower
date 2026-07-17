@@ -1765,16 +1765,31 @@ select {
   overflow-wrap: anywhere;
 }
 
+.phaseOverviewDisclosure {
+  min-width: 0;
+}
+
+.phaseOverviewDisclosure > summary {
+  display: none;
+}
+
 .phaseOverview {
   display: grid;
+  min-width: 0;
   gap: 8px;
 }
 
 .phaseOverview ol {
   display: grid;
+  grid-template-columns: none;
+  grid-auto-columns: minmax(116px, 42%);
+  grid-auto-flow: column;
   gap: 7px;
   margin: 0;
-  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 0 0 9px;
+  scroll-snap-type: x proximity;
   list-style: none;
 }
 
@@ -1788,6 +1803,7 @@ select {
   border-radius: 8px;
   background: #fffdf8;
   padding: 9px 10px;
+  scroll-snap-align: center;
 }
 
 .phaseOverview li span {
@@ -3562,6 +3578,69 @@ select {
     border-radius: 18px 18px 0 0;
     box-shadow: 0 -14px 38px rgba(0, 0, 0, 0.32);
     padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .phaseOverviewDisclosure {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf8;
+  }
+
+  .phaseOverviewDisclosure > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-weight: 900;
+    list-style: none;
+  }
+
+  .phaseOverviewDisclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .phaseOverviewDisclosure > summary::before {
+    color: var(--primary);
+    content: "+";
+  }
+
+  .phaseOverviewDisclosure[open] > summary::before {
+    content: "−";
+  }
+
+  .phaseOverviewDisclosure > summary span {
+    flex: 1;
+  }
+
+  .phaseOverviewDisclosure > summary small {
+    color: var(--muted);
+  }
+
+  .phaseOverviewDisclosure[open] > summary {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .phaseOverviewDisclosure > .phaseOverview {
+    padding: 10px;
+  }
+
+  .phaseOverviewDisclosure > .phaseOverview > h3 {
+    display: none;
+  }
+
+  .phaseOverview ol {
+    grid-template-columns: 1fr;
+    grid-auto-columns: auto;
+    grid-auto-flow: row;
+    overflow-x: visible;
+    padding-bottom: 0;
+    scroll-snap-type: none;
+  }
+
+  .phaseOverview li {
+    scroll-snap-align: none;
   }
 
   .setupShell {

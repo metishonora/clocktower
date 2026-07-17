@@ -115,11 +115,13 @@ export function replayState({
   dayState,
   eventCount = 1,
   playerRoster = players(),
+  phaseOverview,
 }: {
   currentStep: PhaseStep;
   dayState?: ReplayState["dayState"];
   eventCount?: number;
   playerRoster?: Player[];
+  phaseOverview?: ReplayState["phaseOverview"];
 }): ReplayState {
   return {
     schemaVersion: 2,
@@ -127,7 +129,7 @@ export function replayState({
     phase: currentStep.phase,
     players: playerRoster,
     currentStep,
-    phaseOverview: [{ ...currentStep, status: "current" }],
+    phaseOverview: phaseOverview ?? [{ ...currentStep, status: "current" }],
     dayState,
     ruleState: emptyRuleState(),
     warnings: [],
