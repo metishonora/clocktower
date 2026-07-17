@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { Player, RuleState } from "../../core/types";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import type { CoreResult, Player, PlayerAnnotationsInput, Proposal, RuleState } from "../../core/types";
 import {
   characterLabel,
   findOverlappingSeats,
@@ -10,6 +10,8 @@ import {
 import { voteStatusForPlayer } from "../../voting";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { SeatLayoutControls, startSeatDrag } from "./SeatLayoutControls";
+import { PlayerAnnotationsDialog } from "./PlayerAnnotationsDialog";
+import { playerAnnotationBadges } from "./playerAnnotations";
 
 export function Grimoire({
   players,
@@ -21,6 +23,7 @@ export function Grimoire({
   phasePlayerSelection,
   ruleState,
   slayerAbility,
+  onUpdatePlayerAnnotations,
 }: {
   players: Player[];
   draft: SetupDraft;
@@ -48,11 +51,36 @@ export function Grimoire({
     spent: boolean;
     onUse: (button: HTMLButtonElement) => void;
   };
+  onUpdatePlayerAnnotations?: (
+    playerId: string,
+    annotations: PlayerAnnotationsInput,
+  ) => Promise<CoreResult<Proposal> | undefined>;
 }) {
   const [layoutEditing, setLayoutEditing] = useState(false);
+  const [editingPlayerId, setEditingPlayerId] = useState<string>();
+  const annotationLongPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const annotationLongPressActivated = useRef(false);
   const seats = players.length > 0 ? players : draft.players;
   const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);
   const overlapSeats = findOverlappingSeats(draft.seatPositions);
+  const editingPlayer = players.find((player) => player.id === editingPlayerId);
+
+  useEffect(() => () => window.clearTimeout(annotationLongPressTimer.current), []);
+
+  function startAnnotationLongPress(event: PointerEvent<HTMLButtonElement>, player?: Player) {
+    if (!player || !onUpdatePlayerAnnotations || busy || layoutEditing) return;
+    annotationLongPressActivated.current = false;
+    window.clearTimeout(annotationLongPressTimer.current);
+    annotationLongPressTimer.current = window.setTimeout(() => {
+      annotationLongPressActivated.current = true;
+      setEditingPlayerId(player.id);
+    }, 500);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function cancelAnnotationLongPress() {
+    window.clearTimeout(annotationLongPressTimer.current);
+  }
 
   return (
     <>
@@ -97,6 +125,8 @@ export function Grimoire({
             busy || layoutEditing || !playerId || Boolean(setupInformationSelection?.disabled);
           const phaseSelectionDisabled = busy || layoutEditing || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
           const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
+          const automaticEdge = position.x < 50 ? "edgeLeft" : "edgeRight";
+          const manualBadges = playerAnnotationBadges(confirmedPlayer);
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
@@ -107,6 +137,10 @@ export function Grimoire({
           }
 
           function handleSeatClick() {
+            if (annotationLongPressActivated.current) {
+              annotationLongPressActivated.current = false;
+              return;
+            }
             if (layoutEditing) return;
             if (nominationVoting) {
               toggleVote();
@@ -131,18 +165,27 @@ export function Grimoire({
                   voteStatus?.className ?? ""
                 } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
                   setupInformationSelection ? "setupInformationEnabled" : ""
-                } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""}`}
+                } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""} ${
+                  confirmedPlayer?.notes ? "hasAnnotationNotes" : ""
+                }`}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
                 onClick={handleSeatClick}
-                onPointerDown={(event) =>
+                onPointerDown={(event) => {
                   startSeatDrag({
                     event,
                     enabled: layoutEditing,
                     busy,
                     initialPosition: position,
                     onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
-                  })
-                }
+                  });
+                  startAnnotationLongPress(event, confirmedPlayer);
+                }}
+                onPointerUp={cancelAnnotationLongPress}
+                onPointerCancel={cancelAnnotationLongPress}
+                onPointerLeave={cancelAnnotationLongPress}
+                aria-label={`${seat.seat}번 ${seat.name} ${nominationVoting ? "투표 선택" : "좌석 선택"}${
+                  voteStatus ? ` · ${voteStatus.label}` : ""
+                }`}
                 aria-disabled={
                   nominationVoting
                     ? votingDisabled
@@ -169,13 +212,30 @@ export function Grimoire({
                 {showShownCharacter ? (
                   <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
                 ) : null}
-                {playerId === ruleState?.activePoison?.playerId ? (
-                  <span className="ruleEffectBadge poisonBadge">중독</span>
+                {confirmedPlayer?.notes ? (
+                  <span className="playerAnnotationNotesPreview" aria-label="Notes 미리보기">{confirmedPlayer.notes}</span>
                 ) : null}
-                {playerId === ruleState?.activeProtection?.playerId ? (
-                  <span className="ruleEffectBadge protectionBadge">보호</span>
-                ) : null}
+                <span className={`playerAutomaticTokens ${automaticEdge}`}>
+                  {playerId === ruleState?.activePoison?.playerId ? (
+                    <span className="ruleEffectBadge poisonBadge">중독</span>
+                  ) : null}
+                  {playerId === ruleState?.activeProtection?.playerId ? (
+                    <span className="ruleEffectBadge protectionBadge">보호</span>
+                  ) : null}
+                </span>
               </button>
+              {confirmedPlayer && manualBadges.length > 0 ? (
+                <div
+                  className="playerManualTokens"
+                  style={manualTokenStyle(position)}
+                  aria-label={`${confirmedPlayer.seat}번 ${confirmedPlayer.name} 수동 토큰`}
+                >
+                  {manualBadges.slice(0, 2).map((badge) => (
+                    <span aria-label={badge.accessibleLabel} key={badge.key}>{badge.label}</span>
+                  ))}
+                  {manualBadges.length > 2 ? <span>+{manualBadges.length - 2}</span> : null}
+                </div>
+              ) : null}
               {currentSlayerAbility ? (
                 <button
                   type="button"
@@ -199,6 +259,26 @@ export function Grimoire({
           );
         })}
       </div>
+      {editingPlayer && onUpdatePlayerAnnotations ? (
+        <PlayerAnnotationsDialog
+          player={editingPlayer}
+          busy={busy}
+          onCancel={() => setEditingPlayerId(undefined)}
+          onConfirm={onUpdatePlayerAnnotations}
+        />
+      ) : null}
     </>
   );
+}
+
+function manualTokenStyle(position: { x: number; y: number }): CSSProperties {
+  const towardCenterX = 50 - position.x;
+  const towardCenterY = 50 - position.y;
+  const length = Math.hypot(towardCenterX, towardCenterY) || 1;
+  return {
+    left: `${position.x}%`,
+    top: `${position.y}%`,
+    "--manual-token-x": `${(towardCenterX / length) * 96}px`,
+    "--manual-token-y": `${(towardCenterY / length) * 82}px`,
+  } as CSSProperties;
 }

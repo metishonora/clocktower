@@ -3,7 +3,8 @@ use serde_json::Value;
 
 use crate::model::{
     Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase,
-    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, StepInput,
+    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, ScriptTokenRef, StepInput,
+    SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -54,6 +55,20 @@ pub(crate) enum Command {
     },
     #[serde(rename = "endGame")]
     EndGame { payload: EndGameCommandPayload },
+    #[serde(rename = "updatePlayerAnnotations")]
+    UpdatePlayerAnnotations {
+        payload: UpdatePlayerAnnotationsCommandPayload,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct UpdatePlayerAnnotationsCommandPayload {
+    pub(crate) player_id: String,
+    pub(crate) expected_event_count: usize,
+    pub(crate) system_token_ids: Vec<SystemTokenId>,
+    pub(crate) script_tokens: Vec<ScriptTokenRef>,
+    pub(crate) notes: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -286,6 +301,19 @@ pub(crate) enum GameEventKind {
     },
     #[serde(rename = "gameEnded")]
     GameEnded { payload: GameEndedPayload },
+    #[serde(rename = "playerAnnotationsUpdated")]
+    PlayerAnnotationsUpdated {
+        payload: PlayerAnnotationsUpdatedPayload,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerAnnotationsUpdatedPayload {
+    pub(crate) player_id: String,
+    pub(crate) system_token_ids: Vec<SystemTokenId>,
+    pub(crate) script_tokens: Vec<ScriptTokenRef>,
+    pub(crate) notes: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

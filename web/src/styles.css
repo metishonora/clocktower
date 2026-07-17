@@ -4926,6 +4926,138 @@ select {
   background: rgba(37, 112, 170, 0.24);
 }
 
+.playerAutomaticTokens {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.playerAutomaticTokens.edgeLeft { left: -13px; }
+.playerAutomaticTokens.edgeRight { right: -13px; }
+.playerAutomaticTokens .ruleEffectBadge { margin: 0; background-clip: padding-box; }
+
+.seatToken.hasAnnotationNotes {
+  min-height: 112px;
+  padding-bottom: 36px;
+}
+
+.playerAnnotationNotesPreview {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  left: 7px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  border-top: 1px solid #d9d2c6;
+  padding: 4px 3px 0;
+  color: #4d554e;
+  font-size: 0.62rem;
+  font-weight: 750;
+  line-height: 1.22;
+  text-align: left;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.playerManualTokens {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  max-width: 176px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transform: translate(-50%, -50%) translate(var(--manual-token-x), var(--manual-token-y));
+  pointer-events: none;
+}
+
+.playerManualTokens > span {
+  border: 2px solid #7b6825;
+  border-radius: 999px;
+  background: #fff3b8;
+  box-shadow: 0 3px 9px rgba(62, 51, 35, 0.2);
+  color: #382f12;
+  padding: 5px 9px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.playerAnnotationsBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  justify-items: end;
+  background: rgba(24, 28, 25, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.playerAnnotationsDialog {
+  display: grid;
+  width: min(620px, 94vw);
+  height: 100vh;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  background: #fffdf8;
+  box-shadow: -18px 0 50px rgba(20, 24, 21, 0.22);
+  color: var(--ink);
+}
+
+.playerAnnotationsDialog:focus { outline: none; }
+.playerAnnotationsDialog > header,
+.playerAnnotationsDialog > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; }
+.playerAnnotationsDialog > header { border-bottom: 1px solid #d6d0c5; }
+.playerAnnotationsDialog > header > div { display: flex; align-items: center; gap: 10px; }
+.playerAnnotationsDialog > header > div > span { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 50%; background: var(--townsfolk); color: white; font-weight: 900; }
+.playerAnnotationsDialog > header p,
+.playerAnnotationsDialog > header h2 { margin: 0; }
+.playerAnnotationsDialog > header p { color: var(--muted); font-size: 0.74rem; font-weight: 800; }
+.playerAnnotationsDialog > header > button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: #eee9df; color: var(--ink); font-size: 1.4rem; }
+
+.playerAnnotationsContent { display: grid; align-content: start; gap: 16px; overflow: auto; padding: 16px 18px 28px; }
+.playerAnnotationsDialog fieldset { margin: 0; border: 0; padding: 0; }
+.playerAnnotationsDialog legend { margin-bottom: 8px; font-weight: 900; }
+.playerAnnotationSystemGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.playerAnnotationSystemGrid button,
+.playerAnnotationScriptGroups button { min-height: 40px; border: 1px solid #cbc4b7; border-radius: 8px; background: #f7f3eb; color: #303730; font-weight: 800; }
+.playerAnnotationSystemGrid button.selected { border: 2px solid var(--primary); background: #deede6; color: var(--primary-dark); }
+.playerAnnotationScriptGroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.playerAnnotationScriptGroups section { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 6px; border: 1px solid #dfd8cc; border-radius: 8px; padding: 6px; }
+.playerAnnotationScriptGroups section > strong { color: var(--muted); font-size: 0.72rem; }
+.playerAnnotationScriptGroups section > div { display: flex; gap: 5px; }
+.playerAnnotationScriptGroups button { min-height: 34px; flex: 1; padding: 4px 6px; font-size: 0.7rem; }
+.playerAnnotationScriptGroups button.selected { border: 2px solid #66529b; background: #ece8f7; color: #4d397f; }
+.playerAnnotationsNotes { display: grid; gap: 7px; text-transform: none; }
+.playerAnnotationsNotes > span { display: flex; justify-content: space-between; }
+.playerAnnotationsNotes small { color: var(--muted); }
+.playerAnnotationsNotes textarea { resize: vertical; min-height: 92px; border: 1px solid #c7c0b4; border-radius: 8px; padding: 10px; color: var(--ink); }
+.playerAnnotationsError { margin: 0; border: 1px solid #c45d51; border-radius: 8px; background: #fff0ed; color: #8a3027; padding: 9px 11px; font-size: 0.8rem; font-weight: 800; }
+.playerAnnotationsDialog > footer { border-top: 1px solid #d6d0c5; }
+.playerAnnotationsDialog > footer > span { color: var(--muted); font-size: 0.76rem; font-weight: 800; }
+.playerAnnotationsDialog > footer > div { display: flex; gap: 7px; }
+.playerAnnotationsDialog > footer button { min-width: 100px; min-height: 44px; border: 1px solid #bdb6a9; border-radius: 8px; background: #f4efe6; color: var(--ink); font-weight: 900; }
+.playerAnnotationsDialog > footer button:last-child { border-color: var(--primary); background: var(--primary); color: white; }
+.playerAnnotationsDialog button:disabled,
+.playerAnnotationsDialog textarea:disabled { opacity: 0.55; }
+
+@media (max-width: 620px) {
+  .playerAnnotationSystemGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .playerAnnotationScriptGroups { grid-template-columns: 1fr; }
+  .playerManualTokens > span { max-width: 82px; overflow: hidden; text-overflow: ellipsis; }
+  .compactSeats .seatToken.hasAnnotationNotes { min-height: 98px; padding-bottom: 33px; }
+  .playerAnnotationNotesPreview { font-size: 0.56rem; }
+}
+
 .nightActionResult {
   margin: 0.8rem 0 0;
   border-radius: 0.75rem;

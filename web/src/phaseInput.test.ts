@@ -443,6 +443,8 @@ function player(id: string, actualCharacter: string, shownCharacter = actualChar
     alive: true,
     ghostVoteUsed: false,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
 }

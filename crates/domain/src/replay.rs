@@ -305,6 +305,22 @@ pub(crate) fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreEr
                 successor.shown_character = "imp".into();
                 successor.alignment = crate::model::Alignment::Evil;
             }
+            GameEventKind::PlayerAnnotationsUpdated { payload } => {
+                crate::annotations::validate_player_annotations(
+                    &players,
+                    &payload.player_id,
+                    &payload.system_token_ids,
+                    &payload.script_tokens,
+                    &payload.notes,
+                )?;
+                let player = players
+                    .iter_mut()
+                    .find(|player| player.id == payload.player_id)
+                    .expect("validated annotation player should exist");
+                player.system_token_ids = payload.system_token_ids.clone();
+                player.script_tokens = payload.script_tokens.clone();
+                player.notes = payload.notes.clone();
+            }
             _ => {}
         }
     }

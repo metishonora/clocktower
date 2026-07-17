@@ -524,7 +524,27 @@ pub(crate) struct Player {
     pub(crate) alive: bool,
     pub(crate) ghost_vote_used: bool,
     pub(crate) death_announced: bool,
+    pub(crate) system_token_ids: Vec<SystemTokenId>,
+    pub(crate) script_tokens: Vec<ScriptTokenRef>,
     pub(crate) notes: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SystemTokenId {
+    Drunk,
+    Poisoned,
+    Protected,
+    NoAbility,
+    AbilitySpent,
+    NeedsFollowUp,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ScriptTokenRef {
+    pub(crate) character_id: String,
+    pub(crate) token_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]

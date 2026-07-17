@@ -57,6 +57,25 @@ const inputTargets = new Set([
   "phase",
 ]);
 const characterIds = new Set(characters.map((character) => character.id));
+const systemTokenIds = new Set(["drunk", "poisoned", "protected", "noAbility", "abilitySpent", "needsFollowUp"]);
+const scriptTokenKeys = new Set([
+  "butler:master",
+  "drunk:isTheDrunk",
+  "fortuneTeller:redHerring",
+  "imp:dead",
+  "investigator:minion",
+  "investigator:wrong",
+  "librarian:outsider",
+  "librarian:wrong",
+  "monk:safe",
+  "poisoner:poisoned",
+  "scarletWoman:isTheDemon",
+  "slayer:noAbility",
+  "undertaker:diedToday",
+  "virgin:noAbility",
+  "washerwoman:townsfolk",
+  "washerwoman:wrong",
+]);
 
 export function parseCoreResult<T>(
   value: unknown,
@@ -183,6 +202,9 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
+      break;
+    case "playerAnnotationsUpdated":
+      if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
       break;
     case "gameEnded":
       if (
@@ -863,8 +885,38 @@ function isPlayer(value: unknown): boolean {
     typeof value.alive === "boolean" &&
     typeof value.ghostVoteUsed === "boolean" &&
     typeof value.deathAnnounced === "boolean" &&
+    isSystemTokenList(value.systemTokenIds) &&
+    isScriptTokenList(value.scriptTokens) &&
     typeof value.notes === "string"
   );
+}
+
+function isPlayerAnnotationsPayload(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["playerId", "systemTokenIds", "scriptTokens", "notes"]) &&
+    typeof value.playerId === "string" &&
+    isSystemTokenList(value.systemTokenIds) &&
+    isScriptTokenList(value.scriptTokens) &&
+    typeof value.notes === "string" &&
+    [...value.notes].length <= 1_000;
+}
+
+function isSystemTokenList(value: unknown): boolean {
+  return Array.isArray(value) &&
+    value.every((token) => typeof token === "string" && systemTokenIds.has(token)) &&
+    new Set(value).size === value.length;
+}
+
+function isScriptTokenList(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  const keys = value.map((token) => isRecord(token) &&
+    hasExactKeys(token, ["characterId", "tokenId"]) &&
+    typeof token.characterId === "string" &&
+    typeof token.tokenId === "string"
+      ? `${token.characterId}:${token.tokenId}`
+      : undefined);
+  return keys.every((key) => typeof key === "string" && scriptTokenKeys.has(key)) &&
+    new Set(keys).size === keys.length;
 }
 
 function isWarning(value: unknown): boolean {

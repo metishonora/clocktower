@@ -377,5 +377,5 @@ function cloneDraft(draft: SuggestionDraft): SuggestionDraft {
 }
 
 function player(id: string, seat: number, name: string, actualCharacter: string, shownCharacter: string, alignment: Player["alignment"]): Player {
-  return { id, seat, name, actualCharacter, shownCharacter, alignment, alive: true, ghostVoteUsed: false, deathAnnounced: false, notes: "" };
+  return { id, seat, name, actualCharacter, shownCharacter, alignment, alive: true, ghostVoteUsed: false, deathAnnounced: false, systemTokenIds: [], scriptTokens: [], notes: "" };
 }

@@ -140,7 +140,17 @@ export type Command =
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | { type: "skipStep"; payload: { stepId: string; input?: null } }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
-  | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } };
+  | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
+  | {
+      type: "updatePlayerAnnotations";
+      payload: {
+        playerId: string;
+        expectedEventCount: number;
+        systemTokenIds: SystemTokenId[];
+        scriptTokens: ScriptTokenRef[];
+        notes: string;
+      };
+    };
 
 export type UseSlayerAbilityPayload = {
   discussionStepId: string;
@@ -326,6 +336,15 @@ export type GameEvent = EventCommon &
           source: "scarletWoman" | "impSelfKill";
         };
       }
+    | {
+        type: "playerAnnotationsUpdated";
+        payload: {
+          playerId: string;
+          systemTokenIds: SystemTokenId[];
+          scriptTokens: ScriptTokenRef[];
+          notes: string;
+        };
+      }
     | { type: "gameEnded"; payload: { winningTeam: "good" | "evil" } }
   );
 
@@ -372,6 +391,25 @@ export type StepType =
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
 
+export type SystemTokenId =
+  | "drunk"
+  | "poisoned"
+  | "protected"
+  | "noAbility"
+  | "abilitySpent"
+  | "needsFollowUp";
+
+export type ScriptTokenRef = {
+  characterId: string;
+  tokenId: string;
+};
+
+export type PlayerAnnotationsInput = {
+  systemTokenIds: SystemTokenId[];
+  scriptTokens: ScriptTokenRef[];
+  notes: string;
+};
+
 export type Player = {
   id: string;
   seat: number;
@@ -382,6 +420,8 @@ export type Player = {
   alive: boolean;
   ghostVoteUsed: boolean;
   deathAnnounced: boolean;
+  systemTokenIds: SystemTokenId[];
+  scriptTokens: ScriptTokenRef[];
   notes: string;
 };
 

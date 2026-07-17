@@ -51,6 +51,8 @@ function player(id: string, seat: number, name: string, actualCharacter: string,
     alive,
     ghostVoteUsed: false,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
 }

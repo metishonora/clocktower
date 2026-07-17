@@ -248,6 +248,8 @@ function player(
     alive,
     ghostVoteUsed,
     deathAnnounced: !alive,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
 }

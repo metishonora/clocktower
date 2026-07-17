@@ -1264,6 +1264,28 @@ pub(crate) fn is_townsfolk(character: &str) -> bool {
     matches!(character_kind(character), Some(CharacterKind::Townsfolk))
 }
 
+pub(crate) fn is_valid_script_token(character_id: &str, token_id: &str) -> bool {
+    matches!(
+        (character_id, token_id),
+        ("butler", "master")
+            | ("drunk", "isTheDrunk")
+            | ("fortuneTeller", "redHerring")
+            | ("imp", "dead")
+            | ("investigator", "minion")
+            | ("investigator", "wrong")
+            | ("librarian", "outsider")
+            | ("librarian", "wrong")
+            | ("monk", "safe")
+            | ("poisoner", "poisoned")
+            | ("scarletWoman", "isTheDemon")
+            | ("slayer", "noAbility")
+            | ("undertaker", "diedToday")
+            | ("virgin", "noAbility")
+            | ("washerwoman", "townsfolk")
+            | ("washerwoman", "wrong")
+    )
+}
+
 fn required_none() -> RequiredInput {
     RequiredInput {
         kind: RequiredInputKind::None,

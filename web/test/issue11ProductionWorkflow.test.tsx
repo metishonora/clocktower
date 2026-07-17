@@ -97,5 +97,5 @@ function InputHarness({
 }
 
 function player(id: string, seat: number, name: string, actualCharacter: string, alive: boolean): Player {
-  return { id, seat, name, actualCharacter, shownCharacter: actualCharacter, alignment: actualCharacter === "spy" ? "evil" : "good", alive, ghostVoteUsed: false, deathAnnounced: false, notes: "" };
+  return { id, seat, name, actualCharacter, shownCharacter: actualCharacter, alignment: actualCharacter === "spy" ? "evil" : "good", alive, ghostVoteUsed: false, deathAnnounced: false, systemTokenIds: [], scriptTokens: [], notes: "" };
 }

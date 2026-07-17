@@ -696,6 +696,8 @@ function player(
     alive: true,
     ghostVoteUsed: false,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
 }

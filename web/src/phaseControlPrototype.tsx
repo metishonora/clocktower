@@ -11,7 +11,7 @@ type PrototypeStepKey = "chef" | "fortuneTeller" | "poisoner";
 type PrototypePlayer = Player & {
   tokenLabel?: string;
   statusTokens: string[];
-  scriptTokens: string[];
+  scriptTokenLabels: string[];
 };
 
 type PrototypeStep = {
@@ -434,7 +434,7 @@ function ActorToken({ player }: { player: PrototypePlayer }) {
               {token}
             </span>
           ))}
-          {player.scriptTokens.map((token) => (
+          {player.scriptTokenLabels.map((token) => (
             <span key={token}>{token}</span>
           ))}
         </div>
@@ -630,7 +630,7 @@ function GrimoirePeek({
                   </strong>
                   <span>{characterLabel(playerItem.actualCharacter)}</span>
                   <small>{kind ? kindLabels[kind] : "미정"}</small>
-                  {[...playerItem.statusTokens, ...playerItem.scriptTokens].map((token) => (
+                  {[...playerItem.statusTokens, ...playerItem.scriptTokenLabels].map((token) => (
                     <em key={token}>{token}</em>
                   ))}
                 </article>
@@ -746,10 +746,12 @@ function player(
     alive: true,
     ghostVoteUsed: false,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
     tokenLabel: tokenLabel(actualCharacter),
     statusTokens,
-    scriptTokens,
+    scriptTokenLabels: scriptTokens,
   };
 }
 

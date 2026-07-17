@@ -63,6 +63,8 @@ function votingPlayer(id: string, seat: number, alive: boolean, ghostVoteUsed: b
     alive,
     ghostVoteUsed,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
 }
