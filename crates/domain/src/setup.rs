@@ -109,6 +109,8 @@ pub(crate) fn player_from_setup_input(player: &SetupPlayerInput) -> Result<Playe
         alive: true,
         ghost_vote_used: false,
         death_announced: false,
+        system_token_ids: vec![],
+        script_tokens: vec![],
         notes: String::new(),
     })
 }

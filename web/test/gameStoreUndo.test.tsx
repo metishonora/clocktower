@@ -167,3 +167,64 @@ test("store proposes an explicit game end and exposes replayed ended state", asy
   );
   expect(result.current.gameFile.game.events.at(-1)).toEqual(endedEvent);
 });
+
+test("store confirms one player annotation event and exposes it to generic Undo", async () => {
+  const storedGame = gameFile();
+  const annotationEvent = {
+    id: "player-annotations-2",
+    type: "playerAnnotationsUpdated" as const,
+    phase: "firstNight" as const,
+    payload: {
+      playerId: "player-2",
+      systemTokenIds: ["abilitySpent" as const],
+      scriptTokens: [{ characterId: "fortuneTeller", tokenId: "redHerring" }],
+      notes: "다음 낮에 확인",
+    },
+    summary: "플레이어 표시 수정: 2번 Bert",
+    createdAt: "2026-07-17T00:00:00.000Z",
+  };
+  const currentStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+  const core = coreForReplay(vi.fn(async (candidate: GameFile) => {
+    const roster = replayState({ currentStep }).players.map((player) =>
+      candidate.game.events.length === 2 && player.id === "player-2"
+        ? { ...player, ...annotationEvent.payload }
+        : player,
+    );
+    return {
+      ok: true as const,
+      value: replayState({ currentStep, eventCount: candidate.game.events.length, playerRoster: roster }),
+    };
+  }));
+  core.propose = vi.fn(async () => ({
+    ok: true as const,
+    value: { event: annotationEvent, warnings: [], followUpSteps: [], preview: {} },
+  }));
+  const { result } = renderHook(() =>
+    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+  );
+
+  await waitFor(() => expect(result.current.players).toHaveLength(5));
+  await act(async () => {
+    const confirmed = await result.current.updatePlayerAnnotations("player-2", {
+      systemTokenIds: ["abilitySpent"],
+      scriptTokens: [{ characterId: "fortuneTeller", tokenId: "redHerring" }],
+      notes: "다음 낮에 확인",
+    });
+    expect(confirmed?.ok).toBe(true);
+  });
+
+  expect(core.propose).toHaveBeenCalledWith(expect.anything(), {
+    type: "updatePlayerAnnotations",
+    payload: {
+      playerId: "player-2",
+      expectedEventCount: 1,
+      systemTokenIds: ["abilitySpent"],
+      scriptTokens: [{ characterId: "fortuneTeller", tokenId: "redHerring" }],
+      notes: "다음 낮에 확인",
+    },
+  });
+  await waitFor(() => expect(result.current.players[1]?.notes).toBe("다음 낮에 확인"));
+  expect(result.current.latestLiveUndoEvent?.id).toBe(annotationEvent.id);
+  act(() => expect(result.current.undoLatestLiveEvent(annotationEvent.id)).toBe(true));
+  await waitFor(() => expect(result.current.players[1]?.notes).toBe(""));
+});

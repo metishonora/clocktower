@@ -227,6 +227,56 @@ test("validates win warnings and the canonical game-ended contract", () => {
   throws(() => parseReplayState(malformedWarning), /코어 응답 형식/);
 });
 
+test("validates canonical player annotation events and replay projections", () => {
+  const event = {
+    id: "player-annotations-2",
+    type: "playerAnnotationsUpdated",
+    phase: "firstNight",
+    payload: {
+      playerId: "player-2",
+      systemTokenIds: ["abilitySpent", "needsFollowUp"],
+      scriptTokens: [{ characterId: "fortuneTeller", tokenId: "redHerring" }],
+      notes: "다음 낮에 개인 확인",
+    },
+    summary: "플레이어 표시 수정: 2번 Bert",
+    createdAt: "2026-07-17T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "playerAnnotationsUpdated");
+
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 2,
+    phase: "firstNight",
+    players: [{
+      id: "player-2",
+      seat: 2,
+      name: "Bert",
+      actualCharacter: "chef",
+      shownCharacter: "chef",
+      alignment: "good",
+      alive: true,
+      ghostVoteUsed: false,
+      deathAnnounced: false,
+      systemTokenIds: ["abilitySpent"],
+      scriptTokens: [{ characterId: "fortuneTeller", tokenId: "redHerring" }],
+      notes: "다음 낮에 개인 확인",
+    }],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const unknownScriptToken = structuredClone(event);
+  unknownScriptToken.payload.scriptTokens[0].tokenId = "notReal";
+  throws(() => parseGameEvent(unknownScriptToken), /이벤트 형식/);
+  const duplicateSystemToken = structuredClone(replay);
+  duplicateSystemToken.players[0].systemTokenIds = ["abilitySpent", "abilitySpent"];
+  throws(() => parseReplayState(duplicateSystemToken), /코어 응답 형식/);
+});
+
 test("validates typed confirmed information and derived information prompts", () => {
   const information = {
     actor: { playerId: "player-2", characterId: "chef" },
@@ -342,6 +392,8 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
     alive: true,
     ghostVoteUsed: false,
     deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
     notes: "",
   };
   const fortuneTellerStep = {

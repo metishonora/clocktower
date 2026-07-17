@@ -1,0 +1,387 @@
+.annotationPrototype {
+  min-height: 100vh;
+  padding: 14px;
+  background: #ece8df;
+  color: #20241f;
+}
+
+.annotationPrototype button,
+.annotationPrototype textarea {
+  font: inherit;
+}
+
+.annotationPrototypeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.annotationPrototypeHeader p,
+.annotationPrototypeHeader h1,
+.annotationCurrentStep p,
+.annotationPrototypeLegend p,
+.annotationPrototypeLog p {
+  margin: 0;
+}
+
+.annotationPrototypeHeader p {
+  color: #586158;
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.annotationPrototypeHeader h1 {
+  margin-top: 3px;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+
+.annotationPrototypeHeader nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.annotationPrototypeHeader nav button {
+  min-height: 38px;
+  border: 1px solid #c9c2b5;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #3c443c;
+  padding: 7px 11px;
+  font-weight: 850;
+}
+
+.annotationPrototypeHeader nav button.selected {
+  border-color: #236a55;
+  background: #dcebe4;
+  color: #164b3b;
+}
+
+.annotationPrototypeWorkspace {
+  display: grid;
+  grid-template-columns: minmax(620px, 1.45fr) minmax(310px, .62fr);
+  min-height: calc(100vh - 86px);
+  gap: 12px;
+}
+
+.annotationPrototypeGrimoire,
+.annotationCurrentStep,
+.annotationPrototypeLegend,
+.annotationPrototypeLog {
+  border: 1px solid #cfc7b9;
+  border-radius: 12px;
+  background: #fffdf8;
+}
+
+.annotationPrototypeGrimoire {
+  position: relative;
+  min-height: 650px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(35, 106, 85, .08) 0 26%, transparent 26.3%),
+    repeating-radial-gradient(circle at center, transparent 0 15%, rgba(117, 105, 84, .11) 15.2% 15.4%),
+    #f8f5ed;
+}
+
+.annotationTableCenter {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  width: 190px;
+  height: 150px;
+  place-content: center;
+  gap: 5px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(35, 106, 85, .3);
+  border-radius: 50%;
+  background: #fffdf8;
+  text-align: center;
+}
+
+.annotationTableCenter span,
+.annotationTableCenter small {
+  color: #687168;
+  font-weight: 800;
+}
+
+.annotationTableCenter strong {
+  font-size: 1.25rem;
+}
+
+.annotationSeat {
+  position: absolute;
+  left: var(--seat-x);
+  top: var(--seat-y);
+  width: 152px;
+  height: 108px;
+  transform: translate(-50%, -50%);
+}
+
+.annotationSeatCard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #416f9c;
+  border-radius: 18px;
+  background: #fffdf8;
+  box-shadow: 0 8px 20px rgba(62, 51, 35, .12);
+}
+
+.annotationSeatCard.evil { border-color: #93423c; }
+.annotationSeatCard.selected { outline: 4px solid rgba(35, 106, 85, .24); border-color: #236a55; }
+
+.annotationSeatMain {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-content: center;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: #20241f;
+  text-align: center;
+  touch-action: manipulation;
+}
+
+.annotationSeatCard.hasNotes .annotationSeatMain {
+  padding-bottom: 34px;
+}
+
+.annotationSeatMain > span { color: #697269; font-size: .72rem; font-weight: 900; }
+.annotationSeatMain > strong { font-size: .94rem; }
+.annotationSeatMain > small { color: #697269; font-size: .7rem; font-weight: 750; }
+
+.annotationSeatMain:disabled { opacity: .45; }
+
+.annotationAutomaticTokens {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.annotationAutomaticTokens.edgeLeft { left: -13px; }
+.annotationAutomaticTokens.edgeRight { right: -13px; }
+
+.annotationAutomaticTokens span,
+.annotationManualTokens span,
+.annotationPrototypeLegend span {
+  border-radius: 999px;
+  padding: 3px 6px;
+  font-size: .58rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.annotationNotePreview {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  left: 7px;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  border-top: 1px solid #d9d2c6;
+  padding: 4px 3px 0;
+  color: #4d554e;
+  font-size: .61rem;
+  font-weight: 750;
+  line-height: 1.22;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.annotationAutomaticTokens .poisoned,
+.annotationPrototypeLegend .poisoned { border: 1px solid #9b5a28; background: #fff0d7; color: #824316; }
+.annotationAutomaticTokens .protected,
+.annotationPrototypeLegend .protected { border: 1px solid #2d6f83; background: #e0f1f4; color: #245b6a; }
+.annotationAutomaticTokens .automaticGeneric { border: 1px solid #66736c; background: #edf0ed; color: #48534d; }
+
+.annotationManualTokens {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  max-width: 168px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transform: translate(-50%, -50%) translate(var(--token-offset-x), var(--token-offset-y));
+  pointer-events: none;
+}
+
+.annotationManualTokens .manual,
+.annotationPrototypeLegend .manual {
+  border: 2px solid #7b6825;
+  background: #fff3b8;
+  color: #382f12;
+  box-shadow: 0 3px 9px rgba(62, 51, 35, .2);
+}
+.annotationManualTokens .prominent,
+.annotationPrototypeLegend .prominent { padding: 5px 9px; font-size: .68rem; }
+.annotationManualTokens .overflow { background: #eadb91; color: #30280e; }
+.annotationPrototypeLegend .noteSample {
+  max-width: 92px;
+  overflow: hidden;
+  border: 1px solid #cfc7b9;
+  border-radius: 5px;
+  background: #f3efe6;
+  color: #4d554e;
+  text-overflow: ellipsis;
+}
+
+.annotationPrototypeRail {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.annotationCurrentStep,
+.annotationPrototypeLegend,
+.annotationPrototypeLog { padding: 14px; }
+
+.annotationCurrentStep { display: grid; gap: 12px; }
+.annotationCurrentStep > div,
+.annotationPrototypeLog > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.annotationCurrentStep p,
+.annotationPrototypeLegend p,
+.annotationPrototypeLog p { color: #687168; font-size: .74rem; font-weight: 900; text-transform: uppercase; }
+.annotationCurrentStep > div span { border-radius: 999px; background: #dcebe4; color: #164b3b; padding: 4px 8px; font-size: .68rem; font-weight: 900; }
+.annotationCurrentStep h2 { margin: 0; }
+.annotationCurrentStep > strong { border: 1px solid #d4cdbf; border-radius: 8px; background: #f5f1e8; padding: 11px; }
+.annotationCurrentStep > button { min-height: 44px; border: 0; border-radius: 8px; background: #236a55; color: white; font-weight: 900; }
+
+.annotationPrototypeLegend { display: grid; gap: 9px; }
+.annotationPrototypeLegend > div { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 8px; }
+.annotationPrototypeLegend small { color: #687168; font-size: .72rem; font-weight: 750; }
+
+.annotationPrototypeLog { display: grid; gap: 8px; }
+.annotationPrototypeLog ol { display: grid; gap: 7px; margin: 0; padding-left: 22px; color: #586158; font-size: .78rem; font-weight: 700; }
+
+.annotationPrototypeState { display: none; }
+
+.annotationDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  justify-items: end;
+  background: rgba(24, 28, 25, .55);
+  backdrop-filter: blur(3px);
+}
+
+.annotationDialog {
+  display: grid;
+  width: min(620px, 94vw);
+  height: 100vh;
+  grid-template-rows: auto auto 1fr auto;
+  background: #fffdf8;
+  box-shadow: -18px 0 50px rgba(20, 24, 21, .22);
+}
+
+.annotationDialog:focus { outline: none; }
+
+.annotationDialog > header,
+.annotationDialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.annotationDialog > header { border-bottom: 1px solid #d6d0c5; }
+.annotationDialog > header > div { display: flex; align-items: center; gap: 10px; }
+.annotationDialog > header > div > span { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 50%; background: #315f8e; color: white; font-weight: 900; }
+.annotationDialog > header p,
+.annotationDialog > header h2 { margin: 0; }
+.annotationDialog > header p { color: #687168; font-size: .74rem; font-weight: 800; }
+.annotationDialog > header > button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: #eee9df; font-size: 1.4rem; }
+
+.annotationAutomaticState {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #d6d0c5;
+  background: #fff3df;
+  padding: 9px 18px;
+  color: #744017;
+  font-size: .78rem;
+}
+.annotationAutomaticState span { border: 1px solid #ae6d36; border-radius: 999px; padding: 3px 7px; font-weight: 900; }
+
+.annotationDialogContent {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  overflow: auto;
+  padding: 16px 18px 28px;
+}
+
+.annotationDialog fieldset { margin: 0; border: 0; padding: 0; }
+.annotationDialog legend { margin-bottom: 8px; font-weight: 900; }
+
+.annotationTokenGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.annotationTokenGrid button,
+.annotationScriptGroups button {
+  min-height: 40px;
+  border: 1px solid #cbc4b7;
+  border-radius: 8px;
+  background: #f7f3eb;
+  color: #303730;
+  font-weight: 800;
+}
+.annotationTokenGrid button { display: grid; gap: 1px; place-content: center; }
+.annotationTokenGrid button span { color: #697269; font-size: .6rem; text-transform: uppercase; }
+.annotationTokenGrid button.selected { border: 2px solid #236a55; background: #deede6; color: #164b3b; }
+
+.annotationScriptGroups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.annotationScriptGroups section { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 6px; border: 1px solid #dfd8cc; border-radius: 8px; padding: 6px; }
+.annotationScriptGroups section > strong { color: #5a625a; font-size: .72rem; }
+.annotationScriptGroups section > div { display: flex; gap: 5px; }
+.annotationScriptGroups button { min-height: 34px; flex: 1; padding: 4px 6px; font-size: .7rem; }
+.annotationScriptGroups button.selected { border: 2px solid #66529b; background: #ece8f7; color: #4d397f; }
+
+.annotationNotesField { display: grid; gap: 7px; }
+.annotationNotesField > span { display: flex; justify-content: space-between; }
+.annotationNotesField small { color: #697269; }
+.annotationNotesField textarea { resize: vertical; min-height: 92px; border: 1px solid #c7c0b4; border-radius: 8px; padding: 10px; color: #20241f; }
+.annotationDialogError { margin: 0; border: 1px solid #c45d51; border-radius: 8px; background: #fff0ed; color: #8a3027; padding: 9px 11px; font-size: .8rem; font-weight: 800; }
+
+.annotationDialog > footer { border-top: 1px solid #d6d0c5; }
+.annotationDialog > footer > span { color: #687168; font-size: .76rem; font-weight: 800; }
+.annotationDialog > footer > div { display: flex; gap: 7px; }
+.annotationDialog > footer button { min-width: 100px; min-height: 44px; border: 1px solid #bdb6a9; border-radius: 8px; background: #f4efe6; font-weight: 900; }
+.annotationDialog > footer button:last-child { border-color: #236a55; background: #236a55; color: white; }
+.annotationDialog > footer button:disabled { border-color: #d1cbc0; background: #ddd8ce; color: #817e77; }
+
+@media (max-width: 900px) {
+  .annotationPrototypeHeader { align-items: stretch; flex-direction: column; }
+  .annotationPrototypeHeader nav { justify-content: flex-start; }
+  .annotationPrototypeWorkspace { grid-template-columns: 1fr; }
+  .annotationPrototypeGrimoire { min-height: 620px; }
+}
+
+@media (max-width: 620px) {
+  .annotationPrototype { padding: 8px; }
+  .annotationPrototypeGrimoire { min-height: 560px; }
+  .annotationSeat { width: 118px; height: 96px; }
+  .annotationSeatCard.hasNotes .annotationSeatMain { padding-bottom: 31px; }
+  .annotationNotePreview { font-size: .56rem; }
+  .annotationManualTokens span { max-width: 74px; overflow: hidden; text-overflow: ellipsis; }
+  .annotationTokenGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .annotationScriptGroups { grid-template-columns: 1fr; }
+}

@@ -8,6 +8,7 @@ import type {
   PhaseInputSuggestionRequest,
   PhaseStep,
   PhaseStepConfirmation,
+  PlayerAnnotationsInput,
   Proposal,
   RevealPayload,
   ReplayState,
@@ -331,6 +332,33 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     if (result.ok) appendProposalEvent(result.value);
   }
 
+  async function updatePlayerAnnotations(
+    playerId: string,
+    annotations: PlayerAnnotationsInput,
+  ): Promise<CoreResult<Proposal> | undefined> {
+    if (!setupConfirmed || gameEnd || transitionBusy) return undefined;
+    setBusy(true);
+    setLoadError(undefined);
+    const result = await core.propose(gameFile, {
+      type: "updatePlayerAnnotations",
+      payload: {
+        playerId,
+        expectedEventCount: gameFile.game.events.length,
+        ...annotations,
+      },
+    }).catch((error: unknown): CoreResult<Proposal> => ({
+      ok: false,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "플레이어 표시 수정 실패",
+      },
+    }));
+    setProposalResult(result);
+    setBusy(false);
+    if (result.ok) appendProposalEvent(result.value);
+    return result;
+  }
+
   async function skipCurrentStep() {
     await proposeCurrentStep("skipStep");
   }
@@ -542,6 +570,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     suggestPhaseInput,
     useSlayerAbility,
     endGame,
+    updatePlayerAnnotations,
     resetSetup,
     undoLatestLiveEvent,
     recoverConfirmedSetup,

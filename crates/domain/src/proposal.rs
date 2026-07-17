@@ -5,10 +5,11 @@ use crate::{
         ExecutionSurvivalEventPayload, GameEndedPayload, GameEvent, GameEventKind, GameFile,
         ImpAttackOutcome, ImpNoDeathReason, NightActionResolution, NightActionResolvedPayload,
         NightDeathsAnnouncedPayload, NominationEventPayload, NominationStartedPayload,
-        PhaseStepCommandPayload, PhaseStepEventPayload, Proposal, RedHerringAssignedPayload,
-        RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload, SlayerImpairmentContext,
-        SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload, StepIdPayload,
-        UseSlayerAbilityCommandPayload, VirginResolution,
+        PhaseStepCommandPayload, PhaseStepEventPayload, PlayerAnnotationsUpdatedPayload, Proposal,
+        RedHerringAssignedPayload, RevealPayload, SetupEventPayload, SlayerAbilityUsedPayload,
+        SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome, SmokeEventPayload,
+        StepIdPayload, UpdatePlayerAnnotationsCommandPayload, UseSlayerAbilityCommandPayload,
+        VirginResolution,
     },
     day::{
         execution_standing, nomination_record, nomination_start_input, replay_day_state,
@@ -69,7 +70,73 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
         Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
+        Command::UpdatePlayerAnnotations { payload } => {
+            propose_player_annotations(&game_file, payload)
+        }
     }
+}
+
+fn propose_player_annotations(
+    game_file: &GameFile,
+    payload: UpdatePlayerAnnotationsCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    let players = replay_players(&game_file.game.events)?;
+    crate::annotations::validate_player_annotations(
+        &players,
+        &payload.player_id,
+        &payload.system_token_ids,
+        &payload.script_tokens,
+        &payload.notes,
+    )?;
+    let player = players
+        .iter()
+        .find(|player| player.id == payload.player_id)
+        .expect("validated annotation player should exist");
+    if player.system_token_ids == payload.system_token_ids
+        && player.script_tokens == payload.script_tokens
+        && player.notes == payload.notes
+    {
+        return Err(ErrorKind::InvalidPlayerAnnotations.into_error());
+    }
+    let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
+    let token_count = payload.system_token_ids.len() + payload.script_tokens.len();
+    let summary = format!(
+        "플레이어 표시 수정: {}번 {} · 수동 토큰 {token_count}개 · Notes {}",
+        player.seat,
+        player.name,
+        if payload.notes.is_empty() {
+            "없음"
+        } else {
+            "수정"
+        },
+    );
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("player-annotations-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::PlayerAnnotationsUpdated {
+                payload: PlayerAnnotationsUpdatedPayload {
+                    player_id: payload.player_id,
+                    system_token_ids: payload.system_token_ids,
+                    script_tokens: payload.script_tokens,
+                    notes: payload.notes,
+                },
+            },
+            phase,
+            summary: summary.clone(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_end_game(

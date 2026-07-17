@@ -71,6 +71,13 @@ const DevPhaseActionSummaryPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevManualTokensNotesPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./manualTokensNotesPrototype");
+      return { default: module.ManualTokensNotesPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -79,6 +86,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevManualTokensNotesPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "manual-tokens-notes"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevManualTokensNotesPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevPhaseActionSummaryPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "phase-action-summaries"
@@ -282,6 +300,7 @@ export function ClocktowerApp({
                 onDraftChange={gameStore.setSetupDraft}
                 busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
                 ruleState={gameStore.ruleState}
+                onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
                 slayerAbility={gameStore.ruleState?.slayerAbility ? {
                   actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
                   enabled: gameStore.ruleState.slayerAbility.canUseNow,

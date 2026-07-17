@@ -34,6 +34,8 @@ test("store sync replaces same-seat confirmed Players from another imported game
         alive: true,
         ghostVoteUsed: false,
         deathAnnounced: false,
+        systemTokenIds: [],
+        scriptTokens: [],
         notes: "",
       },
       {
@@ -46,6 +48,8 @@ test("store sync replaces same-seat confirmed Players from another imported game
         alive: true,
         ghostVoteUsed: false,
         deathAnnounced: false,
+        systemTokenIds: [],
+        scriptTokens: [],
         notes: "",
       },
       {
@@ -58,6 +62,8 @@ test("store sync replaces same-seat confirmed Players from another imported game
         alive: true,
         ghostVoteUsed: false,
         deathAnnounced: false,
+        systemTokenIds: [],
+        scriptTokens: [],
         notes: "",
       },
     ],
@@ -88,6 +94,8 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
       alive: true,
       ghostVoteUsed: false,
       deathAnnounced: false,
+      systemTokenIds: [],
+      scriptTokens: [],
       notes: "",
     },
     {
@@ -100,6 +108,8 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
       alive: true,
       ghostVoteUsed: false,
       deathAnnounced: false,
+      systemTokenIds: [],
+      scriptTokens: [],
       notes: "",
     },
     {
@@ -112,6 +122,8 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
       alive: true,
       ghostVoteUsed: false,
       deathAnnounced: false,
+      systemTokenIds: [],
+      scriptTokens: [],
       notes: "",
     },
   ];

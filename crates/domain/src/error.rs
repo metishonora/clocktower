@@ -46,6 +46,7 @@ pub(crate) enum ErrorKind {
     InvalidSlayerRegistration,
     MissingMayorDecision,
     InvalidMayorDecision,
+    InvalidPlayerAnnotations,
     GameAlreadyEnded,
 }
 
@@ -130,6 +131,10 @@ impl ErrorKind {
             Self::InvalidSlayerRegistration => ("INVALID_SLAYER_REGISTRATION", "대상의 악마 등록 판정이 올바르지 않습니다."),
             Self::MissingMayorDecision => ("MISSING_MAYOR_DECISION", "시장 사망 또는 튕김 결정을 선택해야 합니다."),
             Self::InvalidMayorDecision => ("INVALID_MAYOR_DECISION", "현재 공격에 적용할 수 없는 시장 결정입니다."),
+            Self::InvalidPlayerAnnotations => (
+                "INVALID_PLAYER_ANNOTATIONS",
+                "플레이어 토큰 또는 Notes 입력이 올바르지 않습니다.",
+            ),
             Self::GameAlreadyEnded => ("GAME_ALREADY_ENDED", "이미 종료된 게임입니다."),
         };
         CoreError { code, message_ko }
