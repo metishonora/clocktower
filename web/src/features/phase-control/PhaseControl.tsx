@@ -340,12 +340,29 @@ function CurrentStepPane({
   const [suggestionUsed, setSuggestionUsed] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
+  const phaseOverviewDisclosureRef = useRef<HTMLDetailsElement>(null);
+  const currentOverviewItemRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
     activeSuggestionRequestRef.current = undefined;
     setSuggesting(false);
     setSuggestionUsed(false);
     setSuggestionError(undefined);
   }, [currentStep?.id, suggestionContextFingerprint]);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mobileViewport = window.matchMedia("(max-width: 900px)");
+    const syncDisclosure = () => {
+      if (phaseOverviewDisclosureRef.current) {
+        phaseOverviewDisclosureRef.current.open = !mobileViewport.matches;
+      }
+    };
+    syncDisclosure();
+    mobileViewport.addEventListener("change", syncDisclosure);
+    return () => mobileViewport.removeEventListener("change", syncDisclosure);
+  }, []);
+  useEffect(() => {
+    currentOverviewItemRef.current?.scrollIntoView?.({ block: "nearest", inline: "center" });
+  }, [currentStep?.id]);
   const currentPlayer = currentStep?.playerId
     ? players.find((player) => player.id === currentStep.playerId)
     : undefined;
@@ -404,6 +421,9 @@ function CurrentStepPane({
   );
   const currentSuggestionFingerprintRef = useRef(currentSuggestionFingerprint);
   currentSuggestionFingerprintRef.current = currentSuggestionFingerprint;
+  const completedPhaseStepCount = phaseOverview.filter(
+    (step) => step.status === "complete" || step.status === "skipped",
+  ).length;
 
   async function suggestCurrentInput() {
     if (!currentStep?.requiredInput.supportsRandomSuggestion || suggesting) return;
@@ -442,6 +462,30 @@ function CurrentStepPane({
         </div>
         {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>
+
+      <details className="phaseOverviewDisclosure" ref={phaseOverviewDisclosureRef}>
+        <summary>
+          <span>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</span>
+          <small>{completedPhaseStepCount} / {phaseOverview.length} 완료</small>
+        </summary>
+        <section className="phaseOverview" aria-label="단계 개요">
+          <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>
+          <ol>
+            {phaseOverview.length === 0 ? <li>표시할 단계 없음</li> : null}
+            {phaseOverview.map((step) => (
+              <li
+                aria-current={step.status === "current" ? "step" : undefined}
+                className={step.status}
+                key={step.id}
+                ref={step.status === "current" ? currentOverviewItemRef : undefined}
+              >
+                <span>{stepTitle(step, step.playerId ? players.find((player) => player.id === step.playerId) : undefined)}</span>
+                <strong>{stepStatusLabel(step.status)}</strong>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </details>
 
       <GameEndControls
         warnings={warnings}
@@ -574,18 +618,6 @@ function CurrentStepPane({
       </section>
       </GameEndControls>
 
-      <section className="phaseOverview" aria-label="단계 개요">
-        <h3>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</h3>
-        <ol>
-          {phaseOverview.length === 0 ? <li>표시할 단계 없음</li> : null}
-          {phaseOverview.map((step) => (
-            <li className={step.status} key={step.id}>
-              <span>{stepTitle(step, step.playerId ? players.find((player) => player.id === step.playerId) : undefined)}</span>
-              <strong>{stepStatusLabel(step.status)}</strong>
-            </li>
-          ))}
-        </ol>
-      </section>
     </>
   );
 }
