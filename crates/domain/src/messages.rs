@@ -2,7 +2,7 @@ use crate::{
     contracts::{RevealPayload, SetupDistribution},
     model::{
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
-        InformationResult, NominationRecord, PhaseStep, Player, StepInput, StepInputFields,
+        InformationResult, NominationRecord, PhaseStep, Player, StepInput,
     },
 };
 use serde_json::{json, Value};
@@ -56,10 +56,8 @@ pub(crate) fn nomination_vote_event_summary(
     players: &[Player],
     record: &NominationRecord,
 ) -> String {
-    let nominee =
-        player_label(players, &record.nominee_id).unwrap_or_else(|| "알 수 없음".to_string());
-    let nominator =
-        player_label(players, &record.nominator_id).unwrap_or_else(|| "알 수 없음".to_string());
+    let nominee = player_verbose_label(players, &record.nominee_id);
+    let nominator = player_verbose_label(players, &record.nominator_id);
     format!(
         "지명 투표 확정: {nominator} → {nominee}, {}표",
         record.vote_count
@@ -79,10 +77,7 @@ pub(crate) fn nomination_vote_preview(
 }
 
 pub(crate) fn execution_death_event_summary(players: &[Player], player_id: &str) -> String {
-    format!(
-        "사망 확정: {}",
-        player_label(players, player_id).unwrap_or_else(|| player_id.to_string())
-    )
+    format!("사망 확정: {}", player_verbose_label(players, player_id))
 }
 
 pub(crate) fn execution_death_preview() -> Value {
@@ -92,16 +87,13 @@ pub(crate) fn execution_death_preview() -> Value {
 pub(crate) fn execution_survival_event_summary(players: &[Player], player_id: &str) -> String {
     format!(
         "처형 후 생존 확정: {}",
-        player_label(players, player_id).unwrap_or_else(|| player_id.to_string())
+        player_verbose_label(players, player_id)
     )
 }
 
 pub(crate) fn execution_event_summary(players: &[Player], player_id: Option<&str>) -> String {
     if let Some(player_id) = player_id {
-        format!(
-            "처형 확정: {}",
-            player_label(players, player_id).unwrap_or_else(|| player_id.to_string())
-        )
+        format!("처형 확정: {}", player_verbose_label(players, player_id))
     } else {
         "처형 없음 확정".to_string()
     }
@@ -206,42 +198,187 @@ pub(crate) fn phase_step_summary(
     input: &StepInput,
     information: Option<&ConfirmedInformation>,
 ) -> Option<String> {
-    match step.character.as_deref()? {
-        "washerwoman" | "librarian" | "investigator" => {
-            setup_info_summary(step.character.as_deref()?, input, players)
+    if let Some(information) = information {
+        if let InformationResult::TeamInfo {
+            demon_player_ids,
+            minion_player_ids,
+            bluff_character_ids,
+        } = &information.delivered_result
+        {
+            let player_list = |ids: &[String]| {
+                let values = ids
+                    .iter()
+                    .map(|id| player_verbose_label(players, id))
+                    .collect::<Vec<_>>();
+                list_or_none(&values)
+            };
+            if step.id.ends_with(":minionInfo") {
+                return Some(format!(
+                    "하수인 정보 전달 · 악마: {} · 하수인: {}",
+                    player_list(demon_player_ids),
+                    player_list(minion_player_ids)
+                ));
+            }
+            if step.id.ends_with(":demonInfo") {
+                let bluffs = bluff_character_ids
+                    .iter()
+                    .map(|id| character_label(id).to_string())
+                    .collect::<Vec<_>>();
+                return Some(format!(
+                    "악마 정보 전달 · 하수인: {} · 블러프: {}",
+                    player_list(minion_player_ids),
+                    list_or_none(&bluffs)
+                ));
+            }
         }
-        "chef" => numeric_information_summary("요리사", "쌍", information?),
-        "empath" => numeric_information_summary("공감능력자", "명", information?),
+    }
+
+    let character = step.character.as_deref()?;
+    if character == "butler" {
+        let actor = step.player_id.as_deref()?;
+        let target = input.as_ref()?.player_ids.as_ref()?.first()?;
+        return Some(format!(
+            "{} → {} · 주인 선택",
+            player_ability_label(players, actor, character),
+            player_verbose_label(players, target)
+        ));
+    }
+
+    let information = information?;
+    let actor = information.actor.as_ref()?;
+    let actor_label = player_ability_label(players, &actor.player_id, &actor.character_id);
+    let targets = information
+        .target_player_ids
+        .iter()
+        .map(|id| player_verbose_label(players, id))
+        .collect::<Vec<_>>();
+    let audit = information_audit_suffix(character, information);
+
+    match character {
+        "washerwoman" | "librarian" | "investigator" => {
+            setup_information_summary(character, &actor_label, information, players)
+        }
+        "chef" => number_result(information).map(|count| {
+            format!("{actor_label}가 서로 이웃한 악한 팀 {count}쌍을 확인했습니다.{audit}")
+        }),
+        "empath" => number_result(information).map(|count| {
+            format!(
+                "{actor_label}가 살아있는 양옆 이웃 중 악한 팀 {count}명을 확인했습니다.{audit}"
+            )
+        }),
+        "fortuneTeller" => boolean_result(information).map(|has_demon| {
+            format!(
+                "{actor_label}가 {}를 확인: 악마 {}{audit}",
+                targets.join(", "),
+                if has_demon { "있음" } else { "없음" }
+            )
+        }),
+        "undertaker" => character_result(information).map(|character_id| {
+            format!(
+                "{actor_label}가 {}를 확인 · 처형된 플레이어의 캐릭터: {}{audit}",
+                targets.join(", "),
+                character_label(character_id)
+            )
+        }),
+        "ravenkeeper" => character_result(information).map(|character_id| {
+            format!(
+                "{actor_label}가 {}를 확인 · 대상의 캐릭터: {}{audit}",
+                targets.join(", "),
+                character_label(character_id)
+            )
+        }),
+        "spy" => Some(format!("{actor_label}가 마도서를 확인했습니다.{audit}")),
         _ => None,
     }
 }
 
-fn numeric_information_summary(
-    character_label: &str,
-    unit: &str,
+fn number_result(information: &ConfirmedInformation) -> Option<usize> {
+    match &information.delivered_result {
+        InformationResult::Number { value } => Some(*value),
+        _ => None,
+    }
+}
+
+fn boolean_result(information: &ConfirmedInformation) -> Option<bool> {
+    match &information.delivered_result {
+        InformationResult::Boolean { value } => Some(*value),
+        _ => None,
+    }
+}
+
+fn character_result(information: &ConfirmedInformation) -> Option<&str> {
+    match &information.delivered_result {
+        InformationResult::Character { character_id } => Some(character_id),
+        _ => None,
+    }
+}
+
+fn setup_information_summary(
+    kind: &str,
+    actor_label: &str,
     information: &ConfirmedInformation,
+    players: &[Player],
 ) -> Option<String> {
-    let Some(InformationResult::Number { value: true_value }) =
-        information.computed_result.as_ref()
+    let InformationResult::SetupInfo {
+        player_ids,
+        character_id,
+        zero_outsiders,
+    } = &information.delivered_result
     else {
         return None;
     };
-    let InformationResult::Number {
-        value: displayed_value,
-    } = information.delivered_result
-    else {
-        return None;
-    };
-    let context = delivery_context_label(&information.delivery_context);
-    let audit_detail = match &information.delivery_context {
-        DeliveryContext::Fixed => String::new(),
-        DeliveryContext::Discretionary { .. } => {
-            format!(" (실제 {true_value}{unit}{context})")
-        }
-    };
+    let audit = information_audit_suffix(kind, information);
+    if kind == "librarian" && *zero_outsiders {
+        return Some(format!(
+            "{actor_label}가 외부인 없음을 확인했습니다.{audit}"
+        ));
+    }
     Some(format!(
-        "{character_label}가 {displayed_value}{unit}을 확인했습니다.{audit_detail}"
+        "{actor_label}가 {} 중 한 명을 {}로 확인했습니다.{audit}",
+        player_ids
+            .iter()
+            .map(|id| player_verbose_label(players, id))
+            .collect::<Vec<_>>()
+            .join(", "),
+        character_label(character_id.as_deref()?)
     ))
+}
+
+fn information_audit_suffix(kind: &str, information: &ConfirmedInformation) -> String {
+    let reasons = delivery_context_label(&information.delivery_context);
+    let Some(computed) = information.computed_result.as_ref() else {
+        return if reasons.is_empty() {
+            String::new()
+        } else {
+            format!(" ({})", reasons.trim_start_matches(" · "))
+        };
+    };
+    if computed == &information.delivered_result
+        && matches!(information.delivery_context, DeliveryContext::Fixed)
+    {
+        return String::new();
+    }
+    let actual = information_result_label(kind, computed);
+    match (actual, reasons.is_empty()) {
+        (Some(actual), false) => format!(" (실제 {actual}{reasons})"),
+        (Some(actual), true) => format!(" (실제 {actual})"),
+        (None, false) => format!(" ({})", reasons.trim_start_matches(" · ")),
+        (None, true) => String::new(),
+    }
+}
+
+fn information_result_label(kind: &str, result: &InformationResult) -> Option<String> {
+    match result {
+        InformationResult::Boolean { value } if kind == "fortuneTeller" => {
+            Some(format!("악마 {}", if *value { "있음" } else { "없음" }))
+        }
+        InformationResult::Character { character_id } => {
+            Some(character_label(character_id).to_string())
+        }
+        InformationResult::Number { value } if kind == "chef" => Some(format!("{value}쌍")),
+        InformationResult::Number { value } if kind == "empath" => Some(format!("{value}명")),
+        _ => None,
+    }
 }
 
 fn delivery_context_label(context: &DeliveryContext) -> String {
@@ -342,39 +479,6 @@ fn team_info_reveal_payload(
     None
 }
 
-pub(crate) fn setup_info_summary(
-    kind: &str,
-    input: &StepInput,
-    players: &[Player],
-) -> Option<String> {
-    let input = input.as_ref()?;
-    if kind == "librarian" && input.zero_outsiders == Some(true) {
-        return Some("사서 정보 확정: 외부인 0명".to_string());
-    }
-
-    let character_id = input.character_id.as_deref()?;
-    let candidates = setup_info_candidate_labels(input, players)?;
-    Some(format!(
-        "{} 정보 확정: {} 중 {}",
-        setup_info_label(kind),
-        candidates.join(", "),
-        character_label(character_id)
-    ))
-}
-
-pub(crate) fn setup_info_candidate_labels(
-    input: &StepInputFields,
-    players: &[Player],
-) -> Option<Vec<String>> {
-    input
-        .player_ids
-        .as_ref()?
-        .iter()
-        .map(String::as_str)
-        .map(|player_id| player_label(players, player_id))
-        .collect()
-}
-
 pub(crate) fn list_or_none(values: &[String]) -> String {
     if values.is_empty() {
         "없음".to_string()
@@ -390,6 +494,44 @@ pub(crate) fn player_character_label(player: &Player) -> String {
         player.name,
         character_label(&player.actual_character)
     )
+}
+
+pub(crate) fn player_verbose_label(players: &[Player], player_id: &str) -> String {
+    players
+        .iter()
+        .find(|player| player.id == player_id)
+        .map(|player| {
+            format!(
+                "{}번 {}({})",
+                player.seat,
+                player.name,
+                character_label(&player.actual_character)
+            )
+        })
+        .unwrap_or_else(|| player_id.to_string())
+}
+
+pub(crate) fn player_ability_label(
+    players: &[Player],
+    player_id: &str,
+    ability_character: &str,
+) -> String {
+    players
+        .iter()
+        .find(|player| player.id == player_id)
+        .map(|player| {
+            let ability = character_label(ability_character);
+            let actual = character_label(&player.actual_character);
+            if player.actual_character == ability_character {
+                format!("{}번 {}({ability})", player.seat, player.name)
+            } else {
+                format!(
+                    "{}번 {}({ability} 능력, 실제 {actual})",
+                    player.seat, player.name
+                )
+            }
+        })
+        .unwrap_or_else(|| player_id.to_string())
 }
 
 pub(crate) fn player_label(players: &[Player], player_id: &str) -> Option<String> {

@@ -63,6 +63,10 @@ fn eligible_mayor_requires_an_explicit_die_or_bounce_decision() {
     );
     assert_eq!(bounced["ok"], true, "bounce proposal failed as {bounced}");
     assert_eq!(
+        bounced["value"]["event"]["summary"],
+        "7번 Imp(임프) → 1번 Mayor(시장) 공격 · 4번 Washer(세탁부)에게 바운스 · 사망"
+    );
+    assert_eq!(
         bounced["value"]["event"]["payload"]["resolution"],
         json!({
             "kind": "impAttack",

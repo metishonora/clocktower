@@ -21,7 +21,8 @@ use crate::{
         execution_preview, execution_survival_event_summary, nomination_closed_event_summary,
         nomination_closed_preview, nomination_vote_event_summary, nomination_vote_preview,
         phase_step_event_summary, phase_step_preview, phase_step_reveal_payload,
-        setup_event_summary, setup_preview, smoke_event_summary, smoke_preview,
+        player_ability_label, player_verbose_label, setup_event_summary, setup_preview,
+        smoke_event_summary, smoke_preview,
     },
     model::{
         Alignment, ExecutionDecisionInput, Phase, PhaseStep, Player, RequiredInputKind, StepInput,
@@ -350,7 +351,8 @@ pub(crate) fn propose_phase_step(
                 _ => None,
             })
             .filter(|id| !announced.contains(id))
-            .collect();
+            .collect::<Vec<_>>();
+        let summary = night_deaths_summary(&players, &player_ids);
         return Ok(simple_typed_proposal(
             game_file,
             &current_step,
@@ -360,6 +362,7 @@ pub(crate) fn propose_phase_step(
                     player_ids,
                 },
             },
+            summary,
         ));
     }
 
@@ -371,6 +374,15 @@ pub(crate) fn propose_phase_step(
             .and_then(|ids| ids.first())
             .cloned()
             .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+        let summary = format!(
+            "{}가 {}를 레드 헤링으로 지정했습니다.",
+            current_step
+                .player_id
+                .as_deref()
+                .map(|actor| player_ability_label(&players, actor, "fortuneTeller"))
+                .unwrap_or_else(|| "점쟁이".to_string()),
+            player_verbose_label(&players, &player_id)
+        );
         return Ok(simple_typed_proposal(
             game_file,
             &current_step,
@@ -381,6 +393,7 @@ pub(crate) fn propose_phase_step(
                     registration_judgments: payload.registration_judgments,
                 },
             },
+            summary,
         ));
     }
     if !skip
@@ -524,13 +537,18 @@ pub(crate) fn propose_phase_step(
     })
 }
 
-fn simple_typed_proposal(game_file: &GameFile, step: &PhaseStep, kind: GameEventKind) -> Proposal {
+fn simple_typed_proposal(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    kind: GameEventKind,
+    summary: String,
+) -> Proposal {
     Proposal {
         event: GameEvent {
             id: format!("phase-step-{}", game_file.game.events.len() + 1),
             kind,
             phase: step.phase,
-            summary: format!("{} 확정", step.id),
+            summary,
             created_at: game_file
                 .game
                 .updated_at
@@ -544,6 +562,21 @@ fn simple_typed_proposal(game_file: &GameFile, step: &PhaseStep, kind: GameEvent
     }
 }
 
+fn night_deaths_summary(players: &[Player], player_ids: &[String]) -> String {
+    if player_ids.is_empty() {
+        "밤 사망 발표: 없음".to_string()
+    } else {
+        format!(
+            "밤 사망 발표: {}",
+            player_ids
+                .iter()
+                .map(|id| player_verbose_label(players, id))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
 fn night_action_proposal(
     game_file: &GameFile,
     step: &PhaseStep,
@@ -551,115 +584,141 @@ fn night_action_proposal(
     actor: String,
     resolution: NightActionResolution,
 ) -> Proposal {
-    let target_id = match &resolution {
-        NightActionResolution::Poison {
-            target_player_id, ..
-        }
-        | NightActionResolution::MonkProtection {
-            target_player_id, ..
-        } => target_player_id,
+    let actor_label = player_ability_label(
+        players,
+        &actor,
+        step.character.as_deref().unwrap_or("unknown"),
+    );
+    let mut warnings = vec![];
+    let mut follow_up_steps = vec![];
+    let summary = match &resolution {
         NightActionResolution::ImpAttack {
             target_player_id,
             mayor_context,
             outcome,
-        } => match outcome {
-            ImpAttackOutcome::Death { player_id }
-            | ImpAttackOutcome::SoldierProtected { player_id } => player_id,
-            _ => match mayor_context {
+        } => {
+            let selected = player_verbose_label(players, target_player_id);
+            let bounce = match mayor_context {
                 crate::contracts::MayorAttackContext::Bounced {
                     bounce_target_player_id,
                     ..
-                } => bounce_target_player_id,
-                _ => target_player_id,
-            },
-        },
-    };
-    let label = players
-        .iter()
-        .find(|p| p.id == *target_id)
-        .map(|p| format!("{}번 {}", p.seat, p.name))
-        .unwrap_or_else(|| target_id.clone());
-    let actor_label = players
-        .iter()
-        .find(|p| p.id == actor)
-        .map(|p| format!("{}번 {}", p.seat, p.name))
-        .unwrap_or_else(|| actor.clone());
-    let mut warnings = vec![];
-    let mut follow_up_steps = vec![];
-    let summary = match &resolution {
-        NightActionResolution::ImpAttack { outcome, .. } => match outcome {
-            ImpAttackOutcome::Death { player_id } => {
-                if players
-                    .iter()
-                    .any(|p| p.id == *player_id && p.actual_character == "ravenkeeper")
-                {
-                    follow_up_steps.push(json!({ "kind": "ravenkeeperReveal", "stepId": format!("{}:ravenkeeper", step.id.rsplit_once(':').unwrap().0), "playerId": player_id }));
+                } => format!(
+                    " · {}에게 바운스",
+                    player_verbose_label(players, bounce_target_player_id)
+                ),
+                _ => String::new(),
+            };
+            let outcome_label = match outcome {
+                ImpAttackOutcome::Death { player_id } => {
+                    if players
+                        .iter()
+                        .any(|p| p.id == *player_id && p.actual_character == "ravenkeeper")
+                    {
+                        follow_up_steps.push(json!({ "kind": "ravenkeeperReveal", "stepId": format!("{}:ravenkeeper", step.id.rsplit_once(':').unwrap().0), "playerId": player_id }));
+                    }
+                    "사망".to_string()
                 }
-                format!("임프 공격: {label} · 사망")
-            }
-            ImpAttackOutcome::Prevented { .. } => {
-                warnings.push(crate::model::CoreWarning {
-                    code: "DEMON_ATTACK_PREVENTED".into(),
-                    severity: "warning",
-                    message_ko: "수도승 보호로 사망하지 않았습니다.".into(),
-                    winning_team: None,
-                });
-                format!("임프 공격: {label} · 사망 없음 (수도승 보호)")
-            }
-            ImpAttackOutcome::SoldierProtected { .. } => {
-                warnings.push(crate::model::CoreWarning {
-                    code: "DEMON_ATTACK_PREVENTED".into(),
-                    severity: "warning",
-                    message_ko: "군인 보호로 사망하지 않았습니다.".into(),
-                    winning_team: None,
-                });
-                format!("임프 공격: {label} · 사망 없음 (군인 보호)")
-            }
-            ImpAttackOutcome::NoDeath {
-                reason: ImpNoDeathReason::AlreadyDead,
-            } => {
-                warnings.push(crate::model::CoreWarning {
-                    code: "DEMON_ATTACK_TARGET_ALREADY_DEAD".into(),
-                    severity: "warning",
-                    message_ko: "이미 사망한 대상입니다.".into(),
-                    winning_team: None,
-                });
-                format!("임프 공격: {label} · 사망 없음 (이미 사망)")
-            }
-            ImpAttackOutcome::NoDeath {
-                reason: ImpNoDeathReason::ActorImpaired,
-            } => {
-                warnings.push(crate::model::CoreWarning {
-                    code: "NIGHT_ACTION_NO_EFFECT".into(),
-                    severity: "warning",
-                    message_ko: "중독 또는 술취함으로 효과가 없습니다.".into(),
-                    winning_team: None,
-                });
-                format!("임프 공격: {label} · 사망 없음 ({actor_label} 중독)")
-            }
-            ImpAttackOutcome::NoDeath {
-                reason: ImpNoDeathReason::NotActualCharacter,
-            } => {
-                warnings.push(crate::model::CoreWarning {
-                    code: "NIGHT_ACTION_NO_EFFECT".into(),
-                    severity: "warning",
-                    message_ko: "실제 캐릭터 능력이 아니어서 효과가 없습니다.".into(),
-                    winning_team: None,
-                });
-                format!("임프 공격: {label} · 사망 없음 ({actor_label} 실제 임프 아님)")
-            }
-        },
-        NightActionResolution::Poison { applied: false, .. }
-        | NightActionResolution::MonkProtection { applied: false, .. } => {
-            warnings.push(crate::model::CoreWarning {
-                code: "NIGHT_ACTION_NO_EFFECT".into(),
-                severity: "warning",
-                message_ko: "행동이 기록되었지만 효과가 없습니다.".into(),
-                winning_team: None,
-            });
-            format!("{} · 효과 없음", step.id)
+                ImpAttackOutcome::Prevented { .. } => {
+                    warnings.push(crate::model::CoreWarning {
+                        code: "DEMON_ATTACK_PREVENTED".into(),
+                        severity: "warning",
+                        message_ko: "수도승 보호로 사망하지 않았습니다.".into(),
+                        winning_team: None,
+                    });
+                    "사망 없음 (수도사 보호)".to_string()
+                }
+                ImpAttackOutcome::SoldierProtected { .. } => {
+                    warnings.push(crate::model::CoreWarning {
+                        code: "DEMON_ATTACK_PREVENTED".into(),
+                        severity: "warning",
+                        message_ko: "군인 보호로 사망하지 않았습니다.".into(),
+                        winning_team: None,
+                    });
+                    "사망 없음 (군인 보호)".to_string()
+                }
+                ImpAttackOutcome::NoDeath {
+                    reason: ImpNoDeathReason::AlreadyDead,
+                } => {
+                    warnings.push(crate::model::CoreWarning {
+                        code: "DEMON_ATTACK_TARGET_ALREADY_DEAD".into(),
+                        severity: "warning",
+                        message_ko: "이미 사망한 대상입니다.".into(),
+                        winning_team: None,
+                    });
+                    "사망 없음 (이미 사망)".to_string()
+                }
+                ImpAttackOutcome::NoDeath {
+                    reason: ImpNoDeathReason::ActorImpaired,
+                } => {
+                    warnings.push(crate::model::CoreWarning {
+                        code: "NIGHT_ACTION_NO_EFFECT".into(),
+                        severity: "warning",
+                        message_ko: "중독 또는 술취함으로 효과가 없습니다.".into(),
+                        winning_team: None,
+                    });
+                    "사망 없음 (행동자 중독)".to_string()
+                }
+                ImpAttackOutcome::NoDeath {
+                    reason: ImpNoDeathReason::NotActualCharacter,
+                } => {
+                    warnings.push(crate::model::CoreWarning {
+                        code: "NIGHT_ACTION_NO_EFFECT".into(),
+                        severity: "warning",
+                        message_ko: "실제 캐릭터 능력이 아니어서 효과가 없습니다.".into(),
+                        winning_team: None,
+                    });
+                    "사망 없음 (실제 임프 아님)".to_string()
+                }
+            };
+            format!("{actor_label} → {selected} 공격{bounce} · {outcome_label}")
         }
-        _ => format!("{} 확정", step.id),
+        NightActionResolution::Poison {
+            target_player_id,
+            applied,
+            no_effect_reason,
+        }
+        | NightActionResolution::MonkProtection {
+            target_player_id,
+            applied,
+            no_effect_reason,
+        } => {
+            let is_poison = matches!(resolution, NightActionResolution::Poison { .. });
+            if !applied {
+                warnings.push(crate::model::CoreWarning {
+                    code: "NIGHT_ACTION_NO_EFFECT".into(),
+                    severity: "warning",
+                    message_ko: "행동이 기록되었지만 효과가 없습니다.".into(),
+                    winning_team: None,
+                });
+            }
+            let result = if *applied {
+                if is_poison {
+                    "중독 적용"
+                } else {
+                    "수도사 보호 적용"
+                }
+                .to_string()
+            } else {
+                let reason = match no_effect_reason {
+                    Some(crate::contracts::NightActionNoEffectReason::ActorImpaired) => {
+                        "행동자 중독"
+                    }
+                    Some(crate::contracts::NightActionNoEffectReason::NotActualCharacter) => {
+                        if is_poison {
+                            "실제 독살자 아님"
+                        } else {
+                            "실제 수도사 아님"
+                        }
+                    }
+                    None => "원인 불명",
+                };
+                format!("효과 없음 ({reason})")
+            };
+            format!(
+                "{actor_label} → {} · {result}",
+                player_verbose_label(players, target_player_id)
+            )
+        }
     };
     Proposal {
         event: GameEvent {
@@ -767,7 +826,11 @@ pub(crate) fn propose_nomination_started(
                 },
             },
             phase: current_step.phase,
-            summary: format!("지명 확정: {} → {}", input.nominator_id, input.nominee_id),
+            summary: format!(
+                "지명 확정: {} → {}",
+                player_verbose_label(players, &input.nominator_id),
+                player_verbose_label(players, &input.nominee_id)
+            ),
             created_at: game_file
                 .game
                 .updated_at
@@ -884,7 +947,10 @@ fn propose_demon_succession(
                 },
             },
             phase: pending.phase,
-            summary: format!("악마 승계 확정: {}", successor.id),
+            summary: format!(
+                "악마 승계 확정: {} · 새 캐릭터 임프",
+                player_verbose_label(players, &successor.id)
+            ),
             created_at: game_file
                 .game
                 .updated_at
