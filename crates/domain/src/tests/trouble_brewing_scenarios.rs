@@ -84,7 +84,7 @@ fn confirming_chef_step_returns_reveal_payload() {
     assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0쌍");
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "요리사가 0쌍을 확인했습니다."
+        "2번 Bert(요리사)가 서로 이웃한 악한 팀 0쌍을 확인했습니다."
     );
     assert_eq!(
         actual["value"]["event"]["payload"]["information"],
@@ -133,7 +133,7 @@ fn confirming_washerwoman_information_logs_and_reveals_selected_setup_info() {
     );
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "세탁부 정보 확정: 1번 Ada, 2번 Bert 중 요리사"
+        "1번 Ada(세탁부)가 1번 Ada(세탁부), 2번 Bert(요리사) 중 한 명을 요리사로 확인했습니다."
     );
     assert_eq!(
         actual["value"]["revealPayload"]["messageKo"],
@@ -206,7 +206,7 @@ fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
     assert_eq!(actual["ok"], true);
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "사서 정보 확정: 외부인 0명"
+        "1번 Ada(사서)가 외부인 없음을 확인했습니다."
     );
     assert_eq!(
         actual["value"]["revealPayload"]["messageKo"],
@@ -457,7 +457,7 @@ fn confirming_chef_can_log_true_count_and_reveal_different_displayed_value() {
     );
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "요리사가 0쌍을 확인했습니다. (실제 1쌍 · 등록 판정)"
+        "2번 Bert(요리사)가 서로 이웃한 악한 팀 0쌍을 확인했습니다. (실제 1쌍 · 등록 판정)"
     );
     assert_eq!(
         actual["value"]["revealPayload"]["messageKo"],
@@ -577,6 +577,10 @@ fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
         json!([{ "type": "drunk" }])
     );
     assert_eq!(actual["value"]["revealPayload"]["valueKo"], "3쌍");
+    assert_eq!(
+        actual["value"]["event"]["summary"],
+        "2번 Bert(요리사 능력, 실제 술꾼)가 서로 이웃한 악한 팀 3쌍을 확인했습니다. (실제 1쌍 · 술취함)"
+    );
 }
 
 #[test]
@@ -616,6 +620,10 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
 
     assert_eq!(minion_actual["ok"], true);
     assert_eq!(
+        minion_actual["value"]["event"]["summary"],
+        "하수인 정보 전달 · 악마: 5번 Eve(임프) · 하수인: 4번 Dev(독살자)"
+    );
+    assert_eq!(
         minion_actual["value"]["revealPayload"]["messageKo"],
         "하수인 정보:\n악마: 5번 Eve - 임프\n하수인: 4번 Dev - 독살자"
     );
@@ -638,6 +646,10 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
     .unwrap();
 
     assert_eq!(demon_actual["ok"], true);
+    assert_eq!(
+        demon_actual["value"]["event"]["summary"],
+        "악마 정보 전달 · 하수인: 4번 Dev(독살자) · 블러프: 사서, 조사관, 장의사"
+    );
     assert_eq!(
         demon_actual["value"]["event"]["payload"]["information"]["computedResult"],
         json!({
@@ -754,6 +766,10 @@ fn spy_step_reveals_grimoire_only_through_reveal_payload() {
         serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
 
     assert_eq!(actual["ok"], true);
+    assert_eq!(
+        actual["value"]["event"]["summary"],
+        "4번 Dev(스파이)가 마도서를 확인했습니다."
+    );
     assert_eq!(actual["value"]["event"]["payload"]["input"], Value::Null);
     assert!(actual["value"]["preview"]["messageKo"]
         .as_str()
@@ -778,6 +794,39 @@ fn spy_step_reveals_grimoire_only_through_reveal_payload() {
     assert!(actual["value"]["revealPayload"]
         .get("previewMessageKo")
         .is_none());
+}
+
+#[test]
+fn butler_selection_summary_names_actor_target_and_characters() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-2", "seat": 2, "name": "Butler", "actualCharacter": "butler", "shownCharacter": "butler" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Washer", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:washerwoman"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath")
+    ]));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:butler",
+            "input": { "playerIds": ["player-1"] }
+        }
+    });
+
+    let actual: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    assert_eq!(
+        actual["value"]["event"]["summary"],
+        "2번 Butler(집사) → 1번 Chef(요리사) · 주인 선택"
+    );
 }
 
 #[test]
@@ -971,7 +1020,7 @@ fn confirming_empath_step_returns_reveal_payload() {
     assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0명");
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "공감능력자가 0명을 확인했습니다."
+        "3번 Cora(공감능력자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다."
     );
 }
 

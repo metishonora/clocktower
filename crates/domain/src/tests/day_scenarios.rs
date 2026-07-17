@@ -75,6 +75,10 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     let started: Value =
         serde_json::from_str(&propose_json(&game.to_string(), &start_command.to_string())).unwrap();
     assert_eq!(started["ok"], true, "start failed as {started}");
+    assert_eq!(
+        started["value"]["event"]["summary"],
+        "지명 확정: 1번 Ada(세탁부) → 5번 Eve(임프)"
+    );
     let mut started_events = game["game"]["events"].as_array().unwrap().clone();
     started_events.push(started["value"]["event"].clone());
     let started_game = game_with_events(Value::Array(started_events));
@@ -92,6 +96,10 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     .unwrap();
 
     assert_eq!(proposal["ok"], true);
+    assert_eq!(
+        proposal["value"]["event"]["summary"],
+        "지명 투표 확정: 1번 Ada(세탁부) → 5번 Eve(임프), 3표"
+    );
     assert_eq!(
         proposal["value"]["event"]["type"],
         "nominationVoteConfirmed"

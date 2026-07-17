@@ -105,6 +105,28 @@ fn ravenkeeper_target_checks_expose_exact_spy_and_recluse_registration_witnesses
     );
     assert_eq!(forged["ok"], false, "forged witness succeeded as {forged}");
     assert_eq!(forged["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+
+    let valid = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:ravenkeeper",
+                "input": { "playerIds": ["player-2"] },
+                "deliveredResult": { "kind": "character", "characterId": "chef" },
+                "registrationJudgments": [{
+                    "playerId": "player-2",
+                    "registeredAs": "townsfolk",
+                    "characterId": "chef"
+                }]
+            }
+        }),
+    );
+    assert_eq!(valid["ok"], true, "valid witness failed as {valid}");
+    assert_eq!(
+        valid["value"]["event"]["summary"],
+        "1번 Raven(까마귀지기)가 2번 Spy(스파이)를 확인 · 대상의 캐릭터: 요리사 (실제 스파이 · 등록 판정)"
+    );
 }
 
 #[test]
@@ -164,6 +186,10 @@ fn announcing_night_deaths_clears_exactly_the_replayed_unannounced_ids() {
     assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
     assert_eq!(proposal["value"]["event"]["type"], "nightDeathsAnnounced");
     assert_eq!(
+        proposal["value"]["event"]["summary"],
+        "밤 사망 발표: 1번 Raven(까마귀지기)"
+    );
+    assert_eq!(
         proposal["value"]["event"]["payload"],
         json!({ "stepId": "day2:announceDeaths", "playerIds": ["player-1"] })
     );
@@ -209,7 +235,7 @@ fn imp_death_has_operational_summary_and_ravenkeeper_follow_up_hint() {
     );
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "임프 공격: 1번 Raven · 사망"
+        "5번 Imp(임프) → 1번 Raven(까마귀지기) 공격 · 사망"
     );
     assert_eq!(proposal["value"]["warnings"], json!([]));
     assert_eq!(
@@ -239,7 +265,7 @@ fn monk_prevented_imp_attack_has_stable_warning_and_operational_summary() {
     assert_warning_code(&proposal, "DEMON_ATTACK_PREVENTED");
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "임프 공격: 1번 Target · 사망 없음 (수도승 보호)"
+        "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (수도사 보호)"
     );
 }
 
@@ -256,7 +282,7 @@ fn already_dead_imp_target_has_stable_warning_and_operational_summary() {
     assert_warning_code(&proposal, "DEMON_ATTACK_TARGET_ALREADY_DEAD");
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "임프 공격: 1번 Target · 사망 없음 (이미 사망)"
+        "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (이미 사망)"
     );
 }
 
@@ -273,7 +299,7 @@ fn poisoned_imp_has_no_effect_warning_and_operational_summary() {
     assert_warning_code(&proposal, "NIGHT_ACTION_NO_EFFECT");
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "임프 공격: 1번 Target · 사망 없음 (5번 Imp 중독)"
+        "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (행동자 중독)"
     );
 }
 
