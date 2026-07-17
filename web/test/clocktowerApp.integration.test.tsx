@@ -273,12 +273,22 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "독살자: 4번 Dae" });
+    const currentAction = screen.getByLabelText("현재 단계");
+    const actor = within(currentAction).getByLabelText("현재 행동자");
+    expect(within(actor).getByText("행동자")).toBeTruthy();
+    expect(within(actor).getByRole("heading", { name: "독살자" })).toBeTruthy();
+    expect(within(actor).getByText("4번 Dae")).toBeTruthy();
+    expect(within(actor).getByText("밤마다 한 명을 다음 해질녘까지 중독시킵니다.")).toBeTruthy();
+    expect(within(currentAction).getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
     expect(storage.loadLatestGame).toHaveBeenCalledTimes(1);
     const stepInput = screen.getByLabelText("단계 입력");
     expect(stepInput.querySelector(".setupInfoCandidate")).toBeNull();
     expect(within(stepInput).queryByText(/실제:/)).toBeNull();
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
     await user.click(within(stepInput).getByRole("button", { name: /Ada/ }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
 
     expect(core.propose).toHaveBeenCalledTimes(1);
     expect(core.propose).toHaveBeenCalledWith(
@@ -683,7 +693,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
     render(<ClocktowerApp coreAdapter={demonCore} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 2} />);
     const characterInput = await screen.findByLabelText("캐릭터 입력");
-    expect(screen.queryByText(/블러프 캐릭터/)).toBeNull();
+    expect(screen.getByText("악마에게 보여줄 블러프 캐릭터를 최대 3개 선택하세요.")).toBeTruthy();
     await user.click(within(characterInput).getByRole("button", { name: "무작위 추천" }));
     expect(within(characterInput).getAllByRole("button", { pressed: true })).toHaveLength(3);
     await user.click(within(characterInput).getByRole("button", { name: /사서/ }));
@@ -1079,6 +1089,7 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    expect(screen.getByText("전달할 악 팀 이웃 쌍의 수를 선택하세요.")).toBeTruthy();
     const delivery = screen.getByLabelText("전달 정보");
     const truth = within(delivery).getByRole("button", { name: /진실.*0/ });
     expect(within(delivery).queryByRole("spinbutton")).toBeNull();
@@ -1537,7 +1548,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(seatMap).getByRole("button", { name: /Cy.*사망 · 유령표 사용됨/ })).toBeTruthy();
   });
 
-  test("confirms Trouble Brewing execution death while showing survival as unavailable", async () => {
+  test("confirms a rule-derived Trouble Brewing execution death without offering a survival choice", async () => {
     const executionDeathStep = {
       ...step({ id: "day:executionDeath", phase: "day" }),
       stepType: "executionDeath",
@@ -1560,11 +1571,17 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const deathButton = await screen.findByRole("button", { name: "사망 확정" }) as HTMLButtonElement;
-    const survivalButton = screen.getByRole("button", { name: "사망하지 않음" }) as HTMLButtonElement;
-    expect(deathButton.disabled).toBe(false);
-    expect(survivalButton.disabled).toBe(true);
-    await user.click(deathButton);
+    await screen.findByRole("heading", { name: "처형 결과: 5번 Eun" });
+    const currentAction = screen.getByLabelText("현재 단계");
+    const subject = within(currentAction).getByLabelText("처형 대상");
+    expect(within(subject).getByText("5번 Eun")).toBeTruthy();
+    expect(within(subject).getByText("임프")).toBeTruthy();
+    expect(within(currentAction).queryByText("해당 플레이어가 사망했는지 확인하세요.")).toBeNull();
+    expect(within(currentAction).queryByRole("button", { name: "사망 확정" })).toBeNull();
+    expect(within(currentAction).queryByRole("button", { name: "사망하지 않음" })).toBeNull();
+    const confirm = within(currentAction).getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1830,7 +1847,14 @@ describe("ClocktowerApp live-play integration", () => {
       },
     });
     expect(await screen.findByText("사망 확인")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "사망 확정" })).toBeTruthy();
+    const currentStep = screen.getByRole("region", { name: "현재 단계" });
+    expect(within(currentStep).getByLabelText("학살자 결과 대상")).toBeTruthy();
+    expect(within(currentStep).getByText("3번 Cy")).toBeTruthy();
+    expect(within(currentStep).getByText("은둔자")).toBeTruthy();
+    expect(within(currentStep).getByText("학살자 능력으로 사망합니다.")).toBeTruthy();
+    expect(within(currentStep).getByRole("button", { name: "확정" })).toBeTruthy();
+    expect(within(currentStep).queryByRole("button", { name: "사망 확정" })).toBeNull();
+    expect(within(currentStep).queryByRole("button", { name: "사망하지 않음" })).toBeNull();
   });
 
   test("keeps the actual Slayer icon disabled when Rust marks the action unavailable", async () => {

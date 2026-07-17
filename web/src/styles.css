@@ -1108,12 +1108,18 @@ select {
 }
 
 .currentActor strong,
+.currentActor h3,
 .currentActor p {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .currentActor strong {
+  font-size: 0.82rem;
+}
+
+.currentActor h3 {
+  margin: 0;
   font-size: 1.05rem;
 }
 
@@ -1138,6 +1144,62 @@ select {
   font-size: 0.66rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.currentSubject {
+  display: grid;
+  gap: 9px;
+  border-radius: 8px;
+  background: rgba(143, 40, 49, 0.08);
+  padding: 12px;
+}
+
+.currentSubject > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.currentSubject strong {
+  font-size: 1.05rem;
+}
+
+.currentSubject span {
+  color: var(--demon);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.currentSubject p {
+  margin: 0;
+  border-top: 1px solid rgba(143, 40, 49, 0.18);
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.currentActionPrompt {
+  display: grid;
+  gap: 5px;
+  border-left: 4px solid #b97514;
+  border-radius: 7px;
+  background: #fff4da;
+  padding: 10px 11px;
+}
+
+.currentActionPrompt small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.currentActionPrompt p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.45;
 }
 
 .stepActions {

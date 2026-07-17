@@ -77,6 +77,79 @@ export function inputKindLabel(inputKind: string): string {
   return inputKind;
 }
 
+export function currentActionPrompt(step: PhaseStep): string | undefined {
+  if (step.stepType === "executionDeath" || step.stepType === "slayerDeath") return undefined;
+  if (step.id.endsWith(":fortuneTellerRedHerring")) {
+    return "점쟁이의 선한 미끼 플레이어 1명을 선택하세요.";
+  }
+
+  const characterPrompt = step.character ? characterActionPrompt(step.character) : undefined;
+  if (characterPrompt) return characterPrompt;
+  if (step.id.endsWith(":demonInfo")) {
+    return "악마에게 보여줄 블러프 캐릭터를 최대 3개 선택하세요.";
+  }
+
+  const input = step.requiredInput;
+  if (input.kind === "nomination") return "지명자와 지명 대상을 선택하세요.";
+  if (input.kind === "nominationVote") return "찬성한 플레이어를 선택하세요.";
+  if (input.kind === "demonSuccession") return "새 임프가 될 플레이어를 확인하세요.";
+  if (input.kind === "number") return "전달할 숫자를 선택하세요.";
+  if (input.kind === "setupInfo") {
+    return input.zeroAllowed
+      ? "후보 플레이어 2명과 보여줄 캐릭터를 선택하거나, 외부인 0명을 선택하세요."
+      : "후보 플레이어 2명과 보여줄 캐릭터를 선택하세요.";
+  }
+  if (input.target === "player" || input.target === "players") {
+    return selectionPrompt("플레이어", "명", "을", input.minSelections, input.maxSelections);
+  }
+  if (input.target === "characters") {
+    return selectionPrompt("캐릭터", "개", "를", input.minSelections, input.maxSelections);
+  }
+  return undefined;
+}
+
+function characterActionPrompt(characterId: string): string | undefined {
+  if (characterId === "washerwoman") {
+    return "세탁부 정보로 보여줄 플레이어 2명과 마을주민 캐릭터를 선택하세요.";
+  }
+  if (characterId === "librarian") {
+    return "사서 정보로 보여줄 플레이어 2명과 외부인 캐릭터를 선택하거나, 외부인 0명을 선택하세요.";
+  }
+  if (characterId === "investigator") {
+    return "조사관 정보로 보여줄 플레이어 2명과 하수인 캐릭터를 선택하세요.";
+  }
+  if (characterId === "chef") return "전달할 악 팀 이웃 쌍의 수를 선택하세요.";
+  if (characterId === "empath") return "전달할 살아있는 이웃 중 악 팀 수를 선택하세요.";
+  if (characterId === "fortuneTeller") return "확인할 플레이어 2명을 선택하세요.";
+  if (characterId === "poisoner") return "중독시킬 플레이어 1명을 선택하세요.";
+  if (characterId === "monk") return "악마로부터 보호할 플레이어 1명을 선택하세요.";
+  if (characterId === "imp") return "오늘 밤 공격할 플레이어 1명을 선택하세요.";
+  if (characterId === "ravenkeeper") return "캐릭터를 확인할 플레이어 1명을 선택하세요.";
+  if (characterId === "butler") return "주인으로 정할 플레이어 1명을 선택하세요.";
+  return undefined;
+}
+
+function selectionPrompt(
+  target: string,
+  unit: string,
+  exactParticle: string,
+  minSelections: number | undefined,
+  maxSelections: number | undefined,
+): string {
+  const min = minSelections ?? 0;
+  if (maxSelections !== undefined && min === maxSelections) {
+    return `${target} ${maxSelections}${unit}${exactParticle} 선택하세요.`;
+  }
+  if (maxSelections !== undefined && min === 0) {
+    return `${target}를 최대 ${maxSelections}${unit} 선택하세요.`;
+  }
+  if (maxSelections !== undefined) {
+    return `${target}를 ${min}-${maxSelections}${unit} 선택하세요.`;
+  }
+  if (min > 0) return `${target}를 ${min}${unit} 이상 선택하세요.`;
+  return `${target}를 선택하세요.`;
+}
+
 export function inputShapeLabel(input: PhaseStep["requiredInput"]): string {
   const parts = [inputKindLabel(input.kind)];
   if (input.target) parts.push(inputTargetLabel(input.target));
