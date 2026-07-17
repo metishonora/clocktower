@@ -19,6 +19,7 @@ import { RevealPreview } from "../../reveal";
 import { characterKind, characterLabel, characters, kindLabels } from "../../setupDraft";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import {
+  currentActionPrompt,
   inputKindLabel,
   phaseLabel,
   phaseStepConfirmation,
@@ -354,6 +355,14 @@ function CurrentStepPane({
   const currentCharacterKind = currentStep?.character
     ? characterKind(currentStep.character)
     : undefined;
+  const resultSubject = currentStep?.stepType === "executionDeath" || currentStep?.stepType === "slayerDeath";
+  const currentSubjectCharacter = resultSubject && currentPlayer
+    ? characters.find((character) => character.id === currentPlayer.actualCharacter)
+    : undefined;
+  const actionPrompt = currentStep ? currentActionPrompt(currentStep) : undefined;
+  const resultEffect = currentStep
+    ? resultEffectDescription(currentStep)
+    : undefined;
   const registrationSensitive = Boolean(
     currentStep?.informationPrompt &&
       (currentStep.informationPrompt.setupInfoRegistrationOptions.length > 0 ||
@@ -446,18 +455,34 @@ function CurrentStepPane({
             {currentStep.stepType === "announcement" ? (
               <NightDeathAnnouncement players={players} playerIds={ruleState?.unannouncedNightDeathPlayerIds ?? []} />
             ) : null}
-            {currentPlayer ? (
+            {currentPlayer && !resultSubject ? (
               <section className="currentActor" aria-label="현재 행동자">
                 <span aria-hidden="true">{currentCharacter?.icon ?? currentPlayer.seat}</span>
                 <div>
-                  <small>현재 행동</small>
-                  <strong>{stepTitle(currentStep, currentPlayer)}</strong>
+                  <small>행동자</small>
+                  <h3>{currentCharacter?.label ?? currentStep.character}</h3>
+                  <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
                     {registrationSensitive ? <em>등록 판정</em> : null}
                   </div>
                   {currentCharacter?.abilitySummary ? <p>{currentCharacter.abilitySummary}</p> : null}
                 </div>
+              </section>
+            ) : null}
+            {currentPlayer && resultSubject ? (
+              <section className="currentSubject" aria-label={currentStep.stepType === "executionDeath" ? "처형 대상" : "학살자 결과 대상"}>
+                <div>
+                  <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
+                  <span>{currentSubjectCharacter?.label ?? characterLabel(currentPlayer.actualCharacter)}</span>
+                </div>
+                {resultEffect ? <p>{resultEffect}</p> : null}
+              </section>
+            ) : null}
+            {actionPrompt ? (
+              <section className="currentActionPrompt" aria-label="필요한 입력">
+                <small>지금 할 일</small>
+                <p>{actionPrompt}</p>
               </section>
             ) : null}
             {currentStep.stepType === "nomination" && dayState ? (
@@ -513,7 +538,6 @@ function CurrentStepPane({
               />
             ) : currentStep.requiredInput.kind === "executionDeathDecision" || currentStep.requiredInput.kind === "slayerDeathDecision" ? (
               <ExecutionDeathActions
-                step={currentStep}
                 player={currentPlayer}
                 busy={busy}
                 onConfirm={onConfirm}
@@ -564,6 +588,14 @@ function CurrentStepPane({
       </section>
     </>
   );
+}
+
+function resultEffectDescription(step: PhaseStep): string | undefined {
+  if (step.stepType === "executionDeath" && step.id.endsWith(":virginDeath")) {
+    return "처녀 능력으로 지명자가 즉시 처형됩니다.";
+  }
+  if (step.stepType === "slayerDeath") return "학살자 능력으로 사망합니다.";
+  return undefined;
 }
 
 function ConfirmedExecutionStanding({

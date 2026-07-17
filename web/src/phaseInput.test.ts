@@ -3,6 +3,7 @@ import test from "node:test";
 import type { PhaseStep, Player } from "./core/types.js";
 import {
   characterInputOptions,
+  currentActionPrompt,
   phaseStepConfirmation,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
@@ -10,6 +11,31 @@ import {
   stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("current action prompts use character wording, input-shape fallbacks, and no result question", () => {
+  const baseStep: PhaseStep = {
+    id: "night1:custom",
+    phase: "night",
+    stepType: "character",
+    requiredInput: { kind: "characterIds", target: "characters", minSelections: 2, maxSelections: 2, optional: false },
+    canSkip: false,
+  };
+
+  equal(currentActionPrompt({ ...baseStep, character: "poisoner" }), "중독시킬 플레이어 1명을 선택하세요.");
+  equal(currentActionPrompt(baseStep), "캐릭터 2개를 선택하세요.");
+  equal(currentActionPrompt({
+    ...baseStep,
+    id: "firstNight:demonInfo",
+    requiredInput: { kind: "characterIds", target: "characters", minSelections: 0, maxSelections: 3, optional: true },
+  }), "악마에게 보여줄 블러프 캐릭터를 최대 3개 선택하세요.");
+  equal(currentActionPrompt({
+    ...baseStep,
+    id: "day:executionDeath",
+    phase: "day",
+    stepType: "executionDeath",
+    requiredInput: { kind: "executionDeathDecision", target: "execution", optional: false },
+  }), undefined);
+});
 
 test("issue 11 phase inputs keep nomination, vote, Mayor, and succession contracts separate", () => {
   const nominationDraft = { nominatorId: "spy", nomineeId: "virgin", voterIds: ["chef"] };
