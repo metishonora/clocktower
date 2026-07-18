@@ -86,6 +86,13 @@ const DevOfficialAssetsPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevSeatLayoutBoundaryPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./seatLayoutBoundaryPrototype");
+      return { default: module.SeatLayoutBoundaryPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -94,6 +101,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevSeatLayoutBoundaryPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "seat-layout-boundary"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevSeatLayoutBoundaryPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevOfficialAssetsPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "official-assets"
