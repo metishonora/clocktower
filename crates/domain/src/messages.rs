@@ -1,5 +1,5 @@
 use crate::{
-    contracts::{RevealPayload, RevealPlayer, SetupDistribution},
+    contracts::{RevealIdentity, RevealPayload, RevealPlayer, SetupDistribution},
     model::{
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
         InformationResult, NominationRecord, PhaseStep, Player, StepInput,
@@ -453,40 +453,34 @@ fn team_info_reveal_payload(
     minion_player_ids: &[String],
     bluff_character_ids: &[String],
 ) -> Option<RevealPayload> {
-    let player_character_labels = |ids: &[String]| {
-        ids.iter()
-            .filter_map(|id| players.iter().find(|player| player.id == *id))
-            .map(player_character_label)
-            .collect::<Vec<_>>()
+    let player_identities = |ids: &[String]| -> Option<Vec<RevealIdentity>> {
+        let mut identities = ids
+            .iter()
+            .map(|id| {
+                players
+                    .iter()
+                    .find(|player| player.id == *id)
+                    .map(|player| RevealIdentity {
+                        seat: player.seat,
+                        name: player.name.clone(),
+                    })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        identities.sort_by_key(|player| player.seat);
+        Some(identities)
     };
-    let demons = player_character_labels(demon_player_ids);
-    let minions = player_character_labels(minion_player_ids);
     if step.id.ends_with(":minionInfo") {
-        return Some(RevealPayload::Text {
-            message_ko: format!(
-                "하수인 정보:\n악마: {}\n하수인: {}",
-                list_or_none(&demons),
-                list_or_none(&minions)
-            ),
-            label_ko: None,
-            value_ko: None,
-            preview_message_ko: None,
+        return Some(RevealPayload::MinionInformation {
+            kind: "minionInformation",
+            demon_players: player_identities(demon_player_ids)?,
+            minion_players: player_identities(minion_player_ids)?,
         });
     }
     if step.id.ends_with(":demonInfo") {
-        let bluffs = bluff_character_ids
-            .iter()
-            .map(|character| character_label(character).to_string())
-            .collect::<Vec<_>>();
-        return Some(RevealPayload::Text {
-            message_ko: format!(
-                "악마 정보:\n하수인: {}\n블러프: {}",
-                list_or_none(&minions),
-                list_or_none(&bluffs)
-            ),
-            label_ko: None,
-            value_ko: None,
-            preview_message_ko: None,
+        return Some(RevealPayload::DemonInformation {
+            kind: "demonInformation",
+            minion_players: player_identities(minion_player_ids)?,
+            bluff_character_ids: bluff_character_ids.to_vec(),
         });
     }
     None
@@ -498,15 +492,6 @@ pub(crate) fn list_or_none(values: &[String]) -> String {
     } else {
         values.join(", ")
     }
-}
-
-pub(crate) fn player_character_label(player: &Player) -> String {
-    format!(
-        "{}번 {} - {}",
-        player.seat,
-        player.name,
-        character_label(&player.actual_character)
-    )
 }
 
 pub(crate) fn player_verbose_label(players: &[Player], player_id: &str) -> String {

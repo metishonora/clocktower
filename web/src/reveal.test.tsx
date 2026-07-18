@@ -48,6 +48,35 @@ test("role information Reveal renders the approved copy from narrow payloads", (
   }
 });
 
+test("evil-team information Reveals render safe identities and official bluff icons", () => {
+  const minionPayload = {
+    kind: "minionInformation",
+    demonPlayers: [{ seat: 5, name: "하린" }],
+    minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+  } as unknown as RevealPayload;
+  const demonPayload = {
+    kind: "demonInformation",
+    minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+    bluffCharacterIds: ["librarian", "undertaker", "butler"],
+  } as unknown as RevealPayload;
+
+  const minionHtml = renderToStaticMarkup(<RevealScreen payload={minionPayload} onClose={() => undefined} />);
+  equal(minionHtml.includes(">하수인 정보<"), true);
+  equal(minionHtml.includes(">악마와 동료 하수인을 확인하세요<"), true);
+  for (const identity of ["5번 하린", "4번 도윤", "7번 유진"]) equal(minionHtml.includes(identity), true);
+
+  const demonHtml = renderToStaticMarkup(<RevealScreen payload={demonPayload} onClose={() => undefined} />);
+  equal(demonHtml.includes(">악마 정보<"), true);
+  equal(demonHtml.includes(">하수인과 블러프를 확인하세요<"), true);
+  for (const character of ["사서", "장의사", "집사"]) equal(demonHtml.includes(`${character} 공식 캐릭터 아이콘`), true);
+
+  for (const html of [minionHtml, demonHtml]) {
+    for (const forbidden of ["player-4", "player-7", "poisoner", "baron", "독살자", "남작"]) {
+      equal(html.includes(forbidden), false, forbidden);
+    }
+  }
+});
+
 for (const playerCount of [5, 10, 15]) {
   test(`Spy RevealScreen renders a read-only ${playerCount}-seat grimoire from its payload alone`, () => {
     const payload = {

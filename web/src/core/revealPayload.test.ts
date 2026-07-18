@@ -59,6 +59,16 @@ test("RevealPayload accepts the narrow role-information contracts", () => {
       alignment: "evil",
       characterId: "imp",
     },
+    {
+      kind: "minionInformation",
+      demonPlayers: [{ seat: 5, name: "하린" }],
+      minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
+    },
   ]) {
     equal(isRevealPayload(payload), true);
   }
@@ -93,6 +103,21 @@ test("RevealPayload rejects mixed or secret-bearing role-information payloads", 
       playerId: "player-6",
       alignment: "evil",
       characterId: "not-a-character",
+    },
+    {
+      kind: "minionInformation",
+      demonPlayers: [{ seat: 5, name: "하린", playerId: "player-5" }],
+      minionPlayers: [{ seat: 4, name: "도윤", actualCharacter: "poisoner" }],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 4, name: "도윤", characterId: "poisoner" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 7, name: "유진" }, { seat: 4, name: "도윤" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
     },
   ]) {
     equal(isRevealPayload(payload), false);

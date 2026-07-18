@@ -31,6 +31,8 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
     const nextPhase = step.requiredInput.kind;
     if (nextPhase === "day" || nextPhase === "night") return `${phaseLabel(nextPhase)} 시작`;
   }
+  if (step.id.endsWith(":minionInfo")) return "하수인 깨우기 · 악마와 동료 하수인 확인";
+  if (step.id.endsWith(":demonInfo")) return "악마 깨우기 · 하수인과 블러프 확인";
   if (step.character) {
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
