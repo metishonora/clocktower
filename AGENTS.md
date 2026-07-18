@@ -2,7 +2,10 @@
 
 ## Working style
 
-- Before starting code work, pull the latest `main`, then create a dedicated issue worktree and branch.
+- Keep `main` deployable and merge into it only for releases or hotfixes.
+- Before starting code work, update `develop`, then create a dedicated issue worktree and branch from it.
+- Merge completed issue branches into `develop`; release by merging `develop` into `main`.
+- Branch hotfixes from `main` and merge them back into `develop`.
 - When implementation needs a UI/product decision, confirm it with the user through a prototype before building the final version. Do not add UI behavior or product scope the user did not ask for.
 - Keep live-play UI concise for a rule-literate Storyteller. Do not add explanatory sentences that merely restate visible labels, state, or already-decided behavior. Prefer actionable operational values such as thresholds, living-Player counts, vote counts, and eligibility. Keep explanatory copy only when it is needed to prevent a misleading or destructive action, communicate validation or failure, explain recovery, or satisfy an explicit user request.
 - For Rust domain changes, follow the module ownership and script-file conventions in `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
