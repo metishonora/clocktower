@@ -53,11 +53,15 @@ test("compares a three-snap drag handle with a two-state bookmark on the same li
   expect(prototype.style.getPropertyValue("--prototype-panel-height")).toBe("680px");
   expect(prototype.dataset.panelState).toBe("controls");
 
-  await user.click(within(prototype).getByTestId("bookmark-toggle"));
+  const bookmarkToggle = within(prototype).getByTestId("bookmark-toggle");
+  expect(bookmarkToggle.dataset.direction).toBe("down");
+  await user.click(bookmarkToggle);
   expect(prototype.style.getPropertyValue("--prototype-panel-height")).toBe("160px");
   expect(prototype.dataset.panelState).toBe("grimoire");
-  await user.click(within(prototype).getByTestId("bookmark-toggle"));
+  expect(bookmarkToggle.dataset.direction).toBe("up");
+  await user.click(bookmarkToggle);
   expect(prototype.style.getPropertyValue("--prototype-panel-height")).toBe("680px");
+  expect(bookmarkToggle.dataset.direction).toBe("down");
 });
 
 test("recomputes the current state when the viewport changes without persisting it", async () => {

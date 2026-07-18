@@ -172,6 +172,7 @@ export function MobilePanelPrototype() {
             type="button"
             className="mobilePanelPrototypeBookmark"
             data-testid="bookmark-toggle"
+            data-direction={panelState === "grimoire" ? "up" : "down"}
             onClick={toggleBookmark}
           >
             <span aria-hidden="true" />
