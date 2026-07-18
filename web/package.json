@@ -23,9 +23,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "generate:pwa-assets": "pwa-assets-generator --preset minimal --root public --manifest false assets/icons/app-icon.svg",
     "verify:pwa": "node scripts/verify-pwa-build.mjs",
-    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test": "pnpm --workspace-root build:wasm && pnpm run test:unit && tsc -p tsconfig.integration.json --noEmit && vitest run",
     "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js .codex-tmp/web-tests/**/*.test.js",
-    "test:integration": "tsc -p tsconfig.integration.json --noEmit && vitest run"
+    "test:integration": "pnpm --workspace-root build:wasm && tsc -p tsconfig.integration.json --noEmit && vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

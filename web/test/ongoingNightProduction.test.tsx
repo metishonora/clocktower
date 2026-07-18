@@ -327,9 +327,10 @@ describe("ongoing-night production UI", () => {
       initialReplay: replayState({ currentStep, playerRoster }),
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-undertaker", "장의사 정보 확정", "night"), {
-        messageKo: "사서",
-        labelKo: "장의사 결과",
-        valueKo: "사서",
+        kind: "characterInformation",
+        characterId: "undertaker",
+        targetPlayer: { playerId: "player-3", seat: 3, name: "서연" },
+        revealedCharacterId: "librarian",
       }),
     });
     const user = userEvent.setup();
