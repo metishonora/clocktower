@@ -12,7 +12,7 @@ import {
   step,
 } from "./clocktowerAppHarness";
 
-type MutableDayRuntimeClock = {
+type MutableRuntimeClock = {
   now: () => number;
 };
 
@@ -22,10 +22,10 @@ afterEach(() => {
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
 });
 
-test("keeps one wall-clock runtime through Day steps and foreground catch-up without replay or saves on ticks", async () => {
+test("keeps one wall-clock runtime through same-phase steps and foreground catch-up without replay or saves on ticks", async () => {
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
   let now = 1_000;
-  const clock: MutableDayRuntimeClock = { now: () => now };
+  const clock: MutableRuntimeClock = { now: () => now };
   const whisperStep = step({ id: "day:whisper", stepType: "whisper", phase: "day" });
   const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
   const core = createCoreHarness({
@@ -38,21 +38,21 @@ test("keeps one wall-clock runtime through Day steps and foreground catch-up wit
   const props = {
     coreAdapter: core,
     storageDriver: storage,
-    dayRuntimeClock: clock,
+    phaseRuntimeClock: clock,
   };
 
   render(<ClocktowerApp {...props} />);
 
-  expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("낮 경과 00:00");
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
   await waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
 
   now += 5 * 60_000 + 7_000;
   await act(async () => vi.advanceTimersByTime(1_000));
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("낮 경과 05:07");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 05:07")).toBeTruthy();
 
   await user.click(screen.getByRole("button", { name: "토론 시작" }));
   expect(await screen.findByRole("button", { name: "지명 및 투표 시작" })).toBeTruthy();
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("낮 경과 05:07");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 05:07")).toBeTruthy();
 
   const replayCallsBeforeCatchUp = vi.mocked(core.replay).mock.calls.length;
   await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
@@ -60,20 +60,20 @@ test("keeps one wall-clock runtime through Day steps and foreground catch-up wit
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   now = 1_000 + 42 * 60_000 + 17_000;
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("낮 경과 05:07");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 05:07")).toBeTruthy();
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
 
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("낮 경과 42:17");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 42:17")).toBeTruthy();
   await act(async () => vi.advanceTimersByTime(3_000));
   expect(vi.mocked(core.replay).mock.calls).toHaveLength(replayCallsBeforeCatchUp);
   expect(storage.savedGames).toHaveLength(savesBeforeCatchUp);
   expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2);
 });
 
-test("starts on a Night-to-Day transition, clears in Night, and restarts for the next Day", async () => {
+test("times Night and Day independently and resets at each phase transition", async () => {
   let now = 10_000;
-  const clock: MutableDayRuntimeClock = { now: () => now };
+  const clock: MutableRuntimeClock = { now: () => now };
   const nightOne = step({ id: "night:end:1", phase: "night" });
   const dayOne = step({ id: "day:whisper:1", stepType: "whisper", phase: "day" });
   const nightTwo = step({ id: "night:end:2", phase: "night" });
@@ -98,31 +98,31 @@ test("starts on a Night-to-Day transition, clears in Night, and restarts for the
   const props = {
     coreAdapter: core,
     storageDriver: new MemoryGameStorageDriver(gameFile()),
-    dayRuntimeClock: clock,
+    phaseRuntimeClock: clock,
   };
 
   render(<ClocktowerApp {...props} />);
 
   await screen.findByRole("heading", { name: "night:end:1" });
-  expect(screen.queryByLabelText("낮 경과 시간")).toBeNull();
+  expect(screen.getByLabelText("2일차 밤 경과 시간 00:00")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "확정" }));
-  expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("00:00");
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
 
   now += 10 * 60_000;
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("10:00");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 10:00")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "토론 시작" }));
   await screen.findByRole("heading", { name: "night:end:2" });
-  expect(screen.queryByLabelText("낮 경과 시간")).toBeNull();
+  expect(screen.getByLabelText("2일차 밤 경과 시간 00:00")).toBeTruthy();
 
   now += 5 * 60_000;
   await user.click(screen.getByRole("button", { name: "확정" }));
-  expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("00:00");
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
 });
 
 test("hides the runtime in full-screen Reveal and preserves elapsed wall-clock time on return", async () => {
   let now = 2_000;
-  const clock: MutableDayRuntimeClock = { now: () => now };
+  const clock: MutableRuntimeClock = { now: () => now };
   const revealStep = step({ id: "day:chef", character: "chef", playerId: "player-2", phase: "day" });
   const nextStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
   const core = createCoreHarness({
@@ -138,7 +138,7 @@ test("hides the runtime in full-screen Reveal and preserves elapsed wall-clock t
   const props = {
     coreAdapter: core,
     storageDriver: new MemoryGameStorageDriver(gameFile()),
-    dayRuntimeClock: clock,
+    phaseRuntimeClock: clock,
   };
 
   render(<ClocktowerApp {...props} />);
@@ -148,19 +148,19 @@ test("hides the runtime in full-screen Reveal and preserves elapsed wall-clock t
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   await user.click(screen.getByRole("button", { name: "확정" }));
   const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("03:00");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 03:00")).toBeTruthy();
   await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
   const reveal = screen.getByLabelText("플레이어 공개 화면");
-  expect(within(reveal).queryByLabelText("낮 경과 시간")).toBeNull();
+  expect(within(reveal).queryByLabelText(/경과 시간/)).toBeNull();
 
   now += 2 * 60_000;
   await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("05:00");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 05:00")).toBeTruthy();
 });
 
 test("successful import of an already-Day game starts a fresh transient runtime", async () => {
   let now = 3_000;
-  const clock: MutableDayRuntimeClock = { now: () => now };
+  const clock: MutableRuntimeClock = { now: () => now };
   const dayStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
   const dayReplay = replayState({ currentStep: dayStep });
   const core = createCoreHarness({
@@ -173,15 +173,15 @@ test("successful import of an already-Day game starts a fresh transient runtime"
   const props = {
     coreAdapter: core,
     storageDriver: storage,
-    dayRuntimeClock: clock,
+    phaseRuntimeClock: clock,
   };
 
   render(<ClocktowerApp {...props} />);
 
-  expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("00:00");
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
   now += 12 * 60_000;
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
-  expect(screen.getByLabelText("낮 경과 시간").textContent).toContain("12:00");
+  expect(screen.getByLabelText("2일차 낮 경과 시간 12:00")).toBeTruthy();
 
   await user.click(screen.getByText("설정 및 불러오기"));
   const imported = gameFile();
@@ -192,7 +192,82 @@ test("successful import of an already-Day game starts a fresh transient runtime"
   await user.upload(fileInput, new File([JSON.stringify(imported)], "day.json", { type: "application/json" }));
 
   await waitFor(() => expect(vi.mocked(core.replay)).toHaveBeenCalledWith(imported));
-  expect((await screen.findByLabelText("낮 경과 시간")).textContent).toContain("00:00");
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+});
+
+test("same-phase Undo preserves the active phase runtime", async () => {
+  let now = 4_000;
+  const currentStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
+  const storedGame = gameFile();
+  storedGame.game.events.push(event("event-whisper", "밀담 종료", "day"));
+  const replay = replayState({ currentStep, eventCount: 2 });
+  const core = createCoreHarness({
+    initialReplay: replay,
+    replayAfterProposal: replay,
+    proposal: proposal(event("unused", "unused", "day")),
+  });
+  const user = userEvent.setup();
+
+  render(
+    <ClocktowerApp
+      coreAdapter={core}
+      storageDriver={new MemoryGameStorageDriver(storedGame)}
+      phaseRuntimeClock={{ now: () => now }}
+    />,
+  );
+
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+  now += 7 * 60_000;
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(screen.getByLabelText("2일차 낮 경과 시간 07:00")).toBeTruthy();
+
+  const undoButton = screen.getByRole("button", { name: "Undo" });
+  await waitFor(() => expect((undoButton as HTMLButtonElement).disabled).toBe(false));
+  await user.click(undoButton);
+  await user.click(screen.getByRole("button", { name: "되돌리기" }));
+
+  await waitFor(() => expect(screen.getByLabelText("2일차 낮 경과 시간 07:00")).toBeTruthy());
+});
+
+test("phase-transition Undo resets the restored phase runtime", async () => {
+  let now = 8_000;
+  const nightStep = step({ id: "night:toDay", phase: "night", stepType: "phaseTransition" });
+  const dayStep = step({ id: "day:whisper", phase: "day", stepType: "whisper" });
+  const storedGame = gameFile();
+  storedGame.game.events.push(event("event-to-day", "낮으로 전환", "night"));
+  const core = createCoreHarness({
+    initialReplay: replayState({ currentStep: dayStep, eventCount: 2 }),
+    replayAfterProposal: replayState({ currentStep: dayStep, eventCount: 2 }),
+    proposal: proposal(event("unused", "unused", "day")),
+  });
+  vi.mocked(core.replay).mockImplementation(async (candidate) => ({
+    ok: true,
+    value: replayState({
+      currentStep: candidate.game.events.length === 1 ? nightStep : dayStep,
+      eventCount: candidate.game.events.length,
+    }),
+  }));
+  const user = userEvent.setup();
+
+  render(
+    <ClocktowerApp
+      coreAdapter={core}
+      storageDriver={new MemoryGameStorageDriver(storedGame)}
+      phaseRuntimeClock={{ now: () => now }}
+    />,
+  );
+
+  expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+  now += 9 * 60_000;
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(screen.getByLabelText("2일차 낮 경과 시간 09:00")).toBeTruthy();
+
+  const undoButton = screen.getByRole("button", { name: "Undo" });
+  await waitFor(() => expect((undoButton as HTMLButtonElement).disabled).toBe(false));
+  await user.click(undoButton);
+  await user.click(screen.getByRole("button", { name: "되돌리기" }));
+
+  expect(await screen.findByLabelText("2일차 밤 경과 시간 00:00")).toBeTruthy();
 });
 
 test("Setup omits a Day runtime", async () => {
@@ -206,5 +281,5 @@ test("Setup omits a Day runtime", async () => {
   render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(undefined)} />);
 
   await screen.findByRole("heading", { name: "Trouble Brewing" });
-  expect(screen.queryByLabelText("낮 경과 시간")).toBeNull();
+  expect(screen.queryByLabelText(/경과 시간/)).toBeNull();
 });

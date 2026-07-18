@@ -15,6 +15,7 @@ export function Grimoire({
   players,
   draft,
   busy,
+  centerStatus,
   nominationVoting,
   setupInformationSelection,
   phasePlayerSelection,
@@ -25,6 +26,9 @@ export function Grimoire({
   players: Player[];
   draft: SetupDraft;
   busy: boolean;
+  centerStatus?:
+    | { kind: "active"; phaseLabel: string; runtime: string }
+    | { kind: "ended" };
   nominationVoting?: {
     draft: NominationDraft;
     onChange: (draft: NominationDraft) => void;
@@ -87,7 +91,19 @@ export function Grimoire({
         <div className="draftLayoutTableMark" aria-hidden="true">
           테이블
         </div>
-        <strong className="mapCenter">{players.length > 0 ? "현재 상태" : "입력 중"}</strong>
+        {centerStatus?.kind === "active" ? (
+          <strong
+            className="mapCenter phaseRuntimeCenter"
+            aria-label={`${centerStatus.phaseLabel} 경과 시간 ${centerStatus.runtime}`}
+          >
+            <span>{centerStatus.phaseLabel}</span>
+            <b>{centerStatus.runtime}</b>
+          </strong>
+        ) : (
+          <strong className="mapCenter">
+            {centerStatus?.kind === "ended" ? "게임 종료" : "입력 중"}
+          </strong>
+        )}
         {seats.map((seat) => {
           const virginAbility = ruleState?.virginAbility;
           const confirmedPlayer = "id" in seat ? (seat as Player) : undefined;

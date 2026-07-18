@@ -234,30 +234,6 @@ h3 {
   font-size: 0.94rem;
 }
 
-.dayRuntime {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 5px;
-  color: #743142;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.dayRuntime span {
-  font-size: 0.69rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-}
-
-.dayRuntime strong {
-  min-width: 5ch;
-  font-family: var(--serif);
-  font-size: 1rem;
-  letter-spacing: 0.04em;
-  text-align: right;
-}
-
 .phaseBadge {
   flex: 0 0 auto;
   border: 1px solid rgba(31, 111, 91, 0.28);
@@ -333,6 +309,35 @@ h3 {
   border: 1px solid #cdbf9f;
   background: #fffdf8;
   text-align: center;
+}
+
+.phaseRuntimeCenter {
+  align-content: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.phaseRuntimeCenter span {
+  font-size: 0.79rem;
+  letter-spacing: 0.02em;
+}
+
+.phaseRuntimeCenter b {
+  min-width: 5ch;
+  font-family: var(--serif);
+  font-size: 1.68rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 460px) {
+  .mapCenter {
+    width: 112px;
+    height: 112px;
+  }
+
+  .phaseRuntimeCenter span { font-size: 0.72rem; }
+  .phaseRuntimeCenter b { font-size: 1.45rem; }
 }
 
 .draftMapCenter {

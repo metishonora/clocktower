@@ -23,10 +23,11 @@ import { SetupForm } from "./features/setup/SetupForm";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
-  browserDayRuntimeClock,
-  type DayRuntimeClock,
-} from "./features/phase-control/dayRuntime";
-import { useDayRuntime } from "./features/phase-control/useDayRuntime";
+  browserRuntimeClock,
+  numberedPhaseForStep,
+  type RuntimeClock,
+} from "./features/phase-control/phaseRuntime";
+import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
 import { CommunityContentNotice } from "./components/CommunityContentNotice";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import "./styles.css";
@@ -94,14 +95,32 @@ const DevSeatLayoutBoundaryPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevGrimoirePhaseRuntimePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./grimoirePhaseRuntimePrototype");
+      return { default: module.GrimoirePhaseRuntimePrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
   choiceTokenSource?: ChoiceTokenSource;
-  dayRuntimeClock?: DayRuntimeClock;
+  phaseRuntimeClock?: RuntimeClock;
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevGrimoirePhaseRuntimePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "grimoire-phase-runtime"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevGrimoirePhaseRuntimePrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevSeatLayoutBoundaryPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "seat-layout-boundary"
@@ -235,7 +254,7 @@ export function ClocktowerApp({
   coreAdapter,
   storageDriver,
   choiceTokenSource = browserCryptoChoiceToken,
-  dayRuntimeClock = browserDayRuntimeClock,
+  phaseRuntimeClock = browserRuntimeClock,
 }: ClocktowerAppProps) {
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -255,11 +274,19 @@ export function ClocktowerApp({
   );
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
-  const dayRuntime = useDayRuntime({
-    phase: gameStore.phase,
+  const numberedPhase = gameStore.gameEnd
+    ? undefined
+    : numberedPhaseForStep(gameStore.phase, gameStore.currentStep?.id);
+  const phaseRuntime = usePhaseRuntime({
+    activePhase: numberedPhase,
     gameSessionRevision: gameStore.gameSessionRevision,
-    clock: dayRuntimeClock,
+    clock: phaseRuntimeClock,
   });
+  const grimoireCenterStatus = gameStore.gameEnd
+    ? { kind: "ended" as const }
+    : numberedPhase && phaseRuntime
+      ? { kind: "active" as const, phaseLabel: numberedPhase.label, runtime: phaseRuntime }
+      : undefined;
   const mobilePhasePanel = useMobilePhasePanel(gameStore.setupConfirmed);
 
   useEffect(() => {
@@ -342,6 +369,7 @@ export function ClocktowerApp({
                 players={gameStore.players}
                 draft={gameStore.setupDraft}
                 busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
+                centerStatus={grimoireCenterStatus}
                 ruleState={gameStore.ruleState}
                 onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
                 slayerAbility={gameStore.ruleState?.slayerAbility ? {
@@ -382,7 +410,6 @@ export function ClocktowerApp({
                 <div className="phasePanelContent">
                   <PhaseControl
                     pendingReveal={gameStore.pendingConfirmedReveal}
-                    dayRuntime={dayRuntime}
                     currentStep={gameStore.currentStep}
                     phaseOverview={gameStore.phaseOverview}
                     players={gameStore.players}
