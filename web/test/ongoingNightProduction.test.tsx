@@ -184,7 +184,9 @@ describe("ongoing-night production UI", () => {
   });
 
   test("freezes Grimoire editing after a Fortune Teller pair is confirmed and shows only the approved result/Reveal controls", async () => {
-    const playerRoster = koreanPlayers();
+    const playerRoster = koreanPlayers().map((player) =>
+      player.id === "player-1" ? { ...player, actualCharacter: "drunk", shownCharacter: "fortuneTeller" } : player,
+    );
     const targetCheck = {
       targetPlayerIds: ["player-3", "player-5"],
       computedResult: { kind: "boolean", value: true },
@@ -217,26 +219,35 @@ describe("ongoing-night production UI", () => {
       initialReplay: replayState({ currentStep, playerRoster }),
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-ft", "점쟁이 정보 확정", "night"), {
-        messageKo: "예",
-        labelKo: "점쟁이 결과",
-        valueKo: "예",
+        kind: "fortuneTellerInformation",
+        targetPlayers: [
+          { playerId: "player-3", seat: 3, name: "서연" },
+          { playerId: "player-5", seat: 5, name: "하린" },
+        ],
+        hasDemon: true,
       }),
     });
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
+    expect(await screen.findByText("실제 술꾼")).toBeTruthy();
     const input = await screen.findByLabelText("단계 입력");
     await user.click(within(input).getByRole("button", { name: /서연/ }));
     await user.click(within(input).getByRole("button", { name: /하린/ }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     const result = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(result).getByText("점쟁이 결과")).toBeTruthy();
-    expect(within(result).getByText("결과")).toBeTruthy();
-    expect(within(result).getByText("악마 있음")).toBeTruthy();
-    expect(within(result).getByRole("button", { name: "Reveal" })).toBeTruthy();
+    expect(within(result).getByText("점쟁이 정보")).toBeTruthy();
+    expect(within(result).getByRole("button", { name: "플레이어에게 공개" })).toBeTruthy();
     expect(within(result).queryByText(/정보 전달|계산값|2명/)).toBeNull();
+    await user.click(within(result).getByRole("button", { name: "플레이어에게 공개" }));
+    const reveal = screen.getByLabelText("플레이어 공개 화면");
+    expect(within(reveal).getByText("이 중에 악마는…")).toBeTruthy();
+    expect(within(reveal).getByText("있음")).toBeTruthy();
+    expect(within(reveal).getByText("서연")).toBeTruthy();
+    expect(within(reveal).getByText("하린")).toBeTruthy();
+    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
     const layoutButton = screen.getByRole("button", { name: "위치 조정" }) as HTMLButtonElement;
     expect(layoutButton.disabled).toBe(true);
   });

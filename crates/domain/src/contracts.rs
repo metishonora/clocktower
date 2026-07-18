@@ -238,13 +238,58 @@ pub(crate) enum RevealPayload {
         kind: &'static str,
         players: Vec<crate::model::InformationPlayer>,
     },
-    NewImp {
+    SetupInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        #[serde(rename = "candidatePlayers")]
+        candidate_players: Vec<RevealPlayer>,
+        #[serde(
+            rename = "revealedCharacterId",
+            skip_serializing_if = "Option::is_none"
+        )]
+        revealed_character_id: Option<String>,
+        #[serde(rename = "zeroOutsiders")]
+        zero_outsiders: bool,
+    },
+    NumericInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        value: usize,
+    },
+    FortuneTellerInformation {
+        kind: &'static str,
+        #[serde(rename = "targetPlayers")]
+        target_players: Vec<RevealPlayer>,
+        #[serde(rename = "hasDemon")]
+        has_demon: bool,
+    },
+    CharacterInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        #[serde(rename = "targetPlayer")]
+        target_player: RevealPlayer,
+        #[serde(rename = "revealedCharacterId")]
+        revealed_character_id: String,
+    },
+    CharacterChange {
         kind: &'static str,
         #[serde(rename = "playerId")]
         player_id: String,
+        alignment: &'static str,
         #[serde(rename = "characterId")]
         character_id: &'static str,
     },
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RevealPlayer {
+    pub(crate) player_id: String,
+    pub(crate) seat: u8,
+    pub(crate) name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

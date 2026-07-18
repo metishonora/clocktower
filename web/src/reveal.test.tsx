@@ -21,15 +21,31 @@ test("RevealScreen renders from RevealPayload alone", () => {
   equal(html.includes("그리모어"), false);
 });
 
-test("New Imp RevealScreen identifies the successor without exposing Grimoire state", () => {
-  const payload = { kind: "newImp" as const, playerId: "poisoner", characterId: "imp" as const };
+test("character change Reveal identifies the new role without exposing Grimoire state", () => {
+  const payload = { kind: "characterChange" as const, playerId: "poisoner", alignment: "evil" as const, characterId: "imp" };
   const html = renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />);
 
-  equal(html.includes("당신은 임프입니다"), true);
+  equal(html.includes("당신의 역할이 변경되었습니다."), true);
+  equal(html.includes(">악<"), true);
+  equal(html.includes("임프"), true);
   equal(html.includes("그리모어"), false);
   equal(html.includes("확인했다면 눈을 감으세요."), true);
   const preview = renderToStaticMarkup(<RevealPreview payload={payload} onShow={() => undefined} />);
-  equal(preview.includes("새 임프에게 공개"), true);
+  equal(preview.includes("플레이어에게 공개"), true);
+});
+
+test("role information Reveal renders the approved copy from narrow payloads", () => {
+  const payloads: RevealPayload[] = [
+    { kind: "setupInformation", characterId: "washerwoman", candidatePlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], revealedCharacterId: "chef", zeroOutsiders: false },
+    { kind: "setupInformation", characterId: "librarian", candidatePlayers: [], zeroOutsiders: true },
+    { kind: "numericInformation", characterId: "chef", value: 1 },
+    { kind: "fortuneTellerInformation", targetPlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], hasDemon: false },
+    { kind: "characterInformation", characterId: "undertaker", targetPlayer: { playerId: "p3", seat: 3, name: "서연" }, revealedCharacterId: "librarian" },
+  ];
+  const html = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />)).join("\n");
+  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 마을주민입니다.", "외부인은 없습니다.", "서로 이웃한 악 팀", "1쌍", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
+    equal(html.includes(copy), true, copy);
+  }
 });
 
 for (const playerCount of [5, 10, 15]) {

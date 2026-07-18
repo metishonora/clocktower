@@ -589,7 +589,7 @@ pub(crate) fn propose_phase_step(
     let reveal_payload = match &event.kind {
         GameEventKind::PhaseStepConfirmed { payload } => {
             payload.information.as_ref().and_then(|information| {
-                phase_step_reveal_payload(&current_step, &information.delivered_result, &players)
+                phase_step_reveal_payload(&current_step, information, &players)
             })
         }
         _ => None,
@@ -1027,9 +1027,10 @@ fn propose_demon_succession(
         warnings: vec![],
         follow_up_steps: vec![],
         preview: json!({ "messageKo": "새 임프를 확정합니다." }),
-        reveal_payload: Some(RevealPayload::NewImp {
-            kind: "newImp",
+        reveal_payload: Some(RevealPayload::CharacterChange {
+            kind: "characterChange",
             player_id: successor.id.clone(),
+            alignment: "evil",
             character_id: "imp",
         }),
     })

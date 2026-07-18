@@ -2036,6 +2036,122 @@ select {
   line-height: 1.25;
 }
 
+.roleInformationCard {
+  display: grid;
+  width: min(690px, 100%);
+  min-height: min(620px, calc(100vh - 36px));
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+  border: 1px solid rgba(207, 183, 121, 0.6);
+  border-radius: 28px;
+  background: #fffdf8;
+  color: #173f36;
+}
+
+.roleInformationContent {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 22px;
+  padding: clamp(28px, 6vw, 44px);
+  text-align: center;
+}
+
+.roleInformationContent h1,
+.roleInformationContent p {
+  margin: 0;
+}
+
+.roleInformationContent h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.18;
+}
+
+.roleInformationContent p {
+  color: #4d5f59;
+  font-size: clamp(1.15rem, 2.3vw, 1.55rem);
+  font-weight: 800;
+}
+
+.roleInformationCard > .revealCloseButton {
+  min-height: 72px;
+  border: 0;
+  border-top: 1px solid #d8d1c3;
+  border-radius: 0;
+  background: #173f36;
+}
+
+.roleInformationCharacter {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.roleInformationCharacter img {
+  width: clamp(112px, 17vw, 164px);
+  height: clamp(112px, 17vw, 164px);
+  object-fit: contain;
+}
+
+.roleInformationCharacter strong { font-size: 1.28rem; }
+
+.roleInformationPlayers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.roleInformationPlayers > div {
+  display: flex;
+  min-width: 170px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #cfc6b6;
+  border-radius: 999px;
+  background: #f4f0e8;
+  padding: 9px 18px 9px 9px;
+  font-size: 1.08rem;
+}
+
+.roleInformationPlayers span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: #173f36;
+  color: #fff;
+  font-weight: 900;
+}
+
+.roleInformationValue,
+.roleInformationEmpty {
+  color: #173f36;
+  font-size: clamp(4.8rem, 13vw, 8.5rem);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.roleInformationValue.yes { color: #8c2f29; }
+.roleInformationValue.no { color: #23594b; }
+.roleInformationEmpty { font-size: clamp(2.4rem, 7vw, 4.8rem); line-height: 1.2; }
+
+.roleInformationAlignment {
+  display: grid;
+  width: 70px;
+  height: 70px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 950;
+}
+
+.roleInformationAlignment.good { background: #23594b; }
+.roleInformationAlignment.evil { background: #8c2f29; }
+
 .revealFollowupPrototype {
   grid-template-rows: auto 1fr;
 }

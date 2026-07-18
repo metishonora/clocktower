@@ -1,5 +1,5 @@
 use crate::{
-    contracts::{RevealPayload, SetupDistribution},
+    contracts::{RevealPayload, RevealPlayer, SetupDistribution},
     model::{
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
         InformationResult, NominationRecord, PhaseStep, Player, StepInput,
@@ -128,38 +128,42 @@ pub(crate) fn duplicate_actual_character_warning() -> CoreWarning {
 
 pub(crate) fn phase_step_reveal_payload(
     step: &PhaseStep,
-    delivered_result: &InformationResult,
+    information: &ConfirmedInformation,
     players: &[Player],
 ) -> Option<RevealPayload> {
+    let delivered_result = &information.delivered_result;
     match delivered_result {
-        InformationResult::Boolean { value } => Some(RevealPayload::Text {
-            message_ko: if *value { "예" } else { "아니요" }.to_string(),
-            label_ko: None,
-            value_ko: Some(if *value { "예" } else { "아니요" }.to_string()),
-            preview_message_ko: None,
-        }),
-        InformationResult::Character { character_id } => Some(RevealPayload::Text {
-            message_ko: character_label(character_id).to_string(),
-            label_ko: None,
-            value_ko: Some(character_label(character_id).to_string()),
-            preview_message_ko: None,
-        }),
-        InformationResult::Number { value: count } if step.character.as_deref() == Some("chef") => {
-            Some(RevealPayload::Text {
-                message_ko: format!("서로 이웃한 악 팀 쌍은 {count}쌍입니다."),
-                label_ko: Some("서로 이웃한 악한 팀 쌍".to_string()),
-                value_ko: Some(format!("{count}쌍")),
-                preview_message_ko: None,
+        InformationResult::Boolean { value }
+            if step.character.as_deref() == Some("fortuneTeller") =>
+        {
+            Some(RevealPayload::FortuneTellerInformation {
+                kind: "fortuneTellerInformation",
+                target_players: reveal_players(players, &information.target_player_ids)?,
+                has_demon: *value,
             })
         }
-        InformationResult::Number { value: count }
-            if step.character.as_deref() == Some("empath") =>
+        InformationResult::Character { character_id }
+            if matches!(
+                step.character.as_deref(),
+                Some("undertaker" | "ravenkeeper")
+            ) =>
         {
-            Some(RevealPayload::Text {
-                message_ko: format!("살아있는 양옆 이웃 중 악 팀은 {count}명입니다."),
-                label_ko: Some("살아있는 양옆 이웃 중 악한 팀".to_string()),
-                value_ko: Some(format!("{count}명")),
-                preview_message_ko: None,
+            Some(RevealPayload::CharacterInformation {
+                kind: "characterInformation",
+                character_id: step.character.clone()?,
+                target_player: reveal_players(players, &information.target_player_ids)?
+                    .into_iter()
+                    .next()?,
+                revealed_character_id: character_id.clone(),
+            })
+        }
+        InformationResult::Number { value }
+            if matches!(step.character.as_deref(), Some("chef" | "empath")) =>
+        {
+            Some(RevealPayload::NumericInformation {
+                kind: "numericInformation",
+                character_id: step.character.clone()?,
+                value: *value,
             })
         }
         InformationResult::SetupInfo {
@@ -408,29 +412,38 @@ fn setup_info_result_reveal_payload(
     players: &[Player],
 ) -> Option<RevealPayload> {
     if kind == "librarian" && zero_outsiders {
-        return Some(RevealPayload::Text {
-            message_ko: "사서 정보: 외부인은 0명입니다.".to_string(),
-            label_ko: None,
-            value_ko: None,
-            preview_message_ko: None,
+        return Some(RevealPayload::SetupInformation {
+            kind: "setupInformation",
+            character_id: kind.to_string(),
+            candidate_players: vec![],
+            revealed_character_id: None,
+            zero_outsiders: true,
         });
     }
     let character_id = character_id?;
-    let candidates = player_ids
-        .iter()
-        .map(|player_id| player_label(players, player_id))
-        .collect::<Option<Vec<_>>>()?;
-    Some(RevealPayload::Text {
-        message_ko: format!(
-            "{} 정보: {} 중 한 명은 {}입니다.",
-            setup_info_label(kind),
-            candidates.join(" 또는 "),
-            character_label(character_id)
-        ),
-        label_ko: None,
-        value_ko: None,
-        preview_message_ko: None,
+    Some(RevealPayload::SetupInformation {
+        kind: "setupInformation",
+        character_id: kind.to_string(),
+        candidate_players: reveal_players(players, player_ids)?,
+        revealed_character_id: Some(character_id.to_string()),
+        zero_outsiders: false,
     })
+}
+
+fn reveal_players(players: &[Player], player_ids: &[String]) -> Option<Vec<RevealPlayer>> {
+    player_ids
+        .iter()
+        .map(|player_id| {
+            players
+                .iter()
+                .find(|player| player.id == *player_id)
+                .map(|player| RevealPlayer {
+                    player_id: player.id.clone(),
+                    seat: player.seat,
+                    name: player.name.clone(),
+                })
+        })
+        .collect()
 }
 
 fn team_info_reveal_payload(
@@ -532,22 +545,6 @@ pub(crate) fn player_ability_label(
             }
         })
         .unwrap_or_else(|| player_id.to_string())
-}
-
-pub(crate) fn player_label(players: &[Player], player_id: &str) -> Option<String> {
-    players
-        .iter()
-        .find(|player| player.id == player_id)
-        .map(|player| format!("{}번 {}", player.seat, player.name))
-}
-
-pub(crate) fn setup_info_label(kind: &str) -> &'static str {
-    match kind {
-        "washerwoman" => "세탁부",
-        "librarian" => "사서",
-        "investigator" => "조사관",
-        _ => "정보",
-    }
 }
 
 pub(crate) fn character_label(character: &str) -> &'static str {
