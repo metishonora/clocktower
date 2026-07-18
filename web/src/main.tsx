@@ -86,6 +86,13 @@ const DevOfficialAssetsPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevMobilePanelPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./mobilePanelPrototype");
+      return { default: module.MobilePanelPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -94,6 +101,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevMobilePanelPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "mobile-panel"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevMobilePanelPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevOfficialAssetsPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "official-assets"

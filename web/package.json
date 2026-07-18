@@ -18,6 +18,7 @@
     "prototype:win-game": "vite --host 0.0.0.0",
     "prototype:manual-tokens-notes": "vite --host 0.0.0.0",
     "prototype:official-assets": "vite --host 0.0.0.0",
+    "prototype:mobile-panel": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "generate:pwa-assets": "pwa-assets-generator --preset minimal --root public --manifest false assets/icons/app-icon.svg",
