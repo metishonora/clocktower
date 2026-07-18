@@ -102,6 +102,13 @@ const DevGrimoirePhaseRuntimePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue64EvilInfoRevealPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue64EvilInfoRevealPrototype");
+      return { default: module.Issue64EvilInfoRevealPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -110,6 +117,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue64EvilInfoRevealPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-64-evil-info"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue64EvilInfoRevealPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevGrimoirePhaseRuntimePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "grimoire-phase-runtime"
