@@ -16,6 +16,7 @@ test("keeps the confirmed Minion follow-up concise and opens a safe identity-onl
   await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
 
   const reveal = screen.getByRole("main", { name: "플레이어 공개 화면" });
+  expect(within(reveal).getByText("하수인 정보")).toBeTruthy();
   expect(within(reveal).getByRole("heading", { name: "하수인 정보 · 악마와 동료 하수인을 확인하세요" })).toBeTruthy();
   const content = within(reveal).getByRole("region", { name: "하수인 정보 내용" });
   expect(within(content).getByText("5번 하린")).toBeTruthy();
@@ -33,6 +34,7 @@ test("renders Demon bluffs with official CharacterIcon assets without exposing M
   await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
 
   const reveal = screen.getByRole("main", { name: "플레이어 공개 화면" });
+  expect(within(reveal).getByText("악마 정보")).toBeTruthy();
   const content = within(reveal).getByRole("region", { name: "악마 정보 내용" });
   expect(within(content).getByText("4번 도윤")).toBeTruthy();
   expect(within(content).getByText("7번 유진")).toBeTruthy();

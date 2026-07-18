@@ -99,7 +99,7 @@ function EvilInfoReveal({ audience, onClose }: { audience: Audience; onClose: ()
   return (
     <main className="issue64PlayerReveal" aria-label="플레이어 공개 화면">
       <header className="issue64RevealHeading">
-        <p>첫 밤 정보</p>
+        <p>{copy[audience].tab}</p>
         <h1>{copy[audience].revealTitle}</h1>
       </header>
 
