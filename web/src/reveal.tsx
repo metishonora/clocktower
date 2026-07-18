@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
-import type { NewImpRevealPayload, RevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
-import { isNewImpRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
+import type { RevealPayload, RevealPlayer, RoleInformationRevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
+import { isRoleInformationRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
 import { characterLabel } from "./setupDraft.js";
 import { spySeatPosition } from "./spyGrimoireLayout.js";
+import { CharacterIcon } from "./components/CharacterIcon.js";
 
 export function RevealPreview({
   payload,
@@ -14,11 +15,11 @@ export function RevealPreview({
   disabled?: boolean;
 }) {
   if (isSpyGrimoireRevealPayload(payload)) return null;
-  if (isNewImpRevealPayload(payload)) {
+  if (isRoleInformationRevealPayload(payload)) {
     return (
       <section className="revealPreview" aria-label="Reveal 미리보기">
-        <p className="revealPreviewMessage">새 임프 역할 변경</p>
-        <button type="button" className="primaryButton" onClick={onShow} disabled={disabled}>새 임프에게 공개</button>
+        <p className="revealPreviewMessage">{roleInformationTitle(payload)}</p>
+        <button type="button" className="primaryButton" onClick={onShow} disabled={disabled}>플레이어에게 공개</button>
       </section>
     );
   }
@@ -42,20 +43,58 @@ export function RevealScreen({ payload, onClose }: { payload: RevealPayload; onC
   if (isSpyGrimoireRevealPayload(payload)) {
     return <SpyGrimoireReveal payload={payload} onClose={onClose} />;
   }
-  if (isNewImpRevealPayload(payload)) return <NewImpReveal payload={payload} onClose={onClose} />;
+  if (isRoleInformationRevealPayload(payload)) return <RoleInformationReveal payload={payload} onClose={onClose} />;
   return <TextReveal payload={payload} onClose={onClose} />;
 }
 
-function NewImpReveal({ payload, onClose }: { payload: NewImpRevealPayload; onClose: () => void }) {
+function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationRevealPayload; onClose: () => void }) {
+  let content;
+  if (payload.kind === "setupInformation") {
+    content = payload.zeroOutsiders ? (
+      <><h1>사서 정보</h1><strong className="roleInformationEmpty">외부인은 없습니다.</strong></>
+    ) : (
+      <>
+        <h1>{characterLabel(payload.characterId)} 정보</h1>
+        <p>{setupInformationDescription(payload.characterId)}</p>
+        <CharacterResult characterId={payload.revealedCharacterId} />
+        <RevealPlayers players={payload.candidatePlayers} />
+      </>
+    );
+  } else if (payload.kind === "numericInformation") {
+    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "chef" ? "서로 이웃한 악 팀" : "살아있는 양옆 이웃 중 악 팀"}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : "명"}</strong></>;
+  } else if (payload.kind === "fortuneTellerInformation") {
+    content = <><h1>점쟁이 정보</h1><p>이 중에 악마는…</p><RevealPlayers players={payload.targetPlayers} /><strong className={`roleInformationValue boolean ${payload.hasDemon ? "yes" : "no"}`}>{payload.hasDemon ? "있음" : "없음"}</strong></>;
+  } else if (payload.kind === "characterInformation") {
+    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>이 자의 직업은…</p><RevealPlayers players={[payload.targetPlayer]} /><CharacterResult characterId={payload.revealedCharacterId} /></>;
+  } else {
+    content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} /></>;
+  }
   return (
-    <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.playerId}>
-      <section className="revealCard structuredRevealCard">
-        <h1 className="revealPlayerLabel">새 역할</h1>
-        <p>당신은 임프입니다</p>
+    <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.kind === "characterChange" ? payload.playerId : undefined}>
+      <section className="roleInformationCard">
+        <div className="roleInformationContent">{content}</div>
         <button type="button" className="revealCloseButton" onClick={onClose}>확인했다면 눈을 감으세요.</button>
       </section>
     </main>
   );
+}
+
+function RevealPlayers({ players }: { players: readonly RevealPlayer[] }) {
+  return <div className="roleInformationPlayers" aria-label="확인 대상">{players.map((player) => <div key={player.playerId}><span>{player.seat}</span><strong>{player.name}</strong></div>)}</div>;
+}
+
+function CharacterResult({ characterId }: { characterId: string }) {
+  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{characterLabel(characterId)}</strong></div>;
+}
+
+function setupInformationDescription(characterId: "washerwoman" | "librarian" | "investigator") {
+  return characterId === "washerwoman" ? "둘 중 한 명은 이 마을주민입니다." : characterId === "librarian" ? "둘 중 한 명은 이 외부인입니다." : "둘 중 한 명은 이 하수인입니다.";
+}
+
+function roleInformationTitle(payload: RoleInformationRevealPayload) {
+  if (payload.kind === "characterChange") return "역할 변경";
+  if (payload.kind === "fortuneTellerInformation") return "점쟁이 정보";
+  return `${characterLabel(payload.characterId)} 정보`;
 }
 
 function TextReveal({ payload, onClose }: { payload: TextRevealPayload; onClose: () => void }) {

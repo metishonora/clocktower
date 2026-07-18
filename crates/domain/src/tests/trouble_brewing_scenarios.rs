@@ -74,14 +74,13 @@ fn confirming_chef_step_returns_reveal_payload() {
 
     assert_eq!(actual["ok"], true);
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "서로 이웃한 악 팀 쌍은 0쌍입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "numericInformation",
+            "characterId": "chef",
+            "value": 0
+        })
     );
-    assert_eq!(
-        actual["value"]["revealPayload"]["labelKo"],
-        "서로 이웃한 악한 팀 쌍"
-    );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0쌍");
     assert_eq!(
         actual["value"]["event"]["summary"],
         "2번 Bert(요리사)가 서로 이웃한 악한 팀 0쌍을 확인했습니다."
@@ -136,11 +135,18 @@ fn confirming_washerwoman_information_logs_and_reveals_selected_setup_info() {
         "1번 Ada(세탁부)가 1번 Ada(세탁부), 2번 Bert(요리사) 중 한 명을 요리사로 확인했습니다."
     );
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "세탁부 정보: 1번 Ada 또는 2번 Bert 중 한 명은 요리사입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "setupInformation",
+            "characterId": "washerwoman",
+            "candidatePlayers": [
+                { "playerId": "player-1", "seat": 1, "name": "Ada" },
+                { "playerId": "player-2", "seat": 2, "name": "Bert" }
+            ],
+            "revealedCharacterId": "chef",
+            "zeroOutsiders": false
+        })
     );
-    assert!(actual["value"]["revealPayload"].get("labelKo").is_none());
-    assert!(actual["value"]["revealPayload"].get("valueKo").is_none());
 }
 
 #[test]
@@ -209,8 +215,13 @@ fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
         "1번 Ada(사서)가 외부인 없음을 확인했습니다."
     );
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "사서 정보: 외부인은 0명입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "setupInformation",
+            "characterId": "librarian",
+            "candidatePlayers": [],
+            "zeroOutsiders": true
+        })
     );
 }
 
@@ -248,8 +259,15 @@ fn confirming_librarian_information_uses_actual_drunk_instead_of_shown_townsfolk
 
     assert_eq!(actual["ok"], true);
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "사서 정보: 2번 Bert 또는 3번 Cora 중 한 명은 술꾼입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "setupInformation", "characterId": "librarian",
+            "candidatePlayers": [
+                { "playerId": "player-2", "seat": 2, "name": "Bert" },
+                { "playerId": "player-3", "seat": 3, "name": "Cora" }
+            ],
+            "revealedCharacterId": "drunk", "zeroOutsiders": false
+        })
     );
 }
 
@@ -355,8 +373,15 @@ fn confirming_investigator_information_requires_minion_character_and_reveals_it(
 
     assert_eq!(actual["ok"], true);
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "조사관 정보: 2번 Bert 또는 4번 Dev 중 한 명은 독살자입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "setupInformation", "characterId": "investigator",
+            "candidatePlayers": [
+                { "playerId": "player-2", "seat": 2, "name": "Bert" },
+                { "playerId": "player-4", "seat": 4, "name": "Dev" }
+            ],
+            "revealedCharacterId": "poisoner", "zeroOutsiders": false
+        })
     );
 }
 
@@ -460,10 +485,11 @@ fn confirming_chef_can_log_true_count_and_reveal_different_displayed_value() {
         "2번 Bert(요리사)가 서로 이웃한 악한 팀 0쌍을 확인했습니다. (실제 1쌍 · 등록 판정)"
     );
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "서로 이웃한 악 팀 쌍은 0쌍입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "numericInformation", "characterId": "chef", "value": 0
+        })
     );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0쌍");
 }
 
 #[test]
@@ -523,7 +549,7 @@ fn poisoned_chef_requires_explicit_delivery_and_reveal_uses_only_delivered_value
             "poisonEventId": "evt-firstNight:poisoner"
         })
     );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "2쌍");
+    assert_eq!(actual["value"]["revealPayload"]["value"], 2);
     assert!(!actual["value"]["revealPayload"]
         .to_string()
         .contains("computedResult"));
@@ -576,7 +602,7 @@ fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
         actual["value"]["event"]["payload"]["information"]["deliveryContext"]["reasons"],
         json!([{ "type": "drunk" }])
     );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "3쌍");
+    assert_eq!(actual["value"]["revealPayload"]["value"], 3);
     assert_eq!(
         actual["value"]["event"]["summary"],
         "2번 Bert(요리사 능력, 실제 술꾼)가 서로 이웃한 악한 팀 3쌍을 확인했습니다. (실제 1쌍 · 술취함)"
@@ -1010,14 +1036,11 @@ fn confirming_empath_step_returns_reveal_payload() {
 
     assert_eq!(actual["ok"], true);
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "살아있는 양옆 이웃 중 악 팀은 0명입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "numericInformation", "characterId": "empath", "value": 0
+        })
     );
-    assert_eq!(
-        actual["value"]["revealPayload"]["labelKo"],
-        "살아있는 양옆 이웃 중 악한 팀"
-    );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "0명");
     assert_eq!(
         actual["value"]["event"]["summary"],
         "3번 Cora(공감능력자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다."
@@ -1110,7 +1133,7 @@ fn recluse_next_to_imp_can_register_evil_for_chef() {
         actual["value"]["event"]["payload"]["information"]["computedResult"]["value"],
         0
     );
-    assert_eq!(actual["value"]["revealPayload"]["valueKo"], "1쌍");
+    assert_eq!(actual["value"]["revealPayload"]["value"], 1);
 }
 
 #[test]
@@ -1265,14 +1288,21 @@ fn drunk_investigator_accepts_any_two_players_and_any_minion_without_true_pair()
         json!([{ "type": "drunk" }])
     );
     assert_eq!(
-        actual["value"]["revealPayload"]["messageKo"],
-        "조사관 정보: 2번 Good 또는 3번 Good 2 중 한 명은 남작입니다."
+        actual["value"]["revealPayload"],
+        json!({
+            "kind": "setupInformation", "characterId": "investigator",
+            "candidatePlayers": [
+                { "playerId": "player-2", "seat": 2, "name": "Good" },
+                { "playerId": "player-3", "seat": 3, "name": "Good 2" }
+            ],
+            "revealedCharacterId": "baron", "zeroOutsiders": false
+        })
     );
 }
 
 #[test]
 fn drunk_setup_information_records_and_reveals_only_the_single_delivered_input() {
-    for (shown_character, input, delivered_result, reveal_message) in [
+    for (shown_character, input, delivered_result, expected_reveal) in [
         (
             "washerwoman",
             json!({
@@ -1285,7 +1315,14 @@ fn drunk_setup_information_records_and_reveals_only_the_single_delivered_input()
                 "characterId": "fortuneTeller",
                 "zeroOutsiders": false
             }),
-            "세탁부 정보: 2번 Chef 또는 3번 Empath 중 한 명은 점쟁이입니다.",
+            json!({
+                "kind": "setupInformation", "characterId": "washerwoman",
+                "candidatePlayers": [
+                    { "playerId": "player-2", "seat": 2, "name": "Chef" },
+                    { "playerId": "player-3", "seat": 3, "name": "Empath" }
+                ],
+                "revealedCharacterId": "fortuneTeller", "zeroOutsiders": false
+            }),
         ),
         (
             "librarian",
@@ -1295,7 +1332,10 @@ fn drunk_setup_information_records_and_reveals_only_the_single_delivered_input()
                 "playerIds": [],
                 "zeroOutsiders": true
             }),
-            "사서 정보: 외부인은 0명입니다.",
+            json!({
+                "kind": "setupInformation", "characterId": "librarian",
+                "candidatePlayers": [], "zeroOutsiders": true
+            }),
         ),
     ] {
         let game = game_with_events(json!([
@@ -1334,10 +1374,7 @@ fn drunk_setup_information_records_and_reveals_only_the_single_delivered_input()
             information["deliveryContext"]["reasons"],
             json!([{ "type": "drunk" }])
         );
-        assert_eq!(
-            actual["value"]["revealPayload"],
-            json!({ "messageKo": reveal_message })
-        );
+        assert_eq!(actual["value"]["revealPayload"], expected_reveal);
     }
 }
 

@@ -249,6 +249,76 @@ fn fortune_teller_assigns_a_red_herring_before_its_first_typed_boolean_check() {
             "deliveryContext": { "type": "fixed" }
         })
     );
+    assert_eq!(
+        check["value"]["revealPayload"],
+        json!({
+            "kind": "fortuneTellerInformation",
+            "targetPlayers": [
+                { "playerId": "player-2", "seat": 2, "name": "Chef" },
+                { "playerId": "player-3", "seat": 3, "name": "Empath" }
+            ],
+            "hasDemon": true
+        })
+    );
+}
+
+#[test]
+fn drunk_shown_fortune_teller_reveals_only_targets_and_delivered_result() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Fortune", "actualCharacter": "drunk", "shownCharacter": "fortuneTeller" },
+            { "id": "player-2", "seat": 2, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath")
+    ]));
+
+    let replayed = replay_game(&game);
+    assert_eq!(replayed["ok"], true, "replay failed as {replayed}");
+    assert_eq!(
+        replayed["value"]["currentStep"]["id"],
+        "firstNight:fortuneTeller"
+    );
+
+    let proposal = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:fortuneTeller",
+                "input": { "playerIds": ["player-2", "player-5"] },
+                "deliveredResult": { "kind": "boolean", "value": false }
+            }
+        }),
+    );
+
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(
+        proposal["value"]["event"]["payload"]["information"]["deliveryContext"],
+        json!({ "type": "discretionary", "reasons": [{ "type": "drunk" }] })
+    );
+    assert_eq!(
+        proposal["value"]["revealPayload"],
+        json!({
+            "kind": "fortuneTellerInformation",
+            "targetPlayers": [
+                { "playerId": "player-2", "seat": 2, "name": "Chef" },
+                { "playerId": "player-5", "seat": 5, "name": "Imp" }
+            ],
+            "hasDemon": false
+        })
+    );
+    let reveal = proposal["value"]["revealPayload"].to_string();
+    assert!(!reveal.contains("drunk"));
+    assert!(!reveal.contains("actualCharacter"));
+    assert!(!reveal.contains("computedResult"));
+    assert!(!reveal.contains("deliveryContext"));
 }
 
 #[test]
@@ -345,6 +415,15 @@ fn undertaker_is_generated_only_for_a_matching_executed_death_and_reports_charac
             "computedResult": { "kind": "character", "characterId": "chef" },
             "deliveredResult": { "kind": "character", "characterId": "chef" },
             "deliveryContext": { "type": "fixed" }
+        })
+    );
+    assert_eq!(
+        proposal["value"]["revealPayload"],
+        json!({
+            "kind": "characterInformation",
+            "characterId": "undertaker",
+            "targetPlayer": { "playerId": "player-2", "seat": 2, "name": "Chef" },
+            "revealedCharacterId": "chef"
         })
     );
 }

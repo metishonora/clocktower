@@ -248,13 +248,57 @@ export type SpyGrimoireRevealPayload = {
   }>;
 };
 
-export type NewImpRevealPayload = {
-  kind: "newImp";
-  playerId: string;
-  characterId: "imp";
+export type RevealPlayer = { playerId: string; seat: number; name: string };
+
+export type SetupInformationRevealPayload =
+  | {
+      kind: "setupInformation";
+      characterId: "washerwoman" | "librarian" | "investigator";
+      candidatePlayers: [RevealPlayer, RevealPlayer];
+      revealedCharacterId: string;
+      zeroOutsiders: false;
+    }
+  | {
+      kind: "setupInformation";
+      characterId: "librarian";
+      candidatePlayers: [];
+      zeroOutsiders: true;
+    };
+
+export type NumericInformationRevealPayload = {
+  kind: "numericInformation";
+  characterId: "chef" | "empath";
+  value: number;
 };
 
-export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | NewImpRevealPayload;
+export type FortuneTellerInformationRevealPayload = {
+  kind: "fortuneTellerInformation";
+  targetPlayers: [RevealPlayer, RevealPlayer];
+  hasDemon: boolean;
+};
+
+export type CharacterInformationRevealPayload = {
+  kind: "characterInformation";
+  characterId: "undertaker" | "ravenkeeper";
+  targetPlayer: RevealPlayer;
+  revealedCharacterId: string;
+};
+
+export type CharacterChangeRevealPayload = {
+  kind: "characterChange";
+  playerId: string;
+  alignment: "good" | "evil";
+  characterId: string;
+};
+
+export type RoleInformationRevealPayload =
+  | SetupInformationRevealPayload
+  | NumericInformationRevealPayload
+  | FortuneTellerInformationRevealPayload
+  | CharacterInformationRevealPayload
+  | CharacterChangeRevealPayload;
+
+export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload;
 
 export type SetupDistributionRequest = {
   playerCount: number;

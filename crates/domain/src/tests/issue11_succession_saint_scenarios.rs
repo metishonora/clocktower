@@ -62,7 +62,12 @@ fn imp_self_kill_with_five_alive_fixes_healthy_scarlet_woman_as_successor() {
     );
     assert_eq!(
         confirmation["value"]["revealPayload"],
-        json!({ "kind": "newImp", "playerId": "player-6", "characterId": "imp" })
+        json!({
+            "kind": "characterChange",
+            "playerId": "player-6",
+            "alignment": "evil",
+            "characterId": "imp"
+        })
     );
 
     let transformed = replay_with_event(&game, confirmation["value"]["event"].clone());

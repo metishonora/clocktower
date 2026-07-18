@@ -172,7 +172,6 @@ function ConfirmedRevealFollowup({
   const actorTitle = actor
     ? `${actor.name}${pendingReveal.step.character ? ` · ${characterLabel(pendingReveal.step.character)}` : ""}`
     : stepTitle(pendingReveal.step);
-  const fortuneTeller = pendingReveal.step.character === "fortuneTeller" && !isSpyGrimoire;
 
   return (
     <>
@@ -186,7 +185,7 @@ function ConfirmedRevealFollowup({
       </div>
 
       <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
-        {!isSpyGrimoire && !fortuneTeller ? (
+        {!isSpyGrimoire ? (
           <div className="confirmedRevealActor">
             <span>{actor?.seat ?? "•"}</span>
             <div>
@@ -200,13 +199,7 @@ function ConfirmedRevealFollowup({
           </div>
         ) : null}
 
-        {fortuneTeller ? (
-          <section className="fortuneTellerResult" aria-label="점쟁이 결과">
-            <h3>점쟁이 결과</h3>
-            <p><span>결과</span><strong>{"valueKo" in pendingReveal.payload && pendingReveal.payload.valueKo === "예" ? "악마 있음" : "악마 없음"}</strong></p>
-            <button type="button" className="primaryButton" onClick={() => onShowReveal(pendingReveal.payload)} disabled={busy}>Reveal</button>
-          </section>
-        ) : isSpyGrimoire ? (
+        {isSpyGrimoire ? (
           <button
             type="button"
             className="primaryButton"
@@ -509,6 +502,7 @@ function CurrentStepPane({
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
+                    {currentPlayer.actualCharacter === "drunk" ? <em>실제 술꾼</em> : null}
                     {registrationSensitive ? <em>등록 판정</em> : null}
                   </div>
                   {currentCharacter?.abilitySummary ? <p>{currentCharacter.abilitySummary}</p> : null}
