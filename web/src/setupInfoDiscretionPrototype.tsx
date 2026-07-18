@@ -255,7 +255,7 @@ export function SetupInfoDiscretionPrototype() {
             </div>
             <span className="phaseBadge">10명</span>
           </div>
-          <Grimoire players={prototypePlayers} draft={grimoireDraft} onDraftChange={() => undefined} busy={false} />
+          <Grimoire players={prototypePlayers} draft={grimoireDraft} busy={false} />
         </section>
 
         <aside className="panel discretionActionPanel">
@@ -364,7 +364,7 @@ function ChefRegistrationPrototype({
           </div>
           <span className="phaseBadge">10명</span>
         </div>
-        <Grimoire players={prototypePlayers} draft={grimoireDraft} onDraftChange={() => undefined} busy={false} />
+        <Grimoire players={prototypePlayers} draft={grimoireDraft} busy={false} />
       </section>
 
       <aside className="panel discretionActionPanel">

@@ -55,7 +55,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 하린" });
-    const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    const grimoire = screen.getByLabelText("라이브 그리모어 좌석 맵");
     const poisonedSeat = within(grimoire).getByRole("button", { name: /2.*민준|민준/ });
     const protectedSeat = within(grimoire).getByRole("button", { name: /3.*서연|서연/ });
     const poisonBadge = within(poisonedSeat).getByText("중독");
@@ -237,8 +237,7 @@ describe("ongoing-night production UI", () => {
     expect(within(result).getByText("악마 있음")).toBeTruthy();
     expect(within(result).getByRole("button", { name: "Reveal" })).toBeTruthy();
     expect(within(result).queryByText(/정보 전달|계산값|2명/)).toBeNull();
-    const layoutButton = screen.getByRole("button", { name: "위치 조정" }) as HTMLButtonElement;
-    expect(layoutButton.disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });
 
   test("renders the following-Day death announcement as death icon, seat, and name only", async () => {

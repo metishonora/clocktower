@@ -26,7 +26,7 @@ export function SeatLayoutControls({
 
   return (
     <div className="seatLayoutToolbar">
-      <div className="seatLayoutPresets" aria-label="좌석 배치 프리셋">
+      <div className="seatLayoutPresets" role="group" aria-label="좌석 배치 프리셋">
         {seatLayoutPresets.map((preset) => (
           <button
             type="button"

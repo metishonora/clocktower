@@ -220,7 +220,7 @@ export function FirstNightSuggestionPrototype({
       <div className="suggestionPrototypeWorkspace">
         <section className="panel grimoire suggestionPrototypeGrimoire">
           <div className="sectionHeader"><div><p className="eyebrow">그리모어 · 실제 상태</p><h2>Trouble Brewing</h2></div><span className="phaseBadge">{scenario.players.length}명</span></div>
-          <Grimoire players={scenario.players} draft={grimoireDraft} onDraftChange={() => undefined} busy={false} />
+          <Grimoire players={scenario.players} draft={grimoireDraft} busy={false} />
         </section>
 
         <aside className="panel suggestionPrototypeActionPanel">

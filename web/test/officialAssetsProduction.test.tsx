@@ -36,7 +36,7 @@ test("production live play renders official icons on seats and the current actor
 
   const actor = await screen.findByLabelText("현재 행동자");
   expect(within(actor).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+  const grimoire = screen.getByLabelText("라이브 그리모어 좌석 맵");
   expect(within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
   expect(screen.getByLabelText("Community Created Content 안내")).toBeTruthy();
 });

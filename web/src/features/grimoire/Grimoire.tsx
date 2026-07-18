@@ -2,22 +2,18 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerE
 import type { CoreResult, Player, PlayerAnnotationsInput, Proposal, RuleState } from "../../core/types";
 import {
   characterLabel,
-  findOverlappingSeats,
   seatLayoutPositions,
-  updateSeatPosition,
   type SetupDraft,
 } from "../../setupDraft";
 import { voteStatusForPlayer } from "../../voting";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { CharacterIcon } from "../../components/CharacterIcon";
-import { SeatLayoutControls, startSeatDrag } from "./SeatLayoutControls";
 import { PlayerAnnotationsDialog } from "./PlayerAnnotationsDialog";
 import { playerAnnotationBadges } from "./playerAnnotations";
 
 export function Grimoire({
   players,
   draft,
-  onDraftChange,
   busy,
   nominationVoting,
   setupInformationSelection,
@@ -28,7 +24,6 @@ export function Grimoire({
 }: {
   players: Player[];
   draft: SetupDraft;
-  onDraftChange: (draft: SetupDraft) => void;
   busy: boolean;
   nominationVoting?: {
     draft: NominationDraft;
@@ -57,19 +52,17 @@ export function Grimoire({
     annotations: PlayerAnnotationsInput,
   ) => Promise<CoreResult<Proposal> | undefined>;
 }) {
-  const [layoutEditing, setLayoutEditing] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
   const annotationLongPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const annotationLongPressActivated = useRef(false);
   const seats = players.length > 0 ? players : draft.players;
   const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);
-  const overlapSeats = findOverlappingSeats(draft.seatPositions);
   const editingPlayer = players.find((player) => player.id === editingPlayerId);
 
   useEffect(() => () => window.clearTimeout(annotationLongPressTimer.current), []);
 
   function startAnnotationLongPress(event: PointerEvent<HTMLButtonElement>, player?: Player) {
-    if (!player || !onUpdatePlayerAnnotations || busy || layoutEditing) return;
+    if (!player || !onUpdatePlayerAnnotations || busy) return;
     annotationLongPressActivated.current = false;
     window.clearTimeout(annotationLongPressTimer.current);
     annotationLongPressTimer.current = window.setTimeout(() => {
@@ -85,18 +78,11 @@ export function Grimoire({
 
   return (
     <>
-      <SeatLayoutControls
-        draft={draft}
-        layoutEditing={layoutEditing}
-        busy={busy}
-        onChange={onDraftChange}
-        onLayoutEditingChange={setLayoutEditing}
-      />
       <div
-        className={`seatMap confirmedSeatMap adjustableSeatMap ${layoutEditing ? "layoutEditing" : ""} ${
+        className={`seatMap confirmedSeatMap adjustableSeatMap ${
           seats.length >= 12 ? "compactSeats" : ""
         }`}
-        aria-label="조정 가능한 그리모어 좌석 맵"
+        aria-label="라이브 그리모어 좌석 맵"
       >
         <div className="draftLayoutTableMark" aria-hidden="true">
           테이블
@@ -121,10 +107,10 @@ export function Grimoire({
             playerId && (!phasePlayerSelection?.allowedPlayerIds || phasePlayerSelection.allowedPlayerIds.includes(playerId)),
           );
           const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
-          const votingDisabled = busy || layoutEditing || !playerId || Boolean(voteStatus?.disabled);
+          const votingDisabled = busy || !playerId || Boolean(voteStatus?.disabled);
           const setupInformationDisabled =
-            busy || layoutEditing || !playerId || Boolean(setupInformationSelection?.disabled);
-          const phaseSelectionDisabled = busy || layoutEditing || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
+            busy || !playerId || Boolean(setupInformationSelection?.disabled);
+          const phaseSelectionDisabled = busy || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
           const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
           const automaticEdge = position.x < 50 ? "edgeLeft" : "edgeRight";
           const manualBadges = playerAnnotationBadges(confirmedPlayer);
@@ -142,7 +128,6 @@ export function Grimoire({
               annotationLongPressActivated.current = false;
               return;
             }
-            if (layoutEditing) return;
             if (nominationVoting) {
               toggleVote();
               return;
@@ -161,8 +146,8 @@ export function Grimoire({
               <button
                 type="button"
                 className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
-                  overlapSeats.has(seat.seat) ? "overlap" : ""
-                } ${votingSelected ? "selected voteSelected" : ""} ${nominationVoting ? "votingEnabled" : ""} ${
+                  votingSelected ? "selected voteSelected" : ""
+                } ${nominationVoting ? "votingEnabled" : ""} ${
                   voteStatus?.className ?? ""
                 } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
                   setupInformationSelection ? "setupInformationEnabled" : ""
@@ -171,16 +156,7 @@ export function Grimoire({
                 }`}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
                 onClick={handleSeatClick}
-                onPointerDown={(event) => {
-                  startSeatDrag({
-                    event,
-                    enabled: layoutEditing,
-                    busy,
-                    initialPosition: position,
-                    onMove: (position) => onDraftChange(updateSeatPosition(draft, seat.seat, position)),
-                  });
-                  startAnnotationLongPress(event, confirmedPlayer);
-                }}
+                onPointerDown={(event) => startAnnotationLongPress(event, confirmedPlayer)}
                 onPointerUp={cancelAnnotationLongPress}
                 onPointerCancel={cancelAnnotationLongPress}
                 onPointerLeave={cancelAnnotationLongPress}
@@ -244,7 +220,7 @@ export function Grimoire({
                   className={`slayerAbilityIcon ${currentSlayerAbility.spent ? "spent" : ""}`}
                   style={{ left: `${position.x}%`, top: `${position.y}%` }}
                   aria-label={`${seat.seat}번 ${seat.name} 학살자 능력 사용`}
-                  disabled={!currentSlayerAbility.enabled || busy || layoutEditing}
+                  disabled={!currentSlayerAbility.enabled || busy}
                   onClick={(event) => currentSlayerAbility.onUse(event.currentTarget)}
                 >
                   S

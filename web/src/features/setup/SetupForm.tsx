@@ -32,7 +32,7 @@ import {
   type SetupDraft,
 } from "../../setupDraft";
 import { EventLog } from "../event-log/EventLog";
-import { SeatLayoutControls, startSeatDrag } from "../grimoire/SeatLayoutControls";
+import { SeatLayoutControls, startSeatDrag } from "./SeatLayoutControls";
 
 export function SetupForm({
   draft,

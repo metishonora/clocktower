@@ -50,7 +50,6 @@ function renderGrimoire({
     <Grimoire
       players={roster}
       draft={createSetupDraftFromConfirmedPlayers(roster)}
-      onDraftChange={vi.fn()}
       busy={false}
       ruleState={{
         unannouncedNightDeathPlayerIds: [],

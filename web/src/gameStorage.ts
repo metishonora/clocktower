@@ -1,4 +1,4 @@
-import type { GameFile } from "./core/types.js";
+import type { GameEvent, GameFile, SeatLayoutState } from "./core/types.js";
 import { parseGameEvent } from "./core/validation.js";
 
 const DB_NAME = "clocktower";
@@ -101,16 +101,78 @@ function validateGameFile(value: unknown): GameFile {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
 
+  const events = value.game.events.map(parseGameEvent);
+  const seatLayout = parseSeatLayout(value.ui, events);
+
   return {
     schemaVersion: 2,
+    ...(seatLayout ? { ui: { seatLayout } } : {}),
     game: {
       id: value.game.id,
       name: value.game.name,
       createdAt: value.game.createdAt,
       updatedAt: value.game.updatedAt,
-      events: value.game.events.map(parseGameEvent),
+      events,
     },
   };
+}
+
+function parseSeatLayout(ui: unknown, events: GameEvent[]): SeatLayoutState | undefined {
+  if (ui === undefined) return undefined;
+  if (!isRecord(ui)) throw invalidSeatLayout();
+  if (ui.seatLayout === undefined) return undefined;
+  if (!isRecord(ui.seatLayout)) throw invalidSeatLayout();
+
+  const { preset, positions } = ui.seatLayout;
+  if (
+    preset !== "circle" &&
+    preset !== "oval" &&
+    preset !== "longTable" &&
+    preset !== "horseshoe"
+  ) {
+    throw invalidSeatLayout();
+  }
+  if (!isRecord(positions)) throw invalidSeatLayout();
+
+  const setupEvent = events.find((event) => event.type === "setupConfirmed");
+  if (!setupEvent) throw invalidSeatLayout();
+  const expectedSeats = new Set(setupEvent.payload.players.map((player) => player.seat));
+  const parsedPositions: SeatLayoutState["positions"] = {};
+
+  for (const [seatKey, position] of Object.entries(positions)) {
+    const seat = Number(seatKey);
+    if (
+      !Number.isInteger(seat) ||
+      seat < 1 ||
+      seat > 15 ||
+      !expectedSeats.has(seat) ||
+      !isRecord(position) ||
+      typeof position.x !== "number" ||
+      !Number.isFinite(position.x) ||
+      position.x < 8 ||
+      position.x > 92 ||
+      typeof position.y !== "number" ||
+      !Number.isFinite(position.y) ||
+      position.y < 12 ||
+      position.y > 88
+    ) {
+      throw invalidSeatLayout();
+    }
+    parsedPositions[seat] = { x: position.x, y: position.y };
+  }
+
+  if (
+    Object.keys(parsedPositions).length !== expectedSeats.size ||
+    [...expectedSeats].some((seat) => parsedPositions[seat] === undefined)
+  ) {
+    throw invalidSeatLayout();
+  }
+
+  return { preset, positions: parsedPositions };
+}
+
+function invalidSeatLayout(): Error {
+  return new Error("좌석 배치 정보가 올바르지 않습니다.");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

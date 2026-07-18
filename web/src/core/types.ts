@@ -1,5 +1,8 @@
 export type GameFile = {
   schemaVersion: 2;
+  ui?: {
+    seatLayout?: SeatLayoutState;
+  };
   game: {
     id: string;
     name: string;
@@ -7,6 +10,20 @@ export type GameFile = {
     updatedAt: string;
     events: GameEvent[];
   };
+};
+
+export type SeatPosition = {
+  x: number;
+  y: number;
+};
+
+export type SeatPositions = Record<number, SeatPosition>;
+
+export type SeatLayoutPreset = "circle" | "oval" | "longTable" | "horseshoe";
+
+export type SeatLayoutState = {
+  preset: SeatLayoutPreset;
+  positions: SeatPositions;
 };
 
 export type SetupPlayerInput = {

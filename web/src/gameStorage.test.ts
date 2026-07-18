@@ -60,6 +60,64 @@ test("import validates basic GameFile shape and schemaVersion", () => {
   }
 });
 
+test("confirmed seat-layout UI metadata survives JSON export and import", () => {
+  const layout = {
+    preset: "longTable",
+    positions: {
+      1: { x: 41, y: 31 },
+      2: { x: 72, y: 24 },
+      3: { x: 76, y: 68 },
+      4: { x: 34, y: 77 },
+      5: { x: 17, y: 48 },
+    },
+  };
+  const gameWithLayout = {
+    ...gameFile,
+    game: {
+      ...gameFile.game,
+      events: [
+        {
+          id: "setup-event",
+          type: "setupConfirmed",
+          phase: "setup",
+          payload: {
+            players: Object.keys(layout.positions).map((seat) => ({
+              id: `player-${seat}`,
+              seat: Number(seat),
+              name: `Player ${seat}`,
+              actualCharacter: "washerwoman",
+            })),
+          },
+          summary: "초기 설정 확정",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    },
+    ui: { seatLayout: layout },
+  } as GameFile;
+
+  const imported = importGameFileJson(exportGameFileJson(gameWithLayout));
+
+  deepEqual((imported as unknown as { ui?: unknown }).ui, { seatLayout: layout });
+});
+
+test("import rejects malformed seat-layout UI metadata without weakening legacy files", () => {
+  deepEqual(importGameFileJson(JSON.stringify(gameFile)), gameFile);
+  const invalidLayouts = [
+    { preset: "spiral", positions: { 1: { x: 41, y: 31 } } },
+    { preset: "circle", positions: { 1: { x: 200, y: 31 } } },
+  ];
+
+  for (const seatLayout of invalidLayouts) {
+    try {
+      importGameFileJson(JSON.stringify({ ...gameFile, ui: { seatLayout } }));
+      throw new Error("expected seat-layout validation to fail");
+    } catch (error) {
+      equal(error instanceof Error ? error.message : "", "좌석 배치 정보가 올바르지 않습니다.");
+    }
+  }
+});
+
 test("audit information survives save, export, and import without a replay-state copy", async () => {
   const auditedGame: GameFile = structuredClone(gameFile);
   auditedGame.game.events.push({

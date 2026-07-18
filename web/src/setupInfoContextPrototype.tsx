@@ -176,7 +176,6 @@ export function SetupInfoContextPrototype() {
           <Grimoire
             players={prototypePlayers}
             draft={grimoireDraft}
-            onDraftChange={() => undefined}
             busy={false}
           />
         </section>

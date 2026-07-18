@@ -2,8 +2,8 @@
 
 ## Status
 
-Awaiting product review. This development-only prototype must not be used as production behavior
-until the product owner approves the setup/live-play boundary.
+Approved by the product owner on 2026-07-18. Production implementation may follow this boundary,
+including persistent confirmed seat coordinates through optional `GameFile` UI metadata.
 
 ## Candidate direction
 
@@ -20,8 +20,8 @@ until the product owner approves the setup/live-play boundary.
 - The `겹침 상태 보기` checkbox is a development scenario control rendered only on the setup
   candidate. It is not proposed production copy.
 - JSON and new-game controls are visual placeholders.
-- State is intentionally in-memory. Production persistence through optional `GameFile` UI metadata
-  remains gated by approval after this prototype review.
+- State is intentionally in-memory. The approved production implementation persists confirmed
+  layout data through optional `GameFile` UI metadata; this prototype does not exercise storage.
 
 ## Review checklist
 

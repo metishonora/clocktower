@@ -334,7 +334,6 @@ export function ClocktowerApp({
               <Grimoire
                 players={gameStore.players}
                 draft={gameStore.setupDraft}
-                onDraftChange={gameStore.setSetupDraft}
                 busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
                 ruleState={gameStore.ruleState}
                 onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}

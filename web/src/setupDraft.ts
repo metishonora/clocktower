@@ -1,3 +1,12 @@
+import type {
+  SeatLayoutPreset,
+  SeatLayoutState,
+  SeatPosition,
+  SeatPositions,
+} from "./core/types.js";
+
+export type { SeatLayoutPreset, SeatLayoutState, SeatPosition, SeatPositions } from "./core/types.js";
+
 export type CharacterKind = "Townsfolk" | "Outsider" | "Minion" | "Demon";
 
 export type Character = {
@@ -14,15 +23,6 @@ export type DraftPlayer = {
   actualCharacter?: string;
   shownCharacter?: string;
 };
-
-export type SeatPosition = {
-  x: number;
-  y: number;
-};
-
-export type SeatPositions = Record<number, SeatPosition>;
-
-export type SeatLayoutPreset = "circle" | "oval" | "longTable" | "horseshoe";
 
 export type SetupDraft = {
   players: DraftPlayer[];
@@ -118,20 +118,25 @@ export function createSetupDraft(playerCount = 5): SetupDraft {
   };
 }
 
-export function createSetupDraftFromConfirmedPlayers(players: ConfirmedSetupPlayer[]): SetupDraft {
+export function createSetupDraftFromConfirmedPlayers(
+  players: ConfirmedSetupPlayer[],
+  seatLayout?: SeatLayoutState,
+): SetupDraft {
   const draftPlayers = confirmedPlayersToDraftPlayers(players);
 
   return {
     players: draftPlayers,
     selectedSeat: draftPlayers[0]?.seat ?? 1,
-    seatLayoutPreset: "circle",
-    seatPositions: seatLayoutPositions(draftPlayers.length || 5, "circle"),
+    seatLayoutPreset: seatLayout?.preset ?? "circle",
+    seatPositions:
+      seatLayout?.positions ?? seatLayoutPositions(draftPlayers.length || 5, "circle"),
   };
 }
 
 export function syncSetupDraftWithConfirmedPlayers(
   draft: SetupDraft,
   players: ConfirmedSetupPlayer[],
+  seatLayout?: SeatLayoutState,
 ): SetupDraft {
   if (players.length === 0) return draft;
 
@@ -146,9 +151,12 @@ export function syncSetupDraftWithConfirmedPlayers(
     selectedSeat: nextPlayers.some((player) => player.seat === draft.selectedSeat)
       ? draft.selectedSeat
       : nextPlayers[0]?.seat ?? 1,
-    seatPositions: sameSeats
-      ? resizeSeatPositions(draft.seatPositions, nextPlayers.length, draft.seatLayoutPreset)
-      : seatLayoutPositions(nextPlayers.length, draft.seatLayoutPreset),
+    seatLayoutPreset: seatLayout?.preset ?? draft.seatLayoutPreset,
+    seatPositions:
+      seatLayout?.positions ??
+      (sameSeats
+        ? resizeSeatPositions(draft.seatPositions, nextPlayers.length, draft.seatLayoutPreset)
+        : seatLayoutPositions(nextPlayers.length, draft.seatLayoutPreset)),
   };
 }
 

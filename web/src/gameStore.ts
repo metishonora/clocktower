@@ -12,6 +12,7 @@ import type {
   Proposal,
   RevealPayload,
   ReplayState,
+  SeatLayoutState,
   SetupDistribution,
 } from "./core/types.js";
 import {
@@ -89,6 +90,13 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
             setStorageReady(true);
             return;
           }
+          setSetupDraft((current) =>
+            syncSetupDraftFromReplayState(
+              current,
+              storedReplay.value,
+              storedGameFile.ui?.seatLayout,
+            ),
+          );
           setReplayResult(storedReplay);
           setGameFile(storedGameFile);
         }
@@ -195,8 +203,10 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
   useEffect(() => {
     if (!setupConfirmed) return;
-    setSetupDraft((current) => syncSetupDraftFromReplayState(current, replayState));
-  }, [replayState, setupConfirmed]);
+    setSetupDraft((current) =>
+      syncSetupDraftFromReplayState(current, replayState, gameFile.ui?.seatLayout),
+    );
+  }, [gameFile.ui?.seatLayout, replayState, setupConfirmed]);
 
   useEffect(() => {
     if (hasConfirmedEvents) return;
@@ -283,7 +293,10 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
     if (!result.ok) return;
 
-    appendProposalEvent(result.value);
+    appendProposalEvent(result.value, {
+      preset: setupDraft.seatLayoutPreset,
+      positions: structuredClone(setupDraft.seatPositions),
+    });
   }
 
   async function confirmCurrentStep(confirmation: PhaseStepConfirmation = {}) {
@@ -425,9 +438,10 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     appendProposalEvent(result.value);
   }
 
-  function appendProposalEvent(proposal: Proposal) {
+  function appendProposalEvent(proposal: Proposal, seatLayout?: SeatLayoutState) {
     setGameFile((current) => ({
       ...current,
+      ...(seatLayout ? { ui: { seatLayout } } : {}),
       game: {
         ...current.game,
         updatedAt: new Date().toISOString(),
@@ -474,14 +488,16 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setLoadError(undefined);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
-    setGameFile((current) => ({
-      ...current,
-      game: {
+    setGameFile((current) => {
+      const nextGame = {
         ...current.game,
         updatedAt: new Date().toISOString(),
         events: current.game.events.slice(0, -1),
-      },
-    }));
+      };
+      return expectedType === "setup"
+        ? { schemaVersion: 2, game: nextGame }
+        : { ...current, game: nextGame };
+    });
     return true;
   }
 
@@ -493,7 +509,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     if (!canRecoverConfirmedSetup || !latestEvent) return;
     if (!window.confirm("설정 확정을 되돌리고 다시 수정할까요?")) return;
     if (removeLatestEvent(latestEvent.id, "setup") && players.length > 0) {
-      setSetupDraft(createSetupDraftFromConfirmedPlayers(players));
+      setSetupDraft(createSetupDraftFromConfirmedPlayers(players, gameFile.ui?.seatLayout));
     }
   }
 
@@ -521,7 +537,13 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         return;
       }
       setReplayResult(importedReplay);
-      setSetupDraft((current) => syncSetupDraftFromReplayState(current, importedReplay.value));
+      setSetupDraft((current) =>
+        syncSetupDraftFromReplayState(
+          current,
+          importedReplay.value,
+          importedGameFile.ui?.seatLayout,
+        ),
+      );
       setStorageError(undefined);
       undoReplayTargetEventCount.current = undefined;
       setUndoReplayPending(false);
