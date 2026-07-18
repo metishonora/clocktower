@@ -158,8 +158,8 @@ export function MobilePanelPrototype() {
             <span>5번 지우 사망 · 유령표 있음</span>
             <span>오늘 지명 가능 · 처형 없음</span>
           </section>
+          <CommunityContentNotice />
         </section>
-        <CommunityContentNotice />
       </div>
 
       <section className="panel mobilePanelPrototypeSheet">

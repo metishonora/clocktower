@@ -77,3 +77,14 @@ test("recomputes the current state when the viewport changes without persisting 
   expect(storageGet).not.toHaveBeenCalled();
   expect(storageSet).not.toHaveBeenCalled();
 });
+
+test("keeps the CCC notice in the Grimoire document flow instead of floating above the panel", async () => {
+  renderPrototype();
+
+  const prototype = await screen.findByRole("main", { name: "모바일 패널 전환 프로토타입" });
+  const grimoire = within(prototype).getByText("Trouble Brewing").closest(".mobilePanelPrototypeGrimoire");
+  const notice = within(prototype).getByLabelText("Community Created Content 안내");
+
+  expect(grimoire).not.toBeNull();
+  expect(notice.parentElement).toBe(grimoire);
+});

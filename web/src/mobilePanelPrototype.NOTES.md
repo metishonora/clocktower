@@ -7,4 +7,4 @@ This development-only surface compares two interactions on the same representati
 
 Open `?prototype=mobile-panel`. The prototype intentionally does not persist state and resets each variant to the control-focused height. Exact heights, the final interaction, and the affordance shape require product approval before production implementation.
 
-Review on iPhone and iPad portrait sizes. Check the independent panel scroll, underlying Grimoire visibility, CCC notice spacing, safe-area padding, and portrait/landscape transitions.
+Review on iPhone and iPad portrait sizes. Check the independent panel scroll, underlying Grimoire visibility, the CCC notice placed in the Grimoire's document-flow footer, safe-area padding, and portrait/landscape transitions.

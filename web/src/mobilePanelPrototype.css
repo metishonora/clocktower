@@ -95,7 +95,14 @@
 .mobilePanelPrototypeLog span { color: var(--muted); font-size: 0.76rem; }
 
 .mobilePanelPrototype .communityContentNotice {
-  margin: 10px 0 calc(var(--prototype-panel-height) + 14px);
+  position: static;
+  margin: 14px -16px -16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: rgba(238, 232, 220, 0.42);
+  box-shadow: none;
+  padding: 10px 16px;
 }
 
 .mobilePanelPrototypeSheet {
