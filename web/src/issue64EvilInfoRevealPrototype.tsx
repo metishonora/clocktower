@@ -22,13 +22,13 @@ const copy = {
   minion: {
     tab: "하수인 정보",
     operationalTitle: "하수인 깨우기 · 악마와 동료 하수인 확인",
-    revealTitle: "하수인 정보 · 악마와 동료 하수인을 확인하세요",
+    revealTitle: "악마와 동료 하수인을 확인하세요",
     contentLabel: "하수인 정보 내용",
   },
   demon: {
     tab: "악마 정보",
     operationalTitle: "악마 깨우기 · 하수인과 블러프 확인",
-    revealTitle: "악마 정보 · 하수인과 블러프를 확인하세요",
+    revealTitle: "하수인과 블러프를 확인하세요",
     contentLabel: "악마 정보 내용",
   },
 } as const;
