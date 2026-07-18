@@ -8,9 +8,30 @@ import {
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
   setupInfoZeroOutsidersAvailable,
+  stepTitle,
   stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("evil-information steps use operational Korean titles instead of internal identifiers", () => {
+  const baseStep: PhaseStep = {
+    id: "firstNight:minionInfo",
+    phase: "firstNight",
+    stepType: "evilInfo",
+    requiredInput: { kind: "none", target: "players", optional: false },
+    canSkip: false,
+  };
+
+  equal(stepTitle(baseStep), "하수인 깨우기 · 악마와 동료 하수인 확인");
+  equal(
+    stepTitle({
+      ...baseStep,
+      id: "firstNight:demonInfo",
+      requiredInput: { kind: "characterIds", target: "characters", minSelections: 0, maxSelections: 3, optional: true },
+    }),
+    "악마 깨우기 · 하수인과 블러프 확인",
+  );
+});
 
 test("current action prompts use character wording, input-shape fallbacks, and no result question", () => {
   const baseStep: PhaseStep = {

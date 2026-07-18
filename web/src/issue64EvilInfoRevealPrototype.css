@@ -1,0 +1,320 @@
+.issue64Prototype,
+.issue64PlayerReveal {
+  min-height: 100vh;
+  color: #20332f;
+  font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
+}
+
+.issue64Prototype {
+  background:
+    radial-gradient(circle at 15% 8%, rgba(180, 134, 69, 0.16), transparent 28rem),
+    #f3efe7;
+  padding: clamp(1rem, 3vw, 2.75rem);
+}
+
+.issue64PrototypeHeader {
+  align-items: end;
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin: 0 auto 2rem;
+  max-width: 72rem;
+}
+
+.issue64PrototypeHeader p,
+.issue64Followup header p,
+.issue64RevealHeading p {
+  color: #84652f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  margin: 0 0 0.55rem;
+  text-transform: uppercase;
+}
+
+.issue64PrototypeHeader h1 {
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  margin: 0;
+}
+
+.issue64PrototypeControls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.issue64PrototypeControls nav {
+  background: #e4ded2;
+  border-radius: 999px;
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.24rem;
+}
+
+.issue64PrototypeControls button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.issue64PrototypeControls nav button {
+  background: transparent;
+  border-radius: 999px;
+  color: #52605c;
+  padding: 0.62rem 0.9rem;
+}
+
+.issue64PrototypeControls nav button[aria-pressed="true"] {
+  background: #fffdf8;
+  box-shadow: 0 2px 10px rgba(32, 51, 47, 0.11);
+  color: #173f36;
+}
+
+.issue64StateToggle {
+  background: transparent;
+  border: 1px solid #bdb3a3 !important;
+  border-radius: 999px;
+  color: #52605c;
+  padding: 0.62rem 0.9rem;
+}
+
+.issue64StateToggle[aria-pressed="true"] {
+  background: #6f421f;
+  border-color: #6f421f !important;
+  color: white;
+}
+
+.issue64StorytellerCanvas {
+  align-items: center;
+  background: #e8e2d7;
+  border: 1px solid #d5ccbd;
+  border-radius: 1.4rem;
+  display: grid;
+  min-height: min(34rem, 68vh);
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.issue64Followup {
+  background: #fffdf8;
+  border: 1px solid #d8d0c4;
+  border-radius: 1.15rem;
+  box-shadow: 0 18px 50px rgba(42, 38, 31, 0.11);
+  margin: auto;
+  max-width: 46rem;
+  padding: clamp(1.35rem, 4vw, 2.5rem);
+  width: 100%;
+}
+
+.issue64Followup h2 {
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.45rem, 3.5vw, 2.15rem);
+  line-height: 1.28;
+  margin: 0;
+}
+
+.issue64FollowupActions {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 2rem;
+}
+
+.issue64FollowupActions button,
+.issue64RevealClose {
+  border-radius: 0.72rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 3.2rem;
+  padding: 0.8rem 1rem;
+}
+
+.issue64Primary {
+  background: #173f36;
+  border: 1px solid #173f36;
+  color: white;
+}
+
+.issue64Secondary {
+  background: white;
+  border: 1px solid #a89d8c;
+  color: #283c37;
+}
+
+.issue64Secondary:disabled {
+  background: #e8e3da;
+  border-color: #d7d0c4;
+  color: #8b8a84;
+  cursor: not-allowed;
+}
+
+.issue64Waiting {
+  color: #6f421f;
+  font-size: 0.88rem;
+  font-weight: 750;
+  margin: 0.85rem 0 0;
+  text-align: right;
+}
+
+.issue64PlayerReveal {
+  align-content: center;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(207, 170, 99, 0.26), transparent 42rem),
+    linear-gradient(160deg, #1f2524, #0f1917 58%, #111311);
+  color: #f9f4e8;
+  display: grid;
+  justify-items: center;
+  padding: clamp(1.25rem, 5vw, 4rem);
+}
+
+.issue64RevealHeading {
+  margin-bottom: clamp(1.2rem, 3vh, 2rem);
+  max-width: 58rem;
+  text-align: center;
+}
+
+.issue64RevealHeading p {
+  color: #cfab66;
+}
+
+.issue64RevealHeading h1 {
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(1.75rem, 5vw, 3.65rem);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.issue64RevealCard {
+  background: #f8f4eb;
+  border: 1px solid rgba(219, 187, 119, 0.62);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  color: #1d302b;
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2.25rem);
+  max-width: 52rem;
+  padding: clamp(1.2rem, 4vw, 2.35rem);
+  width: 100%;
+}
+
+.issue64RevealGroup h2 {
+  color: #775727;
+  font-size: 0.79rem;
+  letter-spacing: 0.13em;
+  margin: 0 0 0.8rem;
+  text-transform: uppercase;
+}
+
+.issue64IdentityGrid {
+  display: grid;
+  gap: 0.72rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.issue64IdentityGrid article {
+  align-items: center;
+  background: #fffefa;
+  border: 1px solid #d8d0c2;
+  border-radius: 0.9rem;
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+}
+
+.issue64IdentityGrid article > span {
+  align-items: center;
+  background: #263f39;
+  border-radius: 50%;
+  color: #fff9ed;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-family: Georgia, serif;
+  font-size: 1.18rem;
+  font-weight: 800;
+  height: 2.65rem;
+  justify-content: center;
+  width: 2.65rem;
+}
+
+.issue64IdentityGrid article.demon {
+  border-color: #b97b70;
+}
+
+.issue64IdentityGrid article.demon > span {
+  background: #7f2f2d;
+}
+
+.issue64IdentityGrid article strong {
+  font-size: 1.08rem;
+}
+
+.issue64Bluffs {
+  border-top: 1px solid #ddd4c5;
+  padding-top: 1.35rem;
+}
+
+.issue64BluffGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.issue64BluffGrid article {
+  align-items: center;
+  background: #fffefa;
+  border: 1px solid #d8d0c2;
+  border-radius: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  text-align: center;
+}
+
+.issue64BluffGrid img {
+  height: clamp(3.4rem, 9vw, 5.25rem);
+  object-fit: contain;
+  width: clamp(3.4rem, 9vw, 5.25rem);
+}
+
+.issue64RevealClose {
+  background: transparent;
+  border: 1px solid rgba(244, 232, 204, 0.45);
+  color: #f7eedc;
+  margin-top: clamp(1.2rem, 3vh, 2rem);
+  max-width: 32rem;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .issue64PrototypeHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .issue64PrototypeControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .issue64PrototypeControls nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .issue64FollowupActions,
+  .issue64BluffGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .issue64Waiting {
+    text-align: left;
+  }
+}

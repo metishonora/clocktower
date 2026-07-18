@@ -249,6 +249,19 @@ export type SpyGrimoireRevealPayload = {
 };
 
 export type RevealPlayer = { playerId: string; seat: number; name: string };
+export type RevealIdentity = { seat: number; name: string };
+
+export type EvilInformationRevealPayload =
+  | {
+      kind: "minionInformation";
+      demonPlayers: RevealIdentity[];
+      minionPlayers: RevealIdentity[];
+    }
+  | {
+      kind: "demonInformation";
+      minionPlayers: RevealIdentity[];
+      bluffCharacterIds: string[];
+    };
 
 export type SetupInformationRevealPayload =
   | {
@@ -296,7 +309,8 @@ export type RoleInformationRevealPayload =
   | NumericInformationRevealPayload
   | FortuneTellerInformationRevealPayload
   | CharacterInformationRevealPayload
-  | CharacterChangeRevealPayload;
+  | CharacterChangeRevealPayload
+  | EvilInformationRevealPayload;
 
 export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload;
 

@@ -224,19 +224,23 @@ pub(crate) struct Proposal {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub(crate) enum RevealPayload {
-    Text {
-        #[serde(rename = "messageKo")]
-        message_ko: String,
-        #[serde(rename = "labelKo", skip_serializing_if = "Option::is_none")]
-        label_ko: Option<String>,
-        #[serde(rename = "valueKo", skip_serializing_if = "Option::is_none")]
-        value_ko: Option<String>,
-        #[serde(rename = "previewMessageKo", skip_serializing_if = "Option::is_none")]
-        preview_message_ko: Option<String>,
-    },
     SpyGrimoire {
         kind: &'static str,
         players: Vec<crate::model::InformationPlayer>,
+    },
+    MinionInformation {
+        kind: &'static str,
+        #[serde(rename = "demonPlayers")]
+        demon_players: Vec<RevealIdentity>,
+        #[serde(rename = "minionPlayers")]
+        minion_players: Vec<RevealIdentity>,
+    },
+    DemonInformation {
+        kind: &'static str,
+        #[serde(rename = "minionPlayers")]
+        minion_players: Vec<RevealIdentity>,
+        #[serde(rename = "bluffCharacterIds")]
+        bluff_character_ids: Vec<String>,
     },
     SetupInformation {
         kind: &'static str,
@@ -288,6 +292,13 @@ pub(crate) enum RevealPayload {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RevealPlayer {
     pub(crate) player_id: String,
+    pub(crate) seat: u8,
+    pub(crate) name: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RevealIdentity {
     pub(crate) seat: u8,
     pub(crate) name: String,
 }

@@ -2157,6 +2157,123 @@ select {
 .roleInformationAlignment.good { background: #23594b; }
 .roleInformationAlignment.evil { background: #8c2f29; }
 
+.evilInformationReveal {
+  align-content: center;
+  gap: clamp(18px, 3vw, 30px);
+}
+
+.evilInformationHeading {
+  width: min(820px, 100%);
+  text-align: center;
+}
+
+.evilInformationHeading p,
+.evilInformationHeading h1 {
+  margin: 0;
+}
+
+.evilInformationHeading p {
+  color: #cfab66;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+
+.evilInformationHeading h1 {
+  margin-top: 8px;
+  font-size: clamp(1.8rem, 5vw, 3.6rem);
+  line-height: 1.15;
+}
+
+.evilInformationCard {
+  display: grid;
+  width: min(760px, 100%);
+  gap: clamp(22px, 4vw, 34px);
+  border: 1px solid rgba(207, 183, 121, 0.6);
+  border-radius: 24px;
+  background: #fffdf8;
+  color: #173f36;
+  padding: clamp(22px, 5vw, 38px);
+}
+
+.evilInformationGroup h2 {
+  margin: 0 0 12px;
+  color: #775727;
+  font-size: 0.82rem;
+  letter-spacing: 0.13em;
+}
+
+.evilInformationIdentities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.evilInformationIdentities > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #cfc6b6;
+  border-radius: 14px;
+  background: #f8f4ec;
+  padding: 11px 14px;
+}
+
+.evilInformationIdentities span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #173f36;
+  color: #fff;
+  font-weight: 900;
+}
+
+.evilInformationIdentities .demon { border-color: #b97b70; }
+.evilInformationIdentities .demon span { background: #8c2f29; }
+
+.evilInformationBluffs {
+  border-top: 1px solid #ddd4c5;
+  padding-top: 22px;
+}
+
+.evilInformationBluffGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.evilInformationBluffGrid > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border: 1px solid #cfc6b6;
+  border-radius: 14px;
+  background: #f8f4ec;
+  padding: 12px;
+}
+
+.evilInformationBluffGrid img {
+  width: clamp(70px, 13vw, 112px);
+  height: clamp(70px, 13vw, 112px);
+  object-fit: contain;
+}
+
+.evilInformationEmpty {
+  color: #4d5f59;
+  font-size: 1.15rem;
+}
+
+.evilInformationClose {
+  width: min(520px, 100%);
+}
+
+@media (max-width: 640px) {
+  .evilInformationBluffGrid { grid-template-columns: 1fr; }
+}
+
 .revealFollowupPrototype {
   grid-template-rows: auto 1fr;
 }

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { RevealPayload, RevealPlayer, RoleInformationRevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
+import type { EvilInformationRevealPayload, RevealIdentity, RevealPayload, RevealPlayer, RoleInformationRevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
 import { isRoleInformationRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
 import { characterLabel } from "./setupDraft.js";
 import { spySeatPosition } from "./spyGrimoireLayout.js";
@@ -48,6 +48,9 @@ export function RevealScreen({ payload, onClose }: { payload: RevealPayload; onC
 }
 
 function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationRevealPayload; onClose: () => void }) {
+  if (payload.kind === "minionInformation" || payload.kind === "demonInformation") {
+    return <EvilInformationReveal payload={payload} onClose={onClose} />;
+  }
   let content;
   if (payload.kind === "setupInformation") {
     content = payload.zeroOutsiders ? (
@@ -79,6 +82,55 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
   );
 }
 
+function EvilInformationReveal({ payload, onClose }: { payload: EvilInformationRevealPayload; onClose: () => void }) {
+  const isMinionInformation = payload.kind === "minionInformation";
+  return (
+    <main className="revealShell evilInformationReveal" aria-label="플레이어 공개 화면">
+      <header className="evilInformationHeading">
+        <p>{isMinionInformation ? "하수인 정보" : "악마 정보"}</p>
+        <h1>{isMinionInformation ? "악마와 동료 하수인을 확인하세요" : "하수인과 블러프를 확인하세요"}</h1>
+      </header>
+      <section className="evilInformationCard" aria-label={isMinionInformation ? "하수인 정보 내용" : "악마 정보 내용"}>
+        {isMinionInformation ? <IdentityGroup label="악마" players={payload.demonPlayers} demon /> : null}
+        <IdentityGroup label="하수인" players={payload.minionPlayers} />
+        {payload.kind === "demonInformation" ? (
+          <section className="evilInformationGroup evilInformationBluffs" aria-labelledby="evil-information-bluffs">
+            <h2 id="evil-information-bluffs">블러프</h2>
+            <div className="evilInformationBluffGrid">
+              {payload.bluffCharacterIds.length === 0 ? <strong className="evilInformationEmpty">없음</strong> : null}
+              {payload.bluffCharacterIds.map((characterId) => (
+                <div key={characterId}>
+                  <CharacterIcon characterId={characterId} />
+                  <strong>{characterLabel(characterId)}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </section>
+      <button type="button" className="revealCloseButton evilInformationClose" onClick={onClose}>확인했다면 눈을 감으세요.</button>
+    </main>
+  );
+}
+
+function IdentityGroup({ label, players, demon = false }: { label: string; players: RevealIdentity[]; demon?: boolean }) {
+  const headingId = `evil-information-${label}`;
+  return (
+    <section className="evilInformationGroup" aria-labelledby={headingId}>
+      <h2 id={headingId}>{label}</h2>
+      <div className="evilInformationIdentities">
+        {players.length === 0 ? <strong className="evilInformationEmpty">없음</strong> : null}
+        {players.map((player) => (
+          <div className={demon ? "demon" : undefined} key={player.seat}>
+            <span>{player.seat}</span>
+            <strong>{player.seat}번 {player.name}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function RevealPlayers({ players }: { players: readonly RevealPlayer[] }) {
   return <div className="roleInformationPlayers" aria-label="확인 대상">{players.map((player) => <div key={player.playerId}><span>{player.seat}</span><strong>{player.name}</strong></div>)}</div>;
 }
@@ -94,6 +146,8 @@ function setupInformationDescription(characterId: "washerwoman" | "librarian" | 
 function roleInformationTitle(payload: RoleInformationRevealPayload) {
   if (payload.kind === "characterChange") return "역할 변경";
   if (payload.kind === "fortuneTellerInformation") return "점쟁이 정보";
+  if (payload.kind === "minionInformation") return "하수인 정보";
+  if (payload.kind === "demonInformation") return "악마 정보";
   return `${characterLabel(payload.characterId)} 정보`;
 }
 

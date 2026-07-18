@@ -632,7 +632,15 @@ fn fixed_information_rejects_storyteller_selected_delivery() {
 
 #[test]
 fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
-    let game = game_with_events(json!([setup_event_with_minion()]));
+    let setup = setup_event_with_players(json!([
+        { "id": "player-1", "seat": 1, "name": "Ada", "actualCharacter": "washerwoman", "shownCharacter": "washerwoman" },
+        { "id": "player-2", "seat": 2, "name": "Bert", "actualCharacter": "chef", "shownCharacter": "chef" },
+        { "id": "player-3", "seat": 3, "name": "Cora", "actualCharacter": "empath", "shownCharacter": "empath" },
+        { "id": "player-6", "seat": 6, "name": "Finn", "actualCharacter": "baron", "shownCharacter": "baron" },
+        { "id": "player-5", "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" },
+        { "id": "player-4", "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" }
+    ]));
+    let game = game_with_events(json!([setup.clone()]));
     let minion_command = json!({
         "type": "confirmStep",
         "payload": { "stepId": "firstNight:minionInfo" }
@@ -647,15 +655,33 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
     assert_eq!(minion_actual["ok"], true);
     assert_eq!(
         minion_actual["value"]["event"]["summary"],
-        "하수인 정보 전달 · 악마: 5번 Eve(임프) · 하수인: 4번 Dev(독살자)"
+        "하수인 정보 전달 · 악마: 5번 Eve(임프) · 하수인: 6번 Finn(남작), 4번 Dev(독살자)"
     );
     assert_eq!(
-        minion_actual["value"]["revealPayload"]["messageKo"],
-        "하수인 정보:\n악마: 5번 Eve - 임프\n하수인: 4번 Dev - 독살자"
+        minion_actual["value"]["revealPayload"],
+        json!({
+            "kind": "minionInformation",
+            "demonPlayers": [{ "seat": 5, "name": "Eve" }],
+            "minionPlayers": [
+                { "seat": 4, "name": "Dev" },
+                { "seat": 6, "name": "Finn" }
+            ]
+        })
     );
+    let minion_reveal = minion_actual["value"]["revealPayload"].to_string();
+    for forbidden in [
+        "player-4",
+        "player-6",
+        "poisoner",
+        "baron",
+        "독살자",
+        "남작",
+    ] {
+        assert!(!minion_reveal.contains(forbidden), "leaked {forbidden}");
+    }
 
     let demon_game = game_with_events(json!([
-        setup_event_with_minion(),
+        setup,
         phase_event("phaseStepConfirmed", "firstNight:minionInfo")
     ]));
     let demon_command = json!({
@@ -674,14 +700,14 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
     assert_eq!(demon_actual["ok"], true);
     assert_eq!(
         demon_actual["value"]["event"]["summary"],
-        "악마 정보 전달 · 하수인: 4번 Dev(독살자) · 블러프: 사서, 조사관, 장의사"
+        "악마 정보 전달 · 하수인: 6번 Finn(남작), 4번 Dev(독살자) · 블러프: 사서, 조사관, 장의사"
     );
     assert_eq!(
         demon_actual["value"]["event"]["payload"]["information"]["computedResult"],
         json!({
             "kind": "teamInfo",
             "demonPlayerIds": ["player-5"],
-            "minionPlayerIds": ["player-4"],
+            "minionPlayerIds": ["player-6", "player-4"],
             "bluffCharacterIds": ["librarian", "investigator", "undertaker"]
         })
     );
@@ -694,9 +720,27 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
         json!({ "type": "fixed" })
     );
     assert_eq!(
-        demon_actual["value"]["revealPayload"]["messageKo"],
-        "악마 정보:\n하수인: 4번 Dev - 독살자\n블러프: 사서, 조사관, 장의사"
+        demon_actual["value"]["revealPayload"],
+        json!({
+            "kind": "demonInformation",
+            "minionPlayers": [
+                { "seat": 4, "name": "Dev" },
+                { "seat": 6, "name": "Finn" }
+            ],
+            "bluffCharacterIds": ["librarian", "investigator", "undertaker"]
+        })
     );
+    let demon_reveal = demon_actual["value"]["revealPayload"].to_string();
+    for forbidden in [
+        "player-4",
+        "player-6",
+        "poisoner",
+        "baron",
+        "독살자",
+        "남작",
+    ] {
+        assert!(!demon_reveal.contains(forbidden), "leaked {forbidden}");
+    }
 }
 
 #[test]

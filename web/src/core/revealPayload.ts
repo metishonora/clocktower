@@ -41,6 +41,19 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
   if (payload.kind === "characterChange") return isCharacterChangeRevealPayload(payload);
+  if (payload.kind === "minionInformation") {
+    return hasExactKeys(payload, ["demonPlayers", "kind", "minionPlayers"])
+      && isRevealIdentities(payload.demonPlayers)
+      && isRevealIdentities(payload.minionPlayers);
+  }
+  if (payload.kind === "demonInformation") {
+    return hasExactKeys(payload, ["bluffCharacterIds", "kind", "minionPlayers"])
+      && isRevealIdentities(payload.minionPlayers)
+      && Array.isArray(payload.bluffCharacterIds)
+      && payload.bluffCharacterIds.length <= 3
+      && new Set(payload.bluffCharacterIds).size === payload.bluffCharacterIds.length
+      && payload.bluffCharacterIds.every((characterId) => typeof characterId === "string" && characterIds.has(characterId));
+  }
   if (payload.kind === "numericInformation") {
     return (payload.characterId === "chef" || payload.characterId === "empath")
       && Number.isInteger(payload.value) && (payload.value as number) >= 0
@@ -69,6 +82,19 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && hasExactKeys(payload, ["candidatePlayers", "characterId", "kind", "revealedCharacterId", "zeroOutsiders"]);
   }
   return false;
+}
+
+function isRevealIdentities(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  let priorSeat = 0;
+  return value.every((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const identity = entry as Record<string, unknown>;
+    if (!hasExactKeys(identity, ["name", "seat"])) return false;
+    if (!Number.isInteger(identity.seat) || (identity.seat as number) <= priorSeat || !nonEmptyString(identity.name)) return false;
+    priorSeat = identity.seat as number;
+    return true;
+  });
 }
 
 function isRevealPlayers(value: unknown, count: number): boolean {

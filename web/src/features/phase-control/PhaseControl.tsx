@@ -160,39 +160,24 @@ function ConfirmedRevealFollowup({
   onContinue: () => void;
 }) {
   const isSpyGrimoire = isSpyGrimoireRevealPayload(pendingReveal.payload);
+  const isEvilInformation = "kind" in pendingReveal.payload
+    && (pendingReveal.payload.kind === "minionInformation" || pendingReveal.payload.kind === "demonInformation");
   const actor = pendingReveal.step.playerId
     ? players.find((player) => player.id === pendingReveal.step.playerId)
     : undefined;
-  const actorTitle = actor
-    ? `${actor.name}${pendingReveal.step.character ? ` · ${characterLabel(pendingReveal.step.character)}` : ""}`
-    : stepTitle(pendingReveal.step);
+  const followupTitle = stepTitle(pendingReveal.step, actor);
 
   return (
     <>
       <div className="sectionHeader compact">
         <div>
           <p className="eyebrow">{phaseLabel(pendingReveal.step.phase)} · 후속 조치</p>
-          <h2>확정된 정보 공개</h2>
+          <h2>{followupTitle}</h2>
         </div>
-        <span className="phaseBadge confirmedRevealBadge">확정됨</span>
       </div>
 
       <section className="confirmedRevealFollowupCard" aria-label="확정된 Reveal 후속 조치">
-        {!isSpyGrimoire ? (
-          <div className="confirmedRevealActor">
-            <span>{actor?.seat ?? "•"}</span>
-            <div>
-              <strong>{actorTitle}</strong>
-              <small>
-                {replayReady
-                  ? "이벤트 확정과 다음 상태 리플레이가 완료되었습니다."
-                  : "이벤트 확정 완료 · 다음 상태 재생 중"}
-              </small>
-            </div>
-          </div>
-        ) : null}
-
-        {isSpyGrimoire ? (
+        {isSpyGrimoire || isEvilInformation ? (
           <button
             type="button"
             className="primaryButton"
@@ -218,20 +203,9 @@ function ConfirmedRevealFollowup({
           >
             다음 단계로 계속
           </button>
-          {!isSpyGrimoire ? (
-            <p>
-              {replayReady
-                ? "Reveal을 다시 열 필요가 없을 때만 다음 단계 입력을 표시합니다."
-                : "다음 상태 재생 중"}
-            </p>
-          ) : null}
+          {!replayReady ? <p>다음 단계 준비 중</p> : null}
         </div>
       </section>
-
-      <div className="confirmedRevealNextStepGuard" aria-label="다음 단계 대기">
-        <span>다음 단계</span>
-        <strong>명시적으로 계속할 때까지 숨김</strong>
-      </div>
     </>
   );
 }
