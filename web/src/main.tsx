@@ -28,6 +28,7 @@ import {
 } from "./features/phase-control/dayRuntime";
 import { useDayRuntime } from "./features/phase-control/useDayRuntime";
 import { CommunityContentNotice } from "./components/CommunityContentNotice";
+import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import "./styles.css";
 
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
@@ -259,6 +260,7 @@ export function ClocktowerApp({
     gameSessionRevision: gameStore.gameSessionRevision,
     clock: dayRuntimeClock,
   });
+  const mobilePhasePanel = useMobilePhasePanel(gameStore.setupConfirmed);
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
@@ -318,7 +320,12 @@ export function ClocktowerApp({
   }
 
   return (
-    <>
+    <div
+      className={`clocktowerApp ${gameStore.setupConfirmed && mobilePhasePanel.mobile ? "mobileLivePlay" : ""}`}
+      data-testid="clocktower-app"
+      data-mobile-panel-state={gameStore.setupConfirmed && mobilePhasePanel.mobile ? mobilePhasePanel.state : undefined}
+      style={{ "--mobile-phase-panel-height": mobilePhasePanel.height } as React.CSSProperties}
+    >
       <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
       <main className={gameStore.setupConfirmed ? "shell confirmedShell" : "shell setupShell"}>
         {gameStore.setupConfirmed ? (
@@ -364,40 +371,46 @@ export function ClocktowerApp({
                     : undefined
                 }
               />
+              {mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
             </section>
 
             <aside className="setupRail">
               <section className="panel phasePanel">
-                <PhaseControl
-                  pendingReveal={gameStore.pendingConfirmedReveal}
-                  dayRuntime={dayRuntime}
-                  currentStep={gameStore.currentStep}
-                  phaseOverview={gameStore.phaseOverview}
-                  players={gameStore.players}
-                  dayState={gameStore.dayState}
-                  ruleState={gameStore.ruleState}
-                  latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
-                  nominationDraft={nominationDraft}
-                  onNominationDraftChange={setNominationDraft}
-                  phaseInputDraft={phaseInputDraft}
-                  replayReady={gameStore.pendingConfirmedRevealReady}
-                  busy={gameStore.busy}
-                  onShowReveal={showReveal}
-                  onContinue={gameStore.continueAfterConfirmedReveal}
-                  onConfirm={gameStore.confirmCurrentStep}
-                  onSkip={gameStore.skipCurrentStep}
-                  onSuggest={gameStore.suggestPhaseInput}
-                  choiceTokenSource={choiceTokenSource}
-                  suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
-                  warnings={gameStore.shownWarnings}
-                  gameEnd={gameStore.gameEnd}
-                  onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
-                  onRequestUndoGameEnd={(trigger) => {
-                    if (gameStore.latestLiveUndoEvent) {
-                      requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
-                    }
-                  }}
-                />
+                {mobilePhasePanel.mobile ? (
+                  <MobilePhasePanelToggle state={mobilePhasePanel.state} onToggle={mobilePhasePanel.toggle} />
+                ) : null}
+                <div className="phasePanelContent">
+                  <PhaseControl
+                    pendingReveal={gameStore.pendingConfirmedReveal}
+                    dayRuntime={dayRuntime}
+                    currentStep={gameStore.currentStep}
+                    phaseOverview={gameStore.phaseOverview}
+                    players={gameStore.players}
+                    dayState={gameStore.dayState}
+                    ruleState={gameStore.ruleState}
+                    latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
+                    nominationDraft={nominationDraft}
+                    onNominationDraftChange={setNominationDraft}
+                    phaseInputDraft={phaseInputDraft}
+                    replayReady={gameStore.pendingConfirmedRevealReady}
+                    busy={gameStore.busy}
+                    onShowReveal={showReveal}
+                    onContinue={gameStore.continueAfterConfirmedReveal}
+                    onConfirm={gameStore.confirmCurrentStep}
+                    onSkip={gameStore.skipCurrentStep}
+                    onSuggest={gameStore.suggestPhaseInput}
+                    choiceTokenSource={choiceTokenSource}
+                    suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
+                    warnings={gameStore.shownWarnings}
+                    gameEnd={gameStore.gameEnd}
+                    onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
+                    onRequestUndoGameEnd={(trigger) => {
+                      if (gameStore.latestLiveUndoEvent) {
+                        requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
+                      }
+                    }}
+                  />
+                </div>
               </section>
 
               <details className="panel auxiliaryPanel setup">
@@ -452,7 +465,7 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      <CommunityContentNotice />
+      {!gameStore.setupConfirmed || !mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
       {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}
@@ -467,6 +480,6 @@ export function ClocktowerApp({
           onConfirm={confirmLiveUndo}
         />
       ) : null}
-    </>
+    </div>
   );
 }

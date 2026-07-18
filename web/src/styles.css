@@ -3636,7 +3636,8 @@ select {
 @media (max-width: 900px) {
   .shell.confirmedShell {
     grid-template-columns: 1fr;
-    padding-bottom: calc(48dvh + 24px);
+    padding-bottom: calc(var(--mobile-phase-panel-height) + 24px);
+    transition: padding-bottom 180ms ease-out;
   }
 
   .confirmedShell > .grimoire {
@@ -3649,15 +3650,68 @@ select {
     bottom: 0;
     left: 0;
     z-index: 30;
-    max-height: 48dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    display: flex;
+    height: var(--mobile-phase-panel-height);
+    max-height: none;
+    flex-direction: column;
+    overflow: visible;
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
     border-radius: 18px 18px 0 0;
     box-shadow: 0 -14px 38px rgba(0, 0, 0, 0.32);
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding: 0;
+    transition: height 180ms ease-out;
+  }
+
+  .phasePanelContent {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 14px max(18px, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobilePhasePanelToggle {
+    position: absolute;
+    top: -42px;
+    left: 50%;
+    display: grid;
+    width: 58px;
+    min-height: 44px;
+    place-items: center;
+    transform: translateX(-50%);
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+    color: #756d64;
+    background: var(--panel);
+    box-shadow: 0 -8px 18px rgba(42, 30, 23, 0.14);
+    padding: 4px 0 0;
+  }
+
+  .mobilePhasePanelToggle > span {
+    width: 13px;
+    height: 13px;
+    border-right: 3px solid currentColor;
+    border-bottom: 3px solid currentColor;
+    transform: translateY(-3px) rotate(45deg);
+  }
+
+  .mobilePhasePanelToggle[data-direction="up"] > span {
+    transform: translateY(4px) rotate(225deg);
+  }
+
+  .mobileLivePlay .confirmedShell > .grimoire > .communityContentNotice {
+    position: static;
+    margin: 14px -16px -16px;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 8px 8px;
+    background: rgba(238, 232, 220, 0.42);
+    box-shadow: none;
+    padding: 10px 16px;
   }
 
   .phaseOverviewDisclosure {
@@ -3729,7 +3783,7 @@ select {
 
   .communityContentNotice {
     margin-right: 10px;
-    margin-bottom: calc(48dvh + 14px);
+    margin-bottom: 14px;
     margin-left: 10px;
   }
 
@@ -3760,6 +3814,13 @@ select {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .shell.confirmedShell,
+  .confirmedShell .setupRail > .phasePanel {
+    transition: none;
+  }
+}
+
 @media (max-width: 720px) {
   .shell {
     padding: 10px;
@@ -3767,6 +3828,10 @@ select {
 
   .panel {
     padding: 12px;
+  }
+
+  .mobileLivePlay .confirmedShell > .grimoire > .communityContentNotice {
+    margin: 14px -12px -12px;
   }
 
   .sectionHeader {
