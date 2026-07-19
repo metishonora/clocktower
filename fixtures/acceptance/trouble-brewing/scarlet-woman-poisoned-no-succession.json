@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 2,
+  "game": {
+    "id": "acceptance-scarlet-woman-poisoned-no-succession",
+    "name": "Trouble Brewing 인수 테스트 · scarlet-woman-poisoned-no-succession",
+    "createdAt": "2026-07-19T00:00:00.000Z",
+    "updatedAt": "2026-07-19T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "librarian",
+              "shownCharacter": "librarian"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "investigator",
+              "shownCharacter": "investigator"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "chef",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "empath",
+              "shownCharacter": "empath"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "fortuneTeller",
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "scarletWoman",
+              "shownCharacter": "scarletWoman"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 10명",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-10"
+              ],
+              "minionPlayerIds": [
+                "player-8",
+                "player-9"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-10"
+              ],
+              "minionPlayerIds": [
+                "player-8",
+                "player-9"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 10번 플레이어 10(임프) · 하수인: 8번 플레이어 8(독살자), 9번 플레이어 9(붉은 여인)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": []
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-10"
+              ],
+              "minionPlayerIds": [
+                "player-8",
+                "player-9"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-10"
+              ],
+              "minionPlayerIds": [
+                "player-8",
+                "player-9"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 8번 플레이어 8(독살자), 9번 플레이어 9(붉은 여인) · 블러프: 없음",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "firstNight:poisoner",
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "poison",
+            "targetPlayerId": "player-9",
+            "applied": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "8번 플레이어 8(독살자) → 9번 플레이어 9(붉은 여인) · 중독 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:washerwoman"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:washerwoman",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:librarian"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:librarian",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-7",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:investigator"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:investigator",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-8",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:chef"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:chef",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-9",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:empath"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:empath",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-10",
+        "type": "redHerringAssigned",
+        "payload": {
+          "stepId": "firstNight:fortuneTellerRedHerring",
+          "playerId": "player-1",
+          "registrationJudgments": []
+        },
+        "phase": "firstNight",
+        "summary": "6번 플레이어 6(점쟁이)가 1번 플레이어 1(세탁부)를 레드 헤링으로 지정했습니다.",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-11",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:fortuneTeller"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:fortuneTeller",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-12",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-13",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-14",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-15",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-started-16",
+        "type": "nominationStarted",
+        "payload": {
+          "stepId": "day:nomination:1",
+          "nominatorId": "player-1",
+          "nomineeId": "player-10",
+          "registrationJudgments": [],
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지명 확정: 1번 플레이어 1(세탁부) → 10번 플레이어 10(임프)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-vote-17",
+        "type": "nominationVoteConfirmed",
+        "payload": {
+          "stepId": "day:nomination:1:vote",
+          "nominationEventId": "nomination-started-16",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-5"
+          ],
+          "ghostVoteSpentPlayerIds": []
+        },
+        "phase": "day",
+        "summary": "지명 투표 확정: 1번 플레이어 1(세탁부) → 10번 플레이어 10(임프), 5표",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-18",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지명 종료",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "execution-19",
+        "type": "executionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": true,
+            "playerId": "player-10"
+          }
+        },
+        "phase": "day",
+        "summary": "처형 확정: 10번 플레이어 10(임프)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      }
+    ]
+  }
+}

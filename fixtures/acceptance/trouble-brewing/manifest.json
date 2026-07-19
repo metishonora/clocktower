@@ -1,0 +1,1040 @@
+{
+  "schemaVersion": 1,
+  "script": "troubleBrewing",
+  "generatedAt": "2026-07-19T00:00:00.000Z",
+  "officialSources": [
+    "https://wiki.bloodontheclocktower.com/Trouble_Brewing",
+    "https://wiki.bloodontheclocktower.com/Glossary",
+    "https://wiki.bloodontheclocktower.com/Baron",
+    "https://wiki.bloodontheclocktower.com/Drunk",
+    "https://wiki.bloodontheclocktower.com/Washerwoman",
+    "https://wiki.bloodontheclocktower.com/Librarian",
+    "https://wiki.bloodontheclocktower.com/Investigator",
+    "https://wiki.bloodontheclocktower.com/Chef",
+    "https://wiki.bloodontheclocktower.com/Empath",
+    "https://wiki.bloodontheclocktower.com/Fortune_Teller",
+    "https://wiki.bloodontheclocktower.com/Poisoner",
+    "https://wiki.bloodontheclocktower.com/Spy",
+    "https://wiki.bloodontheclocktower.com/Butler",
+    "https://wiki.bloodontheclocktower.com/Monk",
+    "https://wiki.bloodontheclocktower.com/Soldier",
+    "https://wiki.bloodontheclocktower.com/Mayor",
+    "https://wiki.bloodontheclocktower.com/Ravenkeeper",
+    "https://wiki.bloodontheclocktower.com/Imp",
+    "https://wiki.bloodontheclocktower.com/Virgin",
+    "https://wiki.bloodontheclocktower.com/Slayer",
+    "https://wiki.bloodontheclocktower.com/Undertaker",
+    "https://wiki.bloodontheclocktower.com/Saint",
+    "https://wiki.bloodontheclocktower.com/Scarlet_Woman"
+  ],
+  "cases": [
+    {
+      "id": "setup-standard-distribution",
+      "category": "setup",
+      "characterIds": [
+        "washerwoman",
+        "librarian",
+        "investigator",
+        "chef",
+        "empath",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Trouble_Brewing",
+      "actionKo": "불러온 직후 7명 구성과 직업 분포 5/0/1/1을 확인하고 첫날 밤 진행을 시작한다.",
+      "expectedKo": "설정 경고 없이 7명이 좌석순으로 표시되고 첫 단계가 악의 팀 정보 단계다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo"
+      },
+      "file": "setup-standard-distribution.json"
+    },
+    {
+      "id": "setup-baron-outsiders",
+      "category": "setup",
+      "characterIds": [
+        "washerwoman",
+        "chef",
+        "empath",
+        "butler",
+        "saint",
+        "baron",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Baron",
+      "actionKo": "구성에서 남작 때문에 주민 2명이 외지인 2명으로 교체되었는지 확인한다.",
+      "expectedKo": "7명 분포가 3/2/1/1이며 남작이 죽더라도 이 설정 효과는 되돌아가지 않는다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo"
+      },
+      "file": "setup-baron-outsiders.json"
+    },
+    {
+      "id": "setup-drunk-shown-townsfolk",
+      "category": "setup",
+      "characterIds": [
+        "drunk",
+        "slayer",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Drunk",
+      "actionKo": "6번 플레이어의 실제 직업과 보여 준 직업을 비교한다.",
+      "expectedKo": "실제 직업은 Drunk이고 보여 준 직업은 Slayer이며 플레이어용 표시는 Slayer처럼 진행된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo",
+        "slayerAbilityPresent": false
+      },
+      "file": "setup-drunk-shown-townsfolk.json"
+    },
+    {
+      "id": "setup-duplicate-character-warning",
+      "category": "setup",
+      "characterIds": [
+        "washerwoman",
+        "chef",
+        "empath",
+        "fortuneTeller",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Trouble_Brewing",
+      "actionKo": "중복 실제 직업 경고를 확인한다.",
+      "expectedKo": "설정을 막지는 않지만 DUPLICATE_ACTUAL_CHARACTER 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo",
+        "warningCodes": [
+          "DUPLICATE_ACTUAL_CHARACTER"
+        ]
+      },
+      "file": "setup-duplicate-character-warning.json"
+    },
+    {
+      "id": "small-game-evil-info-known-deviation",
+      "category": "known-deviation",
+      "characterIds": [
+        "washerwoman",
+        "chef",
+        "empath",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "5명 게임을 불러온 직후 현재 단계를 확인한다.",
+      "expectedKo": "공식 룰과 달리 앱이 Minion 정보 단계를 표시하는 현재 불일치를 재현한다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo"
+      },
+      "knownDeviation": {
+        "officialExpectationKo": "5~6명 게임에서는 Minion 정보와 Demon 정보 및 블러프 3개를 제공하지 않는다.",
+        "observedAppBehaviorKo": "현재 앱은 5명 게임에서도 firstNight:minionInfo와 firstNight:demonInfo를 생성한다."
+      },
+      "file": "small-game-evil-info-known-deviation.json"
+    },
+    {
+      "id": "washerwoman-normal-information",
+      "category": "first-night-information",
+      "characterIds": [
+        "washerwoman",
+        "chef"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Washerwoman",
+      "actionKo": "요리사와 다른 플레이어를 선택하고 요리사 토큰을 전달한다.",
+      "expectedKo": "두 후보 중 실제 요리사가 정확히 한 명 포함된 고정 정보가 확정된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:washerwoman"
+      },
+      "file": "washerwoman-normal-information.json"
+    },
+    {
+      "id": "washerwoman-spy-registration",
+      "category": "registration",
+      "characterIds": [
+        "washerwoman",
+        "spy"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Washerwoman",
+      "actionKo": "Spy를 후보에 넣고 원하는 Townsfolk로 등록시켜 정보를 확정한다.",
+      "expectedKo": "Spy가 그 검사에서만 good/Townsfolk 및 선택한 특정 Townsfolk로 등록될 수 있다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:washerwoman"
+      },
+      "file": "washerwoman-spy-registration.json"
+    },
+    {
+      "id": "librarian-zero-outsiders",
+      "category": "first-night-information",
+      "characterIds": [
+        "librarian"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Librarian",
+      "actionKo": "외지인 0명 옵션을 선택해 정보를 확정한다.",
+      "expectedKo": "실제 외지인이 없으므로 0명 정보가 고정 정보로 전달된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:librarian"
+      },
+      "file": "librarian-zero-outsiders.json"
+    },
+    {
+      "id": "librarian-spy-registration",
+      "category": "registration",
+      "characterIds": [
+        "librarian",
+        "spy"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Librarian",
+      "actionKo": "Spy를 후보에 넣고 특정 Outsider로 등록시켜 정보를 확정한다.",
+      "expectedKo": "Spy를 Outsider로 보는 선택지와 실제 외지인 0명 선택지가 모두 제공된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:librarian"
+      },
+      "file": "librarian-spy-registration.json"
+    },
+    {
+      "id": "investigator-recluse-registration",
+      "category": "registration",
+      "characterIds": [
+        "investigator",
+        "recluse",
+        "poisoner"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Investigator",
+      "actionKo": "Recluse를 후보에 넣고 특정 Minion으로 등록시키거나 실제 Poisoner 정보를 선택한다.",
+      "expectedKo": "정상 정보와 Recluse의 검사별 Minion 등록 정보가 구분되어 선택된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:investigator"
+      },
+      "file": "investigator-recluse-registration.json"
+    },
+    {
+      "id": "chef-evil-pairs-and-recluse",
+      "category": "registration",
+      "characterIds": [
+        "chef",
+        "recluse",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Chef",
+      "actionKo": "계산된 evil 인접쌍 수와 Recluse를 evil로 등록했을 때의 대체 수치를 비교한다.",
+      "expectedKo": "원형의 8번 Imp와 1번 Chef 경계도 인접으로 계산되며 Recluse 등록은 해당 검사에만 적용된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:chef"
+      },
+      "file": "chef-evil-pairs-and-recluse.json"
+    },
+    {
+      "id": "empath-alive-neighbors",
+      "category": "night-information",
+      "characterIds": [
+        "empath",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Empath",
+      "actionKo": "1번 Empath의 계산값을 확인하고 그대로 전달한다.",
+      "expectedKo": "원형 좌우의 살아 있는 이웃 중 8번 Imp 한 명만 evil이므로 1을 받는다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:empath"
+      },
+      "file": "empath-alive-neighbors.json"
+    },
+    {
+      "id": "fortune-teller-red-herring",
+      "category": "setup-information",
+      "characterIds": [
+        "fortuneTeller"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Fortune_Teller",
+      "actionKo": "살아 있는 good 플레이어 한 명을 Red Herring으로 지정한다.",
+      "expectedKo": "같은 플레이어가 게임 내내 Red Herring으로 유지되고 Fortune Teller 자신도 선택할 수 있다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:fortuneTellerRedHerring"
+      },
+      "file": "fortune-teller-red-herring.json"
+    },
+    {
+      "id": "fortune-teller-recluse-registration",
+      "category": "registration",
+      "characterIds": [
+        "fortuneTeller",
+        "recluse",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Fortune_Teller",
+      "actionKo": "Recluse와 다른 플레이어를 선택하고 Recluse를 Demon으로 등록한 결과와 정상 결과를 비교한다.",
+      "expectedKo": "실제 Imp, Red Herring, Recluse 등록 각각이 yes를 만드는 이유로 분리되어 표시된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:fortuneTeller"
+      },
+      "file": "fortune-teller-recluse-registration.json"
+    },
+    {
+      "id": "fortune-teller-detects-dead-demon",
+      "category": "night-information",
+      "characterIds": [
+        "fortuneTeller",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Fortune_Teller",
+      "actionKo": "이미 죽은 8번 Imp와 다른 플레이어를 선택한다.",
+      "expectedKo": "죽은 Demon도 Demon으로 등록하므로 Fortune Teller 결과가 yes다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:fortuneTeller",
+        "warningCodes": [
+          "DEMON_DEAD_GOOD_WIN"
+        ],
+        "deadPlayerIds": [
+          "player-8"
+        ]
+      },
+      "file": "fortune-teller-detects-dead-demon.json"
+    },
+    {
+      "id": "empath-skips-dead-neighbors",
+      "category": "night-information",
+      "characterIds": [
+        "empath",
+        "imp",
+        "poisoner"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Empath",
+      "actionKo": "1번 Empath의 양옆 dead 플레이어를 건너뛴 살아 있는 이웃 계산값을 확인한다.",
+      "expectedKo": "2번과 8번을 건너뛰어 3번 Imp와 7번 Poisoner를 이웃으로 보므로 2를 받는다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:empath",
+        "deadPlayerIds": [
+          "player-2",
+          "player-8"
+        ]
+      },
+      "file": "empath-skips-dead-neighbors.json"
+    },
+    {
+      "id": "poisoner-false-empath-information",
+      "category": "impairment",
+      "characterIds": [
+        "poisoner",
+        "empath"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Poisoner",
+      "actionKo": "poisoned Empath에게 계산값과 다른 수치를 선택해 전달한다.",
+      "expectedKo": "Empath는 정상적으로 깨어나지만 선택 가능한 거짓 정보가 poison 사유와 함께 기록된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:empath",
+        "activePoisonTargetId": "player-1"
+      },
+      "file": "poisoner-false-empath-information.json"
+    },
+    {
+      "id": "poisoner-expiry-at-next-dusk",
+      "category": "impairment",
+      "characterIds": [
+        "poisoner",
+        "empath"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Poisoner",
+      "actionKo": "새 밤의 Poisoner 단계에서 이전 독 상태가 사라졌는지 확인한 뒤 새 대상을 고른다.",
+      "expectedKo": "첫날 밤에 지정한 독은 다음 낮까지 유지되지만 다음 dusk에 해제되어 activePoison이 비어 있다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:poisoner",
+        "activePoisonTargetId": null
+      },
+      "file": "poisoner-expiry-at-next-dusk.json"
+    },
+    {
+      "id": "poisoner-death-ends-poison",
+      "category": "impairment",
+      "characterIds": [
+        "poisoner",
+        "empath"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Poisoner",
+      "actionKo": "poisoned Empath가 있는 상태에서 처형된 Poisoner의 사망을 확정한다.",
+      "expectedKo": "Poisoner가 죽는 즉시 지속 중인 독 효과가 끝나고 Empath가 healthy가 된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath",
+        "activePoisonTargetId": "player-1"
+      },
+      "file": "poisoner-death-ends-poison.json"
+    },
+    {
+      "id": "spy-grimoire-reveal",
+      "category": "night-information",
+      "characterIds": [
+        "spy"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Spy",
+      "actionKo": "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
+      "expectedKo": "모든 실제 직업과 생사·유령 투표·독·보호 reminder 정보만 안전한 공개 payload로 보인다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:spy"
+      },
+      "file": "spy-grimoire-reveal.json"
+    },
+    {
+      "id": "butler-master-selection",
+      "category": "voting",
+      "characterIds": [
+        "butler"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Butler",
+      "actionKo": "Butler 자신이 아닌 플레이어를 Master로 지정한다.",
+      "expectedKo": "내일 Master가 투표 중이거나 이미 집계된 경우에만 Butler가 투표하며 앱은 부정 투표를 강제로 무효화하지 않는다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:butler"
+      },
+      "file": "butler-master-selection.json"
+    },
+    {
+      "id": "monk-protection-before-imp",
+      "category": "night-action",
+      "characterIds": [
+        "monk",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Monk",
+      "actionKo": "Monk 자신이 아닌 플레이어를 보호하고 다음 Imp 단계에서 그 대상을 공격한다.",
+      "expectedKo": "공격 대상이 죽지 않고 Demon은 다른 대상을 다시 고르지 못한다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:monk",
+        "activeProtectionTargetId": null
+      },
+      "file": "monk-protection-before-imp.json"
+    },
+    {
+      "id": "monk-cannot-protect-self",
+      "category": "invalid-input",
+      "characterIds": [
+        "monk"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Monk",
+      "actionKo": "Monk 자신을 선택하려 한 뒤 다른 플레이어를 선택한다.",
+      "expectedKo": "자기 자신은 허용 대상에 없고 확정할 수 없으며 다른 플레이어만 보호할 수 있다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:monk"
+      },
+      "file": "monk-cannot-protect-self.json"
+    },
+    {
+      "id": "soldier-safe-from-imp",
+      "category": "night-action",
+      "characterIds": [
+        "soldier",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Soldier",
+      "actionKo": "Imp로 2번 Soldier를 공격한다.",
+      "expectedKo": "sober/healthy 실제 Soldier는 죽지 않고 그 밤의 다른 희생자도 없다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp"
+      },
+      "file": "soldier-safe-from-imp.json"
+    },
+    {
+      "id": "soldier-poisoned-dies",
+      "category": "impairment",
+      "characterIds": [
+        "soldier",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Soldier",
+      "actionKo": "Imp로 poisoned 2번 Soldier를 공격한다.",
+      "expectedKo": "독 때문에 Soldier 능력이 없어져 사망 처리와 밤 사망 미발표 상태가 생성된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "activePoisonTargetId": "player-2"
+      },
+      "file": "soldier-poisoned-dies.json"
+    },
+    {
+      "id": "mayor-dies-or-bounces",
+      "category": "storyteller-decision",
+      "characterIds": [
+        "mayor",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mayor",
+      "actionKo": "Imp로 3번 Mayor를 공격하고 파일을 다시 불러오며 Mayor 사망과 다른 대상 bounce를 각각 시험한다.",
+      "expectedKo": "Storyteller가 Mayor 사망 또는 다른 roster 플레이어로 bounce를 선택하며 독립적인 nobody dies 선택지는 없다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp"
+      },
+      "file": "mayor-dies-or-bounces.json"
+    },
+    {
+      "id": "mayor-bounce-dead-or-protected",
+      "category": "storyteller-decision",
+      "characterIds": [
+        "mayor",
+        "monk",
+        "soldier",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mayor",
+      "actionKo": "Mayor 공격을 5번 dead 플레이어 또는 Monk가 보호한 2번 Soldier로 bounce한다.",
+      "expectedKo": "두 경우 모두 bounce는 유효하지만 대상은 죽지 않아 결과적으로 밤 사망이 없다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "activeProtectionTargetId": "player-2",
+        "deadPlayerIds": [
+          "player-5"
+        ]
+      },
+      "file": "mayor-bounce-dead-or-protected.json"
+    },
+    {
+      "id": "mayor-poisoned-has-no-bounce",
+      "category": "impairment",
+      "characterIds": [
+        "mayor",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mayor",
+      "actionKo": "Imp로 poisoned 3번 Mayor를 공격한다.",
+      "expectedKo": "Mayor 결정 UI 없이 Mayor가 죽으며 bounce 선택이 적용되지 않는다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "activePoisonTargetId": "player-3"
+      },
+      "file": "mayor-poisoned-has-no-bounce.json"
+    },
+    {
+      "id": "ravenkeeper-night-death-trigger",
+      "category": "night-trigger",
+      "characterIds": [
+        "ravenkeeper",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Ravenkeeper",
+      "actionKo": "죽은 Ravenkeeper로 살아 있거나 죽은 플레이어 한 명을 선택해 실제 직업을 확인한다.",
+      "expectedKo": "Imp 공격 직후 같은 밤에 Ravenkeeper 후속 단계가 생기며 선택한 대상의 실제 직업을 공개한다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:ravenkeeper",
+        "warningCodes": [
+          "NIGHT_DEATH_UNANNOUNCED"
+        ],
+        "deadPlayerIds": [
+          "player-4"
+        ]
+      },
+      "file": "ravenkeeper-night-death-trigger.json"
+    },
+    {
+      "id": "ravenkeeper-spy-recluse-registration",
+      "category": "registration",
+      "characterIds": [
+        "ravenkeeper",
+        "spy",
+        "recluse",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Ravenkeeper",
+      "actionKo": "이미 죽은 Spy와 Recluse를 각각 선택해 실제 직업과 등록 가능한 good/evil 직업 선택지를 비교한다.",
+      "expectedKo": "죽은 Spy는 특정 Townsfolk/Outsider, 죽은 Recluse는 특정 Minion/Demon으로 검사별 등록될 수 있다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:ravenkeeper",
+        "warningCodes": [
+          "NIGHT_DEATH_UNANNOUNCED"
+        ],
+        "deadPlayerIds": [
+          "player-1",
+          "player-6",
+          "player-8"
+        ]
+      },
+      "file": "ravenkeeper-spy-recluse-registration.json"
+    },
+    {
+      "id": "imp-self-kill-minion-successor",
+      "category": "demon-succession",
+      "characterIds": [
+        "imp",
+        "poisoner",
+        "spy"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Imp",
+      "actionKo": "Imp가 자신을 공격한 뒤 살아 있는 Minion 한 명을 새 Imp로 선택한다.",
+      "expectedKo": "기존 Imp가 죽고 Scarlet Woman 자동 승계가 없으면 살아 있는 실제 Minion 중 하나가 Imp가 된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp"
+      },
+      "file": "imp-self-kill-minion-successor.json"
+    },
+    {
+      "id": "imp-poisoned-no-kill",
+      "category": "impairment",
+      "characterIds": [
+        "imp",
+        "poisoner"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Imp",
+      "actionKo": "poisoned Imp로 살아 있는 플레이어를 공격한다.",
+      "expectedKo": "대상은 죽지 않고 NIGHT_ACTION_NO_EFFECT 경고가 제안 확인 화면에 표시된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "activePoisonTargetId": "player-8"
+      },
+      "file": "imp-poisoned-no-kill.json"
+    },
+    {
+      "id": "imp-attacks-dead-player",
+      "category": "night-action",
+      "characterIds": [
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Imp",
+      "actionKo": "Imp로 이미 죽은 5번 플레이어를 공격한다.",
+      "expectedKo": "선택은 허용되지만 추가 사망은 없고 already dead 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "deadPlayerIds": [
+          "player-5"
+        ]
+      },
+      "file": "imp-attacks-dead-player.json"
+    },
+    {
+      "id": "virgin-townsfolk-nomination",
+      "category": "day-trigger",
+      "characterIds": [
+        "virgin",
+        "washerwoman"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Virgin",
+      "actionKo": "1번 actual Townsfolk로 3번 Virgin을 지명하고 즉시 처형 사망을 확정한다.",
+      "expectedKo": "Virgin 능력이 소비되고 지명자가 즉시 처형되며 그날의 지명·투표가 끝난다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "virginSpent": false
+      },
+      "file": "virgin-townsfolk-nomination.json"
+    },
+    {
+      "id": "virgin-outsider-spends-without-execution",
+      "category": "day-trigger",
+      "characterIds": [
+        "virgin",
+        "butler"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Virgin",
+      "actionKo": "actual Outsider인 6번 Butler로 3번 Virgin을 지명한다.",
+      "expectedKo": "Virgin 능력은 소비되지만 지명자는 처형되지 않고 정상 투표 단계로 이어진다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "virginSpent": false
+      },
+      "file": "virgin-outsider-spends-without-execution.json"
+    },
+    {
+      "id": "virgin-poisoned-spends-without-execution",
+      "category": "impairment",
+      "characterIds": [
+        "virgin",
+        "poisoner"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Virgin",
+      "actionKo": "Townsfolk로 poisoned Virgin을 지명한다.",
+      "expectedKo": "Virgin 능력은 소비되지만 독 때문에 지명자가 처형되지 않고 투표가 계속된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "activePoisonTargetId": "player-3",
+        "virginSpent": false
+      },
+      "file": "virgin-poisoned-spends-without-execution.json"
+    },
+    {
+      "id": "virgin-spy-registers-townsfolk",
+      "category": "registration",
+      "characterIds": [
+        "virgin",
+        "spy"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Virgin",
+      "actionKo": "6번 Spy로 Virgin을 지명하고 이 검사에서 Townsfolk 등록을 선택한다.",
+      "expectedKo": "Spy가 실제 Townsfolk처럼 즉시 처형되며 등록 선택 없이 다시 불러오면 정상 투표로 진행된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "virginSpent": false
+      },
+      "file": "virgin-spy-registers-townsfolk.json"
+    },
+    {
+      "id": "slayer-shoots-imp",
+      "category": "public-ability",
+      "characterIds": [
+        "slayer",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Slayer",
+      "actionKo": "낮 토론 중 actual Slayer로 살아 있는 Imp를 공개 지목하고 사망을 확정한다.",
+      "expectedKo": "능력이 즉시 소비되고 Imp 사망 후 good 승리 확인 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:discussion",
+        "slayerAbilityPresent": true
+      },
+      "file": "slayer-shoots-imp.json"
+    },
+    {
+      "id": "slayer-recluse-as-demon",
+      "category": "registration",
+      "characterIds": [
+        "slayer",
+        "recluse"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Slayer",
+      "actionKo": "actual Slayer로 Recluse를 지목하고 Imp로 등록시키는 선택을 시험한다.",
+      "expectedKo": "Recluse를 Demon으로 등록하면 죽일 수 있고 canonical 등록을 택하면 아무 일도 없다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:discussion",
+        "slayerAbilityPresent": true
+      },
+      "file": "slayer-recluse-as-demon.json"
+    },
+    {
+      "id": "slayer-poisoned-spends-no-effect",
+      "category": "impairment",
+      "characterIds": [
+        "slayer",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Slayer",
+      "actionKo": "poisoned actual Slayer로 Imp를 지목한다.",
+      "expectedKo": "Imp는 죽지 않지만 once-per-game 능력은 소비되어 다시 사용할 수 없다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:discussion",
+        "activePoisonTargetId": "player-1",
+        "slayerAbilityPresent": true
+      },
+      "file": "slayer-poisoned-spends-no-effect.json"
+    },
+    {
+      "id": "slayer-shoots-dead-imp",
+      "category": "public-ability",
+      "characterIds": [
+        "slayer",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Slayer",
+      "actionKo": "actual Slayer로 이미 죽은 8번 Imp를 공개 지목한다.",
+      "expectedKo": "죽은 플레이어는 다시 죽지 않으므로 아무 효과가 없지만 Slayer 능력은 소비된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:discussion",
+        "warningCodes": [
+          "DEMON_DEAD_GOOD_WIN"
+        ],
+        "deadPlayerIds": [
+          "player-8"
+        ],
+        "slayerAbilityPresent": true
+      },
+      "file": "slayer-shoots-dead-imp.json"
+    },
+    {
+      "id": "drunk-shown-slayer-has-no-ability",
+      "category": "impairment",
+      "characterIds": [
+        "drunk",
+        "slayer"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Drunk",
+      "actionKo": "낮 토론 화면에서 6번 Drunk-shown-Slayer에게 실제 Slayer 공개 능력 조작이 없는지 확인한다.",
+      "expectedKo": "Drunk는 Slayer 능력을 소유하거나 소비하지 않으며 공개 발언을 해도 앱 규칙 상태가 바뀌지 않는다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:discussion",
+        "slayerAbilityPresent": false
+      },
+      "file": "drunk-shown-slayer-has-no-ability.json"
+    },
+    {
+      "id": "undertaker-learns-executed-drunk",
+      "category": "night-information",
+      "characterIds": [
+        "undertaker",
+        "drunk"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Undertaker",
+      "actionKo": "Undertaker 정보를 확정해 전날 처형되어 죽은 6번 플레이어의 실제 직업을 본다.",
+      "expectedKo": "보여 준 Slayer가 아니라 실제 Drunk 토큰이 공개된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:undertaker",
+        "deadPlayerIds": [
+          "player-6"
+        ]
+      },
+      "file": "undertaker-learns-executed-drunk.json"
+    },
+    {
+      "id": "undertaker-omitted-without-executed-death",
+      "category": "night-information",
+      "characterIds": [
+        "undertaker"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Undertaker",
+      "actionKo": "처형 사망 없이 밤으로 넘어온 phase overview를 확인한다.",
+      "expectedKo": "Undertaker 정보 단계가 생성되지 않으며 별도 빈 정보를 보여 주지 않아도 된다.",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:imp",
+        "absentStepIds": [
+          "night:undertaker"
+        ]
+      },
+      "file": "undertaker-omitted-without-executed-death.json"
+    },
+    {
+      "id": "saint-execution-evil-win-warning",
+      "category": "win-condition",
+      "characterIds": [
+        "saint"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Saint",
+      "actionKo": "처형된 actual Saint의 사망을 확정한 뒤 evil 승리 경고에서 악팀 승리를 수동 확정한다.",
+      "expectedKo": "SAINT_EXECUTED_EVIL_WIN 경고가 표시되지만 앱은 Storyteller의 명시적 게임 종료 확정을 기다린다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath"
+      },
+      "file": "saint-execution-evil-win-warning.json"
+    },
+    {
+      "id": "saint-poisoned-no-win-warning",
+      "category": "impairment",
+      "characterIds": [
+        "saint",
+        "poisoner"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Saint",
+      "actionKo": "poisoned Saint의 처형 사망을 확정한다.",
+      "expectedKo": "Saint가 죽지만 능력이 없어 evil 승리 경고가 생기지 않고 게임이 계속된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath",
+        "activePoisonTargetId": "player-6"
+      },
+      "file": "saint-poisoned-no-win-warning.json"
+    },
+    {
+      "id": "scarlet-woman-succeeds-at-five-plus",
+      "category": "demon-succession",
+      "characterIds": [
+        "scarletWoman",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Scarlet_Woman",
+      "actionKo": "7명 생존 상태에서 처형된 Imp의 사망을 확정하고 고정 Scarlet Woman 승계를 확정한다.",
+      "expectedKo": "Imp 사망 직전 생존자가 5명 이상이므로 살아 있고 sober/healthy인 Scarlet Woman이 새 Imp가 된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath"
+      },
+      "file": "scarlet-woman-succeeds-at-five-plus.json"
+    },
+    {
+      "id": "scarlet-woman-no-succession-below-five",
+      "category": "demon-succession",
+      "characterIds": [
+        "scarletWoman",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Scarlet_Woman",
+      "actionKo": "4명 생존 상태에서 처형된 Imp의 사망을 확정한다.",
+      "expectedKo": "Scarlet Woman 승계 단계 없이 DEMON_DEAD_GOOD_WIN 경고가 표시되고 선팀 승리를 수동 확정할 수 있다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath",
+        "deadPlayerIds": [
+          "player-1",
+          "player-2",
+          "player-3"
+        ]
+      },
+      "file": "scarlet-woman-no-succession-below-five.json"
+    },
+    {
+      "id": "scarlet-woman-poisoned-no-succession",
+      "category": "impairment",
+      "characterIds": [
+        "scarletWoman",
+        "poisoner",
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Scarlet_Woman",
+      "actionKo": "10명 생존 상태에서 Imp 처형 사망을 확정한다.",
+      "expectedKo": "Scarlet Woman이 poisoned 상태라 승계하지 않고 DEMON_DEAD_GOOD_WIN 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:executionDeath",
+        "activePoisonTargetId": "player-9"
+      },
+      "file": "scarlet-woman-poisoned-no-succession.json"
+    },
+    {
+      "id": "mayor-three-alive-no-execution",
+      "category": "win-condition",
+      "characterIds": [
+        "mayor"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mayor",
+      "actionKo": "지명을 종료하고 처형 없음으로 확정한 뒤 good 승리 경고에서 선팀 승리를 수동 확정한다.",
+      "expectedKo": "sober/healthy actual Mayor를 포함해 정확히 3명이 살아 있고 그날 처형이 없으므로 MAYOR_GOOD_WIN 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "deadPlayerIds": [
+          "player-2",
+          "player-4",
+          "player-5",
+          "player-6"
+        ]
+      },
+      "file": "mayor-three-alive-no-execution.json"
+    },
+    {
+      "id": "demon-dead-good-win-warning",
+      "category": "win-condition",
+      "characterIds": [
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "불러온 직후 Demon 사망 경고를 확인하고 선팀 승리를 수동 확정한다.",
+      "expectedKo": "DEMON_DEAD_GOOD_WIN 경고가 표시되며 자동 종료 대신 Storyteller 확정을 기다린다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo",
+        "warningCodes": [
+          "DEMON_DEAD_GOOD_WIN"
+        ],
+        "deadPlayerIds": [
+          "player-7"
+        ]
+      },
+      "file": "demon-dead-good-win-warning.json"
+    },
+    {
+      "id": "two-alive-evil-win-warning",
+      "category": "win-condition",
+      "characterIds": [
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "생존자 2명 경고를 확인하고 악팀 승리를 수동 확정한다.",
+      "expectedKo": "Demon과 다른 한 명만 살아 있으므로 TWO_LIVING_PLAYERS_EVIL_WIN 경고가 표시된다.",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo",
+        "warningCodes": [
+          "TWO_LIVING_PLAYERS_EVIL_WIN"
+        ],
+        "deadPlayerIds": [
+          "player-1",
+          "player-2",
+          "player-3",
+          "player-4",
+          "player-5"
+        ]
+      },
+      "file": "two-alive-evil-win-warning.json"
+    },
+    {
+      "id": "ghost-vote-spending",
+      "category": "voting",
+      "characterIds": [
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "지명 후 투표에서 죽은 2번 플레이어를 포함해 유령 투표를 확정한다.",
+      "expectedKo": "죽은 플레이어의 유령 투표가 한 번만 소비되고 이후 투표 선택에서 제외된다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1",
+        "deadPlayerIds": [
+          "player-2"
+        ],
+        "ghostVoteUsedPlayerIds": []
+      },
+      "file": "ghost-vote-spending.json"
+    },
+    {
+      "id": "tied-votes-no-execution-candidate",
+      "category": "voting",
+      "characterIds": [
+        "imp"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "현재 지명을 종료하고 처형 단계에서 동률 때문에 처형 후보가 없는지 확인한다.",
+      "expectedKo": "최고 득표 4표가 동률이므로 누구도 about-to-die가 아니며 처형 없음만 확정할 수 있다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:3"
+      },
+      "file": "tied-votes-no-execution-candidate.json"
+    },
+    {
+      "id": "night-death-public-announcement",
+      "category": "phase-flow",
+      "characterIds": [
+        "imp",
+        "ravenkeeper"
+      ],
+      "officialSource": "https://wiki.bloodontheclocktower.com/Glossary",
+      "actionKo": "낮 시작의 사망 발표를 확정한다.",
+      "expectedKo": "밤중에는 사망이 숨겨진 상태로 유지되고 발표 이벤트를 확정한 뒤 NIGHT_DEATH_UNANNOUNCED 경고가 사라진다.",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day2:announceDeaths",
+        "warningCodes": [
+          "NIGHT_DEATH_UNANNOUNCED"
+        ],
+        "deadPlayerIds": [
+          "player-4"
+        ]
+      },
+      "file": "night-death-public-announcement.json"
+    }
+  ]
+}
