@@ -607,10 +607,10 @@ function CurrentStepPane({
 function currentPhaseOverviewLayout(mobileViewportMatches?: boolean): PhaseOverviewLayout {
   if (mobileViewportMatches === undefined && typeof window.matchMedia !== "function") return "accordion";
   const mobile = mobileViewportMatches ?? window.matchMedia(MOBILE_PHASE_OVERVIEW_QUERY).matches;
-  return mobile || isFullScreenIpadPro12_9() ? "accordion" : "horizontal";
+  return mobile || isTargetIpadPro12_9() ? "accordion" : "horizontal";
 }
 
-function isFullScreenIpadPro12_9() {
+function isTargetIpadPro12_9() {
   const ipad = window.navigator.maxTouchPoints > 1 && (
     /\b(?:iPad|Macintosh)\b/.test(window.navigator.userAgent)
     || window.navigator.platform === "iPad"
@@ -619,10 +619,7 @@ function isFullScreenIpadPro12_9() {
   if (!ipad) return false;
 
   const screenEdges = [window.screen.width, window.screen.height].sort((left, right) => left - right);
-  if (screenEdges[0] !== IPAD_PRO_12_9_SHORT_EDGE || screenEdges[1] !== IPAD_PRO_12_9_LONG_EDGE) return false;
-
-  const viewportWidth = Math.round(window.innerWidth);
-  return viewportWidth === IPAD_PRO_12_9_SHORT_EDGE || viewportWidth === IPAD_PRO_12_9_LONG_EDGE;
+  return screenEdges[0] === IPAD_PRO_12_9_SHORT_EDGE && screenEdges[1] === IPAD_PRO_12_9_LONG_EDGE;
 }
 
 function resultEffectDescription(step: PhaseStep): string | undefined {

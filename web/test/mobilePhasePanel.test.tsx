@@ -69,7 +69,7 @@ function installMobileViewport(initialMatches: boolean) {
 
 function installIpadPro12_9Gen5Viewport(orientation: "portrait" | "landscape") {
   installMobileViewport(false);
-  const layoutWidth = orientation === "portrait" ? 1024 : 1366;
+  const layoutWidth = orientation === "portrait" ? 960 : 1280;
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
     value: layoutWidth,
