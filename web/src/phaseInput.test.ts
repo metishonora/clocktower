@@ -403,7 +403,7 @@ test("target-check confirmation persists the selected typed result and its exact
       { nominatorId: "", nomineeId: "", voterIds: [] },
     ),
     {
-      input: { playerIds: ["recluse", "chef"] },
+      input: { playerIds: ["chef", "recluse"] },
       deliveredResult: { kind: "boolean", value: true },
       registrationJudgments: witness,
     },
