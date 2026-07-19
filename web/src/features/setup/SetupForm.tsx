@@ -76,7 +76,7 @@ export function SetupForm({
       <section className="panel grimoire draftGrimoire">
         <div className="sectionHeader">
           <div>
-            <p className="eyebrow">그리모어 초안</p>
+            <p className="eyebrow">마도서 초안</p>
             <h1>Trouble Brewing</h1>
           </div>
           <div className="setupActions" aria-label="인원 선택">
@@ -193,7 +193,7 @@ function DraftGrimoireCircle({
         className={`seatMap draftSeatMap adjustableSeatMap ${layoutEditing ? "layoutEditing" : ""} ${
           draft.players.length >= 12 ? "compactSeats" : ""
         }`}
-        aria-label="조정 가능한 그리모어 좌석 맵"
+        aria-label="조정 가능한 마도서 좌석 맵"
       >
         <div className="draftLayoutTableMark" aria-hidden="true">
           테이블

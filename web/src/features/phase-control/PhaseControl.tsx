@@ -460,7 +460,7 @@ function CurrentStepPane({
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
-                    {currentPlayer.actualCharacter === "drunk" ? <em>실제 술꾼</em> : null}
+                    {currentPlayer.actualCharacter === "drunk" ? <em>실제 주정뱅이</em> : null}
                     {registrationSensitive ? <em>등록 판정</em> : null}
                   </div>
                   {currentCharacter?.abilitySummary ? <p>{currentCharacter.abilitySummary}</p> : null}
@@ -468,7 +468,7 @@ function CurrentStepPane({
               </section>
             ) : null}
             {currentPlayer && resultSubject ? (
-              <section className="currentSubject" aria-label={currentStep.stepType === "executionDeath" ? "처형 대상" : "학살자 결과 대상"}>
+              <section className="currentSubject" aria-label={currentStep.stepType === "executionDeath" ? "처형 대상" : "처단자 결과 대상"}>
                 <div>
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <span>{currentSubjectCharacter?.label ?? characterLabel(currentPlayer.actualCharacter)}</span>
@@ -523,7 +523,7 @@ function CurrentStepPane({
               <ImpActionResult proposal={latestProposal} players={players} />
             ) : null}
             {latestProposal?.event.type === "slayerAbilityUsed" && latestProposal.event.payload.outcome.kind === "noEffect" ? (
-              <p className="nightActionResult" aria-label="학살자 능력 결과">아무 일도 일어나지 않음</p>
+              <p className="nightActionResult" aria-label="처단자 능력 결과">아무 일도 일어나지 않음</p>
             ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
             {currentStep.requiredInput.kind === "executionDecision" ? (
@@ -552,7 +552,7 @@ function CurrentStepPane({
                   {currentStep.stepType === "whisper"
                     ? "토론 시작"
                     : currentStep.stepType === "discussion"
-                      ? "지명 및 투표 시작"
+                      ? "지목 및 투표 시작"
                       : isNightDeathAnnouncement
                         ? unannouncedNightDeathPlayerIds.length === 0
                           ? "사망자 없음 발표 확정"
@@ -561,7 +561,7 @@ function CurrentStepPane({
                 </button>
                 {currentStep.canSkip ? (
                   <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
-                    지명 종료
+                    지목 종료
                   </button>
                 ) : null}
               </div>
@@ -579,9 +579,9 @@ function CurrentStepPane({
 
 function resultEffectDescription(step: PhaseStep): string | undefined {
   if (step.stepType === "executionDeath" && step.id.endsWith(":virginDeath")) {
-    return "처녀 능력으로 지명자가 즉시 처형됩니다.";
+    return "성결자 능력으로 지목자가 즉시 처형됩니다.";
   }
-  if (step.stepType === "slayerDeath") return "학살자 능력으로 사망합니다.";
+  if (step.stepType === "slayerDeath") return "처단자 능력으로 사망합니다.";
   return undefined;
 }
 

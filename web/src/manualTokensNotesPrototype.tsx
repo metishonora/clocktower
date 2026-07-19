@@ -35,31 +35,31 @@ const systemTokens: Array<{ id: SystemTokenId; label: string }> = [
 
 const scriptTokens: ScriptTokenRef[] = [
   { id: "butler:master", character: "집사", label: "주인" },
-  { id: "drunk:isTheDrunk", character: "술꾼", label: "술꾼임" },
+  { id: "drunk:isTheDrunk", character: "주정뱅이", label: "주정뱅이임" },
   { id: "fortuneTeller:redHerring", character: "점쟁이", label: "오답 대상" },
   { id: "imp:dead", character: "임프", label: "사망" },
-  { id: "investigator:minion", character: "조사관", label: "하수인" },
-  { id: "investigator:wrong", character: "조사관", label: "오답" },
-  { id: "librarian:outsider", character: "사서", label: "이방인" },
+  { id: "investigator:minion", character: "수사관", label: "하수인" },
+  { id: "investigator:wrong", character: "수사관", label: "오답" },
+  { id: "librarian:outsider", character: "사서", label: "외지인" },
   { id: "librarian:wrong", character: "사서", label: "오답" },
   { id: "monk:safe", character: "수도사", label: "안전" },
-  { id: "poisoner:poisoned", character: "독살자", label: "중독" },
-  { id: "scarletWoman:isTheDemon", character: "붉은 여인", label: "악마임" },
-  { id: "slayer:noAbility", character: "학살자", label: "능력 없음" },
+  { id: "poisoner:poisoned", character: "독살범", label: "중독" },
+  { id: "scarletWoman:isTheDemon", character: "탕녀", label: "악마임" },
+  { id: "slayer:noAbility", character: "처단자", label: "능력 없음" },
   { id: "undertaker:diedToday", character: "장의사", label: "오늘 사망" },
-  { id: "virgin:noAbility", character: "처녀", label: "능력 없음" },
-  { id: "washerwoman:townsfolk", character: "세탁부", label: "마을 주민" },
+  { id: "virgin:noAbility", character: "성결자", label: "능력 없음" },
+  { id: "washerwoman:townsfolk", character: "세탁부", label: "주민" },
   { id: "washerwoman:wrong", character: "세탁부", label: "오답" },
 ];
 
 const initialPlayers: PrototypePlayer[] = [
   player("p1", 1, "민지", "세탁부"),
   player("p2", 2, "준호", "요리사"),
-  player("p3", 3, "서연", "공감능력자"),
+  player("p3", 3, "서연", "초공감자"),
   { ...player("p4", 4, "도윤", "점쟁이"), automaticTokens: ["중독"] },
   { ...player("p5", 5, "하린", "수도사"), automaticTokens: ["보호"] },
-  { ...player("p6", 6, "현우", "학살자"), systemTokenIds: ["abilitySpent"], notes: "능력 사용 확인" },
-  { ...player("p7", 7, "유진", "독살자", "evil"), scriptTokenIds: ["poisoner:poisoned"] },
+  { ...player("p6", 6, "현우", "처단자"), systemTokenIds: ["abilitySpent"], notes: "능력 사용 확인" },
+  { ...player("p7", 7, "유진", "독살범", "evil"), scriptTokenIds: ["poisoner:poisoned"] },
   player("p8", 8, "태오", "임프", "evil"),
 ];
 
@@ -170,7 +170,7 @@ export function ManualTokensNotesPrototype() {
       </header>
 
       <section className="annotationPrototypeWorkspace">
-        <section className="annotationPrototypeGrimoire" aria-label="프로토타입 그리모어">
+        <section className="annotationPrototypeGrimoire" aria-label="프로토타입 마도서">
           <div className="annotationTableCenter">
             <span>{scenario === "voting" ? "투표 입력" : "낮 1일차"}</span>
             <strong>{scenario === "voting" ? `${voterIds.length}표` : "토론"}</strong>
@@ -233,7 +233,7 @@ export function ManualTokensNotesPrototype() {
         <aside className="annotationPrototypeRail">
           <section className="annotationCurrentStep">
             <div><p>현재 단계</p><span>{busy ? "보호됨" : "진행 중"}</span></div>
-            <h2>{scenario === "voting" ? "지명 투표" : "자유 토론"}</h2>
+            <h2>{scenario === "voting" ? "지목 투표" : "자유 토론"}</h2>
             {scenario === "voting" ? <strong>선택된 손 · {voterIds.length}명</strong> : <strong>현재 처형 후보 · 없음</strong>}
             <button type="button" disabled={busy}>확정</button>
           </section>

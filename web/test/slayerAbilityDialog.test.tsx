@@ -23,7 +23,7 @@ test("keeps Spy canonical and requires an explicit Recluse registration decision
       onConfirm={onConfirm}
     />,
   );
-  const dialog = screen.getByRole("dialog", { name: "학살자 능력 사용" });
+  const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
   expect(within(dialog).getByText("확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.")).toBeTruthy();
   expect(within(dialog).getByRole("button", { name: "2번 Bert · 사망" })).toBeTruthy();
 
@@ -32,7 +32,7 @@ test("keeps Spy canonical and requires an explicit Recluse registration decision
 
   await user.click(within(dialog).getByRole("button", { name: "3번 Cy" }));
   expect(within(dialog).getByText("이번 판정의 은둔자 등록")).toBeTruthy();
-  const confirm = within(dialog).getByRole("button", { name: "학살자 사용 확정" }) as HTMLButtonElement;
+  const confirm = within(dialog).getByRole("button", { name: "처단자 사용 확정" }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(true);
   await user.click(within(dialog).getByRole("button", { name: "악마로 등록하지 않음" }));
   expect(within(dialog).getByText("은둔자 · 악마로 등록하지 않음")).toBeTruthy();

@@ -45,13 +45,13 @@ export function GrimoirePhaseRuntimePrototype() {
   return (
     <main
       className="issue67Prototype"
-      aria-label="그리모어 중앙 페이즈 시간 프로토타입"
+      aria-label="마도서 중앙 페이즈 시간 프로토타입"
       data-mobile-panel-state={mobilePanelState}
     >
       <header className="issue67Toolbar">
         <div className="issue67Title">
           <span>이슈 #67 프로토타입</span>
-          <strong>그리모어 중앙 페이즈 · 시간</strong>
+          <strong>마도서 중앙 페이즈 · 시간</strong>
           <small>선택안 B · 작은 페이즈명, 큰 타이머</small>
         </div>
         <ControlGroup label="중앙 상태">
@@ -99,7 +99,7 @@ export function GrimoirePhaseRuntimePrototype() {
         <section className="panel issue67Grimoire">
           <div className="sectionHeader">
             <div>
-              <p className="eyebrow">그리모어</p>
+              <p className="eyebrow">마도서</p>
               <h1>Trouble Brewing</h1>
             </div>
             <span className="phaseBadge">{playerCount}명</span>
@@ -138,7 +138,7 @@ export function GrimoirePhaseRuntimePrototype() {
             <button
               type="button"
               className="issue67MobilePanelToggle"
-              aria-label={mobilePanelState === "grimoire" ? "제어 패널 펼치기" : "그리모어 크게 보기"}
+              aria-label={mobilePanelState === "grimoire" ? "제어 패널 펼치기" : "마도서 크게 보기"}
               onClick={() => setMobilePanelState((current) => current === "grimoire" ? "controls" : "grimoire")}
             >
               {mobilePanelState === "grimoire" ? "⌃" : "⌄"}

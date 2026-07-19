@@ -86,7 +86,7 @@ export function Grimoire({
         className={`seatMap confirmedSeatMap adjustableSeatMap ${
           seats.length >= 12 ? "compactSeats" : ""
         }`}
-        aria-label="라이브 그리모어 좌석 맵"
+        aria-label="라이브 마도서 좌석 맵"
       >
         <div className="draftLayoutTableMark" aria-hidden="true">
           테이블
@@ -235,7 +235,7 @@ export function Grimoire({
                   type="button"
                   className={`slayerAbilityIcon ${currentSlayerAbility.spent ? "spent" : ""}`}
                   style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                  aria-label={`${seat.seat}번 ${seat.name} 학살자 능력 사용`}
+                  aria-label={`${seat.seat}번 ${seat.name} 처단자 능력 사용`}
                   disabled={!currentSlayerAbility.enabled || busy}
                   onClick={(event) => currentSlayerAbility.onUse(event.currentTarget)}
                 >
@@ -246,7 +246,7 @@ export function Grimoire({
                 <span
                   className={`virginAbilityIcon ${virginAbility.spent ? "spent" : ""}`}
                   style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                  aria-label={`${seat.seat}번 ${seat.name} 처녀 능력 ${virginAbility.spent ? "소모" : "사용 가능"}`}
+                  aria-label={`${seat.seat}번 ${seat.name} 성결자 능력 ${virginAbility.spent ? "소모" : "사용 가능"}`}
                 >V</span>
               ) : null}
             </div>

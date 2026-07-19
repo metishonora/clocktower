@@ -68,7 +68,7 @@ test("shows numbered First Night, Day, Night, and later Day runtimes in the Grim
     />,
   );
 
-  const grimoire = await screen.findByLabelText("라이브 그리모어 좌석 맵");
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   const firstNightCenter = within(grimoire).getByLabelText("1일차 밤 경과 시간 00:00");
   expect(firstNightCenter.textContent).toBe("1일차 밤00:00");
   expect(within(firstNightCenter).queryByText("경과")).toBeNull();
@@ -116,6 +116,6 @@ test("derives later Night numbering when reopening an active saved session", asy
     />,
   );
 
-  const grimoire = await screen.findByLabelText("라이브 그리모어 좌석 맵");
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByLabelText("4일차 밤 경과 시간 00:00")).toBeTruthy();
 });

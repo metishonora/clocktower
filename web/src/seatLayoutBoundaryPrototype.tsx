@@ -10,7 +10,7 @@ const players = [
   { seat: 1, name: "민서", character: "세탁부", alignment: "good" },
   { seat: 2, name: "지훈", character: "요리사", alignment: "good" },
   { seat: 3, name: "서연", character: "사서", alignment: "good" },
-  { seat: 4, name: "도윤", character: "독살자", alignment: "evil" },
+  { seat: 4, name: "도윤", character: "독살범", alignment: "evil" },
   { seat: 5, name: "하린", character: "임프", alignment: "evil" },
 ] as const;
 
@@ -152,7 +152,7 @@ function SetupPrototype({
       <section className="issue71Panel issue71GrimoirePanel">
         <div className="issue71SectionHeader">
           <div>
-            <p>그리모어 초안</p>
+            <p>마도서 초안</p>
             <h2>Trouble Brewing</h2>
           </div>
           <span className="issue71PhaseBadge">5명</span>
@@ -219,8 +219,8 @@ function SetupPrototype({
             <span className="issue71PhaseBadge">완료</span>
           </div>
           <dl className="issue71Counts">
-            <div><dt>마을주민</dt><dd>3</dd></div>
-            <div><dt>외부인</dt><dd>0</dd></div>
+            <div><dt>주민</dt><dd>3</dd></div>
+            <div><dt>외지인</dt><dd>0</dd></div>
             <div><dt>하수인</dt><dd>1</dd></div>
             <div><dt>악마</dt><dd>1</dd></div>
           </dl>
@@ -257,7 +257,7 @@ function LivePrototype({
       <section className="issue71Panel issue71GrimoirePanel">
         <div className="issue71SectionHeader">
           <div>
-            <p>그리모어</p>
+            <p>마도서</p>
             <h2>Trouble Brewing</h2>
           </div>
           <span className="issue71PhaseBadge live">첫째 밤</span>
@@ -275,7 +275,7 @@ function LivePrototype({
           <div className="issue71SectionHeader compact">
             <div>
               <p>현재 행동</p>
-              <h2>독살자: 4번 도윤</h2>
+              <h2>독살범: 4번 도윤</h2>
             </div>
             <span className="issue71PhaseBadge">진행 중</span>
           </div>
@@ -321,7 +321,7 @@ function SeatMap({
   return (
     <div
       className={`issue71SeatMap ${mode} ${layoutEditing ? "layoutEditing" : ""}`}
-      aria-label={mode === "setup" ? "설정 좌석 맵" : "라이브 그리모어 좌석 맵"}
+      aria-label={mode === "setup" ? "설정 좌석 맵" : "라이브 마도서 좌석 맵"}
     >
       <div className="issue71TableMark" aria-hidden="true">테이블</div>
       <strong className="issue71MapCenter">{mode === "setup" ? "좌석 배치" : "현재 상태"}</strong>

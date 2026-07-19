@@ -18,7 +18,7 @@ test("RevealScreen renders from RevealPayload alone", () => {
   equal(html.includes("확인했다면 눈을 감으세요."), true);
   equal(html.includes("actualCharacter"), false);
   equal(html.includes("eventList"), false);
-  equal(html.includes("그리모어"), false);
+  equal(html.includes("마도서"), false);
 });
 
 test("character change Reveal identifies the new role without exposing Grimoire state", () => {
@@ -28,7 +28,7 @@ test("character change Reveal identifies the new role without exposing Grimoire 
   equal(html.includes("당신의 역할이 변경되었습니다."), true);
   equal(html.includes(">악<"), true);
   equal(html.includes("임프"), true);
-  equal(html.includes("그리모어"), false);
+  equal(html.includes("마도서"), false);
   equal(html.includes("확인했다면 눈을 감으세요."), true);
   const preview = renderToStaticMarkup(<RevealPreview payload={payload} onShow={() => undefined} />);
   equal(preview.includes("플레이어에게 공개"), true);
@@ -43,7 +43,7 @@ test("role information Reveal renders the approved copy from narrow payloads", (
     { kind: "characterInformation", characterId: "undertaker", targetPlayer: { playerId: "p3", seat: 3, name: "서연" }, revealedCharacterId: "librarian" },
   ];
   const html = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />)).join("\n");
-  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 마을주민입니다.", "외부인은 없습니다.", "서로 이웃한 악 팀", "1쌍", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
+  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 주민입니다.", "외지인은 없습니다.", "서로 이웃한 악한 팀", "1쌍", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
     equal(html.includes(copy), true, copy);
   }
 });
@@ -71,7 +71,7 @@ test("evil-team information Reveals render safe identities and official bluff ic
   for (const character of ["사서", "장의사", "집사"]) equal(demonHtml.includes(`${character} 공식 캐릭터 아이콘`), true);
 
   for (const html of [minionHtml, demonHtml]) {
-    for (const forbidden of ["player-4", "player-7", "poisoner", "baron", "독살자", "남작"]) {
+    for (const forbidden of ["player-4", "player-7", "poisoner", "baron", "독살범", "남작"]) {
       equal(html.includes(forbidden), false, forbidden);
     }
   }

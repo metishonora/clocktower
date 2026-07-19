@@ -54,7 +54,7 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
   let content;
   if (payload.kind === "setupInformation") {
     content = payload.zeroOutsiders ? (
-      <><h1>사서 정보</h1><strong className="roleInformationEmpty">외부인은 없습니다.</strong></>
+      <><h1>사서 정보</h1><strong className="roleInformationEmpty">외지인은 없습니다.</strong></>
     ) : (
       <>
         <h1>{characterLabel(payload.characterId)} 정보</h1>
@@ -64,7 +64,7 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
       </>
     );
   } else if (payload.kind === "numericInformation") {
-    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "chef" ? "서로 이웃한 악 팀" : "살아있는 양옆 이웃 중 악 팀"}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : "명"}</strong></>;
+    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "chef" ? "서로 이웃한 악한 팀" : "살아있는 양옆 이웃 중 악한 팀"}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : "명"}</strong></>;
   } else if (payload.kind === "fortuneTellerInformation") {
     content = <><h1>점쟁이 정보</h1><p>이 중에 악마는…</p><RevealPlayers players={payload.targetPlayers} /><strong className={`roleInformationValue boolean ${payload.hasDemon ? "yes" : "no"}`}>{payload.hasDemon ? "있음" : "없음"}</strong></>;
   } else if (payload.kind === "characterInformation") {
@@ -140,7 +140,7 @@ function CharacterResult({ characterId }: { characterId: string }) {
 }
 
 function setupInformationDescription(characterId: "washerwoman" | "librarian" | "investigator") {
-  return characterId === "washerwoman" ? "둘 중 한 명은 이 마을주민입니다." : characterId === "librarian" ? "둘 중 한 명은 이 외부인입니다." : "둘 중 한 명은 이 하수인입니다.";
+  return characterId === "washerwoman" ? "둘 중 한 명은 이 주민입니다." : characterId === "librarian" ? "둘 중 한 명은 이 외지인입니다." : "둘 중 한 명은 이 하수인입니다.";
 }
 
 function roleInformationTitle(payload: RoleInformationRevealPayload) {
@@ -182,12 +182,12 @@ function SpyGrimoireReveal({
       <header className="spyGrimoireRevealHeader">
         <div>
           <p className="spyGrimoireEyebrow">SPY</p>
-          <h1>그리모어를 확인하세요</h1>
+          <h1>마도서를 확인하세요</h1>
         </div>
         <p>{count}명 · 읽기 전용</p>
       </header>
 
-      <section className="spyGrimoireSeatMap" aria-label="Spy 그리모어 좌석 배치">
+      <section className="spyGrimoireSeatMap" aria-label="첩자 마도서 좌석 배치">
         <div className="spyGrimoireLegend" aria-label="상태 범례">
           <span>실제 캐릭터: 좌석 카드에 표시</span>
           <span>● 생존 / † 사망</span>

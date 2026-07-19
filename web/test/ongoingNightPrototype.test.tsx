@@ -13,8 +13,8 @@ test("covers deterministic ongoing-night scenarios and exact operational cues", 
 
   expect(screen.queryByText("등록 판정")).toBeNull();
   expect(screen.queryByText("선한 팀으로 등록")).toBeNull();
-  expect(screen.queryByText(/마을주민/)).toBeNull();
-  expect(screen.getByText("독살자")).toBeTruthy();
+  expect(screen.queryByText(/주민/)).toBeNull();
+  expect(screen.getByText("독살범")).toBeTruthy();
   expect(state().selectedPlayerIds).toEqual(["p2"]);
 
   await user.click(screen.getByRole("button", { name: "중독 · 보호" }));

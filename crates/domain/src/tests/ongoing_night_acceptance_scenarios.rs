@@ -125,7 +125,7 @@ fn ravenkeeper_target_checks_expose_exact_spy_and_recluse_registration_witnesses
     assert_eq!(valid["ok"], true, "valid witness failed as {valid}");
     assert_eq!(
         valid["value"]["event"]["summary"],
-        "1번 Raven(까마귀지기)가 2번 Spy(스파이)를 확인 · 대상의 캐릭터: 요리사 (실제 스파이 · 등록 판정)"
+        "1번 Raven(까마귀지기)가 2번 Spy(첩자)를 확인 · 대상의 캐릭터: 요리사 (실제 첩자 · 등록 판정)"
     );
     assert_eq!(
         valid["value"]["revealPayload"],

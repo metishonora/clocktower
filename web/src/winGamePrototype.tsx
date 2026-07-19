@@ -33,10 +33,10 @@ const scenarioLabels: Record<PrototypeScenario, string> = {
 const players = [
   { seat: 1, name: "민지", character: "시장" },
   { seat: 2, name: "준호", character: "군인" },
-  { seat: 3, name: "서연", character: "공감능력자" },
+  { seat: 3, name: "서연", character: "초공감자" },
   { seat: 4, name: "도윤", character: "성자" },
-  { seat: 5, name: "은지", character: "스파이" },
-  { seat: 6, name: "지우", character: "중독자" },
+  { seat: 5, name: "은지", character: "첩자" },
+  { seat: 6, name: "지우", character: "독살범" },
   { seat: 7, name: "태오", character: "임프" },
 ];
 
@@ -96,7 +96,7 @@ export function WinGamePrototype() {
 
         <aside className="winGamePrototypeRail">
           <div className="winGamePrototypeRailHeading">
-            <div><p>{gameEnd ? "게임 종료" : "낮 진행"}</p><h2>{gameEnd ? "최종 결과" : "지명 및 투표"}</h2></div>
+            <div><p>{gameEnd ? "게임 종료" : "낮 진행"}</p><h2>{gameEnd ? "최종 결과" : "지목 및 투표"}</h2></div>
             <span className={gameEnd ? "ended" : "active"}>{gameEnd ? "종료됨" : "진행 중"}</span>
           </div>
 
@@ -112,9 +112,9 @@ export function WinGamePrototype() {
               {warnings.length ? <WinWarningCard warnings={warnings} onEndGame={openEndGame} /> : null}
               <section className="winGameCurrentStep" aria-label="현재 단계">
                 <p>현재 단계</p>
-                <strong>지명 및 투표</strong>
+                <strong>지목 및 투표</strong>
                 <div><span>현재 처형 후보</span><b>후보 없음 · 기준 2표</b></div>
-                <button type="button">지명 종료</button>
+                <button type="button">지목 종료</button>
               </section>
               <button type="button" className="manualEndGameButton" onClick={openEndGame}>수동 게임 종료</button>
             </>
@@ -195,8 +195,8 @@ function PrototypeGrimoire({ scenario, ended }: { scenario: PrototypeScenario; e
   const alive = new Set(livingSeats[scenario]);
   const displayedPlayers = players.map((player) => ({ ...player, alive: alive.has(player.seat) }));
   return (
-    <section className={`winGamePrototypeGrimoire ${ended ? "ended" : ""}`} aria-label="프로토타입 그리모어">
-      <div className="winGamePrototypeTable"><span>{ended ? "게임 종료" : "낮 4일차"}</span><strong>{ended ? "최종 상태" : "지명 및 투표"}</strong><small>생존 {displayedPlayers.filter((player) => player.alive).length}명</small></div>
+    <section className={`winGamePrototypeGrimoire ${ended ? "ended" : ""}`} aria-label="프로토타입 마도서">
+      <div className="winGamePrototypeTable"><span>{ended ? "게임 종료" : "낮 4일차"}</span><strong>{ended ? "최종 상태" : "지목 및 투표"}</strong><small>생존 {displayedPlayers.filter((player) => player.alive).length}명</small></div>
       {displayedPlayers.map((player, index) => {
         const angle = -90 + (index * 360) / displayedPlayers.length;
         return (
@@ -210,5 +210,5 @@ function PrototypeGrimoire({ scenario, ended }: { scenario: PrototypeScenario; e
 }
 
 function teamLabel(team: WinningTeam) {
-  return team === "good" ? "선팀" : "악팀";
+  return team === "good" ? "선한 팀" : "악한 팀";
 }

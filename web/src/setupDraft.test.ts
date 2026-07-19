@@ -2,10 +2,13 @@ import { deepEqual, equal } from "node:assert/strict";
 import test from "node:test";
 import {
   assignActualCharacter,
+  characters,
+  characterLabel,
   createSetupDraft,
   createSetupDraftFromConfirmedPlayers,
   drunkShownCharacterOptions,
   findOverlappingSeats,
+  kindLabels,
   resetActualCharacters,
   resetSeatLayout,
   resizeSetupDraft,
@@ -18,6 +21,43 @@ import {
   unassignActualCharacter,
   updateSeatPosition,
 } from "./setupDraft.js";
+
+test("Trouble Brewing catalog uses the exact official Korean-edition character copy", () => {
+  deepEqual(
+    characters.map(({ id, label, kind, abilitySummary }) => ({ id, label, kind, abilitySummary })),
+    [
+      { id: "washerwoman", label: "세탁부", kind: "Townsfolk", abilitySummary: "게임 시작 시, 플레이어 2명 중 1명이 특정 주민임을 알게 됩니다." },
+      { id: "librarian", label: "사서", kind: "Townsfolk", abilitySummary: "게임 시작 시, 플레이어 2명 중 1명이 특정 외지인임을 (또는 게임에 참여하는 외지인이 없음을) 알게 됩니다." },
+      { id: "investigator", label: "수사관", kind: "Townsfolk", abilitySummary: "게임 시작 시, 플레이어 2명 중 1명이 특정 하수인임을 알게 됩니다." },
+      { id: "chef", label: "요리사", kind: "Townsfolk", abilitySummary: "게임 시작 시, 서로 이웃하게 앉은 악한 플레이어가 몇 쌍 있는지 알게 됩니다." },
+      { id: "empath", label: "초공감자", kind: "Townsfolk", abilitySummary: "매일 밤, 이웃 생존자 2명 중 몇 명이나 악한지를 알게 됩니다." },
+      { id: "fortuneTeller", label: "점쟁이", kind: "Townsfolk", abilitySummary: "매일 밤, 플레이어 2명을 선택합니다: 그중 악마가 있는지 알게 됩니다. 단, 선한 플레이어 중 1명이 당신에게는 악마로 위장되어 보입니다." },
+      { id: "undertaker", label: "장의사", kind: "Townsfolk", abilitySummary: "매일 밤*, 오늘 낮에 처형으로 사망한 플레이어의 캐릭터를 알게 됩니다." },
+      { id: "monk", label: "수도사", kind: "Townsfolk", abilitySummary: "매일 밤*, (당신을 제외하고) 플레이어 1명을 선택합니다: 그는 오늘 밤 악마로부터 안전합니다." },
+      { id: "ravenkeeper", label: "까마귀지기", kind: "Townsfolk", abilitySummary: "밤에 사망하면, 깨어나서 플레이어 1명을 선택합니다: 그의 캐릭터를 알게 됩니다." },
+      { id: "virgin", label: "성결자", kind: "Townsfolk", abilitySummary: "처음으로 지목당했을 때, 당신을 지목한 플레이어가 주민이라면, 그는 즉시 처형당합니다." },
+      { id: "slayer", label: "처단자", kind: "Townsfolk", abilitySummary: "게임당 1번, 낮 동안, 공개적으로 플레이어 1명을 선택합니다: 그가 악마면 그는 사망합니다." },
+      { id: "soldier", label: "군인", kind: "Townsfolk", abilitySummary: "악마로부터 안전합니다." },
+      { id: "mayor", label: "시장", kind: "Townsfolk", abilitySummary: "3명만 생존한 상황에서 처형이 일어나지 않았다면, 당신이 속한 팀이 승리합니다. 밤에 사망한다면, 그 대신 다른 플레이어 1명이 사망할 수도 있습니다." },
+      { id: "butler", label: "집사", kind: "Outsider", abilitySummary: "매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다: 다음 날, 그가 투표에 참여한 경우에만 당신도 투표에 참여할 수 있습니다." },
+      { id: "drunk", label: "주정뱅이", kind: "Outsider", abilitySummary: "당신은 자신이 주정뱅이라는 사실을 모릅니다. 대신 다른 주민 캐릭터라고 착각하지만, 실제로는 주정뱅이입니다." },
+      { id: "recluse", label: "은둔자", kind: "Outsider", abilitySummary: "당신은 악한 팀 소속의 특정 하수인 또는 악마로 위장될 수도 있습니다(사망한 상태에서도)." },
+      { id: "saint", label: "성자", kind: "Outsider", abilitySummary: "당신이 처형으로 사망하면, 당신이 속한 팀이 패배합니다." },
+      { id: "poisoner", label: "독살범", kind: "Minion", abilitySummary: "매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다." },
+      { id: "spy", label: "첩자", kind: "Minion", abilitySummary: "매일 밤, 마도서를 확인해 봅니다. 당신은 선한 팀 소속의 특정 주민 또는 외지인으로 위장될 수도 있습니다(사망한 상태에서도)." },
+      { id: "scarletWoman", label: "탕녀", kind: "Minion", abilitySummary: "플레이어가 5명 이상(여행자는 세지 않음) 생존해 있는 상황에서 악마가 사망하면, 당신이 악마가 됩니다." },
+      { id: "baron", label: "남작", kind: "Minion", abilitySummary: "외지인이 추가로 게임에 참여합니다. [외지인 +2명]" },
+      { id: "imp", label: "임프", kind: "Demon", abilitySummary: "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 이 방법으로 자결하면, 하수인 1명이 임프가 됩니다." },
+    ],
+  );
+  deepEqual(kindLabels, {
+    Townsfolk: "주민",
+    Outsider: "외지인",
+    Minion: "하수인",
+    Demon: "악마",
+  });
+  equal(characterLabel("scarletWoman"), "탕녀");
+});
 
 test("assigning an unused Actual Character updates only the selected Player", () => {
   let draft = createSetupDraft();

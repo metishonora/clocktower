@@ -24,11 +24,11 @@ export function ConfirmedSetup({
       <h2>초기 Grimoire 준비됨</h2>
       <dl className="counts">
         <div>
-          <dt>마을주민</dt>
+          <dt>주민</dt>
           <dd>{counts.Townsfolk}</dd>
         </div>
         <div>
-          <dt>외부인</dt>
+          <dt>외지인</dt>
           <dd>{counts.Outsider}</dd>
         </div>
         <div>

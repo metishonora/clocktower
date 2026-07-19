@@ -136,7 +136,7 @@ test("store proposes an explicit game end and exposes replayed ended state", asy
     type: "gameEnded" as const,
     phase: "firstNight" as const,
     payload: { winningTeam: "evil" as const },
-    summary: "게임 종료 · 악팀 승리",
+    summary: "게임 종료 · 악한 팀 승리",
     createdAt: "2026-07-16T00:00:00.000Z",
   };
   const core = coreForReplay(vi.fn(async (candidate: GameFile) => {

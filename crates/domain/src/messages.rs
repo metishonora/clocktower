@@ -45,11 +45,11 @@ pub(crate) fn phase_step_preview(skip: bool) -> Value {
 }
 
 pub(crate) fn nomination_closed_event_summary() -> String {
-    "지명 종료".to_string()
+    "지목 종료".to_string()
 }
 
 pub(crate) fn nomination_closed_preview() -> Value {
-    json!({ "messageKo": "지명을 종료하고 처형 확인으로 이동합니다." })
+    json!({ "messageKo": "지목을 종료하고 처형 확인으로 이동합니다." })
 }
 
 pub(crate) fn nomination_vote_event_summary(
@@ -59,7 +59,7 @@ pub(crate) fn nomination_vote_event_summary(
     let nominee = player_verbose_label(players, &record.nominee_id);
     let nominator = player_verbose_label(players, &record.nominator_id);
     format!(
-        "지명 투표 확정: {nominator} → {nominee}, {}표",
+        "지목 투표 확정: {nominator} → {nominee}, {}표",
         record.vote_count
     )
 }
@@ -69,7 +69,7 @@ pub(crate) fn nomination_vote_preview(
     execution_standing: &ExecutionStanding,
 ) -> Value {
     json!({
-        "messageKo": format!("{}표로 지명 투표를 확정합니다.", record.vote_count),
+        "messageKo": format!("{}표로 지목 투표를 확정합니다.", record.vote_count),
         "voteCount": record.vote_count,
         "ghostVoteSpentPlayerIds": &record.ghost_vote_spent_player_ids,
         "executionStanding": execution_standing,
@@ -110,7 +110,7 @@ pub(crate) fn setup_distribution_warning(expected: &SetupDistribution) -> CoreWa
         code: "SETUP_DISTRIBUTION_MISMATCH".to_string(),
         severity: "warning",
         message_ko: format!(
-            "Trouble Brewing 권장 구성은 마을주민 {}, 외부인 {}, 하수인 {}, 악마 {}명입니다.",
+            "Trouble Brewing 권장 구성은 주민 {}, 외지인 {}, 하수인 {}, 악마 {}명입니다.",
             expected.townsfolk, expected.outsider, expected.minion, expected.demon
         ),
         winning_team: None,
@@ -121,7 +121,7 @@ pub(crate) fn duplicate_actual_character_warning() -> CoreWarning {
     CoreWarning {
         code: "DUPLICATE_ACTUAL_CHARACTER".to_string(),
         severity: "warning",
-        message_ko: "중복된 Actual Character가 있습니다.".to_string(),
+        message_ko: "중복된 실제 캐릭터가 있습니다.".to_string(),
         winning_team: None,
     }
 }
@@ -334,7 +334,7 @@ fn setup_information_summary(
     let audit = information_audit_suffix(kind, information);
     if kind == "librarian" && *zero_outsiders {
         return Some(format!(
-            "{actor_label}가 외부인 없음을 확인했습니다.{audit}"
+            "{actor_label}가 외지인 없음을 확인했습니다.{audit}"
         ));
     }
     Some(format!(
@@ -536,26 +536,63 @@ pub(crate) fn character_label(character: &str) -> &'static str {
     match character {
         "washerwoman" => "세탁부",
         "librarian" => "사서",
-        "investigator" => "조사관",
+        "investigator" => "수사관",
         "chef" => "요리사",
-        "empath" => "공감능력자",
+        "empath" => "초공감자",
         "fortuneTeller" => "점쟁이",
         "undertaker" => "장의사",
         "monk" => "수도사",
         "ravenkeeper" => "까마귀지기",
-        "virgin" => "처녀",
-        "slayer" => "학살자",
+        "virgin" => "성결자",
+        "slayer" => "처단자",
         "soldier" => "군인",
         "mayor" => "시장",
         "butler" => "집사",
-        "drunk" => "술꾼",
+        "drunk" => "주정뱅이",
         "recluse" => "은둔자",
         "saint" => "성자",
-        "poisoner" => "독살자",
-        "spy" => "스파이",
-        "scarletWoman" => "붉은 여인",
+        "poisoner" => "독살범",
+        "spy" => "첩자",
+        "scarletWoman" => "탕녀",
         "baron" => "남작",
         "imp" => "임프",
         _ => "알 수 없음",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::character_label;
+
+    #[test]
+    fn trouble_brewing_character_labels_match_the_official_korean_edition() {
+        let expected = [
+            ("washerwoman", "세탁부"),
+            ("librarian", "사서"),
+            ("investigator", "수사관"),
+            ("chef", "요리사"),
+            ("empath", "초공감자"),
+            ("fortuneTeller", "점쟁이"),
+            ("undertaker", "장의사"),
+            ("monk", "수도사"),
+            ("ravenkeeper", "까마귀지기"),
+            ("virgin", "성결자"),
+            ("slayer", "처단자"),
+            ("soldier", "군인"),
+            ("mayor", "시장"),
+            ("butler", "집사"),
+            ("drunk", "주정뱅이"),
+            ("recluse", "은둔자"),
+            ("saint", "성자"),
+            ("poisoner", "독살범"),
+            ("spy", "첩자"),
+            ("scarletWoman", "탕녀"),
+            ("baron", "남작"),
+            ("imp", "임프"),
+        ];
+
+        for (character_id, label) in expected {
+            assert_eq!(character_label(character_id), label);
+        }
     }
 }

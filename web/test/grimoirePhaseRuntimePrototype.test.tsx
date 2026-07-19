@@ -29,7 +29,7 @@ test("reviews the approved compact center treatment across phase, count, layout,
 
   render(<App coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-  const prototype = await screen.findByRole("main", { name: "그리모어 중앙 페이즈 시간 프로토타입" });
+  const prototype = await screen.findByRole("main", { name: "마도서 중앙 페이즈 시간 프로토타입" });
   const center = within(prototype).getByLabelText("2일차 낮 경과 시간 12:34");
   expect(center.textContent).toBe("2일차 낮12:34");
   expect(within(center).queryByText("경과")).toBeNull();

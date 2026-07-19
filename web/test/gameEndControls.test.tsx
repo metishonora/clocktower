@@ -18,7 +18,7 @@ describe("production game-end controls", () => {
 
     await user.click(screen.getByRole("button", { name: "게임 종료 확인" }));
     const dialog = screen.getByRole("dialog", { name: "게임 종료 확인" });
-    expect(dialog.textContent).toContain("선팀 승리로 종료합니다");
+    expect(dialog.textContent).toContain("선한 팀 승리로 종료합니다");
     expect(within(dialog).queryByRole("button", { name: "악" })).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "게임 종료" }));
 
@@ -45,7 +45,7 @@ describe("production game-end controls", () => {
 
     const ended = screen.getByRole("region", { name: "게임 종료 상태" });
     expect(within(ended).getByText("게임 종료", { selector: "strong" })).not.toBeNull();
-    expect(within(ended).getByRole("heading", { name: "악팀 승리" })).not.toBeNull();
+    expect(within(ended).getByRole("heading", { name: "악한 팀 승리" })).not.toBeNull();
     expect(within(ended).queryByText("마지막 이벤트")).toBeNull();
     await user.click(within(ended).getByRole("button", { name: "게임 종료 되돌리기" }));
 

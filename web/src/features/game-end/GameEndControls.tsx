@@ -105,7 +105,7 @@ export function GameEndControls({
 }
 
 function teamLabel(team: WinningTeam) {
-  return team === "good" ? "선팀" : "악팀";
+  return team === "good" ? "선한 팀" : "악한 팀";
 }
 
 function warningTitle(code: string) {

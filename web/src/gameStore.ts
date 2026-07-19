@@ -268,7 +268,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         ok: false,
         error: {
           code: "SETUP_INCOMPLETE",
-          messageKo: "모든 좌석에 Actual Character를 배정해야 합니다.",
+          messageKo: "모든 좌석에 실제 캐릭터를 배정해야 합니다.",
         },
       });
       return;
@@ -317,7 +317,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         targetPlayerId,
         targetRegistration,
       },
-    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "학살자 능력 확정 실패" } }));
+    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "처단자 능력 확정 실패" } }));
     setProposalResult(result);
     setBusy(false);
     if (result.ok) appendProposalEvent(result.value);
