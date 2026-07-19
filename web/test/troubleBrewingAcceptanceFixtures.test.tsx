@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { render, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { importGameFileJson } from "../src/gameStorage";
-import { replayOrThrow } from "./realWasmCoreHarness";
+import { isSpyGrimoireRevealPayload } from "../src/core/revealPayload";
+import { RevealScreen } from "../src/reveal";
+import { proposeAndAppend, replayOrThrow } from "./realWasmCoreHarness";
 
 type AcceptanceManifest = {
   schemaVersion: 1;
@@ -27,6 +30,14 @@ type AcceptanceCase = {
     activeProtectionTargetId?: string | null;
     deadPlayerIds?: string[];
     ghostVoteUsedPlayerIds?: string[];
+    spyReveal?: {
+      visibleReminderTokens: Array<{
+        seat: number;
+        tokens: Array<"poisoned" | "protected">;
+      }>;
+      hiddenReminderTokenSeats: number[];
+      excludedText: string[];
+    };
     slayerAbilityPresent?: boolean;
     virginSpent?: boolean;
     absentStepIds?: string[];
@@ -94,6 +105,85 @@ describe("Trouble Brewing acceptance fixtures", () => {
   it("links every indexed fixture from the manual checklist", () => {
     for (const acceptanceCase of manifest.cases) {
       expect(checklist).toContain(`../../fixtures/acceptance/trouble-brewing/${acceptanceCase.file}`);
+    }
+  });
+
+  it("INF-05 exposes only current Spy reminder tokens and safe player state", async () => {
+    const acceptanceCase = manifest.cases.find(({ id }) => id === "spy-grimoire-reveal");
+    expect(acceptanceCase).toBeDefined();
+    expect(acceptanceCase?.checkpoint.spyReveal).toBeDefined();
+    if (!acceptanceCase?.checkpoint.spyReveal) return;
+
+    const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
+    const gameFile = importGameFileJson(json);
+    const replay = await replayOrThrow(gameFile);
+    const proposal = await proposeAndAppend(gameFile, {
+      type: "confirmStep",
+      payload: { stepId: replay.currentStep?.id ?? "" },
+    });
+    expect(isSpyGrimoireRevealPayload(proposal.revealPayload)).toBe(true);
+    if (!isSpyGrimoireRevealPayload(proposal.revealPayload)) return;
+
+    const expectedTokens = new Map(
+      acceptanceCase.checkpoint.spyReveal.visibleReminderTokens.map(({ seat, tokens }) => [seat, tokens]),
+    );
+    for (const player of proposal.revealPayload.players) {
+      expect(player.reminderTokens).toEqual(expectedTokens.get(player.seat) ?? []);
+      expect(Object.keys(player).sort()).toEqual([
+        "alive",
+        "characterId",
+        "ghostVoteUsed",
+        "name",
+        "playerId",
+        "reminderTokens",
+        "seat",
+      ]);
+    }
+    for (const seat of acceptanceCase.checkpoint.spyReveal.hiddenReminderTokenSeats) {
+      expect(proposal.revealPayload.players.find((player) => player.seat === seat)?.reminderTokens)
+        .toEqual([]);
+    }
+    expect(proposal.revealPayload.players.filter(({ alive }) => !alive).map(({ playerId }) => playerId))
+      .toEqual(acceptanceCase.checkpoint.deadPlayerIds);
+    expect(proposal.revealPayload.players.filter(({ ghostVoteUsed }) => ghostVoteUsed).map(({ playerId }) => playerId))
+      .toEqual(acceptanceCase.checkpoint.ghostVoteUsedPlayerIds);
+
+    const { container } = render(
+      <RevealScreen payload={proposal.revealPayload} onClose={() => undefined} />,
+    );
+    const reveal = within(container).getByLabelText("플레이어 공개 화면");
+    for (const { seat, tokens } of acceptanceCase.checkpoint.spyReveal.visibleReminderTokens) {
+      const player = proposal.revealPayload.players.find((candidate) => candidate.seat === seat);
+      expect(player).toBeDefined();
+      if (!player) continue;
+      const card = within(reveal).getByRole("group", { name: new RegExp(`좌석 ${seat},`) });
+      for (const token of tokens) {
+        expect(within(card).getByText(token === "poisoned" ? "중독" : "보호")).toBeTruthy();
+      }
+    }
+    for (const seat of acceptanceCase.checkpoint.spyReveal.hiddenReminderTokenSeats) {
+      const card = within(reveal).getByRole("group", { name: new RegExp(`좌석 ${seat},`) });
+      expect(within(card).queryByText(/중독|보호/)).toBeNull();
+    }
+    for (const playerId of acceptanceCase.checkpoint.deadPlayerIds ?? []) {
+      const player = proposal.revealPayload.players.find((candidate) => candidate.playerId === playerId);
+      expect(player).toBeDefined();
+      if (!player) continue;
+      expect(within(reveal).getByRole("group", {
+        name: new RegExp(`좌석 ${player.seat},.*사망`),
+      })).toBeTruthy();
+    }
+    for (const playerId of acceptanceCase.checkpoint.ghostVoteUsedPlayerIds ?? []) {
+      const player = proposal.revealPayload.players.find((candidate) => candidate.playerId === playerId);
+      expect(player).toBeDefined();
+      if (!player) continue;
+      expect(within(reveal).getByRole("group", {
+        name: new RegExp(`좌석 ${player.seat},.*유령 투표 사용`),
+      })).toBeTruthy();
+    }
+    for (const excludedText of acceptanceCase.checkpoint.spyReveal.excludedText) {
+      expect(JSON.stringify(proposal.revealPayload)).not.toContain(excludedText);
+      expect(reveal.textContent).not.toContain(excludedText);
     }
   });
 

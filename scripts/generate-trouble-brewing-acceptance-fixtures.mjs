@@ -536,16 +536,59 @@ await addCase({
 await addCase({
   id: "spy-grimoire-reveal",
   category: "night-information",
-  characterIds: ["spy"],
+  characterIds: ["monk", "poisoner", "spy"],
   officialSource: source.spy,
   actionKo: "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
-  expectedKo: "모든 실제 직업과 생사·유령 투표·독·보호 reminder 정보만 안전한 공개 payload로 보인다.",
-  checkpoint: { phase: "firstNight", currentStepId: "firstNight:spy" },
+  expectedKo: "현재 밤의 중독·보호와 실제 직업·생사·유령 투표만 보이고 이전 밤 상태와 수동 토큰·Notes는 숨겨진다.",
+  checkpoint: {
+    phase: "night",
+    currentStepId: "night2:spy",
+    activePoisonTargetId: "player-1",
+    activeProtectionTargetId: "player-4",
+    deadPlayerIds: ["player-6"],
+    ghostVoteUsedPlayerIds: ["player-6"],
+    spyReveal: {
+      visibleReminderTokens: [
+        { seat: 1, tokens: ["poisoned"] },
+        { seat: 4, tokens: ["protected"] },
+      ],
+      hiddenReminderTokenSeats: [2, 3, 7],
+      excludedText: ["abilitySpent", "redHerring", "safe", "INF-05 비공개 Storyteller Notes"],
+    },
+  },
 }, () => {
   const game = createGame("spy-grimoire-reveal", roster([
-    "washerwoman", "chef", "empath", "fortuneTeller", "virgin", "spy", "imp",
+    "washerwoman", "chef", "empath", "fortuneTeller", "monk",
+    "virgin", "mayor", "poisoner", "spy", "imp",
   ]));
-  advanceTo(game, "firstNight:spy");
+  appendCommand(game, {
+    type: "updatePlayerAnnotations",
+    payload: {
+      playerId: "player-7",
+      expectedEventCount: game.game.events.length,
+      systemTokenIds: ["protected", "abilitySpent"],
+      scriptTokens: [
+        { characterId: "poisoner", tokenId: "poisoned" },
+        { characterId: "monk", tokenId: "safe" },
+        { characterId: "fortuneTeller", tokenId: "redHerring" },
+      ],
+      notes: "INF-05 비공개 Storyteller Notes",
+    },
+  });
+  advanceTo(game, "day:nomination:1", {
+    "firstNight:poisoner": confirmStep("firstNight:poisoner", { playerIds: ["player-2"] }),
+  });
+  appendManualDeath(game, "player-6");
+  startNomination(game, "player-1", "player-2");
+  confirmNominationVote(game, ["player-6"]);
+  advanceTo(game, "night2:spy", {
+    "night:poisoner": confirmStep("night:poisoner", { playerIds: ["player-2"] }),
+    "night:monk": confirmStep("night:monk", { playerIds: ["player-3"] }),
+    "night:imp": confirmStep("night:imp", { playerIds: ["player-6"] }),
+    "night2:poisoner": confirmStep("night2:poisoner", { playerIds: ["player-1"] }),
+    "night2:monk": confirmStep("night2:monk", { playerIds: ["player-4"] }),
+    "night2:imp": confirmStep("night2:imp", { playerIds: ["player-6"] }),
+  });
   return game;
 });
 
