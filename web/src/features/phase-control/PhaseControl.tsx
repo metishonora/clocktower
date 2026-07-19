@@ -40,12 +40,6 @@ type ConfirmedReveal = {
   confirmedEventCount: number;
 };
 
-type PhaseOverviewLayout = "accordion" | "horizontal";
-
-const MOBILE_PHASE_OVERVIEW_QUERY = "(max-width: 900px)";
-const IPAD_PRO_12_9_SHORT_EDGE = 1024;
-const IPAD_PRO_12_9_LONG_EDGE = 1366;
-
 export function PhaseControl({
   pendingReveal,
   currentStep,
@@ -298,36 +292,13 @@ function CurrentStepPane({
   const [suggestionUsed, setSuggestionUsed] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
-  const phaseOverviewDisclosureRef = useRef<HTMLDetailsElement>(null);
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
-  const [phaseOverviewLayout, setPhaseOverviewLayout] = useState<PhaseOverviewLayout>(currentPhaseOverviewLayout);
   useEffect(() => {
     activeSuggestionRequestRef.current = undefined;
     setSuggesting(false);
     setSuggestionUsed(false);
     setSuggestionError(undefined);
   }, [currentStep?.id, suggestionContextFingerprint]);
-  useEffect(() => {
-    const mobileViewport = typeof window.matchMedia === "function"
-      ? window.matchMedia(MOBILE_PHASE_OVERVIEW_QUERY)
-      : undefined;
-    const syncDisclosure = () => {
-      const layout = currentPhaseOverviewLayout(mobileViewport?.matches);
-      setPhaseOverviewLayout(layout);
-      if (phaseOverviewDisclosureRef.current) {
-        phaseOverviewDisclosureRef.current.open = layout === "horizontal";
-      }
-    };
-    syncDisclosure();
-    mobileViewport?.addEventListener("change", syncDisclosure);
-    window.addEventListener("resize", syncDisclosure);
-    window.screen.orientation?.addEventListener("change", syncDisclosure);
-    return () => {
-      mobileViewport?.removeEventListener("change", syncDisclosure);
-      window.removeEventListener("resize", syncDisclosure);
-      window.screen.orientation?.removeEventListener("change", syncDisclosure);
-    };
-  }, []);
   useEffect(() => {
     currentOverviewItemRef.current?.scrollIntoView?.({ block: "nearest", inline: "center" });
   }, [currentStep?.id]);
@@ -434,8 +405,7 @@ function CurrentStepPane({
 
       <details
         className="phaseOverviewDisclosure"
-        data-layout={phaseOverviewLayout}
-        ref={phaseOverviewDisclosureRef}
+        data-layout="accordion"
       >
         <summary>
           <span>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</span>
@@ -602,27 +572,6 @@ function CurrentStepPane({
 
     </>
   );
-}
-
-function currentPhaseOverviewLayout(mobileViewportMatches?: boolean): PhaseOverviewLayout {
-  if (mobileViewportMatches === undefined && typeof window.matchMedia !== "function") return "accordion";
-  const mobile = mobileViewportMatches ?? window.matchMedia(MOBILE_PHASE_OVERVIEW_QUERY).matches;
-  return mobile || isFullScreenIpadPro12_9() ? "accordion" : "horizontal";
-}
-
-function isFullScreenIpadPro12_9() {
-  const ipad = window.navigator.maxTouchPoints > 1 && (
-    /\b(?:iPad|Macintosh)\b/.test(window.navigator.userAgent)
-    || window.navigator.platform === "iPad"
-    || window.navigator.platform === "MacIntel"
-  );
-  if (!ipad) return false;
-
-  const screenEdges = [window.screen.width, window.screen.height].sort((left, right) => left - right);
-  if (screenEdges[0] !== IPAD_PRO_12_9_SHORT_EDGE || screenEdges[1] !== IPAD_PRO_12_9_LONG_EDGE) return false;
-
-  const viewportWidth = Math.round(window.innerWidth);
-  return viewportWidth === IPAD_PRO_12_9_SHORT_EDGE || viewportWidth === IPAD_PRO_12_9_LONG_EDGE;
 }
 
 function resultEffectDescription(step: PhaseStep): string | undefined {
