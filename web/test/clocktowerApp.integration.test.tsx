@@ -738,7 +738,7 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "악마 깨우기 · 하수인과 블러프 확인" });
     await user.click(screen.getByText("0 / 1 완료"));
     const phaseOverview = screen.getByRole("region", { name: "단계 개요" });
-    expect(within(phaseOverview).getByText("악마 깨우기 · 하수인과 블러프 확인")).toBeTruthy();
+    expect(within(phaseOverview).getByText("악마 (5)")).toBeTruthy();
     const characterInput = await screen.findByLabelText("캐릭터 입력");
     expect(within(characterInput).getByRole("button", { name: /사서/ })).toBeTruthy();
     expect(within(characterInput).getByRole("button", { name: /장의사/ })).toBeTruthy();

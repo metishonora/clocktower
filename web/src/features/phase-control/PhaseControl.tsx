@@ -21,6 +21,7 @@ import type { NominationDraft } from "../voting/useNominationDraft";
 import {
   currentActionPrompt,
   phaseLabel,
+  phaseOverviewTitle,
   phaseStepConfirmation,
   stepInputReady,
   stepStatusLabel,
@@ -422,7 +423,7 @@ function CurrentStepPane({
                 key={step.id}
                 ref={step.status === "current" ? currentOverviewItemRef : undefined}
               >
-                <span>{stepTitle(step, step.playerId ? players.find((player) => player.id === step.playerId) : undefined)}</span>
+                <span>{phaseOverviewTitle(step, players)}</span>
                 <strong>{stepStatusLabel(step.status)}</strong>
               </li>
             ))}
