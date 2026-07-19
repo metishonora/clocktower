@@ -20,7 +20,6 @@ import { characterKind, characterLabel, characters, kindLabels } from "../../set
 import type { NominationDraft } from "../voting/useNominationDraft";
 import {
   currentActionPrompt,
-  inputKindLabel,
   phaseLabel,
   phaseStepConfirmation,
   stepInputReady,
@@ -414,7 +413,6 @@ function CurrentStepPane({
           <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
           <h2>{currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
         </div>
-        {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>
 
       <details className="phaseOverviewDisclosure" ref={phaseOverviewDisclosureRef}>
