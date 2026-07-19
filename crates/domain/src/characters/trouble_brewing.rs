@@ -974,6 +974,9 @@ pub(crate) fn target_information_checks(
     players: &[Player],
     events: &[crate::contracts::GameEvent],
 ) -> Vec<crate::model::TargetInformationCheck> {
+    if step.step_type != StepType::Character {
+        return Vec::new();
+    }
     use crate::model::{TargetInformationCheck, TargetInformationChoice};
     let last_to_night = events.iter().rposition(|event| matches!(&event.kind, crate::contracts::GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
     let impaired = step.player_id.as_ref().is_some_and(|actor| {
