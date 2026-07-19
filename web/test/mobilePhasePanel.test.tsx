@@ -13,12 +13,24 @@ import {
 } from "./clocktowerAppHarness";
 
 const originalMatchMedia = window.matchMedia;
+const originalInnerWidth = window.innerWidth;
+const originalScreenWidth = window.screen.width;
+const originalScreenHeight = window.screen.height;
+const originalUserAgent = window.navigator.userAgent;
+const originalPlatform = window.navigator.platform;
+const originalMaxTouchPoints = window.navigator.maxTouchPoints;
 
 afterEach(() => {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: originalMatchMedia,
   });
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: originalScreenWidth });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: originalScreenHeight });
+  Object.defineProperty(window.navigator, "userAgent", { configurable: true, value: originalUserAgent });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: originalPlatform });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: originalMaxTouchPoints });
 });
 
 function installMobileViewport(initialMatches: boolean) {
@@ -51,6 +63,22 @@ function installMobileViewport(initialMatches: boolean) {
       });
     },
   };
+}
+
+function installIpadPro12_9Gen5Viewport(orientation: "portrait" | "landscape") {
+  installMobileViewport(false);
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: orientation === "portrait" ? 1024 : 1366,
+  });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1",
+  });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "MacIntel" });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 5 });
 }
 
 function renderLivePlay() {
@@ -118,4 +146,38 @@ test("removes the mobile control and restores the existing notice placement abov
   const app = screen.getByTestId("clocktower-app");
   expect(app.dataset.mobilePanelState).toBeUndefined();
   expect(within(app).getByLabelText("Community Created Content 안내").closest(".grimoire")).toBeNull();
+});
+
+test.each(["portrait", "landscape"] as const)(
+  "uses only the vertical phase overview accordion on a full-screen 12.9-inch fifth-generation iPad Pro in %s",
+  async (orientation) => {
+    installIpadPro12_9Gen5Viewport(orientation);
+    renderLivePlay();
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+    const app = screen.getByTestId("clocktower-app");
+
+    expect(overview?.dataset.layout).toBe("accordion");
+    expect(overview?.open).toBe(false);
+    expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
+    expect(app.dataset.mobilePanelState).toBeUndefined();
+    expect(within(app).getByLabelText("Community Created Content 안내").closest(".grimoire")).toBeNull();
+  },
+);
+
+test("keeps the horizontal phase overview on a same-width mouse desktop", async () => {
+  installMobileViewport(false);
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1366 });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "MacIntel" });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 0 });
+  renderLivePlay();
+
+  await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+  const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+
+  expect(overview?.dataset.layout).toBe("horizontal");
+  expect(overview?.open).toBe(true);
 });
