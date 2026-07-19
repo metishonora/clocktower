@@ -435,7 +435,7 @@ export function ClocktowerApp({
                     : undefined
                 }
               />
-              {mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
+              <CommunityContentNotice />
             </section>
 
             <aside className="setupRail">
@@ -529,7 +529,7 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!gameStore.setupConfirmed || !mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
+      {!gameStore.setupConfirmed ? <CommunityContentNotice /> : null}
       {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}

@@ -159,6 +159,17 @@ select:focus-visible {
   white-space: nowrap;
 }
 
+.confirmedShell > .grimoire > .communityContentNotice {
+  position: static;
+  margin: 14px -16px -16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: rgba(238, 232, 220, 0.42);
+  box-shadow: none;
+  padding: 10px 16px;
+}
+
 @media (min-width: 901px) {
   .shell {
     min-height: calc(100vh - 82px);
@@ -169,7 +180,7 @@ select:focus-visible {
     min-height: calc(100vh - 88px);
   }
 
-  .communityContentNotice {
+  .clocktowerApp > .communityContentNotice {
     position: fixed;
     right: 14px;
     bottom: 10px;
@@ -180,16 +191,16 @@ select:focus-visible {
     padding: 6px 12px;
   }
 
-  .communityContentNotice > img {
+  .clocktowerApp > .communityContentNotice > img {
     width: 88px;
     height: 38px;
   }
 
-  .communityContentNotice strong {
+  .clocktowerApp > .communityContentNotice strong {
     font-size: 0.82rem;
   }
 
-  .communityContentNotice span {
+  .clocktowerApp > .communityContentNotice span {
     font-size: 0.68rem;
   }
 }
@@ -4034,17 +4045,6 @@ select {
     transform: translateY(4px) rotate(225deg);
   }
 
-  .mobileLivePlay .confirmedShell > .grimoire > .communityContentNotice {
-    position: static;
-    margin: 14px -16px -16px;
-    border: 0;
-    border-top: 1px solid var(--line);
-    border-radius: 0 0 8px 8px;
-    background: rgba(238, 232, 220, 0.42);
-    box-shadow: none;
-    padding: 10px 16px;
-  }
-
   .setupShell {
     grid-template-columns: 1fr;
   }
@@ -4098,7 +4098,7 @@ select {
     padding: 12px;
   }
 
-  .mobileLivePlay .confirmedShell > .grimoire > .communityContentNotice {
+  .confirmedShell > .grimoire > .communityContentNotice {
     margin: 14px -12px -12px;
   }
 

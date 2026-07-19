@@ -131,7 +131,10 @@ test("keeps the mobile CCC notice in the Grimoire flow and resets panel state on
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   const notice = screen.getByLabelText("Community Created Content 안내");
-  expect(notice.closest(".grimoire")).not.toBeNull();
+  const grimoire = notice.closest(".grimoire");
+  expect(grimoire).not.toBeNull();
+  expect(grimoire?.lastElementChild).toBe(notice);
+  expect(screen.getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
   await user.click(screen.getByTestId("mobile-phase-panel-toggle"));
   expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("grimoire");
 
@@ -141,7 +144,7 @@ test("keeps the mobile CCC notice in the Grimoire flow and resets panel state on
   expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("controls");
 });
 
-test("removes the mobile control and restores the existing notice placement above 900px", async () => {
+test("removes the mobile control but keeps the live notice in the Grimoire above 900px", async () => {
   const viewport = installMobileViewport(true);
   renderLivePlay();
 
@@ -152,7 +155,11 @@ test("removes the mobile control and restores the existing notice placement abov
   await waitFor(() => expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull());
   const app = screen.getByTestId("clocktower-app");
   expect(app.dataset.mobilePanelState).toBeUndefined();
-  expect(within(app).getByLabelText("Community Created Content 안내").closest(".grimoire")).toBeNull();
+  const notice = within(app).getByLabelText("Community Created Content 안내");
+  const grimoire = notice.closest(".grimoire");
+  expect(grimoire).not.toBeNull();
+  expect(grimoire?.lastElementChild).toBe(notice);
+  expect(within(app).getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
 });
 
 test.each(["portrait", "landscape"] as const)(
@@ -169,7 +176,11 @@ test.each(["portrait", "landscape"] as const)(
     expect(overview?.open).toBe(false);
     expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
     expect(app.dataset.mobilePanelState).toBeUndefined();
-    expect(within(app).getByLabelText("Community Created Content 안내").closest(".grimoire")).toBeNull();
+    const notice = within(app).getByLabelText("Community Created Content 안내");
+    const grimoire = notice.closest(".grimoire");
+    expect(grimoire).not.toBeNull();
+    expect(grimoire?.lastElementChild).toBe(notice);
+    expect(within(app).getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
   },
 );
 
