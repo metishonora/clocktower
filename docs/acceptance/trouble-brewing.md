@@ -53,10 +53,10 @@
 
 ## 1. Setup과 공통 계약
 
-- [ ] `SET-01` [setup-standard-distribution.json](../../fixtures/acceptance/trouble-brewing/setup-standard-distribution.json) — 7명 분포가 5 Townsfolk / 0 Outsider / 1 Minion / 1 Demon이며 설정 경고가 없는지 확인한다.
-- [ ] `SET-02` [setup-baron-outsiders.json](../../fixtures/acceptance/trouble-brewing/setup-baron-outsiders.json) — Baron 설정이 3/2/1/1 분포를 만들고 지속되는지 확인한다.
-- [ ] `SET-03` [setup-drunk-shown-townsfolk.json](../../fixtures/acceptance/trouble-brewing/setup-drunk-shown-townsfolk.json) — 6번의 actual Drunk와 shown Slayer가 분리되는지 확인한다.
-- [ ] `SET-04` [setup-duplicate-character-warning.json](../../fixtures/acceptance/trouble-brewing/setup-duplicate-character-warning.json) — 중복 실제 직업을 막지 않고 `DUPLICATE_ACTUAL_CHARACTER` 경고로 알리는지 확인한다.
+- [x] `SET-01` [setup-standard-distribution.json](../../fixtures/acceptance/trouble-brewing/setup-standard-distribution.json) — 7명 분포가 5 Townsfolk / 0 Outsider / 1 Minion / 1 Demon이며 설정 경고가 없는지 확인한다.
+- [x] `SET-02` [setup-baron-outsiders.json](../../fixtures/acceptance/trouble-brewing/setup-baron-outsiders.json) — Baron 설정이 3/2/1/1 분포를 만들고 지속되는지 확인한다.
+- [x] `SET-03` [setup-drunk-shown-townsfolk.json](../../fixtures/acceptance/trouble-brewing/setup-drunk-shown-townsfolk.json) — 6번의 actual Drunk와 shown Slayer가 분리되는지 확인한다.
+- [x] `SET-04` [setup-duplicate-character-warning.json](../../fixtures/acceptance/trouble-brewing/setup-duplicate-character-warning.json) — 중복 실제 직업을 막지 않고 `DUPLICATE_ACTUAL_CHARACTER` 경고로 알리는지 확인한다.
 - [x] **KNOWN FAIL `SET-05`** [small-game-evil-info-known-deviation.json](../../fixtures/acceptance/trouble-brewing/small-game-evil-info-known-deviation.json) — 공식 룰은 5~6명에게 Minion/Demon 정보와 Demon 블러프를 주지 않지만 현재 앱은 `firstNight:minionInfo`와 `firstNight:demonInfo`를 생성한다.
 
 ## 2. 첫날 밤과 정보 직업
