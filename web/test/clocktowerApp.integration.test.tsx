@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { GameFile, ReplayState, RevealPayload } from "../src/core/types";
+import { IndexedDbGameStorageDriver } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { seatLayoutPositions } from "../src/setupDraft";
 import {
@@ -24,6 +26,55 @@ afterEach(() => {
 });
 
 describe("ClocktowerApp live-play integration", () => {
+  test("keeps an unsupported IndexedDB autosave until the existing new-game recovery is chosen", async () => {
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: step({ id: "unused" }) }),
+      replayAfterProposal: replayState({ currentStep: step({ id: "unused" }), eventCount: 2 }),
+      proposal: proposal(gameFile().game.events[0]),
+    });
+    const idb = new IDBFactory();
+    const unsupportedGame = { ...gameFile(), schemaVersion: 1 };
+    await putRawLatestGame(idb, unsupportedGame);
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new IndexedDbGameStorageDriver(idb)} />);
+
+    expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
+    expect((screen.getByRole("button", { name: "플레이어 추가" }) as HTMLButtonElement).disabled).toBe(false);
+
+    const seatMap = screen.getByLabelText("조정 가능한 마도서 좌석 맵");
+    const assignments = [
+      ["플레이어 1", "세탁부"],
+      ["플레이어 2", "사서"],
+      ["플레이어 3", "요리사"],
+      ["플레이어 4", "독살범"],
+      ["플레이어 5", "임프"],
+    ] as const;
+    for (const [playerName, characterName] of assignments) {
+      await user.click(within(seatMap).getByRole("button", { name: new RegExp(playerName) }));
+      const characterButton = screen.getByText(characterName, { selector: ".characterText strong" }).closest("button");
+      if (!characterButton) throw new Error(`${characterName} character card was not rendered`);
+      await user.click(characterButton);
+    }
+
+    expect((screen.getByRole("button", { name: "설정 확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(await getRawLatestGame(idb)).toEqual(unsupportedGame);
+
+    await user.click(screen.getByRole("button", { name: "새 게임" }));
+
+    await waitFor(() => {
+      expect(screen.queryAllByText("지원하지 않는 게임 파일 버전입니다.")).toHaveLength(0);
+    });
+    await waitFor(async () => {
+      expect(await getRawLatestGame(idb)).toMatchObject({
+        schemaVersion: 2,
+        game: { events: [] },
+      });
+    });
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
   test("rejects an invalid stored log as a whole and replaces it only after starting a new game", async () => {
     const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
     const core = createCoreHarness({
@@ -1824,6 +1875,40 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
 
+  test("reports an incompatible import without confirming or replacing the current game", async () => {
+    const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const storedGame = gameFile();
+    const storage = new MemoryGameStorageDriver(storedGame);
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
+    const savesBeforeImport = storage.savedGames.length;
+    const incompatibleGame = { ...gameFile(), schemaVersion: 1 };
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!fileInput) throw new Error("JSON file input was not rendered");
+
+    await user.upload(
+      fileInput,
+      new File([JSON.stringify(incompatibleGame)], "old-clocktower.json", { type: "application/json" }),
+    );
+
+    expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getAllByText("초기 설정 확정").length).toBeGreaterThan(0);
+    expect(core.replay).not.toHaveBeenCalledWith(expect.objectContaining({ schemaVersion: 1 }));
+    expect(storage.savedGames).toHaveLength(savesBeforeImport);
+    expect(latestSavedGame(storage.savedGames)).toEqual(storedGame);
+  });
+
   test("uses the living Slayer icon to resolve an explicit Recluse shot into a death confirmation", async () => {
     const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
     const slayerDeathStep = {
@@ -1973,4 +2058,50 @@ function deferred<T>() {
     resolve = resolvePromise;
   });
   return { promise, resolve };
+}
+
+async function putRawLatestGame(idb: IDBFactory, value: unknown): Promise<void> {
+  const database = await openGameDatabase(idb);
+  try {
+    const transaction = database.transaction("game", "readwrite");
+    transaction.objectStore("game").put(value, "latest");
+    await transactionCompletion(transaction);
+  } finally {
+    database.close();
+  }
+}
+
+async function getRawLatestGame(idb: IDBFactory): Promise<unknown> {
+  const database = await openGameDatabase(idb);
+  try {
+    const transaction = database.transaction("game", "readonly");
+    return await requestResult(transaction.objectStore("game").get("latest"));
+  } finally {
+    database.close();
+  }
+}
+
+function openGameDatabase(idb: IDBFactory): Promise<IDBDatabase> {
+  const request = idb.open("clocktower", 1);
+  request.onupgradeneeded = () => {
+    if (!request.result.objectStoreNames.contains("game")) {
+      request.result.createObjectStore("game");
+    }
+  };
+  return requestResult(request);
+}
+
+function requestResult<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function transactionCompletion(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
 }

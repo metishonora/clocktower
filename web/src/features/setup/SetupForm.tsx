@@ -43,6 +43,7 @@ export function SetupForm({
   warnings,
   expectedCounts,
   busy,
+  confirmationBlocked,
   replayResult,
   proposalResult,
   loadError,
@@ -58,6 +59,7 @@ export function SetupForm({
   warnings: CoreWarning[];
   expectedCounts?: SetupDistribution;
   busy: boolean;
+  confirmationBlocked: boolean;
   replayResult?: CoreResult<ReplayState>;
   proposalResult?: CoreResult<Proposal>;
   loadError?: string;
@@ -119,7 +121,12 @@ export function SetupForm({
           {hasConfirmedEvents && !setupConfirmed ? (
             <p className="status pending">저장된 게임을 불러오는 중입니다. 새 게임을 시작하거나 JSON을 가져올 수 있습니다.</p>
           ) : null}
-          <button type="button" className="primaryButton" onClick={onConfirm} disabled={busy || setupIncomplete}>
+          <button
+            type="button"
+            className="primaryButton"
+            onClick={onConfirm}
+            disabled={busy || confirmationBlocked || setupIncomplete}
+          >
             {busy ? "확정 중" : "설정 확정"}
           </button>
           <div className="setupRecoveryActions">
