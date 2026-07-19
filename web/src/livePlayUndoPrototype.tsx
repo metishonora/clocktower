@@ -10,7 +10,7 @@ type PrototypeEvent = {
 };
 
 const setupEvent: PrototypeEvent = { id: "setup", summary: "게임 설정 확정" };
-const poisonerEvent: PrototypeEvent = { id: "poisoner", summary: "독살자가 2번 준호를 선택함" };
+const poisonerEvent: PrototypeEvent = { id: "poisoner", summary: "독살범이 2번 준호를 선택함" };
 const chefEvent: PrototypeEvent = { id: "chef", summary: "요리사 정보 확정 · 1쌍 공개" };
 
 const liveEvents = [setupEvent, poisonerEvent, chefEvent];
@@ -84,14 +84,14 @@ export function LivePlayUndoPrototype() {
       </nav>
 
       <div className="liveUndoWorkspace">
-        <section className="liveUndoGrimoire" aria-label="프로토타입 그리모어">
+        <section className="liveUndoGrimoire" aria-label="프로토타입 마도서">
           <div className="liveUndoTable">
             <span>첫 번째 밤</span>
             <strong>{replayedStep === "chef" ? "2 / 6 완료" : "3 / 6 완료"}</strong>
             <small>{busy ? "다음 상태 재생 중" : "상태 재생 완료"}</small>
           </div>
           {[
-            ["1", "민지", "세탁부"], ["2", "준호", "요리사"], ["3", "서연", "공감능력자"],
+            ["1", "민지", "세탁부"], ["2", "준호", "요리사"], ["3", "서연", "초공감자"],
             ["4", "도윤", "점쟁이"], ["5", "하린", "은둔자"], ["6", "현우", "임프"],
           ].map(([seat, name, character]) => (
             <div className={`liveUndoSeat seat${seat}`} key={seat}>
@@ -113,7 +113,7 @@ export function LivePlayUndoPrototype() {
             ) : (
               <section aria-label="현재 단계 입력" className="liveUndoCurrentStep">
                 <p>첫 번째 밤 · 현재 행동</p>
-                <h2>{replayedStep === "chef" ? "요리사 정보 입력" : "공감능력자 정보 입력"}</h2>
+                <h2>{replayedStep === "chef" ? "요리사 정보 입력" : "초공감자 정보 입력"}</h2>
                 <button type="button">확정</button>
               </section>
             )}

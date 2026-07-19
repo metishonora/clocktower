@@ -6,7 +6,7 @@ import { OfficialAssetsPrototype } from "../src/officialAssetsPrototype";
 test("uses official toolmaker character resources with a persistent community-content notice", () => {
   render(<OfficialAssetsPrototype />);
 
-  const grimoire = screen.getByRole("region", { name: "공식 아이콘 그리모어" });
+  const grimoire = screen.getByRole("region", { name: "공식 아이콘 마도서" });
   const washerwoman = within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" });
   const imp = within(grimoire).getByRole("img", { name: "임프 공식 캐릭터 아이콘" });
   expect(washerwoman.getAttribute("src")).toBe("/assets/characters/tb/washerwoman_g.webp");
@@ -28,6 +28,6 @@ test("compares official icons in setup and live-play surfaces", async () => {
 
   expect(screen.getByRole("heading", { name: "현재 행동" })).toBeTruthy();
   const actor = screen.getByRole("region", { name: "현재 행동자" });
-  expect(within(actor).getByRole("img", { name: "독살자 공식 캐릭터 아이콘" })).toBeTruthy();
+  expect(within(actor).getByRole("img", { name: "독살범 공식 캐릭터 아이콘" })).toBeTruthy();
   expect(screen.queryByRole("heading", { name: "캐릭터 풀" })).toBeNull();
 });

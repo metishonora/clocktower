@@ -33,15 +33,15 @@ const players: PrototypePlayer[] = [
   player("p5", 5, "은지", "은둔자"),
   player("p6", 6, "지우", "수도사", false, true),
   player("p7", 7, "현우", "시장"),
-  player("p8", 8, "유나", "중독자"),
+  player("p8", 8, "유나", "독살범"),
   player("p9", 9, "태오", "임프"),
 ];
 
 const stages: Array<{ key: DayStage; label: string; action?: string }> = [
   { key: "announcement", label: "사망 발표", action: "밀담 시작" },
   { key: "whisper", label: "밀담", action: "토론 시작" },
-  { key: "discussion", label: "토론", action: "지명 및 투표 시작" },
-  { key: "nomination", label: "지명 및 투표", action: "지명 종료" },
+  { key: "discussion", label: "토론", action: "지목 및 투표 시작" },
+  { key: "nomination", label: "지목 및 투표", action: "지목 종료" },
   { key: "execution", label: "처형 확인" },
   { key: "executionDeath", label: "사망 확인" },
   { key: "toNight", label: "밤 전환" },
@@ -151,12 +151,12 @@ export function DayVotingPrototype() {
         <section className="prototypeGrimoirePanel">
           <div className="prototypePanelHeading">
             <div>
-              <p>그리모어</p>
+              <p>마도서</p>
               <h2>Trouble Brewing</h2>
             </div>
             <span>낮</span>
           </div>
-          <div className="prototypeGrimoire" aria-label="프로토타입 그리모어">
+          <div className="prototypeGrimoire" aria-label="프로토타입 마도서">
             <div className="prototypeTableCenter">
               <small>현재 낮</small>
               <strong>{stages[currentStageIndex]?.label}</strong>
@@ -284,10 +284,10 @@ function NominationSurface({
         <small>기준 4표 · 생존자 7명</small>
       </section>
 
-      <section className="prototypeNominationDraft" aria-label="현재 지명 입력">
+      <section className="prototypeNominationDraft" aria-label="현재 지목 입력">
         <div className="prototypeSelectRow">
           <label>
-            지명자
+            지목자
             <select value={nominatorId} onChange={(event) => onNominatorChange(event.target.value)}>
               {players.filter((candidatePlayer) => candidatePlayer.alive).map((candidatePlayer) => (
                 <option value={candidatePlayer.id} key={candidatePlayer.id}>
@@ -297,7 +297,7 @@ function NominationSurface({
             </select>
           </label>
           <label>
-            피지명자
+            피지목자
             <select value={nomineeId} onChange={(event) => onNomineeChange(event.target.value)}>
               {players.filter((candidatePlayer) => candidatePlayer.alive).map((candidatePlayer) => (
                 <option value={candidatePlayer.id} key={candidatePlayer.id}>
@@ -320,7 +320,7 @@ function NominationSurface({
         </dl>
 
         <div className="prototypeNominationActions">
-          <button type="button" className="secondary">지명 종료</button>
+          <button type="button" className="secondary">지목 종료</button>
           <button type="button" className="primary">투표 확정</button>
         </div>
       </section>
@@ -399,7 +399,7 @@ function StageSurface({
     discussion: {
       title: "토론",
       value: "생존자 7명",
-      action: "지명 및 투표 시작",
+      action: "지목 및 투표 시작",
     },
   };
   const current = content[stage];

@@ -73,7 +73,7 @@ impl ErrorKind {
             Self::UnknownCharacter => ("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."),
             Self::InvalidDrunkShownCharacter => (
                 "INVALID_DRUNK_SHOWN_CHARACTER",
-                "Drunk의 Shown Character는 마을주민이어야 합니다.",
+                "주정뱅이에게 보여준 캐릭터는 주민이어야 합니다.",
             ),
             Self::InvalidSeating => (
                 "INVALID_SEATING",
@@ -121,16 +121,36 @@ impl ErrorKind {
             ),
             Self::NoValidDraftSuggestion => (
                 "NO_VALID_DRAFT_SUGGESTION",
-                "무작위 추천을 만들 수 없습니다. Actual Character 배정과 현재 단계 조건을 확인하세요.",
+                "무작위 추천을 만들 수 없습니다. 실제 캐릭터 배정과 현재 단계 조건을 확인하세요.",
             ),
-            Self::SlayerWrongPhase => ("SLAYER_WRONG_PHASE", "토론 중에만 학살자 능력을 사용할 수 있습니다."),
-            Self::StaleCommand => ("STALE_COMMAND", "게임 상태가 변경되었습니다. 다시 선택하세요."),
-            Self::InvalidSlayerActor => ("INVALID_SLAYER_ACTOR", "능력을 사용할 수 있는 학살자가 아닙니다."),
-            Self::SlayerAlreadyUsed => ("SLAYER_ALREADY_USED", "학살자 능력을 이미 사용했습니다."),
-            Self::InvalidSlayerTarget => ("INVALID_SLAYER_TARGET", "학살자 대상을 찾을 수 없습니다."),
-            Self::InvalidSlayerRegistration => ("INVALID_SLAYER_REGISTRATION", "대상의 악마 등록 판정이 올바르지 않습니다."),
-            Self::MissingMayorDecision => ("MISSING_MAYOR_DECISION", "시장 사망 또는 튕김 결정을 선택해야 합니다."),
-            Self::InvalidMayorDecision => ("INVALID_MAYOR_DECISION", "현재 공격에 적용할 수 없는 시장 결정입니다."),
+            Self::SlayerWrongPhase => (
+                "SLAYER_WRONG_PHASE",
+                "토론 중에만 처단자 능력을 사용할 수 있습니다.",
+            ),
+            Self::StaleCommand => (
+                "STALE_COMMAND",
+                "게임 상태가 변경되었습니다. 다시 선택하세요.",
+            ),
+            Self::InvalidSlayerActor => (
+                "INVALID_SLAYER_ACTOR",
+                "능력을 사용할 수 있는 처단자가 아닙니다.",
+            ),
+            Self::SlayerAlreadyUsed => ("SLAYER_ALREADY_USED", "처단자 능력을 이미 사용했습니다."),
+            Self::InvalidSlayerTarget => {
+                ("INVALID_SLAYER_TARGET", "처단자 대상을 찾을 수 없습니다.")
+            }
+            Self::InvalidSlayerRegistration => (
+                "INVALID_SLAYER_REGISTRATION",
+                "대상의 악마 등록 판정이 올바르지 않습니다.",
+            ),
+            Self::MissingMayorDecision => (
+                "MISSING_MAYOR_DECISION",
+                "시장 사망 또는 튕김 결정을 선택해야 합니다.",
+            ),
+            Self::InvalidMayorDecision => (
+                "INVALID_MAYOR_DECISION",
+                "현재 공격에 적용할 수 없는 시장 결정입니다.",
+            ),
             Self::InvalidPlayerAnnotations => (
                 "INVALID_PLAYER_ANNOTATIONS",
                 "플레이어 토큰 또는 Notes 입력이 올바르지 않습니다.",

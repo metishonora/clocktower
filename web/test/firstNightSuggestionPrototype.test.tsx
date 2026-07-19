@@ -91,10 +91,10 @@ test("suggests zero Outsiders and an ability-shaped impaired result", async () =
   render(<FirstNightSuggestionPrototype randomIndex={firstChoice} />);
 
   await user.click(screen.getByRole("button", { name: "무작위 추천" }));
-  expect(screen.getByRole("button", { name: "외부인 0명" }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByRole("button", { name: "외지인 0명" }).getAttribute("aria-pressed")).toBe("true");
   expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
 
-  await user.click(screen.getByRole("button", { name: "술취한 조사관" }));
+  await user.click(screen.getByRole("button", { name: "술취한 수사관" }));
   const input = screen.getByLabelText("설정 정보 후보 입력");
   await user.click(within(input).getByRole("button", { name: "무작위 추천" }));
   expect(within(input).getAllByRole("button", { pressed: true })).toHaveLength(2);
@@ -132,6 +132,6 @@ test("shows only an actionable failure and preserves the current input", async (
 
   await user.click(within(input).getByRole("button", { name: "무작위 추천" }));
   expect(existing.getAttribute("aria-pressed")).toBe("true");
-  expect(screen.getByRole("alert").textContent).toMatch(/3개 미만.*Actual Character.*현재 입력은 유지했습니다/);
+  expect(screen.getByRole("alert").textContent).toMatch(/3개 미만.*실제 캐릭터.*현재 입력은 유지했습니다/);
   expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
 });

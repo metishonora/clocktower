@@ -43,9 +43,9 @@ export function NominationVoteInput({
     return (
       <div className="nominationVoteInput">
         <p className="nominationPair">
-          <strong>{nominator ? seatPlayerLabel(nominator) : "지명자"}</strong>
+          <strong>{nominator ? seatPlayerLabel(nominator) : "지목자"}</strong>
           <span> → </span>
-          <strong>{nominee ? seatPlayerLabel(nominee) : "피지명자"}</strong>
+          <strong>{nominee ? seatPlayerLabel(nominee) : "피지목자"}</strong>
         </p>
         <dl className="votePreview">
           <div><dt>현재 표</dt><dd>{validVotePlayers.length}표</dd></div>
@@ -60,7 +60,7 @@ export function NominationVoteInput({
     <div className="nominationVoteInput">
       <div className="nominationSelectors">
         <label>
-          지명자
+          지목자
           <select
             value={draft.nominatorId}
             disabled={busy}
@@ -75,7 +75,7 @@ export function NominationVoteInput({
           </select>
         </label>
         <label>
-          피지명자
+          피지목자
           <select
             value={draft.nomineeId}
             disabled={busy}

@@ -51,7 +51,7 @@ test("keeps one wall-clock runtime through same-phase steps and foreground catch
   expect(screen.getByLabelText("2일차 낮 경과 시간 05:07")).toBeTruthy();
 
   await user.click(screen.getByRole("button", { name: "토론 시작" }));
-  expect(await screen.findByRole("button", { name: "지명 및 투표 시작" })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: "지목 및 투표 시작" })).toBeTruthy();
   expect(screen.getByLabelText("2일차 낮 경과 시간 05:07")).toBeTruthy();
 
   const replayCallsBeforeCatchUp = vi.mocked(core.replay).mock.calls.length;

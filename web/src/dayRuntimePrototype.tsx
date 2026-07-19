@@ -29,10 +29,10 @@ const surfaces: Array<{ key: PrototypeSurface; label: string }> = [
 const seats = [
   { seat: 1, name: "민지", character: "세탁부", status: "생존", x: 50, y: 6 },
   { seat: 2, name: "준호", character: "요리사", status: "생존", x: 79, y: 17 },
-  { seat: 3, name: "서연", character: "학살자", status: "생존", x: 94, y: 47 },
-  { seat: 4, name: "도윤", character: "공감능력자", status: "생존", x: 81, y: 79 },
+  { seat: 3, name: "서연", character: "처단자", status: "생존", x: 94, y: 47 },
+  { seat: 4, name: "도윤", character: "초공감자", status: "생존", x: 81, y: 79 },
   { seat: 5, name: "하린", character: "은둔자", status: "사망 · 유령표", x: 50, y: 94 },
-  { seat: 6, name: "지우", character: "독살자", status: "생존", x: 19, y: 79 },
+  { seat: 6, name: "지우", character: "독살범", status: "생존", x: 19, y: 79 },
   { seat: 7, name: "현우", character: "시장", status: "생존", x: 6, y: 47 },
   { seat: 8, name: "유나", character: "주정뱅이", status: "생존", x: 21, y: 17 },
 ] as const;
@@ -116,10 +116,10 @@ function PrototypeGrimoire({ surface }: { surface: PrototypeSurface }) {
   return (
     <section className="panel dayRuntimePrototypeGrimoire">
       <div className="sectionHeader">
-        <div><p className="eyebrow">그리모어</p><h1>Trouble Brewing</h1></div>
+        <div><p className="eyebrow">마도서</p><h1>Trouble Brewing</h1></div>
         <span className="phaseBadge">{phase}</span>
       </div>
-      <div className="dayRuntimePrototypeMap" aria-label="프로토타입 그리모어">
+      <div className="dayRuntimePrototypeMap" aria-label="프로토타입 마도서">
         <div className="dayRuntimePrototypeMapCenter"><span>{phase}</span><strong>{surfaceLabel(surface)}</strong></div>
         {seats.map((player) => (
           <div
@@ -187,7 +187,7 @@ function PrototypePhaseBody({ surface }: { surface: PrototypeSurface }) {
   }
 
   if (surface === "setup") {
-    return <section className="currentStepCard dayRuntimePrototypeCard"><strong>초기 Grimoire 준비</strong><p>8명 · 마을주민 5 · 외부인 1 · 하수인 1 · 악마 1</p><button type="button" className="primaryButton">설정 확정</button></section>;
+    return <section className="currentStepCard dayRuntimePrototypeCard"><strong>초기 Grimoire 준비</strong><p>8명 · 주민 5 · 외지인 1 · 하수인 1 · 악마 1</p><button type="button" className="primaryButton">설정 확정</button></section>;
   }
 
   if (surface === "night") {
@@ -216,7 +216,7 @@ function surfaceTitle(surface: PrototypeSurface) {
   return {
     whisper: "밀담",
     discussion: "토론",
-    nomination: "지명 및 투표",
+    nomination: "지목 및 투표",
     execution: "처형 결과",
     followup: "확정된 정보 공개",
     night: "임프: 6번 지우",

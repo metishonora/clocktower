@@ -152,8 +152,8 @@ fn propose_end_game(
     let players = replay_players(&game_file.game.events)?;
     let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
     let team_label = match payload.winning_team {
-        Alignment::Good => "선팀",
-        Alignment::Evil => "악팀",
+        Alignment::Good => "선한 팀",
+        Alignment::Evil => "악한 팀",
     };
     Ok(Proposal {
         event: GameEvent {
@@ -269,7 +269,7 @@ fn propose_slayer_ability(
             },
             phase: Phase::Day,
             summary: format!(
-                "학살자: {actor_label} → {target_label} · {}",
+                "처단자: {actor_label} → {target_label} · {}",
                 if pending {
                     "사망 확인 필요"
                 } else {
@@ -772,7 +772,7 @@ fn night_action_proposal(
                     }
                     Some(crate::contracts::NightActionNoEffectReason::NotActualCharacter) => {
                         if is_poison {
-                            "실제 독살자 아님"
+                            "실제 독살범 아님"
                         } else {
                             "실제 수도사 아님"
                         }
@@ -894,7 +894,7 @@ pub(crate) fn propose_nomination_started(
             },
             phase: current_step.phase,
             summary: format!(
-                "지명 확정: {} → {}",
+                "지목 확정: {} → {}",
                 player_verbose_label(players, &input.nominator_id),
                 player_verbose_label(players, &input.nominee_id)
             ),
@@ -918,7 +918,7 @@ pub(crate) fn propose_nomination_started(
             })]
         },
         preview: json!({
-            "messageKo": if immediate_execution { "지명자를 즉시 처형합니다." } else { "지명을 확정하고 투표로 이동합니다." }
+            "messageKo": if immediate_execution { "지목자를 즉시 처형합니다." } else { "지목을 확정하고 투표로 이동합니다." }
         }),
         reveal_payload: None,
     })

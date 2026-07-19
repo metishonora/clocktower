@@ -34,9 +34,9 @@ export function SlayerAbilityDialog({ actor, players, busy, onClose, onConfirm }
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div ref={dialogRef} className="slayerDialog" role="dialog" aria-modal="true" aria-label="학살자 능력 사용">
+      <div ref={dialogRef} className="slayerDialog" role="dialog" aria-modal="true" aria-label="처단자 능력 사용">
         <header>
-          <div><small>공개 능력</small><h2>학살자 능력 사용</h2></div>
+          <div><small>공개 능력</small><h2>처단자 능력 사용</h2></div>
           <button type="button" aria-label="닫기" onClick={onClose}>×</button>
         </header>
 
@@ -87,7 +87,7 @@ export function SlayerAbilityDialog({ actor, players, busy, onClose, onConfirm }
             disabled={!ready || busy}
             onClick={() => target && onConfirm(target.id, recluseDecision === "demon" ? { kind: "recluseAsDemon", registeredCharacterId: "imp" } : { kind: "canonical" })}
           >
-            학살자 사용 확정
+            처단자 사용 확정
           </button>
         </footer>
       </div>

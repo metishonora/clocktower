@@ -6,8 +6,8 @@ import { StepInputFields } from "../src/features/phase-control/StepInputs";
 import { emptyNominationDraft, type NominationDraft } from "../src/features/voting/useNominationDraft";
 
 const players: Player[] = [
-  player("spy", 1, "스파이", "spy", true),
-  player("virgin", 2, "처녀", "virgin", true),
+  player("spy", 1, "첩자", "spy", true),
+  player("virgin", 2, "성결자", "virgin", true),
   player("mayor", 3, "시장", "mayor", true),
   player("dead", 4, "사망자", "chef", false),
 ];
@@ -29,10 +29,10 @@ describe("issue 11 production workflow", () => {
     const judgments: RegistrationJudgment[][] = [];
     render(<InputHarness step={step} onJudgments={(value) => judgments.push(value)} />);
 
-    fireEvent.change(screen.getByRole("combobox", { name: "지명자" }), { target: { value: "spy" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "피지명자" }), { target: { value: "virgin" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "지목자" }), { target: { value: "spy" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "피지목자" }), { target: { value: "virgin" } });
     expect(screen.queryByText("현재 표")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "마을 주민으로 등록" }));
+    fireEvent.click(screen.getByRole("button", { name: "주민으로 등록" }));
     expect(judgments.at(-1)).toEqual([{ playerId: "spy", registeredAs: "townsfolk" }]);
   });
 

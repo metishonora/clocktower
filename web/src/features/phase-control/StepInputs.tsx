@@ -262,9 +262,9 @@ function RegistrationDecision({
   );
   return (
     <fieldset className="ruleDecisionInput">
-      <legend>스파이 등록</legend>
+      <legend>첩자 등록</legend>
       <button type="button" className={!registeredAsTownsfolk ? "selected" : ""} aria-pressed={!registeredAsTownsfolk} disabled={busy} onClick={() => onChange([])}>악한 팀 그대로</button>
-      <button type="button" className={registeredAsTownsfolk ? "selected" : ""} aria-pressed={registeredAsTownsfolk} disabled={busy} onClick={() => onChange([option])}>마을 주민으로 등록</button>
+      <button type="button" className={registeredAsTownsfolk ? "selected" : ""} aria-pressed={registeredAsTownsfolk} disabled={busy} onClick={() => onChange([option])}>주민으로 등록</button>
     </fieldset>
   );
 }
@@ -503,7 +503,7 @@ function StepSpecificInput({
           </label>
         ) : null}
         {step.requiredInput.zeroAllowed && !zeroOutsidersAvailable ? (
-          <p className="setupInfoZeroUnavailable">실제 외부인이 있어 0명을 선택할 수 없습니다.</p>
+          <p className="setupInfoZeroUnavailable">실제 외지인이 있어 0명을 선택할 수 없습니다.</p>
         ) : null}
         {!zeroOutsiders ? (
           <label>

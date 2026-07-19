@@ -22,7 +22,7 @@ test("keeps the confirmed Minion follow-up concise and opens a safe identity-onl
   expect(within(content).getByText("5번 하린")).toBeTruthy();
   expect(within(content).getByText("4번 도윤")).toBeTruthy();
   expect(within(content).getByText("7번 유진")).toBeTruthy();
-  expect(within(content).queryByText(/독살자|남작|poisoner|baron/)).toBeNull();
+  expect(within(content).queryByText(/독살범|남작|poisoner|baron/)).toBeNull();
 });
 
 test("renders Demon bluffs with official CharacterIcon assets without exposing Minion roles", async () => {
@@ -39,7 +39,7 @@ test("renders Demon bluffs with official CharacterIcon assets without exposing M
   const content = within(reveal).getByRole("region", { name: "악마 정보 내용" });
   expect(within(content).getByText("4번 도윤")).toBeTruthy();
   expect(within(content).getByText("7번 유진")).toBeTruthy();
-  expect(within(content).queryByText(/독살자|남작|poisoner|baron/)).toBeNull();
+  expect(within(content).queryByText(/독살범|남작|poisoner|baron/)).toBeNull();
 
   expect(within(content).getByRole("img", { name: "사서 공식 캐릭터 아이콘" }).getAttribute("src"))
     .toBe("/assets/characters/tb/librarian_g.webp");

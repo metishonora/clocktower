@@ -212,7 +212,7 @@ fn confirming_librarian_zero_outsiders_logs_and_reveals_zero() {
     assert_eq!(actual["ok"], true);
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "1번 Ada(사서)가 외부인 없음을 확인했습니다."
+        "1번 Ada(사서)가 외지인 없음을 확인했습니다."
     );
     assert_eq!(
         actual["value"]["revealPayload"],
@@ -605,7 +605,7 @@ fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
     assert_eq!(actual["value"]["revealPayload"]["value"], 3);
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "2번 Bert(요리사 능력, 실제 술꾼)가 서로 이웃한 악한 팀 3쌍을 확인했습니다. (실제 1쌍 · 술취함)"
+        "2번 Bert(요리사 능력, 실제 주정뱅이)가 서로 이웃한 악한 팀 3쌍을 확인했습니다. (실제 1쌍 · 술취함)"
     );
 }
 
@@ -655,7 +655,7 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
     assert_eq!(minion_actual["ok"], true);
     assert_eq!(
         minion_actual["value"]["event"]["summary"],
-        "하수인 정보 전달 · 악마: 5번 Eve(임프) · 하수인: 6번 Finn(남작), 4번 Dev(독살자)"
+        "하수인 정보 전달 · 악마: 5번 Eve(임프) · 하수인: 6번 Finn(남작), 4번 Dev(독살범)"
     );
     assert_eq!(
         minion_actual["value"]["revealPayload"],
@@ -674,7 +674,7 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
         "player-6",
         "poisoner",
         "baron",
-        "독살자",
+        "독살범",
         "남작",
     ] {
         assert!(!minion_reveal.contains(forbidden), "leaked {forbidden}");
@@ -700,7 +700,7 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
     assert_eq!(demon_actual["ok"], true);
     assert_eq!(
         demon_actual["value"]["event"]["summary"],
-        "악마 정보 전달 · 하수인: 6번 Finn(남작), 4번 Dev(독살자) · 블러프: 사서, 조사관, 장의사"
+        "악마 정보 전달 · 하수인: 6번 Finn(남작), 4번 Dev(독살범) · 블러프: 사서, 수사관, 장의사"
     );
     assert_eq!(
         demon_actual["value"]["event"]["payload"]["information"]["computedResult"],
@@ -736,7 +736,7 @@ fn demon_and_minion_information_steps_return_safe_reveal_payloads() {
         "player-6",
         "poisoner",
         "baron",
-        "독살자",
+        "독살범",
         "남작",
     ] {
         assert!(!demon_reveal.contains(forbidden), "leaked {forbidden}");
@@ -838,7 +838,7 @@ fn spy_step_reveals_grimoire_only_through_reveal_payload() {
     assert_eq!(actual["ok"], true);
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "4번 Dev(스파이)가 마도서를 확인했습니다."
+        "4번 Dev(첩자)가 마도서를 확인했습니다."
     );
     assert_eq!(actual["value"]["event"]["payload"]["input"], Value::Null);
     assert!(actual["value"]["preview"]["messageKo"]
@@ -938,7 +938,7 @@ fn normal_night_spy_snapshot_uses_only_current_confirmed_poison_and_protection()
                 "voterIds": ["player-1", "player-2", "player-3", "player-4", "player-5", "player-6"],
                 "ghostVoteSpentPlayerIds": ["player-1"]
             },
-            "summary": "지명 투표 확정",
+            "summary": "지목 투표 확정",
             "createdAt": "2026-01-01T00:00:00.000Z"
         },
         phase_event("phaseStepSkipped", "day:nomination:2"),
@@ -1051,7 +1051,7 @@ fn replay_keeps_legacy_schema_v1_spy_information_compatible() {
                     "deliveryContext": { "type": "fixed" }
                 }
             },
-            "summary": "스파이 정보 확정",
+            "summary": "첩자 정보 확정",
             "createdAt": "2026-01-01T00:00:00.000Z"
         }
     ]));
@@ -1087,7 +1087,7 @@ fn confirming_empath_step_returns_reveal_payload() {
     );
     assert_eq!(
         actual["value"]["event"]["summary"],
-        "3번 Cora(공감능력자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다."
+        "3번 Cora(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다."
     );
 }
 

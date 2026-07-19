@@ -378,7 +378,7 @@ export function ClocktowerApp({
             <section className="panel grimoire">
               <div className="sectionHeader">
                 <div>
-                  <p className="eyebrow">그리모어</p>
+                  <p className="eyebrow">마도서</p>
                   <h1>Trouble Brewing</h1>
                 </div>
                 <span className="phaseBadge">설정 확정</span>
