@@ -60,7 +60,7 @@ test("renders the long phase order before the action and brings the current step
   expect(disclosure).not.toBeNull();
   expect(disclosure?.open).toBe(false);
   expect(within(disclosure!).getByText("9 / 12 완료")).toBeTruthy();
-  expect(overview.querySelector('li[aria-current="step"]')?.textContent).toContain("임프: 5번 Eun");
+  expect(overview.querySelector('li[aria-current="step"]')?.textContent).toContain("임프 (5)");
   await waitFor(() =>
     expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "center" }),
   );

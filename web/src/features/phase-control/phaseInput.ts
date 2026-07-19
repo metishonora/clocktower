@@ -48,6 +48,38 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   return step.id;
 }
 
+export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): string {
+  const player = step.playerId
+    ? players.find((candidate) => candidate.id === step.playerId)
+    : undefined;
+  if (step.phase !== "firstNight" && step.phase !== "night") {
+    return stepTitle(step, player);
+  }
+  if (step.id.endsWith(":minionInfo")) {
+    return factionOverviewTitle("하수인", "Minion", players);
+  }
+  if (step.id.endsWith(":demonInfo")) {
+    return factionOverviewTitle("악마", "Demon", players);
+  }
+  if (step.character) {
+    const label = characterLabel(step.character);
+    return player ? `${label} (${player.seat})` : label;
+  }
+  return stepTitle(step, player);
+}
+
+function factionOverviewTitle(
+  label: string,
+  kind: CharacterKind,
+  players: Player[],
+): string {
+  const seats = players
+    .filter((player) => characterKind(player.actualCharacter) === kind)
+    .map((player) => player.seat)
+    .sort((left, right) => left - right);
+  return seats.length > 0 ? `${label} (${seats.join(", ")})` : label;
+}
+
 export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "character") return "캐릭터";
   if (stepType === "phaseTransition") return "전환";
