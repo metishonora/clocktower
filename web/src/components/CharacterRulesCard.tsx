@@ -102,7 +102,11 @@ export function CharacterRulesButton({
               </section>
               <details className="characterRulesExample">
                 <summary>예시 보기</summary>
-                <p>{rules.example}</p>
+                <ol>
+                  {rules.examples.map((example, index) => (
+                    <li key={`${rules.id}-example-${index}`}>{example}</li>
+                  ))}
+                </ol>
               </details>
               <a href={rules.sourceUrl} target="_blank" rel="noreferrer">공식 규칙</a>
             </div>
