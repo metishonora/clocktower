@@ -183,6 +183,11 @@ fn fortune_teller_assigns_a_red_herring_before_its_first_typed_boolean_check() {
         before_assignment["value"]["currentStep"]["id"],
         "firstNight:fortuneTellerRedHerring"
     );
+    assert_eq!(
+        before_assignment["value"]["currentStep"]["informationPrompt"],
+        Value::Null,
+        "Red Herring assignment must not expose the later Fortune Teller information prompt"
+    );
 
     let assign = propose(
         &game,
