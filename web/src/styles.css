@@ -1877,6 +1877,69 @@ select {
   display: none;
 }
 
+.phaseOverviewDisclosure[data-layout="accordion"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > summary {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > summary::-webkit-details-marker {
+  display: none;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > summary::before {
+  color: var(--primary);
+  content: "+";
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"][open] > summary::before {
+  content: "−";
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > summary span {
+  flex: 1;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > summary small {
+  color: var(--muted);
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"][open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > .phaseOverview {
+  padding: 10px;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] > .phaseOverview > h3 {
+  display: none;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] .phaseOverview ol {
+  grid-template-columns: 1fr;
+  grid-auto-columns: auto;
+  grid-auto-flow: row;
+  overflow-x: visible;
+  padding-bottom: 0;
+  scroll-snap-type: none;
+}
+
+.phaseOverviewDisclosure[data-layout="accordion"] .phaseOverview li {
+  scroll-snap-align: none;
+}
+
 .phaseOverview {
   display: grid;
   min-width: 0;
@@ -3969,69 +4032,6 @@ select {
     background: rgba(238, 232, 220, 0.42);
     box-shadow: none;
     padding: 10px 16px;
-  }
-
-  .phaseOverviewDisclosure {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fffdf8;
-  }
-
-  .phaseOverviewDisclosure > summary {
-    display: flex;
-    min-height: 48px;
-    align-items: center;
-    gap: 9px;
-    padding: 9px 10px;
-    cursor: pointer;
-    font-weight: 900;
-    list-style: none;
-  }
-
-  .phaseOverviewDisclosure > summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .phaseOverviewDisclosure > summary::before {
-    color: var(--primary);
-    content: "+";
-  }
-
-  .phaseOverviewDisclosure[open] > summary::before {
-    content: "−";
-  }
-
-  .phaseOverviewDisclosure > summary span {
-    flex: 1;
-  }
-
-  .phaseOverviewDisclosure > summary small {
-    color: var(--muted);
-  }
-
-  .phaseOverviewDisclosure[open] > summary {
-    border-bottom: 1px solid var(--line);
-  }
-
-  .phaseOverviewDisclosure > .phaseOverview {
-    padding: 10px;
-  }
-
-  .phaseOverviewDisclosure > .phaseOverview > h3 {
-    display: none;
-  }
-
-  .phaseOverview ol {
-    grid-template-columns: 1fr;
-    grid-auto-columns: auto;
-    grid-auto-flow: row;
-    overflow-x: visible;
-    padding-bottom: 0;
-    scroll-snap-type: none;
-  }
-
-  .phaseOverview li {
-    scroll-snap-align: none;
   }
 
   .setupShell {
