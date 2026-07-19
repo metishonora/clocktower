@@ -519,6 +519,7 @@ export function ClocktowerApp({
               storageReady: gameStore.storageReady,
               replayingConfirmedGame: gameStore.hasConfirmedEvents && !gameStore.setupConfirmed,
             })}
+            confirmationBlocked={gameStore.setupConfirmationBlocked}
             replayResult={gameStore.replayResult}
             proposalResult={gameStore.proposalResult}
             loadError={gameStore.loadError}
