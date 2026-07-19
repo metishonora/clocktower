@@ -89,18 +89,21 @@ export function Grimoire({
         }`}
         aria-label="라이브 마도서 좌석 맵"
       >
-        <div className="draftLayoutTableMark" aria-hidden="true">
-          테이블
+        <div
+          className={`draftLayoutTableMark ${centerStatus?.kind === "active" ? "hasPhaseRuntime" : ""}`}
+          aria-hidden={centerStatus?.kind === "active" ? undefined : true}
+        >
+          {centerStatus?.kind === "active" ? (
+            <strong
+              className="phaseRuntimeCenter phaseRuntimeTable"
+              aria-label={`${centerStatus.phaseLabel} 경과 시간 ${centerStatus.runtime}`}
+            >
+              <span>{centerStatus.phaseLabel}</span>
+              <b>{centerStatus.runtime}</b>
+            </strong>
+          ) : "테이블"}
         </div>
-        {centerStatus?.kind === "active" ? (
-          <strong
-            className="mapCenter phaseRuntimeCenter"
-            aria-label={`${centerStatus.phaseLabel} 경과 시간 ${centerStatus.runtime}`}
-          >
-            <span>{centerStatus.phaseLabel}</span>
-            <b>{centerStatus.runtime}</b>
-          </strong>
-        ) : (
+        {centerStatus?.kind === "active" ? null : (
           <strong className="mapCenter">
             {centerStatus?.kind === "ended" ? "게임 종료" : "입력 중"}
           </strong>

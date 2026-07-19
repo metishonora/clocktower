@@ -7,6 +7,7 @@ type PrototypeStatus = "firstNight" | "day" | "night" | "laterDay" | "ended" | "
 type PlayerCount = 5 | 12 | 15;
 type RuntimeValue = "00:00" | "12:34" | "60:00";
 type MobilePanelState = "controls" | "grimoire";
+type Placement = "table" | "center";
 
 const statusOptions: Array<{
   key: PrototypeStatus;
@@ -36,11 +37,13 @@ export function GrimoirePhaseRuntimePrototype() {
   const [playerCount, setPlayerCount] = useState<PlayerCount>(12);
   const [preset, setPreset] = useState<SeatLayoutPreset>("circle");
   const [mobilePanelState, setMobilePanelState] = useState<MobilePanelState>("grimoire");
+  const [placement, setPlacement] = useState<Placement>("table");
   const positions = useMemo(
     () => seatLayoutPositions(playerCount, preset),
     [playerCount, preset],
   );
   const currentStatus = statusOptions.find((candidate) => candidate.key === status) ?? statusOptions[1];
+  const activeStatus = status !== "ended" && status !== "setup";
 
   return (
     <main
@@ -50,10 +53,26 @@ export function GrimoirePhaseRuntimePrototype() {
     >
       <header className="issue67Toolbar">
         <div className="issue67Title">
-          <span>이슈 #67 프로토타입</span>
-          <strong>마도서 중앙 페이즈 · 시간</strong>
-          <small>선택안 B · 작은 페이즈명, 큰 타이머</small>
+          <span>이슈 #77 프로토타입</span>
+          <strong>테이블 영역 페이즈 · 시간</strong>
+          <small>테이블 문구 대체 · 낮은 2줄 타이머</small>
         </div>
+        <ControlGroup label="배치 비교">
+          <ChoiceButton
+            label="테이블 영역"
+            selected={placement === "table"}
+            onClick={() => setPlacement("table")}
+          >
+            테이블 영역
+          </ChoiceButton>
+          <ChoiceButton
+            label="기존 중앙"
+            selected={placement === "center"}
+            onClick={() => setPlacement("center")}
+          >
+            기존 중앙
+          </ChoiceButton>
+        </ControlGroup>
         <ControlGroup label="중앙 상태">
           {statusOptions.map((candidate) => (
             <ChoiceButton
@@ -108,8 +127,22 @@ export function GrimoirePhaseRuntimePrototype() {
             className={`issue67SeatMap ${playerCount >= 12 ? "compact" : ""}`}
             aria-label={`${playerCount}명 ${presetLabels[preset]} 좌석 맵`}
           >
-            <div className="issue67TableMark" aria-hidden="true">테이블</div>
-            <CenterStatus status={status} label={currentStatus.label} runtime={runtime} />
+            <div
+              className={`issue67TableMark ${placement === "table" && activeStatus ? "hasRuntime" : ""}`}
+              aria-hidden={placement === "table" && activeStatus ? undefined : true}
+            >
+              {placement === "table" && activeStatus ? (
+                <CenterStatus
+                  status={status}
+                  label={currentStatus.label}
+                  runtime={runtime}
+                  tablePlacement
+                />
+              ) : "테이블"}
+            </div>
+            {placement === "center" || !activeStatus ? (
+              <CenterStatus status={status} label={currentStatus.label} runtime={runtime} />
+            ) : null}
             {Array.from({ length: playerCount }, (_, index) => {
               const seat = index + 1;
               const position = positions[seat] ?? { x: 50, y: 50 };
@@ -170,16 +203,25 @@ function CenterStatus({
   status,
   label,
   runtime,
+  tablePlacement = false,
 }: {
   status: PrototypeStatus;
   label: string;
   runtime: RuntimeValue;
+  tablePlacement?: boolean;
 }) {
   if (status === "ended" || status === "setup") {
-    return <strong className="issue67MapCenter issue67MapCenterSingle">{label}</strong>;
+    return (
+      <strong className={`issue67MapCenter issue67MapCenterSingle ${tablePlacement ? "issue77TableRuntime" : ""}`}>
+        {label}
+      </strong>
+    );
   }
   return (
-    <strong className="issue67MapCenter" aria-label={`${label} 경과 시간 ${runtime}`}>
+    <strong
+      className={`issue67MapCenter ${tablePlacement ? "issue77TableRuntime" : ""}`}
+      aria-label={`${label} 경과 시간 ${runtime}`}
+    >
       <span>{label}</span>
       <b>{runtime}</b>
     </strong>

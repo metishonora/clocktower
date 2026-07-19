@@ -33,6 +33,9 @@ test("reviews the approved compact center treatment across phase, count, layout,
   const center = within(prototype).getByLabelText("2일차 낮 경과 시간 12:34");
   expect(center.textContent).toBe("2일차 낮12:34");
   expect(within(center).queryByText("경과")).toBeNull();
+  expect(center.parentElement?.classList.contains("issue67TableMark")).toBe(true);
+  expect(within(prototype).getByRole("button", { name: "테이블 영역" }).getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).getAllByLabelText(/경과 시간/)).toHaveLength(1);
   expect(within(prototype).getAllByRole("button", { name: /명$/ }).map((button) => button.textContent)).toEqual([
     "5명",
     "12명",
@@ -46,6 +49,10 @@ test("reviews the approved compact center treatment across phase, count, layout,
   expect(within(prototype).getByLabelText("3일차 낮 경과 시간 12:34")).toBeTruthy();
   await user.click(within(prototype).getByRole("button", { name: "2일차 밤" }));
   expect(within(prototype).getByLabelText("2일차 밤 경과 시간 12:34")).toBeTruthy();
+
+  await user.click(within(prototype).getByRole("button", { name: "기존 중앙" }));
+  expect(within(prototype).getByLabelText("2일차 밤 경과 시간 12:34").parentElement?.classList.contains("issue67TableMark"))
+    .toBe(false);
 
   await user.click(within(prototype).getByRole("button", { name: "게임 종료" }));
   expect(within(prototype).getByText("게임 종료")).toBeTruthy();
