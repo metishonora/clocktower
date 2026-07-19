@@ -109,6 +109,13 @@ const DevIssue64EvilInfoRevealPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./characterRulesTooltipPrototype");
+      return { default: module.CharacterRulesTooltipPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -117,6 +124,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevCharacterRulesTooltipPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevCharacterRulesTooltipPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevIssue64EvilInfoRevealPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-64-evil-info"
