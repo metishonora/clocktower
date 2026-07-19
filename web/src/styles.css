@@ -507,6 +507,16 @@ select {
 .slayerAbilityIcon:disabled { border-color: #c9c5bc; background: #98958d; box-shadow: none; opacity: 0.72; }
 .slayerAbilityIcon.spent { filter: grayscale(1); }
 
+.characterRulesSeatInfo {
+  position: absolute;
+  z-index: 5;
+  transform: translate(48px, 28px);
+}
+
+.compactSeats .characterRulesSeatInfo {
+  transform: translate(38px, 24px);
+}
+
 .virginAbilityIcon {
   position: absolute;
   z-index: 3;
@@ -1207,6 +1217,15 @@ select {
   margin: 0;
   font-size: 1.05rem;
 }
+
+.currentActorTitle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.currentActorTitle h3 { flex: 1; }
+.currentActorTitle .characterRulesInfoButton { width: 28px; height: 28px; }
 
 .currentActor p {
   margin: 2px 0 0;
