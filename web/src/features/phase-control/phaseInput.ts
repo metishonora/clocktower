@@ -422,7 +422,19 @@ export function phaseStepConfirmation(
   }
 
   const targetCheck = targetCheckForSelection(step, draft.selectedPlayerIds);
-  const targetChoice = draft.selectedTargetChoice ?? (targetCheck?.choices.length === 1 ? targetCheck.choices[0] : undefined);
+  if (targetCheck && confirmation.input && "playerIds" in confirmation.input) {
+    confirmation.input = {
+      ...confirmation.input,
+      playerIds: [...targetCheck.targetPlayerIds],
+    };
+    delete confirmation.registrationJudgments;
+  }
+  const selectedTargetChoice = draft.selectedTargetChoice;
+  const targetChoice = selectedTargetChoice && targetCheck?.choices.includes(selectedTargetChoice)
+    ? selectedTargetChoice
+    : targetCheck?.choices.length === 1
+      ? targetCheck.choices[0]
+      : undefined;
   if (targetChoice) {
     if (!targetChoice.isComputed || step.informationPrompt?.deliveryMode === "selectable") {
       confirmation.deliveredResult = targetChoice.result;
