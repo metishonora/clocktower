@@ -8,7 +8,7 @@ use crate::{
         setup_info_input_is_valid_registration, setup_info_registration_options,
         spy_grimoire_result,
     },
-    contracts::{GameEvent, GameEventKind},
+    contracts::{GameEvent, GameEventKind, NightActionResolution},
     error::{CoreError, ErrorKind},
     model::{
         ConfirmedInformation, DeliveryContext, DeliveryReason, InformationActor,
@@ -220,6 +220,21 @@ fn confirmed_step_targets(events: &[GameEvent], step_id: &str) -> Vec<String> {
         .iter()
         .rev()
         .find_map(|event| match &event.kind {
+            GameEventKind::NightActionResolved { payload } if payload.step_id == step_id => {
+                match &payload.resolution {
+                    NightActionResolution::Poison {
+                        target_player_id,
+                        applied: true,
+                        ..
+                    }
+                    | NightActionResolution::MonkProtection {
+                        target_player_id,
+                        applied: true,
+                        ..
+                    } => Some(vec![target_player_id.clone()]),
+                    _ => Some(Vec::new()),
+                }
+            }
             GameEventKind::PhaseStepConfirmed { payload } if payload.step_id == step_id => Some(
                 payload
                     .input

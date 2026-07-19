@@ -76,6 +76,8 @@
 - [x] `IMP-02` [poisoner-expiry-at-next-dusk.json](../../fixtures/acceptance/trouble-brewing/poisoner-expiry-at-next-dusk.json) — 다음 밤 시작 때 이전 독이 해제되어 있는지 확인한다.
 - [x] `IMP-02B` [poisoner-death-ends-poison.json](../../fixtures/acceptance/trouble-brewing/poisoner-death-ends-poison.json) — Poisoner 처형 사망을 확정하면 지속 중이던 Empath 독이 즉시 끝나는지 확인한다.
 - [ ] `INF-05` [spy-grimoire-reveal.json](../../fixtures/acceptance/trouble-brewing/spy-grimoire-reveal.json) — Spy reveal에 실제 직업과 필요한 상태만 표시되고 Storyteller 조작 화면 비밀이 새지 않는지 확인한다.
+  - 표시: 1번은 `중독`, 4번은 `보호`, 6번은 사망 및 유령 투표 사용 상태로 보여야 한다.
+  - 숨김: 이전 밤 대상인 2번의 중독과 3번의 보호, 7번의 수동 Script/System Tokens 및 Notes는 보이지 않아야 한다.
 - [ ] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 규칙은 경고·운영 보조이며 강제 무효화하지 않는지 확인한다.
 
 ## 3. 밤 행동과 사망 후속 처리

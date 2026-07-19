@@ -379,14 +379,51 @@
       "id": "spy-grimoire-reveal",
       "category": "night-information",
       "characterIds": [
+        "monk",
+        "poisoner",
         "spy"
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Spy",
       "actionKo": "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
-      "expectedKo": "모든 실제 직업과 생사·유령 투표·독·보호 reminder 정보만 안전한 공개 payload로 보인다.",
+      "expectedKo": "현재 밤의 중독·보호와 실제 직업·생사·유령 투표만 보이고 이전 밤 상태와 수동 토큰·Notes는 숨겨진다.",
       "checkpoint": {
-        "phase": "firstNight",
-        "currentStepId": "firstNight:spy"
+        "phase": "night",
+        "currentStepId": "night2:spy",
+        "activePoisonTargetId": "player-1",
+        "activeProtectionTargetId": "player-4",
+        "deadPlayerIds": [
+          "player-6"
+        ],
+        "ghostVoteUsedPlayerIds": [
+          "player-6"
+        ],
+        "spyReveal": {
+          "visibleReminderTokens": [
+            {
+              "seat": 1,
+              "tokens": [
+                "poisoned"
+              ]
+            },
+            {
+              "seat": 4,
+              "tokens": [
+                "protected"
+              ]
+            }
+          ],
+          "hiddenReminderTokenSeats": [
+            2,
+            3,
+            7
+          ],
+          "excludedText": [
+            "abilitySpent",
+            "redHerring",
+            "safe",
+            "INF-05 비공개 Storyteller Notes"
+          ]
+        }
       },
       "file": "spy-grimoire-reveal.json"
     },
