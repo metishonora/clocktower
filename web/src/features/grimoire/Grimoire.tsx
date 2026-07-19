@@ -8,7 +8,6 @@ import {
 import { voteStatusForPlayer } from "../../voting";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { CharacterIcon } from "../../components/CharacterIcon";
-import { CharacterRulesButton } from "../../components/CharacterRulesCard";
 import { PlayerAnnotationsDialog } from "./PlayerAnnotationsDialog";
 import { playerAnnotationBadges } from "./playerAnnotations";
 
@@ -222,14 +221,6 @@ export function Grimoire({
                   ) : null}
                 </span>
               </button>
-              {actualCharacter ? (
-                <CharacterRulesButton
-                  characterId={actualCharacter}
-                  className="characterRulesSeatInfo"
-                  style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                  ariaLabel={`${seat.seat}번 ${characterLabel(actualCharacter)} 세부 규칙 보기`}
-                />
-              ) : null}
               {confirmedPlayer && manualBadges.length > 0 ? (
                 <div
                   className="playerManualTokens"

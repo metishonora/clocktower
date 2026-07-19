@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { ClocktowerApp } from "../src/main";
 import {
   MemoryGameStorageDriver,
@@ -26,12 +26,26 @@ function renderCharacterStep(character = "washerwoman") {
   render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 }
 
-test("opens a player's official rules card from the production Grimoire", async () => {
+function longPressSeat(name: RegExp) {
+  vi.useFakeTimers();
+  const seat = screen.getByRole("button", { name });
+  fireEvent.pointerDown(seat, { pointerId: 1 });
+  act(() => vi.advanceTimersByTime(550));
+  fireEvent.pointerUp(seat, { pointerId: 1 });
+  vi.useRealTimers();
+}
+
+afterEach(() => vi.useRealTimers());
+
+test("opens a player's official rules card from the production player detail", async () => {
   const user = userEvent.setup();
   renderCharacterStep();
 
   const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
-  const trigger = within(grimoire).getByRole("button", { name: "1번 세탁부 세부 규칙 보기" });
+  expect(within(grimoire).queryByRole("button", { name: "1번 세탁부 세부 규칙 보기" })).toBeNull();
+  longPressSeat(/1번 Ada 좌석 선택/);
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
+  const trigger = within(detail).getByRole("button", { name: "세탁부 세부 규칙 보기" });
   await user.click(trigger);
 
   const dialog = screen.getByRole("dialog", { name: "세탁부 세부 규칙" });
@@ -50,6 +64,7 @@ test("opens a player's official rules card from the production Grimoire", async 
 
   await user.click(within(dialog).getByRole("button", { name: "세부 규칙 닫기" }));
   expect(screen.queryByRole("dialog", { name: "세탁부 세부 규칙" })).toBeNull();
+  expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
   expect(document.activeElement).toBe(trigger);
 });
 

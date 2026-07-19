@@ -9,11 +9,13 @@ export function CharacterRulesButton({
   ariaLabel,
   className = "",
   style,
+  onOpenChange,
 }: {
   characterId?: string;
   ariaLabel: string;
   className?: string;
   style?: CSSProperties;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const rules = characterRulesFor(characterId);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -42,13 +44,19 @@ export function CharacterRulesButton({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [open, onOpenChange]);
 
   if (!rules) return null;
 
   function closeCard() {
     setOpen(false);
+    onOpenChange?.(false);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
+  }
+
+  function openCard() {
+    setOpen(true);
+    onOpenChange?.(true);
   }
 
   const kind = characterKind(rules.id);
@@ -63,7 +71,7 @@ export function CharacterRulesButton({
         aria-label={ariaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen(true)}
+        onClick={openCard}
       >
         ⓘ
       </button>
