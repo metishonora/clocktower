@@ -611,14 +611,17 @@ function currentPhaseOverviewLayout(mobileViewportMatches?: boolean): PhaseOverv
 }
 
 function isFullScreenIpadPro12_9() {
-  const ipad = /\biPad\b/.test(window.navigator.userAgent)
-    || (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+  const ipad = window.navigator.maxTouchPoints > 1 && (
+    /\b(?:iPad|Macintosh)\b/.test(window.navigator.userAgent)
+    || window.navigator.platform === "iPad"
+    || window.navigator.platform === "MacIntel"
+  );
   if (!ipad) return false;
 
   const screenEdges = [window.screen.width, window.screen.height].sort((left, right) => left - right);
   if (screenEdges[0] !== IPAD_PRO_12_9_SHORT_EDGE || screenEdges[1] !== IPAD_PRO_12_9_LONG_EDGE) return false;
 
-  const viewportWidth = Math.round(window.visualViewport?.width ?? window.innerWidth);
+  const viewportWidth = Math.round(window.innerWidth);
   return viewportWidth === IPAD_PRO_12_9_SHORT_EDGE || viewportWidth === IPAD_PRO_12_9_LONG_EDGE;
 }
 

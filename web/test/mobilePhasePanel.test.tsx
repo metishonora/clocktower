@@ -14,6 +14,7 @@ import {
 
 const originalMatchMedia = window.matchMedia;
 const originalInnerWidth = window.innerWidth;
+const originalVisualViewport = window.visualViewport;
 const originalScreenWidth = window.screen.width;
 const originalScreenHeight = window.screen.height;
 const originalUserAgent = window.navigator.userAgent;
@@ -26,6 +27,7 @@ afterEach(() => {
     value: originalMatchMedia,
   });
   Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: originalVisualViewport });
   Object.defineProperty(window.screen, "width", { configurable: true, value: originalScreenWidth });
   Object.defineProperty(window.screen, "height", { configurable: true, value: originalScreenHeight });
   Object.defineProperty(window.navigator, "userAgent", { configurable: true, value: originalUserAgent });
@@ -67,17 +69,22 @@ function installMobileViewport(initialMatches: boolean) {
 
 function installIpadPro12_9Gen5Viewport(orientation: "portrait" | "landscape") {
   installMobileViewport(false);
+  const layoutWidth = orientation === "portrait" ? 1024 : 1366;
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
-    value: orientation === "portrait" ? 1024 : 1366,
+    value: layoutWidth,
+  });
+  Object.defineProperty(window, "visualViewport", {
+    configurable: true,
+    value: { width: layoutWidth - 44 },
   });
   Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
   Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
   Object.defineProperty(window.navigator, "userAgent", {
     configurable: true,
-    value: "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1",
+    value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15",
   });
-  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "MacIntel" });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "iPad" });
   Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 5 });
 }
 
