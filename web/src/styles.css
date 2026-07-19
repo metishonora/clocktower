@@ -5499,6 +5499,12 @@ select {
   padding: 0.75rem 0.9rem;
 }
 
+.nightDeathAnnouncement > .empty {
+  grid-template-columns: 1fr;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
 .targetInformationChoices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));

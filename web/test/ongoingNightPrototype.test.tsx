@@ -52,13 +52,21 @@ test("covers deterministic ongoing-night scenarios and exact operational cues", 
       .every((button) => (button as HTMLButtonElement).disabled),
   ).toBe(true);
 
-  await user.click(screen.getByRole("button", { name: "사망 발표" }));
+  await user.click(screen.getByRole("button", { name: "사망 없음" }));
+  expect(state().selectedPlayerIds).toEqual([]);
+  const emptyAnnouncementPanel = within(screen.getByLabelText("밤 행동 패널"));
+  expect(emptyAnnouncementPanel.getByText("사망자 없음")).toBeTruthy();
+  expect(emptyAnnouncementPanel.queryByLabelText("사망")).toBeNull();
+  expect(screen.getByRole("button", { name: "사망자 없음 발표 확정" })).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: "사망 있음" }));
   expect(state().selectedPlayerIds).toEqual(["p5"]);
   const announcementPanel = within(screen.getByLabelText("밤 행동 패널"));
   expect(announcementPanel.getByLabelText("사망")).toBeTruthy();
   expect(announcementPanel.getByText("5번")).toBeTruthy();
   expect(announcementPanel.getByText("하린")).toBeTruthy();
+  expect(announcementPanel.queryByText("사망자 없음")).toBeNull();
   expect(screen.queryByText("살아있는 플레이어 6")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "발표 확정" }));
+  await user.click(screen.getByRole("button", { name: "사망 발표 확정" }));
   expect(state().confirmed).toBe(true);
 });

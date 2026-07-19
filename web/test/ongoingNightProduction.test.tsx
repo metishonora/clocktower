@@ -251,7 +251,62 @@ describe("ongoing-night production UI", () => {
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });
 
-  test("renders the following-Day death announcement as death icon, seat, and name only", async () => {
+  test("confirms an empty following-Day death announcement explicitly and advances", async () => {
+    const playerRoster = koreanPlayers();
+    const currentStep = step({
+      id: "day2:announceDeaths",
+      phase: "day",
+      stepType: "announcement",
+    });
+    const nextStep = step({
+      id: "day2:whisper",
+      phase: "day",
+      stepType: "whisper",
+    });
+    const initialReplay = replayWithRuleState(
+      replayState({ currentStep, playerRoster }),
+      { unannouncedNightDeathPlayerIds: [] },
+    );
+    const replayAfterProposal = replayWithRuleState(
+      replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
+      { unannouncedNightDeathPlayerIds: [] },
+    );
+    const canonicalEvent = nightDeathsAnnouncedEvent([]);
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal,
+      proposal: proposal(canonicalEvent),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    const announcement = await screen.findByLabelText("밤 사망 발표");
+    expect(within(announcement).getByText("사망자 없음")).toBeTruthy();
+    expect(within(announcement).queryByRole("img", { name: "사망" })).toBeNull();
+    const playerStatusesBefore = within(screen.getByLabelText("라이브 그리모어 좌석 맵"))
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"));
+
+    await user.click(screen.getByRole("button", { name: "사망자 없음 발표 확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "day2:announceDeaths", input: null },
+    });
+    await waitFor(() => {
+      expect(storage.savedGames.at(-1)?.game.events.at(-1)).toEqual(canonicalEvent);
+    });
+    expect(await screen.findByRole("button", { name: "토론 시작" })).toBeTruthy();
+    expect(
+      within(screen.getByLabelText("라이브 그리모어 좌석 맵"))
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(playerStatusesBefore);
+  });
+
+  test("renders and confirms a non-empty following-Day death announcement", async () => {
     const playerRoster = koreanPlayers().map((player) =>
       player.id === "player-5" ? { ...player, alive: false, deathAnnounced: false } : player,
     );
@@ -267,8 +322,9 @@ describe("ongoing-night production UI", () => {
     const core = createCoreHarness({
       initialReplay,
       replayAfterProposal: initialReplay,
-      proposal: proposal(phaseEvent("event-announce", "밤 사망 발표", "day")),
+      proposal: proposal(nightDeathsAnnouncedEvent(["player-5"])),
     });
+    const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
@@ -276,7 +332,13 @@ describe("ongoing-night production UI", () => {
     expect(within(announcement).getByRole("img", { name: "사망" })).toBeTruthy();
     expect(within(announcement).getByText("5번")).toBeTruthy();
     expect(within(announcement).getByText("하린")).toBeTruthy();
+    expect(within(announcement).queryByText("사망자 없음")).toBeNull();
     expect(within(announcement).queryByText(/살아있는 플레이어|생존자|6명/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "사망 발표 확정" }));
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "day2:announceDeaths", input: null },
+    });
   });
 
   test("renders an Undertaker's derived target choices without Player input and submits the selected registration witness", async () => {
@@ -514,6 +576,17 @@ function phaseEvent(id: string, summary: string, phase: "firstNight" | "night" |
     phase,
     payload: { stepId: id, input: null },
     summary,
+    createdAt: "2026-07-16T00:01:00.000Z",
+  };
+}
+
+function nightDeathsAnnouncedEvent(playerIds: string[]): GameEvent {
+  return {
+    id: "event-announce",
+    type: "nightDeathsAnnounced",
+    phase: "day",
+    payload: { stepId: "day2:announceDeaths", playerIds },
+    summary: playerIds.length === 0 ? "밤 사망 발표: 없음" : "밤 사망 발표: 5번 하린(까마귀지기)",
     createdAt: "2026-07-16T00:01:00.000Z",
   };
 }

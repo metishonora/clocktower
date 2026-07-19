@@ -212,6 +212,39 @@ fn announcing_night_deaths_clears_exactly_the_replayed_unannounced_ids() {
 }
 
 #[test]
+fn confirming_no_night_deaths_emits_the_empty_canonical_event_without_changing_players() {
+    let game = game_with_events(Value::Array(empty_announce_death_events()));
+    let before = replay_game(&game);
+    assert_eq!(before["ok"], true, "replay failed as {before}");
+    assert_eq!(before["value"]["currentStep"]["id"], "day2:announceDeaths");
+    assert_eq!(
+        before["value"]["ruleState"]["unannouncedNightDeathPlayerIds"],
+        json!([])
+    );
+    let players_before = before["value"]["players"].clone();
+
+    let proposal = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "day2:announceDeaths" }
+        }),
+    );
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(proposal["value"]["event"]["type"], "nightDeathsAnnounced");
+    assert_eq!(
+        proposal["value"]["event"]["payload"],
+        json!({ "stepId": "day2:announceDeaths", "playerIds": [] })
+    );
+    assert_eq!(proposal["value"]["event"]["summary"], "밤 사망 발표: 없음");
+
+    let confirmed = replay_with_event(&game, proposal["value"]["event"].clone());
+    assert_eq!(confirmed["ok"], true, "replay failed as {confirmed}");
+    assert_eq!(confirmed["value"]["currentStep"]["id"], "day2:whisper");
+    assert_eq!(confirmed["value"]["players"], players_before);
+}
+
+#[test]
 fn replay_rejects_night_death_announcements_that_do_not_match_unannounced_ids() {
     let game = game_with_events(Value::Array(announce_death_events()));
     for player_ids in [
@@ -544,6 +577,15 @@ fn undertaker_spy_events() -> Vec<Value> {
 fn announce_death_events() -> Vec<Value> {
     let mut events = ravenkeeper_check_events();
     events.push(phase_event("phaseStepSkipped", "night:ravenkeeper"));
+    events.push(confirm_current_step(&events, "night:spy"));
+    events.push(phase_event("phaseStepConfirmed", "night:toDay"));
+    events
+}
+
+fn empty_announce_death_events() -> Vec<Value> {
+    let mut events = ravenkeeper_check_events();
+    events.pop();
+    events.push(phase_event("phaseStepSkipped", "night:imp"));
     events.push(confirm_current_step(&events, "night:spy"));
     events.push(phase_event("phaseStepConfirmed", "night:toDay"));
     events
