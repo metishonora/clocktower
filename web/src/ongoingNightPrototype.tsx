@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./ongoingNightPrototype.css";
 
-type Scenario = "red-herring" | "effects" | "imp" | "information" | "announcement";
+type Scenario = "red-herring" | "effects" | "imp" | "information" | "announcement-empty" | "announcement";
 type InfoRole = "fortuneTeller";
 
 const players = [
@@ -19,7 +19,8 @@ const scenarioLabels: Record<Scenario, string> = {
   effects: "중독 · 보호",
   imp: "임프 결과",
   information: "정보",
-  announcement: "사망 발표",
+  "announcement-empty": "사망 없음",
+  announcement: "사망 있음",
 };
 
 export function OngoingNightPrototype() {
@@ -43,6 +44,7 @@ export function OngoingNightPrototype() {
     if (next === "effects") setSelectedIds([]);
     if (next === "imp") { setImpOutcome("prevented"); setSelectedIds(["p3"]); }
     if (next === "information") setSelectedIds(["p3", "p7"]);
+    if (next === "announcement-empty") setSelectedIds([]);
     if (next === "announcement") setSelectedIds(["p5"]);
   }
 
@@ -72,14 +74,15 @@ export function OngoingNightPrototype() {
         ))}
       </nav>
       <section className="onpLayout">
-        <Grimoire selectedIds={selectedIds} badges={badges} disabled={scenario === "effects" || scenario === "imp" || scenario === "information" || scenario === "announcement"} onSelect={(id) => toggle(id)} />
+        <Grimoire selectedIds={selectedIds} badges={badges} disabled={scenario === "effects" || scenario === "imp" || scenario === "information" || scenario === "announcement-empty" || scenario === "announcement"} onSelect={(id) => toggle(id)} />
         <aside className="onpPanel" aria-label="밤 행동 패널">
           {scenario === "red-herring" && <RedHerring selectedIds={selectedIds} onSelect={(id) => toggle(id)} />}
           {scenario === "effects" && <Effects />}
           {scenario === "imp" && <Imp outcome={impOutcome} onChange={changeImpOutcome} />}
           {scenario === "information" && <Information />}
-          {scenario === "announcement" && <Announcement />}
-          {scenario !== "effects" && <button className="onpConfirm" onClick={() => setConfirmed(true)}>{scenario === "announcement" ? "발표 확정" : scenario === "information" ? "Reveal" : "확정"}</button>}
+          {scenario === "announcement-empty" && <Announcement empty />}
+          {scenario === "announcement" && <Announcement empty={false} />}
+          {scenario !== "effects" && <button className="onpConfirm" onClick={() => setConfirmed(true)}>{scenario === "announcement-empty" ? "사망자 없음 발표 확정" : scenario === "announcement" ? "사망 발표 확정" : scenario === "information" ? "Reveal" : "확정"}</button>}
           {confirmed && <div className="onpConfirmed" role="status">확정됨</div>}
         </aside>
       </section>
@@ -124,8 +127,11 @@ function Information() {
   </>;
 }
 
-function Announcement() {
-  return <><PanelHeading kicker="다음 날" title="밤 사망 발표" value="1명" /><div className="onpDeath"><span className="onpDeathIcon" aria-label="사망">✕</span><span className="onpDeathNumber">5번</span><b>하린</b></div></>;
+function Announcement({ empty }: { empty: boolean }) {
+  return <><PanelHeading kicker="다음 날" title="밤 사망 발표" value={empty ? "0명" : "1명"} />{empty
+    ? <div className="onpDeath onpDeathEmpty"><b>사망자 없음</b></div>
+    : <div className="onpDeath"><span className="onpDeathIcon" aria-label="사망">✕</span><span className="onpDeathNumber">5번</span><b>하린</b></div>}
+  </>;
 }
 
 function PanelHeading({ kicker, title, value }: { kicker: string; title: string; value: string }) {

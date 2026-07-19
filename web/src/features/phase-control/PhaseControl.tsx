@@ -237,6 +237,7 @@ function NightDeathAnnouncement({ players, playerIds }: { players: Player[]; pla
   });
   return (
     <section className="nightDeathAnnouncement" aria-label="밤 사망 발표">
+      {deaths.length === 0 ? <div className="empty"><strong>사망자 없음</strong></div> : null}
       {deaths.map((player) => (
         <div key={player.id}>
           <span role="img" aria-label="사망">†</span>
@@ -324,6 +325,9 @@ function CurrentStepPane({
     ? characterKind(currentStep.character)
     : undefined;
   const resultSubject = currentStep?.stepType === "executionDeath" || currentStep?.stepType === "slayerDeath";
+  const isNightDeathAnnouncement =
+    currentStep?.stepType === "announcement" && currentStep.id.endsWith(":announceDeaths");
+  const unannouncedNightDeathPlayerIds = ruleState?.unannouncedNightDeathPlayerIds ?? [];
   const currentSubjectCharacter = resultSubject && currentPlayer
     ? characters.find((character) => character.id === currentPlayer.actualCharacter)
     : undefined;
@@ -446,8 +450,8 @@ function CurrentStepPane({
       <section className="currentStepCard" aria-label="현재 단계">
         {currentStep ? (
           <>
-            {currentStep.stepType === "announcement" ? (
-              <NightDeathAnnouncement players={players} playerIds={ruleState?.unannouncedNightDeathPlayerIds ?? []} />
+            {isNightDeathAnnouncement ? (
+              <NightDeathAnnouncement players={players} playerIds={unannouncedNightDeathPlayerIds} />
             ) : null}
             {currentPlayer && !resultSubject ? (
               <section className="currentActor" aria-label="현재 행동자">
@@ -551,8 +555,10 @@ function CurrentStepPane({
                     ? "토론 시작"
                     : currentStep.stepType === "discussion"
                       ? "지명 및 투표 시작"
-                      : currentStep.stepType === "announcement" && currentStep.id.includes("announceDeaths")
-                        ? "발표 확정"
+                      : isNightDeathAnnouncement
+                        ? unannouncedNightDeathPlayerIds.length === 0
+                          ? "사망자 없음 발표 확정"
+                          : "사망 발표 확정"
                         : "확정"}
                 </button>
                 {currentStep.canSkip ? (
