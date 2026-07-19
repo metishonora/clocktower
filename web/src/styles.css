@@ -330,12 +330,28 @@ h3 {
   letter-spacing: 0.04em;
 }
 
+.phaseRuntimeTable {
+  z-index: 1;
+  display: grid;
+  box-sizing: border-box;
+  width: min(210px, calc(100% - 24px));
+  min-height: 68px;
+  place-content: center;
+  border: 1px solid #cdbf9f;
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 5px 16px rgba(66, 51, 30, 0.08);
+  color: var(--primary-dark);
+  text-align: center;
+}
+
 @media (max-width: 460px) {
   .mapCenter {
     width: 112px;
     height: 112px;
   }
 
+  .phaseRuntimeTable { width: min(144px, calc(100% - 16px)); min-height: 60px; }
   .phaseRuntimeCenter span { font-size: 0.72rem; }
   .phaseRuntimeCenter b { font-size: 1.45rem; }
 }
@@ -795,6 +811,11 @@ select {
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: 0.08em;
+}
+
+.draftLayoutTableMark.hasPhaseRuntime {
+  color: inherit;
+  letter-spacing: normal;
 }
 
 .adjustableSeatToken {

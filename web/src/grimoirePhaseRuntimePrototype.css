@@ -9,7 +9,7 @@
 
 .issue67Toolbar {
   display: grid;
-  grid-template-columns: minmax(210px, 0.9fr) minmax(330px, 1.5fr) auto auto minmax(250px, 1fr);
+  grid-template-columns: minmax(210px, 0.9fr) auto minmax(330px, 1.5fr) auto auto minmax(250px, 1fr);
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
@@ -88,12 +88,36 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-18deg);
-  color: rgba(76, 58, 42, 0.08);
-  font-family: var(--serif);
-  font-size: 5.4rem;
+  z-index: 1;
+  display: grid;
+  width: 66%;
+  height: 22%;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 2px dashed #c9bda9;
+  border-radius: 999px;
+  color: #958875;
+  font-size: 0.8rem;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+}
+
+.issue67TableMark.hasRuntime {
+  color: inherit;
+  letter-spacing: normal;
+}
+
+.issue67MapCenter.issue77TableRuntime {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: min(210px, calc(100% - 24px));
+  height: auto;
+  min-height: 68px;
+  gap: 3px;
+  transform: none;
+  border-radius: 14px;
+  box-shadow: 0 5px 16px rgba(66, 51, 30, 0.08);
 }
 
 .issue67MapCenter {
@@ -220,6 +244,7 @@
   }
   .issue67SeatMap::before { width: calc(var(--issue67-radius-x) * 1.9); height: calc(var(--issue67-radius-y) * 1.75); }
   .issue67MapCenter { width: 112px; height: 112px; }
+  .issue67MapCenter.issue77TableRuntime { width: min(144px, calc(100% - 16px)); height: auto; min-height: 60px; }
   .issue67MapCenter > span { font-size: 0.72rem; }
   .issue67MapCenter > b { font-size: 1.42rem; }
   .issue67Seat { width: 76px; min-height: 56px; grid-template-columns: 22px minmax(0, 1fr); padding: 5px; }
