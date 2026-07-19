@@ -116,6 +116,13 @@ const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue76PlayerDetailHeaderPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue76PlayerDetailHeaderPrototype");
+      return { default: module.Issue76PlayerDetailHeaderPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -124,6 +131,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue76PlayerDetailHeaderPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-76-player-detail-header"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue76PlayerDetailHeaderPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevCharacterRulesTooltipPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"
