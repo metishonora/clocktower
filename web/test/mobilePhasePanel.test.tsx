@@ -173,11 +173,11 @@ test.each(["portrait", "landscape"] as const)(
   },
 );
 
-test("keeps the horizontal phase overview on a same-width mouse desktop", async () => {
+test("uses the vertical phase overview accordion on a large mouse desktop", async () => {
   installMobileViewport(false);
-  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1366 });
-  Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
-  Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1920 });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1920 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1080 });
   Object.defineProperty(window.navigator, "platform", { configurable: true, value: "MacIntel" });
   Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 0 });
   renderLivePlay();
@@ -185,6 +185,6 @@ test("keeps the horizontal phase overview on a same-width mouse desktop", async 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
 
-  expect(overview?.dataset.layout).toBe("horizontal");
-  expect(overview?.open).toBe(true);
+  expect(overview?.dataset.layout).toBe("accordion");
+  expect(overview?.open).toBe(false);
 });
