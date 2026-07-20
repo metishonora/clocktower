@@ -220,6 +220,11 @@ function requiredSelectionValid(step: PhaseStep, selectedCount: number): boolean
   return true;
 }
 
+export function mayorDecisionApplies(step: PhaseStep, selectedPlayerIds: string[]): boolean {
+  const prompt = step.requiredInput.mayorDecision;
+  return Boolean(prompt && selectedPlayerIds.includes(prompt.mayorPlayerId));
+}
+
 export function stepInputReady(
   step: PhaseStep,
   selectedCount: number,
@@ -242,7 +247,7 @@ export function stepInputReady(
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "fixed" || selectedCount === 1;
   }
-  if (step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId)) {
+  if (mayorDecisionApplies(step, selectedPlayerIds)) {
     return Boolean(mayorDecision);
   }
   if (step.requiredInput.kind === "executionDecision") return true;
@@ -305,7 +310,7 @@ export function stepInputPayload(
     return null;
   }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
-    return mayorDecision
+    return mayorDecision && mayorDecisionApplies(step, selectedPlayerIds)
       ? { playerIds: selectedPlayerIds, mayorDecision }
       : { playerIds: selectedPlayerIds };
   }

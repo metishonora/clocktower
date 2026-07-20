@@ -13,7 +13,12 @@ import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
-import { characterInputOptions, setupInfoCharacterOptions, targetCheckForSelection } from "./phaseInput";
+import {
+  characterInputOptions,
+  mayorDecisionApplies,
+  setupInfoCharacterOptions,
+  targetCheckForSelection,
+} from "./phaseInput";
 
 export function PlayerStepInput({
   step,
@@ -198,7 +203,7 @@ export function StepInputFields({
           onChange={onRegistrationJudgmentsChange}
         />
       ) : null}
-      {step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId) ? (
+      {step.requiredInput.mayorDecision && mayorDecisionApplies(step, selectedPlayerIds) ? (
         <MayorDecisionChoices
           prompt={step.requiredInput.mayorDecision}
           players={players}

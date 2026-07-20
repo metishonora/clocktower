@@ -401,11 +401,14 @@ fn enrich_targets(steps: &mut [PhaseStep], players: &[Player], events: &[GameEve
             step.required_input.allowed_player_ids = Some(ids);
         }
         if step.character.as_deref() == Some("imp") {
-            step.required_input.mayor_decision = crate::characters::mayor_decision_prompt(
-                players,
-                active_poison.as_ref(),
-                active_protection.as_ref(),
-            );
+            step.required_input.mayor_decision = step.player_id.as_deref().and_then(|actor| {
+                crate::characters::mayor_decision_prompt(
+                    players,
+                    actor,
+                    active_poison.as_ref(),
+                    active_protection.as_ref(),
+                )
+            });
         }
     }
 }
