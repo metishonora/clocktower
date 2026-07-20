@@ -80,14 +80,14 @@
 
 ## 3. 밤 행동과 사망 후속 처리
 
-- [ ] `NGT-01` [monk-protection-before-imp.json](../../fixtures/acceptance/trouble-brewing/monk-protection-before-imp.json) — 보호 후 같은 대상을 Imp로 공격해 사망이 없고 재공격도 없는지 확인한다.
-- [ ] `NEG-01` [monk-cannot-protect-self.json](../../fixtures/acceptance/trouble-brewing/monk-cannot-protect-self.json) — Monk 자신을 선택할 수 없고 다른 플레이어만 확정 가능한지 확인한다.
-- [ ] `NGT-02` [soldier-safe-from-imp.json](../../fixtures/acceptance/trouble-brewing/soldier-safe-from-imp.json) — sober/healthy actual Soldier 공격이 사망 없음으로 끝나는지 확인한다.
-- [ ] `IMP-03` [soldier-poisoned-dies.json](../../fixtures/acceptance/trouble-brewing/soldier-poisoned-dies.json) — poisoned Soldier가 Imp 공격으로 죽는지 확인한다.
-- [ ] `ST-01` [mayor-dies-or-bounces.json](../../fixtures/acceptance/trouble-brewing/mayor-dies-or-bounces.json) — 재import하며 Mayor 사망과 다른 대상 bounce 두 분기를 시험하고 독립적인 `아무도 죽지 않음` 선택지가 없는지 확인한다.
-- [ ] `ST-02` [mayor-bounce-dead-or-protected.json](../../fixtures/acceptance/trouble-brewing/mayor-bounce-dead-or-protected.json) — dead 5번과 Monk-protected Soldier 2번으로 각각 bounce해 결과적 사망 없음이 되는지 확인한다.
-- [ ] `IMP-03B` [mayor-poisoned-has-no-bounce.json](../../fixtures/acceptance/trouble-brewing/mayor-poisoned-has-no-bounce.json) — poisoned Mayor 공격에서 결정 UI 없이 Mayor가 죽고 bounce가 적용되지 않는지 확인한다.
-- [ ] `TRG-01` [ravenkeeper-night-death-trigger.json](../../fixtures/acceptance/trouble-brewing/ravenkeeper-night-death-trigger.json) — 밤에 죽은 Ravenkeeper 후속 단계에서 살아 있거나 죽은 대상을 확인할 수 있는지 확인한다.
+- [x] `NGT-01` [monk-protection-before-imp.json](../../fixtures/acceptance/trouble-brewing/monk-protection-before-imp.json) — 보호 후 같은 대상을 Imp로 공격해 사망이 없고 재공격도 없는지 확인한다.
+- [x] `NEG-01` [monk-cannot-protect-self.json](../../fixtures/acceptance/trouble-brewing/monk-cannot-protect-self.json) — Monk 자신을 선택할 수 없고 다른 플레이어만 확정 가능한지 확인한다.
+- [x] `NGT-02` [soldier-safe-from-imp.json](../../fixtures/acceptance/trouble-brewing/soldier-safe-from-imp.json) — sober/healthy actual Soldier 공격이 사망 없음으로 끝나는지 확인한다.
+- [x] `IMP-03` [soldier-poisoned-dies.json](../../fixtures/acceptance/trouble-brewing/soldier-poisoned-dies.json) — poisoned Soldier가 Imp 공격으로 죽는지 확인한다.
+- [x] `ST-01` [mayor-dies-or-bounces.json](../../fixtures/acceptance/trouble-brewing/mayor-dies-or-bounces.json) — 재import하며 Mayor 사망과 다른 대상 bounce 두 분기를 시험하고 독립적인 `아무도 죽지 않음` 선택지가 없는지 확인한다.
+- [x] `ST-02` [mayor-bounce-dead-or-protected.json](../../fixtures/acceptance/trouble-brewing/mayor-bounce-dead-or-protected.json) — dead 5번과 Monk-protected Soldier 2번으로 각각 bounce해 결과적 사망 없음이 되는지 확인한다.
+- [x] `IMP-03B` [mayor-poisoned-has-no-bounce.json](../../fixtures/acceptance/trouble-brewing/mayor-poisoned-has-no-bounce.json) — poisoned Mayor 공격에서 결정 UI 없이 Mayor가 죽고 bounce가 적용되지 않는지 확인한다.
+- [x] `TRG-01` [ravenkeeper-night-death-trigger.json](../../fixtures/acceptance/trouble-brewing/ravenkeeper-night-death-trigger.json) — 밤에 죽은 Ravenkeeper 후속 단계에서 살아 있거나 죽은 대상을 확인할 수 있는지 확인한다.
 - [ ] `REG-06` [ravenkeeper-spy-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/ravenkeeper-spy-recluse-registration.json) — 이미 죽은 Spy를 good 직업, 죽은 Recluse를 evil 직업으로 보는 등록 선택지를 각각 확인한다.
 - [ ] `SUC-01` [imp-self-kill-minion-successor.json](../../fixtures/acceptance/trouble-brewing/imp-self-kill-minion-successor.json) — Imp 자살 후 살아 있는 Minion 중 새 Imp를 고르고 같은 밤 다시 행동하지 않는지 확인한다.
 - [ ] `IMP-04` [imp-poisoned-no-kill.json](../../fixtures/acceptance/trouble-brewing/imp-poisoned-no-kill.json) — poisoned Imp 공격이 `NIGHT_ACTION_NO_EFFECT`와 사망 없음으로 끝나는지 확인한다.
