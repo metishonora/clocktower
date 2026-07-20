@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   CoreResult,
   Player,
@@ -86,7 +87,7 @@ export function PlayerAnnotationsDialog({
     setError(result?.error.messageKo ?? "현재 상태에서는 플레이어 표시를 수정할 수 없습니다.");
   }
 
-  return (
+  return createPortal(
     <div className="playerAnnotationsBackdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !pending) onCancel();
     }}>
@@ -181,6 +182,7 @@ export function PlayerAnnotationsDialog({
           </div>
         </footer>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
