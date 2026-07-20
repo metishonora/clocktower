@@ -116,6 +116,13 @@ const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue90SpyRevealPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue90SpyRevealPrototype");
+      return { default: module.Issue90SpyRevealPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -124,6 +131,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue90SpyRevealPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-90-spy-reveal"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue90SpyRevealPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevCharacterRulesTooltipPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"

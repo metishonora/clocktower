@@ -1,0 +1,244 @@
+.issue90Prototype,
+.issue90FullReveal {
+  min-height: 100vh;
+  background: #eee8dc;
+  color: var(--ink);
+}
+
+.issue90Prototype {
+  padding: 16px;
+}
+
+.issue90PrototypeHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf8;
+  padding: 14px 16px;
+}
+
+.issue90PrototypeHeader p,
+.issue90PrototypeHeader h1,
+.issue90ComparisonLabel span {
+  margin: 0;
+}
+
+.issue90PrototypeHeader p {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.issue90PrototypeHeader h1 {
+  margin-top: 3px;
+  font-size: 1.45rem;
+}
+
+.issue90PrototypeControls {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.issue90PrototypeControls label {
+  min-width: 128px;
+}
+
+.issue90PrototypeControls button,
+.issue90RevealAction button {
+  min-height: 44px;
+  border: 1px solid var(--primary-dark);
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  padding: 9px 14px;
+  font-weight: 900;
+}
+
+.issue90Comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.issue90ComparisonColumn {
+  min-width: 0;
+}
+
+.issue90ComparisonLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  border-left: 4px solid #887c6c;
+  background: rgba(255, 253, 248, 0.75);
+  padding: 8px 10px;
+}
+
+.issue90ComparisonLabel.approved {
+  border-color: var(--primary);
+}
+
+.issue90ComparisonLabel span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.issue90Surface {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.31fr);
+  gap: 8px;
+  min-width: 0;
+  min-height: 680px;
+}
+
+.issue90GrimoirePanel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.issue90GrimoirePanel .sectionHeader h2 {
+  margin: 0;
+}
+
+.issue90GrimoirePanel .seatMap {
+  min-height: 590px;
+  margin-top: 4px;
+}
+
+.issue90StorytellerControls,
+.issue90RevealAction {
+  min-width: 0;
+}
+
+.issue90StorytellerControls {
+  align-self: stretch;
+  padding: 14px;
+}
+
+.issue90StorytellerControls h3 {
+  margin: 5px 0 16px;
+  font-size: 1rem;
+}
+
+.issue90StorytellerControls dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.issue90StorytellerControls dl > div {
+  display: grid;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 7px;
+}
+
+.issue90StorytellerControls dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.issue90StorytellerControls dd {
+  margin: 0;
+  font-weight: 850;
+}
+
+.issue90StorytellerControls section {
+  margin-top: 18px;
+}
+
+.issue90StorytellerControls ol {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.issue90RevealAction {
+  display: grid;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 12px;
+}
+
+.issue90RevealAction button {
+  width: 100%;
+  min-height: 58px;
+}
+
+.readOnlyRevealSeatMap .seatToken {
+  cursor: default;
+}
+
+.issue90FullReveal {
+  padding: 12px;
+}
+
+.issue90FullReveal .issue90Surface {
+  min-height: calc(100vh - 24px);
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.3fr);
+}
+
+.issue90FullReveal .issue90GrimoirePanel .seatMap {
+  min-height: calc(100vh - 110px);
+}
+
+@media (max-width: 1180px) {
+  .issue90Comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .issue90Surface,
+  .issue90FullReveal .issue90Surface {
+    grid-template-columns: 1fr;
+  }
+
+  .issue90FullReveal .issue90Surface {
+    height: calc(100vh - 24px);
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .issue90FullReveal .issue90GrimoirePanel {
+    min-height: 0;
+  }
+
+  .issue90RevealAction {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    min-height: auto;
+  }
+
+  .issue90FullReveal .issue90GrimoirePanel .seatMap {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .issue90PrototypeHeader,
+  .issue90PrototypeControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .issue90PrototypeControls label,
+  .issue90PrototypeControls button {
+    width: 100%;
+  }
+}
