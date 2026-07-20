@@ -23,6 +23,8 @@ pub(crate) enum ErrorKind {
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
+    InvalidButlerMaster,
+    ButlerMasterVoteRequired,
     GhostVoteAlreadySpent,
     MissingStepInput,
     TooMuchStepInput,
@@ -81,6 +83,14 @@ impl ErrorKind {
             ),
             Self::ReplayFailed => ("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."),
             Self::InvalidStepInput => ("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."),
+            Self::InvalidButlerMaster => (
+                "INVALID_BUTLER_MASTER",
+                "집사는 자신을 주인으로 선택할 수 없습니다.",
+            ),
+            Self::ButlerMasterVoteRequired => (
+                "BUTLER_MASTER_VOTE_REQUIRED",
+                "집사는 주인이 현재 투표에 참여한 경우에만 투표할 수 있습니다.",
+            ),
             Self::GhostVoteAlreadySpent => (
                 "GHOST_VOTE_ALREADY_SPENT",
                 "이미 유령표를 사용한 플레이어가 포함되어 있습니다.",

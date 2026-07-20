@@ -612,6 +612,7 @@ function isRuleState(value: unknown): boolean {
       "unannouncedNightDeathPlayerIds",
       "slayerAbility",
       "virginAbility",
+      "butlerVote",
     ]) &&
     isOptionalString(value.redHerringPlayerId) &&
     (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
@@ -629,7 +630,13 @@ function isRuleState(value: unknown): boolean {
         hasOnlyKeys(value.virginAbility, ["actorPlayerId", "spent", "spentByNominationEventId"]) &&
         typeof value.virginAbility.actorPlayerId === "string" &&
         typeof value.virginAbility.spent === "boolean" &&
-        isOptionalString(value.virginAbility.spentByNominationEventId)))
+        isOptionalString(value.virginAbility.spentByNominationEventId))) &&
+    (value.butlerVote === undefined ||
+      (isRecord(value.butlerVote) &&
+        hasOnlyKeys(value.butlerVote, ["butlerPlayerId", "masterPlayerId", "restrictionApplies"]) &&
+        typeof value.butlerVote.butlerPlayerId === "string" &&
+        isOptionalString(value.butlerVote.masterPlayerId) &&
+        typeof value.butlerVote.restrictionApplies === "boolean"))
   );
 }
 

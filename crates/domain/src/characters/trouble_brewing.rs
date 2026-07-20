@@ -1,7 +1,7 @@
 use crate::contracts::{
-    ActiveRuleEffect, ImpAttackOutcome, ImpNoDeathReason, ImpPreventionReason, MayorAttackContext,
-    NightActionResolution, SlayerRegistrationContext, SlayerTargetRegistration,
-    VirginImpairmentContext, VirginResolution,
+    ActiveRuleEffect, ButlerVoteState, GameEvent, GameEventKind, ImpAttackOutcome,
+    ImpNoDeathReason, ImpPreventionReason, MayorAttackContext, NightActionResolution,
+    SlayerRegistrationContext, SlayerTargetRegistration, VirginImpairmentContext, VirginResolution,
 };
 use crate::error::ErrorKind;
 use crate::model::{
@@ -29,6 +29,92 @@ pub(crate) fn mayor_win_eligible(
                 && player.actual_character == "mayor"
                 && active_poison.is_none_or(|poison| poison.player_id != player.id)
         })
+}
+
+pub(crate) fn character_can_target_self(character: &str) -> bool {
+    !matches!(character, "monk" | "butler")
+}
+
+pub(crate) fn butler_vote_state(
+    players: &[Player],
+    events: &[GameEvent],
+    active_poison: Option<&ActiveRuleEffect>,
+) -> Option<ButlerVoteState> {
+    let butler = players
+        .iter()
+        .rev()
+        .find(|player| player.actual_character == "butler")?;
+    let last_to_day = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload }
+                if payload.step_id.ends_with(":toDay")
+        )
+    });
+    let last_to_night = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload }
+                if payload.step_id.ends_with(":toNight")
+        )
+    });
+    let current_day_boundary =
+        last_to_day.filter(|to_day| last_to_night.is_none_or(|to_night| to_day > &to_night));
+    let master_player_id = current_day_boundary.and_then(|boundary| {
+        let GameEventKind::PhaseStepConfirmed { payload: to_day } = &events[boundary].kind else {
+            unreachable!()
+        };
+        let prefix = to_day.step_id.rsplit_once(':').map(|(prefix, _)| prefix)?;
+        let butler_step_id = format!("{prefix}:butler");
+        events[..boundary]
+            .iter()
+            .rev()
+            .find_map(|event| match &event.kind {
+                GameEventKind::PhaseStepConfirmed { payload }
+                    if payload.step_id == butler_step_id =>
+                {
+                    payload
+                        .input
+                        .as_ref()
+                        .and_then(|input| input.player_ids.as_ref())
+                        .and_then(|ids| ids.first())
+                        .filter(|master_id| {
+                            master_id.as_str() != butler.id
+                                && players.iter().any(|player| player.id == **master_id)
+                        })
+                        .cloned()
+                }
+                _ => None,
+            })
+    });
+    let restriction_applies =
+        butler.alive && active_poison.is_none_or(|poison| poison.player_id != butler.id);
+
+    Some(ButlerVoteState {
+        butler_player_id: butler.id.clone(),
+        master_player_id,
+        restriction_applies,
+    })
+}
+
+pub(crate) fn validate_butler_voters(
+    state: Option<&ButlerVoteState>,
+    voter_ids: &[String],
+) -> Result<(), crate::error::CoreError> {
+    let Some(state) = state.filter(|state| state.restriction_applies) else {
+        return Ok(());
+    };
+    if !voter_ids.contains(&state.butler_player_id) {
+        return Ok(());
+    }
+    if state
+        .master_player_id
+        .as_ref()
+        .is_some_and(|master_id| voter_ids.contains(master_id))
+    {
+        return Ok(());
+    }
+    Err(ErrorKind::ButlerMasterVoteRequired.into_error())
 }
 
 pub(crate) fn virgin_resolution(

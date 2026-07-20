@@ -568,6 +568,32 @@ test("requires canonical nomination eligibility lists in Day replay state", () =
   throws(() => parseReplayState(malformedNominees), /코어 응답 형식/);
 });
 
+test("validates the optional Butler vote projection in replay state", () => {
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 12,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      butlerVote: {
+        butlerPlayerId: "player-2",
+        masterPlayerId: "player-1",
+        restrictionApplies: true,
+      },
+    },
+    warnings: [],
+  };
+
+  deepEqual<unknown>(parseReplayState(replay).ruleState.butlerVote, replay.ruleState.butlerVote);
+
+  const malformed = structuredClone(replay);
+  malformed.ruleState.butlerVote.restrictionApplies = "yes" as unknown as boolean;
+  throws(() => parseReplayState(malformed), /코어 응답 형식/);
+});
+
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
   const setupPromptReplay = {
     schemaVersion: 2,

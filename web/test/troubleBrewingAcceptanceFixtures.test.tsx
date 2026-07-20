@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { importGameFileJson } from "../src/gameStorage";
 import { isSpyGrimoireRevealPayload } from "../src/core/revealPayload";
 import { RevealScreen } from "../src/reveal";
-import { proposeAndAppend, replayOrThrow } from "./realWasmCoreHarness";
+import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 type AcceptanceManifest = {
   schemaVersion: 1;
@@ -41,6 +41,11 @@ type AcceptanceCase = {
     slayerAbilityPresent?: boolean;
     virginSpent?: boolean;
     absentStepIds?: string[];
+    butlerVote?: {
+      butlerPlayerId: string;
+      masterPlayerId?: string;
+      restrictionApplies: boolean;
+    };
   };
   knownDeviation?: {
     officialExpectationKo: string;
@@ -187,6 +192,46 @@ describe("Trouble Brewing acceptance fixtures", () => {
     }
   });
 
+  it("VOT-01 restores the Butler master and rejects a new vote without that master", async () => {
+    const acceptanceCase = manifest.cases.find(({ id }) => id === "butler-master-selection");
+    expect(acceptanceCase?.checkpoint.butlerVote).toBeDefined();
+    if (!acceptanceCase?.checkpoint.butlerVote) return;
+
+    const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
+    const gameFile = importGameFileJson(json);
+    const replay = await replayOrThrow(gameFile);
+    expect(replay.ruleState.butlerVote).toEqual(acceptanceCase.checkpoint.butlerVote);
+
+    const invalid = await realWasmCore().propose(gameFile, {
+      type: "confirmStep",
+      payload: {
+        stepId: replay.currentStep?.id ?? "",
+        input: { voterIds: [acceptanceCase.checkpoint.butlerVote.butlerPlayerId] },
+      },
+    });
+    expect(invalid).toEqual({
+      ok: false,
+      error: {
+        code: "BUTLER_MASTER_VOTE_REQUIRED",
+        messageKo: "집사는 주인이 현재 투표에 참여한 경우에만 투표할 수 있습니다.",
+      },
+    });
+
+    const valid = await realWasmCore().propose(gameFile, {
+      type: "confirmStep",
+      payload: {
+        stepId: replay.currentStep?.id ?? "",
+        input: {
+          voterIds: [
+            acceptanceCase.checkpoint.butlerVote.masterPlayerId ?? "",
+            acceptanceCase.checkpoint.butlerVote.butlerPlayerId,
+          ],
+        },
+      },
+    });
+    expect(valid.ok).toBe(true);
+  });
+
   for (const acceptanceCase of manifest.cases) {
     it(`${acceptanceCase.id} imports and replays at its documented checkpoint`, async () => {
       const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
@@ -207,6 +252,9 @@ describe("Trouble Brewing acceptance fixtures", () => {
       if (acceptanceCase.checkpoint.activeProtectionTargetId !== undefined) {
         expect(replay.ruleState.activeProtection?.playerId ?? null)
           .toBe(acceptanceCase.checkpoint.activeProtectionTargetId);
+      }
+      if (acceptanceCase.checkpoint.butlerVote !== undefined) {
+        expect(replay.ruleState.butlerVote).toEqual(acceptanceCase.checkpoint.butlerVote);
       }
       if (acceptanceCase.checkpoint.deadPlayerIds !== undefined) {
         expect(replay.players.filter(({ alive }) => !alive).map(({ id }) => id).sort())

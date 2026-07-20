@@ -311,7 +311,11 @@ fn enrich_targets(steps: &mut [PhaseStep], players: &[Player], events: &[GameEve
             Some(InputTarget::Player | InputTarget::Players)
         ) {
             let mut ids = players.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
-            if step.character.as_deref() == Some("monk") {
+            if step
+                .character
+                .as_deref()
+                .is_some_and(|character| !crate::characters::character_can_target_self(character))
+            {
                 ids.retain(|id| Some(id.as_str()) != step.player_id.as_deref());
             }
             step.required_input.allowed_player_ids = Some(ids);

@@ -1654,6 +1654,79 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "지목 및 투표 2" })).toBeTruthy();
   });
 
+  test("blocks the Butler until the master votes and removes both when the master is cleared", async () => {
+    const votingStep = step({
+      id: "day:nomination:1:vote",
+      kind: "nominationVote",
+      stepType: "nomination",
+      phase: "day",
+    });
+    const playerRoster = players().map((player) =>
+      player.id === "player-2"
+        ? {
+            ...player,
+            actualCharacter: "butler",
+            shownCharacter: "butler",
+            alive: true,
+            ghostVoteUsed: false,
+          }
+        : player,
+    );
+    const initialReplay = {
+      ...replayState({
+        currentStep: votingStep,
+        playerRoster,
+        dayState: {
+          nominations: [],
+          eligibleNominatorIds: playerRoster.map(({ id }) => id),
+          eligibleNomineeIds: playerRoster.map(({ id }) => id),
+          executionVoteThreshold: 3,
+          highestVoteCount: 0,
+          activeNomination: {
+            eventId: "nomination-started-1",
+            stepId: "day:nomination:1",
+            nominatorId: "player-4",
+            nomineeId: "player-5",
+          },
+        },
+      }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        butlerVote: {
+          butlerPlayerId: "player-2",
+          masterPlayerId: "player-1",
+          restrictionApplies: true,
+        },
+      },
+    } as unknown as ReplayState;
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal: initialReplay,
+      proposal: proposal(event("unused", "unused", "day")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByText("찬성한 플레이어를 선택하세요.");
+    const seatMap = screen.getByLabelText("라이브 마도서 좌석 맵");
+    const blockedButler = within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ });
+    expect(blockedButler.getAttribute("aria-disabled")).toBe("true");
+    await user.click(blockedButler);
+    expect(screen.getByText("0표")).toBeTruthy();
+
+    await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
+    const enabledButler = within(seatMap).getByRole("button", { name: /Bert.*생존/ });
+    expect(enabledButler.getAttribute("aria-disabled")).toBe("false");
+    await user.click(enabledButler);
+    expect(screen.getByText("2표")).toBeTruthy();
+
+    await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
+    expect(screen.getByText("0표")).toBeTruthy();
+    expect(within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ }).getAttribute("aria-disabled"))
+      .toBe("true");
+  });
+
   test("always exposes concise life and ghost-vote state on confirmed Grimoire seats", async () => {
     const currentStep = step({ id: "day:whisper", stepType: "whisper" as never, phase: "day" });
     const core = createCoreHarness({

@@ -1018,7 +1018,7 @@ pub(crate) fn phase_step_statuses(
         if let Some(input) = event_input {
             if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
                 if step.required_input.kind != RequiredInputKind::SetupInfo {
-                    validate_required_input(&step.required_input, input, &players_at_event)?;
+                    validate_replayed_required_input(&step, input, &players_at_event)?;
                 }
                 validate_confirmed_information(
                     &step,
@@ -1277,6 +1277,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
             }
             _ => None,
         });
+    let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
     let announced = events
         .iter()
         .flat_map(|e| match &e.kind {
@@ -1305,7 +1306,30 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         unannounced_night_death_player_ids,
         slayer_ability: None,
         virgin_ability: None,
+        butler_vote,
     }
+}
+
+fn validate_replayed_required_input(
+    step: &PhaseStep,
+    input: &crate::model::StepInput,
+    players: &[Player],
+) -> Result<(), CoreError> {
+    let legacy_self_master = step.character.as_deref() == Some("butler")
+        && step.player_id.as_ref().is_some_and(|actor_id| {
+            input
+                .as_ref()
+                .and_then(|input| input.player_ids.as_ref())
+                .is_some_and(|ids| ids.len() == 1 && ids.first() == Some(actor_id))
+        });
+    if !legacy_self_master {
+        return validate_required_input(&step.required_input, input, players);
+    }
+
+    let mut legacy_input = step.required_input.clone();
+    legacy_input.allowed_player_ids =
+        Some(players.iter().map(|player| player.id.clone()).collect());
+    validate_required_input(&legacy_input, input, players)
 }
 
 pub(crate) fn phase_sequences_with_statuses(
