@@ -1005,17 +1005,18 @@ pub(crate) fn target_information_checks(
                 }
                 _ => None,
             });
-            let demon = players
+            let demon_player_ids = players
                 .iter()
-                .find(|p| p.actual_character == "imp")
-                .map(|p| p.id.as_str());
+                .filter(|p| p.actual_character == "imp")
+                .map(|p| p.id.as_str())
+                .collect::<HashSet<_>>();
             let mut result = vec![];
             for i in 0..players.len() {
                 for j in i + 1..players.len() {
                     let ids = vec![players[i].id.clone(), players[j].id.clone()];
-                    let yes = ids
-                        .iter()
-                        .any(|id| Some(id.as_str()) == demon || Some(id.as_str()) == red);
+                    let yes = ids.iter().any(|id| {
+                        demon_player_ids.contains(id.as_str()) || Some(id.as_str()) == red
+                    });
                     let mut check = fixed(ids.clone(), InformationResult::Boolean { value: yes });
                     if impaired {
                         check.choices = [false, true]

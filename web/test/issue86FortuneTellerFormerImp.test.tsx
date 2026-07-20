@@ -1,0 +1,167 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import type { GameFile } from "../src/core/types";
+import { importGameFileJson } from "../src/gameStorage";
+import { ClocktowerApp } from "../src/main";
+import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+
+const fixturePath = resolve(
+  process.cwd(),
+  "../fixtures/acceptance/trouble-brewing/fortune-teller-detects-dead-demon.json",
+);
+
+const originalMatchMedia = window.matchMedia;
+const originalInnerWidth = window.innerWidth;
+const originalVisualViewport = window.visualViewport;
+const originalScreenWidth = window.screen.width;
+const originalScreenHeight = window.screen.height;
+const originalUserAgent = window.navigator.userAgent;
+const originalPlatform = window.navigator.platform;
+const originalMaxTouchPoints = window.navigator.maxTouchPoints;
+
+describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: originalMatchMedia });
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: originalVisualViewport });
+    Object.defineProperty(window.screen, "width", { configurable: true, value: originalScreenWidth });
+    Object.defineProperty(window.screen, "height", { configurable: true, value: originalScreenHeight });
+    Object.defineProperty(window.navigator, "userAgent", { configurable: true, value: originalUserAgent });
+    Object.defineProperty(window.navigator, "platform", { configurable: true, value: originalPlatform });
+    Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: originalMaxTouchPoints });
+  });
+
+  test.each([
+    { surface: "phase input", demonSeat: 7, demonPlayerId: "player-7", description: "dead former Imp" },
+    { surface: "phase input", demonSeat: 6, demonPlayerId: "player-6", description: "living successor Imp" },
+    { surface: "Grimoire", demonSeat: 7, demonPlayerId: "player-7", description: "dead former Imp" },
+    { surface: "Grimoire", demonSeat: 6, demonPlayerId: "player-6", description: "living successor Imp" },
+  ])("selects, clears, reselects, and confirms the $description from the $surface", async ({
+    surface,
+    demonSeat,
+    demonPlayerId,
+  }) => {
+    installIpadProLandscapeSafari();
+    const game = loadFixture();
+    const initialEventCount = game.game.events.length;
+    const initialReplay = await replayOrThrow(game);
+    expect(initialReplay.currentStep?.id).toBe("night:fortuneTeller");
+    expect(initialReplay.gameEnd).toBeNull();
+    expect(initialReplay.warnings.map(({ code }) => code)).not.toContain("DEMON_DEAD_GOOD_WIN");
+    expect(initialReplay.players.find(({ id }) => id === "player-7")?.alive).toBe(false);
+    expect(initialReplay.players.find(({ id }) => id === "player-6")).toMatchObject({
+      alive: true,
+      actualCharacter: "imp",
+    });
+
+    const storage = new MemoryGameStorageDriver(game);
+    const user = userEvent.setup();
+    render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    const phaseInput = screen.getByLabelText("단계 입력");
+    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    const phaseFortuneTeller = within(phaseInput).getByRole("button", { name: /플레이어 5/ });
+    const phaseDemon = within(phaseInput).getByRole("button", { name: new RegExp(`플레이어 ${demonSeat}`) });
+    const phaseThird = within(phaseInput).getByRole("button", { name: /플레이어 4/ });
+    const grimoireFortuneTeller = within(grimoire).getByRole("button", { name: /5번 플레이어 5 좌석 선택/ });
+    const grimoireDemon = within(grimoire).getByRole("button", { name: new RegExp(`${demonSeat}번 플레이어 ${demonSeat} 좌석 선택`) });
+    const grimoireThird = within(grimoire).getByRole("button", { name: /4번 플레이어 4 좌석 선택/ });
+
+    expect((phaseFortuneTeller as HTMLButtonElement).disabled).toBe(false);
+    expect((phaseDemon as HTMLButtonElement).disabled).toBe(false);
+    expect(grimoireFortuneTeller.getAttribute("aria-disabled")).toBe("false");
+    expect(grimoireDemon.getAttribute("aria-disabled")).toBe("false");
+
+    const fortuneTeller = surface === "phase input" ? phaseFortuneTeller : grimoireFortuneTeller;
+    const demon = surface === "phase input" ? phaseDemon : grimoireDemon;
+    const third = surface === "phase input" ? phaseThird : grimoireThird;
+
+    await user.click(fortuneTeller);
+    await user.click(demon);
+    expect(phaseFortuneTeller.getAttribute("aria-pressed")).toBe("true");
+    expect(phaseDemon.getAttribute("aria-pressed")).toBe("true");
+    expect(grimoireFortuneTeller.getAttribute("aria-pressed")).toBe("true");
+    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(third);
+    expect(phaseThird.getAttribute("aria-pressed")).toBe("false");
+    expect(grimoireThird.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(demon);
+    expect(phaseDemon.getAttribute("aria-pressed")).toBe("false");
+    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("false");
+    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+
+    await user.click(demon);
+    expect(phaseDemon.getAttribute("aria-pressed")).toBe("true");
+    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("true");
+    const confirm = screen.getByRole("button", { name: "확정" });
+    expect((confirm as HTMLButtonElement).disabled).toBe(false);
+    await user.dblClick(confirm);
+
+    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+    expect(within(followup).getByText("점쟁이 정보")).toBeTruthy();
+    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    expect(within(screen.getByLabelText("플레이어 공개 화면")).getByText("있음")).toBeTruthy();
+
+    await waitFor(() => {
+      expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
+    });
+    expect(latestSavedGame(storage).game.events.at(-1)).toMatchObject({
+      type: "phaseStepConfirmed",
+      payload: {
+        stepId: "night:fortuneTeller",
+        input: { playerIds: ["player-5", demonPlayerId] },
+        information: {
+          targetPlayerIds: ["player-5", demonPlayerId],
+          computedResult: { kind: "boolean", value: true },
+          deliveredResult: { kind: "boolean", value: true },
+          deliveryContext: { type: "fixed" },
+        },
+      },
+    });
+  });
+});
+
+function installIpadProLandscapeSafari() {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn((media: string) => ({
+      matches: false,
+      media,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    } satisfies MediaQueryList)),
+  });
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1280 });
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: { width: 1236 } });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15",
+  });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "iPad" });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 5 });
+}
+
+function loadFixture(): GameFile {
+  return importGameFileJson(readFileSync(fixturePath, "utf8"));
+}
+
+function latestSavedGame(storage: MemoryGameStorageDriver): GameFile {
+  const saved = storage.savedGames.at(-1);
+  if (!saved) throw new Error("expected an autosaved GameFile");
+  return saved;
+}

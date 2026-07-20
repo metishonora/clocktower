@@ -286,19 +286,17 @@
       "category": "night-information",
       "characterIds": [
         "fortuneTeller",
+        "scarletWoman",
         "imp"
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Fortune_Teller",
-      "actionKo": "이미 죽은 8번 Imp와 다른 플레이어를 선택한다.",
-      "expectedKo": "죽은 Demon도 Demon으로 등록하므로 Fortune Teller 결과가 yes다.",
+      "actionKo": "Imp 자살과 Scarlet Woman 승계 후 이미 죽은 7번 이전 Imp 또는 살아 있는 6번 새 Imp와 다른 플레이어를 선택한다.",
+      "expectedKo": "게임이 계속되며 죽은 이전 Demon과 살아 있는 현재 Demon 모두 Fortune Teller 결과가 yes다.",
       "checkpoint": {
-        "phase": "firstNight",
-        "currentStepId": "firstNight:fortuneTeller",
-        "warningCodes": [
-          "DEMON_DEAD_GOOD_WIN"
-        ],
+        "phase": "night",
+        "currentStepId": "night:fortuneTeller",
         "deadPlayerIds": [
-          "player-8"
+          "player-7"
         ]
       },
       "file": "fortune-teller-detects-dead-demon.json"
