@@ -95,17 +95,17 @@
 
 ## 4. 낮 능력, 지명과 처형
 
-- [ ] `TRG-02` [virgin-townsfolk-nomination.json](../../fixtures/acceptance/trouble-brewing/virgin-townsfolk-nomination.json) — actual Townsfolk 지명자가 즉시 처형되고 Virgin 능력이 소비되며 그날 지명이 끝나는지 확인한다.
-- [ ] `TRG-03` [virgin-outsider-spends-without-execution.json](../../fixtures/acceptance/trouble-brewing/virgin-outsider-spends-without-execution.json) — Outsider 지명에서는 Virgin만 소비되고 정상 투표로 이어지는지 확인한다.
-- [ ] `IMP-05` [virgin-poisoned-spends-without-execution.json](../../fixtures/acceptance/trouble-brewing/virgin-poisoned-spends-without-execution.json) — poisoned Virgin이 소비되지만 Townsfolk 지명자가 처형되지 않는지 확인한다.
-- [ ] `REG-07` [virgin-spy-registers-townsfolk.json](../../fixtures/acceptance/trouble-brewing/virgin-spy-registers-townsfolk.json) — Spy Townsfolk 등록 사용 시 즉시 처형되고 등록하지 않으면 정상 투표로 이어지는지 재import해 비교한다.
-- [ ] `PUB-01` [slayer-shoots-imp.json](../../fixtures/acceptance/trouble-brewing/slayer-shoots-imp.json) — actual Slayer가 살아 있는 Imp를 죽이고 능력 소비 및 good 승리 경고까지 이어지는지 확인한다.
-- [ ] `REG-08` [slayer-recluse-as-demon.json](../../fixtures/acceptance/trouble-brewing/slayer-recluse-as-demon.json) — Recluse를 Imp로 등록하면 죽고 canonical로 처리하면 아무 일도 없는지 비교한다.
-- [ ] `IMP-06` [slayer-poisoned-spends-no-effect.json](../../fixtures/acceptance/trouble-brewing/slayer-poisoned-spends-no-effect.json) — poisoned Slayer가 Imp를 죽이지 못하지만 다시 사용할 수도 없는지 확인한다.
-- [ ] `PUB-01B` [slayer-shoots-dead-imp.json](../../fixtures/acceptance/trouble-brewing/slayer-shoots-dead-imp.json) — 이미 죽은 Imp를 지목하면 추가 사망 없이 Slayer 능력만 소비되는지 확인한다.
-- [ ] `IMP-07` [drunk-shown-slayer-has-no-ability.json](../../fixtures/acceptance/trouble-brewing/drunk-shown-slayer-has-no-ability.json) — shown Slayer인 actual Drunk에게 추적되는 Slayer 능력이 없는지 확인한다.
-- [ ] `INF-06` [undertaker-learns-executed-drunk.json](../../fixtures/acceptance/trouble-brewing/undertaker-learns-executed-drunk.json) — 전날 처형되어 죽은 플레이어가 shown Slayer가 아니라 actual Drunk로 공개되는지 확인한다.
-- [ ] `INF-06B` [undertaker-omitted-without-executed-death.json](../../fixtures/acceptance/trouble-brewing/undertaker-omitted-without-executed-death.json) — 전날 처형 사망이 없으면 밤 overview에 Undertaker 단계가 생성되지 않는지 확인한다.
+- [x] `TRG-02` [virgin-townsfolk-nomination.json](../../fixtures/acceptance/trouble-brewing/virgin-townsfolk-nomination.json) — actual Townsfolk 지명자가 즉시 처형되고 Virgin 능력이 소비되며 그날 지명이 끝나는지 확인한다.
+- [x] `TRG-03` [virgin-outsider-spends-without-execution.json](../../fixtures/acceptance/trouble-brewing/virgin-outsider-spends-without-execution.json) — Outsider 지명에서는 Virgin만 소비되고 정상 투표로 이어지는지 확인한다.
+- [x] `IMP-05` [virgin-poisoned-spends-without-execution.json](../../fixtures/acceptance/trouble-brewing/virgin-poisoned-spends-without-execution.json) — poisoned Virgin이 소비되지만 Townsfolk 지명자가 처형되지 않는지 확인한다.
+- [x] `REG-07` [virgin-spy-registers-townsfolk.json](../../fixtures/acceptance/trouble-brewing/virgin-spy-registers-townsfolk.json) — Spy Townsfolk 등록 사용 시 즉시 처형되고 등록하지 않으면 정상 투표로 이어지는지 재import해 비교한다.
+- [x] `PUB-01` [slayer-shoots-imp.json](../../fixtures/acceptance/trouble-brewing/slayer-shoots-imp.json) — actual Slayer가 살아 있는 Imp를 죽이고 능력 소비 및 good 승리 경고까지 이어지는지 확인한다.
+- [x] `REG-08` [slayer-recluse-as-demon.json](../../fixtures/acceptance/trouble-brewing/slayer-recluse-as-demon.json) — Recluse를 Imp로 등록하면 죽고 canonical로 처리하면 아무 일도 없는지 비교한다.
+- [x] `IMP-06` [slayer-poisoned-spends-no-effect.json](../../fixtures/acceptance/trouble-brewing/slayer-poisoned-spends-no-effect.json) — poisoned Slayer가 Imp를 죽이지 못하지만 다시 사용할 수도 없는지 확인한다.
+- [x] `PUB-01B` [slayer-shoots-dead-imp.json](../../fixtures/acceptance/trouble-brewing/slayer-shoots-dead-imp.json) — 이미 죽은 Imp를 지목하면 추가 사망 없이 Slayer 능력만 소비되는지 확인한다.
+- [x] `IMP-07` [drunk-shown-slayer-has-no-ability.json](../../fixtures/acceptance/trouble-brewing/drunk-shown-slayer-has-no-ability.json) — shown Slayer인 actual Drunk에게 추적되는 Slayer 능력이 없는지 확인한다.
+- [x] `INF-06` [undertaker-learns-executed-drunk.json](../../fixtures/acceptance/trouble-brewing/undertaker-learns-executed-drunk.json) — 전날 처형되어 죽은 플레이어가 shown Slayer가 아니라 actual Drunk로 공개되는지 확인한다.
+- [x] `INF-06B` [undertaker-omitted-without-executed-death.json](../../fixtures/acceptance/trouble-brewing/undertaker-omitted-without-executed-death.json) — 전날 처형 사망이 없으면 밤 overview에 Undertaker 단계가 생성되지 않는지 확인한다.
 
 ## 5. 승계와 승리 조건
 
