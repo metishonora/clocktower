@@ -22,6 +22,7 @@ export function Grimoire({
   ruleState,
   slayerAbility,
   onUpdatePlayerAnnotations,
+  readOnlyReveal = false,
 }: {
   players: Player[];
   draft: SetupDraft;
@@ -55,6 +56,7 @@ export function Grimoire({
     playerId: string,
     annotations: PlayerAnnotationsInput,
   ) => Promise<CoreResult<Proposal> | undefined>;
+  readOnlyReveal?: boolean;
 }) {
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
   const annotationLongPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -85,14 +87,14 @@ export function Grimoire({
       <div
         className={`seatMap confirmedSeatMap adjustableSeatMap ${
           seats.length >= 12 ? "compactSeats" : ""
-        }`}
-        aria-label="라이브 마도서 좌석 맵"
+        } ${readOnlyReveal ? "readOnlyRevealSeatMap" : ""}`}
+        aria-label={readOnlyReveal ? "첩자 공개 마도서 좌석 맵" : "라이브 마도서 좌석 맵"}
       >
         <div
-          className={`draftLayoutTableMark ${centerStatus?.kind === "active" ? "hasPhaseRuntime" : ""}`}
-          aria-hidden={centerStatus?.kind === "active" ? undefined : true}
+          className={`draftLayoutTableMark ${!readOnlyReveal && centerStatus?.kind === "active" ? "hasPhaseRuntime" : ""}`}
+          aria-hidden={!readOnlyReveal && centerStatus?.kind === "active" ? undefined : true}
         >
-          {centerStatus?.kind === "active" ? (
+          {!readOnlyReveal && centerStatus?.kind === "active" ? (
             <strong
               className="phaseRuntimeCenter phaseRuntimeTable"
               aria-label={`${centerStatus.phaseLabel} 경과 시간 ${centerStatus.runtime}`}
@@ -102,7 +104,7 @@ export function Grimoire({
             </strong>
           ) : "테이블"}
         </div>
-        {centerStatus?.kind === "active" ? null : (
+        {readOnlyReveal || centerStatus?.kind === "active" ? null : (
           <strong className="mapCenter">
             {centerStatus?.kind === "ended" ? "게임 종료" : "입력 중"}
           </strong>
@@ -140,6 +142,39 @@ export function Grimoire({
           const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
           const automaticEdge = position.x < 50 ? "edgeLeft" : "edgeRight";
           const manualBadges = playerAnnotationBadges(confirmedPlayer);
+          const seatClassName = `seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
+            votingSelected ? "selected voteSelected" : ""
+          } ${nominationVoting ? "votingEnabled" : ""} ${voteStatus?.className ?? ""} ${
+            setupInformationSelected ? "selected setupInformationSelected" : ""
+          } ${setupInformationSelection ? "setupInformationEnabled" : ""} ${
+            phaseSelected ? "selected phasePlayerSelected" : ""
+          } ${phasePlayerSelection ? "phasePlayerEnabled" : ""} ${
+            confirmedPlayer?.notes && !readOnlyReveal ? "hasAnnotationNotes" : ""
+          }`;
+          const seatStyle = { left: `${position.x}%`, top: `${position.y}%` };
+          const seatContent = (
+            <>
+              <CharacterIcon characterId={actualCharacter} className="seatCharacterIcon" />
+              <span className="seatTokenNumber">{seat.seat}</span>
+              <strong>{seat.name}</strong>
+              <small>{characterLabel(actualCharacter)}</small>
+              {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
+              {!readOnlyReveal && showShownCharacter ? (
+                <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
+              ) : null}
+              {!readOnlyReveal && confirmedPlayer?.notes ? (
+                <span className="playerAnnotationNotesPreview" aria-label="Notes 미리보기">{confirmedPlayer.notes}</span>
+              ) : null}
+              <span className={`playerAutomaticTokens ${automaticEdge}`}>
+                {playerId === ruleState?.activePoison?.playerId ? (
+                  <span className="ruleEffectBadge poisonBadge">중독</span>
+                ) : null}
+                {playerId === ruleState?.activeProtection?.playerId ? (
+                  <span className="ruleEffectBadge protectionBadge">보호</span>
+                ) : null}
+              </span>
+            </>
+          );
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
@@ -171,66 +206,50 @@ export function Grimoire({
 
           return (
             <div className="seatTokenSlot" key={seat.seat}>
-              <button
-                type="button"
-                className={`seatToken confirmedSeatToken adjustableSeatToken ${alignment} ${
-                  votingSelected ? "selected voteSelected" : ""
-                } ${nominationVoting ? "votingEnabled" : ""} ${
-                  voteStatus?.className ?? ""
-                } ${setupInformationSelected ? "selected setupInformationSelected" : ""} ${
-                  setupInformationSelection ? "setupInformationEnabled" : ""
-                } ${phaseSelected ? "selected phasePlayerSelected" : ""} ${phasePlayerSelection ? "phasePlayerEnabled" : ""} ${
-                  confirmedPlayer?.notes ? "hasAnnotationNotes" : ""
-                }`}
-                style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                onClick={handleSeatClick}
-                onPointerDown={(event) => startAnnotationLongPress(event, confirmedPlayer)}
-                onPointerUp={cancelAnnotationLongPress}
-                onPointerCancel={cancelAnnotationLongPress}
-                onPointerLeave={cancelAnnotationLongPress}
-                aria-label={`${seat.seat}번 ${seat.name} ${nominationVoting ? "투표 선택" : "좌석 선택"}${
-                  voteStatus ? ` · ${voteStatus.label}` : ""
-                }`}
-                aria-disabled={
-                  nominationVoting
-                    ? votingDisabled
-                    : setupInformationSelection
-                      ? setupInformationDisabled
-                      : phasePlayerSelection
-                        ? phaseSelectionDisabled
-                        : true
-                }
-                aria-pressed={
-                  nominationVoting
-                    ? votingSelected
-                    : setupInformationSelection
-                      ? setupInformationSelected
-                      : phasePlayerSelection
-                        ? phaseSelected
-                        : undefined
-                }
-              >
-                <CharacterIcon characterId={actualCharacter} className="seatCharacterIcon" />
-                <span className="seatTokenNumber">{seat.seat}</span>
-                <strong>{seat.name}</strong>
-                <small>{characterLabel(actualCharacter)}</small>
-                {voteStatus ? <small className="lifeVoteStatus">{voteStatus.label}</small> : null}
-                {showShownCharacter ? (
-                  <small className="shownCharacter">보여준 캐릭터: {characterLabel(shownCharacter)}</small>
-                ) : null}
-                {confirmedPlayer?.notes ? (
-                  <span className="playerAnnotationNotesPreview" aria-label="Notes 미리보기">{confirmedPlayer.notes}</span>
-                ) : null}
-                <span className={`playerAutomaticTokens ${automaticEdge}`}>
-                  {playerId === ruleState?.activePoison?.playerId ? (
-                    <span className="ruleEffectBadge poisonBadge">중독</span>
-                  ) : null}
-                  {playerId === ruleState?.activeProtection?.playerId ? (
-                    <span className="ruleEffectBadge protectionBadge">보호</span>
-                  ) : null}
-                </span>
-              </button>
-              {confirmedPlayer && manualBadges.length > 0 ? (
+              {readOnlyReveal ? (
+                <article
+                  className={seatClassName}
+                  style={seatStyle}
+                  aria-label={`${seat.seat}번 ${seat.name} · ${voteStatus?.label ?? "생존"}`}
+                >
+                  {seatContent}
+                </article>
+              ) : (
+                <button
+                  type="button"
+                  className={seatClassName}
+                  style={seatStyle}
+                  onClick={handleSeatClick}
+                  onPointerDown={(event) => startAnnotationLongPress(event, confirmedPlayer)}
+                  onPointerUp={cancelAnnotationLongPress}
+                  onPointerCancel={cancelAnnotationLongPress}
+                  onPointerLeave={cancelAnnotationLongPress}
+                  aria-label={`${seat.seat}번 ${seat.name} ${nominationVoting ? "투표 선택" : "좌석 선택"}${
+                    voteStatus ? ` · ${voteStatus.label}` : ""
+                  }`}
+                  aria-disabled={
+                    nominationVoting
+                      ? votingDisabled
+                      : setupInformationSelection
+                        ? setupInformationDisabled
+                        : phasePlayerSelection
+                          ? phaseSelectionDisabled
+                          : true
+                  }
+                  aria-pressed={
+                    nominationVoting
+                      ? votingSelected
+                      : setupInformationSelection
+                        ? setupInformationSelected
+                        : phasePlayerSelection
+                          ? phaseSelected
+                          : undefined
+                  }
+                >
+                  {seatContent}
+                </button>
+              )}
+              {!readOnlyReveal && confirmedPlayer && manualBadges.length > 0 ? (
                 <div
                   className="playerManualTokens"
                   style={manualTokenStyle(position)}
@@ -242,7 +261,7 @@ export function Grimoire({
                   {manualBadges.length > 2 ? <span>+{manualBadges.length - 2}</span> : null}
                 </div>
               ) : null}
-              {currentSlayerAbility ? (
+              {!readOnlyReveal && currentSlayerAbility ? (
                 <button
                   type="button"
                   className={`slayerAbilityIcon ${currentSlayerAbility.spent ? "spent" : ""}`}
@@ -254,7 +273,7 @@ export function Grimoire({
                   S
                 </button>
               ) : null}
-              {virginAbility && playerId === virginAbility.actorPlayerId ? (
+              {!readOnlyReveal && virginAbility && playerId === virginAbility.actorPlayerId ? (
                 <span
                   className={`virginAbilityIcon ${virginAbility.spent ? "spent" : ""}`}
                   style={{ left: `${position.x}%`, top: `${position.y}%` }}
