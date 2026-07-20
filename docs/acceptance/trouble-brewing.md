@@ -71,7 +71,7 @@
 - [x] `INF-03B` [empath-skips-dead-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-skips-dead-neighbors.json) — 양옆 dead 플레이어를 건너뛰어 다음 살아 있는 이웃인 Imp와 Poisoner를 세어 `2`가 나오는지 확인한다.
 - [x] `INF-04` [fortune-teller-red-herring.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-red-herring.json) — good 플레이어 또는 자신을 Red Herring으로 지정할 수 있는지 확인한다.
 - [ ] `REG-05` [fortune-teller-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-recluse-registration.json) — 실제 Imp, Red Herring, Demon 등록 Recluse가 각각 yes 사유로 구분되는지 확인한다.
-- [ ] `INF-04B` [fortune-teller-detects-dead-demon.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-detects-dead-demon.json) — 이미 죽은 Imp를 선택해도 yes가 나오는지 확인한다.
+- [ ] `INF-04B` [fortune-teller-detects-dead-demon.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-detects-dead-demon.json) — Imp 자살 후 Scarlet Woman이 승계해 게임이 계속되는 상태에서 죽은 이전 Imp와 살아 있는 새 Imp가 각각 yes인지 확인한다.
 - [x] `IMP-01` [poisoner-false-empath-information.json](../../fixtures/acceptance/trouble-brewing/poisoner-false-empath-information.json) — poisoned Empath에게 거짓 수치를 전달하고 poison 사유가 기록되는지 확인한다.
 - [x] `IMP-02` [poisoner-expiry-at-next-dusk.json](../../fixtures/acceptance/trouble-brewing/poisoner-expiry-at-next-dusk.json) — 다음 밤 시작 때 이전 독이 해제되어 있는지 확인한다.
 - [x] `IMP-02B` [poisoner-death-ends-poison.json](../../fixtures/acceptance/trouble-brewing/poisoner-death-ends-poison.json) — Poisoner 처형 사망을 확정하면 지속 중이던 Empath 독이 즉시 끝나는지 확인한다.

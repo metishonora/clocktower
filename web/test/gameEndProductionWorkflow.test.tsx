@@ -62,6 +62,11 @@ test("warning confirmation ends the game and protected Undo restores the live st
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByText("게임 종료")).toBeTruthy();
   expect(within(grimoire).queryByLabelText(/경과 시간/)).toBeNull();
+  expect(screen.queryByLabelText("단계 입력")).toBeNull();
+  const endedSeat = within(grimoire).getByRole("button", { name: /1번 Ada 좌석 선택/ });
+  expect(endedSeat.getAttribute("aria-disabled")).toBe("true");
+  await user.click(endedSeat);
+  expect(core.propose).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "게임 종료 되돌리기" }));
   const undo = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
   await user.click(within(undo).getByRole("button", { name: "되돌리기" }));
