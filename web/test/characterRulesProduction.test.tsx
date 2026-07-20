@@ -68,6 +68,19 @@ test("opens a player's official rules card from the production player detail", a
   expect(document.activeElement).toBe(trigger);
 });
 
+test("mounts player detail in the top-level overlay layer above live-play panels", async () => {
+  renderCharacterStep();
+
+  const grimoire = (await screen.findByLabelText("라이브 마도서 좌석 맵")).closest(".grimoire");
+  longPressSeat(/1번 Ada 좌석 선택/);
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
+  const backdrop = detail.closest(".playerAnnotationsBackdrop");
+
+  expect(backdrop?.parentElement).toBe(document.body);
+  expect(grimoire?.contains(backdrop)).toBe(false);
+  expect(screen.getByLabelText("현재 행동자")).toBeTruthy();
+});
+
 test("opens the current actor rules card and restores focus after Escape", async () => {
   const user = userEvent.setup();
   renderCharacterStep();
