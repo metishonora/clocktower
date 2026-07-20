@@ -35,6 +35,7 @@ pub(crate) fn simple_step(
         required_input,
         can_skip,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 
@@ -71,6 +72,7 @@ pub(crate) fn phase_transition_step(
         },
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 

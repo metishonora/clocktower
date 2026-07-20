@@ -332,6 +332,18 @@ pub(crate) struct PhaseStep {
     pub(crate) can_skip: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) pre_action_reveal: Option<PreActionReveal>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PreActionReveal {
+    pub(crate) kind: &'static str,
+    pub(crate) source_event_id: String,
+    pub(crate) player_id: String,
+    pub(crate) alignment: &'static str,
+    pub(crate) character_id: &'static str,
 }
 
 #[derive(Debug, Serialize, Clone)]

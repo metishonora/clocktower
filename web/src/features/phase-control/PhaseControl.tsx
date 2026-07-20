@@ -54,6 +54,8 @@ export function PhaseControl({
   phaseInputDraft,
   replayReady,
   busy,
+  preActionRevealPending,
+  onShowPreActionReveal,
   onShowReveal,
   onContinue,
   onConfirm,
@@ -78,6 +80,8 @@ export function PhaseControl({
   phaseInputDraft: PhaseInputDraftController;
   replayReady: boolean;
   busy: boolean;
+  preActionRevealPending: boolean;
+  onShowPreActionReveal: () => void;
   onShowReveal: (payload: RevealPayload) => void;
   onContinue: () => void;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
@@ -100,6 +104,24 @@ export function PhaseControl({
         onShowReveal={onShowReveal}
         onContinue={onContinue}
       />
+    );
+  }
+
+  if (currentStep?.preActionReveal && preActionRevealPending) {
+    const player = players.find((candidate) => candidate.id === currentStep.preActionReveal?.playerId);
+    return (
+      <>
+        <div className="sectionHeader compact">
+          <div><p className="eyebrow">{phaseLabel(currentStep.phase)}</p><h2>새 임프 직업 변경 안내</h2></div>
+        </div>
+        <section className="currentStepCard preActionRevealCard" aria-label="직업 변경 안내">
+          <small>먼저 안내할 플레이어</small>
+          <strong>{player ? `${player.seat}번 ${player.name}` : "새 임프"} · 임프</strong>
+          <button type="button" className="primaryButton" disabled={busy} onClick={onShowPreActionReveal}>
+            플레이어에게 공개
+          </button>
+        </section>
+      </>
     );
   }
 
@@ -443,7 +465,7 @@ function CurrentStepPane({
             {isNightDeathAnnouncement ? (
               <NightDeathAnnouncement players={players} playerIds={unannouncedNightDeathPlayerIds} />
             ) : null}
-            {currentPlayer && !resultSubject ? (
+            {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? (
               <section className="currentActor" aria-label="현재 행동자">
                 <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
                 <div>
@@ -547,7 +569,9 @@ function CurrentStepPane({
                   }
                   disabled={busy || suggesting || !selectionValid || !targetChoiceReady}
                 >
-                  {currentStep.stepType === "whisper"
+                  {currentStep.stepType === "demonSuccession"
+                    ? "승계 확정"
+                    : currentStep.stepType === "whisper"
                     ? "토론 시작"
                     : currentStep.stepType === "discussion"
                       ? "지목 및 투표 시작"

@@ -1328,6 +1328,26 @@ select {
   line-height: 1.45;
 }
 
+.demonSuccessionCard,
+.preActionRevealCard {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--demon) 28%, var(--line));
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--demon) 7%, var(--panel));
+}
+
+.demonSuccessionCard small,
+.preActionRevealCard small {
+  color: var(--muted);
+}
+
+.demonSuccessionCard strong,
+.preActionRevealCard strong {
+  font-size: 1rem;
+}
+
 .stepActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

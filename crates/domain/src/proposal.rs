@@ -1046,7 +1046,7 @@ fn propose_demon_succession(
         warnings: vec![],
         follow_up_steps: vec![],
         preview: json!({ "messageKo": "새 임프를 확정합니다." }),
-        reveal_payload: Some(RevealPayload::CharacterChange {
+        reveal_payload: (pending.phase == Phase::Night).then(|| RevealPayload::CharacterChange {
             kind: "characterChange",
             player_id: successor.id.clone(),
             alignment: "evil",

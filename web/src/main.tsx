@@ -295,13 +295,23 @@ export function ClocktowerApp({
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
+  const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
   const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
   const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
   const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [undoResetRevision, setUndoResetRevision] = useState(0);
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
-  const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
+  const preActionRevealKey = gameStore.currentStep?.preActionReveal
+    ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
+    : undefined;
+  const preActionRevealPending = Boolean(
+    preActionRevealKey && acknowledgedPreActionRevealKey !== preActionRevealKey,
+  );
+  const phaseInputStep = gameStore.pendingConfirmedReveal || preActionRevealPending
+    ? undefined
+    : gameStore.currentStep;
   const phaseInputDraft = usePhaseInputDraft(
     phaseInputStep,
     gameStore.players,
@@ -331,6 +341,10 @@ export function ClocktowerApp({
     }
   }, [gameStore.pendingConfirmedReveal]);
 
+  useEffect(() => {
+    if (!preActionRevealKey) setAcknowledgedPreActionRevealKey(undefined);
+  }, [preActionRevealKey]);
+
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -351,6 +365,14 @@ export function ClocktowerApp({
   function showReveal(payload: RevealPayload) {
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
+  }
+
+  function showPreActionReveal() {
+    const reveal = gameStore.currentStep?.preActionReveal;
+    if (!reveal || !preActionRevealKey) return;
+    const { sourceEventId: _, ...payload } = reveal;
+    setActivePreActionRevealKey(preActionRevealKey);
+    setActiveRevealPayload(payload);
   }
 
   function closeLiveUndoDialog() {
@@ -379,7 +401,13 @@ export function ClocktowerApp({
   }
 
   if (activeRevealPayload) {
-    return <RevealScreen payload={activeRevealPayload} onClose={() => setActiveRevealPayload(undefined)} />;
+    return <RevealScreen payload={activeRevealPayload} onClose={() => {
+      if (activePreActionRevealKey) {
+        setAcknowledgedPreActionRevealKey(activePreActionRevealKey);
+        setActivePreActionRevealKey(undefined);
+      }
+      setActiveRevealPayload(undefined);
+    }} />;
   }
 
   return (
@@ -404,7 +432,7 @@ export function ClocktowerApp({
               <Grimoire
                 players={gameStore.players}
                 draft={gameStore.setupDraft}
-                busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
+                busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal) || preActionRevealPending}
                 centerStatus={grimoireCenterStatus}
                 ruleState={gameStore.ruleState}
                 onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
@@ -457,6 +485,8 @@ export function ClocktowerApp({
                     phaseInputDraft={phaseInputDraft}
                     replayReady={gameStore.pendingConfirmedRevealReady}
                     busy={gameStore.busy}
+                    preActionRevealPending={preActionRevealPending}
+                    onShowPreActionReveal={showPreActionReveal}
                     onShowReveal={showReveal}
                     onContinue={gameStore.continueAfterConfirmedReveal}
                     onConfirm={gameStore.confirmCurrentStep}

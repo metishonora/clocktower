@@ -326,8 +326,20 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     isOptionalString(value.playerId) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
+    (value.preActionReveal === undefined || isPreActionReveal(value.preActionReveal)) &&
     (value.informationPrompt === undefined ||
       isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
+  );
+}
+
+function isPreActionReveal(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    value.kind === "characterChange" &&
+    typeof value.sourceEventId === "string" &&
+    typeof value.playerId === "string" &&
+    value.alignment === "evil" &&
+    value.characterId === "imp"
   );
 }
 

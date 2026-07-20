@@ -170,6 +170,14 @@ export function StepInputFields({
           busy={busy}
           activeNomination={dayState?.activeNomination}
         />
+      ) : step.requiredInput.kind === "demonSuccession" ? (
+        <DemonSuccessionInput
+          step={step}
+          players={players}
+          selectedPlayerIds={selectedPlayerIds}
+          busy={busy}
+          onChange={onSelectedPlayerIdsChange}
+        />
       ) : (
         <PlayerStepInput
           step={step}
@@ -188,15 +196,6 @@ export function StepInputFields({
           busy={busy}
           value={registrationJudgments}
           onChange={onRegistrationJudgmentsChange}
-        />
-      ) : null}
-      {step.requiredInput.kind === "demonSuccession" ? (
-        <DemonSuccessionInput
-          step={step}
-          players={players}
-          selectedPlayerIds={selectedPlayerIds}
-          busy={busy}
-          onChange={onSelectedPlayerIdsChange}
         />
       ) : null}
       {step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId) ? (
@@ -328,19 +327,29 @@ function DemonSuccessionInput({
 }) {
   const prompt = step.requiredInput.demonSuccession;
   if (!prompt) return null;
-  const allowedIds = prompt.kind === "fixed" ? [prompt.successorPlayerId] : prompt.allowedPlayerIds;
+  if (prompt.kind === "fixed") {
+    const player = players.find((candidate) => candidate.id === prompt.successorPlayerId);
+    if (!player) return null;
+    return (
+      <section className="demonSuccessionCard" aria-label="악마 승계 확인">
+        <small>승계 대상</small>
+        <strong>{player.seat}번 {player.name} · {characterLabel(player.actualCharacter)} → 임프</strong>
+      </section>
+    );
+  }
+  const allowedIds = prompt.allowedPlayerIds;
   return (
     <div className="ruleDecisionInput" aria-label="새 임프 선택">
       {allowedIds.flatMap((id) => {
         const player = players.find((candidate) => candidate.id === id);
         if (!player) return [];
-        const selected = prompt.kind === "fixed" || selectedPlayerIds.includes(id);
+        const selected = selectedPlayerIds.includes(id);
         return [(
           <button
             type="button"
             className={selected ? "selected" : ""}
             aria-pressed={selected}
-            disabled={busy || prompt.kind === "fixed"}
+            disabled={busy}
             onClick={() => onChange([id])}
             key={id}
           >{seatPlayerLabel(player)} → 임프</button>

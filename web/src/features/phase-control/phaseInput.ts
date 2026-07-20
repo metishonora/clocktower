@@ -33,6 +33,9 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   }
   if (step.id.endsWith(":minionInfo")) return "하수인 깨우기 · 악마와 동료 하수인 확인";
   if (step.id.endsWith(":demonInfo")) return "악마 깨우기 · 하수인과 블러프 확인";
+  if (step.stepType === "demonSuccession") {
+    return step.requiredInput.demonSuccession?.kind === "fixed" ? "탕녀 승계" : "새 임프 선택";
+  }
   if (step.character) {
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
@@ -41,7 +44,6 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
   if (step.stepType === "nomination") return `지목 및 투표 ${step.id.split(":").at(-1)}`;
-  if (step.stepType === "demonSuccession") return "새 임프 선택";
   if (step.id.endsWith(":execution")) return "처형 확정";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   if (step.stepType === "slayerDeath") return player ? `처단자 결과: ${player.seat}번 ${player.name}` : "처단자 결과";
@@ -116,6 +118,11 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
   if (step.id.endsWith(":fortuneTellerRedHerring")) {
     return "점쟁이의 선한 미끼 플레이어 1명을 선택하세요.";
   }
+  if (step.requiredInput.kind === "demonSuccession") {
+    return step.requiredInput.demonSuccession?.kind === "selectable"
+      ? "새 임프가 될 플레이어를 선택하세요."
+      : undefined;
+  }
 
   const characterPrompt = step.character ? characterActionPrompt(step.character) : undefined;
   if (characterPrompt) return characterPrompt;
@@ -126,7 +133,6 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
   const input = step.requiredInput;
   if (input.kind === "nomination") return "지목자와 지목 대상을 선택하세요.";
   if (input.kind === "nominationVote") return "찬성한 플레이어를 선택하세요.";
-  if (input.kind === "demonSuccession") return "새 임프가 될 플레이어를 확인하세요.";
   if (input.kind === "number") return "전달할 숫자를 선택하세요.";
   if (input.kind === "setupInfo") {
     return input.zeroAllowed

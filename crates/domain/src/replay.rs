@@ -445,18 +445,22 @@ pub(crate) fn pending_demon_succession(
 }
 
 fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
-    let (allowed_player_ids, player_id) = match &pending.prompt {
-        DemonSuccessionPrompt::Fixed {
-            successor_player_id,
-            ..
-        } => (
-            vec![successor_player_id.clone()],
-            Some(successor_player_id.clone()),
-        ),
-        DemonSuccessionPrompt::Selectable {
-            allowed_player_ids, ..
-        } => (allowed_player_ids.clone(), None),
-    };
+    let (target, min_selections, max_selections, allowed_player_ids, player_id) =
+        match &pending.prompt {
+            DemonSuccessionPrompt::Fixed {
+                successor_player_id,
+                ..
+            } => (None, None, None, None, Some(successor_player_id.clone())),
+            DemonSuccessionPrompt::Selectable {
+                allowed_player_ids, ..
+            } => (
+                Some(InputTarget::Player),
+                Some(1),
+                Some(1),
+                Some(allowed_player_ids.clone()),
+                None,
+            ),
+        };
     PhaseStep {
         id: format!("{}:demonSuccession", pending.trigger_event_id),
         phase: pending.phase,
@@ -465,13 +469,13 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
         player_id,
         required_input: RequiredInput {
             kind: RequiredInputKind::DemonSuccession,
-            target: Some(InputTarget::Player),
-            min_selections: Some(1),
-            max_selections: Some(1),
+            target,
+            min_selections,
+            max_selections,
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
-            allowed_player_ids: Some(allowed_player_ids),
+            allowed_player_ids,
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -484,6 +488,7 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
         },
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 
@@ -1087,6 +1092,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
         player_id: Some(player_id.into()),
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::SlayerDeathDecision,
             target: None,

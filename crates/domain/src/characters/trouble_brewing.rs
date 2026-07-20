@@ -1028,8 +1028,16 @@ pub(crate) fn character_steps(
 ) -> Vec<PhaseStep> {
     let waking_characters = players
         .iter()
-        .map(|player| (awakening_character(player), player.id.as_str()))
-        .collect::<HashMap<_, _>>();
+        .fold(HashMap::new(), |mut waking_characters, player| {
+            let character = awakening_character(player);
+            let replace = waking_characters
+                .get(character)
+                .is_none_or(|current: &&Player| player.alive || !current.alive);
+            if replace {
+                waking_characters.insert(character, player);
+            }
+            waking_characters
+        });
     let mut emitted = HashSet::new();
 
     order
@@ -1046,10 +1054,11 @@ pub(crate) fn character_steps(
                 character: Some((*character).to_string()),
                 player_id: waking_characters
                     .get(character)
-                    .map(|player_id| (*player_id).to_string()),
+                    .map(|player| player.id.clone()),
                 required_input: character_required_input(character),
                 can_skip: true,
                 information_prompt: None,
+                pre_action_reveal: None,
             })
         })
         .collect()
