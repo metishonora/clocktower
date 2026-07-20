@@ -1439,7 +1439,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(followup).queryByText("다음 단계 준비 중")).toBeNull();
   });
 
-  test("opens a Spy grimoire directly without a Storyteller preview and preserves it until continue", async () => {
+  test("keeps the production Grimoire layout during a safe read-only Spy Reveal", async () => {
     const revealStep = step({
       id: "firstNight:spy",
       character: "spy",
@@ -1453,7 +1453,10 @@ describe("ClocktowerApp live-play integration", () => {
     const playerRoster = players().map((player, index) => ({
       ...player,
       actualCharacter: index === 3 ? "spy" : player.actualCharacter,
-      shownCharacter: index === 3 ? "spy" : player.shownCharacter,
+      shownCharacter: index === 0 ? "slayer" : index === 3 ? "spy" : player.shownCharacter,
+      systemTokenIds: index === 0 ? ["abilitySpent" as const] : [],
+      scriptTokens: index === 0 ? [{ characterId: "scarletWoman", tokenId: "isTheDemon" }] : [],
+      notes: index === 0 ? "비공개 메모" : "",
     }));
     const spyPayload = {
       kind: "spyGrimoire",
@@ -1478,6 +1481,9 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "첩자: 4번 Dae" });
+    const storytellerSeatStyle = screen
+      .getByRole("button", { name: /4번 Dae 좌석 선택/ })
+      .getAttribute("style");
     await user.click(screen.getByRole("button", { name: "확정" }));
     const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
     expect(within(followup).queryByLabelText("Reveal 미리보기")).toBeNull();
@@ -1487,10 +1493,20 @@ describe("ClocktowerApp live-play integration", () => {
 
     await user.click(showButton);
     const revealScreen = screen.getByLabelText("플레이어 공개 화면");
-    expect(within(revealScreen).getByText("Dae")).toBeTruthy();
-    expect(screen.queryByText("Trouble Brewing")).toBeNull();
-    expect(screen.queryByLabelText("라이브 마도서 좌석 맵")).toBeNull();
+    const revealSeat = within(revealScreen).getByText("Dae").closest("article");
+    expect(revealSeat?.getAttribute("style")).toBe(storytellerSeatStyle);
+    expect(within(revealScreen).getByRole("heading", { name: "Trouble Brewing" })).toBeTruthy();
+    expect(within(revealScreen).getByLabelText("첩자 공개 마도서 좌석 맵")).toBeTruthy();
+    expect(within(revealScreen).getAllByRole("article")).toHaveLength(playerRoster.length);
+    expect(within(revealScreen).getAllByRole("button")).toHaveLength(1);
+    expect(within(revealScreen).getByText("중독")).toBeTruthy();
+    expect(within(revealScreen).getByText("보호")).toBeTruthy();
+    expect(within(revealScreen).queryByText(/보여준 캐릭터/)).toBeNull();
+    expect(within(revealScreen).queryByText("비공개 메모")).toBeNull();
+    expect(within(revealScreen).queryByText(/악마임|능력 소모/)).toBeNull();
     expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(screen.queryByText("이벤트 로그")).toBeNull();
+    expect(screen.queryByText("설정 및 불러오기")).toBeNull();
 
     await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();

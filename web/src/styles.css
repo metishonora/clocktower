@@ -109,6 +109,27 @@ select:focus-visible {
   min-width: 0;
 }
 
+.spyRevealRail {
+  display: grid;
+  min-width: 0;
+  min-height: calc(100vh - 28px);
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.spyRevealRail > button {
+  width: 100%;
+  min-height: 58px;
+}
+
+.readOnlyRevealSeatMap .seatToken {
+  cursor: default;
+}
+
 .confirmedShell > .grimoire {
   position: sticky;
   top: 14px;
@@ -3992,6 +4013,34 @@ select {
 
   .phasePrototypeWording.compact {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .shell.confirmedShell.spyRevealShell {
+    height: 100vh;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .spyRevealShell > .grimoire {
+    position: static;
+    height: 100%;
+    min-height: 0;
+    align-self: stretch;
+    overflow: hidden;
+  }
+
+  .spyRevealShell .seatMap {
+    min-height: 0;
+  }
+
+  .spyRevealRail {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    min-height: auto;
+    padding: 12px;
   }
 }
 
