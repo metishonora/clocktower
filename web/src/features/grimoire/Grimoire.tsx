@@ -5,7 +5,7 @@ import {
   seatLayoutPositions,
   type SetupDraft,
 } from "../../setupDraft";
-import { voteStatusForPlayer } from "../../voting";
+import { nextVoterIdsAfterToggle, voteStatusForPlayer } from "../../voting";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { CharacterIcon } from "../../components/CharacterIcon";
 import { PlayerAnnotationsDialog } from "./PlayerAnnotationsDialog";
@@ -125,7 +125,14 @@ export function Grimoire({
           const phaseAllowed = Boolean(
             playerId && (!phasePlayerSelection?.allowedPlayerIds || phasePlayerSelection.allowedPlayerIds.includes(playerId)),
           );
-          const voteStatus = confirmedPlayer ? voteStatusForPlayer(confirmedPlayer, votingSelected) : undefined;
+          const voteStatus = confirmedPlayer
+            ? voteStatusForPlayer(
+                confirmedPlayer,
+                votingSelected,
+                nominationVoting?.draft.voterIds,
+                ruleState?.butlerVote,
+              )
+            : undefined;
           const votingDisabled = busy || !playerId || Boolean(voteStatus?.disabled);
           const setupInformationDisabled =
             busy || !playerId || Boolean(setupInformationSelection?.disabled);
@@ -136,9 +143,11 @@ export function Grimoire({
 
           function toggleVote() {
             if (!playerId || !nominationVoting || votingDisabled) return;
-            const voterIds = votingSelected
-              ? nominationVoting.draft.voterIds.filter((selectedId) => selectedId !== playerId)
-              : [...nominationVoting.draft.voterIds, playerId];
+            const voterIds = nextVoterIdsAfterToggle(
+              nominationVoting.draft.voterIds,
+              playerId,
+              ruleState?.butlerVote,
+            );
             nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
           }
 

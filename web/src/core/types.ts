@@ -210,6 +210,13 @@ export type RuleState = {
     spent: boolean;
     spentByNominationEventId?: string;
   };
+  butlerVote?: ButlerVoteState;
+};
+
+export type ButlerVoteState = {
+  butlerPlayerId: string;
+  masterPlayerId?: string;
+  restrictionApplies: boolean;
 };
 
 export type ActiveRuleEffect = {

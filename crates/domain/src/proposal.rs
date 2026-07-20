@@ -361,6 +361,18 @@ pub(crate) fn propose_phase_step(
     if skip && (payload.delivered_result.is_some() || !payload.registration_judgments.is_empty()) {
         return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
     }
+    if !skip
+        && current_step.character.as_deref() == Some("butler")
+        && current_step.player_id.as_ref().is_some_and(|actor_id| {
+            payload
+                .input
+                .as_ref()
+                .and_then(|input| input.player_ids.as_ref())
+                .is_some_and(|ids| ids.iter().any(|id| id == actor_id))
+        })
+    {
+        return Err(ErrorKind::InvalidButlerMaster.into_error());
+    }
     if !skip && current_step.required_input.kind != RequiredInputKind::SetupInfo {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
     }
@@ -932,6 +944,13 @@ pub(crate) fn propose_nomination_vote(
 ) -> Result<Proposal, CoreError> {
     let (record, active) =
         nomination_record(current_step, players, &input, &game_file.game.events)?;
+    let active_poison = crate::night::active_night_poison(&game_file.game.events, players);
+    let butler_vote = crate::characters::butler_vote_state(
+        players,
+        &game_file.game.events,
+        active_poison.as_ref(),
+    );
+    crate::characters::validate_butler_voters(butler_vote.as_ref(), &record.voter_ids)?;
     let prefix = step_prefix(&current_step.id)?;
     let mut projected_nominations =
         replay_day_state(&game_file.game.events, players, &prefix)?.nominations;

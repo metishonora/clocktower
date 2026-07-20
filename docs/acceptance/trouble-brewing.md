@@ -38,7 +38,7 @@
 
 ### Outsiders
 
-- **Butler**: 매일 밤 자신 이외 Master를 고르고 다음 날 Master가 투표 중이거나 이미 집계되었을 때만 투표할 수 있다. 공식 룰상 고의 위반은 부정행위이며 Storyteller가 자동으로 무효표 처리하지 않는다.
+- **Butler**: 매일 밤 자신 이외 Master를 고르고 다음 날 Master가 투표 중이거나 이미 집계되었을 때만 투표할 수 있다. 공식 룰상 고의 위반은 부정행위이며 Storyteller가 자동으로 무효표 처리하지 않지만, 앱은 운영 실수를 막기 위해 불가능한 투표 draft와 새 command를 차단한다.
 - **Drunk**: 실제 능력이 없고 Townsfolk라고 생각한다. 해당 Townsfolk처럼 깨우고 행동시키지만 효과는 없으며 정보는 거짓일 수 있다.
 - **Recluse**: 죽어 있어도 검사별로 evil 및 특정 Minion/Demon으로 등록할 수 있다. 등록된 직업의 능력을 얻지는 않는다.
 - **Saint**: sober/healthy actual Saint가 처형으로 죽으면 그 팀이 패배한다. 다른 원인의 사망이나 poisoned 상태에서는 발동하지 않는다.
@@ -78,7 +78,7 @@
 - [ ] `INF-05` [spy-grimoire-reveal.json](../../fixtures/acceptance/trouble-brewing/spy-grimoire-reveal.json) — Spy reveal에 실제 직업과 필요한 상태만 표시되고 Storyteller 조작 화면 비밀이 새지 않는지 확인한다.
   - 표시: 1번은 `중독`, 4번은 `보호`, 6번은 사망 및 유령 투표 사용 상태로 보여야 한다.
   - 숨김: 이전 밤 대상인 2번의 중독과 3번의 보호, 7번의 수동 Script/System Tokens 및 Notes는 보이지 않아야 한다.
-- [ ] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 규칙은 경고·운영 보조이며 강제 무효화하지 않는지 확인한다.
+- [ ] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, Master 미투표 시 Butler 좌석이 사유와 함께 비활성화되며, Master 선택·해제에 따라 Butler 표가 활성화·원자 제거되고 UI 우회 command도 거부되는지 확인한다.
 
 ## 3. 밤 행동과 사망 후속 처리
 
