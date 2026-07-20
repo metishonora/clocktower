@@ -70,13 +70,13 @@
 - [x] `INF-03` [empath-alive-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-alive-neighbors.json) — 1번 Empath의 살아 있는 좌우 이웃 중 8번 Imp 한 명을 세어 `1`이 나오는지 확인한다.
 - [x] `INF-03B` [empath-skips-dead-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-skips-dead-neighbors.json) — 양옆 dead 플레이어를 건너뛰어 다음 살아 있는 이웃인 Imp와 Poisoner를 세어 `2`가 나오는지 확인한다.
 - [x] `INF-04` [fortune-teller-red-herring.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-red-herring.json) — good 플레이어 또는 자신을 Red Herring으로 지정할 수 있는지 확인한다.
-- [ ] `REG-05` [fortune-teller-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-recluse-registration.json) — 실제 Imp, Red Herring, Demon 등록 Recluse가 각각 yes 사유로 구분되는지 확인한다.
-- [ ] `INF-04B` [fortune-teller-detects-dead-demon.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-detects-dead-demon.json) — 이미 죽은 Imp를 선택해도 yes가 나오는지 확인한다.
+- [x] `REG-05` [fortune-teller-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-recluse-registration.json) — 실제 Imp, Red Herring, Demon 등록 Recluse가 각각 yes 사유로 구분되는지 확인한다.
+- [x] `INF-04B` [fortune-teller-detects-dead-demon.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-detects-dead-demon.json) — 이미 죽은 Imp를 선택해도 yes가 나오는지 확인한다.
 - [x] `IMP-01` [poisoner-false-empath-information.json](../../fixtures/acceptance/trouble-brewing/poisoner-false-empath-information.json) — poisoned Empath에게 거짓 수치를 전달하고 poison 사유가 기록되는지 확인한다.
 - [x] `IMP-02` [poisoner-expiry-at-next-dusk.json](../../fixtures/acceptance/trouble-brewing/poisoner-expiry-at-next-dusk.json) — 다음 밤 시작 때 이전 독이 해제되어 있는지 확인한다.
 - [x] `IMP-02B` [poisoner-death-ends-poison.json](../../fixtures/acceptance/trouble-brewing/poisoner-death-ends-poison.json) — Poisoner 처형 사망을 확정하면 지속 중이던 Empath 독이 즉시 끝나는지 확인한다.
 - [ ] `INF-05` [spy-grimoire-reveal.json](../../fixtures/acceptance/trouble-brewing/spy-grimoire-reveal.json) — Spy reveal에 실제 직업과 필요한 상태만 표시되고 Storyteller 조작 화면 비밀이 새지 않는지 확인한다.
-- [ ] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 규칙은 경고·운영 보조이며 강제 무효화하지 않는지 확인한다.
+- [x] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 규칙은 경고·운영 보조이며 강제 무효화하지 않는지 확인한다.
 
 ## 3. 밤 행동과 사망 후속 처리
 
