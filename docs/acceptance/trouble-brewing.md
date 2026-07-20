@@ -89,9 +89,9 @@
 - [x] `IMP-03B` [mayor-poisoned-has-no-bounce.json](../../fixtures/acceptance/trouble-brewing/mayor-poisoned-has-no-bounce.json) — poisoned Mayor 공격에서 결정 UI 없이 Mayor가 죽고 bounce가 적용되지 않는지 확인한다.
 - [x] `TRG-01` [ravenkeeper-night-death-trigger.json](../../fixtures/acceptance/trouble-brewing/ravenkeeper-night-death-trigger.json) — 밤에 죽은 Ravenkeeper 후속 단계에서 살아 있거나 죽은 대상을 확인할 수 있는지 확인한다.
 - [ ] `REG-06` [ravenkeeper-spy-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/ravenkeeper-spy-recluse-registration.json) — 이미 죽은 Spy를 good 직업, 죽은 Recluse를 evil 직업으로 보는 등록 선택지를 각각 확인한다.
-- [ ] `SUC-01` [imp-self-kill-minion-successor.json](../../fixtures/acceptance/trouble-brewing/imp-self-kill-minion-successor.json) — Imp 자살 후 살아 있는 Minion 중 새 Imp를 고르고 같은 밤 다시 행동하지 않는지 확인한다.
+- [x] `SUC-01` [imp-self-kill-minion-successor.json](../../fixtures/acceptance/trouble-brewing/imp-self-kill-minion-successor.json) — Imp 자살 후 살아 있는 Minion 중 새 Imp를 고르고 같은 밤 다시 행동하지 않는지 확인한다.
 - [ ] `IMP-04` [imp-poisoned-no-kill.json](../../fixtures/acceptance/trouble-brewing/imp-poisoned-no-kill.json) — poisoned Imp 공격이 `NIGHT_ACTION_NO_EFFECT`와 사망 없음으로 끝나는지 확인한다.
-- [ ] `NGT-03` [imp-attacks-dead-player.json](../../fixtures/acceptance/trouble-brewing/imp-attacks-dead-player.json) — dead 대상을 공격할 수 있지만 추가 사망이 없고 already-dead 경고가 나오는지 확인한다.
+- [x] `NGT-03` [imp-attacks-dead-player.json](../../fixtures/acceptance/trouble-brewing/imp-attacks-dead-player.json) — dead 대상을 공격할 수 있지만 추가 사망이 없고 already-dead 경고가 나오는지 확인한다.
 
 ## 4. 낮 능력, 지명과 처형
 
