@@ -9,6 +9,7 @@ import type {
   TargetCheck,
 } from "../../core/types";
 import {
+  mayorDecisionApplies,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
   setupInfoZeroOutsidersAvailable,
@@ -184,7 +185,7 @@ function updatePlayerSelection(
     return {
       ...draft,
       selectedPlayerIds,
-      mayorDecision: step?.requiredInput.mayorDecision?.mayorPlayerId === selectedPlayerIds[0]
+      mayorDecision: step && mayorDecisionApplies(step, selectedPlayerIds)
         ? draft.mayorDecision
         : undefined,
       selectedTargetChoice: check?.choices.length === 1 ? check.choices[0] : undefined,

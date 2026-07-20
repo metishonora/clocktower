@@ -183,9 +183,17 @@ pub(crate) fn virgin_resolution(
 
 pub(crate) fn mayor_decision_prompt(
     players: &[Player],
+    actor_player_id: &str,
     active_poison: Option<&ActiveRuleEffect>,
     active_protection: Option<&ActiveRuleEffect>,
 ) -> Option<MayorDecisionPrompt> {
+    let actor = players.iter().find(|player| player.id == actor_player_id)?;
+    if !actor.alive
+        || actor.actual_character != "imp"
+        || is_poisoned(active_poison, actor_player_id)
+    {
+        return None;
+    }
     let mayor = players.iter().find(|player| {
         player.alive
             && player.actual_character == "mayor"
