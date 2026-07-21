@@ -7,6 +7,17 @@ const files = walk(root.pathname).map((path) => path.slice(root.pathname.length)
 const index = readFileSync(new URL("index.html", root), "utf8");
 
 assert.match(index, /(?:src|href)="\/clocktower\//, "build assets must use the /clocktower/ Pages base");
+for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html"]) {
+  assert.ok(files.includes(page), `production page is missing: ${page}`);
+}
+for (const logo of ["assets/scripts/trouble-brewing.png", "assets/scripts/sects-and-violets.png"]) {
+  assert.ok(files.includes(logo), `official script logo is missing: ${logo}`);
+}
+
+const landingEntryPath = index.match(/<script[^>]+src="([^"]+\.js)"/)?.[1];
+assert.ok(landingEntryPath, "landing entry script is missing");
+const landingEntry = readFileSync(new URL(landingEntryPath.replace("/clocktower/", ""), root), "utf8");
+assert.equal(landingEntry.includes("clocktower_wasm"), false, "landing entry must not load the WASM game core");
 
 const manifestFile = files.find((file) => file.endsWith(".webmanifest"));
 assert.ok(manifestFile, "web manifest is missing from the production build");
@@ -23,6 +34,10 @@ assert.ok(manifest.icons?.some((icon) => icon.purpose === "maskable"), "maskable
 assert.ok(files.includes("sw.js"), "generated Service Worker is missing");
 const serviceWorker = readFileSync(new URL("sw.js", root), "utf8");
 for (const requiredAsset of [
+  "trouble-brewing/index.html",
+  "sects-and-violets/index.html",
+  "assets/scripts/trouble-brewing.png",
+  "assets/scripts/sects-and-violets.png",
   ".wasm",
   "assets/characters/tb/washerwoman_g.webp",
   "assets/characters/tb/imp_e.webp",

@@ -1,0 +1,121 @@
+:root {
+  color: #292720;
+  background: #f2ede3;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 0; margin: 0; }
+button { min-height: 44px; font: inherit; cursor: pointer; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.scriptLandingPage {
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 42%, rgba(173, 143, 84, .12), transparent 38%), #f2ede3;
+}
+
+.scriptLandingChoices {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(34px, 7vw, 90px);
+  padding: 24px;
+}
+
+.officialScriptChoice {
+  display: grid;
+  width: clamp(220px, 27vw, 330px);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+  padding: 18px;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.officialScriptChoice img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 22px 30px rgba(43, 32, 21, .18)); }
+.officialScriptChoice:hover,
+.officialScriptChoice:focus-visible { transform: translateY(-7px) scale(1.02); filter: saturate(1.08); }
+.officialScriptChoice:focus-visible { outline: 3px solid currentColor; outline-offset: 5px; }
+.officialScriptChoice.troubleBrewing { color: #823727; }
+.officialScriptChoice.sectsAndViolets { color: #674382; }
+
+.scriptSynopsisTheme { position: relative; display: grid; place-items: center; overflow-x: hidden; color: #f0eee8; transition: background 280ms ease; }
+.scriptSynopsisTheme.troubleBrewing { background: radial-gradient(circle at 50% 18%, #446956 0, #1d362c 43%, #101c18 100%); }
+.scriptSynopsisTheme.sectsAndViolets { background: radial-gradient(circle at 50% 18%, #88699a 0, #4c345b 43%, #24182c 100%); }
+
+.scriptLandingBack {
+  position: fixed;
+  z-index: 3;
+  top: 20px;
+  left: 20px;
+  width: 48px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(10, 14, 12, .2);
+  font-size: 1.25rem;
+}
+
+.scriptSynopsisCard {
+  display: grid;
+  width: min(680px, calc(100% - 48px));
+  justify-items: center;
+  margin: 18px 0;
+  padding: 38px 48px 46px;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 28px;
+  background: rgba(8, 13, 11, .24);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+}
+
+.scriptSynopsisLogo { width: 190px; height: 190px; object-fit: contain; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .32)); }
+.scriptSynopsisCopy { max-width: 58ch; color: rgba(255, 255, 255, .84); font-family: Georgia, "Times New Roman", serif; font-size: .88rem; line-height: 1.9; }
+.scriptSynopsisCopy p { margin: 0; }
+.scriptSynopsisCopy p + p { margin-top: 1em; }
+
+.scriptConfirmButton {
+  min-width: 150px;
+  margin-top: 30px;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, .12);
+  padding: 10px 28px;
+  font-weight: 850;
+}
+.scriptConfirmButton:hover,
+.scriptConfirmButton:focus-visible { background: rgba(255, 255, 255, .24); }
+
+.scriptLoadingScreen {
+  position: fixed;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: inherit;
+  background: rgba(8, 11, 10, .92);
+  font-size: .8rem;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+.scriptLoadingScreen img { width: 180px; height: 180px; object-fit: contain; animation: scriptLogoPulse 650ms ease-in-out infinite alternate; }
+@keyframes scriptLogoPulse { to { transform: scale(1.06); filter: drop-shadow(0 0 26px currentColor); } }
+
+@media (max-width: 620px) {
+  .scriptLandingChoices { flex-direction: column; gap: 18px; }
+  .officialScriptChoice { width: min(240px, 70vw); padding: 8px; }
+  .scriptSynopsisCard { width: calc(100% - 28px); padding: 28px 24px 32px; }
+  .scriptSynopsisLogo { width: 150px; height: 150px; }
+  .scriptSynopsisCopy { font-size: .79rem; line-height: 1.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .officialScriptChoice, .scriptSynopsisTheme { transition: none; }
+  .scriptLoadingScreen img { animation: none; }
+}

@@ -446,6 +446,9 @@ export function ClocktowerApp({
       data-mobile-panel-state={gameStore.setupConfirmed && mobilePhasePanel.mobile && !activeSpyRevealPayload ? mobilePhasePanel.state : undefined}
       style={{ "--mobile-phase-panel-height": mobilePhasePanel.height } as React.CSSProperties}
     >
+      <a className="scriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">
+        <span aria-hidden="true">←</span>
+      </a>
       {!activeSpyRevealPayload ? (
         <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
       ) : null}

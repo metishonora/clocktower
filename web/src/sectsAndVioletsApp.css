@@ -1,0 +1,8 @@
+:root { color: #f1e7f4; background: #24182c; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { min-width: 0; margin: 0; }
+.sectsAndVioletsApp { display: grid; min-height: 100vh; place-items: center; background: radial-gradient(circle at 50% 20%, #88699a 0, #4c345b 42%, #24182c 100%); }
+.sectsAndVioletsApp > section { display: grid; justify-items: center; }
+.sectsAndVioletsApp img { width: min(360px, 74vw); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .34)); }
+.sectsAndVioletsApp p { margin: 4px 0 0; color: rgba(255, 255, 255, .72); font-size: .78rem; font-weight: 850; letter-spacing: .18em; }
+.sectsAndVioletsBack { position: fixed; top: 20px; left: 20px; display: grid; width: 48px; min-height: 48px; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: inherit; background: rgba(10, 8, 12, .2); font-size: 1.25rem; text-decoration: none; }
