@@ -291,7 +291,7 @@ fn duplicate_only_player_ids_return_public_no_valid_suggestion_error() {
     assert_eq!(suggested["error"]["code"], "NO_VALID_DRAFT_SUGGESTION");
     assert_eq!(
         suggested["error"]["messageKo"],
-        "무작위 추천을 만들 수 없습니다. Actual Character 배정과 현재 단계 조건을 확인하세요."
+        "무작위 추천을 만들 수 없습니다. 실제 캐릭터 배정과 현재 단계 조건을 확인하세요."
     );
 }
 

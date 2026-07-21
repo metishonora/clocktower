@@ -37,13 +37,13 @@ test("lets a poisoned Librarian choose only the delivered information", async ()
 
   await user.click(screen.getByRole("button", { name: "프로토타입 확정" }));
   const preview = screen.getByLabelText("확정 정보 미리보기");
-  expect(within(preview).getByText("외부인 0명")).toBeTruthy();
+  expect(within(preview).getByText("외지인 0명")).toBeTruthy();
 
   await user.click(within(preview).getByRole("button", { name: "안전한 Reveal 미리보기" }));
   const reveal = screen.getByLabelText("플레이어 공개 화면");
-  expect(within(reveal).getByText("사서 정보: 외부인은 0명입니다.")).toBeTruthy();
+  expect(within(reveal).getByText("사서 정보: 외지인은 0명입니다.")).toBeTruthy();
   expect(screen.queryByText("기록할 실제 정보")).toBeNull();
-  expect(screen.queryByText("그리모어 · 실제 상태")).toBeNull();
+  expect(screen.queryByText("마도서 · 실제 상태")).toBeNull();
 });
 
 test("visualizes a Recluse-Imp neighbor pair and selectable Chef results", async () => {
@@ -83,17 +83,17 @@ test("lets a Drunk Investigator use the same single delivered-information flow a
 
   render(<SetupInfoDiscretionPrototype />);
 
-  expect(screen.getByRole("heading", { name: "조사관: 3번 서연" })).toBeTruthy();
-  expect(screen.getByText("실제 술꾼")).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "수사관: 3번 서연" })).toBeTruthy();
+  expect(screen.getByText("실제 주정뱅이")).toBeTruthy();
   expect(screen.queryByLabelText("기준 설정 정보")).toBeNull();
   const delivered = screen.getByLabelText("전달 설정 정보");
   const deliveredCharacter = within(delivered).getByRole("combobox", {
     name: "전달할 캐릭터",
   });
   expect(within(deliveredCharacter).getAllByRole("option").map((option) => option.textContent)).toEqual([
-    "독살자",
-    "스파이",
-    "붉은 여인",
+    "독살범",
+    "첩자",
+    "탕녀",
     "남작",
   ]);
   expect((deliveredCharacter as HTMLSelectElement).value).toBe("scarletWoman");
@@ -110,9 +110,9 @@ test("expands the Investigator Character list when Recluse is in the single deli
   const delivered = screen.getByLabelText("전달 설정 정보");
   const deliveredCharacter = within(delivered).getByRole("combobox", { name: "전달할 캐릭터" });
   expect(within(deliveredCharacter).getAllByRole("option").map((option) => option.textContent)).toEqual([
-    "독살자",
-    "스파이",
-    "붉은 여인",
+    "독살범",
+    "첩자",
+    "탕녀",
     "남작",
   ]);
   expect((deliveredCharacter as HTMLSelectElement).value).toBe("scarletWoman");

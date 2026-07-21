@@ -152,6 +152,7 @@ pub(crate) fn day_steps(
         },
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
     });
     steps.push(phase_transition_step(
         Phase::Day,
@@ -190,6 +191,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
         },
         can_skip: true,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 
@@ -241,6 +243,7 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
         },
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 
@@ -272,6 +275,7 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
         },
         can_skip: false,
         information_prompt: None,
+        pre_action_reveal: None,
     }
 }
 

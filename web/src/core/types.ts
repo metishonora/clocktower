@@ -210,6 +210,13 @@ export type RuleState = {
     spent: boolean;
     spentByNominationEventId?: string;
   };
+  butlerVote?: ButlerVoteState;
+};
+
+export type ButlerVoteState = {
+  butlerPlayerId: string;
+  masterPlayerId?: string;
+  restrictionApplies: boolean;
 };
 
 export type ActiveRuleEffect = {
@@ -516,6 +523,11 @@ export type PhaseStep = {
   requiredInput: RequiredInput;
   canSkip: boolean;
   informationPrompt?: InformationPrompt;
+  preActionReveal?: PreActionReveal;
+};
+
+export type PreActionReveal = CharacterChangeRevealPayload & {
+  sourceEventId: string;
 };
 
 export type PhaseOverviewItem = PhaseStep & {

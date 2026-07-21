@@ -73,7 +73,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const undoReplayTargetEventCount = useRef<number | undefined>(undefined);
   const [loadError, setLoadError] = useState<string>();
   const [storageReady, setStorageReady] = useState(false);
-  const [storageError, setStorageError] = useState<string>();
+  const [autosaveRecoveryError, setAutosaveRecoveryError] = useState<string>();
+  const [storageWriteError, setStorageWriteError] = useState<string>();
   const [gameSessionRevision, setGameSessionRevision] = useState(0);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
           const storedReplay = await core.replay(storedGameFile);
           if (cancelled) return;
           if (!storedReplay.ok) {
-            setStorageError(storedReplay.error.messageKo);
+            setAutosaveRecoveryError(storedReplay.error.messageKo);
             setStorageReady(true);
             return;
           }
@@ -104,7 +105,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setStorageError(error instanceof Error ? error.message : "저장된 게임 로드 실패");
+        setAutosaveRecoveryError(error instanceof Error ? error.message : "저장된 게임 로드 실패");
         setStorageReady(true);
       });
 
@@ -114,14 +115,14 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   }, [core, storageDriver]);
 
   useEffect(() => {
-    if (!storageReady || storageError) return;
+    if (!storageReady || autosaveRecoveryError || storageWriteError) return;
 
     saveLatestGame(gameFile, storageDriver)
-      .then(() => setStorageError(undefined))
+      .then(() => setStorageWriteError(undefined))
       .catch((error: unknown) => {
-        setStorageError(error instanceof Error ? error.message : "게임 자동 저장 실패");
+        setStorageWriteError(error instanceof Error ? error.message : "게임 자동 저장 실패");
       });
-  }, [gameFile, storageDriver, storageError, storageReady]);
+  }, [autosaveRecoveryError, gameFile, storageDriver, storageReady, storageWriteError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -263,12 +264,14 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   }, [core, createGamePlayers, gameFile, hasConfirmedEvents]);
 
   async function confirmSetup() {
+    if (autosaveRecoveryError) return;
+
     if (!createGamePlayers) {
       setProposalResult({
         ok: false,
         error: {
           code: "SETUP_INCOMPLETE",
-          messageKo: "모든 좌석에 Actual Character를 배정해야 합니다.",
+          messageKo: "모든 좌석에 실제 캐릭터를 배정해야 합니다.",
         },
       });
       return;
@@ -317,7 +320,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         targetPlayerId,
         targetRegistration,
       },
-    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "학살자 능력 확정 실패" } }));
+    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "처단자 능력 확정 실패" } }));
     setProposalResult(result);
     setBusy(false);
     if (result.ok) appendProposalEvent(result.value);
@@ -457,7 +460,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
 
     undoReplayTargetEventCount.current = undefined;
     setUndoReplayPending(false);
-    setStorageError(undefined);
+    setAutosaveRecoveryError(undefined);
+    setStorageWriteError(undefined);
     setLoadError(undefined);
     setGameFile(createGameFile());
     setProposalResult(undefined);
@@ -484,7 +488,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     const nextEventCount = gameFile.game.events.length - 1;
     undoReplayTargetEventCount.current = nextEventCount;
     setUndoReplayPending(true);
-    setStorageError(undefined);
+    setStorageWriteError(undefined);
     setLoadError(undefined);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
@@ -523,10 +527,6 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   }
 
   async function importGameFile(json: string) {
-    if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 가져온 게임으로 교체할까요?")) {
-      return;
-    }
-
     setBusy(true);
     setLoadError(undefined);
     try {
@@ -534,6 +534,9 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
       const importedReplay = await core.replay(importedGameFile);
       if (!importedReplay.ok) {
         setLoadError(importedReplay.error.messageKo);
+        return;
+      }
+      if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 가져온 게임으로 교체할까요?")) {
         return;
       }
       setReplayResult(importedReplay);
@@ -544,7 +547,8 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
           importedGameFile.ui?.seatLayout,
         ),
       );
-      setStorageError(undefined);
+      setAutosaveRecoveryError(undefined);
+      setStorageWriteError(undefined);
       undoReplayTargetEventCount.current = undefined;
       setUndoReplayPending(false);
       setGameFile(importedGameFile);
@@ -567,8 +571,9 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     pendingConfirmedReveal,
     pendingConfirmedRevealReady,
     busy: transitionBusy,
-    loadError: loadError ?? storageError,
+    loadError: loadError ?? autosaveRecoveryError ?? storageWriteError,
     storageReady,
+    setupConfirmationBlocked: Boolean(autosaveRecoveryError),
     hasConfirmedEvents,
     players,
     currentStep,

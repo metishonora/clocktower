@@ -88,7 +88,7 @@ const scenarios: PrototypeScenario[] = [
     key: "poisonedLibrarian",
     tabLabel: "중독 · 사서",
     title: "중독된 사서",
-    description: "실제 정보 입력 없이 아무 두 명과 외부인 하나, 또는 외부인 0명을 바로 선택합니다.",
+    description: "실제 정보 입력 없이 아무 두 명과 외지인 하나, 또는 외지인 0명을 바로 선택합니다.",
     actorId: "player-4",
     characterId: "librarian",
     characterKind: "Outsider",
@@ -99,8 +99,8 @@ const scenarios: PrototypeScenario[] = [
   },
   {
     key: "drunkInvestigator",
-    tabLabel: "술꾼 · 조사관",
-    title: "조사관이라고 생각하는 술꾼",
+    tabLabel: "주정뱅이 · 수사관",
+    title: "수사관이라고 생각하는 주정뱅이",
     description: "중독된 사서와 같은 방식으로, 아무 두 명과 하수인 하나를 한 번만 선택합니다.",
     actorId: "player-3",
     characterId: "investigator",
@@ -112,7 +112,7 @@ const scenarios: PrototypeScenario[] = [
   },
   {
     key: "registrationInvestigator",
-    tabLabel: "등록 · 조사관",
+    tabLabel: "등록 · 수사관",
     title: "은둔자 등록 판정",
     description: "은둔자를 후보에 넣으면 전달 가능한 하수인 목록이 자동으로 늘어납니다.",
     actorId: "player-8",
@@ -250,7 +250,7 @@ export function SetupInfoDiscretionPrototype() {
         <section className="panel grimoire discretionPrototypeGrimoire">
           <div className="sectionHeader">
             <div>
-              <p className="eyebrow">그리모어 · 실제 상태</p>
+              <p className="eyebrow">마도서 · 실제 상태</p>
               <h2>Trouble Brewing</h2>
             </div>
             <span className="phaseBadge">10명</span>
@@ -328,7 +328,7 @@ function UtilityPanels() {
         </summary>
         <ol>
           <li>첫 번째 밤 시작</li>
-          <li>독살자가 4번 도윤을 선택</li>
+          <li>독살범이 4번 도윤을 선택</li>
         </ol>
       </details>
     </section>
@@ -359,7 +359,7 @@ function ChefRegistrationPrototype({
       <section className="panel grimoire discretionPrototypeGrimoire">
         <div className="sectionHeader">
           <div>
-            <p className="eyebrow">그리모어 · 실제 상태</p>
+            <p className="eyebrow">마도서 · 실제 상태</p>
             <h2>Trouble Brewing</h2>
           </div>
           <span className="phaseBadge">10명</span>
@@ -523,7 +523,7 @@ function InfoEditor({
       </header>
 
       {zeroAllowed ? (
-        <div className="discretionZeroChoices" aria-label="전달할 외부인 수">
+        <div className="discretionZeroChoices" aria-label="전달할 외지인 수">
           <button
             type="button"
             className={!draftValue.zeroOutsiders ? "selected" : ""}
@@ -531,7 +531,7 @@ function InfoEditor({
             onClick={() => onChange({ playerIds: [], characterId: "", zeroOutsiders: false })}
           >
             <span>2명 정보</span>
-            <small>후보와 외부인을 선택</small>
+            <small>후보와 외지인을 선택</small>
           </button>
           <button
             type="button"
@@ -635,7 +635,7 @@ function registrationAdjustedCharacters(playerIds: string[], scenario: Prototype
 }
 
 function resultLabel(scenario: PrototypeScenario, value: SetupInfoDraft): string {
-  if (value.zeroOutsiders) return "외부인 0명";
+  if (value.zeroOutsiders) return "외지인 0명";
   const names = value.playerIds.map((playerId) => {
     const candidate = playerById(playerId);
     return `${candidate.seat}번 ${candidate.name}`;
@@ -644,7 +644,7 @@ function resultLabel(scenario: PrototypeScenario, value: SetupInfoDraft): string
 }
 
 function resultMessage(scenario: PrototypeScenario, value: SetupInfoDraft): string {
-  if (value.zeroOutsiders) return `${characterLabel(scenario.characterId)} 정보: 외부인은 0명입니다.`;
+  if (value.zeroOutsiders) return `${characterLabel(scenario.characterId)} 정보: 외지인은 0명입니다.`;
   return `${characterLabel(scenario.characterId)} 정보: ${resultLabel(scenario, value).replace(" · ", " 중 한 명은 ")}입니다.`;
 }
 
@@ -653,7 +653,7 @@ function singleEditorDescription(scenario: PrototypeScenario): string {
     return "은둔자가 후보에 포함되면 전달 가능한 하수인 목록이 자동으로 늘어납니다.";
   }
   if (scenario.characterId === "librarian") {
-    return "중독 상태이므로 아무 두 명과 외부인 하나, 또는 외부인 0명을 선택할 수 있습니다.";
+    return "중독 상태이므로 아무 두 명과 외지인 하나, 또는 외지인 0명을 선택할 수 있습니다.";
   }
   if (scenario.deliveryMode === "impaired") {
     return `술취한 상태이므로 아무 두 명과 ${kindLabels[scenario.characterKind]} 하나를 선택할 수 있습니다.`;

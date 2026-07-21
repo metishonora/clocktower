@@ -20,8 +20,8 @@ import { characterKind, characterLabel, characters, kindLabels } from "../../set
 import type { NominationDraft } from "../voting/useNominationDraft";
 import {
   currentActionPrompt,
-  inputKindLabel,
   phaseLabel,
+  phaseOverviewTitle,
   phaseStepConfirmation,
   stepInputReady,
   stepStatusLabel,
@@ -33,6 +33,7 @@ import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
 import { CharacterIcon } from "../../components/CharacterIcon";
+import { CharacterRulesButton } from "../../components/CharacterRulesCard";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -53,6 +54,8 @@ export function PhaseControl({
   phaseInputDraft,
   replayReady,
   busy,
+  preActionRevealPending,
+  onShowPreActionReveal,
   onShowReveal,
   onContinue,
   onConfirm,
@@ -77,6 +80,8 @@ export function PhaseControl({
   phaseInputDraft: PhaseInputDraftController;
   replayReady: boolean;
   busy: boolean;
+  preActionRevealPending: boolean;
+  onShowPreActionReveal: () => void;
   onShowReveal: (payload: RevealPayload) => void;
   onContinue: () => void;
   onConfirm: (confirmation: PhaseStepConfirmation) => void;
@@ -99,6 +104,24 @@ export function PhaseControl({
         onShowReveal={onShowReveal}
         onContinue={onContinue}
       />
+    );
+  }
+
+  if (currentStep?.preActionReveal && preActionRevealPending) {
+    const player = players.find((candidate) => candidate.id === currentStep.preActionReveal?.playerId);
+    return (
+      <>
+        <div className="sectionHeader compact">
+          <div><p className="eyebrow">{phaseLabel(currentStep.phase)}</p><h2>새 임프 직업 변경 안내</h2></div>
+        </div>
+        <section className="currentStepCard preActionRevealCard" aria-label="직업 변경 안내">
+          <small>먼저 안내할 플레이어</small>
+          <strong>{player ? `${player.seat}번 ${player.name}` : "새 임프"} · 임프</strong>
+          <button type="button" className="primaryButton" disabled={busy} onClick={onShowPreActionReveal}>
+            플레이어에게 공개
+          </button>
+        </section>
+      </>
     );
   }
 
@@ -292,7 +315,6 @@ function CurrentStepPane({
   const [suggestionUsed, setSuggestionUsed] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
-  const phaseOverviewDisclosureRef = useRef<HTMLDetailsElement>(null);
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
     activeSuggestionRequestRef.current = undefined;
@@ -300,18 +322,6 @@ function CurrentStepPane({
     setSuggestionUsed(false);
     setSuggestionError(undefined);
   }, [currentStep?.id, suggestionContextFingerprint]);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const mobileViewport = window.matchMedia("(max-width: 900px)");
-    const syncDisclosure = () => {
-      if (phaseOverviewDisclosureRef.current) {
-        phaseOverviewDisclosureRef.current.open = !mobileViewport.matches;
-      }
-    };
-    syncDisclosure();
-    mobileViewport.addEventListener("change", syncDisclosure);
-    return () => mobileViewport.removeEventListener("change", syncDisclosure);
-  }, []);
   useEffect(() => {
     currentOverviewItemRef.current?.scrollIntoView?.({ block: "nearest", inline: "center" });
   }, [currentStep?.id]);
@@ -414,10 +424,12 @@ function CurrentStepPane({
           <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
           <h2>{currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
         </div>
-        {currentStep ? <span className="phaseBadge">{inputKindLabel(currentStep.requiredInput.kind)}</span> : null}
       </div>
 
-      <details className="phaseOverviewDisclosure" ref={phaseOverviewDisclosureRef}>
+      <details
+        className="phaseOverviewDisclosure"
+        data-layout="accordion"
+      >
         <summary>
           <span>{currentStep ? `${phaseLabel(currentStep.phase)} 순서` : "단계 개요"}</span>
           <small>{completedPhaseStepCount} / {phaseOverview.length} 완료</small>
@@ -433,7 +445,7 @@ function CurrentStepPane({
                 key={step.id}
                 ref={step.status === "current" ? currentOverviewItemRef : undefined}
               >
-                <span>{stepTitle(step, step.playerId ? players.find((player) => player.id === step.playerId) : undefined)}</span>
+                <span>{phaseOverviewTitle(step, players)}</span>
                 <strong>{stepStatusLabel(step.status)}</strong>
               </li>
             ))}
@@ -453,16 +465,22 @@ function CurrentStepPane({
             {isNightDeathAnnouncement ? (
               <NightDeathAnnouncement players={players} playerIds={unannouncedNightDeathPlayerIds} />
             ) : null}
-            {currentPlayer && !resultSubject ? (
+            {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? (
               <section className="currentActor" aria-label="현재 행동자">
                 <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
                 <div>
                   <small>행동자</small>
-                  <h3>{currentCharacter?.label ?? currentStep.character}</h3>
+                  <div className="currentActorTitle">
+                    <h3>{currentCharacter?.label ?? currentStep.character}</h3>
+                    <CharacterRulesButton
+                      characterId={currentStep.character}
+                      ariaLabel={`현재 단계 ${currentCharacter?.label ?? currentStep.character} 세부 규칙 보기`}
+                    />
+                  </div>
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
-                    {currentPlayer.actualCharacter === "drunk" ? <em>실제 술꾼</em> : null}
+                    {currentPlayer.actualCharacter === "drunk" ? <em>실제 주정뱅이</em> : null}
                     {registrationSensitive ? <em>등록 판정</em> : null}
                   </div>
                   {currentCharacter?.abilitySummary ? <p>{currentCharacter.abilitySummary}</p> : null}
@@ -470,7 +488,7 @@ function CurrentStepPane({
               </section>
             ) : null}
             {currentPlayer && resultSubject ? (
-              <section className="currentSubject" aria-label={currentStep.stepType === "executionDeath" ? "처형 대상" : "학살자 결과 대상"}>
+              <section className="currentSubject" aria-label={currentStep.stepType === "executionDeath" ? "처형 대상" : "처단자 결과 대상"}>
                 <div>
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <span>{currentSubjectCharacter?.label ?? characterLabel(currentPlayer.actualCharacter)}</span>
@@ -525,7 +543,7 @@ function CurrentStepPane({
               <ImpActionResult proposal={latestProposal} players={players} />
             ) : null}
             {latestProposal?.event.type === "slayerAbilityUsed" && latestProposal.event.payload.outcome.kind === "noEffect" ? (
-              <p className="nightActionResult" aria-label="학살자 능력 결과">아무 일도 일어나지 않음</p>
+              <p className="nightActionResult" aria-label="처단자 능력 결과">아무 일도 일어나지 않음</p>
             ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
             {currentStep.requiredInput.kind === "executionDecision" ? (
@@ -551,10 +569,12 @@ function CurrentStepPane({
                   }
                   disabled={busy || suggesting || !selectionValid || !targetChoiceReady}
                 >
-                  {currentStep.stepType === "whisper"
+                  {currentStep.stepType === "demonSuccession"
+                    ? "승계 확정"
+                    : currentStep.stepType === "whisper"
                     ? "토론 시작"
                     : currentStep.stepType === "discussion"
-                      ? "지명 및 투표 시작"
+                      ? "지목 및 투표 시작"
                       : isNightDeathAnnouncement
                         ? unannouncedNightDeathPlayerIds.length === 0
                           ? "사망자 없음 발표 확정"
@@ -563,7 +583,7 @@ function CurrentStepPane({
                 </button>
                 {currentStep.canSkip ? (
                   <button type="button" className="secondaryButton" onClick={onSkip} disabled={busy}>
-                    지명 종료
+                    지목 종료
                   </button>
                 ) : null}
               </div>
@@ -581,9 +601,9 @@ function CurrentStepPane({
 
 function resultEffectDescription(step: PhaseStep): string | undefined {
   if (step.stepType === "executionDeath" && step.id.endsWith(":virginDeath")) {
-    return "처녀 능력으로 지명자가 즉시 처형됩니다.";
+    return "성결자 능력으로 지목자가 즉시 처형됩니다.";
   }
-  if (step.stepType === "slayerDeath") return "학살자 능력으로 사망합니다.";
+  if (step.stepType === "slayerDeath") return "처단자 능력으로 사망합니다.";
   return undefined;
 }
 

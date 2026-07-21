@@ -33,6 +33,9 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   }
   if (step.id.endsWith(":minionInfo")) return "하수인 깨우기 · 악마와 동료 하수인 확인";
   if (step.id.endsWith(":demonInfo")) return "악마 깨우기 · 하수인과 블러프 확인";
+  if (step.stepType === "demonSuccession") {
+    return step.requiredInput.demonSuccession?.kind === "fixed" ? "탕녀 승계" : "새 임프 선택";
+  }
   if (step.character) {
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
@@ -40,12 +43,43 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.id.endsWith(":announceDeaths")) return "사망 발표";
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
-  if (step.stepType === "nomination") return `지명 및 투표 ${step.id.split(":").at(-1)}`;
-  if (step.stepType === "demonSuccession") return "새 임프 선택";
+  if (step.stepType === "nomination") return `지목 및 투표 ${step.id.split(":").at(-1)}`;
   if (step.id.endsWith(":execution")) return "처형 확정";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
-  if (step.stepType === "slayerDeath") return player ? `학살자 결과: ${player.seat}번 ${player.name}` : "학살자 결과";
+  if (step.stepType === "slayerDeath") return player ? `처단자 결과: ${player.seat}번 ${player.name}` : "처단자 결과";
   return step.id;
+}
+
+export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): string {
+  const player = step.playerId
+    ? players.find((candidate) => candidate.id === step.playerId)
+    : undefined;
+  if (step.phase !== "firstNight" && step.phase !== "night") {
+    return stepTitle(step, player);
+  }
+  if (step.id.endsWith(":minionInfo")) {
+    return factionOverviewTitle("하수인", "Minion", players);
+  }
+  if (step.id.endsWith(":demonInfo")) {
+    return factionOverviewTitle("악마", "Demon", players);
+  }
+  if (step.character) {
+    const label = characterLabel(step.character);
+    return player ? `${label} (${player.seat})` : label;
+  }
+  return stepTitle(step, player);
+}
+
+function factionOverviewTitle(
+  label: string,
+  kind: CharacterKind,
+  players: Player[],
+): string {
+  const seats = players
+    .filter((player) => characterKind(player.actualCharacter) === kind)
+    .map((player) => player.seat)
+    .sort((left, right) => left - right);
+  return seats.length > 0 ? `${label} (${seats.join(", ")})` : label;
 }
 
 export function stepTypeLabel(stepType: StepType): string {
@@ -54,7 +88,7 @@ export function stepTypeLabel(stepType: StepType): string {
   if (stepType === "announcement") return "발표";
   if (stepType === "whisper") return "밀담";
   if (stepType === "discussion") return "토론";
-  if (stepType === "nomination") return "지명";
+  if (stepType === "nomination") return "지목";
   if (stepType === "execution") return "처형";
   if (stepType === "executionDeath") return "처형 결과";
   if (stepType === "slayerDeath") return "사망 확인";
@@ -68,8 +102,8 @@ export function inputKindLabel(inputKind: string): string {
   if (inputKind === "setupInfo") return "설정 정보";
   if (inputKind === "characterIds") return "캐릭터";
   if (inputKind === "number") return "숫자";
-  if (inputKind === "nominationVote") return "지명 투표";
-  if (inputKind === "nomination") return "지명 확인";
+  if (inputKind === "nominationVote") return "지목 투표";
+  if (inputKind === "nomination") return "지목 확인";
   if (inputKind === "executionDecision") return "처형 결정";
   if (inputKind === "executionDeathDecision") return "처형 결과";
   if (inputKind === "slayerDeathDecision") return "사망 결정";
@@ -84,6 +118,11 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
   if (step.id.endsWith(":fortuneTellerRedHerring")) {
     return "점쟁이의 선한 미끼 플레이어 1명을 선택하세요.";
   }
+  if (step.requiredInput.kind === "demonSuccession") {
+    return step.requiredInput.demonSuccession?.kind === "selectable"
+      ? "새 임프가 될 플레이어를 선택하세요."
+      : undefined;
+  }
 
   const characterPrompt = step.character ? characterActionPrompt(step.character) : undefined;
   if (characterPrompt) return characterPrompt;
@@ -92,13 +131,12 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
   }
 
   const input = step.requiredInput;
-  if (input.kind === "nomination") return "지명자와 지명 대상을 선택하세요.";
+  if (input.kind === "nomination") return "지목자와 지목 대상을 선택하세요.";
   if (input.kind === "nominationVote") return "찬성한 플레이어를 선택하세요.";
-  if (input.kind === "demonSuccession") return "새 임프가 될 플레이어를 확인하세요.";
   if (input.kind === "number") return "전달할 숫자를 선택하세요.";
   if (input.kind === "setupInfo") {
     return input.zeroAllowed
-      ? "후보 플레이어 2명과 보여줄 캐릭터를 선택하거나, 외부인 0명을 선택하세요."
+      ? "후보 플레이어 2명과 보여줄 캐릭터를 선택하거나, 외지인 0명을 선택하세요."
       : "후보 플레이어 2명과 보여줄 캐릭터를 선택하세요.";
   }
   if (input.target === "player" || input.target === "players") {
@@ -112,16 +150,16 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
 
 function characterActionPrompt(characterId: string): string | undefined {
   if (characterId === "washerwoman") {
-    return "세탁부 정보로 보여줄 플레이어 2명과 마을주민 캐릭터를 선택하세요.";
+    return "세탁부 정보로 보여줄 플레이어 2명과 주민 캐릭터를 선택하세요.";
   }
   if (characterId === "librarian") {
-    return "사서 정보로 보여줄 플레이어 2명과 외부인 캐릭터를 선택하거나, 외부인 0명을 선택하세요.";
+    return "사서 정보로 보여줄 플레이어 2명과 외지인 캐릭터를 선택하거나, 외지인 0명을 선택하세요.";
   }
   if (characterId === "investigator") {
-    return "조사관 정보로 보여줄 플레이어 2명과 하수인 캐릭터를 선택하세요.";
+    return "수사관 정보로 보여줄 플레이어 2명과 하수인 캐릭터를 선택하세요.";
   }
-  if (characterId === "chef") return "전달할 악 팀 이웃 쌍의 수를 선택하세요.";
-  if (characterId === "empath") return "전달할 살아있는 이웃 중 악 팀 수를 선택하세요.";
+  if (characterId === "chef") return "전달할 악한 팀 이웃 쌍의 수를 선택하세요.";
+  if (characterId === "empath") return "전달할 살아있는 이웃 중 악한 팀 수를 선택하세요.";
   if (characterId === "fortuneTeller") return "확인할 플레이어 2명을 선택하세요.";
   if (characterId === "poisoner") return "중독시킬 플레이어 1명을 선택하세요.";
   if (characterId === "monk") return "악마로부터 보호할 플레이어 1명을 선택하세요.";
@@ -182,6 +220,11 @@ function requiredSelectionValid(step: PhaseStep, selectedCount: number): boolean
   return true;
 }
 
+export function mayorDecisionApplies(step: PhaseStep, selectedPlayerIds: string[]): boolean {
+  const prompt = step.requiredInput.mayorDecision;
+  return Boolean(prompt && selectedPlayerIds.includes(prompt.mayorPlayerId));
+}
+
 export function stepInputReady(
   step: PhaseStep,
   selectedCount: number,
@@ -204,7 +247,7 @@ export function stepInputReady(
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "fixed" || selectedCount === 1;
   }
-  if (step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId)) {
+  if (mayorDecisionApplies(step, selectedPlayerIds)) {
     return Boolean(mayorDecision);
   }
   if (step.requiredInput.kind === "executionDecision") return true;
@@ -267,7 +310,7 @@ export function stepInputPayload(
     return null;
   }
   if (step.requiredInput.target === "player" || step.requiredInput.target === "players") {
-    return mayorDecision
+    return mayorDecision && mayorDecisionApplies(step, selectedPlayerIds)
       ? { playerIds: selectedPlayerIds, mayorDecision }
       : { playerIds: selectedPlayerIds };
   }
@@ -390,7 +433,19 @@ export function phaseStepConfirmation(
   }
 
   const targetCheck = targetCheckForSelection(step, draft.selectedPlayerIds);
-  const targetChoice = draft.selectedTargetChoice ?? (targetCheck?.choices.length === 1 ? targetCheck.choices[0] : undefined);
+  if (targetCheck && confirmation.input && "playerIds" in confirmation.input) {
+    confirmation.input = {
+      ...confirmation.input,
+      playerIds: [...targetCheck.targetPlayerIds],
+    };
+    delete confirmation.registrationJudgments;
+  }
+  const selectedTargetChoice = draft.selectedTargetChoice;
+  const targetChoice = selectedTargetChoice && targetCheck?.choices.includes(selectedTargetChoice)
+    ? selectedTargetChoice
+    : targetCheck?.choices.length === 1
+      ? targetCheck.choices[0]
+      : undefined;
   if (targetChoice) {
     if (!targetChoice.isComputed || step.informationPrompt?.deliveryMode === "selectable") {
       confirmation.deliveredResult = targetChoice.result;

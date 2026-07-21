@@ -200,6 +200,17 @@ pub(crate) struct RuleState {
     pub(crate) slayer_ability: Option<crate::model::SlayerAbilityState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) virgin_ability: Option<crate::model::VirginAbilityState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) butler_vote: Option<ButlerVoteState>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ButlerVoteState {
+    pub(crate) butler_player_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) master_player_id: Option<String>,
+    pub(crate) restriction_applies: bool,
 }
 
 #[derive(Debug, Serialize)]

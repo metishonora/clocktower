@@ -149,6 +149,57 @@ test("Mayor decision is required only when the Imp actually selects the Mayor", 
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["chef"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["mayor"]), false);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, { kind: "mayorDies" }, ["mayor"]), true);
+  deepEqual(
+    stepInputPayload(step, ["chef"], "", [], nominationDraft, false, { kind: "mayorDies" }),
+    { playerIds: ["chef"] },
+  );
+});
+
+test("inapplicable stale Mayor decisions are omitted from Imp confirmation input", () => {
+  const impairedImpStep: PhaseStep = {
+    id: "night1:imp",
+    phase: "night",
+    stepType: "character",
+    character: "imp",
+    playerId: "imp",
+    requiredInput: {
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
+  equal(
+    stepInputReady(
+      impairedImpStep,
+      1,
+      0,
+      "",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      { kind: "mayorDies" },
+      ["mayor"],
+    ),
+    true,
+  );
+  deepEqual(
+    stepInputPayload(
+      impairedImpStep,
+      ["mayor"],
+      "",
+      [],
+      nominationDraft,
+      false,
+      { kind: "mayorDies" },
+    ),
+    { playerIds: ["mayor"] },
+  );
 });
 
 test("character input options honor an explicit allowlist in catalog order", () => {
@@ -403,7 +454,7 @@ test("target-check confirmation persists the selected typed result and its exact
       { nominatorId: "", nomineeId: "", voterIds: [] },
     ),
     {
-      input: { playerIds: ["recluse", "chef"] },
+      input: { playerIds: ["chef", "recluse"] },
       deliveredResult: { kind: "boolean", value: true },
       registrationJudgments: witness,
     },

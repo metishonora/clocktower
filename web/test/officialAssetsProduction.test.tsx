@@ -19,6 +19,8 @@ test("production setup renders bundled official icons and the approved CCC notic
   expect(washerwoman.getAttribute("src")).not.toContain("release.botc.app");
 
   const notice = screen.getByLabelText("Community Created Content 안내");
+  expect(notice.parentElement).toBe(screen.getByTestId("clocktower-app"));
+  expect(screen.getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
   expect(within(notice).getByText("비공식 · 비상업 · 개인용 Storyteller 도구")).toBeTruthy();
   expect(within(notice).getByRole("img", { name: "Community Created Content" }).getAttribute("src"))
     .toMatch(/\/assets\/community\/ccc-parchment\.png$/);
@@ -36,7 +38,7 @@ test("production live play renders official icons on seats and the current actor
 
   const actor = await screen.findByLabelText("현재 행동자");
   expect(within(actor).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  const grimoire = screen.getByLabelText("라이브 그리모어 좌석 맵");
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
   expect(screen.getByLabelText("Community Created Content 안내")).toBeTruthy();
 });

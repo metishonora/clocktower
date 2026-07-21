@@ -536,16 +536,59 @@ await addCase({
 await addCase({
   id: "spy-grimoire-reveal",
   category: "night-information",
-  characterIds: ["spy"],
+  characterIds: ["monk", "poisoner", "spy"],
   officialSource: source.spy,
   actionKo: "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
-  expectedKo: "모든 실제 직업과 생사·유령 투표·독·보호 reminder 정보만 안전한 공개 payload로 보인다.",
-  checkpoint: { phase: "firstNight", currentStepId: "firstNight:spy" },
+  expectedKo: "현재 밤의 중독·보호와 실제 직업·생사·유령 투표만 보이고 이전 밤 상태와 수동 토큰·Notes는 숨겨진다.",
+  checkpoint: {
+    phase: "night",
+    currentStepId: "night2:spy",
+    activePoisonTargetId: "player-1",
+    activeProtectionTargetId: "player-4",
+    deadPlayerIds: ["player-6"],
+    ghostVoteUsedPlayerIds: ["player-6"],
+    spyReveal: {
+      visibleReminderTokens: [
+        { seat: 1, tokens: ["poisoned"] },
+        { seat: 4, tokens: ["protected"] },
+      ],
+      hiddenReminderTokenSeats: [2, 3, 7],
+      excludedText: ["abilitySpent", "redHerring", "safe", "INF-05 비공개 Storyteller Notes"],
+    },
+  },
 }, () => {
   const game = createGame("spy-grimoire-reveal", roster([
-    "washerwoman", "chef", "empath", "fortuneTeller", "virgin", "spy", "imp",
+    "washerwoman", "chef", "empath", "fortuneTeller", "monk",
+    "virgin", "mayor", "poisoner", "spy", "imp",
   ]));
-  advanceTo(game, "firstNight:spy");
+  appendCommand(game, {
+    type: "updatePlayerAnnotations",
+    payload: {
+      playerId: "player-7",
+      expectedEventCount: game.game.events.length,
+      systemTokenIds: ["protected", "abilitySpent"],
+      scriptTokens: [
+        { characterId: "poisoner", tokenId: "poisoned" },
+        { characterId: "monk", tokenId: "safe" },
+        { characterId: "fortuneTeller", tokenId: "redHerring" },
+      ],
+      notes: "INF-05 비공개 Storyteller Notes",
+    },
+  });
+  advanceTo(game, "day:nomination:1", {
+    "firstNight:poisoner": confirmStep("firstNight:poisoner", { playerIds: ["player-2"] }),
+  });
+  appendManualDeath(game, "player-6");
+  startNomination(game, "player-1", "player-2");
+  confirmNominationVote(game, ["player-6"]);
+  advanceTo(game, "night2:spy", {
+    "night:poisoner": confirmStep("night:poisoner", { playerIds: ["player-2"] }),
+    "night:monk": confirmStep("night:monk", { playerIds: ["player-3"] }),
+    "night:imp": confirmStep("night:imp", { playerIds: ["player-6"] }),
+    "night2:poisoner": confirmStep("night2:poisoner", { playerIds: ["player-1"] }),
+    "night2:monk": confirmStep("night2:monk", { playerIds: ["player-4"] }),
+    "night2:imp": confirmStep("night2:imp", { playerIds: ["player-6"] }),
+  });
   return game;
 });
 
@@ -554,14 +597,25 @@ await addCase({
   category: "voting",
   characterIds: ["butler"],
   officialSource: source.butler,
-  actionKo: "Butler 자신이 아닌 플레이어를 Master로 지정한다.",
-  expectedKo: "내일 Master가 투표 중이거나 이미 집계된 경우에만 Butler가 투표하며 앱은 부정 투표를 강제로 무효화하지 않는다.",
-  checkpoint: { phase: "firstNight", currentStepId: "firstNight:butler" },
+  actionKo: "Butler가 자신이 아닌 Master를 지정한 뒤 다음 날 지목 투표를 진행한다.",
+  expectedKo: "Master가 현재 투표에 없으면 Butler 좌석이 사유와 함께 비활성화되고, Master 선택 후 활성화되며, Master 해제 시 Butler 표도 제거된다.",
+  checkpoint: {
+    phase: "day",
+    currentStepId: "day:nomination:1:vote",
+    butlerVote: {
+      butlerPlayerId: "player-6",
+      masterPlayerId: "player-1",
+      restrictionApplies: true,
+    },
+  },
 }, () => {
   const game = createGame("butler-master-selection", roster([
     "washerwoman", "chef", "empath", "fortuneTeller", "virgin", "butler", "poisoner", "imp",
   ]));
   advanceTo(game, "firstNight:butler");
+  appendCommand(game, confirmStep("firstNight:butler", { playerIds: ["player-1"] }));
+  advanceTo(game, "day:nomination:1");
+  startNomination(game, "player-2", "player-3");
   return game;
 });
 

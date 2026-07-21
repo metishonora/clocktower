@@ -17,6 +17,8 @@
     "src/setupDraft.test.ts",
     "src/characterAssets.ts",
     "src/characterAssets.test.ts",
+    "src/characterRules.ts",
+    "src/characterRules.test.ts",
     "src/gameStorage.ts",
     "src/gameStorage.test.ts",
     "src/core/validation.test.ts",

@@ -11,7 +11,7 @@ describe("issue 12 win-game prototype", () => {
     await user.click(screen.getByRole("button", { name: "게임 종료 확인" }));
 
     const dialog = screen.getByRole("dialog", { name: "게임 종료 확인" });
-    expect(dialog.textContent).toContain("선팀 승리로 종료합니다");
+    expect(dialog.textContent).toContain("선한 팀 승리로 종료합니다");
     expect(within(dialog).queryByRole("button", { name: "악" })).toBeNull();
     expect((within(dialog).getByRole("button", { name: "게임 종료" }) as HTMLButtonElement).disabled).toBe(false);
   });
@@ -38,10 +38,10 @@ describe("issue 12 win-game prototype", () => {
     await user.click(within(dialog).getByRole("button", { name: "게임 종료" }));
 
     const ended = screen.getByRole("region", { name: "게임 종료 상태" });
-    expect(ended.textContent).toContain("선팀 승리");
+    expect(ended.textContent).toContain("선한 팀 승리");
     expect(within(ended).getByText("게임 종료", { selector: "strong" })).not.toBeNull();
     expect(within(ended).queryByText("마지막 이벤트")).toBeNull();
-    expect(screen.getByRole("region", { name: "프로토타입 그리모어" })).not.toBeNull();
+    expect(screen.getByRole("region", { name: "프로토타입 마도서" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "게임 종료 되돌리기" })).not.toBeNull();
     expect(screen.queryByRole("region", { name: "현재 단계" })).toBeNull();
   });
@@ -58,10 +58,10 @@ describe("issue 12 win-game prototype", () => {
     await user.click(within(dialog).getByRole("button", { name: "악" }));
     await user.click(within(dialog).getByRole("button", { name: "게임 종료" }));
 
-    expect(screen.getByRole("region", { name: "게임 종료 상태" }).textContent).toContain("악팀 승리");
+    expect(screen.getByRole("region", { name: "게임 종료 상태" }).textContent).toContain("악한 팀 승리");
     await user.click(screen.getByRole("button", { name: "게임 종료 되돌리기" }));
 
-    expect(screen.getByRole("region", { name: "현재 단계" }).textContent).toContain("지명 및 투표");
+    expect(screen.getByRole("region", { name: "현재 단계" }).textContent).toContain("지목 및 투표");
     expect(screen.getByRole("button", { name: "수동 게임 종료" })).not.toBeNull();
   });
 });

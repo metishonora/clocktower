@@ -42,7 +42,7 @@ describe.each([
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
     expect(screen.queryByRole("button", { name: "자동 배치" })).toBeNull();
 
-    const liveMap = screen.getByLabelText("라이브 그리모어 좌석 맵");
+    const liveMap = screen.getByLabelText("라이브 마도서 좌석 맵");
     const liveSeat = within(liveMap).getByRole("button", { name: /1번 민서/ });
     expect(liveSeat.getAttribute("style")).toBe(confirmedPosition);
     expect(liveSeat.classList.contains("overlap")).toBe(false);
@@ -72,5 +72,5 @@ test("overlap feedback belongs to setup and is absent from live play", async () 
   await user.click(screen.getByRole("button", { name: "설정 확정" }));
 
   expect(screen.queryByText("겹침 1, 2")).toBeNull();
-  expect(within(screen.getByLabelText("라이브 그리모어 좌석 맵")).queryByLabelText(/겹침$/)).toBeNull();
+  expect(within(screen.getByLabelText("라이브 마도서 좌석 맵")).queryByLabelText(/겹침$/)).toBeNull();
 });

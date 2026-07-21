@@ -13,12 +13,26 @@ import {
 } from "./clocktowerAppHarness";
 
 const originalMatchMedia = window.matchMedia;
+const originalInnerWidth = window.innerWidth;
+const originalVisualViewport = window.visualViewport;
+const originalScreenWidth = window.screen.width;
+const originalScreenHeight = window.screen.height;
+const originalUserAgent = window.navigator.userAgent;
+const originalPlatform = window.navigator.platform;
+const originalMaxTouchPoints = window.navigator.maxTouchPoints;
 
 afterEach(() => {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: originalMatchMedia,
   });
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: originalVisualViewport });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: originalScreenWidth });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: originalScreenHeight });
+  Object.defineProperty(window.navigator, "userAgent", { configurable: true, value: originalUserAgent });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: originalPlatform });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: originalMaxTouchPoints });
 });
 
 function installMobileViewport(initialMatches: boolean) {
@@ -51,6 +65,27 @@ function installMobileViewport(initialMatches: boolean) {
       });
     },
   };
+}
+
+function installIpadPro12_9Gen5Viewport(orientation: "portrait" | "landscape") {
+  installMobileViewport(false);
+  const layoutWidth = orientation === "portrait" ? 960 : 1280;
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: layoutWidth,
+  });
+  Object.defineProperty(window, "visualViewport", {
+    configurable: true,
+    value: { width: layoutWidth - 44 },
+  });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1024 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1366 });
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15",
+  });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "iPad" });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 5 });
 }
 
 function renderLivePlay() {
@@ -96,7 +131,10 @@ test("keeps the mobile CCC notice in the Grimoire flow and resets panel state on
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   const notice = screen.getByLabelText("Community Created Content 안내");
-  expect(notice.closest(".grimoire")).not.toBeNull();
+  const grimoire = notice.closest(".grimoire");
+  expect(grimoire).not.toBeNull();
+  expect(grimoire?.lastElementChild).toBe(notice);
+  expect(screen.getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
   await user.click(screen.getByTestId("mobile-phase-panel-toggle"));
   expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("grimoire");
 
@@ -106,7 +144,7 @@ test("keeps the mobile CCC notice in the Grimoire flow and resets panel state on
   expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("controls");
 });
 
-test("removes the mobile control and restores the existing notice placement above 900px", async () => {
+test("removes the mobile control but keeps the live notice in the Grimoire above 900px", async () => {
   const viewport = installMobileViewport(true);
   renderLivePlay();
 
@@ -117,5 +155,47 @@ test("removes the mobile control and restores the existing notice placement abov
   await waitFor(() => expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull());
   const app = screen.getByTestId("clocktower-app");
   expect(app.dataset.mobilePanelState).toBeUndefined();
-  expect(within(app).getByLabelText("Community Created Content 안내").closest(".grimoire")).toBeNull();
+  const notice = within(app).getByLabelText("Community Created Content 안내");
+  const grimoire = notice.closest(".grimoire");
+  expect(grimoire).not.toBeNull();
+  expect(grimoire?.lastElementChild).toBe(notice);
+  expect(within(app).getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
+});
+
+test.each(["portrait", "landscape"] as const)(
+  "uses only the vertical phase overview accordion on a full-screen 12.9-inch fifth-generation iPad Pro in %s",
+  async (orientation) => {
+    installIpadPro12_9Gen5Viewport(orientation);
+    renderLivePlay();
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+    const app = screen.getByTestId("clocktower-app");
+
+    expect(overview?.dataset.layout).toBe("accordion");
+    expect(overview?.open).toBe(false);
+    expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
+    expect(app.dataset.mobilePanelState).toBeUndefined();
+    const notice = within(app).getByLabelText("Community Created Content 안내");
+    const grimoire = notice.closest(".grimoire");
+    expect(grimoire).not.toBeNull();
+    expect(grimoire?.lastElementChild).toBe(notice);
+    expect(within(app).getAllByLabelText("Community Created Content 안내")).toHaveLength(1);
+  },
+);
+
+test("uses the vertical phase overview accordion on a large mouse desktop", async () => {
+  installMobileViewport(false);
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1920 });
+  Object.defineProperty(window.screen, "width", { configurable: true, value: 1920 });
+  Object.defineProperty(window.screen, "height", { configurable: true, value: 1080 });
+  Object.defineProperty(window.navigator, "platform", { configurable: true, value: "MacIntel" });
+  Object.defineProperty(window.navigator, "maxTouchPoints", { configurable: true, value: 0 });
+  renderLivePlay();
+
+  await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+  const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+
+  expect(overview?.dataset.layout).toBe("accordion");
+  expect(overview?.open).toBe(false);
 });

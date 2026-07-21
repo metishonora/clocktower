@@ -13,7 +13,12 @@ import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
-import { characterInputOptions, setupInfoCharacterOptions, targetCheckForSelection } from "./phaseInput";
+import {
+  characterInputOptions,
+  mayorDecisionApplies,
+  setupInfoCharacterOptions,
+  targetCheckForSelection,
+} from "./phaseInput";
 
 export function PlayerStepInput({
   step,
@@ -170,6 +175,14 @@ export function StepInputFields({
           busy={busy}
           activeNomination={dayState?.activeNomination}
         />
+      ) : step.requiredInput.kind === "demonSuccession" ? (
+        <DemonSuccessionInput
+          step={step}
+          players={players}
+          selectedPlayerIds={selectedPlayerIds}
+          busy={busy}
+          onChange={onSelectedPlayerIdsChange}
+        />
       ) : (
         <PlayerStepInput
           step={step}
@@ -190,16 +203,7 @@ export function StepInputFields({
           onChange={onRegistrationJudgmentsChange}
         />
       ) : null}
-      {step.requiredInput.kind === "demonSuccession" ? (
-        <DemonSuccessionInput
-          step={step}
-          players={players}
-          selectedPlayerIds={selectedPlayerIds}
-          busy={busy}
-          onChange={onSelectedPlayerIdsChange}
-        />
-      ) : null}
-      {step.requiredInput.mayorDecision && selectedPlayerIds.includes(step.requiredInput.mayorDecision.mayorPlayerId) ? (
+      {step.requiredInput.mayorDecision && mayorDecisionApplies(step, selectedPlayerIds) ? (
         <MayorDecisionChoices
           prompt={step.requiredInput.mayorDecision}
           players={players}
@@ -262,9 +266,9 @@ function RegistrationDecision({
   );
   return (
     <fieldset className="ruleDecisionInput">
-      <legend>스파이 등록</legend>
+      <legend>첩자 등록</legend>
       <button type="button" className={!registeredAsTownsfolk ? "selected" : ""} aria-pressed={!registeredAsTownsfolk} disabled={busy} onClick={() => onChange([])}>악한 팀 그대로</button>
-      <button type="button" className={registeredAsTownsfolk ? "selected" : ""} aria-pressed={registeredAsTownsfolk} disabled={busy} onClick={() => onChange([option])}>마을 주민으로 등록</button>
+      <button type="button" className={registeredAsTownsfolk ? "selected" : ""} aria-pressed={registeredAsTownsfolk} disabled={busy} onClick={() => onChange([option])}>주민으로 등록</button>
     </fieldset>
   );
 }
@@ -328,19 +332,29 @@ function DemonSuccessionInput({
 }) {
   const prompt = step.requiredInput.demonSuccession;
   if (!prompt) return null;
-  const allowedIds = prompt.kind === "fixed" ? [prompt.successorPlayerId] : prompt.allowedPlayerIds;
+  if (prompt.kind === "fixed") {
+    const player = players.find((candidate) => candidate.id === prompt.successorPlayerId);
+    if (!player) return null;
+    return (
+      <section className="demonSuccessionCard" aria-label="악마 승계 확인">
+        <small>승계 대상</small>
+        <strong>{player.seat}번 {player.name} · {characterLabel(player.actualCharacter)} → 임프</strong>
+      </section>
+    );
+  }
+  const allowedIds = prompt.allowedPlayerIds;
   return (
     <div className="ruleDecisionInput" aria-label="새 임프 선택">
       {allowedIds.flatMap((id) => {
         const player = players.find((candidate) => candidate.id === id);
         if (!player) return [];
-        const selected = prompt.kind === "fixed" || selectedPlayerIds.includes(id);
+        const selected = selectedPlayerIds.includes(id);
         return [(
           <button
             type="button"
             className={selected ? "selected" : ""}
             aria-pressed={selected}
-            disabled={busy || prompt.kind === "fixed"}
+            disabled={busy}
             onClick={() => onChange([id])}
             key={id}
           >{seatPlayerLabel(player)} → 임프</button>
@@ -367,18 +381,22 @@ function TargetInformationDeliveryInput({
   if (!check || check.choices.length <= 1) return null;
   return (
     <div className="targetInformationChoices" aria-label="전달 정보">
-      {check.choices.map((choice, index) => (
-        <button
-          type="button"
-          className={selectedChoice === choice ? "selected" : ""}
-          aria-pressed={selectedChoice === choice}
-          disabled={busy}
-          onClick={() => onChange(choice)}
-          key={`${informationResultLabel(choice.result)}-${index}`}
-        >
-          {informationResultLabel(choice.result)}
-        </button>
-      ))}
+      {check.choices.map((choice, index) => {
+        const selected = selectedChoice === choice;
+        return (
+          <button
+            type="button"
+            className={selected ? "selected" : ""}
+            aria-pressed={selected}
+            disabled={busy}
+            onClick={() => onChange(choice)}
+            key={`${informationResultLabel(choice.result)}-${index}`}
+          >
+            <span>{informationResultLabel(choice.result)}</span>
+            {selected ? <span className="targetInformationChoiceCheck" aria-hidden="true">✓</span> : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -503,7 +521,7 @@ function StepSpecificInput({
           </label>
         ) : null}
         {step.requiredInput.zeroAllowed && !zeroOutsidersAvailable ? (
-          <p className="setupInfoZeroUnavailable">실제 외부인이 있어 0명을 선택할 수 없습니다.</p>
+          <p className="setupInfoZeroUnavailable">실제 외지인이 있어 0명을 선택할 수 없습니다.</p>
         ) : null}
         {!zeroOutsiders ? (
           <label>

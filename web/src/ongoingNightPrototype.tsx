@@ -6,11 +6,11 @@ type InfoRole = "fortuneTeller";
 
 const players = [
   { id: "p1", seat: 1, name: "민지", character: "점쟁이", team: "good" },
-  { id: "p2", seat: 2, name: "준호", character: "스파이", team: "evil" },
+  { id: "p2", seat: 2, name: "준호", character: "첩자", team: "evil" },
   { id: "p3", seat: 3, name: "서연", character: "은둔자", team: "good" },
   { id: "p4", seat: 4, name: "도윤", character: "수도사", team: "good" },
   { id: "p5", seat: 5, name: "하린", character: "까마귀지기", team: "good" },
-  { id: "p6", seat: 6, name: "지우", character: "독살자", team: "evil" },
+  { id: "p6", seat: 6, name: "지우", character: "독살범", team: "evil" },
   { id: "p7", seat: 7, name: "현우", character: "임프", team: "evil" },
 ];
 
@@ -92,8 +92,8 @@ export function OngoingNightPrototype() {
 }
 
 function Grimoire({ selectedIds, badges, disabled, onSelect }: { selectedIds: string[]; badges: Record<string, string>; disabled: boolean; onSelect: (id: string) => void }) {
-  return <section className="onpMap" aria-label="그리모어">
-    <div className="onpMapTitle"><strong>그리모어</strong></div>
+  return <section className="onpMap" aria-label="마도서">
+    <div className="onpMapTitle"><strong>마도서</strong></div>
     <div className="onpSeats">{players.map((player) => <button key={player.id} disabled={disabled} className={`onpSeat ${player.team} ${selectedIds.includes(player.id) ? "selected" : ""}`} aria-pressed={selectedIds.includes(player.id)} onClick={() => onSelect(player.id)}>
       <span className="onpSeatNo">{player.seat}</span><strong>{player.name}</strong><small>{player.character}</small>
       {badges[player.id] && <em className={`onpSeatBadge ${badges[player.id] === "중독" ? "poison" : "protect"}`}>{badges[player.id]}</em>}
@@ -103,7 +103,7 @@ function Grimoire({ selectedIds, badges, disabled, onSelect }: { selectedIds: st
 
 function RedHerring({ selectedIds, onSelect }: { selectedIds: string[]; onSelect: (id: string) => void }) {
   return <><PanelHeading kicker="점쟁이" title="레드 헤링 지정" value="1명" />
-    <div className="onpChoiceList" aria-label="레드 헤링 대상">{players.filter((p) => p.team === "good" || p.character === "스파이").map((p) => <button key={p.id} aria-pressed={selectedIds.includes(p.id)} onClick={() => onSelect(p.id)}>{p.seat}번 {p.name}<span>{p.character}</span></button>)}</div>
+    <div className="onpChoiceList" aria-label="레드 헤링 대상">{players.filter((p) => p.team === "good" || p.character === "첩자").map((p) => <button key={p.id} aria-pressed={selectedIds.includes(p.id)} onClick={() => onSelect(p.id)}>{p.seat}번 {p.name}<span>{p.character}</span></button>)}</div>
   </>;
 }
 

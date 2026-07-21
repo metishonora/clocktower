@@ -54,13 +54,13 @@ describe.each([
       />,
     );
 
-    await screen.findByRole("heading", { name: "독살자: 4번 Dae" });
+    await screen.findByRole("heading", { name: "독살범: 4번 Dae" });
     expect(screen.queryByRole("group", { name: "좌석 배치 프리셋" })).toBeNull();
     expect(screen.queryByText(/^겹침/)).toBeNull();
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
     expect(screen.queryByRole("button", { name: "자동 배치" })).toBeNull();
 
-    const grimoire = screen.getByLabelText("라이브 그리모어 좌석 맵");
+    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
     expect(grimoire.classList.contains("layoutEditing")).toBe(false);
     const ada = within(grimoire).getByRole("button", { name: /1번 Ada 좌석 선택/ });
     expect(ada.getAttribute("style")).toContain("left: 41%");
@@ -93,7 +93,7 @@ test("setup recovery restores the persisted confirmed coordinates and setup-only
   await user.click(screen.getByText("설정 및 불러오기"));
   await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
 
-  const setupMap = await screen.findByLabelText("조정 가능한 그리모어 좌석 맵");
+  const setupMap = await screen.findByLabelText("조정 가능한 마도서 좌석 맵");
   const ada = within(setupMap).getByText("Ada").closest("button");
   if (!ada) throw new Error("recovered Ada seat was not rendered");
   expect(ada.getAttribute("style")).toContain("left: 41%");

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
-import type { RevealPayload } from "./core/types";
+import type { Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
+import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
 import type { GameStorageDriver } from "./gameStorage";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
@@ -12,6 +13,7 @@ import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
 import { SlayerPublicAbilityPrototype } from "./slayerPublicAbilityPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
+import { characters } from "./setupDraft";
 import { EventLog } from "./features/event-log/EventLog";
 import { LiveUndoDialog } from "./features/event-log/LiveUndoDialog";
 import { Grimoire } from "./features/grimoire/Grimoire";
@@ -109,6 +111,13 @@ const DevIssue64EvilInfoRevealPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./characterRulesTooltipPrototype");
+      return { default: module.CharacterRulesTooltipPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
@@ -117,6 +126,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevCharacterRulesTooltipPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevCharacterRulesTooltipPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevIssue64EvilInfoRevealPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-64-evil-info"
@@ -277,13 +297,23 @@ export function ClocktowerApp({
   const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
+  const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
   const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
   const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
   const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [undoResetRevision, setUndoResetRevision] = useState(0);
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
-  const phaseInputStep = gameStore.pendingConfirmedReveal ? undefined : gameStore.currentStep;
+  const preActionRevealKey = gameStore.currentStep?.preActionReveal
+    ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
+    : undefined;
+  const preActionRevealPending = Boolean(
+    preActionRevealKey && acknowledgedPreActionRevealKey !== preActionRevealKey,
+  );
+  const phaseInputStep = gameStore.pendingConfirmedReveal || preActionRevealPending
+    ? undefined
+    : gameStore.currentStep;
   const phaseInputDraft = usePhaseInputDraft(
     phaseInputStep,
     gameStore.players,
@@ -306,12 +336,21 @@ export function ClocktowerApp({
       ? { kind: "active" as const, phaseLabel: numberedPhase.label, runtime: phaseRuntime }
       : undefined;
   const mobilePhasePanel = useMobilePhasePanel(gameStore.setupConfirmed);
+  const activeSpyRevealPayload = activeRevealPayload && isSpyGrimoireRevealPayload(activeRevealPayload)
+    ? activeRevealPayload
+    : undefined;
+  const revealPlayers = activeSpyRevealPayload ? playersForSpyReveal(activeSpyRevealPayload) : undefined;
+  const revealRuleState = activeSpyRevealPayload ? ruleStateForSpyReveal(activeSpyRevealPayload) : undefined;
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
       setActiveRevealPayload(undefined);
     }
   }, [gameStore.pendingConfirmedReveal]);
+
+  useEffect(() => {
+    if (!preActionRevealKey) setAcknowledgedPreActionRevealKey(undefined);
+  }, [preActionRevealKey]);
 
   function exportLatestGame() {
     const blob = new Blob([gameStore.exportGameFile()], { type: "application/json" });
@@ -333,6 +372,14 @@ export function ClocktowerApp({
   function showReveal(payload: RevealPayload) {
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
+  }
+
+  function showPreActionReveal() {
+    const reveal = gameStore.currentStep?.preActionReveal;
+    if (!reveal || !preActionRevealKey) return;
+    const { sourceEventId: _, ...payload } = reveal;
+    setActivePreActionRevealKey(preActionRevealKey);
+    setActiveRevealPayload(payload);
   }
 
   function closeLiveUndoDialog() {
@@ -360,37 +407,57 @@ export function ClocktowerApp({
     setLiveUndoDialogEvent(event);
   }
 
-  if (activeRevealPayload) {
-    return <RevealScreen payload={activeRevealPayload} onClose={() => setActiveRevealPayload(undefined)} />;
+  function closeActiveReveal() {
+    if (activePreActionRevealKey) {
+      setAcknowledgedPreActionRevealKey(activePreActionRevealKey);
+      setActivePreActionRevealKey(undefined);
+    }
+    setActiveRevealPayload(undefined);
+  }
+
+  if (activeRevealPayload && !activeSpyRevealPayload) {
+    return <RevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />;
   }
 
   return (
     <div
-      className={`clocktowerApp ${gameStore.setupConfirmed && mobilePhasePanel.mobile ? "mobileLivePlay" : ""}`}
+      className={`clocktowerApp ${activeSpyRevealPayload ? "spyRevealActive" : ""} ${
+        gameStore.setupConfirmed && mobilePhasePanel.mobile && !activeSpyRevealPayload ? "mobileLivePlay" : ""
+      }`}
       data-testid="clocktower-app"
-      data-mobile-panel-state={gameStore.setupConfirmed && mobilePhasePanel.mobile ? mobilePhasePanel.state : undefined}
+      data-mobile-panel-state={gameStore.setupConfirmed && mobilePhasePanel.mobile && !activeSpyRevealPayload ? mobilePhasePanel.state : undefined}
       style={{ "--mobile-phase-panel-height": mobilePhasePanel.height } as React.CSSProperties}
     >
-      <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
-      <main className={gameStore.setupConfirmed ? "shell confirmedShell" : "shell setupShell"}>
+      {!activeSpyRevealPayload ? (
+        <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
+      ) : null}
+      <main
+        className={gameStore.setupConfirmed
+          ? `shell confirmedShell ${activeSpyRevealPayload ? "spyRevealShell" : ""}`
+          : "shell setupShell"}
+        aria-label={activeSpyRevealPayload ? "플레이어 공개 화면" : undefined}
+      >
         {gameStore.setupConfirmed ? (
           <>
             <section className="panel grimoire">
               <div className="sectionHeader">
                 <div>
-                  <p className="eyebrow">그리모어</p>
+                  <p className="eyebrow">마도서</p>
                   <h1>Trouble Brewing</h1>
                 </div>
-                <span className="phaseBadge">설정 확정</span>
+                {!activeSpyRevealPayload ? <span className="phaseBadge">설정 확정</span> : null}
               </div>
               <Grimoire
-                players={gameStore.players}
+                players={revealPlayers ?? gameStore.players}
                 draft={gameStore.setupDraft}
-                busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal)}
-                centerStatus={grimoireCenterStatus}
-                ruleState={gameStore.ruleState}
-                onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
-                slayerAbility={gameStore.ruleState?.slayerAbility ? {
+                busy={activeSpyRevealPayload
+                  ? false
+                  : gameStore.busy || Boolean(gameStore.pendingConfirmedReveal) || preActionRevealPending}
+                centerStatus={activeSpyRevealPayload ? undefined : grimoireCenterStatus}
+                ruleState={revealRuleState ?? gameStore.ruleState}
+                readOnlyReveal={Boolean(activeSpyRevealPayload)}
+                onUpdatePlayerAnnotations={activeSpyRevealPayload || gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
+                slayerAbility={!activeSpyRevealPayload && gameStore.ruleState?.slayerAbility ? {
                   actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
                   enabled: gameStore.ruleState.slayerAbility.canUseNow,
                   spent: gameStore.ruleState.slayerAbility.spent,
@@ -398,7 +465,7 @@ export function ClocktowerApp({
                 } : undefined}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
                 setupInformationSelection={
-                  !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
+                  !activeSpyRevealPayload && !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
                     ? {
                         selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
                         disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
@@ -407,7 +474,7 @@ export function ClocktowerApp({
                     : undefined
                 }
                 phasePlayerSelection={
-                  !votingStepActive && phaseInputStep?.requiredInput.kind === "playerIds"
+                  !activeSpyRevealPayload && !votingStepActive && phaseInputStep?.requiredInput.kind === "playerIds"
                     ? {
                         selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
                         allowedPlayerIds: phaseInputStep.requiredInput.allowedPlayerIds,
@@ -417,10 +484,16 @@ export function ClocktowerApp({
                     : undefined
                 }
               />
-              {mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
+              {!activeSpyRevealPayload ? <CommunityContentNotice /> : null}
             </section>
 
-            <aside className="setupRail">
+            {activeSpyRevealPayload ? (
+              <aside className="spyRevealRail" aria-label="첩자 Reveal 닫기 동작">
+                <button type="button" className="primaryButton" onClick={closeActiveReveal}>
+                  확인했다면 눈을 감으세요.
+                </button>
+              </aside>
+            ) : <aside className="setupRail">
               <section className="panel phasePanel">
                 {mobilePhasePanel.mobile ? (
                   <MobilePhasePanelToggle state={mobilePhasePanel.state} onToggle={mobilePhasePanel.toggle} />
@@ -439,6 +512,8 @@ export function ClocktowerApp({
                     phaseInputDraft={phaseInputDraft}
                     replayReady={gameStore.pendingConfirmedRevealReady}
                     busy={gameStore.busy}
+                    preActionRevealPending={preActionRevealPending}
+                    onShowPreActionReveal={showPreActionReveal}
                     onShowReveal={showReveal}
                     onContinue={gameStore.continueAfterConfirmedReveal}
                     onConfirm={gameStore.confirmCurrentStep}
@@ -485,7 +560,7 @@ export function ClocktowerApp({
                 undoDisabled={!gameStore.canUndoLatestLiveEvent}
                 onRequestUndo={requestLiveUndo}
               />
-            </aside>
+            </aside>}
           </>
         ) : (
           <SetupForm
@@ -501,6 +576,7 @@ export function ClocktowerApp({
               storageReady: gameStore.storageReady,
               replayingConfirmedGame: gameStore.hasConfirmedEvents && !gameStore.setupConfirmed,
             })}
+            confirmationBlocked={gameStore.setupConfirmationBlocked}
             replayResult={gameStore.replayResult}
             proposalResult={gameStore.proposalResult}
             loadError={gameStore.loadError}
@@ -510,15 +586,15 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!gameStore.setupConfirmed || !mobilePhasePanel.mobile ? <CommunityContentNotice /> : null}
-      {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
+      {!gameStore.setupConfirmed ? <CommunityContentNotice /> : null}
+      {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}
         busy={gameStore.busy}
         onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
         onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
       /> : null}
-      {liveUndoDialogEvent ? (
+      {!activeSpyRevealPayload && liveUndoDialogEvent ? (
         <LiveUndoDialog
           event={liveUndoDialogEvent}
           onCancel={closeLiveUndoDialog}
@@ -527,4 +603,42 @@ export function ClocktowerApp({
       ) : null}
     </div>
   );
+}
+
+function playersForSpyReveal(payload: SpyGrimoireRevealPayload): Player[] {
+  return payload.players.map((player) => {
+    const kind = characters.find((character) => character.id === player.characterId)?.kind;
+    return {
+      id: player.playerId,
+      seat: player.seat,
+      name: player.name,
+      actualCharacter: player.characterId,
+      shownCharacter: player.characterId,
+      alignment: kind === "Minion" || kind === "Demon" ? "evil" : "good",
+      alive: player.alive,
+      ghostVoteUsed: player.ghostVoteUsed,
+      deathAnnounced: !player.alive,
+      systemTokenIds: [],
+      scriptTokens: [],
+      notes: "",
+    };
+  });
+}
+
+function ruleStateForSpyReveal(payload: SpyGrimoireRevealPayload): RuleState {
+  const poisonedPlayer = payload.players.find((player) => player.reminderTokens.includes("poisoned"));
+  const protectedPlayer = payload.players.find((player) => player.reminderTokens.includes("protected"));
+  return {
+    activePoison: poisonedPlayer ? {
+      playerId: poisonedPlayer.playerId,
+      sourcePlayerId: "spy-reveal",
+      sourceEventId: "spy-reveal",
+    } : undefined,
+    activeProtection: protectedPlayer ? {
+      playerId: protectedPlayer.playerId,
+      sourcePlayerId: "spy-reveal",
+      sourceEventId: "spy-reveal",
+    } : undefined,
+    unannouncedNightDeathPlayerIds: [],
+  };
 }

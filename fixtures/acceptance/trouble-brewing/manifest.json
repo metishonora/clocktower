@@ -286,19 +286,17 @@
       "category": "night-information",
       "characterIds": [
         "fortuneTeller",
+        "scarletWoman",
         "imp"
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Fortune_Teller",
-      "actionKo": "이미 죽은 8번 Imp와 다른 플레이어를 선택한다.",
-      "expectedKo": "죽은 Demon도 Demon으로 등록하므로 Fortune Teller 결과가 yes다.",
+      "actionKo": "Imp 자살과 Scarlet Woman 승계 후 이미 죽은 7번 이전 Imp 또는 살아 있는 6번 새 Imp와 다른 플레이어를 선택한다.",
+      "expectedKo": "게임이 계속되며 죽은 이전 Demon과 살아 있는 현재 Demon 모두 Fortune Teller 결과가 yes다.",
       "checkpoint": {
-        "phase": "firstNight",
-        "currentStepId": "firstNight:fortuneTeller",
-        "warningCodes": [
-          "DEMON_DEAD_GOOD_WIN"
-        ],
+        "phase": "night",
+        "currentStepId": "night:fortuneTeller",
         "deadPlayerIds": [
-          "player-8"
+          "player-7"
         ]
       },
       "file": "fortune-teller-detects-dead-demon.json"
@@ -379,14 +377,51 @@
       "id": "spy-grimoire-reveal",
       "category": "night-information",
       "characterIds": [
+        "monk",
+        "poisoner",
         "spy"
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Spy",
       "actionKo": "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
-      "expectedKo": "모든 실제 직업과 생사·유령 투표·독·보호 reminder 정보만 안전한 공개 payload로 보인다.",
+      "expectedKo": "현재 밤의 중독·보호와 실제 직업·생사·유령 투표만 보이고 이전 밤 상태와 수동 토큰·Notes는 숨겨진다.",
       "checkpoint": {
-        "phase": "firstNight",
-        "currentStepId": "firstNight:spy"
+        "phase": "night",
+        "currentStepId": "night2:spy",
+        "activePoisonTargetId": "player-1",
+        "activeProtectionTargetId": "player-4",
+        "deadPlayerIds": [
+          "player-6"
+        ],
+        "ghostVoteUsedPlayerIds": [
+          "player-6"
+        ],
+        "spyReveal": {
+          "visibleReminderTokens": [
+            {
+              "seat": 1,
+              "tokens": [
+                "poisoned"
+              ]
+            },
+            {
+              "seat": 4,
+              "tokens": [
+                "protected"
+              ]
+            }
+          ],
+          "hiddenReminderTokenSeats": [
+            2,
+            3,
+            7
+          ],
+          "excludedText": [
+            "abilitySpent",
+            "redHerring",
+            "safe",
+            "INF-05 비공개 Storyteller Notes"
+          ]
+        }
       },
       "file": "spy-grimoire-reveal.json"
     },
@@ -397,11 +432,16 @@
         "butler"
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Butler",
-      "actionKo": "Butler 자신이 아닌 플레이어를 Master로 지정한다.",
-      "expectedKo": "내일 Master가 투표 중이거나 이미 집계된 경우에만 Butler가 투표하며 앱은 부정 투표를 강제로 무효화하지 않는다.",
+      "actionKo": "Butler가 자신이 아닌 Master를 지정한 뒤 다음 날 지목 투표를 진행한다.",
+      "expectedKo": "Master가 현재 투표에 없으면 Butler 좌석이 사유와 함께 비활성화되고, Master 선택 후 활성화되며, Master 해제 시 Butler 표도 제거된다.",
       "checkpoint": {
-        "phase": "firstNight",
-        "currentStepId": "firstNight:butler"
+        "phase": "day",
+        "currentStepId": "day:nomination:1:vote",
+        "butlerVote": {
+          "butlerPlayerId": "player-6",
+          "masterPlayerId": "player-1",
+          "restrictionApplies": true
+        }
       },
       "file": "butler-master-selection.json"
     },

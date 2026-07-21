@@ -109,6 +109,53 @@ fn mayor_bounces_to_dead_soldier_or_monk_protected_players_produce_no_death() {
     );
 }
 
+#[test]
+fn ineligible_mayor_targets_do_not_require_a_mayor_decision() {
+    let cases = [
+        (
+            "dead",
+            imp_step_game(vec![death_event("player-1")]),
+            json!({ "kind": "noDeath", "reason": "alreadyDead" }),
+        ),
+        (
+            "poisoned",
+            imp_step_game_with_poisoned_mayor(),
+            json!({ "kind": "death", "playerId": "player-1" }),
+        ),
+        (
+            "Monk-protected",
+            imp_step_game(vec![monk_protection_event("player-1")]),
+            json!({
+                "kind": "prevented",
+                "reason": "monkProtection",
+                "sourceEventId": "night-monk-protection"
+            }),
+        ),
+    ];
+
+    for (label, game, expected_outcome) in cases {
+        let current = replay(&game);
+        assert_eq!(
+            current["ok"], true,
+            "{label} Mayor replay failed as {current}"
+        );
+        assert!(
+            current["value"]["currentStep"]["requiredInput"]["mayorDecision"].is_null(),
+            "{label} Mayor exposed an inapplicable decision: {current}"
+        );
+
+        let proposal = propose_imp_attack(&game, "player-1", None);
+        assert_eq!(
+            proposal["ok"], true,
+            "{label} Mayor proposal failed as {proposal}"
+        );
+        assert_eq!(
+            proposal["value"]["event"]["payload"]["resolution"]["outcome"], expected_outcome,
+            "{label} Mayor outcome changed"
+        );
+    }
+}
+
 fn bounce(game: &Value, target_player_id: &str) -> Value {
     let proposal = propose_imp_attack(
         game,
@@ -154,6 +201,32 @@ fn imp_step_game(extra_before_imp: Vec<Value>) -> Value {
         events.extend(extra_before_imp);
     }
     game_with_events(Value::Array(events))
+}
+
+fn imp_step_game_with_poisoned_mayor() -> Value {
+    let mut game = imp_step_game(vec![]);
+    let events = game["game"]["events"].as_array_mut().unwrap();
+    let poisoner_step = events
+        .iter_mut()
+        .find(|event| event["payload"]["stepId"] == "night:poisoner")
+        .expect("night Poisoner step should exist");
+    *poisoner_step = json!({
+        "id": "night-poison",
+        "type": "nightActionResolved",
+        "phase": "night",
+        "payload": {
+            "stepId": "night:poisoner",
+            "actorPlayerId": "player-6",
+            "resolution": {
+                "kind": "poison",
+                "targetPlayerId": "player-1",
+                "applied": true
+            }
+        },
+        "summary": "시장 중독",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    });
+    game
 }
 
 fn monk_protection_event(target_player_id: &str) -> Value {

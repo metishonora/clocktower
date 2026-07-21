@@ -43,31 +43,81 @@
               "id": "player-5",
               "seat": 5,
               "name": "플레이어 5",
-              "actualCharacter": "virgin",
-              "shownCharacter": "virgin"
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
             },
             {
               "id": "player-6",
               "seat": 6,
               "name": "플레이어 6",
-              "actualCharacter": "spy",
-              "shownCharacter": "spy"
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
             },
             {
               "id": "player-7",
               "seat": 7,
               "name": "플레이어 7",
+              "actualCharacter": "mayor",
+              "shownCharacter": "mayor"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
               "actualCharacter": "imp",
               "shownCharacter": "imp"
             }
           ]
         },
         "phase": "setup",
-        "summary": "초기 설정 확정: 7명",
+        "summary": "초기 설정 확정: 10명",
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-2",
+        "id": "player-annotations-2",
+        "type": "playerAnnotationsUpdated",
+        "payload": {
+          "playerId": "player-7",
+          "systemTokenIds": [
+            "protected",
+            "abilitySpent"
+          ],
+          "scriptTokens": [
+            {
+              "characterId": "poisoner",
+              "tokenId": "poisoned"
+            },
+            {
+              "characterId": "monk",
+              "tokenId": "safe"
+            },
+            {
+              "characterId": "fortuneTeller",
+              "tokenId": "redHerring"
+            }
+          ],
+          "notes": "INF-05 비공개 Storyteller Notes"
+        },
+        "phase": "firstNight",
+        "summary": "플레이어 표시 수정: 7번 플레이어 7 · 수동 토큰 5개 · Notes 수정",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-3",
         "type": "phaseStepConfirmed",
         "payload": {
           "stepId": "firstNight:minionInfo",
@@ -77,20 +127,22 @@
             "computedResult": {
               "kind": "teamInfo",
               "demonPlayerIds": [
-                "player-7"
+                "player-10"
               ],
               "minionPlayerIds": [
-                "player-6"
+                "player-8",
+                "player-9"
               ],
               "bluffCharacterIds": []
             },
             "deliveredResult": {
               "kind": "teamInfo",
               "demonPlayerIds": [
-                "player-7"
+                "player-10"
               ],
               "minionPlayerIds": [
-                "player-6"
+                "player-8",
+                "player-9"
               ],
               "bluffCharacterIds": []
             },
@@ -100,11 +152,11 @@
           }
         },
         "phase": "firstNight",
-        "summary": "하수인 정보 전달 · 악마: 7번 플레이어 7(임프) · 하수인: 6번 플레이어 6(스파이)",
+        "summary": "하수인 정보 전달 · 악마: 10번 플레이어 10(임프) · 하수인: 8번 플레이어 8(독살범), 9번 플레이어 9(첩자)",
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-3",
+        "id": "phase-step-4",
         "type": "phaseStepConfirmed",
         "payload": {
           "stepId": "firstNight:demonInfo",
@@ -116,20 +168,22 @@
             "computedResult": {
               "kind": "teamInfo",
               "demonPlayerIds": [
-                "player-7"
+                "player-10"
               ],
               "minionPlayerIds": [
-                "player-6"
+                "player-8",
+                "player-9"
               ],
               "bluffCharacterIds": []
             },
             "deliveredResult": {
               "kind": "teamInfo",
               "demonPlayerIds": [
-                "player-7"
+                "player-10"
               ],
               "minionPlayerIds": [
-                "player-6"
+                "player-8",
+                "player-9"
               ],
               "bluffCharacterIds": []
             },
@@ -139,11 +193,27 @@
           }
         },
         "phase": "firstNight",
-        "summary": "악마 정보 전달 · 하수인: 6번 플레이어 6(스파이) · 블러프: 없음",
+        "summary": "악마 정보 전달 · 하수인: 8번 플레이어 8(독살범), 9번 플레이어 9(첩자) · 블러프: 없음",
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-4",
+        "id": "phase-step-5",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "firstNight:poisoner",
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "poison",
+            "targetPlayerId": "player-2",
+            "applied": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "8번 플레이어 8(독살범) → 2번 플레이어 2(요리사) · 중독 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-6",
         "type": "phaseStepSkipped",
         "payload": {
           "stepId": "firstNight:washerwoman"
@@ -153,7 +223,7 @@
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-5",
+        "id": "phase-step-7",
         "type": "phaseStepSkipped",
         "payload": {
           "stepId": "firstNight:chef"
@@ -163,7 +233,7 @@
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-6",
+        "id": "phase-step-8",
         "type": "phaseStepSkipped",
         "payload": {
           "stepId": "firstNight:empath"
@@ -173,7 +243,7 @@
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-7",
+        "id": "phase-step-9",
         "type": "redHerringAssigned",
         "payload": {
           "stepId": "firstNight:fortuneTellerRedHerring",
@@ -185,13 +255,382 @@
         "createdAt": "2026-07-19T00:00:00.000Z"
       },
       {
-        "id": "phase-step-8",
+        "id": "phase-step-10",
         "type": "phaseStepSkipped",
         "payload": {
           "stepId": "firstNight:fortuneTeller"
         },
         "phase": "firstNight",
         "summary": "단계 건너뜀: firstNight:fortuneTeller",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-11",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:spy"
+        },
+        "phase": "firstNight",
+        "summary": "단계 건너뜀: firstNight:spy",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-12",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-13",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-14",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-15",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "fixture-death-16-player-6",
+        "type": "deathConfirmed",
+        "phase": "day",
+        "payload": {
+          "playerId": "player-6"
+        },
+        "summary": "인수 테스트 사전 상태 · player-6 사망",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-started-17",
+        "type": "nominationStarted",
+        "payload": {
+          "stepId": "day:nomination:1",
+          "nominatorId": "player-1",
+          "nomineeId": "player-2",
+          "registrationJudgments": [],
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 1번 플레이어 1(세탁부) → 2번 플레이어 2(요리사)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-vote-18",
+        "type": "nominationVoteConfirmed",
+        "payload": {
+          "stepId": "day:nomination:1:vote",
+          "nominationEventId": "nomination-started-17",
+          "voterIds": [
+            "player-6"
+          ],
+          "ghostVoteSpentPlayerIds": [
+            "player-6"
+          ]
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 1번 플레이어 1(세탁부) → 2번 플레이어 2(요리사), 1표",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-19",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "execution-20",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-21",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-22",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:poisoner",
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "poison",
+            "targetPlayerId": "player-2",
+            "applied": true
+          }
+        },
+        "phase": "night",
+        "summary": "8번 플레이어 8(독살범) → 2번 플레이어 2(요리사) · 중독 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-23",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:monk",
+          "actorPlayerId": "player-5",
+          "resolution": {
+            "kind": "monkProtection",
+            "targetPlayerId": "player-3",
+            "applied": true
+          }
+        },
+        "phase": "night",
+        "summary": "5번 플레이어 5(수도사) → 3번 플레이어 3(초공감자) · 수도사 보호 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-24",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:imp",
+          "actorPlayerId": "player-10",
+          "resolution": {
+            "kind": "impAttack",
+            "targetPlayerId": "player-6",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "10번 플레이어 10(임프) → 6번 플레이어 6(성결자) 공격 · 사망 없음 (이미 사망)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-25",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night:empath"
+        },
+        "phase": "night",
+        "summary": "단계 건너뜀: night:empath",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-26",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "단계 건너뜀: night:fortuneTeller",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-27",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night:spy"
+        },
+        "phase": "night",
+        "summary": "단계 건너뜀: night:spy",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-28",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:toDay",
+          "input": null
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:toDay",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-29",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day2:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-30",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:whisper",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-31",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:discussion",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-32",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day2:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "execution-33",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day2:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-34",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:toNight",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-35",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night2:poisoner",
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "poison",
+            "targetPlayerId": "player-1",
+            "applied": true
+          }
+        },
+        "phase": "night",
+        "summary": "8번 플레이어 8(독살범) → 1번 플레이어 1(세탁부) · 중독 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-36",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night2:monk",
+          "actorPlayerId": "player-5",
+          "resolution": {
+            "kind": "monkProtection",
+            "targetPlayerId": "player-4",
+            "applied": true
+          }
+        },
+        "phase": "night",
+        "summary": "5번 플레이어 5(수도사) → 4번 플레이어 4(점쟁이) · 수도사 보호 적용",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-37",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night2:imp",
+          "actorPlayerId": "player-10",
+          "resolution": {
+            "kind": "impAttack",
+            "targetPlayerId": "player-6",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "10번 플레이어 10(임프) → 6번 플레이어 6(성결자) 공격 · 사망 없음 (이미 사망)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-38",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night2:empath"
+        },
+        "phase": "night",
+        "summary": "단계 건너뜀: night2:empath",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-39",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night2:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "단계 건너뜀: night2:fortuneTeller",
         "createdAt": "2026-07-19T00:00:00.000Z"
       }
     ]

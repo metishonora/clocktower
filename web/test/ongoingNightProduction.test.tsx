@@ -55,7 +55,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 하린" });
-    const grimoire = screen.getByLabelText("라이브 그리모어 좌석 맵");
+    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
     const poisonedSeat = within(grimoire).getByRole("button", { name: /2.*민준|민준/ });
     const protectedSeat = within(grimoire).getByRole("button", { name: /3.*서연|서연/ });
     const poisonBadge = within(poisonedSeat).getByText("중독");
@@ -109,7 +109,7 @@ describe("ongoing-night production UI", () => {
     const disallowedImp = within(input).getByRole("button", { name: /하린/ }) as HTMLButtonElement;
     expect(spy.disabled).toBe(false);
     expect(disallowedImp.disabled).toBe(true);
-    expect(screen.queryByText(/등록 판정|선한 팀으로 등록|스파이.*등록/)).toBeNull();
+    expect(screen.queryByText(/등록 판정|선한 팀으로 등록|첩자.*등록/)).toBeNull();
 
     await user.click(spy);
     await user.click(screen.getByRole("button", { name: "확정" }));
@@ -231,7 +231,7 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    expect(await screen.findByText("실제 술꾼")).toBeTruthy();
+    expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
     const input = await screen.findByLabelText("단계 입력");
     await user.click(within(input).getByRole("button", { name: /서연/ }));
     await user.click(within(input).getByRole("button", { name: /하린/ }));
@@ -285,7 +285,7 @@ describe("ongoing-night production UI", () => {
     const announcement = await screen.findByLabelText("밤 사망 발표");
     expect(within(announcement).getByText("사망자 없음")).toBeTruthy();
     expect(within(announcement).queryByRole("img", { name: "사망" })).toBeNull();
-    const playerStatusesBefore = within(screen.getByLabelText("라이브 그리모어 좌석 맵"))
+    const playerStatusesBefore = within(screen.getByLabelText("라이브 마도서 좌석 맵"))
       .getAllByRole("button")
       .map((button) => button.getAttribute("aria-label"));
 
@@ -300,7 +300,7 @@ describe("ongoing-night production UI", () => {
     });
     expect(await screen.findByRole("button", { name: "토론 시작" })).toBeTruthy();
     expect(
-      within(screen.getByLabelText("라이브 그리모어 좌석 맵"))
+      within(screen.getByLabelText("라이브 마도서 좌석 맵"))
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
     ).toEqual(playerStatusesBefore);
@@ -402,7 +402,7 @@ describe("ongoing-night production UI", () => {
     await screen.findByRole("heading", { name: "장의사: 2번 민준" });
     expect(screen.queryByLabelText("단계 입력")).toBeNull();
     const choices = screen.getByLabelText("전달 정보");
-    expect(within(choices).getByRole("button", { name: "스파이" })).toBeTruthy();
+    expect(within(choices).getByRole("button", { name: "첩자" })).toBeTruthy();
     await user.click(within(choices).getByRole("button", { name: "사서" }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 

@@ -30,7 +30,7 @@ fn poisoner_resolution_is_typed_and_poison_expires_on_the_following_to_night() {
     assert_eq!(proposal["value"]["event"]["type"], "nightActionResolved");
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "4번 Dev(독살자) → 2번 Bert(요리사) · 중독 적용"
+        "4번 Dev(독살범) → 2번 Bert(요리사) · 중독 적용"
     );
     assert_eq!(
         proposal["value"]["event"]["payload"],
@@ -183,6 +183,11 @@ fn fortune_teller_assigns_a_red_herring_before_its_first_typed_boolean_check() {
         before_assignment["value"]["currentStep"]["id"],
         "firstNight:fortuneTellerRedHerring"
     );
+    assert_eq!(
+        before_assignment["value"]["currentStep"]["informationPrompt"],
+        Value::Null,
+        "Red Herring assignment must not expose the later Fortune Teller information prompt"
+    );
 
     let assign = propose(
         &game,
@@ -237,7 +242,7 @@ fn fortune_teller_assigns_a_red_herring_before_its_first_typed_boolean_check() {
     assert_eq!(check["ok"], true, "Fortune Teller check failed as {check}");
     assert_eq!(
         check["value"]["event"]["summary"],
-        "1번 Fortune(점쟁이)가 2번 Chef(요리사), 3번 Empath(공감능력자)를 확인: 악마 있음"
+        "1번 Fortune(점쟁이)가 2번 Chef(요리사), 3번 Empath(초공감자)를 확인: 악마 있음"
     );
     assert_eq!(
         check["value"]["event"]["payload"]["information"],

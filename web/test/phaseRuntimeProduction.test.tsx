@@ -18,7 +18,7 @@ afterEach(() => {
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
 });
 
-test("shows numbered First Night, Day, Night, and later Day runtimes in the Grimoire center", async () => {
+test("shows one numbered First Night, Day, Night, and later Day runtime inside the Grimoire table marker", async () => {
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
   let now = 1_000;
   const clock = { now: () => now };
@@ -68,10 +68,16 @@ test("shows numbered First Night, Day, Night, and later Day runtimes in the Grim
     />,
   );
 
-  const grimoire = await screen.findByLabelText("라이브 그리모어 좌석 맵");
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   const firstNightCenter = within(grimoire).getByLabelText("1일차 밤 경과 시간 00:00");
+  const tableMarker = grimoire.querySelector<HTMLElement>(".draftLayoutTableMark");
+  if (!tableMarker) throw new Error("Grimoire table marker was not rendered");
   expect(firstNightCenter.textContent).toBe("1일차 밤00:00");
   expect(within(firstNightCenter).queryByText("경과")).toBeNull();
+  expect(firstNightCenter.parentElement).toBe(tableMarker);
+  expect(firstNightCenter.classList.contains("mapCenter")).toBe(false);
+  expect(within(tableMarker).queryByText("테이블")).toBeNull();
+  expect(grimoire.querySelectorAll(".phaseRuntimeCenter")).toHaveLength(1);
 
   now += 5 * 60_000 + 7_000;
   await act(async () => vi.advanceTimersByTime(1_000));
@@ -116,6 +122,6 @@ test("derives later Night numbering when reopening an active saved session", asy
     />,
   );
 
-  const grimoire = await screen.findByLabelText("라이브 그리모어 좌석 맵");
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByLabelText("4일차 밤 경과 시간 00:00")).toBeTruthy();
 });

@@ -70,17 +70,17 @@ const noOutsiderPlayers = prototypePlayers.map((candidate) =>
 
 const scenarios: PrototypeScenario[] = [
   setupScenario("washerwoman", "세탁부", "정상 세탁부 정보", "player-1", "Townsfolk"),
-  setupScenario("librarian", "사서", "실제 외부인이 있는 사서 정보", "player-4", "Outsider"),
+  setupScenario("librarian", "사서", "실제 외지인이 있는 사서 정보", "player-4", "Outsider"),
   {
-    ...setupScenario("librarianZero", "사서 0명", "실제 외부인이 없는 사서 정보", "player-4", "Outsider"),
+    ...setupScenario("librarianZero", "사서 0명", "실제 외지인이 없는 사서 정보", "player-4", "Outsider"),
     players: noOutsiderPlayers,
-    description: "Actual Outsider가 없으므로 외부인 0명 입력을 선택합니다.",
+    description: "Actual Outsider가 없으므로 외지인 0명 입력을 선택합니다.",
   },
-  setupScenario("investigator", "조사관", "정상 조사관 정보", "player-7", "Minion"),
+  setupScenario("investigator", "수사관", "정상 수사관 정보", "player-7", "Minion"),
   {
-    ...setupScenario("impairedInvestigator", "술취한 조사관", "술꾼·중독 상태의 조사관 정보", "player-11", "Minion"),
+    ...setupScenario("impairedInvestigator", "술취한 수사관", "주정뱅이·중독 상태의 수사관 정보", "player-11", "Minion"),
     impaired: true,
-    description: "서로 다른 후보 두 명과 조사관 능력 형태의 하수인 캐릭터를 선택합니다.",
+    description: "서로 다른 후보 두 명과 수사관 능력 형태의 하수인 캐릭터를 선택합니다.",
   },
   {
     key: "demon",
@@ -144,8 +144,8 @@ export function FirstNightSuggestionPrototype({
     if (suggestionPool.length === 0) {
       setFailure(
         scenario.mode === "demon"
-          ? "블러프 후보가 3개 미만입니다. Actual Character 배정과 사용 가능한 Trouble Brewing 캐릭터를 확인하세요. 현재 입력은 유지했습니다."
-          : "무작위 추천을 만들 수 없습니다. Actual Character 배정과 현재 단계 조건을 확인하세요. 현재 입력은 유지했습니다.",
+          ? "블러프 후보가 3개 미만입니다. 실제 캐릭터 배정과 사용 가능한 Trouble Brewing 캐릭터를 확인하세요. 현재 입력은 유지했습니다."
+          : "무작위 추천을 만들 수 없습니다. 실제 캐릭터 배정과 현재 단계 조건을 확인하세요. 현재 입력은 유지했습니다.",
       );
       return;
     }
@@ -219,7 +219,7 @@ export function FirstNightSuggestionPrototype({
 
       <div className="suggestionPrototypeWorkspace">
         <section className="panel grimoire suggestionPrototypeGrimoire">
-          <div className="sectionHeader"><div><p className="eyebrow">그리모어 · 실제 상태</p><h2>Trouble Brewing</h2></div><span className="phaseBadge">{scenario.players.length}명</span></div>
+          <div className="sectionHeader"><div><p className="eyebrow">마도서 · 실제 상태</p><h2>Trouble Brewing</h2></div><span className="phaseBadge">{scenario.players.length}명</span></div>
           <Grimoire players={scenario.players} draft={grimoireDraft} busy={false} />
         </section>
 
@@ -233,7 +233,7 @@ export function FirstNightSuggestionPrototype({
             <section className="suggestionCandidateInput" aria-label="설정 정보 후보 입력">
               <div className="suggestionInputHeader"><strong>후보 2명</strong>{suggestionAction}</div>
               {draft.zeroOutsiders ? (
-                <button type="button" className="suggestionZeroDraft selected" aria-pressed="true" onClick={() => updateManually({ ...draft, zeroOutsiders: false })}>외부인 0명</button>
+                <button type="button" className="suggestionZeroDraft selected" aria-pressed="true" onClick={() => updateManually({ ...draft, zeroOutsiders: false })}>외지인 0명</button>
               ) : (
                 <div className="suggestionCandidateGrid">
                   {scenario.players.map((candidate) => (
@@ -351,7 +351,7 @@ function setupScenario(key: ScenarioKey, tabLabel: string, title: string, actorI
     key,
     tabLabel,
     title,
-    description: `실제 ${characterKind === "Townsfolk" ? "마을주민" : characterKind === "Outsider" ? "외부인" : "하수인"} 한 명을 포함하는 서로 다른 후보 두 명과 그 캐릭터를 선택합니다.`,
+    description: `실제 ${characterKind === "Townsfolk" ? "주민" : characterKind === "Outsider" ? "외지인" : "하수인"} 한 명을 포함하는 서로 다른 후보 두 명과 그 캐릭터를 선택합니다.`,
     mode: "setupInfo",
     actorId,
     characterKind,

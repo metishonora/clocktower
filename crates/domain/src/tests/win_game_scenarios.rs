@@ -55,7 +55,7 @@ fn explicit_end_game_is_canonical_replayable_and_undoable() {
     );
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "게임 종료 · 악팀 승리"
+        "게임 종료 · 악한 팀 승리"
     );
 
     let ended_game = with_event(&game, proposal["value"]["event"].clone());
@@ -89,7 +89,7 @@ fn replay_rejects_events_after_game_end() {
             "type": "gameEnded",
             "phase": "firstNight",
             "payload": { "winningTeam": "good" },
-            "summary": "게임 종료 · 선팀 승리",
+            "summary": "게임 종료 · 선한 팀 승리",
             "createdAt": "2026-01-01T00:00:00.000Z"
         },
         death_event("player-1")
