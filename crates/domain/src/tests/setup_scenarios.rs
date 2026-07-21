@@ -126,7 +126,7 @@ fn expected_distribution_covers_baron_and_non_baron_representative_player_counts
 #[test]
 fn setup_distribution_json_returns_baron_adjusted_counts() {
     let actual: Value = serde_json::from_str(&setup_distribution_json(
-        r#"{ "playerCount": 7, "actualCharacters": ["baron"] }"#,
+        r#"{ "scriptId": "troubleBrewing", "playerCount": 7, "actualCharacters": ["baron"] }"#,
     ))
     .unwrap();
 

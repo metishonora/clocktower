@@ -13,13 +13,9 @@ pub(crate) fn setup_distribution(
         return Err(ErrorKind::InvalidPlayerCount.into_error());
     }
 
-    Ok(expected_distribution(
-        request.player_count,
-        request
-            .actual_characters
-            .iter()
-            .any(|character| character.as_str() == "baron"),
-    ))
+    let has_baron = crate::characters::rules(request.script_id)
+        .setup_has_baron_adjustment(&request.actual_characters)?;
+    Ok(expected_distribution(request.player_count, has_baron))
 }
 
 pub(crate) fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> {

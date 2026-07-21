@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
+import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
 import type { Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
@@ -126,6 +127,7 @@ const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
   : undefined;
 
 export type ClocktowerAppProps = {
+  scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
   choiceTokenSource?: ChoiceTokenSource;
@@ -307,12 +309,13 @@ export function App(props: ClocktowerAppProps) {
 }
 
 export function ClocktowerApp({
+  scriptId = TROUBLE_BREWING,
   coreAdapter,
   storageDriver,
   choiceTokenSource = browserCryptoChoiceToken,
   phaseRuntimeClock = browserRuntimeClock,
 }: ClocktowerAppProps) {
-  const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
+  const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();

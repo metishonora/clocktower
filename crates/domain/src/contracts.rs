@@ -9,7 +9,15 @@ use crate::model::{
 
 pub(crate) struct GameFile {
     pub(crate) schema_version: u32,
+    pub(crate) script_id: ScriptId,
     pub(crate) game: Game,
+}
+
+#[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ScriptId {
+    TroubleBrewing,
+    SectsAndViolets,
 }
 
 #[derive(Debug)]
@@ -28,6 +36,8 @@ pub(crate) struct RawGameFile {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RawGame {
+    #[serde(default)]
+    pub(crate) script_id: Option<ScriptId>,
     pub(crate) updated_at: Option<String>,
     pub(crate) events: Vec<Value>,
 }
@@ -133,6 +143,7 @@ pub(crate) struct PhaseStepCommandPayload {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetupDistributionRequest {
+    pub(crate) script_id: ScriptId,
     pub(crate) player_count: usize,
     #[serde(default)]
     pub(crate) actual_characters: Vec<String>,
@@ -167,6 +178,7 @@ pub(crate) struct SetupDistribution {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
     pub(crate) schema_version: u32,
+    pub(crate) script_id: ScriptId,
     pub(crate) event_count: usize,
     pub(crate) phase: Phase,
     pub(crate) players: Vec<Player>,

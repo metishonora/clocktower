@@ -26,13 +26,35 @@ function replayValue(game: GameFile): CoreResult<ReplayState> {
   return { ok: true, value: replayState({ currentStep, eventCount: game.game.events.length }) };
 }
 
+test("store creates a canonical script-bound game and passes script identity to setup queries", async () => {
+  const replay = vi.fn(async (candidate: GameFile) => replayValue(candidate));
+  const core = coreForReplay(replay);
+  core.propose = vi.fn(async () => ({
+    ok: false as const,
+    error: { code: "TEST_PREVIEW", messageKo: "테스트 설정 검토" },
+  }));
+  const storage = new MemoryGameStorageDriver(undefined);
+  const { result } = renderHook(() =>
+    useGameStore({ scriptId: "troubleBrewing", core, storage }),
+  );
+
+  await waitFor(() => expect(replay).toHaveBeenCalled());
+  expect(result.current.gameFile).toMatchObject({
+    schemaVersion: 3,
+    game: { scriptId: "troubleBrewing", name: "Trouble Brewing", events: [] },
+  });
+  await waitFor(() => expect(core.setupDistribution).toHaveBeenCalledWith(expect.objectContaining({
+    scriptId: "troubleBrewing",
+  })));
+});
+
 test("store exposes a guarded latest live event without treating setup recovery as generic Undo", async () => {
   const storedGame = gameFile();
   const latestEvent = event("event-chef", "요리사 정보 확정 · 1쌍 공개");
   storedGame.game.events.push(latestEvent);
   const core = coreForReplay(vi.fn(async (candidate) => replayValue(candidate)));
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.latestLiveUndoEvent).toEqual({
@@ -63,7 +85,7 @@ test("store keeps eligible Undo visible but disabled until replay catches up", a
     value: replayState({ currentStep, eventCount: 1 }),
   })));
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.latestLiveUndoEvent?.id).toBe(latestEvent.id));
@@ -82,7 +104,7 @@ test("store keeps the latest Undo target visible but disables it while a command
   const core = coreForReplay(vi.fn(async (candidate) => replayValue(candidate)));
   core.propose = vi.fn(async () => proposalResult);
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.canUndoLatestLiveEvent).toBe(true));
@@ -110,7 +132,7 @@ test("an unresolved Undo replay blocks overlap and setup recovery appears only a
   );
   const core = coreForReplay(replay);
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.canUndoLatestLiveEvent).toBe(true));
@@ -118,6 +140,8 @@ test("an unresolved Undo replay blocks overlap and setup recovery appears only a
     expect(result.current.undoLatestLiveEvent(latestEvent.id)).toBe(true);
   });
   expect(result.current.gameFile.game.events).toHaveLength(1);
+  expect(result.current.gameFile.schemaVersion).toBe(3);
+  expect(result.current.gameFile.game.scriptId).toBe("troubleBrewing");
   expect(result.current.canUndoLatestLiveEvent).toBe(false);
   expect(result.current.busy).toBe(true);
 
@@ -154,7 +178,7 @@ test("store proposes an explicit game end and exposes replayed ended state", asy
     value: { event: endedEvent, warnings: [], followUpSteps: [], preview: {} },
   }));
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.currentStep?.id).toBe("firstNight:chef"));
@@ -200,7 +224,7 @@ test("store confirms one player annotation event and exposes it to generic Undo"
     value: { event: annotationEvent, warnings: [], followUpSteps: [], preview: {} },
   }));
   const { result } = renderHook(() =>
-    useGameStore({ core, storage: new MemoryGameStorageDriver(storedGame) }),
+    useGameStore({ scriptId: "troubleBrewing", core, storage: new MemoryGameStorageDriver(storedGame) }),
   );
 
   await waitFor(() => expect(result.current.players).toHaveLength(5));

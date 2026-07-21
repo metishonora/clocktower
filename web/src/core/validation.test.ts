@@ -2,6 +2,7 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
+import { TROUBLE_BREWING } from "./scripts.js";
 import {
   parseCoreResult,
   parseGameEvent,
@@ -11,9 +12,10 @@ import {
 } from "./validation.js";
 
 test("imports schema-v2 events as typed GameEvent values", () => {
-  const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()));
+  const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()), TROUBLE_BREWING);
 
-  equal(gameFile.schemaVersion, 2);
+  equal(gameFile.schemaVersion, 3);
+  equal(gameFile.game.scriptId, TROUBLE_BREWING);
   equal(gameFile.game.events.length, 8);
   equal(gameFile.game.events[0]?.type, "setupConfirmed");
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");
@@ -22,7 +24,7 @@ test("imports schema-v2 events as typed GameEvent values", () => {
 test("rejects the canonical schema-v1 fixture", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
 
-  throws(() => importGameFileJson(fixture), /지원하지 않는 게임 파일 버전/);
+  throws(() => importGameFileJson(fixture, TROUBLE_BREWING), /지원하지 않는 게임 파일 버전/);
 });
 
 test("validates complete phase-input suggestion results", () => {
@@ -62,8 +64,8 @@ test("rejects unsupported and malformed imported events", () => {
   const malformed = structuredClone(fixture);
   delete malformed.game.events[0].payload.players;
 
-  throws(() => importGameFileJson(JSON.stringify(unsupported)), /지원하지 않는 이벤트/);
-  throws(() => importGameFileJson(JSON.stringify(malformed)), /이벤트 형식/);
+  throws(() => importGameFileJson(JSON.stringify(unsupported), TROUBLE_BREWING), /지원하지 않는 이벤트/);
+  throws(() => importGameFileJson(JSON.stringify(malformed), TROUBLE_BREWING), /이벤트 형식/);
 });
 
 test("rejects non-canonical nomination payload fields", () => {
@@ -202,7 +204,8 @@ test("validates win warnings and the canonical game-ended contract", () => {
   equal(parseGameEvent(event).type, "gameEnded");
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -244,7 +247,8 @@ test("validates canonical player annotation events and replay projections", () =
   equal(parseGameEvent(event).type, "playerAnnotationsUpdated");
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 2,
     phase: "firstNight",
     players: [{
@@ -316,7 +320,8 @@ test("validates typed confirmed information and derived information prompts", ()
   deepEqual<unknown>(parseProposal(proposal).event, event);
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 1,
     phase: "firstNight",
     players: [],
@@ -434,7 +439,8 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
     },
   };
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 3,
     phase: "night",
     players: [player],
@@ -540,7 +546,8 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
 
 test("requires canonical nomination eligibility lists in Day replay state", () => {
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -570,7 +577,8 @@ test("requires canonical nomination eligibility lists in Day replay state", () =
 
 test("validates the optional Butler vote projection in replay state", () => {
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -596,7 +604,8 @@ test("validates the optional Butler vote projection in replay state", () => {
 
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
   const setupPromptReplay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 1,
     phase: "firstNight",
     players: [],

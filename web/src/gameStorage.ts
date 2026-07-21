@@ -1,5 +1,11 @@
 import type { GameEvent, GameFile, SeatLayoutState } from "./core/types.js";
 import { parseGameEvent } from "./core/validation.js";
+import {
+  isScriptId,
+  scriptStorageKey,
+  TROUBLE_BREWING,
+  type ScriptId,
+} from "./core/scripts.js";
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -12,24 +18,32 @@ export type GameStorageDriver = {
 };
 
 export class IndexedDbGameStorageDriver implements GameStorageDriver {
-  constructor(private readonly idb: IDBFactory = globalThis.indexedDB) {}
+  constructor(
+    private readonly scriptId: ScriptId,
+    private readonly idb: IDBFactory = globalThis.indexedDB,
+  ) {}
 
   async loadLatestGame(): Promise<GameFile | undefined> {
     const db = await this.openDb();
     try {
       const transaction = db.transaction(STORE_NAME, "readonly");
-      const value = await requestToPromise<unknown>(transaction.objectStore(STORE_NAME).get(LATEST_GAME_KEY));
-      return value === undefined ? undefined : validateGameFile(value);
+      const store = transaction.objectStore(STORE_NAME);
+      let value = await requestToPromise<unknown>(store.get(scriptStorageKey(this.scriptId)));
+      if (value === undefined && this.scriptId === TROUBLE_BREWING) {
+        value = await requestToPromise<unknown>(store.get(LATEST_GAME_KEY));
+      }
+      return value === undefined ? undefined : validateGameFile(value, this.scriptId);
     } finally {
       db.close();
     }
   }
 
   async saveLatestGame(gameFile: GameFile): Promise<void> {
+    if (gameFile.game.scriptId !== this.scriptId) throw scriptMismatch();
     const db = await this.openDb();
     try {
       const transaction = db.transaction(STORE_NAME, "readwrite");
-      transaction.objectStore(STORE_NAME).put(gameFile, LATEST_GAME_KEY);
+      transaction.objectStore(STORE_NAME).put(gameFile, scriptStorageKey(this.scriptId));
       await transactionDone(transaction);
     } finally {
       db.close();
@@ -48,13 +62,13 @@ export class IndexedDbGameStorageDriver implements GameStorageDriver {
   }
 }
 
-export async function loadLatestGame(driver: GameStorageDriver = new IndexedDbGameStorageDriver()) {
+export async function loadLatestGame(driver: GameStorageDriver) {
   return driver.loadLatestGame();
 }
 
 export async function saveLatestGame(
   gameFile: GameFile,
-  driver: GameStorageDriver = new IndexedDbGameStorageDriver(),
+  driver: GameStorageDriver,
 ) {
   await driver.saveLatestGame(gameFile);
 }
@@ -70,7 +84,10 @@ export function exportGameFileJson(gameFile: GameFile, exportedAt = new Date()):
   );
 }
 
-export function importGameFileJson(json: string): GameFile {
+export function importGameFileJson(
+  json: string,
+  expectedScriptId: ScriptId = TROUBLE_BREWING,
+): GameFile {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -78,19 +95,21 @@ export function importGameFileJson(json: string): GameFile {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
 
-  return validateGameFile(parsed);
+  return validateGameFile(parsed, expectedScriptId);
 }
 
-function validateGameFile(value: unknown): GameFile {
+function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile {
   if (!isRecord(value)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
-  if (value.schemaVersion !== 2) {
+  if (value.schemaVersion !== 2 && value.schemaVersion !== 3) {
     throw new Error("지원하지 않는 게임 파일 버전입니다.");
   }
   if (!isRecord(value.game)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
+  const scriptId = parseStoredScriptId(value.schemaVersion, value.game.scriptId);
+  if (scriptId !== expectedScriptId) throw scriptMismatch();
   if (
     typeof value.game.id !== "string" ||
     typeof value.game.name !== "string" ||
@@ -105,9 +124,10 @@ function validateGameFile(value: unknown): GameFile {
   const seatLayout = parseSeatLayout(value.ui, events);
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     ...(seatLayout ? { ui: { seatLayout } } : {}),
     game: {
+      scriptId,
       id: value.game.id,
       name: value.game.name,
       createdAt: value.game.createdAt,
@@ -115,6 +135,19 @@ function validateGameFile(value: unknown): GameFile {
       events,
     },
   };
+}
+
+function parseStoredScriptId(schemaVersion: unknown, value: unknown): ScriptId {
+  if (schemaVersion === 2) {
+    if (value !== undefined) throw new Error("게임 파일 형식이 올바르지 않습니다.");
+    return TROUBLE_BREWING;
+  }
+  if (!isScriptId(value)) throw new Error("게임 파일 형식이 올바르지 않습니다.");
+  return value;
+}
+
+function scriptMismatch(): Error {
+  return new Error("현재 페이지와 다른 스크립트의 게임 파일입니다.");
 }
 
 function parseSeatLayout(ui: unknown, events: GameEvent[]): SeatLayoutState | undefined {

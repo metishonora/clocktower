@@ -38,7 +38,7 @@ describe("ClocktowerApp live-play integration", () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    render(<ClocktowerApp coreAdapter={core} storageDriver={new IndexedDbGameStorageDriver(idb)} />);
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new IndexedDbGameStorageDriver("troubleBrewing", idb)} />);
 
     expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
     expect((screen.getByRole("button", { name: "플레이어 추가" }) as HTMLButtonElement).disabled).toBe(false);
@@ -67,9 +67,9 @@ describe("ClocktowerApp live-play integration", () => {
       expect(screen.queryAllByText("지원하지 않는 게임 파일 버전입니다.")).toHaveLength(0);
     });
     await waitFor(async () => {
-      expect(await getRawLatestGame(idb)).toMatchObject({
-        schemaVersion: 2,
-        game: { events: [] },
+      expect(await getRawLatestGame(idb, "latest:troubleBrewing")).toMatchObject({
+        schemaVersion: 3,
+        game: { scriptId: "troubleBrewing", events: [] },
       });
     });
     expect(confirm).not.toHaveBeenCalled();
@@ -88,7 +88,8 @@ describe("ClocktowerApp live-play integration", () => {
         : {
             ok: true,
             value: {
-              schemaVersion: 2,
+              schemaVersion: 3,
+              scriptId: "troubleBrewing",
               eventCount: 0,
               phase: "setup",
               players: [],
@@ -109,7 +110,8 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "새 게임" }));
 
     await waitFor(() => expect(storage.savedGames).toHaveLength(1));
-    expect(storage.savedGames[0]?.schemaVersion).toBe(2);
+    expect(storage.savedGames[0]?.schemaVersion).toBe(3);
+    expect(storage.savedGames[0]?.game.scriptId).toBe("troubleBrewing");
     expect(storage.savedGames[0]?.game.events).toEqual([]);
   });
 
@@ -1981,19 +1983,24 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
     await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
     const savesBeforeImport = storage.savedGames.length;
-    const incompatibleGame = { ...gameFile(), schemaVersion: 1 };
+    const incompatibleGame = gameFile();
+    incompatibleGame.game.scriptId = "sectsAndViolets";
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
     if (!fileInput) throw new Error("JSON file input was not rendered");
 
     await user.upload(
       fileInput,
-      new File([JSON.stringify(incompatibleGame)], "old-clocktower.json", { type: "application/json" }),
+      new File([JSON.stringify(incompatibleGame)], "sects-and-violets.json", { type: "application/json" }),
     );
 
-    expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText("현재 페이지와 다른 스크립트의 게임 파일입니다.")).length,
+    ).toBeGreaterThan(0);
     expect(confirm).not.toHaveBeenCalled();
     expect(screen.getAllByText("초기 설정 확정").length).toBeGreaterThan(0);
-    expect(core.replay).not.toHaveBeenCalledWith(expect.objectContaining({ schemaVersion: 1 }));
+    expect(core.replay).not.toHaveBeenCalledWith(
+      expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
+    );
     expect(storage.savedGames).toHaveLength(savesBeforeImport);
     expect(latestSavedGame(storage.savedGames)).toEqual(storedGame);
   });
@@ -2160,11 +2167,11 @@ async function putRawLatestGame(idb: IDBFactory, value: unknown): Promise<void> 
   }
 }
 
-async function getRawLatestGame(idb: IDBFactory): Promise<unknown> {
+async function getRawLatestGame(idb: IDBFactory, key = "latest"): Promise<unknown> {
   const database = await openGameDatabase(idb);
   try {
     const transaction = database.transaction("game", "readonly");
-    return await requestResult(transaction.objectStore("game").get("latest"));
+    return await requestResult(transaction.objectStore("game").get(key));
   } finally {
     database.close();
   }

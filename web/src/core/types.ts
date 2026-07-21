@@ -1,9 +1,12 @@
+import type { ScriptId } from "./scripts.js";
+
 export type GameFile = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   ui?: {
     seatLayout?: SeatLayoutState;
   };
   game: {
+    scriptId: ScriptId;
     id: string;
     name: string;
     createdAt: string;
@@ -182,7 +185,8 @@ export type CoreResult<T> =
   | { ok: false; error: { code: string; messageKo: string } };
 
 export type ReplayState = {
-  schemaVersion: 2;
+  schemaVersion: 3;
+  scriptId: ScriptId;
   eventCount: number;
   phase: Phase;
   players: Player[];
@@ -322,6 +326,7 @@ export type RoleInformationRevealPayload =
 export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload;
 
 export type SetupDistributionRequest = {
+  scriptId: ScriptId;
   playerCount: number;
   actualCharacters: string[];
 };

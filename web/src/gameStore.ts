@@ -15,6 +15,7 @@ import type {
   SeatLayoutState,
   SetupDistribution,
 } from "./core/types.js";
+import { scriptDisplayName, type ScriptId } from "./core/scripts.js";
 import {
   exportGameFileJson,
   importGameFileJson,
@@ -31,14 +32,15 @@ import {
   type SetupDraft,
 } from "./setupDraft.js";
 
-export function createGameFile(events: GameEvent[] = []): GameFile {
+export function createGameFile(scriptId: ScriptId, events: GameEvent[] = []): GameFile {
   const now = new Date().toISOString();
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     game: {
+      scriptId,
       id: "local-game",
-      name: "Trouble Brewing",
+      name: scriptDisplayName(scriptId),
       createdAt: now,
       updatedAt: now,
       events,
@@ -47,6 +49,7 @@ export function createGameFile(events: GameEvent[] = []): GameFile {
 }
 
 export type GameStoreDependencies = {
+  scriptId: ScriptId;
   core: CoreAdapter;
   storage: GameStorageDriver;
 };
@@ -57,9 +60,9 @@ export type PendingConfirmedReveal = {
   confirmedEventCount: number;
 };
 
-export function useGameStore({ core, storage }: GameStoreDependencies) {
+export function useGameStore({ scriptId, core, storage }: GameStoreDependencies) {
   const [storageDriver] = useState<GameStorageDriver>(() => storage);
-  const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile());
+  const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile(scriptId));
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
   const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
   const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
@@ -176,12 +179,13 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
   const createGamePlayers = useMemo(() => toCreateGamePlayers(setupDraft.players), [setupDraft.players]);
   const setupDistributionRequest = useMemo(
     () => ({
+      scriptId,
       playerCount: setupDraft.players.length,
       actualCharacters: setupDraft.players.flatMap((player) =>
         player.actualCharacter ? [player.actualCharacter] : [],
       ),
     }),
-    [setupDraft.players],
+    [scriptId, setupDraft.players],
   );
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {
@@ -463,7 +467,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setAutosaveRecoveryError(undefined);
     setStorageWriteError(undefined);
     setLoadError(undefined);
-    setGameFile(createGameFile());
+    setGameFile(createGameFile(scriptId));
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
     setSetupDraft(createSetupDraft());
@@ -499,7 +503,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
         events: current.game.events.slice(0, -1),
       };
       return expectedType === "setup"
-        ? { schemaVersion: 2, game: nextGame }
+        ? { schemaVersion: 3, game: nextGame }
         : { ...current, game: nextGame };
     });
     return true;
@@ -530,7 +534,7 @@ export function useGameStore({ core, storage }: GameStoreDependencies) {
     setBusy(true);
     setLoadError(undefined);
     try {
-      const importedGameFile = importGameFileJson(json);
+      const importedGameFile = importGameFileJson(json, scriptId);
       const importedReplay = await core.replay(importedGameFile);
       if (!importedReplay.ok) {
         setLoadError(importedReplay.error.messageKo);

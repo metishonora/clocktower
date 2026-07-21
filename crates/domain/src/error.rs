@@ -15,6 +15,9 @@ pub(crate) enum ErrorKind {
     UnsupportedCommand,
     MalformedEvent,
     UnsupportedEvent,
+    ScriptNotImplemented,
+    CommandNotSupportedByScript,
+    EventNotSupportedByScript,
     MalformedRequest,
     InvalidPlayerCount,
     InvalidPlayer,
@@ -66,6 +69,18 @@ impl ErrorKind {
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),
             Self::MalformedEvent => ("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."),
             Self::UnsupportedEvent => ("UNSUPPORTED_EVENT", "지원하지 않는 이벤트입니다."),
+            Self::ScriptNotImplemented => (
+                "SCRIPT_NOT_IMPLEMENTED",
+                "현재 스크립트의 규칙은 아직 구현되지 않았습니다.",
+            ),
+            Self::CommandNotSupportedByScript => (
+                "COMMAND_NOT_SUPPORTED_BY_SCRIPT",
+                "현재 스크립트에서 지원하지 않는 명령입니다.",
+            ),
+            Self::EventNotSupportedByScript => (
+                "EVENT_NOT_SUPPORTED_BY_SCRIPT",
+                "현재 스크립트에서 지원하지 않는 이벤트입니다.",
+            ),
             Self::MalformedRequest => ("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."),
             Self::InvalidPlayerCount => (
                 "INVALID_PLAYER_COUNT",

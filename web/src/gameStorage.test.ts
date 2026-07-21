@@ -1,17 +1,21 @@
 import { deepEqual, equal } from "node:assert/strict";
 import test from "node:test";
+import { IDBFactory } from "fake-indexeddb";
 import {
   exportGameFileJson,
   importGameFileJson,
+  IndexedDbGameStorageDriver,
   loadLatestGame,
   saveLatestGame,
   type GameStorageDriver,
 } from "./gameStorage.js";
 import type { GameFile } from "./core/types.js";
+import { TROUBLE_BREWING } from "./core/scripts.js";
 
 const gameFile: GameFile = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   game: {
+    scriptId: "troubleBrewing",
     id: "game-1",
     name: "Trouble Brewing",
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -41,22 +45,80 @@ test("saving the latest GameFile stores one replaceable value", async () => {
   equal(driver.writeCount, 2);
 });
 
-test("export writes schemaVersion and exportedAt into GameFile JSON", () => {
+test("IndexedDB preserves independent latest games for both scripts", async () => {
+  const idb = new IDBFactory();
+  const troubleBrewing = new IndexedDbGameStorageDriver("troubleBrewing", idb);
+  const sectsAndViolets = new IndexedDbGameStorageDriver("sectsAndViolets", idb);
+  const svGame: GameFile = {
+    ...gameFile,
+    game: {
+      ...gameFile.game,
+      scriptId: "sectsAndViolets",
+      id: "game-sv",
+      name: "Sects & Violets",
+      events: [],
+    },
+  };
+
+  await troubleBrewing.saveLatestGame(gameFile);
+  await sectsAndViolets.saveLatestGame(svGame);
+
+  deepEqual(await troubleBrewing.loadLatestGame(), gameFile);
+  deepEqual(await sectsAndViolets.loadLatestGame(), svGame);
+});
+
+test("only Trouble Brewing reads and normalizes the legacy latest key", async () => {
+  const idb = new IDBFactory();
+  const legacy = structuredClone(gameFile) as unknown as Record<string, unknown>;
+  legacy.schemaVersion = 2;
+  delete (legacy.game as Record<string, unknown>).scriptId;
+  await putRawGame(idb, "latest", legacy);
+
+  const troubleBrewing = new IndexedDbGameStorageDriver("troubleBrewing", idb);
+  const sectsAndViolets = new IndexedDbGameStorageDriver("sectsAndViolets", idb);
+
+  deepEqual(await troubleBrewing.loadLatestGame(), gameFile);
+  equal(await sectsAndViolets.loadLatestGame(), undefined);
+});
+
+test("export writes canonical schema, script identity, and exportedAt", () => {
   const json = exportGameFileJson(gameFile, new Date("2026-07-10T00:00:00.000Z"));
   const parsed = JSON.parse(json);
 
-  equal(parsed.schemaVersion, 2);
+  equal(parsed.schemaVersion, 3);
+  equal(parsed.game.scriptId, "troubleBrewing");
   equal(parsed.exportedAt, "2026-07-10T00:00:00.000Z");
   deepEqual(parsed.game.events, gameFile.game.events);
 });
 
-test("import validates basic GameFile shape and schemaVersion", () => {
-  deepEqual(importGameFileJson(JSON.stringify(gameFile)), gameFile);
+test("import validates canonical GameFile shape and expected script", () => {
+  deepEqual(importGameFileJson(JSON.stringify(gameFile), TROUBLE_BREWING), gameFile);
   try {
-    importGameFileJson(JSON.stringify({ ...gameFile, schemaVersion: 1 }));
+    importGameFileJson(JSON.stringify({ ...gameFile, schemaVersion: 1 }), TROUBLE_BREWING);
     throw new Error("expected schema validation to fail");
   } catch (error) {
     equal(error instanceof Error ? error.message : "", "지원하지 않는 게임 파일 버전입니다.");
+  }
+});
+
+test("import normalizes a script-less schema-v2 file to canonical Trouble Brewing v3", () => {
+  const legacy = structuredClone(gameFile) as unknown as Record<string, unknown>;
+  legacy.schemaVersion = 2;
+  delete (legacy.game as Record<string, unknown>).scriptId;
+
+  deepEqual(importGameFileJson(JSON.stringify(legacy), TROUBLE_BREWING), gameFile);
+});
+
+test("import rejects a valid game belonging to a different script", () => {
+  const sectsAndViolets = {
+    ...gameFile,
+    game: { ...gameFile.game, scriptId: "sectsAndViolets" },
+  };
+  try {
+    importGameFileJson(JSON.stringify(sectsAndViolets), TROUBLE_BREWING);
+    throw new Error("expected script mismatch to fail");
+  } catch (error) {
+    equal(error instanceof Error ? error.message : "", "현재 페이지와 다른 스크립트의 게임 파일입니다.");
   }
 });
 
@@ -96,13 +158,13 @@ test("confirmed seat-layout UI metadata survives JSON export and import", () => 
     ui: { seatLayout: layout },
   } as GameFile;
 
-  const imported = importGameFileJson(exportGameFileJson(gameWithLayout));
+  const imported = importGameFileJson(exportGameFileJson(gameWithLayout), TROUBLE_BREWING);
 
   deepEqual((imported as unknown as { ui?: unknown }).ui, { seatLayout: layout });
 });
 
 test("import rejects malformed seat-layout UI metadata without weakening legacy files", () => {
-  deepEqual(importGameFileJson(JSON.stringify(gameFile)), gameFile);
+  deepEqual(importGameFileJson(JSON.stringify(gameFile), TROUBLE_BREWING), gameFile);
   const invalidLayouts = [
     { preset: "spiral", positions: { 1: { x: 41, y: 31 } } },
     { preset: "circle", positions: { 1: { x: 200, y: 31 } } },
@@ -110,7 +172,7 @@ test("import rejects malformed seat-layout UI metadata without weakening legacy 
 
   for (const seatLayout of invalidLayouts) {
     try {
-      importGameFileJson(JSON.stringify({ ...gameFile, ui: { seatLayout } }));
+      importGameFileJson(JSON.stringify({ ...gameFile, ui: { seatLayout } }), TROUBLE_BREWING);
       throw new Error("expected seat-layout validation to fail");
     } catch (error) {
       equal(error instanceof Error ? error.message : "", "좌석 배치 정보가 올바르지 않습니다.");
@@ -158,6 +220,7 @@ test("audit information survives save, export, and import without a replay-state
 
   const imported = importGameFileJson(
     exportGameFileJson(auditedGame, new Date("2026-07-15T00:01:00.000Z")),
+    TROUBLE_BREWING,
   );
   deepEqual(imported, auditedGame);
   equal("informationAudit" in (imported as unknown as Record<string, unknown>), false);
@@ -175,4 +238,20 @@ class MemoryGameStorageDriver implements GameStorageDriver {
     this.writeCount += 1;
     this.value = structuredClone(gameFile);
   }
+}
+
+async function putRawGame(idb: IDBFactory, key: string, value: unknown): Promise<void> {
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = idb.open("clocktower", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("game");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("game", "readwrite");
+    transaction.objectStore("game").put(value, key);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+  db.close();
 }
