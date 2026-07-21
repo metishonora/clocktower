@@ -15,6 +15,7 @@ import type {
 } from "./types.js";
 import { isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
+import { isScriptId } from "./scripts.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -222,7 +223,8 @@ export function parseGameEvent(value: unknown): GameEvent {
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 2 ||
+    value.schemaVersion !== 3 ||
+    !isScriptId(value.scriptId) ||
     typeof value.eventCount !== "number" ||
     !isPhase(value.phase) ||
     !Array.isArray(value.players) ||

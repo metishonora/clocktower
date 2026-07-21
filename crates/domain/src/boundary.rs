@@ -50,9 +50,15 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
 
-    if raw.schema_version != 2 {
-        return Err(ErrorKind::UnsupportedSchemaVersion.into_error());
-    }
+    let script_id = match raw.schema_version {
+        2 if raw.game.script_id.is_none() => crate::contracts::ScriptId::TroubleBrewing,
+        2 => return Err(ErrorKind::MalformedGameFile.into_error()),
+        3 => raw
+            .game
+            .script_id
+            .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?,
+        _ => return Err(ErrorKind::UnsupportedSchemaVersion.into_error()),
+    };
 
     let events = raw
         .game
@@ -60,9 +66,11 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .into_iter()
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
+    crate::characters::rules(script_id).validate_replay_events(&events)?;
 
     Ok(GameFile {
         schema_version: raw.schema_version,
+        script_id,
         game: Game {
             updated_at: raw.game.updated_at,
             events,

@@ -26,7 +26,8 @@ const setupDistribution: SetupDistribution = {
 };
 
 const emptyReplayState: ReplayState = {
-  schemaVersion: 2,
+  schemaVersion: 3,
+  scriptId: "troubleBrewing",
   eventCount: 0,
   phase: "setup",
   players: [],
@@ -82,8 +83,9 @@ export function createCoreHarness({
 
 export function gameFile(): GameFile {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     game: {
+      scriptId: "troubleBrewing",
       id: "game-integration",
       name: "Trouble Brewing",
       createdAt: "2026-07-14T00:00:00.000Z",
@@ -124,7 +126,8 @@ export function replayState({
   phaseOverview?: ReplayState["phaseOverview"];
 }): ReplayState {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount,
     phase: currentStep.phase,
     players: playerRoster,

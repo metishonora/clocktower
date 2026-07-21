@@ -25,6 +25,7 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    crate::characters::rules(game_file.script_id).validate_replay_events(&game_file.game.events)?;
     let events = &game_file.game.events;
     let ended_positions = events
         .iter()
@@ -161,6 +162,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
+        script_id: game_file.script_id,
         event_count: events.len(),
         phase: phase_state.phase,
         players,

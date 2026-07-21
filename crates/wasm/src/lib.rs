@@ -47,10 +47,10 @@ mod tests {
 
     #[test]
     fn wasm_adapter_returns_setup_distribution_json() {
-        assert!(
-            setup_distribution(r#"{ "playerCount": 7, "actualCharacters": ["baron"] }"#)
-                .contains(r#""Townsfolk":3"#)
-        );
+        assert!(setup_distribution(
+            r#"{ "scriptId": "troubleBrewing", "playerCount": 7, "actualCharacters": ["baron"] }"#
+        )
+        .contains(r#""Townsfolk":3"#));
     }
 
     #[test]

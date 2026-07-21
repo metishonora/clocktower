@@ -116,8 +116,9 @@ function gameAtRedHerringAssignment(): GameFile {
     phaseEvent("phaseStepSkipped", "firstNight:empath"),
   ];
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     game: {
+      scriptId: "troubleBrewing",
       id: "issue-81",
       name: "Issue 81 regression",
       createdAt: "2026-07-19T00:00:00.000Z",

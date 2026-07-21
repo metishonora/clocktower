@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
+import type { ScriptId } from "../../core/scripts";
 import "./scriptLanding.css";
-
-type ScriptId = "troubleBrewing" | "sectsAndViolets";
 
 const scripts = {
   troubleBrewing: {

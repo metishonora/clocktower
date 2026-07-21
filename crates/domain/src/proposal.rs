@@ -39,6 +39,7 @@ use crate::{
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
+    crate::characters::rules(game_file.script_id).validate_command(&command)?;
     if game_file
         .game
         .events
