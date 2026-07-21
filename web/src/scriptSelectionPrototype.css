@@ -1,0 +1,252 @@
+.scriptSelectionPrototype {
+  --paper: #f2ede3;
+  --panel: #fffdf7;
+  --ink: #25241f;
+  --muted: #6c6a62;
+  --line: #d5cdbf;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 16% 4%, rgba(169, 139, 77, .12), transparent 30%),
+    radial-gradient(circle at 84% 100%, rgba(50, 88, 95, .1), transparent 34%),
+    var(--paper);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.scriptSelectionPrototype * { box-sizing: border-box; }
+.scriptSelectionPrototype button,
+.scriptSelectionPrototype input { min-height: 44px; font: inherit; }
+.scriptSelectionPrototype button { cursor: pointer; }
+
+.scriptSelectionPrototypeBar {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #cbc1b1;
+  background: rgba(255, 253, 247, .84);
+  padding: 6px 22px;
+}
+
+.scriptSelectionPrototypeBar > span {
+  color: #716b60;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+
+.scriptSelectionPrototypeBar > div {
+  display: flex;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #e9e3d8;
+  padding: 3px;
+}
+
+.scriptSelectionPrototypeBar button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  color: #6b675f;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.scriptSelectionPrototypeBar button.selected {
+  color: #1e352e;
+  background: #fffdf8;
+  box-shadow: 0 2px 8px rgba(49, 39, 23, .13);
+}
+
+.scriptLanding {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(40px, 7vh, 78px) 0 48px;
+}
+
+.scriptLandingHeader {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.clocktowerMark {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  margin-bottom: 14px;
+  border: 2px solid #a28a58;
+  border-radius: 50%;
+  color: #816936;
+  background: #f9f4e9;
+  box-shadow: inset 0 0 0 5px #f0e7d6;
+  font-family: Georgia, serif;
+  font-weight: 800;
+}
+
+.clocktowerMark span { transform: translateY(-1px); }
+.scriptLandingHeader p,
+.scriptLandingHeader h1 { margin: 0; }
+.scriptLandingHeader p { color: #7b6a45; font-size: .72rem; font-weight: 900; letter-spacing: .16em; }
+.scriptLandingHeader h1 { margin-top: 8px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 600; }
+.scriptLandingHeader > span { margin-top: 10px; color: var(--muted); font-size: .92rem; }
+
+.pwaUpdateNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #b9cbbf;
+  border-radius: 12px;
+  color: #214a3d;
+  background: #e8f0ea;
+  padding: 12px 14px 12px 18px;
+}
+
+.pwaUpdateNotice > div { display: grid; gap: 2px; }
+.pwaUpdateNotice span { color: #597067; font-size: .8rem; }
+.pwaUpdateNotice button { border: 1px solid #9eb5a7; border-radius: 8px; color: #214a3d; background: #f8fbf8; padding: 6px 14px; font-weight: 800; }
+
+.scriptCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+.scriptCard {
+  position: relative;
+  display: grid;
+  min-height: 510px;
+  align-content: start;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 253, 247, .94);
+  box-shadow: 0 22px 54px rgba(63, 49, 26, .1);
+  padding: 20px;
+}
+
+.scriptCard::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5px;
+  content: "";
+  background: var(--card-accent);
+}
+
+.troubleBrewingCard { --card-accent: #28634f; }
+.sectsAndVioletsCard { --card-accent: #755288; }
+.scriptCardTopline { display: flex; min-height: 32px; align-items: center; justify-content: space-between; gap: 10px; }
+
+.scriptStatus,
+.recentPlay {
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: .7rem;
+  font-weight: 900;
+}
+
+.scriptStatus.available { color: #245b48; background: #e2eee8; }
+.scriptStatus.preparing { color: #6f4e7d; background: #eee4f1; }
+.recentPlay { color: #725720; background: #f3e7c9; }
+
+.scriptSigil {
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  margin: 22px 0 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.troubleBrewingSigil { color: #28634f; background: #e8f0eb; box-shadow: inset 0 0 0 7px #f7faf8; }
+.sectsAndVioletsSigil { color: #755288; background: #f0e8f2; box-shadow: inset 0 0 0 7px #fbf8fc; }
+.scriptCardTitle p,
+.scriptCardTitle h2 { margin: 0; }
+.scriptCardTitle p { color: var(--card-accent); font-size: .76rem; font-weight: 900; }
+.scriptCardTitle h2 { margin-top: 3px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.75rem, 3vw, 2.35rem); font-weight: 600; }
+.scriptSummary { min-height: 45px; margin: 10px 0 20px; color: var(--muted); line-height: 1.45; }
+
+.savedGameSummary,
+.emptyGameSummary {
+  display: grid;
+  min-height: 94px;
+  align-content: center;
+  gap: 4px;
+  margin-top: auto;
+  border: 1px solid #ded7ca;
+  border-radius: 12px;
+  background: #f7f3ea;
+  padding: 14px;
+}
+
+.savedGameSummary span,
+.emptyGameSummary span { color: #777167; font-size: .72rem; font-weight: 800; }
+.savedGameSummary strong { font-size: 1.08rem; }
+.savedGameSummary small,
+.emptyGameSummary small { color: #777167; }
+.preparingSummary { border-color: #ded2e2; background: #f7f1f8; }
+
+.scriptCardActions { display: flex; gap: 8px; margin-top: 12px; }
+.scriptCardActions button { flex: 1; border-radius: 10px; padding: 10px 15px; font-weight: 900; }
+.primaryScriptAction { border: 1px solid #245c4a; color: white; background: #245c4a; }
+.secondaryScriptAction { border: 1px solid #beb5a7; color: #39362f; background: #fffdf8; }
+.secondaryScriptAction.violetAction { border-color: #af98b8; color: #694878; background: #fbf8fc; }
+
+.prototypeScriptSurface { min-height: calc(100vh - 52px); }
+.prototypeSurfaceHeader { display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding: 8px 22px; }
+.prototypeSurfaceHeader button { border: 0; color: #2f5c4d; background: transparent; padding: 6px 0; font-weight: 900; }
+.prototypeSurfaceHeader span { color: #767067; font-size: .68rem; font-weight: 900; letter-spacing: .12em; }
+.prototypeSurfaceBody { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: clamp(44px, 9vh, 92px) 0; }
+.prototypeSurfaceBody > h1 { margin: 4px 0 7px; font-family: Georgia, serif; font-size: clamp(2.3rem, 6vw, 4rem); font-weight: 600; }
+.prototypeSurfaceBody > p { margin: 0; color: var(--muted); }
+.surfaceEyebrow { color: #28634f !important; font-size: .75rem; font-weight: 900; letter-spacing: .1em; }
+
+.continuedGameSkeleton { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 42px; }
+.continuedGameSkeleton > div { display: grid; min-height: 110px; align-content: center; gap: 5px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px; }
+.continuedGameSkeleton span { color: var(--muted); font-size: .8rem; }
+.continuedGameSkeleton strong { font-size: 1.2rem; }
+.continuedGameSkeleton .wideSkeleton { grid-column: 1 / -1; min-height: 260px; place-content: center; border-style: dashed; text-align: center; }
+
+.draftExperienceField { display: grid; max-width: 560px; gap: 7px; margin-top: 40px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 20px; }
+.draftExperienceField > span { font-weight: 900; }
+.draftExperienceField input { width: 100%; border: 1px solid #bdb5a8; border-radius: 9px; background: white; padding: 9px 11px; }
+.draftExperienceField small { color: var(--muted); }
+
+.sectsAndVioletsSurface { background: radial-gradient(circle at center, #f6edf7, #ece5dc 72%); }
+.centeredSurfaceBody { display: grid; min-height: calc(100vh - 210px); place-items: center; align-content: center; text-align: center; }
+.largeVioletSigil { display: grid; width: 112px; height: 112px; place-items: center; margin-bottom: 18px; border: 1px solid #755288; border-radius: 50%; color: #755288; background: #fbf7fc; box-shadow: inset 0 0 0 9px #eadced; font-family: Georgia, serif; font-size: 1.4rem; font-weight: 800; }
+.centeredSurfaceBody > p { margin: 0 0 12px; }
+.centeredSurfaceBody > strong { color: #6f4e7d; font-size: .84rem; }
+
+.prototypeDialogBackdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(28, 25, 20, .52); padding: 18px; }
+.prototypeDialog { width: min(430px, 100%); border: 1px solid #c8beae; border-radius: 16px; background: #fffdf8; box-shadow: 0 28px 80px rgba(22, 17, 10, .28); padding: 22px; }
+.prototypeDialog > span { color: #8a6546; font-size: .72rem; font-weight: 900; letter-spacing: .08em; }
+.prototypeDialog h2 { margin: 6px 0 8px; font-family: Georgia, serif; font-size: 1.6rem; }
+.prototypeDialog p { margin: 0; color: var(--muted); line-height: 1.5; }
+.prototypeDialog > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.prototypeDialog button { border: 1px solid #bfb6a8; border-radius: 9px; background: white; padding: 8px 14px; font-weight: 850; }
+.prototypeDialog .destructivePrototypeAction { border-color: #8c493c; color: white; background: #8c493c; }
+
+@media (max-width: 720px) {
+  .scriptSelectionPrototypeBar { align-items: flex-start; flex-direction: column; padding: 9px 12px; }
+  .scriptSelectionPrototypeBar > div { width: 100%; overflow-x: auto; }
+  .scriptSelectionPrototypeBar button { flex: 1 0 auto; }
+  .scriptLanding { width: min(100% - 20px, 520px); padding-top: 32px; }
+  .scriptCards { grid-template-columns: 1fr; }
+  .scriptCard { min-height: 470px; }
+  .pwaUpdateNotice { align-items: flex-start; }
+  .continuedGameSkeleton { grid-template-columns: 1fr; }
+  .continuedGameSkeleton .wideSkeleton { grid-column: auto; }
+  .prototypeSurfaceHeader { padding: 8px 12px; }
+}

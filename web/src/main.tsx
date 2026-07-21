@@ -34,6 +34,13 @@ import { CommunityContentNotice } from "./components/CommunityContentNotice";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import "./styles.css";
 
+const DevScriptSelectionPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./scriptSelectionPrototype");
+      return { default: module.ScriptSelectionPrototype };
+    })
+  : undefined;
+
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
   ? React.lazy(async () => {
       const module = await import("./firstNightSuggestionPrototype");
@@ -126,6 +133,17 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevScriptSelectionPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "script-selection"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevScriptSelectionPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevCharacterRulesTooltipPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"
