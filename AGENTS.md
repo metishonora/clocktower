@@ -20,7 +20,8 @@
 
 ## Test server lifecycle
 
-- When the user requests a test server, run it as a detached background process bound to `0.0.0.0`, record its PID, and keep it running after the response.
+- Never run a requested test server in a tool-managed or interactive command session. Launch it as an OS-level detached background process bound to `0.0.0.0`, redirect its logs, and record its PID.
+- After the launch command exits, verify that the recorded process is alive and the server responds. Keep it running after the response.
 - Provide an explicit clickable `http://<tailscale-ip>:<port>` link using the machine's current Tailscale IPv4 address, not `localhost`.
 - At the start of the next user turn, stop the recorded test server before doing other work unless the user explicitly asks to keep it running.
 
