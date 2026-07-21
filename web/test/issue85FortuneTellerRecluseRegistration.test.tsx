@@ -106,8 +106,16 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(other);
 
     let delivery = screen.getByLabelText("전달 정보");
-    await user.click(within(delivery).getByRole("button", { name: "악마 있음" }));
-    await user.click(within(delivery).getByRole("button", { name: "악마 없음" }));
+    const demonPresent = within(delivery).getByRole("button", { name: "악마 있음" });
+    const demonAbsent = within(delivery).getByRole("button", { name: "악마 없음" });
+    await user.click(demonPresent);
+    expect(within(demonPresent).getByText("✓").getAttribute("aria-hidden")).toBe("true");
+    expect(within(demonAbsent).queryByText("✓")).toBeNull();
+
+    await user.click(demonAbsent);
+    expect(within(demonAbsent).getByText("✓").getAttribute("aria-hidden")).toBe("true");
+    expect(within(demonPresent).queryByText("✓")).toBeNull();
+    expect(within(delivery).getAllByText("✓")).toHaveLength(1);
 
     await user.click(recluse);
     expect(screen.queryByLabelText("전달 정보")).toBeNull();
@@ -118,6 +126,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
     expect(within(delivery).getByRole("button", { name: "악마 없음" }).getAttribute("aria-pressed")).toBe("false");
     expect(within(delivery).getByRole("button", { name: "악마 있음" }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(delivery).queryByText("✓")).toBeNull();
 
     await user.click(within(delivery).getByRole("button", { name: "악마 없음" }));
     await user.click(screen.getByRole("button", { name: "확정" }));

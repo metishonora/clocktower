@@ -5624,6 +5624,60 @@ select {
   gap: 0.5rem;
 }
 
+.targetInformationChoices button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  border: 2px solid var(--line);
+  border-radius: 0.55rem;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.7rem 2.9rem 0.7rem 0.85rem;
+  text-align: left;
+  font-weight: 750;
+}
+
+.targetInformationChoices button:hover:not(:disabled):not(.selected) {
+  border-color: #9fa99f;
+  background: #f7f3eb;
+}
+
+.targetInformationChoices button.selected {
+  border-color: var(--primary);
+  background: #deede6;
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.targetInformationChoices button.selected:hover:not(:disabled),
+.targetInformationChoices button.selected:active:not(:disabled) {
+  border-color: var(--primary-dark);
+  background: #d2e7dc;
+}
+
+.targetInformationChoices button.selected:disabled {
+  opacity: 0.72;
+}
+
+.targetInformationChoiceCheck {
+  position: absolute;
+  top: 50%;
+  right: 0.72rem;
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  place-items: center;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--panel);
+  font-size: 0.92rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
 @media (max-width: 900px), (max-height: 760px) {
   .spyGrimoireSeat,
   .spyGrimoireReveal.count15 .spyGrimoireSeat {

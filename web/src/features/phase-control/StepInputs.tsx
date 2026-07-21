@@ -381,18 +381,22 @@ function TargetInformationDeliveryInput({
   if (!check || check.choices.length <= 1) return null;
   return (
     <div className="targetInformationChoices" aria-label="전달 정보">
-      {check.choices.map((choice, index) => (
-        <button
-          type="button"
-          className={selectedChoice === choice ? "selected" : ""}
-          aria-pressed={selectedChoice === choice}
-          disabled={busy}
-          onClick={() => onChange(choice)}
-          key={`${informationResultLabel(choice.result)}-${index}`}
-        >
-          {informationResultLabel(choice.result)}
-        </button>
-      ))}
+      {check.choices.map((choice, index) => {
+        const selected = selectedChoice === choice;
+        return (
+          <button
+            type="button"
+            className={selected ? "selected" : ""}
+            aria-pressed={selected}
+            disabled={busy}
+            onClick={() => onChange(choice)}
+            key={`${informationResultLabel(choice.result)}-${index}`}
+          >
+            <span>{informationResultLabel(choice.result)}</span>
+            {selected ? <span className="targetInformationChoiceCheck" aria-hidden="true">✓</span> : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
