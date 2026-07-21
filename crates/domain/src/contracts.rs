@@ -200,6 +200,17 @@ pub(crate) struct RuleState {
     pub(crate) slayer_ability: Option<crate::model::SlayerAbilityState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) virgin_ability: Option<crate::model::VirginAbilityState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) butler_vote: Option<ButlerVoteState>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ButlerVoteState {
+    pub(crate) butler_player_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) master_player_id: Option<String>,
+    pub(crate) restriction_applies: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -224,27 +235,83 @@ pub(crate) struct Proposal {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub(crate) enum RevealPayload {
-    Text {
-        #[serde(rename = "messageKo")]
-        message_ko: String,
-        #[serde(rename = "labelKo", skip_serializing_if = "Option::is_none")]
-        label_ko: Option<String>,
-        #[serde(rename = "valueKo", skip_serializing_if = "Option::is_none")]
-        value_ko: Option<String>,
-        #[serde(rename = "previewMessageKo", skip_serializing_if = "Option::is_none")]
-        preview_message_ko: Option<String>,
-    },
     SpyGrimoire {
         kind: &'static str,
         players: Vec<crate::model::InformationPlayer>,
     },
-    NewImp {
+    MinionInformation {
+        kind: &'static str,
+        #[serde(rename = "demonPlayers")]
+        demon_players: Vec<RevealIdentity>,
+        #[serde(rename = "minionPlayers")]
+        minion_players: Vec<RevealIdentity>,
+    },
+    DemonInformation {
+        kind: &'static str,
+        #[serde(rename = "minionPlayers")]
+        minion_players: Vec<RevealIdentity>,
+        #[serde(rename = "bluffCharacterIds")]
+        bluff_character_ids: Vec<String>,
+    },
+    SetupInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        #[serde(rename = "candidatePlayers")]
+        candidate_players: Vec<RevealPlayer>,
+        #[serde(
+            rename = "revealedCharacterId",
+            skip_serializing_if = "Option::is_none"
+        )]
+        revealed_character_id: Option<String>,
+        #[serde(rename = "zeroOutsiders")]
+        zero_outsiders: bool,
+    },
+    NumericInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        value: usize,
+    },
+    FortuneTellerInformation {
+        kind: &'static str,
+        #[serde(rename = "targetPlayers")]
+        target_players: Vec<RevealPlayer>,
+        #[serde(rename = "hasDemon")]
+        has_demon: bool,
+    },
+    CharacterInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        #[serde(rename = "targetPlayer")]
+        target_player: RevealPlayer,
+        #[serde(rename = "revealedCharacterId")]
+        revealed_character_id: String,
+    },
+    CharacterChange {
         kind: &'static str,
         #[serde(rename = "playerId")]
         player_id: String,
+        alignment: &'static str,
         #[serde(rename = "characterId")]
         character_id: &'static str,
     },
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RevealPlayer {
+    pub(crate) player_id: String,
+    pub(crate) seat: u8,
+    pub(crate) name: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RevealIdentity {
+    pub(crate) seat: u8,
+    pub(crate) name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

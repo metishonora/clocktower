@@ -57,7 +57,7 @@ test("mock confirmation removes only the latest item and returns to replayed pri
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "되돌리기" }));
 
   expect(screen.queryByText("요리사 정보 확정 · 1쌍 공개")).toBeNull();
-  expect(screen.getAllByText("독살자가 2번 준호를 선택함").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("독살범이 2번 준호를 선택함").length).toBeGreaterThan(0);
   expect(screen.getByText("요리사 정보 입력")).toBeTruthy();
   expect(prototypeState()).toMatchObject({ eventCount: 2, replayedStep: "chef", dialogOpen: false });
 });

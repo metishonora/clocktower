@@ -45,7 +45,7 @@ const setupInfoCharacters: Array<{
 }> = [
   { id: "washerwoman", label: "세탁부", kind: "Townsfolk" },
   { id: "librarian", label: "사서", kind: "Outsider" },
-  { id: "investigator", label: "조사관", kind: "Minion" },
+  { id: "investigator", label: "수사관", kind: "Minion" },
 ];
 
 const prototypePlayers: Player[] = [
@@ -168,7 +168,7 @@ export function SetupInfoContextPrototype() {
         <section className="panel grimoire contextPrototypeGrimoire">
           <div className="sectionHeader">
             <div>
-              <p className="eyebrow">그리모어 · 이야기꾼 전용</p>
+              <p className="eyebrow">마도서 · 이야기꾼 전용</p>
               <h2>Trouble Brewing</h2>
             </div>
             <span className="phaseBadge">첫 번째 밤</span>
@@ -176,7 +176,6 @@ export function SetupInfoContextPrototype() {
           <Grimoire
             players={prototypePlayers}
             draft={grimoireDraft}
-            onDraftChange={() => undefined}
             busy={false}
           />
         </section>
@@ -312,8 +311,8 @@ function representedCharacters(playerIds: string[], kind: CharacterKind) {
 }
 
 function kindLabel(kind: CharacterKind): string {
-  if (kind === "Townsfolk") return "마을주민";
-  if (kind === "Outsider") return "외부인";
+  if (kind === "Townsfolk") return "주민";
+  if (kind === "Outsider") return "외지인";
   if (kind === "Minion") return "하수인";
   return "악마";
 }

@@ -16,5 +16,5 @@ Review decisions:
   good/evil warnings and warning-free manual game end let the Storyteller choose `선` or `악`.
 - The dialog does not ask for a reason.
 - Ended state replaces current-step inputs while retaining the Grimoire, event log, and Undo.
-- The ended card emphasizes only `게임 종료` and `선팀/악팀 승리`; audit detail stays in the event
+- The ended card emphasizes only `게임 종료` and `선한 팀/악한 팀 승리`; audit detail stays in the event
   log.

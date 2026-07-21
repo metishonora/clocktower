@@ -7,8 +7,8 @@ use crate::{
         ActiveRuleEffect, GameEvent, GameEventKind, ImpAttackOutcome, NightActionResolution,
     },
     model::{
-        CharacterKind, InputTarget, Phase, PhaseStep, Player, RequiredInput, RequiredInputKind,
-        StepType,
+        CharacterKind, InputTarget, Phase, PhaseStep, Player, PreActionReveal, RequiredInput,
+        RequiredInputKind, StepType,
     },
     phase::{phase_prefix, phase_transition_step, required_characters, required_none, simple_step},
 };
@@ -114,6 +114,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                     },
                     can_skip: false,
                     information_prompt: None,
+                    pre_action_reveal: None,
                 },
             );
         }
@@ -141,6 +142,9 @@ pub(crate) fn night_steps(
             .is_none_or(|id| players.iter().any(|p| p.id == *id && p.alive))
     });
     steps.retain(|step| step.character.as_deref() != Some("ravenkeeper"));
+    if imp_succeeded_during_night(events, &prefix) {
+        steps.retain(|step| step.character.as_deref() != Some("imp"));
+    }
     if !events
         .iter()
         .any(|e| matches!(e.kind, GameEventKind::RedHerringAssigned { .. }))
@@ -202,6 +206,7 @@ pub(crate) fn night_steps(
                     },
                     can_skip: false,
                     information_prompt: None,
+                    pre_action_reveal: None,
                 },
             );
         }
@@ -232,6 +237,7 @@ pub(crate) fn night_steps(
             .map_or(0, |pos| pos + 1);
         steps.insert(pos, custom_character_step(&prefix, "ravenkeeper", raven_id));
     }
+    attach_day_succession_reveal(&mut steps, events, cycle);
     enrich_targets(&mut steps, players, events);
     steps
         .into_iter()
@@ -254,7 +260,81 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
         required_input: crate::characters::character_required_input(character),
         can_skip: true,
         information_prompt: None,
+        pre_action_reveal: None,
     }
+}
+
+fn attach_day_succession_reveal(steps: &mut [PhaseStep], events: &[GameEvent], cycle: usize) {
+    let day_prefix = phase_prefix("day", cycle);
+    let night_imp_step_id = format!("{}:imp", phase_prefix("night", cycle));
+    let Some((succession_index, succession_event, payload)) = events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(index, event)| {
+            let GameEventKind::DemonSuccessionConfirmed { payload } = &event.kind else {
+                return None;
+            };
+            let triggered_this_day = events.iter().any(|candidate| {
+                candidate.id == payload.trigger_imp_death_event_id
+                    && matches!(
+                        &candidate.kind,
+                        GameEventKind::DeathConfirmed { payload: death }
+                            if death.step_id.as_ref().is_some_and(|step_id| {
+                                step_id == &day_prefix || step_id.starts_with(&format!("{day_prefix}:"))
+                            })
+                    )
+            });
+            (event.phase == Phase::Day && payload.new_character == "imp" && triggered_this_day)
+                .then_some((index, event, payload))
+        })
+    else {
+        return;
+    };
+    let imp_step_finished =
+        events
+            .iter()
+            .skip(succession_index + 1)
+            .any(|event| match &event.kind {
+                GameEventKind::NightActionResolved { payload } => {
+                    payload.step_id == night_imp_step_id
+                }
+                GameEventKind::PhaseStepSkipped { payload } => payload.step_id == night_imp_step_id,
+                _ => false,
+            });
+    if imp_step_finished {
+        return;
+    }
+    if let Some(step) = steps.iter_mut().find(|step| {
+        step.id == night_imp_step_id
+            && step.player_id.as_deref() == Some(payload.successor_player_id.as_str())
+    }) {
+        step.pre_action_reveal = Some(PreActionReveal {
+            kind: "characterChange",
+            source_event_id: succession_event.id.clone(),
+            player_id: payload.successor_player_id.clone(),
+            alignment: "evil",
+            character_id: "imp",
+        });
+    }
+}
+
+fn imp_succeeded_during_night(events: &[GameEvent], prefix: &str) -> bool {
+    let imp_step_id = format!("{prefix}:imp");
+    events.iter().any(|event| {
+        let GameEventKind::DemonSuccessionConfirmed { payload } = &event.kind else {
+            return false;
+        };
+        event.phase == Phase::Night
+            && events.iter().any(|candidate| {
+                candidate.id == payload.trigger_imp_death_event_id
+                    && matches!(
+                        &candidate.kind,
+                        GameEventKind::NightActionResolved { payload: action }
+                            if action.step_id == imp_step_id
+                    )
+            })
+    })
 }
 
 pub(crate) fn previous_executed_death(events: &[GameEvent], cycle: usize) -> Option<String> {
@@ -311,17 +391,24 @@ fn enrich_targets(steps: &mut [PhaseStep], players: &[Player], events: &[GameEve
             Some(InputTarget::Player | InputTarget::Players)
         ) {
             let mut ids = players.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
-            if step.character.as_deref() == Some("monk") {
+            if step
+                .character
+                .as_deref()
+                .is_some_and(|character| !crate::characters::character_can_target_self(character))
+            {
                 ids.retain(|id| Some(id.as_str()) != step.player_id.as_deref());
             }
             step.required_input.allowed_player_ids = Some(ids);
         }
         if step.character.as_deref() == Some("imp") {
-            step.required_input.mayor_decision = crate::characters::mayor_decision_prompt(
-                players,
-                active_poison.as_ref(),
-                active_protection.as_ref(),
-            );
+            step.required_input.mayor_decision = step.player_id.as_deref().and_then(|actor| {
+                crate::characters::mayor_decision_prompt(
+                    players,
+                    actor,
+                    active_poison.as_ref(),
+                    active_protection.as_ref(),
+                )
+            });
         }
     }
 }

@@ -152,8 +152,8 @@ fn propose_end_game(
     let players = replay_players(&game_file.game.events)?;
     let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
     let team_label = match payload.winning_team {
-        Alignment::Good => "선팀",
-        Alignment::Evil => "악팀",
+        Alignment::Good => "선한 팀",
+        Alignment::Evil => "악한 팀",
     };
     Ok(Proposal {
         event: GameEvent {
@@ -269,7 +269,7 @@ fn propose_slayer_ability(
             },
             phase: Phase::Day,
             summary: format!(
-                "학살자: {actor_label} → {target_label} · {}",
+                "처단자: {actor_label} → {target_label} · {}",
                 if pending {
                     "사망 확인 필요"
                 } else {
@@ -360,6 +360,18 @@ pub(crate) fn propose_phase_step(
     }
     if skip && (payload.delivered_result.is_some() || !payload.registration_judgments.is_empty()) {
         return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+    }
+    if !skip
+        && current_step.character.as_deref() == Some("butler")
+        && current_step.player_id.as_ref().is_some_and(|actor_id| {
+            payload
+                .input
+                .as_ref()
+                .and_then(|input| input.player_ids.as_ref())
+                .is_some_and(|ids| ids.iter().any(|id| id == actor_id))
+        })
+    {
+        return Err(ErrorKind::InvalidButlerMaster.into_error());
     }
     if !skip && current_step.required_input.kind != RequiredInputKind::SetupInfo {
         validate_required_input(&current_step.required_input, &payload.input, &players)?;
@@ -589,7 +601,7 @@ pub(crate) fn propose_phase_step(
     let reveal_payload = match &event.kind {
         GameEventKind::PhaseStepConfirmed { payload } => {
             payload.information.as_ref().and_then(|information| {
-                phase_step_reveal_payload(&current_step, &information.delivered_result, &players)
+                phase_step_reveal_payload(&current_step, information, &players)
             })
         }
         _ => None,
@@ -772,7 +784,7 @@ fn night_action_proposal(
                     }
                     Some(crate::contracts::NightActionNoEffectReason::NotActualCharacter) => {
                         if is_poison {
-                            "실제 독살자 아님"
+                            "실제 독살범 아님"
                         } else {
                             "실제 수도사 아님"
                         }
@@ -894,7 +906,7 @@ pub(crate) fn propose_nomination_started(
             },
             phase: current_step.phase,
             summary: format!(
-                "지명 확정: {} → {}",
+                "지목 확정: {} → {}",
                 player_verbose_label(players, &input.nominator_id),
                 player_verbose_label(players, &input.nominee_id)
             ),
@@ -918,7 +930,7 @@ pub(crate) fn propose_nomination_started(
             })]
         },
         preview: json!({
-            "messageKo": if immediate_execution { "지명자를 즉시 처형합니다." } else { "지명을 확정하고 투표로 이동합니다." }
+            "messageKo": if immediate_execution { "지목자를 즉시 처형합니다." } else { "지목을 확정하고 투표로 이동합니다." }
         }),
         reveal_payload: None,
     })
@@ -932,6 +944,13 @@ pub(crate) fn propose_nomination_vote(
 ) -> Result<Proposal, CoreError> {
     let (record, active) =
         nomination_record(current_step, players, &input, &game_file.game.events)?;
+    let active_poison = crate::night::active_night_poison(&game_file.game.events, players);
+    let butler_vote = crate::characters::butler_vote_state(
+        players,
+        &game_file.game.events,
+        active_poison.as_ref(),
+    );
+    crate::characters::validate_butler_voters(butler_vote.as_ref(), &record.voter_ids)?;
     let prefix = step_prefix(&current_step.id)?;
     let mut projected_nominations =
         replay_day_state(&game_file.game.events, players, &prefix)?.nominations;
@@ -1027,9 +1046,10 @@ fn propose_demon_succession(
         warnings: vec![],
         follow_up_steps: vec![],
         preview: json!({ "messageKo": "새 임프를 확정합니다." }),
-        reveal_payload: Some(RevealPayload::NewImp {
-            kind: "newImp",
+        reveal_payload: (pending.phase == Phase::Night).then(|| RevealPayload::CharacterChange {
+            kind: "characterChange",
             player_id: successor.id.clone(),
+            alignment: "evil",
             character_id: "imp",
         }),
     })

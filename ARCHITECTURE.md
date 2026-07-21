@@ -203,9 +203,9 @@ web/src/
     setup/
       SetupForm.tsx
       ConfirmedSetup.tsx
+      SeatLayoutControls.tsx
     grimoire/
       Grimoire.tsx
-      SeatLayoutControls.tsx
     phase-control/
       PhaseControl.tsx
       StepInputs.tsx
@@ -224,7 +224,7 @@ web/src/
 - `reveal.tsx` owns player-facing Reveal rendering from `RevealPayload` only. Prototype TSX files remain isolated development-only surfaces and must not become production feature dependencies.
 - `components/CharacterSelect.tsx` owns the reusable character select control. `components/CoreFeedback.tsx` owns reusable replay/proposal/load status and warning rendering. Shared components receive display data and callbacks only; they do not own feature state.
 - `features/setup/SetupForm.tsx` owns the unconfirmed setup surface, draft Grimoire editing, character assignment, setup validation summary, and setup recovery actions. `features/setup/ConfirmedSetup.tsx` owns the compact confirmed-setup summary and undo/import/export/reset controls.
-- `features/grimoire/Grimoire.tsx` owns the confirmed seat map and its optional voting-selection projection. `features/grimoire/SeatLayoutControls.tsx` owns shared seat presets, overlap feedback, manual layout mode, and pointer-drag behavior used by setup and live play.
+- `features/grimoire/Grimoire.tsx` owns the confirmed live seat map and its optional voting-selection projection. Confirmed layouts are read-only during live play. `features/setup/SeatLayoutControls.tsx` owns setup-only seat presets, overlap feedback, manual layout mode, and pointer-drag behavior.
 - `features/phase-control/PhaseControl.tsx` owns current-step composition, phase overview, confirmed
   Reveal follow-up, suggestion request pending/error state, and step-local draft reset.
   `features/phase-control/StepInputs.tsx` owns phase input controls and the inline suggestion action.

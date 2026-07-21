@@ -16,10 +16,10 @@ const confirmedReveal = {
 const seats = [
   { seat: 1, name: "민지", character: "세탁부", alignment: "good", x: 50, y: 5 },
   { seat: 2, name: "준호", character: "요리사", alignment: "good", x: 78, y: 15 },
-  { seat: 3, name: "서연", character: "공감능력자", alignment: "good", x: 94, y: 43 },
+  { seat: 3, name: "서연", character: "초공감자", alignment: "good", x: 94, y: 43 },
   { seat: 4, name: "도윤", character: "점쟁이", alignment: "good", x: 88, y: 73 },
   { seat: 5, name: "하린", character: "은둔자", alignment: "good", x: 65, y: 92 },
-  { seat: 6, name: "지우", character: "독살자", alignment: "evil", x: 35, y: 92 },
+  { seat: 6, name: "지우", character: "독살범", alignment: "evil", x: 35, y: 92 },
   { seat: 7, name: "현우", character: "임프", alignment: "evil", x: 12, y: 73 },
   { seat: 8, name: "유나", character: "주정뱅이", alignment: "good", x: 6, y: 43 },
   { seat: 9, name: "태오", character: "시장", alignment: "good", x: 22, y: 15 },
@@ -47,13 +47,13 @@ export function RevealFollowupPrototype() {
       <section className="panel grimoire revealPrototypeGrimoire">
         <div className="sectionHeader">
           <div>
-            <p className="eyebrow">그리모어</p>
+            <p className="eyebrow">마도서</p>
             <h1>Trouble Brewing</h1>
           </div>
           <span className="phaseBadge">첫 번째 밤</span>
         </div>
 
-        <div className="revealPrototypeMap" aria-label="프로토타입 그리모어">
+        <div className="revealPrototypeMap" aria-label="프로토타입 마도서">
           <div className="revealPrototypeMapCenter">
             <span>첫 번째 밤</span>
             <strong>2 / 6 완료</strong>
@@ -102,7 +102,7 @@ export function RevealFollowupPrototype() {
         <p className="status ok">상태 재생 완료</p>
         <ol className="eventList">
           <li>게임 설정 확정</li>
-          <li>독살자가 2번 준호를 선택함</li>
+          <li>독살범이 2번 준호를 선택함</li>
           <li className="revealPrototypeLatestEvent">요리사 정보 확정</li>
         </ol>
         <div className="revealPrototypeStateNote">
@@ -164,7 +164,7 @@ function ContinuedCurrentStep() {
       <div className="sectionHeader compact">
         <div>
           <p className="eyebrow">첫 번째 밤</p>
-          <h2>공감능력자: 3번 서연</h2>
+          <h2>초공감자: 3번 서연</h2>
         </div>
         <span className="phaseBadge">입력 없음</span>
       </div>

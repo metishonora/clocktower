@@ -1,4 +1,4 @@
-import { characterAsset } from "../characterAssets";
+import { characterAsset } from "../characterAssets.js";
 
 export function CharacterIcon({
   characterId,

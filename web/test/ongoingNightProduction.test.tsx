@@ -55,7 +55,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 하린" });
-    const grimoire = screen.getByLabelText("조정 가능한 그리모어 좌석 맵");
+    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
     const poisonedSeat = within(grimoire).getByRole("button", { name: /2.*민준|민준/ });
     const protectedSeat = within(grimoire).getByRole("button", { name: /3.*서연|서연/ });
     const poisonBadge = within(poisonedSeat).getByText("중독");
@@ -109,7 +109,7 @@ describe("ongoing-night production UI", () => {
     const disallowedImp = within(input).getByRole("button", { name: /하린/ }) as HTMLButtonElement;
     expect(spy.disabled).toBe(false);
     expect(disallowedImp.disabled).toBe(true);
-    expect(screen.queryByText(/등록 판정|선한 팀으로 등록|스파이.*등록/)).toBeNull();
+    expect(screen.queryByText(/등록 판정|선한 팀으로 등록|첩자.*등록/)).toBeNull();
 
     await user.click(spy);
     await user.click(screen.getByRole("button", { name: "확정" }));
@@ -184,7 +184,9 @@ describe("ongoing-night production UI", () => {
   });
 
   test("freezes Grimoire editing after a Fortune Teller pair is confirmed and shows only the approved result/Reveal controls", async () => {
-    const playerRoster = koreanPlayers();
+    const playerRoster = koreanPlayers().map((player) =>
+      player.id === "player-1" ? { ...player, actualCharacter: "drunk", shownCharacter: "fortuneTeller" } : player,
+    );
     const targetCheck = {
       targetPlayerIds: ["player-3", "player-5"],
       computedResult: { kind: "boolean", value: true },
@@ -217,31 +219,94 @@ describe("ongoing-night production UI", () => {
       initialReplay: replayState({ currentStep, playerRoster }),
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-ft", "점쟁이 정보 확정", "night"), {
-        messageKo: "예",
-        labelKo: "점쟁이 결과",
-        valueKo: "예",
+        kind: "fortuneTellerInformation",
+        targetPlayers: [
+          { playerId: "player-3", seat: 3, name: "서연" },
+          { playerId: "player-5", seat: 5, name: "하린" },
+        ],
+        hasDemon: true,
       }),
     });
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
+    expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
     const input = await screen.findByLabelText("단계 입력");
     await user.click(within(input).getByRole("button", { name: /서연/ }));
     await user.click(within(input).getByRole("button", { name: /하린/ }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     const result = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(result).getByText("점쟁이 결과")).toBeTruthy();
-    expect(within(result).getByText("결과")).toBeTruthy();
-    expect(within(result).getByText("악마 있음")).toBeTruthy();
-    expect(within(result).getByRole("button", { name: "Reveal" })).toBeTruthy();
+    expect(within(result).getByText("점쟁이 정보")).toBeTruthy();
+    expect(within(result).getByRole("button", { name: "플레이어에게 공개" })).toBeTruthy();
     expect(within(result).queryByText(/정보 전달|계산값|2명/)).toBeNull();
-    const layoutButton = screen.getByRole("button", { name: "위치 조정" }) as HTMLButtonElement;
-    expect(layoutButton.disabled).toBe(true);
+    await user.click(within(result).getByRole("button", { name: "플레이어에게 공개" }));
+    const reveal = screen.getByLabelText("플레이어 공개 화면");
+    expect(within(reveal).getByText("이 중에 악마는…")).toBeTruthy();
+    expect(within(reveal).getByText("있음")).toBeTruthy();
+    expect(within(reveal).getByText("서연")).toBeTruthy();
+    expect(within(reveal).getByText("하린")).toBeTruthy();
+    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });
 
-  test("renders the following-Day death announcement as death icon, seat, and name only", async () => {
+  test("confirms an empty following-Day death announcement explicitly and advances", async () => {
+    const playerRoster = koreanPlayers();
+    const currentStep = step({
+      id: "day2:announceDeaths",
+      phase: "day",
+      stepType: "announcement",
+    });
+    const nextStep = step({
+      id: "day2:whisper",
+      phase: "day",
+      stepType: "whisper",
+    });
+    const initialReplay = replayWithRuleState(
+      replayState({ currentStep, playerRoster }),
+      { unannouncedNightDeathPlayerIds: [] },
+    );
+    const replayAfterProposal = replayWithRuleState(
+      replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
+      { unannouncedNightDeathPlayerIds: [] },
+    );
+    const canonicalEvent = nightDeathsAnnouncedEvent([]);
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal,
+      proposal: proposal(canonicalEvent),
+    });
+    const storage = new MemoryGameStorageDriver(gameFile());
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+    const announcement = await screen.findByLabelText("밤 사망 발표");
+    expect(within(announcement).getByText("사망자 없음")).toBeTruthy();
+    expect(within(announcement).queryByRole("img", { name: "사망" })).toBeNull();
+    const playerStatusesBefore = within(screen.getByLabelText("라이브 마도서 좌석 맵"))
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"));
+
+    await user.click(screen.getByRole("button", { name: "사망자 없음 발표 확정" }));
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "day2:announceDeaths", input: null },
+    });
+    await waitFor(() => {
+      expect(storage.savedGames.at(-1)?.game.events.at(-1)).toEqual(canonicalEvent);
+    });
+    expect(await screen.findByRole("button", { name: "토론 시작" })).toBeTruthy();
+    expect(
+      within(screen.getByLabelText("라이브 마도서 좌석 맵"))
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(playerStatusesBefore);
+  });
+
+  test("renders and confirms a non-empty following-Day death announcement", async () => {
     const playerRoster = koreanPlayers().map((player) =>
       player.id === "player-5" ? { ...player, alive: false, deathAnnounced: false } : player,
     );
@@ -257,8 +322,9 @@ describe("ongoing-night production UI", () => {
     const core = createCoreHarness({
       initialReplay,
       replayAfterProposal: initialReplay,
-      proposal: proposal(phaseEvent("event-announce", "밤 사망 발표", "day")),
+      proposal: proposal(nightDeathsAnnouncedEvent(["player-5"])),
     });
+    const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
@@ -266,7 +332,13 @@ describe("ongoing-night production UI", () => {
     expect(within(announcement).getByRole("img", { name: "사망" })).toBeTruthy();
     expect(within(announcement).getByText("5번")).toBeTruthy();
     expect(within(announcement).getByText("하린")).toBeTruthy();
+    expect(within(announcement).queryByText("사망자 없음")).toBeNull();
     expect(within(announcement).queryByText(/살아있는 플레이어|생존자|6명/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "사망 발표 확정" }));
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "day2:announceDeaths", input: null },
+    });
   });
 
   test("renders an Undertaker's derived target choices without Player input and submits the selected registration witness", async () => {
@@ -317,9 +389,10 @@ describe("ongoing-night production UI", () => {
       initialReplay: replayState({ currentStep, playerRoster }),
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-undertaker", "장의사 정보 확정", "night"), {
-        messageKo: "사서",
-        labelKo: "장의사 결과",
-        valueKo: "사서",
+        kind: "characterInformation",
+        characterId: "undertaker",
+        targetPlayer: { playerId: "player-3", seat: 3, name: "서연" },
+        revealedCharacterId: "librarian",
       }),
     });
     const user = userEvent.setup();
@@ -329,7 +402,7 @@ describe("ongoing-night production UI", () => {
     await screen.findByRole("heading", { name: "장의사: 2번 민준" });
     expect(screen.queryByLabelText("단계 입력")).toBeNull();
     const choices = screen.getByLabelText("전달 정보");
-    expect(within(choices).getByRole("button", { name: "스파이" })).toBeTruthy();
+    expect(within(choices).getByRole("button", { name: "첩자" })).toBeTruthy();
     await user.click(within(choices).getByRole("button", { name: "사서" }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 
@@ -503,6 +576,17 @@ function phaseEvent(id: string, summary: string, phase: "firstNight" | "night" |
     phase,
     payload: { stepId: id, input: null },
     summary,
+    createdAt: "2026-07-16T00:01:00.000Z",
+  };
+}
+
+function nightDeathsAnnouncedEvent(playerIds: string[]): GameEvent {
+  return {
+    id: "event-announce",
+    type: "nightDeathsAnnounced",
+    phase: "day",
+    payload: { stepId: "day2:announceDeaths", playerIds },
+    summary: playerIds.length === 0 ? "밤 사망 발표: 없음" : "밤 사망 발표: 5번 하린(까마귀지기)",
     createdAt: "2026-07-16T00:01:00.000Z",
   };
 }

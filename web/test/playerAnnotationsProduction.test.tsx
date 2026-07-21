@@ -1,7 +1,7 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
-import type { CoreResult, PlayerAnnotationsInput, Proposal } from "../src/core/types";
+import type { CoreResult, Player, PlayerAnnotationsInput, Proposal } from "../src/core/types";
 import { Grimoire } from "../src/features/grimoire/Grimoire";
 import { createSetupDraftFromConfirmedPlayers } from "../src/setupDraft";
 import { players } from "./clocktowerAppHarness";
@@ -34,11 +34,13 @@ function successProposal(): Proposal {
 function renderGrimoire({
   onUpdate = vi.fn(async () => ({ ok: true as const, value: successProposal() })),
   voting = false,
+  players: providedPlayers,
 }: {
   onUpdate?: (playerId: string, annotations: PlayerAnnotationsInput) => Promise<CoreResult<Proposal> | undefined>;
   voting?: boolean;
+  players?: Player[];
 } = {}) {
-  const roster = players();
+  const roster = (providedPlayers ?? players()).map((player) => ({ ...player }));
   roster[1] = {
     ...roster[1]!,
     systemTokenIds: ["abilitySpent"],
@@ -50,7 +52,6 @@ function renderGrimoire({
     <Grimoire
       players={roster}
       draft={createSetupDraftFromConfirmedPlayers(roster)}
-      onDraftChange={vi.fn()}
       busy={false}
       ruleState={{
         unannouncedNightDeathPlayerIds: [],
@@ -76,9 +77,77 @@ test("long-press opens the production annotation sheet without an edit icon or t
   longPressSeat(/2번 Bert 좌석 선택/);
 
   const dialog = screen.getByRole("dialog", { name: "2번 Bert 토큰 및 Notes" });
+  expect(within(dialog).getByAltText("요리사 공식 캐릭터 아이콘")).toBeTruthy();
+  expect(within(dialog).getByRole("heading", { name: "Bert" })).toBeTruthy();
+  expect(within(dialog).getByText("좌석 2")).toBeTruthy();
+  expect(within(dialog).getByText("요리사")).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "요리사 세부 규칙 보기" })).toBeTruthy();
   expect(within(dialog).getByRole("group", { name: "System Tokens" })).toBeTruthy();
   expect(within(dialog).getByRole("group", { name: "Script Tokens" })).toBeTruthy();
   expect(document.activeElement).toBe(dialog);
+});
+
+test.each([5, 15])("keeps character-rules controls off the %i-player seat map", (playerCount) => {
+  const roster = expandedPlayers(playerCount);
+  renderGrimoire({ players: roster });
+
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  expect(within(grimoire).queryAllByRole("button", { name: /세부 규칙 보기/ })).toHaveLength(0);
+
+  const player = roster[playerCount - 1]!;
+  longPressSeat(new RegExp(`${player.seat}번 ${player.name} 좌석 선택`));
+  const dialog = screen.getByRole("dialog", { name: `${player.seat}번 ${player.name} 토큰 및 Notes` });
+  expect(within(dialog).getByAltText("임프 공식 캐릭터 아이콘")).toBeTruthy();
+  expect(within(dialog).getByText(`좌석 ${player.seat}`)).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "임프 세부 규칙 보기" })).toBeTruthy();
+});
+
+test("closing character rules returns to the player detail and preserves its draft", async () => {
+  const user = userEvent.setup();
+  renderGrimoire();
+  longPressSeat(/1번 Ada 좌석 선택/);
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
+  const notes = within(detail).getByRole("textbox", { name: "Notes" });
+  const trigger = within(detail).getByRole("button", { name: "세탁부 세부 규칙 보기" });
+  await user.type(notes, "다음 밤 확인");
+  await user.click(trigger);
+
+  const rules = screen.getByRole("dialog", { name: "세탁부 세부 규칙" });
+  await user.click(within(rules).getByRole("button", { name: "세부 규칙 닫기" }));
+
+  expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
+  expect((notes as HTMLTextAreaElement).value).toBe("다음 밤 확인");
+  expect(document.activeElement).toBe(trigger);
+});
+
+test("Escape and the rules backdrop close only the nested rules card", async () => {
+  const user = userEvent.setup();
+  renderGrimoire();
+  longPressSeat(/1번 Ada 좌석 선택/);
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
+  const notes = within(detail).getByRole("textbox", { name: "Notes" });
+  const trigger = within(detail).getByRole("button", { name: "세탁부 세부 규칙 보기" });
+  await user.type(notes, "입력 유지");
+
+  await user.click(trigger);
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog", { name: "세탁부 세부 규칙" })).toBeNull();
+  expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
+  expect((notes as HTMLTextAreaElement).value).toBe("입력 유지");
+  expect(document.activeElement).toBe(trigger);
+
+  await user.click(trigger);
+  const rules = screen.getByRole("dialog", { name: "세탁부 세부 규칙" });
+  const backdrop = rules.parentElement;
+  if (!backdrop) throw new Error("character rules backdrop was not rendered");
+  fireEvent.mouseDown(backdrop);
+  expect(screen.queryByRole("dialog", { name: "세탁부 세부 규칙" })).toBeNull();
+  expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
+  expect((notes as HTMLTextAreaElement).value).toBe("입력 유지");
+  await waitFor(() => expect(document.activeElement).toBe(trigger));
+
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBeNull();
 });
 
 test("confirms Korean Script Tokens, System Tokens, and Notes in one command", async () => {
@@ -142,3 +211,24 @@ test("a failed proposal keeps the annotation draft for retry", async () => {
   expect(within(dialog).getByRole("button", { name: "System Token · 후속 처리" }).getAttribute("aria-pressed")).toBe("true");
   expect((within(dialog).getByRole("textbox", { name: "Notes" }) as HTMLTextAreaElement).value).toBe("입력 유지");
 });
+
+function expandedPlayers(count: number): Player[] {
+  const basePlayers = players();
+  return Array.from({ length: count }, (_, index) => {
+    const source = basePlayers[index % basePlayers.length]!;
+    return {
+      ...source,
+      id: `expanded-player-${index + 1}`,
+      seat: index + 1,
+      name: index < basePlayers.length ? source.name : `Player ${index + 1}`,
+      actualCharacter: index === count - 1 ? "imp" : source.actualCharacter,
+      shownCharacter: index === count - 1 ? "imp" : source.shownCharacter,
+      alive: true,
+      ghostVoteUsed: false,
+      deathAnnounced: false,
+      systemTokenIds: [],
+      scriptTokens: [],
+      notes: "",
+    };
+  });
+}

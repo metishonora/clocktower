@@ -20,6 +20,110 @@ test("RevealPayload rejects incomplete structured values", () => {
   equal(isRevealPayload({ messageKo: "전체 문장", labelKo: " ", valueKo: "1쌍" }), false);
 });
 
+test("RevealPayload accepts the narrow role-information contracts", () => {
+  for (const payload of [
+    {
+      kind: "setupInformation",
+      characterId: "washerwoman",
+      candidatePlayers: [
+        { playerId: "player-2", seat: 2, name: "민준" },
+        { playerId: "player-3", seat: 3, name: "서연" },
+      ],
+      revealedCharacterId: "chef",
+      zeroOutsiders: false,
+    },
+    {
+      kind: "setupInformation",
+      characterId: "librarian",
+      candidatePlayers: [],
+      zeroOutsiders: true,
+    },
+    { kind: "numericInformation", characterId: "chef", value: 1 },
+    {
+      kind: "fortuneTellerInformation",
+      targetPlayers: [
+        { playerId: "player-2", seat: 2, name: "민준" },
+        { playerId: "player-5", seat: 5, name: "하린" },
+      ],
+      hasDemon: true,
+    },
+    {
+      kind: "characterInformation",
+      characterId: "ravenkeeper",
+      targetPlayer: { playerId: "player-5", seat: 5, name: "하린" },
+      revealedCharacterId: "imp",
+    },
+    {
+      kind: "characterChange",
+      playerId: "player-6",
+      alignment: "evil",
+      characterId: "imp",
+    },
+    {
+      kind: "minionInformation",
+      demonPlayers: [{ seat: 5, name: "하린" }],
+      minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 4, name: "도윤" }, { seat: 7, name: "유진" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
+    },
+  ]) {
+    equal(isRevealPayload(payload), true);
+  }
+});
+
+test("RevealPayload rejects mixed or secret-bearing role-information payloads", () => {
+  for (const payload of [
+    { kind: "numericInformation", characterId: "chef", value: 1, messageKo: "중복" },
+    {
+      kind: "fortuneTellerInformation",
+      targetPlayers: [
+        { playerId: "player-2", seat: 2, name: "민준", actualCharacter: "chef" },
+        { playerId: "player-5", seat: 5, name: "하린" },
+      ],
+      hasDemon: true,
+    },
+    {
+      kind: "characterInformation",
+      characterId: "undertaker",
+      targetPlayer: { playerId: "player-2", seat: 2, name: "민준" },
+      revealedCharacterId: "chef",
+      computedResult: { kind: "character", characterId: "spy" },
+    },
+    {
+      kind: "characterChange",
+      playerId: "player-6",
+      alignment: "neutral",
+      characterId: "imp",
+    },
+    {
+      kind: "characterChange",
+      playerId: "player-6",
+      alignment: "evil",
+      characterId: "not-a-character",
+    },
+    {
+      kind: "minionInformation",
+      demonPlayers: [{ seat: 5, name: "하린", playerId: "player-5" }],
+      minionPlayers: [{ seat: 4, name: "도윤", actualCharacter: "poisoner" }],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 4, name: "도윤", characterId: "poisoner" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
+    },
+    {
+      kind: "demonInformation",
+      minionPlayers: [{ seat: 7, name: "유진" }, { seat: 4, name: "도윤" }],
+      bluffCharacterIds: ["librarian", "undertaker", "butler"],
+    },
+  ]) {
+    equal(isRevealPayload(payload), false);
+  }
+});
+
 test("RevealPayload accepts only the narrow structured Spy grimoire contract", () => {
   const valid = {
     kind: "spyGrimoire",

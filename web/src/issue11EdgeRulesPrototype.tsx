@@ -31,27 +31,27 @@ type PrototypePlayer = {
 const basePlayers: PrototypePlayer[] = [
   player("p1", 1, "민지", "세탁부", "good"),
   player("p2", 2, "준호", "군인", "good"),
-  player("p3", 3, "서연", "공감능력자", "good"),
-  player("p4", 4, "도윤", "처녀", "good"),
-  player("p5", 5, "은지", "스파이", "evil"),
-  player("p6", 6, "지우", "중독자", "evil"),
+  player("p3", 3, "서연", "초공감자", "good"),
+  player("p4", 4, "도윤", "성결자", "good"),
+  player("p5", 5, "은지", "첩자", "evil"),
+  player("p6", 6, "지우", "독살범", "evil"),
   player("p7", 7, "현우", "시장", "good"),
-  player("p8", 8, "유나", "붉은 여인", "evil"),
+  player("p8", 8, "유나", "탕녀", "evil"),
   player("p9", 9, "태오", "임프", "evil"),
 ];
 
 const scenarioLabels: Record<Scenario, string> = {
-  "virgin-normal": "처녀 · 주민 지명",
-  "virgin-spy": "처녀 · 스파이 등록",
-  "virgin-outsider": "처녀 · 외부인 지명",
-  "virgin-poisoned": "처녀 · 중독",
-  "virgin-spent": "처녀 · 사용 완료",
+  "virgin-normal": "성결자 · 주민 지목",
+  "virgin-spy": "성결자 · 첩자 등록",
+  "virgin-outsider": "성결자 · 외지인 지목",
+  "virgin-poisoned": "성결자 · 중독",
+  "virgin-spent": "성결자 · 사용 완료",
   "mayor-dies": "시장 · 본인 사망",
   "mayor-living": "시장 · 생존자에게 튕김",
   "mayor-dead": "시장 · 사망자에게 튕김",
   "mayor-soldier": "시장 · 군인에게 튕김",
   "mayor-monk": "시장 · 수도사 보호 대상",
-  "succession-fixed": "승계 · 붉은 여인 고정",
+  "succession-fixed": "승계 · 탕녀 고정",
   "succession-selectable": "승계 · 임프 자살 후 선택",
 };
 
@@ -68,7 +68,7 @@ export function Issue11EdgeRulesPrototype() {
   const family = scenario.split("-")[0] as "virgin" | "mayor" | "succession";
   const players = useMemo(() => playersForScenario(scenario, successorId, successionStage), [scenario, successorId, successionStage]);
   const displayedVirginSpent = virginSpent || scenario === "virgin-spent";
-  const heading = family === "virgin" ? "처녀 지명" : family === "mayor" ? "임프 공격" : "악마 승계";
+  const heading = family === "virgin" ? "성결자 지목" : family === "mayor" ? "임프 공격" : "악마 승계";
 
   function changeScenario(next: Scenario) {
     setScenario(next);
@@ -140,7 +140,7 @@ export function Issue11EdgeRulesPrototype() {
         <label>
           <span>검토 시나리오</span>
           <select aria-label="검토 시나리오" value={scenario} onChange={(event) => changeScenario(event.target.value as Scenario)}>
-            <optgroup label="처녀">
+            <optgroup label="성결자">
               {(Object.keys(scenarioLabels) as Scenario[]).filter((key) => key.startsWith("virgin-")).map(option)}
             </optgroup>
             <optgroup label="시장">
@@ -156,14 +156,14 @@ export function Issue11EdgeRulesPrototype() {
       <section className="issue11Shell">
         <section className="issue11GrimoirePanel">
           <div className="issue11PanelHeading">
-            <div><p>그리모어</p><h2>Trouble Brewing</h2></div>
+            <div><p>마도서</p><h2>Trouble Brewing</h2></div>
             <span>{family === "mayor" ? "밤" : "낮"}</span>
           </div>
-          <div className="issue11Grimoire" aria-label="이슈 11 프로토타입 그리모어">
+          <div className="issue11Grimoire" aria-label="이슈 11 프로토타입 마도서">
             <div className="issue11TableCenter"><small>현재 단계</small><strong>{heading}</strong></div>
             {players.map((candidate, index) => {
               const angle = -90 + (index * 360) / players.length;
-              const isVirgin = candidate.id === "p4" && candidate.character === "처녀";
+              const isVirgin = candidate.id === "p4" && candidate.character === "성결자";
               const isPendingSuccessor = family === "succession" && successorId === candidate.id;
               return (
                 <article
@@ -180,7 +180,7 @@ export function Issue11EdgeRulesPrototype() {
                   {isVirgin ? (
                     <span
                       className={`virginAbility ${displayedVirginSpent ? "spent" : "available"}`}
-                      aria-label={`${candidate.seat}번 ${candidate.name} 처녀 능력 ${displayedVirginSpent ? "사용 완료" : "사용 가능"}`}
+                      aria-label={`${candidate.seat}번 ${candidate.name} 성결자 능력 ${displayedVirginSpent ? "사용 완료" : "사용 가능"}`}
                     >
                       {displayedVirginSpent ? "사용 완료" : "사용 가능"}
                     </span>
@@ -225,7 +225,7 @@ export function Issue11EdgeRulesPrototype() {
           )}
           <ol className="issue11Overview" aria-label="프로토타입 단계 개요">
             {family === "virgin" ? (
-              <><li className="current">지명 확인</li><li className={virginStage === "vote" ? "current" : ""}>투표 확인</li><li className={virginStage === "death" ? "current" : ""}>사망 확인</li></>
+              <><li className="current">지목 확인</li><li className={virginStage === "vote" ? "current" : ""}>투표 확인</li><li className={virginStage === "death" ? "current" : ""}>사망 확인</li></>
             ) : family === "mayor" ? (
               <><li className="complete">임프 대상 선택</li><li className="current">시장 결정</li><li>밤 사망 발표</li></>
             ) : (
@@ -254,7 +254,7 @@ function VirginSurface({
 }) {
   if (stage === "death") {
     return (
-      <section className="issue11ActionCard danger" aria-label="처녀 즉시 처형 사망 확인">
+      <section className="issue11ActionCard danger" aria-label="성결자 즉시 처형 사망 확인">
         <p>즉시 처형</p><strong>3번 서연</strong><span>사망 확인 필요</span>
         <button type="button" className="primary dangerButton">사망 확정</button>
       </section>
@@ -263,7 +263,7 @@ function VirginSurface({
   const nominator = scenario === "virgin-spy" ? "5번 은지" : scenario === "virgin-outsider" ? "7번 현우" : "3번 서연";
   if (stage === "vote") {
     return (
-      <section className="issue11ActionCard" aria-label="확정된 지명의 투표">
+      <section className="issue11ActionCard" aria-label="확정된 지목의 투표">
         <p>투표 확인</p><strong>{nominator} → 4번 도윤</strong>
         <div className="voteMeter"><span>현재 4표</span><b>과반 기준 5표</b></div>
         <button type="button" className="primary">투표 확정</button>
@@ -273,24 +273,24 @@ function VirginSurface({
   const preview = scenario === "virgin-poisoned"
     ? "중독됨 · 능력 소모 · 처형 없음"
     : scenario === "virgin-outsider"
-      ? "외부인 · 능력 소모 · 처형 없음"
+      ? "외지인 · 능력 소모 · 처형 없음"
       : scenario === "virgin-spent"
-        ? "이미 사용 완료 · 처녀 판정 없음"
+        ? "이미 사용 완료 · 성결자 판정 없음"
         : scenario === "virgin-spy" && registration
-          ? registration === "townsfolk" ? "주민 등록 · 지명자 즉시 처형" : "악한 팀 등록 · 능력 소모 · 처형 없음"
-          : "능력 발동 · 지명자 즉시 처형";
+          ? registration === "townsfolk" ? "주민 등록 · 지목자 즉시 처형" : "악한 팀 등록 · 능력 소모 · 처형 없음"
+          : "능력 발동 · 지목자 즉시 처형";
   return (
-    <section className="issue11ActionCard" aria-label="처녀 지명 확인">
-      <p>지명 확인</p><strong>{nominator} → 4번 도윤</strong>
+    <section className="issue11ActionCard" aria-label="성결자 지목 확인">
+      <p>지목 확인</p><strong>{nominator} → 4번 도윤</strong>
       {scenario === "virgin-spy" ? (
         <fieldset className="registrationChoice">
-          <legend>이번 처녀 판정의 스파이 등록</legend>
+          <legend>이번 성결자 판정의 첩자 등록</legend>
           <button type="button" className={registration === "townsfolk" ? "selected" : ""} onClick={() => onRegistration("townsfolk")}>선한 주민으로 등록</button>
           <button type="button" className={registration === "evil" ? "selected" : ""} onClick={() => onRegistration("evil")}>악한 팀으로 등록</button>
         </fieldset>
       ) : null}
       <div className="resultPreview"><small>확정 결과</small><span>{preview}</span></div>
-      <button type="button" className="primary" disabled={scenario === "virgin-spy" && !registration} onClick={onConfirm}>지명 확정</button>
+      <button type="button" className="primary" disabled={scenario === "virgin-spy" && !registration} onClick={onConfirm}>지목 확정</button>
     </section>
   );
 }
@@ -383,15 +383,15 @@ function SuccessionSurface({
     <section className="issue11ActionCard" aria-label="악마 승계 확인">
       <p>{fixed ? "고정 후계자" : "후계자 선택"}</p>
       {fixed ? (
-        <div className="fixedSuccessor"><span>8</span><div><strong>8번 유나 · 붉은 여인</strong><small>사망 직전 생존 5명 · 능력 정상</small></div></div>
+        <div className="fixedSuccessor"><span>8</span><div><strong>8번 유나 · 탕녀</strong><small>사망 직전 생존 5명 · 능력 정상</small></div></div>
       ) : (
         <fieldset className="successorChoices">
           <legend>생존한 실제 하수인</legend>
-          <button type="button" className={successorId === "p5" ? "selected" : ""} onClick={() => onSuccessor("p5")}>5번 은지 · 스파이</button>
-          <button type="button" className={successorId === "p6" ? "selected" : ""} onClick={() => onSuccessor("p6")}>6번 지우 · 중독자</button>
+          <button type="button" className={successorId === "p5" ? "selected" : ""} onClick={() => onSuccessor("p5")}>5번 은지 · 첩자</button>
+          <button type="button" className={successorId === "p6" ? "selected" : ""} onClick={() => onSuccessor("p6")}>6번 지우 · 독살범</button>
         </fieldset>
       )}
-      <div className="resultPreview"><small>역할 변경</small><span>{fixed ? "8번 유나 · 붉은 여인 → 임프" : successorId ? `${successorId === "p5" ? "5번 은지" : "6번 지우"} → 임프` : "후계자를 선택하세요"}</span></div>
+      <div className="resultPreview"><small>역할 변경</small><span>{fixed ? "8번 유나 · 탕녀 → 임프" : successorId ? `${successorId === "p5" ? "5번 은지" : "6번 지우"} → 임프` : "후계자를 선택하세요"}</span></div>
       <button type="button" className="primary" disabled={!fixed && !successorId} onClick={onConfirm}>새 임프 확정</button>
     </section>
   );

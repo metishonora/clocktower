@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import "./ongoingNightPrototype.css";
 
-type Scenario = "red-herring" | "effects" | "imp" | "information" | "announcement";
+type Scenario = "red-herring" | "effects" | "imp" | "information" | "announcement-empty" | "announcement";
 type InfoRole = "fortuneTeller";
 
 const players = [
   { id: "p1", seat: 1, name: "민지", character: "점쟁이", team: "good" },
-  { id: "p2", seat: 2, name: "준호", character: "스파이", team: "evil" },
+  { id: "p2", seat: 2, name: "준호", character: "첩자", team: "evil" },
   { id: "p3", seat: 3, name: "서연", character: "은둔자", team: "good" },
   { id: "p4", seat: 4, name: "도윤", character: "수도사", team: "good" },
   { id: "p5", seat: 5, name: "하린", character: "까마귀지기", team: "good" },
-  { id: "p6", seat: 6, name: "지우", character: "독살자", team: "evil" },
+  { id: "p6", seat: 6, name: "지우", character: "독살범", team: "evil" },
   { id: "p7", seat: 7, name: "현우", character: "임프", team: "evil" },
 ];
 
@@ -19,7 +19,8 @@ const scenarioLabels: Record<Scenario, string> = {
   effects: "중독 · 보호",
   imp: "임프 결과",
   information: "정보",
-  announcement: "사망 발표",
+  "announcement-empty": "사망 없음",
+  announcement: "사망 있음",
 };
 
 export function OngoingNightPrototype() {
@@ -43,6 +44,7 @@ export function OngoingNightPrototype() {
     if (next === "effects") setSelectedIds([]);
     if (next === "imp") { setImpOutcome("prevented"); setSelectedIds(["p3"]); }
     if (next === "information") setSelectedIds(["p3", "p7"]);
+    if (next === "announcement-empty") setSelectedIds([]);
     if (next === "announcement") setSelectedIds(["p5"]);
   }
 
@@ -72,14 +74,15 @@ export function OngoingNightPrototype() {
         ))}
       </nav>
       <section className="onpLayout">
-        <Grimoire selectedIds={selectedIds} badges={badges} disabled={scenario === "effects" || scenario === "imp" || scenario === "information" || scenario === "announcement"} onSelect={(id) => toggle(id)} />
+        <Grimoire selectedIds={selectedIds} badges={badges} disabled={scenario === "effects" || scenario === "imp" || scenario === "information" || scenario === "announcement-empty" || scenario === "announcement"} onSelect={(id) => toggle(id)} />
         <aside className="onpPanel" aria-label="밤 행동 패널">
           {scenario === "red-herring" && <RedHerring selectedIds={selectedIds} onSelect={(id) => toggle(id)} />}
           {scenario === "effects" && <Effects />}
           {scenario === "imp" && <Imp outcome={impOutcome} onChange={changeImpOutcome} />}
           {scenario === "information" && <Information />}
-          {scenario === "announcement" && <Announcement />}
-          {scenario !== "effects" && <button className="onpConfirm" onClick={() => setConfirmed(true)}>{scenario === "announcement" ? "발표 확정" : scenario === "information" ? "Reveal" : "확정"}</button>}
+          {scenario === "announcement-empty" && <Announcement empty />}
+          {scenario === "announcement" && <Announcement empty={false} />}
+          {scenario !== "effects" && <button className="onpConfirm" onClick={() => setConfirmed(true)}>{scenario === "announcement-empty" ? "사망자 없음 발표 확정" : scenario === "announcement" ? "사망 발표 확정" : scenario === "information" ? "Reveal" : "확정"}</button>}
           {confirmed && <div className="onpConfirmed" role="status">확정됨</div>}
         </aside>
       </section>
@@ -89,8 +92,8 @@ export function OngoingNightPrototype() {
 }
 
 function Grimoire({ selectedIds, badges, disabled, onSelect }: { selectedIds: string[]; badges: Record<string, string>; disabled: boolean; onSelect: (id: string) => void }) {
-  return <section className="onpMap" aria-label="그리모어">
-    <div className="onpMapTitle"><strong>그리모어</strong></div>
+  return <section className="onpMap" aria-label="마도서">
+    <div className="onpMapTitle"><strong>마도서</strong></div>
     <div className="onpSeats">{players.map((player) => <button key={player.id} disabled={disabled} className={`onpSeat ${player.team} ${selectedIds.includes(player.id) ? "selected" : ""}`} aria-pressed={selectedIds.includes(player.id)} onClick={() => onSelect(player.id)}>
       <span className="onpSeatNo">{player.seat}</span><strong>{player.name}</strong><small>{player.character}</small>
       {badges[player.id] && <em className={`onpSeatBadge ${badges[player.id] === "중독" ? "poison" : "protect"}`}>{badges[player.id]}</em>}
@@ -100,7 +103,7 @@ function Grimoire({ selectedIds, badges, disabled, onSelect }: { selectedIds: st
 
 function RedHerring({ selectedIds, onSelect }: { selectedIds: string[]; onSelect: (id: string) => void }) {
   return <><PanelHeading kicker="점쟁이" title="레드 헤링 지정" value="1명" />
-    <div className="onpChoiceList" aria-label="레드 헤링 대상">{players.filter((p) => p.team === "good" || p.character === "스파이").map((p) => <button key={p.id} aria-pressed={selectedIds.includes(p.id)} onClick={() => onSelect(p.id)}>{p.seat}번 {p.name}<span>{p.character}</span></button>)}</div>
+    <div className="onpChoiceList" aria-label="레드 헤링 대상">{players.filter((p) => p.team === "good" || p.character === "첩자").map((p) => <button key={p.id} aria-pressed={selectedIds.includes(p.id)} onClick={() => onSelect(p.id)}>{p.seat}번 {p.name}<span>{p.character}</span></button>)}</div>
   </>;
 }
 
@@ -124,8 +127,11 @@ function Information() {
   </>;
 }
 
-function Announcement() {
-  return <><PanelHeading kicker="다음 날" title="밤 사망 발표" value="1명" /><div className="onpDeath"><span className="onpDeathIcon" aria-label="사망">✕</span><span className="onpDeathNumber">5번</span><b>하린</b></div></>;
+function Announcement({ empty }: { empty: boolean }) {
+  return <><PanelHeading kicker="다음 날" title="밤 사망 발표" value={empty ? "0명" : "1명"} />{empty
+    ? <div className="onpDeath onpDeathEmpty"><b>사망자 없음</b></div>
+    : <div className="onpDeath"><span className="onpDeathIcon" aria-label="사망">✕</span><span className="onpDeathNumber">5번</span><b>하린</b></div>}
+  </>;
 }
 
 function PanelHeading({ kicker, title, value }: { kicker: string; title: string; value: string }) {

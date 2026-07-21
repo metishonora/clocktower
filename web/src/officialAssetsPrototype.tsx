@@ -18,17 +18,17 @@ type PrototypePlayer = PrototypeCharacter & {
 };
 
 const players: PrototypePlayer[] = [
-  { seat: 1, name: "민지", id: "washerwoman", label: "세탁부", alignment: "g", team: "마을주민" },
-  { seat: 2, name: "준호", id: "librarian", label: "사서", alignment: "g", team: "마을주민" },
-  { seat: 3, name: "서연", id: "chef", label: "요리사", alignment: "g", team: "마을주민" },
-  { seat: 4, name: "도윤", id: "poisoner", label: "독살자", alignment: "e", team: "하수인" },
+  { seat: 1, name: "민지", id: "washerwoman", label: "세탁부", alignment: "g", team: "주민" },
+  { seat: 2, name: "준호", id: "librarian", label: "사서", alignment: "g", team: "주민" },
+  { seat: 3, name: "서연", id: "chef", label: "요리사", alignment: "g", team: "주민" },
+  { seat: 4, name: "도윤", id: "poisoner", label: "독살범", alignment: "e", team: "하수인" },
   { seat: 5, name: "하린", id: "imp", label: "임프", alignment: "e", team: "악마" },
 ];
 
 const setupCharacters: PrototypeCharacter[] = [
   ...players.map(({ id, label, alignment, team }) => ({ id, label, alignment, team })),
-  { id: "empath", label: "공감능력자", alignment: "g", team: "마을주민" },
-  { id: "slayer", label: "학살자", alignment: "g", team: "마을주민" },
+  { id: "empath", label: "초공감자", alignment: "g", team: "주민" },
+  { id: "slayer", label: "처단자", alignment: "g", team: "주민" },
   { id: "baron", label: "남작", alignment: "e", team: "하수인" },
 ];
 
@@ -53,10 +53,10 @@ export function OfficialAssetsPrototype() {
       </header>
 
       <section className="officialAssetsWorkspace">
-        <section className="officialAssetsGrimoire" aria-label="공식 아이콘 그리모어">
+        <section className="officialAssetsGrimoire" aria-label="공식 아이콘 마도서">
           <div className="officialAssetsTableCenter">
             <span>{mode === "setup" ? "설정 미리보기" : "첫 밤"}</span>
-            <strong>{mode === "setup" ? "5명" : "독살자"}</strong>
+            <strong>{mode === "setup" ? "5명" : "독살범"}</strong>
           </div>
           {players.map((player, index) => {
             const angle = (360 / players.length) * index - 54;
@@ -120,8 +120,8 @@ function LiveAssetPreview() {
         <span>플레이어 선택</span>
       </div>
       <section className="officialAssetsActor" aria-label="현재 행동자">
-        <img src={iconUrl(poisoner)} alt="독살자 공식 캐릭터 아이콘" />
-        <div><span>4번 도윤</span><strong>독살자</strong><small>밤마다 한 명을 다음 해질녘까지 중독시킵니다.</small></div>
+        <img src={iconUrl(poisoner)} alt="독살범 공식 캐릭터 아이콘" />
+        <div><span>4번 도윤</span><strong>독살범</strong><small>매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.</small></div>
       </section>
       <p className="officialAssetsPrompt">중독시킬 플레이어 1명을 선택하세요.</p>
       <div className="officialAssetsTargets">

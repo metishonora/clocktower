@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   CoreResult,
   Player,
@@ -7,6 +8,8 @@ import type {
   ScriptTokenRef,
   SystemTokenId,
 } from "../../core/types";
+import { CharacterIcon } from "../../components/CharacterIcon";
+import { CharacterRulesButton } from "../../components/CharacterRulesCard";
 import { characterLabel } from "../../setupDraft";
 import { sameScriptToken, scriptTokens, systemTokens } from "./playerAnnotations";
 
@@ -28,6 +31,7 @@ export function PlayerAnnotationsDialog({
   }));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
+  const [rulesOpen, setRulesOpen] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
   const groupedScriptTokens = useMemo(() => {
     const groups = new Map<string, typeof scriptTokens>();
@@ -44,11 +48,11 @@ export function PlayerAnnotationsDialog({
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !pending) onCancel();
+      if (event.key === "Escape" && !pending && !rulesOpen) onCancel();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel, pending]);
+  }, [onCancel, pending, rulesOpen]);
 
   function toggleSystemToken(tokenId: SystemTokenId) {
     setDraft((current) => ({
@@ -83,7 +87,7 @@ export function PlayerAnnotationsDialog({
     setError(result?.error.messageKo ?? "현재 상태에서는 플레이어 표시를 수정할 수 없습니다.");
   }
 
-  return (
+  return createPortal(
     <div className="playerAnnotationsBackdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !pending) onCancel();
     }}>
@@ -96,8 +100,22 @@ export function PlayerAnnotationsDialog({
         aria-label={`${player.seat}번 ${player.name} 토큰 및 Notes`}
       >
         <header>
-          <div><span>{player.seat}</span><div><p>{characterLabel(player.actualCharacter)}</p><h2>{player.name}</h2></div></div>
-          <button type="button" aria-label="닫기" disabled={pending} onClick={onCancel}>×</button>
+          <CharacterIcon characterId={player.actualCharacter} className="playerAnnotationsCharacterIcon" />
+          <div className="playerAnnotationsIdentity">
+            <h2>{player.name}</h2>
+            <div className="playerAnnotationsMeta">
+              <span>좌석 {player.seat}</span>
+              <i aria-hidden="true" />
+              <strong>{characterLabel(player.actualCharacter)}</strong>
+              <CharacterRulesButton
+                characterId={player.actualCharacter}
+                className="playerAnnotationsRulesButton"
+                ariaLabel={`${characterLabel(player.actualCharacter)} 세부 규칙 보기`}
+                onOpenChange={setRulesOpen}
+              />
+            </div>
+          </div>
+          <button className="playerAnnotationsClose" type="button" aria-label="닫기" disabled={pending} onClick={onCancel}>×</button>
         </header>
         <div className="playerAnnotationsContent">
           <fieldset>
@@ -164,6 +182,7 @@ export function PlayerAnnotationsDialog({
           </div>
         </footer>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

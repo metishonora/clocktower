@@ -77,7 +77,7 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     assert_eq!(started["ok"], true, "start failed as {started}");
     assert_eq!(
         started["value"]["event"]["summary"],
-        "지명 확정: 1번 Ada(세탁부) → 5번 Eve(임프)"
+        "지목 확정: 1번 Ada(세탁부) → 5번 Eve(임프)"
     );
     let mut started_events = game["game"]["events"].as_array().unwrap().clone();
     started_events.push(started["value"]["event"].clone());
@@ -98,7 +98,7 @@ fn confirming_nomination_vote_spends_valid_ghost_votes_and_derives_candidate() {
     assert_eq!(proposal["ok"], true);
     assert_eq!(
         proposal["value"]["event"]["summary"],
-        "지명 투표 확정: 1번 Ada(세탁부) → 5번 Eve(임프), 3표"
+        "지목 투표 확정: 1번 Ada(세탁부) → 5번 Eve(임프), 3표"
     );
     assert_eq!(
         proposal["value"]["event"]["type"],
@@ -1194,7 +1194,7 @@ fn nomination_event_for_step(
             "voterIds": voter_ids,
             "ghostVoteSpentPlayerIds": []
         },
-        "summary": "지명 투표 확정",
+        "summary": "지목 투표 확정",
         "createdAt": "2026-01-01T00:00:00.000Z"
     })
 }
@@ -1218,7 +1218,7 @@ fn nomination_event_with_ghost_spending(
             "voterIds": voter_ids,
             "ghostVoteSpentPlayerIds": ghost_vote_spent_player_ids
         },
-        "summary": "지명 투표 확정",
+        "summary": "지목 투표 확정",
         "createdAt": "2026-01-01T00:00:00.000Z"
     })
 }

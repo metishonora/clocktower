@@ -79,7 +79,7 @@ test("rejects non-canonical nomination payload fields", () => {
       ghostVoteSpentPlayerIds: [],
       voteCount: 2,
     },
-    summary: "지명 투표 확정",
+    summary: "지목 투표 확정",
     createdAt: "2026-07-16T00:00:00.000Z",
   };
 
@@ -138,7 +138,7 @@ test("validates the strict Slayer audit event used by import and export", () => 
       },
       outcome: { kind: "deathPending", playerId: "player-3" },
     },
-    summary: "학살자: 1번 Ada → 3번 Cy · 사망 확인 필요",
+    summary: "처단자: 1번 Ada → 3번 Cy · 사망 확인 필요",
     createdAt: "2026-07-16T00:00:00.000Z",
   };
 
@@ -196,7 +196,7 @@ test("validates win warnings and the canonical game-ended contract", () => {
     type: "gameEnded",
     phase: "day",
     payload: { winningTeam: "evil" },
-    summary: "게임 종료 · 악팀 승리",
+    summary: "게임 종료 · 악한 팀 승리",
     createdAt: "2026-07-16T00:00:00.000Z",
   };
   equal(parseGameEvent(event).type, "gameEnded");
@@ -566,6 +566,32 @@ test("requires canonical nomination eligibility lists in Day replay state", () =
   const malformedNominees = structuredClone(replay);
   malformedNominees.dayState.eligibleNomineeIds = [1 as unknown as string];
   throws(() => parseReplayState(malformedNominees), /코어 응답 형식/);
+});
+
+test("validates the optional Butler vote projection in replay state", () => {
+  const replay = {
+    schemaVersion: 2,
+    eventCount: 12,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      butlerVote: {
+        butlerPlayerId: "player-2",
+        masterPlayerId: "player-1",
+        restrictionApplies: true,
+      },
+    },
+    warnings: [],
+  };
+
+  deepEqual<unknown>(parseReplayState(replay).ruleState.butlerVote, replay.ruleState.butlerVote);
+
+  const malformed = structuredClone(replay);
+  malformed.ruleState.butlerVote.restrictionApplies = "yes" as unknown as boolean;
+  throws(() => parseReplayState(malformed), /코어 응답 형식/);
 });
 
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {

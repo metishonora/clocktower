@@ -26,7 +26,7 @@ const players: PrototypePlayer[] = [
 
 const stageLabels: Record<PrototypeStage, string> = {
   discussion: "토론",
-  nomination: "지명 및 투표",
+  nomination: "지목 및 투표",
   slayerDeath: "사망 확인",
 };
 
@@ -101,7 +101,7 @@ export function SlayerPublicAbilityPrototype() {
       <header className="slayerPrototypeHeader">
         <div>
           <p>PROTOTYPE · ISSUE #50</p>
-          <h1>그리모어에서 시작하는 학살자 능력</h1>
+          <h1>마도서에서 시작하는 처단자 능력</h1>
         </div>
         <nav aria-label="프로토타입 단계">
           <button type="button" className={stage === "discussion" && !spent ? "selected" : ""} onClick={() => selectStage("discussion")}>
@@ -118,7 +118,7 @@ export function SlayerPublicAbilityPrototype() {
             토론 · 사용 완료
           </button>
           <button type="button" className={stage === "nomination" ? "selected" : ""} onClick={() => selectStage("nomination")}>
-            지명 단계
+            지목 단계
           </button>
           <button type="button" className={stage === "slayerDeath" ? "selected" : ""} onClick={() => selectStage("slayerDeath")}>
             사망 후속
@@ -130,13 +130,13 @@ export function SlayerPublicAbilityPrototype() {
         <section className="slayerGrimoirePanel">
           <div className="slayerPanelHeading">
             <div>
-              <p>그리모어</p>
+              <p>마도서</p>
               <h2>Trouble Brewing</h2>
             </div>
             <span>낮 · {stageLabels[stage]}</span>
           </div>
 
-          <div className="slayerGrimoire" aria-label="학살자 능력 프로토타입 그리모어">
+          <div className="slayerGrimoire" aria-label="처단자 능력 프로토타입 마도서">
             <div className="slayerTableCenter" aria-hidden="true">
               <small>현재 단계</small>
               <strong>{stageLabels[stage]}</strong>
@@ -165,7 +165,7 @@ export function SlayerPublicAbilityPrototype() {
                     <button
                       type="button"
                       className="slayerCharacterIcon abilityEntry"
-                      aria-label={slayerEligible ? "3번 서연 학살자 능력 사용" : "3번 서연 학살자 능력 사용 불가"}
+                      aria-label={slayerEligible ? "3번 서연 처단자 능력 사용" : "3번 서연 처단자 능력 사용 불가"}
                       disabled={!slayerEligible}
                       onClick={openAbility}
                     >
@@ -192,13 +192,13 @@ export function SlayerPublicAbilityPrototype() {
           {stage === "discussion" ? (
             <section className="discussionSurface">
               <strong>토론 진행 중</strong>
-              <button type="button">지명 및 투표 시작</button>
+              <button type="button">지목 및 투표 시작</button>
             </section>
           ) : stage === "nomination" ? (
-            <section className="discussionSurface"><strong>지명 및 투표</strong><button type="button">지명 종료</button></section>
+            <section className="discussionSurface"><strong>지목 및 투표</strong><button type="button">지목 종료</button></section>
           ) : (
-            <section className="slayerDeathSurface" aria-label="학살자 사망 후속">
-              <p>학살자 적중</p>
+            <section className="slayerDeathSurface" aria-label="처단자 사망 후속">
+              <p>처단자 적중</p>
               <strong>{target ? `${target.seat}번 ${target.name}` : "9번 태오"}</strong>
               <button type="button">사망 확정</button>
             </section>
@@ -211,7 +211,7 @@ export function SlayerPublicAbilityPrototype() {
             <li className="complete">사망 발표</li>
             <li className="complete">밀담</li>
             <li className={stage === "discussion" ? "current" : "complete"}>토론</li>
-            <li className={stage === "nomination" ? "current" : ""}>지명 및 투표</li>
+            <li className={stage === "nomination" ? "current" : ""}>지목 및 투표</li>
             <li>처형 확인</li>
           </ol>
         </aside>
@@ -229,14 +229,14 @@ export function SlayerPublicAbilityPrototype() {
             <header>
               <div>
                 <p>공개 능력</p>
-                <h2 id="slayer-dialog-title">학살자 능력 사용</h2>
+                <h2 id="slayer-dialog-title">처단자 능력 사용</h2>
               </div>
-              <button type="button" aria-label="학살자 능력 팝업 닫기" onClick={() => setDialogOpen(false)}>×</button>
+              <button type="button" aria-label="처단자 능력 팝업 닫기" onClick={() => setDialogOpen(false)}>×</button>
             </header>
 
             <div className="slayerActorSummary">
               <span>S</span>
-              <div><small>행동자</small><strong>{slayer.seat}번 {slayer.name} · 학살자</strong></div>
+              <div><small>행동자</small><strong>{slayer.seat}번 {slayer.name} · 처단자</strong></div>
             </div>
 
             <fieldset className="slayerTargetPicker">
@@ -271,7 +271,7 @@ export function SlayerPublicAbilityPrototype() {
               </fieldset>
             ) : null}
 
-            <section className="slayerActionReview" aria-label="학살자 행동 검토">
+            <section className="slayerActionReview" aria-label="처단자 행동 검토">
               <small>확정할 행동</small>
               <strong>{target ? `${slayer.seat}번 ${slayer.name} → ${target.seat}번 ${target.name}` : "대상을 선택하세요"}</strong>
               {target?.character === "recluse" && registration ? (
@@ -282,7 +282,7 @@ export function SlayerPublicAbilityPrototype() {
             <p className="slayerSpendWarning">확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.</p>
             <footer>
               <button type="button" className="secondary" onClick={() => setDialogOpen(false)}>취소</button>
-              <button type="button" className="primary" disabled={!canConfirm} onClick={confirmAbility}>학살자 사용 확정</button>
+              <button type="button" className="primary" disabled={!canConfirm} onClick={confirmAbility}>처단자 사용 확정</button>
             </footer>
           </section>
         </div>

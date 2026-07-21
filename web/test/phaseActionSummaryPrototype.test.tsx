@@ -56,17 +56,17 @@ test("switches between information, targeting, drunk, and mayor-bounce examples"
     ),
   ).toBeTruthy();
 
-  await user.click(within(prototype).getByRole("button", { name: "술꾼 행동자" }));
+  await user.click(within(prototype).getByRole("button", { name: "주정뱅이 행동자" }));
   expect(
     within(prototype).getByText(
-      "8번 유나(세탁부 능력, 실제 술꾼)가 2번 준호(요리사), 3번 서연(공감능력자) 중 한 명을 요리사로 확인했습니다.",
+      "8번 유나(세탁부 능력, 실제 주정뱅이)가 2번 준호(요리사), 3번 서연(초공감자) 중 한 명을 요리사로 확인했습니다.",
     ),
   ).toBeTruthy();
 
   await user.click(within(prototype).getByRole("button", { name: "시장 바운스" }));
   expect(
     within(prototype).getByText(
-      "6번 현우(임프) → 7번 하린(시장) 공격 · 3번 서연(공감능력자)에게 바운스 · 사망",
+      "6번 현우(임프) → 7번 하린(시장) 공격 · 3번 서연(초공감자)에게 바운스 · 사망",
     ),
   ).toBeTruthy();
 });
@@ -78,13 +78,13 @@ test("shows outcome and audit context for applied and no-effect actions", async 
 
   await user.click(within(prototype).getByRole("button", { name: "대상 행동" }));
   expect(
-    within(prototype).getByText("5번 지우(독살자) → 2번 준호(요리사) · 중독 적용"),
+    within(prototype).getByText("5번 지우(독살범) → 2번 준호(요리사) · 중독 적용"),
   ).toBeTruthy();
 
   await user.click(within(prototype).getByRole("button", { name: "효과 없음" }));
   expect(
     within(prototype).getByText(
-      "8번 유나(수도사 능력, 실제 술꾼) → 6번 현우(임프) · 효과 없음 (실제 수도사 아님)",
+      "8번 유나(수도사 능력, 실제 주정뱅이) → 6번 현우(임프) · 효과 없음 (실제 수도사 아님)",
     ),
   ).toBeTruthy();
 

@@ -28,16 +28,8 @@ fn second_normal_night_spy_uses_only_night2_poison_and_protection() {
         phase_event("phaseStepSkipped", "day:nomination:1"),
         no_execution_event("day:execution"),
         phase_event("phaseStepConfirmed", "day:toNight"),
-        phase_event_with_input(
-            "phaseStepConfirmed",
-            "night:poisoner",
-            json!({ "playerIds": ["player-2"] })
-        ),
-        phase_event_with_input(
-            "phaseStepConfirmed",
-            "night:monk",
-            json!({ "playerIds": ["player-1"] })
-        ),
+        night_effect_event("night:poisoner", "player-3", "poison", "player-4"),
+        night_effect_event("night:monk", "player-2", "monkProtection", "player-1"),
         phase_event_with_input(
             "phaseStepConfirmed",
             "night:imp",
@@ -51,16 +43,8 @@ fn second_normal_night_spy_uses_only_night2_poison_and_protection() {
         cycle_phase_event("phaseStepSkipped", "day2:nomination:1", Value::Null),
         no_execution_event("day2:execution"),
         cycle_phase_event("phaseStepConfirmed", "day2:toNight", Value::Null),
-        cycle_phase_event(
-            "phaseStepConfirmed",
-            "night2:poisoner",
-            json!({ "playerIds": ["player-1"] })
-        ),
-        cycle_phase_event(
-            "phaseStepConfirmed",
-            "night2:monk",
-            json!({ "playerIds": ["player-4"] })
-        ),
+        night_effect_event("night2:poisoner", "player-3", "poison", "player-1"),
+        night_effect_event("night2:monk", "player-2", "monkProtection", "player-4"),
         cycle_phase_event(
             "phaseStepConfirmed",
             "night2:imp",
@@ -92,4 +76,28 @@ fn cycle_phase_event(event_type: &str, step_id: &str, input: Value) -> Value {
         "night"
     });
     event
+}
+
+fn night_effect_event(
+    step_id: &str,
+    actor_player_id: &str,
+    kind: &str,
+    target_player_id: &str,
+) -> Value {
+    json!({
+        "id": format!("event-{step_id}"),
+        "type": "nightActionResolved",
+        "phase": "night",
+        "payload": {
+            "stepId": step_id,
+            "actorPlayerId": actor_player_id,
+            "resolution": {
+                "kind": kind,
+                "targetPlayerId": target_player_id,
+                "applied": true
+            }
+        },
+        "summary": step_id,
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    })
 }

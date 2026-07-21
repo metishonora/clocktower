@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 2,
+  "game": {
+    "id": "acceptance-washerwoman-spy-registration",
+    "name": "Trouble Brewing 인수 테스트 · washerwoman-spy-registration",
+    "createdAt": "2026-07-19T00:00:00.000Z",
+    "updatedAt": "2026-07-19T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "chef",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "empath",
+              "shownCharacter": "empath"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "fortuneTeller",
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 7번 플레이어 7(임프) · 하수인: 6번 플레이어 6(스파이)",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": []
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 플레이어 6(스파이) · 블러프: 없음",
+        "createdAt": "2026-07-19T00:00:00.000Z"
+      }
+    ]
+  }
+}

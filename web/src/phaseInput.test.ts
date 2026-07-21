@@ -8,9 +8,30 @@ import {
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
   setupInfoZeroOutsidersAvailable,
+  stepTitle,
   stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("evil-information steps use operational Korean titles instead of internal identifiers", () => {
+  const baseStep: PhaseStep = {
+    id: "firstNight:minionInfo",
+    phase: "firstNight",
+    stepType: "evilInfo",
+    requiredInput: { kind: "none", target: "players", optional: false },
+    canSkip: false,
+  };
+
+  equal(stepTitle(baseStep), "하수인 깨우기 · 악마와 동료 하수인 확인");
+  equal(
+    stepTitle({
+      ...baseStep,
+      id: "firstNight:demonInfo",
+      requiredInput: { kind: "characterIds", target: "characters", minSelections: 0, maxSelections: 3, optional: true },
+    }),
+    "악마 깨우기 · 하수인과 블러프 확인",
+  );
+});
 
 test("current action prompts use character wording, input-shape fallbacks, and no result question", () => {
   const baseStep: PhaseStep = {
@@ -128,6 +149,57 @@ test("Mayor decision is required only when the Imp actually selects the Mayor", 
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["chef"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["mayor"]), false);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, { kind: "mayorDies" }, ["mayor"]), true);
+  deepEqual(
+    stepInputPayload(step, ["chef"], "", [], nominationDraft, false, { kind: "mayorDies" }),
+    { playerIds: ["chef"] },
+  );
+});
+
+test("inapplicable stale Mayor decisions are omitted from Imp confirmation input", () => {
+  const impairedImpStep: PhaseStep = {
+    id: "night1:imp",
+    phase: "night",
+    stepType: "character",
+    character: "imp",
+    playerId: "imp",
+    requiredInput: {
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
+  equal(
+    stepInputReady(
+      impairedImpStep,
+      1,
+      0,
+      "",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      { kind: "mayorDies" },
+      ["mayor"],
+    ),
+    true,
+  );
+  deepEqual(
+    stepInputPayload(
+      impairedImpStep,
+      ["mayor"],
+      "",
+      [],
+      nominationDraft,
+      false,
+      { kind: "mayorDies" },
+    ),
+    { playerIds: ["mayor"] },
+  );
 });
 
 test("character input options honor an explicit allowlist in catalog order", () => {
@@ -382,7 +454,7 @@ test("target-check confirmation persists the selected typed result and its exact
       { nominatorId: "", nomineeId: "", voterIds: [] },
     ),
     {
-      input: { playerIds: ["recluse", "chef"] },
+      input: { playerIds: ["chef", "recluse"] },
       deliveredResult: { kind: "boolean", value: true },
       registrationJudgments: witness,
     },

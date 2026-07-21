@@ -125,7 +125,16 @@ fn ravenkeeper_target_checks_expose_exact_spy_and_recluse_registration_witnesses
     assert_eq!(valid["ok"], true, "valid witness failed as {valid}");
     assert_eq!(
         valid["value"]["event"]["summary"],
-        "1번 Raven(까마귀지기)가 2번 Spy(스파이)를 확인 · 대상의 캐릭터: 요리사 (실제 스파이 · 등록 판정)"
+        "1번 Raven(까마귀지기)가 2번 Spy(첩자)를 확인 · 대상의 캐릭터: 요리사 (실제 첩자 · 등록 판정)"
+    );
+    assert_eq!(
+        valid["value"]["revealPayload"],
+        json!({
+            "kind": "characterInformation",
+            "characterId": "ravenkeeper",
+            "targetPlayer": { "playerId": "player-2", "seat": 2, "name": "Spy" },
+            "revealedCharacterId": "chef"
+        })
     );
 }
 
@@ -200,6 +209,39 @@ fn announcing_night_deaths_clears_exactly_the_replayed_unannounced_ids() {
         confirmed["value"]["ruleState"]["unannouncedNightDeathPlayerIds"],
         json!([])
     );
+}
+
+#[test]
+fn confirming_no_night_deaths_emits_the_empty_canonical_event_without_changing_players() {
+    let game = game_with_events(Value::Array(empty_announce_death_events()));
+    let before = replay_game(&game);
+    assert_eq!(before["ok"], true, "replay failed as {before}");
+    assert_eq!(before["value"]["currentStep"]["id"], "day2:announceDeaths");
+    assert_eq!(
+        before["value"]["ruleState"]["unannouncedNightDeathPlayerIds"],
+        json!([])
+    );
+    let players_before = before["value"]["players"].clone();
+
+    let proposal = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "day2:announceDeaths" }
+        }),
+    );
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(proposal["value"]["event"]["type"], "nightDeathsAnnounced");
+    assert_eq!(
+        proposal["value"]["event"]["payload"],
+        json!({ "stepId": "day2:announceDeaths", "playerIds": [] })
+    );
+    assert_eq!(proposal["value"]["event"]["summary"], "밤 사망 발표: 없음");
+
+    let confirmed = replay_with_event(&game, proposal["value"]["event"].clone());
+    assert_eq!(confirmed["ok"], true, "replay failed as {confirmed}");
+    assert_eq!(confirmed["value"]["currentStep"]["id"], "day2:whisper");
+    assert_eq!(confirmed["value"]["players"], players_before);
 }
 
 #[test]
@@ -301,6 +343,61 @@ fn poisoned_imp_has_no_effect_warning_and_operational_summary() {
         proposal["value"]["event"]["summary"],
         "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (행동자 중독)"
     );
+}
+
+#[test]
+fn poisoned_imp_targeting_mayor_does_not_require_an_inapplicable_mayor_decision() {
+    let game = game_with_events(Value::Array(imp_ready_while_poisoned_targeting("mayor")));
+    let current = replay_game(&game);
+
+    assert_eq!(current["ok"], true, "replay failed as {current}");
+    assert_eq!(current["value"]["currentStep"]["id"], "night:imp");
+    assert!(
+        current["value"]["currentStep"]["requiredInput"]["mayorDecision"].is_null(),
+        "impaired Imp exposed an inapplicable Mayor decision: {current}"
+    );
+
+    let proposal = propose_imp_attack(&game, "player-1");
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(
+        proposal["value"]["event"]["payload"]["resolution"],
+        json!({
+            "kind": "impAttack",
+            "targetPlayerId": "player-1",
+            "mayorContext": { "kind": "notApplicable" },
+            "outcome": { "kind": "noDeath", "reason": "actorImpaired" }
+        })
+    );
+    assert_warning_code(&proposal, "NIGHT_ACTION_NO_EFFECT");
+
+    let unnecessary_decision = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:imp",
+                "input": {
+                    "playerIds": ["player-1"],
+                    "mayorDecision": { "kind": "mayorDies" }
+                }
+            }
+        }),
+    );
+    assert_eq!(unnecessary_decision["ok"], false);
+    assert_eq!(
+        unnecessary_decision["error"]["code"],
+        "INVALID_MAYOR_DECISION"
+    );
+
+    let original_event_count = game["game"]["events"].as_array().unwrap().len();
+    let replayed = replay_with_event(&game, proposal["value"]["event"].clone());
+    assert_eq!(
+        replayed["ok"], true,
+        "confirmed event failed replay as {replayed}"
+    );
+    assert_eq!(replayed["value"]["eventCount"], original_event_count + 1);
+    assert_eq!(replayed["value"]["currentStep"]["id"], "night:empath");
+    assert_eq!(replayed["value"]["players"][0]["alive"], true);
 }
 
 fn propose(game: &Value, command: Value) -> Value {
@@ -450,12 +547,19 @@ fn imp_ready_with_dead_target() -> Vec<Value> {
 }
 
 fn imp_ready_while_poisoned() -> Vec<Value> {
+    imp_ready_while_poisoned_targeting("soldier")
+}
+
+fn imp_ready_while_poisoned_targeting(target_character: &str) -> Vec<Value> {
     let players = standard_imp_players(json!({
         "id": "player-4", "seat": 4, "name": "Poisoner",
         "actualCharacter": "poisoner", "shownCharacter": "poisoner"
     }));
+    let mut players = players.as_array().unwrap().clone();
+    players[0]["actualCharacter"] = json!(target_character);
+    players[0]["shownCharacter"] = json!(target_character);
     let mut events = vec![
-        setup_event_with_players(players),
+        setup_event_with_players(Value::Array(players)),
         phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
         phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
         phase_event("phaseStepSkipped", "firstNight:poisoner"),
@@ -535,6 +639,15 @@ fn undertaker_spy_events() -> Vec<Value> {
 fn announce_death_events() -> Vec<Value> {
     let mut events = ravenkeeper_check_events();
     events.push(phase_event("phaseStepSkipped", "night:ravenkeeper"));
+    events.push(confirm_current_step(&events, "night:spy"));
+    events.push(phase_event("phaseStepConfirmed", "night:toDay"));
+    events
+}
+
+fn empty_announce_death_events() -> Vec<Value> {
+    let mut events = ravenkeeper_check_events();
+    events.pop();
+    events.push(phase_event("phaseStepSkipped", "night:imp"));
     events.push(confirm_current_step(&events, "night:spy"));
     events.push(phase_event("phaseStepConfirmed", "night:toDay"));
     events

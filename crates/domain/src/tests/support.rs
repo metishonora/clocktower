@@ -84,7 +84,7 @@ pub(super) fn nomination_vote_event<const N: usize>(
             "voterIds": voter_ids,
             "ghostVoteSpentPlayerIds": []
         },
-        "summary": "지명 투표 확정",
+        "summary": "지목 투표 확정",
         "createdAt": "2026-01-01T00:00:00.000Z"
     })
 }
