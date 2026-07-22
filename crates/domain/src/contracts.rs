@@ -534,6 +534,8 @@ pub(crate) struct RedHerringAssignedPayload {
 pub(crate) struct NightActionResolvedPayload {
     pub(crate) step_id: String,
     pub(crate) actor_player_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) actor_character_id: Option<String>,
     pub(crate) resolution: NightActionResolution,
 }
 
@@ -562,6 +564,52 @@ pub(crate) enum NightActionResolution {
         mayor_context: MayorAttackContext,
         outcome: ImpAttackOutcome,
     },
+    DemonAttack {
+        target_player_id: String,
+        outcome: DemonAttackOutcome,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum DemonAttackOutcome {
+    Deaths { deaths: Vec<NightDeath> },
+    NoEffect { reason: DemonAttackNoEffectReason },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct NightDeath {
+    pub(crate) player_id: String,
+    pub(crate) cause: NightDeathCause,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum NightDeathCause {
+    DemonAttack {
+        actor_player_id: String,
+        actor_character_id: String,
+        target_player_id: String,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum DemonAttackNoEffectReason {
+    TargetAlreadyDead,
+    ActorImpaired,
+    NotActualCharacter,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]

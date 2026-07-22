@@ -51,6 +51,8 @@ impl ScriptRules {
                         GameEventKind::SetupConfirmed { .. }
                             | GameEventKind::PhaseStepConfirmed { .. }
                             | GameEventKind::ManualPhaseStepResolved { .. }
+                            | GameEventKind::NightActionResolved { .. }
+                            | GameEventKind::NightDeathsAnnounced { .. }
                     )
                 }) =>
             {

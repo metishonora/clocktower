@@ -192,10 +192,14 @@ export function parseGameEvent(value: unknown): GameEvent {
       ) throw invalidEvent();
       break;
     case "nightActionResolved":
+      const isDemonAttack = isRecord(payload.resolution) && payload.resolution.kind === "demonAttack";
       if (
-        !hasExactKeys(payload, ["stepId", "actorPlayerId", "resolution"]) ||
+        !(isDemonAttack
+          ? hasExactKeys(payload, ["stepId", "actorPlayerId", "actorCharacterId", "resolution"])
+          : hasExactKeys(payload, ["stepId", "actorPlayerId", "resolution"])) ||
         typeof payload.stepId !== "string" ||
         typeof payload.actorPlayerId !== "string" ||
+        (isDemonAttack && typeof payload.actorCharacterId !== "string") ||
         !isNightActionResolution(payload.resolution)
       ) throw invalidEvent();
       break;
@@ -718,6 +722,23 @@ function isNightActionResolution(value: unknown): boolean {
     return hasOnlyKeys(value, ["kind", "targetPlayerId", "applied", "noEffectReason"]) &&
       typeof value.targetPlayerId === "string" && typeof value.applied === "boolean" &&
       (value.noEffectReason === undefined || value.noEffectReason === "actorImpaired" || value.noEffectReason === "notActualCharacter");
+  }
+  if (value.kind === "demonAttack") {
+    if (!hasExactKeys(value, ["kind", "targetPlayerId", "outcome"]) ||
+        typeof value.targetPlayerId !== "string" || !isRecord(value.outcome)) return false;
+    const outcome = value.outcome;
+    if (outcome.kind === "noEffect") {
+      return hasExactKeys(outcome, ["kind", "reason"]) &&
+        ["targetAlreadyDead", "actorImpaired", "notActualCharacter"].includes(String(outcome.reason));
+    }
+    return outcome.kind === "deaths" && hasExactKeys(outcome, ["kind", "deaths"]) &&
+      Array.isArray(outcome.deaths) && outcome.deaths.length > 0 && outcome.deaths.every((death) => (
+        isRecord(death) && hasExactKeys(death, ["playerId", "cause"]) &&
+        typeof death.playerId === "string" && isRecord(death.cause) &&
+        hasExactKeys(death.cause, ["kind", "actorPlayerId", "actorCharacterId", "targetPlayerId"]) &&
+        death.cause.kind === "demonAttack" && typeof death.cause.actorPlayerId === "string" &&
+        typeof death.cause.actorCharacterId === "string" && typeof death.cause.targetPlayerId === "string"
+      ));
   }
   if (value.kind !== "impAttack" || !hasOnlyKeys(value, ["kind", "targetPlayerId", "mayorContext", "outcome"]) ||
       typeof value.targetPlayerId !== "string" ||

@@ -859,6 +859,9 @@ pub(crate) fn phase_step_statuses(
                 }
             }
             GameEventKind::NightActionResolved { payload } => {
+                if payload.actor_character_id.is_some() {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
                 if step.player_id.as_deref() != Some(payload.actor_player_id.as_str()) {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
@@ -872,6 +875,9 @@ pub(crate) fn phase_step_statuses(
                     | NightActionResolution::ImpAttack {
                         target_player_id, ..
                     } => target_player_id,
+                    NightActionResolution::DemonAttack { .. } => {
+                        return Err(ErrorKind::ReplayFailed.into_error())
+                    }
                 };
                 let actual = players_at_event
                     .iter()

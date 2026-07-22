@@ -13,6 +13,7 @@ mod ongoing_night_lifetime_scenarios;
 mod phase_scenarios;
 mod player_annotations_scenarios;
 mod script_identity_scenarios;
+mod sects_and_violets_demon_attack_scenarios;
 mod sects_and_violets_phase_scenarios;
 mod sects_and_violets_setup_scenarios;
 mod setup_scenarios;

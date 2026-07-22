@@ -402,7 +402,12 @@ export type GameEvent = EventCommon &
       }
     | {
         type: "nightActionResolved";
-        payload: { stepId: string; actorPlayerId: string; resolution: NightActionResolution };
+        payload: {
+          stepId: string;
+          actorPlayerId: string;
+          actorCharacterId?: string;
+          resolution: NightActionResolution;
+        };
       }
     | {
         type: "nightDeathsAnnounced";
@@ -466,6 +471,24 @@ export type NightActionResolution =
         | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
         | { kind: "soldierProtected"; playerId: string }
         | { kind: "noDeath"; reason: "alreadyDead" | "actorImpaired" | "notActualCharacter" };
+    }
+  | {
+      kind: "demonAttack";
+      targetPlayerId: string;
+      outcome:
+        | {
+            kind: "deaths";
+            deaths: Array<{
+              playerId: string;
+              cause: {
+                kind: "demonAttack";
+                actorPlayerId: string;
+                actorCharacterId: string;
+                targetPlayerId: string;
+              };
+            }>;
+          }
+        | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" };
     };
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
