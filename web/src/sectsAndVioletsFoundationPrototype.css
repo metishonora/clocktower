@@ -81,6 +81,8 @@
 .snvSeatingToolbar button { padding: 9px 13px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .snvSeatingToolbar .snvToolbarBack { width: 42px; height: 38px; margin-right: auto; padding: 0; font-size: 1.15rem; }
 .snvSeatingToolbar .snvToolbarBack.destructive { border-color: rgba(240, 101, 122, .72); color: #ffdce2; background: rgba(154, 38, 59, .62); box-shadow: 0 8px 24px rgba(112, 19, 38, .3); }
+.snvCurrentActorLegend { display: flex; min-height: 38px; padding: 0 11px; align-items: center; gap: 7px; color: #eadbc0; font-size: .7rem; font-weight: 850; }
+.snvCurrentActorLegend > span { width: 11px; height: 11px; border: 2px solid #f4d275; border-radius: 50%; background: rgba(244, 210, 117, .16); box-shadow: 0 0 12px rgba(244, 210, 117, .55); }
 .snvSeatingWorkspace { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
 .snvGrimoireDraft { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
 .snvGrimoireDraft > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
@@ -94,6 +96,7 @@
 .snvGrimoireDraft > button.kind-demon { --kind-accent: #ed6679; }
 .snvGrimoireDraft > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
 .snvGrimoireDraft > button.selected, .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
+.snvGrimoireDraft > button.assigned.currentActor { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
 .snvGrimoireDraft > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
 .snvGrimoireDraft > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
 .snvGrimoireDraft > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
@@ -177,31 +180,19 @@
 .snvCurrentStep .unsupported { margin-left: 8px; color: #e9c6ee; background: rgba(104, 61, 121, .5); }
 .snvCurrentStep h2, .snvCurrentStep h3 { margin: 48px 0 10px; font: clamp(2.6rem, 5vw, 4.4rem)/1 Georgia, serif; }
 .snvCurrentStep p { margin: 0; color: #c7b9cc; }
-.snvCurrentStep .snvCurrentStepLabel { margin-top: 42px; color: #ead7ee; font-size: .72rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+.snvCurrentStep .snvCurrentStepLabel { margin-top: 0; color: #ead7ee; font-size: .72rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
 .snvCurrentStep .snvCurrentStepLabel + h3 { margin-top: 8px; }
+.snvCurrentStep .snvRevealPlaceholder { color: #a997b0; }
 .snvStepActions { display: flex; margin-top: 42px; gap: 10px; }
 .snvStepActions button { padding: 12px 18px; border-color: #c89bd3; background: #82509a; }
 .snvStepActions button.secondary { border-color: rgba(230, 209, 237, .2); background: transparent; }
+.snvStepActions button.reveal { min-width: 132px; border-color: rgba(244, 210, 117, .62); color: #201426; background: #f4d275; }
 .snvPhaseOverview { margin: 0; padding: 0; list-style: none; }
 .snvPhaseOverview li { display: flex; min-height: 62px; padding: 0 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .1); color: #9f90a7; }
 .snvPhaseOverview li.current { color: #fff; background: rgba(154, 94, 178, .18); }
 .snvPhaseOverview li.complete { color: #ccb7d3; }
 .snvPhaseOverview span { font-size: .7rem; font-weight: 850; }
 .snvPhaseOverview strong { font-size: .9rem; }
-.snvPlayGrimoire { position: relative; height: var(--grimoire-height, 520px); border: 1px solid rgba(214, 169, 226, .22); border-radius: 26px; background: radial-gradient(circle, rgba(130, 80, 154, .21), rgba(12, 7, 17, .75)); overflow: hidden; }
-.snvPlaySeat { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 88px; height: 72px; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .24); border-radius: 17px; color: #f8f0fb; background: #2b1932; box-shadow: 0 8px 22px rgba(5, 2, 8, .4); text-align: center; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-.snvPlaySeat > span { position: absolute; top: 5px; left: 7px; color: #a998b0; font-size: .52rem; font-weight: 900; }
-.snvPlaySeat img { width: 30px; height: 30px; margin: 0 auto; object-fit: contain; }
-.snvPlaySeat strong, .snvPlaySeat small { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.snvPlaySeat strong { font-size: .61rem; }
-.snvPlaySeat small { color: #b6a4bd; font-size: .52rem; }
-.snvPlaySeat.alignment-good { border-color: rgba(111, 195, 226, .62); background: linear-gradient(145deg, #203847, #28233b); }
-.snvPlaySeat.alignment-evil { border-color: rgba(224, 103, 127, .68); background: linear-gradient(145deg, #4a222e, #2b1b31); }
-.snvPlaySeat.currentActor { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .24), 0 0 34px rgba(244, 210, 117, .5); transform: translate(-50%, -50%) scale(1.08); }
-.snvPlaySeat.currentActor::after { position: absolute; right: 7px; bottom: 4px; left: 7px; height: 3px; border-radius: 999px; background: #f4d275; content: ""; }
-.snvPlayGrimoireCenter { position: absolute; top: 50%; left: 50%; display: grid; width: 118px; height: 118px; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(214, 169, 226, .2); border-radius: 50%; background: rgba(17, 9, 22, .82); text-align: center; }
-.snvPlayGrimoireCenter strong { font: 1.4rem Georgia, serif; }
-.snvPlayGrimoireCenter span { color: #bca8c4; font-size: .68rem; font-weight: 850; }
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
@@ -219,10 +210,6 @@
   .snvFirstNightMoon { grid-row: 1; grid-column: 2; }
   .snvFirstNightHeader button { grid-column: 1 / -1; margin-top: 14px; justify-self: start; }
   .snvFirstNightSurface .snvPhaseOverview { order: 3; }
-  .snvPlayGrimoire { height: var(--mobile-grimoire-height, 520px); }
-  .snvPlaySeat { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 78px; height: 64px; border-radius: 15px; }
-  .snvPlaySeat img { width: 25px; height: 25px; }
-  .snvPlaySeat strong, .snvPlaySeat small { max-width: 66px; }
   .snvCatalogPreview article { grid-template-columns: 1fr; }
   .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }
   .snvRoleDetail { bottom: 10px; z-index: 4; height: auto; min-height: 72px; padding: 10px; grid-template-columns: 1fr; box-shadow: 0 14px 34px rgba(7, 3, 10, .72); }

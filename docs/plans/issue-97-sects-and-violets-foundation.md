@@ -114,8 +114,12 @@ inspector area and the empty lower panel area without introducing internal scrol
 Gate C is approved. Gate D now has a First Night-only review specimen: the large Night identity and
 current task lead the surface, the right rail contains the official First Night order filtered to
 the selected roster while retaining Minion and Demon information, and the read-only visual Grimoire
-highlights the Player whose character owns the current step. This specimen intentionally does not
-add Day, later-night, persistence, or production runtime wiring yet.
+remains exclusively in the existing `마도서` tab. That tab highlights the Player whose character
+owns the current step with a yellow border and a top-right `현재 행동자` legend; the `진행` tab does
+not duplicate the board. The current-task card omits support and step-count badges. Automated
+information steps require an explicit `Reveal` before displaying their information and enabling the
+next-step action. This specimen intentionally does not add Day, later-night, persistence, or
+production runtime wiring yet.
 
 ## Approved Scope
 

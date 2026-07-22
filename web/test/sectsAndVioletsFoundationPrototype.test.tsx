@@ -240,19 +240,29 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
 
   await user.click(within(seating).getByRole("button", { name: "진행으로 이동" }));
   expect(prototype.classList.contains("tabForward")).toBe(true);
-  const firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
+  let firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   expect(firstNight.classList.contains("snvTabPanel")).toBe(true);
   expect(within(firstNight).getByRole("heading", { name: "첫날 밤" })).toBeTruthy();
   expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
+  expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
+  expect(within(firstNight).queryByText("수동")).toBeNull();
+  expect(within(firstNight).queryByText("1 / 7")).toBeNull();
   expect(within(firstNight).getByRole("list", { name: "첫날 밤 순서" }).textContent).toMatch(
     /철학자.*하수인 정보.*악마 정보.*뱀 조련사.*사악한 쌍둥이.*시계공.*꿈꾸는 자/,
   );
   expect(within(firstNight).queryByText("마녀")).toBeNull();
-  const currentActor = within(firstNight).getByLabelText(/4번 좌석.*철학자.*현재 행동자/);
+  await user.click(within(firstNight).getByRole("button", { name: "마도서로 이동" }));
+  const currentActor = within(seating).getByRole("button", { name: /4번 좌석.*철학자.*현재 행동자/ });
   expect(currentActor.classList.contains("currentActor")).toBe(true);
+  expect(within(seating).getByLabelText("현재 행동자 안내").textContent).toContain("현재 행동자");
+  await user.click(within(prototype).getByRole("button", { name: "진행" }));
+  firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   await user.click(within(firstNight).getByRole("button", { name: "처리 완료" }));
   expect(within(firstNight).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  expect(within(firstNight).getByText("자동")).toBeTruthy();
+  expect(within(firstNight).queryByText(/하수인에게 악마와 다른 하수인을 알려줍니다/)).toBeNull();
+  await user.click(within(firstNight).getByRole("button", { name: "Reveal" }));
+  expect(within(firstNight).getByText(/하수인에게 악마와 다른 하수인을 알려줍니다/)).toBeTruthy();
+  expect(within(firstNight).getByRole("button", { name: "다음 단계" })).toBeTruthy();
   await user.click(within(prototype).getByRole("button", { name: "마도서로 이동" }));
   expect(prototype.classList.contains("tabBackward")).toBe(true);
   expect(within(prototype).getByRole("complementary", { name: "좌석 상세 정보" })).toBeTruthy();
@@ -387,7 +397,7 @@ test("starts the first night with the always-present evil information steps when
   await user.click(within(prototype).getByRole("button", { name: "진행" }));
   const phase = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   expect(within(phase).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  expect(within(phase).getByText("자동")).toBeTruthy();
+  expect(within(phase).getByRole("button", { name: "Reveal" })).toBeTruthy();
   expect(within(phase).getByRole("list", { name: "첫날 밤 순서" }).textContent).toBe("현재하수인 정보대기악마 정보");
 });
 

@@ -113,6 +113,7 @@ export function SectsAndVioletsFoundationPrototype() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
+  const [revealedStepId, setRevealedStepId] = useState<string>();
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -198,6 +199,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setFirstNightStepIndex(0);
+    setRevealedStepId(undefined);
     navigateToTab("seating");
   };
 
@@ -213,6 +215,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
+    setRevealedStepId(undefined);
     setActiveTab("roles");
   };
 
@@ -228,6 +231,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
+    setRevealedStepId(undefined);
     setSeatAssignments({});
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
@@ -240,6 +244,7 @@ export function SectsAndVioletsFoundationPrototype() {
     if (character.kind === "demon") return;
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
+    setRevealedStepId(undefined);
     setSelectedIds((selected) => {
       if (selected.includes(character.id)) return selected.filter((id) => id !== character.id);
       if (selectedByKind[character.kind] >= requiredByKind[character.kind]) return selected;
@@ -247,7 +252,10 @@ export function SectsAndVioletsFoundationPrototype() {
     });
   };
 
-  const advanceFirstNight = () => setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
+  const advanceFirstNight = () => {
+    setRevealedStepId(undefined);
+    setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
+  };
 
   const assignCharacterToSeat = (characterId: string, seat: number, preserveSelectedSeat = false) => {
     const previousSeat = Object.entries(seatAssignments).find(([, assignedCharacterId]) => assignedCharacterId === characterId)?.[0];
@@ -422,7 +430,10 @@ export function SectsAndVioletsFoundationPrototype() {
         <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
           <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
             {seatingConfirmed ? (
-              <button ref={returnTriggerRef} type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
+              <>
+                <button ref={returnTriggerRef} type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
+                {currentFirstNightStep?.characterId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
+              </>
             ) : (
               <>
               <button type="button" className="snvToolbarBack" aria-label="직업 선택으로 돌아가기" onClick={() => navigateToTab("roles")}><span aria-hidden="true">←</span></button>
@@ -441,12 +452,13 @@ export function SectsAndVioletsFoundationPrototype() {
                 const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
                 const desktopPosition = desktopSeatPositions[index];
                 const mobilePosition = mobileSeatPositions[index];
+                const isCurrentActor = Boolean(seatingConfirmed && characterId && currentFirstNightStep?.characterId === characterId);
                 return (
                   <button
                     key={seat}
                     type="button"
-                    className={`fixedSize ${selectedSeat === seat ? "selected" : ""} ${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
-                    aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}`}
+                    className={`fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "currentActor " : ""}${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
+                    aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
                     aria-pressed={selectedSeat === seat}
                     style={{
                       "--seat-x": `${desktopPosition.x}%`,
@@ -572,15 +584,15 @@ export function SectsAndVioletsFoundationPrototype() {
           <div className="snvFirstNightPrimary">
             {currentFirstNightStep ? (
               <article className="snvCurrentStep">
-                <header>
-                  <span className={currentFirstNightStep.support}>{currentFirstNightStep.support === "manual" ? "수동" : "자동"}</span>
-                  <small>{firstNightStepIndex + 1} / {firstNightSteps.length}</small>
-                </header>
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 <h3>{currentFirstNightStep.name}</h3>
-                <p>{currentFirstNightStep.summary}</p>
+                {currentFirstNightStep.support === "manual" || revealedStepId === currentFirstNightStep.id
+                  ? <p>{currentFirstNightStep.summary}</p>
+                  : <p className="snvRevealPlaceholder">정보를 확인할 준비가 되면 Reveal을 누르세요.</p>}
                 <div className="snvStepActions">
-                  <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
+                  {currentFirstNightStep.support === "automated" && revealedStepId !== currentFirstNightStep.id
+                    ? <button type="button" className="reveal" onClick={() => setRevealedStepId(currentFirstNightStep.id)}>Reveal</button>
+                    : <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>}
                   {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" onClick={advanceFirstNight}>해당 없음</button> : null}
                 </div>
               </article>
@@ -591,38 +603,6 @@ export function SectsAndVioletsFoundationPrototype() {
                 <p>첫날 밤 순서의 마지막까지 확인했습니다.</p>
               </article>
             )}
-
-            <div className="snvPlayGrimoire" aria-label="진행 마도서" style={grimoireSizeStyle}>
-              {Array.from({ length: playerCount }, (_, index) => {
-                const seat = index + 1;
-                const characterId = seatAssignments[seat];
-                const character = characters.find((candidate) => candidate.id === characterId);
-                const asset = sectsAndVioletsCharacterAsset(characterId);
-                const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
-                const desktopPosition = desktopSeatPositions[index];
-                const mobilePosition = mobileSeatPositions[index];
-                const isCurrentActor = Boolean(characterId && currentFirstNightStep?.characterId === characterId);
-                return (
-                  <div
-                    key={seat}
-                    className={`snvPlaySeat ${isCurrentActor ? "currentActor " : ""}${character ? `alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
-                    aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
-                    style={{
-                      "--seat-x": `${desktopPosition.x}%`,
-                      "--seat-y": `${desktopPosition.y}%`,
-                      "--mobile-seat-x": `${mobilePosition.x}%`,
-                      "--mobile-seat-y": `${mobilePosition.y}%`,
-                    } as CSSProperties}
-                  >
-                    <span>{seat}</span>
-                    {asset ? <img src={asset.src} alt="" /> : null}
-                    <strong>{playerName}</strong>
-                    <small>{character?.name ?? "미할당"}</small>
-                  </div>
-                );
-              })}
-              <div className="snvPlayGrimoireCenter"><strong>1일차</strong><span>첫날 밤</span></div>
-            </div>
           </div>
 
           <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
