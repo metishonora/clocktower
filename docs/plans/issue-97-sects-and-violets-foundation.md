@@ -153,10 +153,17 @@ light identity card rather than inheriting the Night inspector palette.
 Day also owns light variants of the destructive return-confirmation dialog and the shared character
 detail dialog. Their headings, body copy, metadata, links, close/cancel actions, and destructive CTA
 use explicit Day contrast while the blurred backdrop remains dark enough to preserve modal focus.
+The Day Grimoire is fully light rather than retaining Night seat cards: the board, unassigned seats,
+Good and Evil assigned seats, labels, selection, and current-actor treatment all switch to readable
+light surfaces while preserving alignment and character-kind accents.
 
 After the role selection is confirmed, the player count, demon choice, and selected roster are locked
 so an accidental click cannot discard seating or live-game state. Confirmed role cards remain usable for
 switching the role-description panel, but they no longer mutate the roster.
+
+`새 게임` sits beside `저장 / 불러오기` in the utility navigation. It always requires destructive
+confirmation and then clears the roster, seats, names, alignment overrides, Reveal history, and phase
+progress before returning to the default 7-Player Fang Gu role-selection screen.
 
 ## Approved Scope
 

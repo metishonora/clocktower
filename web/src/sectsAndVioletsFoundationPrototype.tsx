@@ -113,6 +113,7 @@ export function SectsAndVioletsFoundationPrototype() {
   const [activeCharacterId, setActiveCharacterId] = useState("fangGu");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
+  const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
   const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
   const [revealedStepIds, setRevealedStepIds] = useState<string[]>([]);
   const [informationStepId, setInformationStepId] = useState<string>();
@@ -122,6 +123,8 @@ export function SectsAndVioletsFoundationPrototype() {
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
   const returnCancelRef = useRef<HTMLButtonElement>(null);
+  const newGameTriggerRef = useRef<HTMLButtonElement>(null);
+  const newGameCancelRef = useRef<HTMLButtonElement>(null);
   const informationCloseRef = useRef<HTMLButtonElement>(null);
 
   const distribution = useMemo(() => {
@@ -185,6 +188,16 @@ export function SectsAndVioletsFoundationPrototype() {
   }, [returnConfirmOpen]);
 
   useEffect(() => {
+    if (!newGameConfirmOpen) return;
+    newGameCancelRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeNewGameConfirmation();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [newGameConfirmOpen]);
+
+  useEffect(() => {
     if (!informationStepId) return;
     informationCloseRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -221,6 +234,34 @@ export function SectsAndVioletsFoundationPrototype() {
     setPlayPhase("firstNight");
     setDayComplete(false);
     navigateToTab("seating");
+  };
+
+  const closeNewGameConfirmation = () => {
+    setNewGameConfirmOpen(false);
+    window.setTimeout(() => newGameTriggerRef.current?.focus(), 0);
+  };
+
+  const startNewGame = () => {
+    setNewGameConfirmOpen(false);
+    setDetailsOpen(false);
+    setReturnConfirmOpen(false);
+    setRosterConfirmed(false);
+    setSeatingConfirmed(false);
+    setPlayerCount(7);
+    setDemon("fangGu");
+    setSelectedIds(["fangGu"]);
+    setSeatAssignments({});
+    setSeatAlignments({});
+    setSeatNames({});
+    setSelectedSeat(undefined);
+    setPendingCharacterId(undefined);
+    setActiveCharacterId("fangGu");
+    setFirstNightStepIndex(0);
+    setRevealedStepIds([]);
+    setInformationStepId(undefined);
+    setPlayPhase("firstNight");
+    setDayComplete(false);
+    navigateToTab("roles");
   };
 
   const choosePlayerCount = (count: number) => {
@@ -393,6 +434,7 @@ export function SectsAndVioletsFoundationPrototype() {
       </header>
 
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
+        <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
         <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
       </nav>
 
@@ -769,6 +811,18 @@ export function SectsAndVioletsFoundationPrototype() {
             <div>
               <button ref={returnCancelRef} type="button" onClick={closeReturnConfirmation}>취소</button>
               <button type="button" onClick={returnToSeating}>초기화하고 돌아가기</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {newGameConfirmOpen ? (
+        <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeNewGameConfirmation(); }}>
+          <section className="snvReturnDialog" role="dialog" aria-modal="true" aria-label="새 게임 시작 확인">
+            <h2>새 게임을 시작할까요?</h2>
+            <p>현재 직업 선택, 좌석, 진행 상태가 모두 초기화됩니다.</p>
+            <div>
+              <button ref={newGameCancelRef} type="button" onClick={closeNewGameConfirmation}>취소</button>
+              <button type="button" className="snvDestructiveAction" onClick={startNewGame}>새 게임 시작</button>
             </div>
           </section>
         </div>

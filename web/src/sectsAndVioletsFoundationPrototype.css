@@ -8,10 +8,11 @@
 .snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
 .snvPrototypeHeader p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
 .snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .72s ease, background .72s ease, border-color .72s ease, transform .72s ease; }
-.snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; }
+.snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; gap: 8px; }
 .snvSurfaceTabs { display: flex; max-width: 1180px; margin: 0 auto 22px; gap: 8px; }
 .snvUtilityTabs button, .snvSurfaceTabs button, .snvChoiceRow button, .snvStepActions button, .snvConfirmRoster, .snvBackToRoster { border: 1px solid rgba(230, 209, 237, .2); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-weight: 800; cursor: pointer; }
 .snvUtilityTabs button { padding: 8px 14px; font-size: .72rem; }
+.snvUtilityTabs .snvNewGameTab { border-color: rgba(240, 101, 122, .34); color: #ffdce2; }
 .snvSurfaceTabs button { min-width: 104px; padding: 11px 20px; }
 .snvUtilityTabs button.active, .snvSurfaceTabs button.active, .snvChoiceRow button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; box-shadow: 0 8px 26px rgba(65, 23, 83, .42); }
 .snvSurfaceTabs button:disabled { color: #766d7b; cursor: not-allowed; }
@@ -155,6 +156,7 @@
 .snvReturnDialog > div { display: flex; justify-content: flex-end; gap: 8px; }
 .snvReturnDialog button { padding: 10px 13px; border: 1px solid rgba(230, 209, 237, .2); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-weight: 800; cursor: pointer; }
 .snvReturnDialog button:last-child { border-color: rgba(214, 169, 226, .48); background: #82509a; }
+.snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
 @keyframes snvPanelSwapIn { from { transform: translateX(14px); } to { transform: translateX(0); } }
 .snvStorageSurface { display: grid; max-width: 1180px; margin: 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .snvStorageSurface article { display: grid; min-height: 260px; padding: 28px; align-content: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
@@ -220,6 +222,7 @@
 .snvDayMode .snvPrototypeHeader p { color: #725f77; }
 .snvDayMode .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
 .snvDayMode .snvUtilityTabs button, .snvDayMode .snvSurfaceTabs button { border-color: rgba(92, 57, 101, .2); color: #442e49; background: rgba(255, 255, 255, .42); }
+.snvDayMode .snvUtilityTabs .snvNewGameTab { border-color: rgba(170, 50, 75, .34); color: #8f2f43; background: rgba(255, 248, 249, .7); }
 .snvDayMode .snvUtilityTabs button.active, .snvDayMode .snvSurfaceTabs button.active { border-color: #81508f; color: #fff; background: #82509a; box-shadow: 0 8px 26px rgba(88, 49, 101, .2); }
 .snvDayMode .snvSurfaceTabs button:disabled { color: #9b8b9f; }
 .snvDayMode .snvSetupControls, .snvDayMode .snvCatalogPreview, .snvDayMode .snvSeatingSurface, .snvDayMode .snvStorageSurface article { border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .64); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
@@ -231,7 +234,16 @@
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
 .snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
 .snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
-.snvDayMode .snvGrimoireDraft { color: #35283a; border-color: rgba(88, 55, 97, .26); background: #cbb9d1; box-shadow: none; }
+.snvDayMode .snvGrimoireDraft { color: #35283a; border-color: rgba(88, 55, 97, .2); background: linear-gradient(145deg, #fffdfb, #eee5f0); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .62); }
+.snvDayMode .snvGrimoireDraft > button { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
+.snvDayMode .snvGrimoireDraft > button.unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
+.snvDayMode .snvGrimoireDraft > button.assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
+.snvDayMode .snvGrimoireDraft > button.assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
+.snvDayMode .snvGrimoireDraft > button.selected, .snvDayMode .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
+.snvDayMode .snvGrimoireDraft > button.assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
+.snvDayMode .snvGrimoireDraft > button .snvSeatNumber { color: #75637a; }
+.snvDayMode .snvGrimoireDraft > button .snvSeatPlayerName { color: #302535; }
+.snvDayMode .snvGrimoireDraft > button small { color: #6b5a70; }
 .snvDayMode .snvGrimoireCenter { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
 .snvDayMode .snvGrimoireCenter strong { color: #382b3d; }
 .snvDayMode .snvGrimoireCenter span { color: #705e75; }
@@ -254,9 +266,10 @@
 .snvDayMode .snvReturnDialog p { color: #594b5e; }
 .snvDayMode .snvReturnDialog button { border-color: rgba(88, 55, 97, .2); color: #47364c; background: rgba(255, 255, 255, .58); }
 .snvDayMode .snvReturnDialog button:last-child { border-color: #82509a; color: #fff; background: #82509a; }
-.snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
+.snvDayMode .snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
+.snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
-  .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition-duration: 0s; }
+  .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition-duration: 0s; }
 }
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }

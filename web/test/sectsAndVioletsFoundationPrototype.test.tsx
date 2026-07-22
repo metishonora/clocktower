@@ -394,6 +394,34 @@ test("places Save and Load at the far edge as a separate surface", async () => {
   expect(within(storage).getByRole("button", { name: "import JSON" })).toBeTruthy();
 });
 
+test("starts a fresh game from the utility navigation after destructive confirmation", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsFoundationPrototype />);
+  const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
+
+  await user.click(within(prototype).getByRole("button", { name: "9명" }));
+  await user.click(within(prototype).getByRole("button", { name: "노 다시" }));
+  await user.click(within(prototype).getByRole("button", { name: "시계공" }));
+
+  const utilityNavigation = within(prototype).getByRole("navigation", { name: "게임 데이터" });
+  await user.click(within(utilityNavigation).getByRole("button", { name: "새 게임" }));
+  const confirmation = screen.getByRole("dialog", { name: "새 게임 시작 확인" });
+  expect(within(confirmation).getByText(/직업 선택, 좌석, 진행 상태가 모두 초기화/)).toBeTruthy();
+
+  await user.click(within(confirmation).getByRole("button", { name: "취소" }));
+  expect(within(prototype).getByRole("button", { name: "9명" }).getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).getByRole("button", { name: "노 다시" }).getAttribute("aria-pressed")).toBe("true");
+
+  await user.click(within(utilityNavigation).getByRole("button", { name: "새 게임" }));
+  await user.click(within(screen.getByRole("dialog", { name: "새 게임 시작 확인" })).getByRole("button", { name: "새 게임 시작" }));
+
+  expect(within(prototype).getByRole("button", { name: "직업" }).getAttribute("aria-current")).toBe("page");
+  expect(within(prototype).getByRole("button", { name: "7명" }).getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).getByRole("button", { name: "팡 구" }).getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).getByRole("button", { name: "시계공" }).getAttribute("aria-pressed")).toBe("false");
+  expect(within(prototype).getByRole("button", { name: "마도서" }).hasAttribute("disabled")).toBe(true);
+});
+
 test("keeps a fixed character summary slot with icons and opens the baseline detail dialog", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsFoundationPrototype />);
