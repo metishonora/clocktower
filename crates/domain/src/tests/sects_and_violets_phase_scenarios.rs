@@ -182,12 +182,14 @@ fn first_night_enters_a_manual_day_bridge_then_the_official_later_night_order() 
             "night:philosopher",
             "night:snakeCharmer",
             "night:witch",
-            "night:vortox",
+            "night:demon",
             "night:seamstress",
             "night:mathematician",
             "night:toDay",
         ]
     );
+    assert_eq!(night["value"]["phaseOverview"][3]["character"], "vortox");
+    assert_eq!(night["value"]["phaseOverview"][3]["support"], "automated");
 }
 
 #[test]

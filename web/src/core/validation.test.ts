@@ -62,6 +62,54 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
+test("accepts the generic S&V Demon attack while preserving the Imp payload contract", () => {
+  const demonAttack = {
+    id: "phase-7",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon",
+      actorPlayerId: "player-7",
+      actorCharacterId: "vortox",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-4",
+        outcome: {
+          kind: "deaths",
+          deaths: [{
+            playerId: "player-4",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "vortox",
+              targetPlayerId: "player-4",
+            },
+          }],
+        },
+      },
+    },
+    summary: "7번 Demon(vortox) → 4번 Savant 공격 · 사망",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+
+  deepEqual<unknown>(parseGameEvent(demonAttack), demonAttack);
+
+  const impWithUnexpectedCharacterSnapshot = {
+    ...demonAttack,
+    payload: {
+      stepId: "night:imp",
+      actorPlayerId: "player-7",
+      actorCharacterId: "imp",
+      resolution: {
+        kind: "impAttack",
+        targetPlayerId: "player-4",
+        outcome: { kind: "death", playerId: "player-4" },
+      },
+    },
+  };
+  throws(() => parseGameEvent(impWithUnexpectedCharacterSnapshot), /이벤트 형식/);
+});
+
 test("rejects the canonical schema-v1 fixture", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
 

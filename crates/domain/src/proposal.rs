@@ -808,6 +808,9 @@ fn night_action_proposal(
                 player_verbose_label(players, target_player_id)
             )
         }
+        NightActionResolution::DemonAttack { .. } => {
+            unreachable!("S&V Demon attacks use the script-specific proposal path")
+        }
     };
     Proposal {
         event: GameEvent {
@@ -816,6 +819,7 @@ fn night_action_proposal(
                 payload: NightActionResolvedPayload {
                     step_id: step.id.clone(),
                     actor_player_id: actor,
+                    actor_character_id: None,
                     resolution,
                 },
             },
