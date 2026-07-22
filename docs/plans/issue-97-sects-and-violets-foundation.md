@@ -449,6 +449,59 @@ visible state.
 8. Issue #112 records that Issue #97 owns Fang Gu's baseline setup adjustment while Issue #112
    owns the jump-specific automation and regression coverage.
 
+## Approved UI Production Plan
+
+The prototype review is complete. Production work must preserve the approved structure instead of
+reopening it component by component:
+
+- utility actions above the `직업 / 마도서 / 진행` tabs;
+- locked role composition after confirmation, with role cards still usable for inspection;
+- role selection → Grimoire assignment → live progression as explicit stages;
+- a non-overlapping rectangular 7–15 Player Grimoire whose own size is derived from its seats;
+- the same Grimoire tab for assignment and live reference, with a current-actor guide;
+- a large current task, right-aligned order on wide layouts, and compact mobile progression;
+- a gradual whole-site Day/Night theme, including fully light Day Grimoire seats and dialogs;
+- destructive confirmation for returning to assignment or starting a new game.
+
+Implement the production integration in these slices:
+
+1. **Freeze contracts and fixtures.** Convert the approved 7-, 9-, and 15-Player specimens into
+   stable black-box workflow tests covering role locking, seat assignment, Day/Night changes, and
+   new-game reset. Keep the development prototype available as a visual regression lab.
+2. **Extract presentation primitives.** Move theme tokens, utility/stage navigation, role cards,
+   role summary, Grimoire seat/card primitives, confirmation dialogs, and phase task/order blocks
+   behind script-neutral presentation props. Do not make S&V import TB screens or vice versa.
+3. **Connect the S&V setup contract.** Replace prototype-local catalog and distribution state with
+   the canonical S&V catalog, setup modifier result, and validation returned by Rust/WASM. Preserve
+   the selected Demon reset rule and the post-confirmation read-only contract.
+4. **Connect seating and confirmation.** Store Player names, clockwise seat order, Actual Character,
+   alignment, and assignment draft in the production setup model. Confirm through the canonical
+   setup command only after every seat is valid; failed confirmation must keep the draft intact.
+5. **Connect the baseline phase skeleton.** Render canonical first-night steps, manual/automated
+   support, Reveal availability, phase completion, and current-actor Grimoire emphasis. #97 lands
+   the official skeleton and honest unsupported fallbacks; Issue #116 completes the operational Day
+   and recurring later-Night UI as character automation arrives.
+6. **Replace the S&V production route.** Make the approved shell the default S&V game UI, retain the
+   lab behind its development entry point, and verify that navigation or script switching cannot
+   leak TB state or assets.
+7. **Responsive and accessibility pass.** Verify every Player count at 360 px, 390 px, iPad
+   portrait/landscape, and desktop. Check seat overlap, panel overflow, safe-area padding, focus
+   return, outside-click/Escape dismissal, reduced motion, full accessible labels, and Day/Night
+   contrast before closing #97.
+
+### Deferred follow-ups
+
+- Issue #113 applies the approved shell to Trouble Brewing after #97 without changing TB rules.
+- Issue #114 owns the reusable rich character-detail panel and content hierarchy.
+- Issue #115 connects S&V save/load, JSON import/export, recovery feedback, and new-game lifecycle.
+- Issue #116 completes canonical Day and recurring later-Night operational UI.
+- Issue #117 owns shared Grimoire status presentation/editing while #105, #110, and other character
+  issues remain responsible for producing canonical status state.
+- Issue #118 owns the Grimoire phase timer, persistence boundary, and background-time behavior.
+
+The #97 production slice may expose the approved utility controls and placeholders needed to keep
+layout stable, but it must not simulate completion of Issues #114–#118.
+
 ## Completion Checks
 
 - `cargo test --workspace`
