@@ -143,6 +143,9 @@ low-contrast state. Day mode does not add a shadow to the Grimoire board, and it
 detail action uses an explicit dark foreground on the light panel.
 The Day Grimoire itself uses an opaque solid dark surface. The Night board's translucent radial
 gradient is not reused because it lets the light page show through and reads as a large grey shadow.
+Its center labels explicitly retain the light Grimoire foreground instead of inheriting the Day
+page text color. Character-owned Play steps show the official role icon beside the task title; that
+icon/title group opens the existing baseline character-detail dialog and returns focus on close.
 
 ## Approved Scope
 

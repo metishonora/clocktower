@@ -247,6 +247,11 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(phaseHeader.firstElementChild?.getAttribute("aria-label")).toBe("마도서로 이동");
   expect(firstNight.querySelector(".snvFirstNightMoon")).toBeNull();
   expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
+  expect(within(firstNight).getByRole("img", { name: "철학자 공식 캐릭터 아이콘" })).toBeTruthy();
+  await user.click(within(firstNight).getByRole("button", { name: "철학자 상세 정보" }));
+  const currentRoleDialog = screen.getByRole("dialog", { name: "철학자 상세 정보" });
+  expect(within(currentRoleDialog).getByText(/선한 직업 하나의 능력을 얻습니다/)).toBeTruthy();
+  await user.click(within(currentRoleDialog).getByRole("button", { name: "상세 정보 닫기" }));
   expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
   expect(within(firstNight).queryByText("수동")).toBeNull();
   expect(within(firstNight).queryByText("1 / 7")).toBeNull();

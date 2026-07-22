@@ -182,6 +182,12 @@
 .snvCurrentStep p { margin: 0; color: #c7b9cc; }
 .snvCurrentStep .snvCurrentStepLabel { margin-top: 0; color: #ead7ee; font-size: .72rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
 .snvCurrentStep .snvCurrentStepLabel + h3 { margin-top: 8px; }
+.snvCurrentStepIdentity { display: flex; margin: 34px 0 12px; align-items: center; gap: 18px; }
+.snvCurrentStepIdentity.interactive { width: fit-content; padding: 8px 12px 8px 8px; border: 1px solid transparent; border-radius: 18px; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.snvCurrentStepIdentity.interactive:hover, .snvCurrentStepIdentity.interactive:focus-visible { border-color: rgba(214, 169, 226, .36); background: rgba(255, 255, 255, .055); outline: none; }
+.snvCurrentStepIdentity img { width: 82px; height: 82px; flex: 0 0 auto; object-fit: contain; filter: drop-shadow(0 9px 20px rgba(4, 2, 7, .32)); }
+.snvCurrentStepIdentity h3 { margin: 0; }
+.snvCurrentStepRoleName { font: clamp(2.6rem, 5vw, 4.4rem)/1 Georgia, serif; }
 .snvStepActions { display: flex; margin-top: 42px; gap: 10px; }
 .snvStepActions button { padding: 12px 18px; border-color: #c89bd3; background: #82509a; }
 .snvStepActions button.secondary { border-color: rgba(230, 209, 237, .2); background: transparent; }
@@ -225,7 +231,9 @@
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
 .snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
 .snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
-.snvDayMode .snvGrimoireDraft { background: #1c1622; box-shadow: none; }
+.snvDayMode .snvGrimoireDraft { color: #f8f0fb; background: #2a2130; box-shadow: none; }
+.snvDayMode .snvGrimoireCenter strong { color: #f8f0fb; }
+.snvDayMode .snvGrimoireCenter span { color: #c7b6cc; }
 .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
   .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition-duration: 0s; }
@@ -246,6 +254,8 @@
   .snvFirstNightHeader { grid-template-columns: 72px minmax(0, 1fr) 72px; }
   .snvFirstNightHeader h2 { font-size: 2.2rem; }
   .snvFirstNightHeader button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
+  .snvCurrentStepIdentity { margin-top: 28px; gap: 12px; }
+  .snvCurrentStepIdentity img { width: 64px; height: 64px; }
   .snvFirstNightSurface .snvPhaseOverview { order: 3; }
   .snvCatalogPreview article { grid-template-columns: 1fr; }
   .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }

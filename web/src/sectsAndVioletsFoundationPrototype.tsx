@@ -151,6 +151,7 @@ export function SectsAndVioletsFoundationPrototype() {
     [selectedIds],
   );
   const currentFirstNightStep = firstNightSteps[firstNightStepIndex];
+  const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -621,7 +622,20 @@ export function SectsAndVioletsFoundationPrototype() {
             {playPhase === "firstNight" && currentFirstNightStep ? (
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
-                <h3>{currentFirstNightStep.name}</h3>
+                {currentFirstNightAsset && currentFirstNightStep.characterId ? (
+                  <button
+                    ref={detailTriggerRef}
+                    type="button"
+                    className="snvCurrentStepIdentity interactive"
+                    aria-label={`${currentFirstNightStep.name} 상세 정보`}
+                    aria-haspopup="dialog"
+                    aria-expanded={detailsOpen}
+                    onClick={() => { setActiveCharacterId(currentFirstNightStep.characterId!); setDetailsOpen(true); }}
+                  >
+                    <img src={currentFirstNightAsset.src} alt={`${currentFirstNightStep.name} 공식 캐릭터 아이콘`} />
+                    <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{currentFirstNightStep.name}</span>
+                  </button>
+                ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
                   {currentFirstNightStep.support === "automated" ? (
