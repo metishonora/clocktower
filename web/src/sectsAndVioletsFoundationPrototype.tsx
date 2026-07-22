@@ -480,7 +480,7 @@ export function SectsAndVioletsFoundationPrototype() {
                   <button
                     key={seat}
                     type="button"
-                    className={`fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "currentActor " : ""}${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
+                    className={`fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "snvCurrentActorSeat " : ""}${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
                     aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
                     aria-pressed={selectedSeat === seat}
                     style={{
@@ -599,8 +599,8 @@ export function SectsAndVioletsFoundationPrototype() {
       ) : activeTab === "play" ? (
         <section className="snvManualSurface snvFirstNightSurface snvTabPanel" aria-label="첫날 밤 진행">
           <header className="snvFirstNightHeader">
-            <h2>1일차 밤</h2>
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
+            <h2>1일차 밤</h2>
           </header>
 
           <div className="snvFirstNightPrimary">
@@ -623,9 +623,8 @@ export function SectsAndVioletsFoundationPrototype() {
               </article>
             ) : (
               <article className="snvCurrentStep complete">
-                <p className="snvCurrentStepLabel">첫날 밤</p>
-                <h3>모든 단계 완료</h3>
-                <p>첫날 밤 순서의 마지막까지 확인했습니다.</p>
+                <h3>1일차 밤 종료</h3>
+                <div className="snvStepActions"><button type="button">낮으로</button></div>
               </article>
             )}
           </div>

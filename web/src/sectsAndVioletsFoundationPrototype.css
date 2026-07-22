@@ -96,7 +96,7 @@
 .snvGrimoireDraft > button.kind-demon { --kind-accent: #ed6679; }
 .snvGrimoireDraft > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
 .snvGrimoireDraft > button.selected, .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
-.snvGrimoireDraft > button.assigned.currentActor { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
+.snvGrimoireDraft > button.assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
 .snvGrimoireDraft > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
 .snvGrimoireDraft > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
 .snvGrimoireDraft > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
@@ -163,7 +163,7 @@
 .snvManualSurface { grid-template-columns: minmax(0, 1fr) 320px; padding: 28px; }
 .snvFirstNightHeader { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
 .snvFirstNightHeader h2 { grid-column: 2; margin: 0; text-align: center; font: clamp(2.4rem, 5vw, 4.4rem)/.95 Georgia, serif; }
-.snvFirstNightHeader button { grid-column: 3; justify-self: end; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvFirstNightHeader button { grid-column: 1; grid-row: 1; justify-self: start; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .snvFirstNightPrimary { display: grid; gap: 18px; min-width: 0; }
 .snvPhaseContext { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .12); padding-bottom: 18px; }
 .snvPhaseContext span { color: #c9b4d1; font-size: .82rem; font-weight: 850; }
@@ -212,7 +212,7 @@
   .snvPhaseContext { grid-column: 1; }
   .snvFirstNightHeader { grid-template-columns: 72px minmax(0, 1fr) 72px; }
   .snvFirstNightHeader h2 { font-size: 2.2rem; }
-  .snvFirstNightHeader button { grid-column: 3; padding: 7px 9px; font-size: .62rem; }
+  .snvFirstNightHeader button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
   .snvFirstNightSurface .snvPhaseOverview { order: 3; }
   .snvCatalogPreview article { grid-template-columns: 1fr; }
   .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }

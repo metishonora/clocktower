@@ -243,6 +243,8 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   let firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   expect(firstNight.classList.contains("snvTabPanel")).toBe(true);
   expect(within(firstNight).getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
+  const phaseHeader = firstNight.querySelector(".snvFirstNightHeader") as HTMLElement;
+  expect(phaseHeader.firstElementChild?.getAttribute("aria-label")).toBe("마도서로 이동");
   expect(firstNight.querySelector(".snvFirstNightMoon")).toBeNull();
   expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
   expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
@@ -254,7 +256,9 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(within(firstNight).queryByText("마녀")).toBeNull();
   await user.click(within(firstNight).getByRole("button", { name: "마도서로 이동" }));
   const currentActor = within(seating).getByRole("button", { name: /4번 좌석.*철학자.*현재 행동자/ });
-  expect(currentActor.classList.contains("currentActor")).toBe(true);
+  expect(currentActor.classList.contains("snvCurrentActorSeat")).toBe(true);
+  expect(currentActor.classList.contains("currentActor")).toBe(false);
+  expect(within(currentActor).getByText("플레이어 4").classList.contains("snvSeatPlayerName")).toBe(true);
   expect(within(seating).getByLabelText("현재 행동자 안내").textContent).toContain("현재 행동자");
   await user.click(within(prototype).getByRole("button", { name: "진행" }));
   firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
@@ -411,6 +415,12 @@ test("starts the first night with the always-present evil information steps when
   expect(within(phase).getByRole("button", { name: "정보 공개" })).toBeTruthy();
   expect(within(phase).getByRole("button", { name: "다음 단계" })).toBeTruthy();
   expect(within(phase).getByRole("list", { name: "첫날 밤 순서" }).textContent).toBe("현재하수인 정보대기악마 정보");
+
+  await user.click(within(phase).getByRole("button", { name: "다음 단계" }));
+  await user.click(within(phase).getByRole("button", { name: "다음 단계" }));
+  expect(within(phase).getByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
+  expect(within(phase).queryByText(/모든 단계 완료/)).toBeNull();
+  expect(within(phase).getByRole("button", { name: "낮으로" })).toBeTruthy();
 });
 
 function expectNoSeatOverlap(

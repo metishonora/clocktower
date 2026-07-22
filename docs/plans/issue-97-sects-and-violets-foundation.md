@@ -123,6 +123,12 @@ for that step and remains available without emphasis afterward. The phase header
 single label `n일차 밤` without a separate Night icon. This specimen intentionally does not add Day,
 later-night, persistence, or production runtime wiring yet.
 
+The Play header places `← 마도서` immediately left of the centered `n일차 밤` label. Current-actor
+seat styling uses a prototype-prefixed class so the production phase-control `.currentActor` rules
+cannot truncate or reposition seat contents. Completing the order replaces explanatory completion
+copy with the concise `n일차 밤 종료` state and a single `낮으로` transition CTA; the Day destination
+remains outside this First Night specimen.
+
 ## Approved Scope
 
 - Add the official Sects & Violets catalog: 13 Townsfolk, 4 Outsiders, 4 Minions, and 4 Demons.
