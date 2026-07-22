@@ -27,6 +27,7 @@ test("selects a complete roster, shows the active character detail, and advances
   expect(within(prototype).getByText("팡 구 보정 · 마을 주민 -1 · 외부인 +1")).toBeTruthy();
   expect(within(prototype).queryByRole("heading", { name: "기본 구성" })).toBeNull();
   expect(within(prototype).queryByRole("button", { name: "미완성 시료" })).toBeNull();
+  expect(within(prototype).queryByLabelText("직업 선택 현황")).toBeNull();
 
   const confirmRoster = within(prototype).getByRole("button", { name: "직업 선택 확정" });
   expect(confirmRoster.classList.contains("prominent")).toBe(true);
@@ -93,7 +94,10 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(grimoire.parentElement?.classList.contains("stable")).toBe(true);
   expect((within(grimoire).getByRole("button", { name: /1번 좌석/ }) as HTMLElement).style.getPropertyValue("--mobile-seat-x")).not.toBe("");
   expect((grimoire as HTMLElement).style.getPropertyValue("--mobile-grimoire-height")).toBe("356px");
-  expect(within(seating).queryByRole("button", { name: "배치 확정" })).toBeNull();
+  const initialSeatingConfirm = within(seating).getByRole("button", { name: "배치 확정" });
+  expect(initialSeatingConfirm.classList.contains("floatingAction")).toBe(true);
+  expect(initialSeatingConfirm.classList.contains("prominent")).toBe(true);
+  expect(initialSeatingConfirm.hasAttribute("disabled")).toBe(true);
   expect(within(seating).getByLabelText("좌석 편집기").classList.contains("idle")).toBe(true);
 
   await user.click(within(seating).getByRole("button", { name: "무작위 배치" }));
@@ -104,7 +108,7 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(randomizedConfirm.hasAttribute("disabled")).toBe(false);
   await user.click(within(seating).getByRole("button", { name: "배치 초기화" }));
   expect(within(seating).queryAllByRole("button", { name: /미할당/ })).toHaveLength(7);
-  expect(within(seating).queryByRole("button", { name: "배치 확정" })).toBeNull();
+  expect(within(seating).getByRole("button", { name: "배치 확정" }).hasAttribute("disabled")).toBe(true);
   expect(within(seating).getByRole("button", { name: /1번 좌석.*미할당/ }).classList.contains("unassigned")).toBe(true);
 
   const seatingTray = within(seating).getByRole("complementary", { name: "선택한 직업" });
@@ -113,6 +117,10 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(seatingTray.classList.contains("mobileOpen")).toBe(true);
   expect(within(seatingTray).getByRole("textbox", { name: "1번 좌석 이름" })).toBeTruthy();
   expect(within(seatingTray).getByText("1번 좌석")).toBeTruthy();
+  const inspectorHeader = within(seatingTray).getByLabelText("좌석 편집기 머리글");
+  expect(within(inspectorHeader).getByText("1번 좌석")).toBeTruthy();
+  expect(within(inspectorHeader).getByText("미할당")).toBeTruthy();
+  expect(within(inspectorHeader).getByLabelText("진영 미정")).toBeTruthy();
   expect(within(seatingTray).queryByRole("button", { name: "직업 선택 팝업 열기" })).toBeNull();
   expect(within(seatingTray).queryByRole("button", { name: "좌석 설정 패널 닫기" })).toBeNull();
   const clockmaker = within(seatingTray).getByRole("button", { name: "시계공 배치" });
@@ -124,6 +132,8 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(partialConfirm.classList.contains("prominent")).toBe(true);
   expect(partialConfirm.hasAttribute("disabled")).toBe(true);
   expect(clockmaker.getAttribute("aria-pressed")).toBe("true");
+  expect(within(inspectorHeader).getByText("시계공")).toBeTruthy();
+  expect(within(inspectorHeader).getByLabelText("선한 진영")).toBeTruthy();
   const assignedSeat = within(seating).getByRole("button", { name: /1번 좌석.*시계공/ });
   expect(assignedSeat.querySelector("img")?.getAttribute("src")).toBe("/assets/characters/snv/clockmaker_g.webp");
   expect(assignedSeat.classList.contains("alignment-good")).toBe(true);
@@ -140,7 +150,7 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(assignedClockmaker.classList.contains("selectedForSeat")).toBe(true);
   await user.click(assignedClockmaker);
   expect(within(seating).getByRole("button", { name: /2번 좌석.*미할당/ })).toBeTruthy();
-  expect(within(seating).queryByRole("button", { name: "배치 확정" })).toBeNull();
+  expect(within(seating).getByRole("button", { name: "배치 확정" }).hasAttribute("disabled")).toBe(true);
 
   expect(seatingTray.classList.contains("mobileOpen")).toBe(true);
   await user.click(within(seating).getByRole("button", { name: "좌석 설정 패널 닫기 배경" }));
@@ -186,6 +196,11 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
 
   expect(within(seating).queryByRole("complementary", { name: "선택한 직업" })).toBeNull();
   const details = within(seating).getByRole("complementary", { name: "좌석 상세 정보" });
+  expect(details.classList.contains("mobileCollapsed")).toBe(true);
+  expect(within(seating).queryByRole("heading", { name: "플레이어 1" })).toBeNull();
+  expect(within(seating).getByRole("button", { name: "배치로 돌아가기" }).textContent).toContain("←");
+  await user.click(within(seating).getByRole("button", { name: /1번 좌석.*시계공/ }));
+  expect(details.classList.contains("mobileOpen")).toBe(true);
   expect(within(details).getByRole("heading", { name: "플레이어 1" })).toBeTruthy();
   expect(within(details).getByText("선한 진영")).toBeTruthy();
   expect(within(details).getByText("시계공")).toBeTruthy();
@@ -194,6 +209,10 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(within(details).getByRole("button", { name: "시계공 상세 정보" })).toBeTruthy();
   expect(within(details).queryByRole("button", { name: "배치 편집" })).toBeNull();
   expect(details.classList.contains("transitionIn")).toBe(true);
+  await user.click(within(seating).getByRole("button", { name: "좌석 설정 패널 닫기 배경" }));
+  expect(details.classList.contains("mobileCollapsed")).toBe(true);
+  await user.click(within(seating).getByRole("button", { name: /1번 좌석.*시계공/ }));
+  expect(details.classList.contains("mobileOpen")).toBe(true);
   expect(within(seating).getByText("1일차 밤")).toBeTruthy();
   expect(within(seating).getByText("00:00")).toBeTruthy();
 
@@ -206,13 +225,13 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(prototype.classList.contains("tabBackward")).toBe(true);
   expect(within(prototype).getByRole("complementary", { name: "좌석 상세 정보" })).toBeTruthy();
 
-  await user.click(within(prototype).getByRole("button", { name: "배치 단계로 돌아가기" }));
+  await user.click(within(prototype).getByRole("button", { name: "배치로 돌아가기" }));
   let confirmation = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
   expect(within(confirmation).getByText(/진행 중인 게임과 모든 상태가 초기화/)).toBeTruthy();
   await user.click(within(confirmation).getByRole("button", { name: "취소" }));
   expect(within(prototype).getByRole("complementary", { name: "좌석 상세 정보" })).toBeTruthy();
 
-  await user.click(within(prototype).getByRole("button", { name: "배치 단계로 돌아가기" }));
+  await user.click(within(prototype).getByRole("button", { name: "배치로 돌아가기" }));
   confirmation = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
   await user.click(within(confirmation).getByRole("button", { name: "초기화하고 돌아가기" }));
   expect(within(prototype).getByRole("complementary", { name: "선택한 직업" })).toBeTruthy();

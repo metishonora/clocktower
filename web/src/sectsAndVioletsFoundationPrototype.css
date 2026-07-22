@@ -28,12 +28,6 @@
 .snvDistributionCard strong { font: 1.9rem Georgia, serif; }
 .snvDistributionCard span { color: #baaac3; font-size: .72rem; font-weight: 750; }
 .snvModifierNote { margin: 0; padding: 10px 12px; border-radius: 12px; color: #e7c1ef; background: rgba(255, 255, 255, .04); font-size: .78rem; font-weight: 800; text-align: center; }
-.snvRosterProgress { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(231, 208, 239, .12); }
-.snvRosterProgress > div { display: flex; align-items: center; justify-content: space-between; color: #c7b4cf; font-size: .8rem; font-weight: 850; }
-.snvRosterProgress > div strong { color: #e7c1ef; }
-.snvRosterProgress ul { display: grid; margin: 12px 0 0; padding: 0; grid-template-columns: repeat(2, 1fr); gap: 7px; list-style: none; }
-.snvRosterProgress li { display: flex; padding: 9px 10px; align-items: center; justify-content: space-between; border-radius: 11px; color: #ad9bb6; background: rgba(255, 255, 255, .035); font-size: .74rem; }
-.snvRosterProgress li strong { color: #f2e8f5; }
 .snvConfirmRoster { width: 100%; margin-top: 18px; padding: 13px 18px; border-color: #d6a9e2; background: #82509a; }
 .snvStageForward { display: flex; align-items: center; justify-content: space-between; }
 .snvStageForward small { font-size: .7rem; font-weight: 900; opacity: .78; }
@@ -83,6 +77,7 @@
 .snvSeatingSurface > header > strong { color: #dfbee6; font-size: .8rem; }
 .snvSeatingToolbar { display: flex; justify-content: flex-end; gap: 8px; }
 .snvSeatingToolbar button { padding: 9px 13px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvSeatingToolbar .snvToolbarBack { width: 42px; height: 38px; margin-right: auto; padding: 0; font-size: 1.15rem; }
 .snvSeatingWorkspace { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
 .snvGrimoireDraft { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
 .snvGrimoireDraft > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
@@ -120,6 +115,13 @@
 .snvSeatInspector { display: grid; box-sizing: border-box; height: 178px; padding: 14px; align-content: start; gap: 7px; border-radius: 14px; background: rgba(130, 80, 154, .15); overflow: hidden; }
 .snvSeatInspector > span { color: #bba9c3; font-size: .7rem; font-weight: 850; }
 .snvSeatInspector > strong { min-height: 24px; font: 1.12rem Georgia, serif; }
+.snvSeatInspectorHeader { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.snvSeatInspectorHeader > span:first-child { color: #c8b6cf; font-size: .72rem; font-weight: 850; }
+.snvSeatInspectorHeader > strong { min-width: 0; overflow: hidden; font: 1.05rem Georgia, serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.snvAlignmentIcon { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .9rem; }
+.snvAlignmentIcon.alignment-good { color: #74d1ef; background: rgba(67, 154, 189, .16); }
+.snvAlignmentIcon.alignment-evil { color: #f17a90; background: rgba(196, 68, 94, .16); }
+.snvAlignmentIcon.unassigned { color: #8f8295; background: rgba(255, 255, 255, .035); }
 .snvSeatInspector input { box-sizing: border-box; width: 100%; padding: 9px 10px; border: 1px solid rgba(230, 209, 237, .2); border-radius: 9px; color: #f8f0fb; background: rgba(10, 5, 13, .42); font: inherit; font-size: .78rem; }
 .snvSeatInspector input::placeholder { color: #817486; }
 .snvSeatInspector button { margin-top: auto; padding: 8px 10px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 9px; color: inherit; background: rgba(255, 255, 255, .04); font: inherit; font-size: .68rem; font-weight: 800; cursor: pointer; }
@@ -202,15 +204,16 @@
   .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
   .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
   .snvGrimoireDraft > button img { width: 38px; height: 38px; }
-  .snvSeatingTray.mobileCollapsed { display: none; }
-  .snvSeatingTray.mobileOpen { position: fixed; z-index: 190; right: 0; bottom: 0; left: 0; display: grid; width: auto; height: auto; max-height: min(430px, calc(100dvh - 20px)); padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #201426; box-shadow: 0 -22px 70px rgba(0, 0, 0, .58); overflow: auto; animation: snvSeatPanelIn .22s ease-out; }
+  .snvSeatingTray.mobileCollapsed, .snvLiveSeatDetails.mobileCollapsed { display: none; }
+  .snvSeatingTray.mobileOpen, .snvLiveSeatDetails.mobileOpen { position: fixed; z-index: 190; right: 0; bottom: 0; left: 0; display: grid; width: auto; height: auto; max-height: min(430px, calc(100dvh - 20px)); padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #201426; box-shadow: 0 -22px 70px rgba(0, 0, 0, .58); overflow: auto; animation: snvSeatPanelIn .22s ease-out; }
   .snvSeatingTray > header { display: none; }
   .snvMobileSeatPanelBackdrop { position: fixed; z-index: 189; inset: 0; display: block; width: 100%; border: 0; background: rgba(6, 3, 8, .62); }
   .snvSelectedRosterTray { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
   .snvSelectedRosterTray button.compact { min-height: 36px; padding: 5px 7px; border-radius: 9px; gap: 6px; }
   .snvSelectedRosterTray button.compact .compactIcon { width: 20px; height: 20px; }
   .snvSelectedRosterTray button.compact span { color: #fff7ff; font-size: .66rem; font-weight: 900; }
-  .snvSeatInspector { height: 108px; padding: 10px; grid-template-columns: 78px minmax(0, 1fr); gap: 6px 8px; align-items: center; }
+  .snvSeatInspector { height: 96px; padding: 10px; grid-template-columns: 1fr; gap: 8px; align-items: center; }
+  .snvSeatInspectorHeader { grid-template-columns: auto minmax(0, 1fr) 30px; }
   .snvSeatInspector > span, .snvSeatInspector > strong { min-width: 0; }
   .snvSeatInspector > strong { overflow: hidden; font-size: .96rem; text-overflow: ellipsis; white-space: nowrap; }
   .snvSeatInspector > strong { grid-column: 1 / -1; }

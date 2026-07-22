@@ -358,14 +358,6 @@ export function SectsAndVioletsFoundationPrototype() {
                   : `${selectedDemon.name} 보정 · 마을 주민 ${signed(distribution.delta[0])} · 외부인 ${signed(distribution.delta[1])}`}
               </p>
             </section>
-            <section className="snvRosterProgress" aria-label="직업 선택 현황">
-              <div>
-                <span>직업 선택</span>
-              </div>
-              <ul>
-                {kindOrder.map((kind) => <li key={kind}><span>{kindLabels[kind]}</span><strong>{selectedByKind[kind]}/{requiredByKind[kind]}</strong></li>)}
-              </ul>
-            </section>
           </div>
 
           <section className="snvCatalogPreview" aria-label="직업 선택 패널">
@@ -401,10 +393,10 @@ export function SectsAndVioletsFoundationPrototype() {
           </section>
         </section>
       ) : activeTab === "seating" ? (
-        <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed && (assignedCount > 0 || pendingCharacterId) ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
+        <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
           <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
             {seatingConfirmed ? (
-              <button ref={returnTriggerRef} type="button" onClick={() => setReturnConfirmOpen(true)}>배치 단계로 돌아가기</button>
+              <button ref={returnTriggerRef} type="button" className="snvToolbarBack" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
             ) : (
               <>
               <button type="button" onClick={randomizeSeating}>무작위 배치</button>
@@ -450,8 +442,16 @@ export function SectsAndVioletsFoundationPrototype() {
                 {seatingConfirmed ? <button type="button" aria-label="진행으로 이동" onClick={() => navigateToTab("play")}>진행 →</button> : null}
               </div>
             </div>
+            {selectedSeat ? (
+              <button
+                type="button"
+                className="snvMobileSeatPanelBackdrop"
+                aria-label="좌석 설정 패널 닫기 배경"
+                onClick={() => { setSelectedSeat(undefined); setPendingCharacterId(undefined); }}
+              />
+            ) : null}
             {seatingConfirmed ? (
-              <aside className="snvLiveSeatDetails transitionIn" aria-label="좌석 상세 정보">
+              <aside className={`snvLiveSeatDetails transitionIn ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="좌석 상세 정보">
                 {selectedSeat && selectedSeatCharacter ? (
                   <>
                     <header>
@@ -482,28 +482,30 @@ export function SectsAndVioletsFoundationPrototype() {
               </aside>
             ) : (
             <>
-            {selectedSeat ? (
-              <button
-                type="button"
-                className="snvMobileSeatPanelBackdrop"
-                aria-label="좌석 설정 패널 닫기 배경"
-                onClick={() => { setSelectedSeat(undefined); setPendingCharacterId(undefined); }}
-              />
-            ) : null}
             <aside className={`snvSeatingTray ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
               <header><span>직업</span><strong>{assignedCount}/{playerCount}</strong></header>
               <div className={`snvSeatInspector fixed ${!selectedSeat && !pendingCharacterId ? "idle" : ""}`} aria-label="좌석 편집기">
-                <span>{selectedSeat ? `${selectedSeat}번 좌석` : pendingCharacterId ? "배치할 좌석 선택" : "좌석 또는 직업 선택"}</span>
                 {selectedSeat ? (
-                  <input
-                    type="text"
-                    aria-label={`${selectedSeat}번 좌석 이름`}
-                    placeholder="플레이어 이름"
-                    value={seatNames[selectedSeat] ?? ""}
-                    onChange={(event) => setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }))}
-                  />
-                ) : null}
-                <strong>{selectedSeat ? characters.find((character) => character.id === seatAssignments[selectedSeat])?.name ?? "미할당" : pendingCharacterId ? characters.find((character) => character.id === pendingCharacterId)?.name : ""}</strong>
+                  <>
+                    <div className="snvSeatInspectorHeader" aria-label="좌석 편집기 머리글">
+                      <span>{selectedSeat}번 좌석</span>
+                      <strong>{characters.find((character) => character.id === seatAssignments[selectedSeat])?.name ?? "미할당"}</strong>
+                      <span
+                        className={`snvAlignmentIcon ${seatAssignments[selectedSeat] ? `alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])}` : "unassigned"}`}
+                        aria-label={seatAssignments[selectedSeat] ? `${(seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "악한" : "선한"} 진영` : "진영 미정"}
+                      >{seatAssignments[selectedSeat] ? ((seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "☾" : "☀") : "○"}</span>
+                    </div>
+                    <input
+                      type="text"
+                      aria-label={`${selectedSeat}번 좌석 이름`}
+                      placeholder="플레이어 이름"
+                      value={seatNames[selectedSeat] ?? ""}
+                      onChange={(event) => setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }))}
+                    />
+                  </>
+                ) : (
+                  <><span>{pendingCharacterId ? "배치할 좌석 선택" : "좌석 또는 직업 선택"}</span><strong>{pendingCharacterId ? characters.find((character) => character.id === pendingCharacterId)?.name : ""}</strong></>
+                )}
               </div>
               <div className="snvSelectedRosterTray">
                 {selectedIds.map((id) => {
@@ -534,9 +536,7 @@ export function SectsAndVioletsFoundationPrototype() {
             {!seatingConfirmed ? (
               <>
               <button type="button" className="snvBackToRoster" onClick={() => navigateToTab("roles")}>직업 선택으로 돌아가기</button>
-              {assignedCount > 0 || pendingCharacterId ? (
-                <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(1); setPendingCharacterId(undefined); }}>배치 확정</button>
-              ) : null}
+              <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(undefined); setPendingCharacterId(undefined); }}>배치 확정</button>
               </>
             ) : null}
           </div>

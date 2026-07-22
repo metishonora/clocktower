@@ -86,12 +86,17 @@ state. Role buttons own removal and movement: pressing the current role again un
 pressing a role assigned elsewhere moves it to the current seat and clears its previous seat. The
 separate unassign button is removed.
 
-Grimoire confirmation follows the same prominent floating CTA pattern, but remains absent before
-the first role choice. A pending role or completed first assignment reveals the disabled CTA; it
-becomes actionable only when every seat is assigned. On mobile the role-selection floating panel
+Grimoire confirmation follows the same prominent floating CTA pattern and remains visible in its
+disabled treatment from the start; it becomes actionable only when every seat is assigned. On
+mobile the role-selection floating panel
 keeps only its two actions and omits the icon and short summary. At tablet widths, the idle
 `좌석 또는 직업 선택` inspector is hidden so the selection tray starts with the role list, matching
-the mobile content hierarchy.
+the mobile content hierarchy. Confirming the Grimoire no longer inserts live Player details above
+the board on mobile: seat details reuse the same backdrop-and-bottom-sheet interaction as editing,
+and confirmation clears the selected seat so the board stays in place. The return action is a
+compact left-arrow in the top Grimoire toolbar. The edit sheet groups seat number, assigned role,
+and alignment icon on one row with the Player-name input beneath it. The separate setup-side role
+progress panel is removed because distribution and catalog group counts already expose that state.
 
 ## Approved Scope
 
