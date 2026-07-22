@@ -401,7 +401,7 @@ export function SectsAndVioletsFoundationPrototype() {
           </section>
         </section>
       ) : activeTab === "seating" ? (
-        <section className="snvSeatingSurface snvTabPanel" aria-label="그리모어 배치 단계">
+        <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed && (assignedCount > 0 || pendingCharacterId) ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
           <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
             {seatingConfirmed ? (
               <button ref={returnTriggerRef} type="button" onClick={() => setReturnConfirmOpen(true)}>배치 단계로 돌아가기</button>
@@ -492,7 +492,7 @@ export function SectsAndVioletsFoundationPrototype() {
             ) : null}
             <aside className={`snvSeatingTray ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
               <header><span>직업</span><strong>{assignedCount}/{playerCount}</strong></header>
-              <div className="snvSeatInspector fixed" aria-label="좌석 편집기">
+              <div className={`snvSeatInspector fixed ${!selectedSeat && !pendingCharacterId ? "idle" : ""}`} aria-label="좌석 편집기">
                 <span>{selectedSeat ? `${selectedSeat}번 좌석` : pendingCharacterId ? "배치할 좌석 선택" : "좌석 또는 직업 선택"}</span>
                 {selectedSeat ? (
                   <input
@@ -534,7 +534,9 @@ export function SectsAndVioletsFoundationPrototype() {
             {!seatingConfirmed ? (
               <>
               <button type="button" className="snvBackToRoster" onClick={() => navigateToTab("roles")}>직업 선택으로 돌아가기</button>
-              <button type="button" className="snvConfirmRoster" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(1); setPendingCharacterId(undefined); }}>배치 확정</button>
+              {assignedCount > 0 || pendingCharacterId ? (
+                <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(1); setPendingCharacterId(undefined); }}>배치 확정</button>
+              ) : null}
               </>
             ) : null}
           </div>
@@ -592,8 +594,8 @@ export function SectsAndVioletsFoundationPrototype() {
       )}
       {activeTab === "roles" ? (
         <aside className="snvRoleDetail fixed floatingAction" aria-label="직업 설명">
-          {activeCharacterAsset ? <img className="snvRoleDetailIcon" src={activeCharacterAsset.src} alt={`${activeCharacter.name} 공식 캐릭터 아이콘`} /> : null}
-          <div className="snvRoleDetailCopy">
+          {activeCharacterAsset ? <img className="snvRoleDetailIcon mobileHidden" src={activeCharacterAsset.src} alt={`${activeCharacter.name} 공식 캐릭터 아이콘`} /> : null}
+          <div className="snvRoleDetailCopy mobileHidden">
             <div><span>{kindLabels[activeCharacter.kind]}</span></div>
             <h2>{activeCharacter.name}</h2>
             <p>{activeCharacter.summary}</p>

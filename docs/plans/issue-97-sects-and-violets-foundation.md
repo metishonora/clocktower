@@ -86,6 +86,13 @@ state. Role buttons own removal and movement: pressing the current role again un
 pressing a role assigned elsewhere moves it to the current seat and clears its previous seat. The
 separate unassign button is removed.
 
+Grimoire confirmation follows the same prominent floating CTA pattern, but remains absent before
+the first role choice. A pending role or completed first assignment reveals the disabled CTA; it
+becomes actionable only when every seat is assigned. On mobile the role-selection floating panel
+keeps only its two actions and omits the icon and short summary. At tablet widths, the idle
+`좌석 또는 직업 선택` inspector is hidden so the selection tray starts with the role list, matching
+the mobile content hierarchy.
+
 ## Approved Scope
 
 - Add the official Sects & Violets catalog: 13 Townsfolk, 4 Outsiders, 4 Minions, and 4 Demons.

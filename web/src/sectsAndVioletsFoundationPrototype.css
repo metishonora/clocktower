@@ -76,6 +76,7 @@
 .snvDetailsBody p { margin: 0; color: #d0c4d4; line-height: 1.65; }
 .snvDetailsBody a { justify-self: start; color: #e2bceb; font-weight: 850; }
 .snvSeatingSurface { max-width: 1180px; margin: 0 auto; padding: 28px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
+.snvSeatingSurface.assignmentStarted { padding-bottom: 110px; }
 .snvSeatingSurface > header { display: flex; align-items: flex-end; justify-content: space-between; }
 .snvSeatingSurface > header span { color: #c9b4d1; font-size: .72rem; font-weight: 850; }
 .snvSeatingSurface > header h2 { margin: 6px 0 0; font: 2.2rem Georgia, serif; }
@@ -125,6 +126,8 @@
 .snvSeatInspector button:disabled { color: #756a7a; cursor: not-allowed; }
 .snvSeatingActions { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 12px; }
 .snvSeatingActions .snvConfirmRoster { width: auto; min-width: 150px; }
+.snvConfirmSeating.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(380px, calc(100vw - 32px)); min-height: 60px; margin: 0 auto; border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
+.snvConfirmSeating.floatingAction:disabled { border-color: rgba(230, 209, 237, .18); color: #887d8d; background: rgba(36, 24, 42, .94); box-shadow: 0 12px 30px rgba(7, 3, 10, .46); }
 .snvLiveSeatDetails { display: grid; box-sizing: border-box; height: 100%; padding: 22px; align-content: start; gap: 22px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: auto; animation: snvPanelSwapIn .24s ease-out; }
 .snvLiveSeatDetails > header span { color: #bcaac4; font-size: .7rem; font-weight: 850; }
 .snvLiveSeatDetails > header h2 { margin: 7px 0 0; font: 1.9rem Georgia, serif; }
@@ -176,10 +179,10 @@
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
 .snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray, .snvLiveSeatDetails { order: -1; height: 520px; } .snvLiveSeatDetails { animation-name: snvMobilePanelSwapIn; } }
+@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray, .snvLiveSeatDetails { order: -1; height: 520px; } .snvSeatInspector.idle { display: none; } .snvLiveSeatDetails { animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
   .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
-  .snvSetupSurface { padding-bottom: 226px; }
+  .snvSetupSurface { padding-bottom: 104px; }
   .snvManualSurface, .snvSeatingSurface { padding: 18px; }
   .snvSurfaceTabs { max-width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
   .snvSurfaceTabs::-webkit-scrollbar { display: none; }
@@ -188,9 +191,9 @@
   .snvPhaseContext { grid-column: 1; }
   .snvCatalogPreview article { grid-template-columns: 1fr; }
   .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }
-  .snvRoleDetail { bottom: 10px; z-index: 4; height: 210px; grid-template-columns: 56px minmax(0, 1fr); box-shadow: 0 14px 34px rgba(7, 3, 10, .72); }
-  .snvRoleDetailIcon { width: 56px; height: 56px; }
-  .snvRoleDetailActions { width: 100%; min-width: 0; grid-column: 1 / -1; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+  .snvRoleDetail { bottom: 10px; z-index: 4; height: auto; min-height: 72px; padding: 10px; grid-template-columns: 1fr; box-shadow: 0 14px 34px rgba(7, 3, 10, .72); }
+  .snvRoleDetail .mobileHidden { display: none; }
+  .snvRoleDetailActions { width: 100%; min-width: 0; grid-column: 1; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
   .snvRoleDetailActions .snvRoleDetailButton { grid-column: auto; justify-self: stretch; }
   .snvRoleDetailActions .snvConfirmRoster { min-width: 0; min-height: 50px; }
   .snvDetailsBackdrop { align-items: flex-end; padding: 0; }
