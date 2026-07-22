@@ -128,6 +128,15 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "phaseStepNeedsFollowUp":
       if (typeof payload.stepId !== "string") throw invalidEvent();
       break;
+    case "manualPhaseStepResolved":
+      if (
+        !hasExactKeys(payload, ["stepId", "outcome"]) ||
+        typeof payload.stepId !== "string" ||
+        (payload.outcome !== "handled" && payload.outcome !== "notApplicable")
+      ) {
+        throw invalidEvent();
+      }
+      break;
     case "nominationVoteConfirmed":
       if (!isNominationVotePayload(payload)) throw invalidEvent();
       break;
@@ -328,6 +337,7 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     isOptionalString(value.playerId) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
+    (value.support === undefined || value.support === "automated" || value.support === "manual") &&
     (value.preActionReveal === undefined || isPreActionReveal(value.preActionReveal)) &&
     (value.informationPrompt === undefined ||
       isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
@@ -560,7 +570,7 @@ function isPhaseOverviewItem(value: unknown): boolean {
   return (
     isPhaseStep(value) &&
     isRecord(value) &&
-    ["waiting", "current", "complete", "skipped", "needsFollowUp"].includes(
+    ["waiting", "current", "complete", "skipped", "needsFollowUp", "manualComplete", "notApplicable"].includes(
       String((value as unknown as Record<string, unknown>).status),
     )
   );

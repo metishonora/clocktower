@@ -2,6 +2,12 @@
 
 ## Status
 
+Production integration completed on 2026-07-22. The approved shell now owns the S&V production
+route, confirms setup and phase work through the canonical WASM adapter, and retains the tagged
+prototype as its development comparison surface. Save/load, rich reusable details, recurring
+Day/Night operation, shared status editing, and the persistent timer remain in Issues #114–#118 as
+listed below.
+
 Issue analysis and the product decisions below were approved on 2026-07-21. The initial setup and
 manual-live-play prototype was approved on 2026-07-21 as the production visual direction. Continue
 test-first, but land the production UI through the incremental specimen and integration gates below

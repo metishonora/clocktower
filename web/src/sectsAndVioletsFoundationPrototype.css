@@ -1,8 +1,10 @@
 :root { color-scheme: dark; }
 
 .snvFoundationPrototype { position: relative; isolation: isolate; min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; transition: color .72s ease; }
+.snvScriptHomeLink { position: absolute; z-index: 20; top: 22px; left: 22px; display: grid; width: 44px; min-height: 44px; place-items: center; border: 1px solid rgba(230, 209, 237, .24); border-radius: 50%; color: inherit; background: rgba(17, 9, 23, .28); font-size: 1.2rem; text-decoration: none; }
 .snvFoundationPrototype::before { position: absolute; z-index: -1; inset: 0; opacity: 0; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); content: ""; pointer-events: none; transition: opacity .72s ease; }
 .snvFoundationPrototype.snvDayMode::before { opacity: 1; }
+.snvDayMode .snvScriptHomeLink { border-color: rgba(88, 55, 97, .2); background: rgba(255, 255, 255, .58); }
 .snvPrototypeHeader { display: flex; max-width: 1180px; margin: 0 auto 24px; align-items: center; justify-content: space-between; }
 .snvEyebrow { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
 .snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
@@ -137,6 +139,8 @@
 .snvSeatInspector button:disabled { color: #756a7a; cursor: not-allowed; }
 .snvSeatingActions { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 12px; }
 .snvSeatingActions .snvConfirmRoster { width: auto; min-width: 150px; }
+.snvOperationError { max-width: 760px; margin: 0 auto 18px; color: #ffd6dd; font-size: .8rem; font-weight: 800; text-align: center; }
+.snvDayMode .snvOperationError { color: #7b1836; }
 .snvConfirmSeating.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(380px, calc(100vw - 32px)); min-height: 60px; margin: 0 auto; border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
 .snvConfirmSeating.floatingAction:disabled { border-color: rgba(230, 209, 237, .18); color: #887d8d; background: rgba(36, 24, 42, .94); box-shadow: 0 12px 30px rgba(7, 3, 10, .46); }
 .snvLiveSeatDetails { display: grid; box-sizing: border-box; height: 100%; padding: 22px; align-content: start; gap: 22px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: auto; animation: snvPanelSwapIn .24s ease-out; }
@@ -277,6 +281,7 @@
 .snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
 @media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
+  .snvScriptHomeLink + .snvPrototypeHeader { padding-top: 52px; }
   .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
   .snvSetupSurface { padding-bottom: 104px; }
   .snvManualSurface, .snvSeatingSurface { padding: 18px; }

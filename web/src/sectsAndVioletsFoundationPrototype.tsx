@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
+import type { CoreAdapter } from "./core/coreAdapter";
+import { SECTS_AND_VIOLETS } from "./core/scripts";
+import type { GameEvent, GameFile, PhaseStep, ReplayState, SetupDistribution } from "./core/types";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 
 type DemonChoice = "fangGu" | "vigormortis" | "noDashii" | "vortox";
@@ -97,7 +100,19 @@ const baseDistribution: Record<number, [number, number, number, number]> = {
   15: [9, 2, 3, 1],
 };
 
+export type SectsAndVioletsFoundationPrototypeProps = {
+  coreAdapter?: CoreAdapter;
+  production?: boolean;
+};
+
 export function SectsAndVioletsFoundationPrototype() {
+  return <SectsAndVioletsFoundation />;
+}
+
+export function SectsAndVioletsFoundation({
+  coreAdapter,
+  production = false,
+}: SectsAndVioletsFoundationPrototypeProps = {}) {
   const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
   const [tabMotion, setTabMotion] = useState<TabMotion>("");
   const [rosterConfirmed, setRosterConfirmed] = useState(false);
@@ -119,6 +134,11 @@ export function SectsAndVioletsFoundationPrototype() {
   const [informationStepId, setInformationStepId] = useState<string>();
   const [playPhase, setPlayPhase] = useState<PlayPhase>("firstNight");
   const [dayComplete, setDayComplete] = useState(false);
+  const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
+  const [replayState, setReplayState] = useState<ReplayState>();
+  const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
+  const [operationBusy, setOperationBusy] = useState(false);
+  const [operationError, setOperationError] = useState<string>();
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -127,7 +147,7 @@ export function SectsAndVioletsFoundationPrototype() {
   const newGameCancelRef = useRef<HTMLButtonElement>(null);
   const informationCloseRef = useRef<HTMLButtonElement>(null);
 
-  const distribution = useMemo(() => {
+  const localDistribution = useMemo(() => {
     const base = baseDistribution[playerCount];
     const delta: [number, number, number, number] = demon === "fangGu"
       ? [-1, 1, 0, 0]
@@ -140,6 +160,21 @@ export function SectsAndVioletsFoundationPrototype() {
     };
   }, [demon, playerCount]);
 
+  const distribution = useMemo(() => {
+    if (!canonicalDistribution) return localDistribution;
+    const final: [number, number, number, number] = [
+      canonicalDistribution.Townsfolk,
+      canonicalDistribution.Outsider,
+      canonicalDistribution.Minion,
+      canonicalDistribution.Demon,
+    ];
+    const base = baseDistribution[playerCount];
+    return {
+      final,
+      delta: final.map((value, index) => value - base[index]) as [number, number, number, number],
+    };
+  }, [canonicalDistribution, localDistribution, playerCount]);
+
   const requiredByKind = Object.fromEntries(kindOrder.map((kind, index) => [kind, distribution.final[index]])) as Record<CharacterKind, number>;
   const selectedByKind = Object.fromEntries(kindOrder.map((kind) => [kind, selectedIds.filter((id) => characters.find((character) => character.id === id)?.kind === kind).length])) as Record<CharacterKind, number>;
   const remaining = playerCount - selectedIds.length;
@@ -149,11 +184,23 @@ export function SectsAndVioletsFoundationPrototype() {
   const selectedDemon = demonChoices.find((choice) => choice.id === demon) ?? demonChoices[0];
   const assignedCount = Object.keys(seatAssignments).length;
   const seatingComplete = assignedCount === playerCount;
-  const firstNightSteps = useMemo(
+  const localFirstNightSteps = useMemo(
     () => firstNightOrder.filter((step) => !step.characterId || selectedIds.includes(step.characterId)),
     [selectedIds],
   );
-  const currentFirstNightStep = firstNightSteps[firstNightStepIndex];
+  const canonicalSteps = useMemo(
+    () => replayState?.phaseOverview.map(workflowStepFromCanonical) ?? [],
+    [replayState?.phaseOverview],
+  );
+  const firstNightSteps = coreAdapter && replayState?.phase === "firstNight"
+    ? canonicalSteps
+    : localFirstNightSteps;
+  const currentFirstNightStep = coreAdapter && replayState?.currentStep
+    ? workflowStepFromCanonical(replayState.currentStep)
+    : localFirstNightSteps[firstNightStepIndex];
+  const effectivePlayPhase: PlayPhase = coreAdapter && replayState?.phase && replayState.phase !== "setup"
+    ? replayState.phase === "firstNight" ? "firstNight" : replayState.phase === "day" ? "day" : "laterNight"
+    : playPhase;
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
@@ -207,6 +254,46 @@ export function SectsAndVioletsFoundationPrototype() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [informationStepId]);
 
+  useEffect(() => {
+    if (!coreAdapter) return;
+    let cancelled = false;
+    coreAdapter.replay(gameFile)
+      .then((result) => {
+        if (cancelled) return;
+        if (result.ok) {
+          setReplayState(result.value);
+          setOperationError(undefined);
+        } else {
+          setOperationError(result.error.messageKo);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setOperationError(error instanceof Error ? error.message : "게임 상태 복원 실패");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [coreAdapter, gameFile]);
+
+  useEffect(() => {
+    if (!coreAdapter || rosterConfirmed) return;
+    let cancelled = false;
+    coreAdapter.setupDistribution({
+      scriptId: SECTS_AND_VIOLETS,
+      playerCount,
+      actualCharacters: [demon],
+    }).then((result) => {
+      if (cancelled) return;
+      if (result.ok) setCanonicalDistribution(result.value);
+      else setOperationError(result.error.messageKo);
+    }).catch((error: unknown) => {
+      if (!cancelled) setOperationError(error instanceof Error ? error.message : "인원 구성 계산 실패");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [coreAdapter, demon, playerCount, rosterConfirmed]);
+
   const navigateToTab = (nextTab: PrototypeTab) => {
     const tabOrder: PrototypeTab[] = ["roles", "seating", "play", "storage"];
     setTabMotion(tabOrder.indexOf(nextTab) >= tabOrder.indexOf(activeTab) ? "tabForward" : "tabBackward");
@@ -233,6 +320,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setInformationStepId(undefined);
     setPlayPhase("firstNight");
     setDayComplete(false);
+    setGameFile(createSectsAndVioletsGameFile());
+    setReplayState(undefined);
     navigateToTab("seating");
   };
 
@@ -261,6 +350,10 @@ export function SectsAndVioletsFoundationPrototype() {
     setInformationStepId(undefined);
     setPlayPhase("firstNight");
     setDayComplete(false);
+    setGameFile(createSectsAndVioletsGameFile());
+    setReplayState(undefined);
+    setCanonicalDistribution(undefined);
+    setOperationError(undefined);
     navigateToTab("roles");
   };
 
@@ -268,6 +361,7 @@ export function SectsAndVioletsFoundationPrototype() {
     if (rosterConfirmed) return;
     if (count === playerCount) return;
     setPlayerCount(count);
+    setCanonicalDistribution(undefined);
     setSelectedIds([demon]);
     setSeatAssignments({});
     setSeatAlignments({});
@@ -289,6 +383,7 @@ export function SectsAndVioletsFoundationPrototype() {
     if (rosterConfirmed) return;
     if (choice === demon) return;
     setDemon(choice);
+    setCanonicalDistribution(undefined);
     setSelectedIds([choice]);
     setSeatAssignments({});
     setSeatAlignments({});
@@ -301,10 +396,6 @@ export function SectsAndVioletsFoundationPrototype() {
     setInformationStepId(undefined);
     setPlayPhase("firstNight");
     setDayComplete(false);
-    setSeatAssignments({});
-    setSeatingConfirmed(false);
-    setSelectedSeat(undefined);
-    setPendingCharacterId(undefined);
     setActiveTab("roles");
   };
 
@@ -324,7 +415,31 @@ export function SectsAndVioletsFoundationPrototype() {
     });
   };
 
-  const advanceFirstNight = () => {
+  const advanceFirstNight = async (manualOutcome: "handled" | "notApplicable" = "handled") => {
+    if (coreAdapter && replayState?.currentStep) {
+      if (operationBusy) return;
+      setOperationBusy(true);
+      setOperationError(undefined);
+      const step = replayState.currentStep;
+      const command = step.support === "manual"
+        ? { type: "resolveManualStep" as const, payload: { stepId: step.id, outcome: manualOutcome } }
+        : { type: "confirmStep" as const, payload: { stepId: step.id, input: null as null } };
+      const result = await coreAdapter.propose(gameFile, command).catch((error: unknown) => ({
+        ok: false as const,
+        error: {
+          code: "WASM_LOAD_FAILED",
+          messageKo: error instanceof Error ? error.message : "단계 확정 실패",
+        },
+      }));
+      if (!result.ok) {
+        setOperationBusy(false);
+        setOperationError(result.error.messageKo);
+        return;
+      }
+      await applyCanonicalEvent(result.value.event);
+      setOperationBusy(false);
+      return;
+    }
     setInformationStepId(undefined);
     setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
   };
@@ -422,27 +537,105 @@ export function SectsAndVioletsFoundationPrototype() {
     setSeatingConfirmed(false);
   };
 
+  const confirmSeating = async () => {
+    if (!seatingComplete || operationBusy) return;
+    if (!coreAdapter) {
+      setSeatingConfirmed(true);
+      setSelectedSeat(undefined);
+      setPendingCharacterId(undefined);
+      return;
+    }
+
+    const players = Array.from({ length: playerCount }, (_, index) => {
+      const seat = index + 1;
+      return {
+        seat,
+        name: seatNames[seat]?.trim() || `플레이어 ${seat}`,
+        actualCharacter: seatAssignments[seat],
+      };
+    });
+    if (players.some((player) => !player.actualCharacter)) return;
+
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const result = await coreAdapter.propose(gameFile, {
+      type: "createGame",
+      payload: { players: players as Array<{ seat: number; name: string; actualCharacter: string }> },
+    }).catch((error: unknown) => ({
+      ok: false as const,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "설정 확정 실패",
+      },
+    }));
+    if (!result.ok) {
+      setOperationBusy(false);
+      setOperationError(result.error.messageKo);
+      return;
+    }
+
+    const applied = await applyCanonicalEvent(result.value.event);
+    if (!applied) {
+      setOperationBusy(false);
+      return;
+    }
+    setOperationBusy(false);
+    setSeatingConfirmed(true);
+    setSelectedSeat(undefined);
+    setPendingCharacterId(undefined);
+  };
+
+  const applyCanonicalEvent = async (event: GameEvent): Promise<boolean> => {
+    if (!coreAdapter) return false;
+    const nextGameFile: GameFile = {
+      ...gameFile,
+      game: {
+        ...gameFile.game,
+        updatedAt: new Date().toISOString(),
+        events: [...gameFile.game.events, event],
+      },
+    };
+    const replayed = await coreAdapter.replay(nextGameFile).catch((error: unknown) => ({
+      ok: false as const,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "게임 상태 복원 실패",
+      },
+    }));
+    if (!replayed.ok) {
+      setOperationError(replayed.error.messageKo);
+      return false;
+    }
+    setReplayState(replayed.value);
+    setGameFile(nextGameFile);
+    setInformationStepId(undefined);
+    setDayComplete(false);
+    return true;
+  };
+
   return (
-    <main className={`snvFoundationPrototype ${tabMotion} ${playPhase === "day" ? "snvDayMode" : "snvNightMode"}`} aria-label="Sects & Violets 기반 화면 프로토타입">
+    <main className={`snvFoundationPrototype ${tabMotion} ${effectivePlayPhase === "day" ? "snvDayMode" : "snvNightMode"}`} aria-label={production ? "Sects & Violets 게임" : "Sects & Violets 기반 화면 프로토타입"}>
+      {production ? <a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a> : null}
       <header className="snvPrototypeHeader">
         <div>
-          <span className="snvEyebrow">ISSUE 97 · REVIEW PROTOTYPE</span>
+          <span className="snvEyebrow">{production ? "STORYTELLER CONSOLE" : "ISSUE 97 · REVIEW PROTOTYPE"}</span>
           <h1>Sects &amp; Violets</h1>
           <p>7–15명 · 일부 자동화</p>
         </div>
-        <span className={`snvPhaseMark ${playPhase === "day" ? "snvSunMark" : "snvMoonMark"}`} aria-hidden="true">{playPhase === "day" ? "☀" : "☾"}</span>
+        <span className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`} aria-hidden="true">{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
       </header>
 
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
         <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
-        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
+        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} disabled={production} title={production ? "Issue #115에서 연결 예정" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
       </nav>
 
       <nav className="snvSurfaceTabs" aria-label="작업 단계">
         <button type="button" className={activeTab === "roles" ? "active" : ""} aria-current={activeTab === "roles" ? "page" : undefined} onClick={() => navigateToTab("roles")}>직업</button>
         <button type="button" className={activeTab === "seating" ? "active" : ""} aria-current={activeTab === "seating" ? "page" : undefined} disabled={!rosterConfirmed} onClick={() => navigateToTab("seating")}>마도서</button>
-        <button type="button" className={activeTab === "play" ? "active" : ""} aria-current={activeTab === "play" ? "page" : undefined} onClick={() => navigateToTab("play")}>진행</button>
+        <button type="button" className={activeTab === "play" ? "active" : ""} aria-current={activeTab === "play" ? "page" : undefined} disabled={production && !seatingConfirmed} onClick={() => navigateToTab("play")}>진행</button>
       </nav>
+      {operationError ? <p className="snvOperationError" role="alert">{operationError}</p> : null}
 
       {activeTab === "roles" ? (
         <section className="snvSetupSurface snvTabPanel" aria-label="S&V 설정 검토">
@@ -531,7 +724,12 @@ export function SectsAndVioletsFoundationPrototype() {
                 const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
                 const desktopPosition = desktopSeatPositions[index];
                 const mobilePosition = mobileSeatPositions[index];
-                const isCurrentActor = Boolean(seatingConfirmed && characterId && currentFirstNightStep?.characterId === characterId);
+                const canonicalActorSeat = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId)?.seat;
+                const isCurrentActor = Boolean(
+                  seatingConfirmed && characterId && (
+                    canonicalActorSeat ? canonicalActorSeat === seat : currentFirstNightStep?.characterId === characterId
+                  ),
+                );
                 return (
                   <button
                     key={seat}
@@ -555,7 +753,7 @@ export function SectsAndVioletsFoundationPrototype() {
                 );
               })}
               <div className={`snvGrimoireCenter ${seatingConfirmed ? "live" : ""}`}>
-                <strong>{seatingConfirmed ? (playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "2일차 낮" : "2일차 밤") : `${assignedCount}/${playerCount}`}</strong>
+                <strong>{seatingConfirmed ? phaseLabel(effectivePlayPhase, replayState?.currentStep) : `${assignedCount}/${playerCount}`}</strong>
                 <span>{seatingConfirmed ? "00:00" : "배치"}</span>
                 {seatingConfirmed ? <button type="button" aria-label="진행으로 이동" onClick={() => navigateToTab("play")}>진행 →</button> : null}
               </div>
@@ -648,22 +846,22 @@ export function SectsAndVioletsFoundationPrototype() {
           </div>
           <div className={`snvSeatingActions ${seatingConfirmed ? "placeholder" : ""}`}>
             {!seatingConfirmed ? (
-              <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(undefined); setPendingCharacterId(undefined); }}>배치 확정</button>
+              <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete || operationBusy} onClick={() => void confirmSeating()}>{operationBusy ? "확정 중" : "배치 확정"}</button>
             ) : null}
           </div>
         </section>
       ) : activeTab === "play" ? (
         <section
-          className={`snvManualSurface snvFirstNightSurface snvTabPanel ${playPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
-          aria-label={playPhase === "firstNight" ? "첫날 밤 진행" : playPhase === "day" ? "낮 진행" : "이후 밤 진행"}
+          className={`snvManualSurface snvFirstNightSurface snvTabPanel ${effectivePlayPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
+          aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "낮 진행" : "이후 밤 진행"}
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
-            <h2>{playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "2일차 낮" : "2일차 밤"}</h2>
+            <h2>{phaseLabel(effectivePlayPhase, replayState?.currentStep)}</h2>
           </header>
 
           <div className="snvFirstNightPrimary">
-            {playPhase === "firstNight" && currentFirstNightStep ? (
+            {effectivePlayPhase === "firstNight" && currentFirstNightStep && !isTransitionStep(currentFirstNightStep) ? (
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 {currentFirstNightAsset && currentFirstNightStep.characterId ? (
@@ -689,18 +887,18 @@ export function SectsAndVioletsFoundationPrototype() {
                       onClick={showCurrentStepInformation}
                     >정보 공개</button>
                   ) : null}
-                  <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
-                  {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" onClick={advanceFirstNight}>해당 없음</button> : null}
+                  <button type="button" disabled={operationBusy} onClick={() => void advanceFirstNight()}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
+                  {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" disabled={operationBusy} onClick={() => void advanceFirstNight("notApplicable")}>해당 없음</button> : null}
                 </div>
               </article>
-            ) : playPhase === "firstNight" ? (
+            ) : effectivePlayPhase === "firstNight" ? (
               <article className="snvCurrentStep complete">
                 <h3>1일차 밤 종료</h3>
                 <div className="snvStepActions">
-                  <button type="button" onClick={() => { setPlayPhase("day"); setDayComplete(false); }}>낮으로</button>
+                  <button type="button" disabled={operationBusy} onClick={() => coreAdapter ? void advanceFirstNight() : (() => { setPlayPhase("day"); setDayComplete(false); })()}>낮으로</button>
                 </div>
               </article>
-            ) : playPhase === "day" && !dayComplete ? (
+            ) : effectivePlayPhase === "day" && !dayComplete ? (
               <article className="snvCurrentStep snvDayStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 <h3>낮 진행</h3>
@@ -709,11 +907,11 @@ export function SectsAndVioletsFoundationPrototype() {
                   <button type="button" onClick={() => setDayComplete(true)}>낮 종료</button>
                 </div>
               </article>
-            ) : playPhase === "day" ? (
+            ) : effectivePlayPhase === "day" ? (
               <article className="snvCurrentStep snvDayStep complete">
                 <h3>2일차 낮 종료</h3>
                 <div className="snvStepActions">
-                  <button type="button" onClick={() => setPlayPhase("laterNight")}>2일차 밤으로</button>
+                  <button type="button" disabled={operationBusy} onClick={() => coreAdapter ? void advanceFirstNight() : setPlayPhase("laterNight")}>2일차 밤으로</button>
                 </div>
               </article>
             ) : (
@@ -725,16 +923,16 @@ export function SectsAndVioletsFoundationPrototype() {
             )}
           </div>
 
-          {playPhase === "firstNight" ? (
+          {effectivePlayPhase === "firstNight" ? (
             <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
               {firstNightSteps.map((step, index) => (
-                <li key={step.id} className={index < firstNightStepIndex ? "complete" : index === firstNightStepIndex ? "current" : ""}>
-                  <span>{index < firstNightStepIndex ? "완료" : index === firstNightStepIndex ? "현재" : "대기"}</span>
+                <li key={step.id} className={phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview).className}>
+                  <span>{phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview).label}</span>
                   <strong>{step.name}</strong>
                 </li>
               ))}
             </ol>
-          ) : playPhase === "day" ? (
+          ) : effectivePlayPhase === "day" ? (
             <ol className="snvPhaseOverview" aria-label="낮 순서">
               <li className={dayComplete ? "complete" : "current"}>
                 <span>{dayComplete ? "완료" : "현재"}</span>
@@ -837,6 +1035,79 @@ export function grimoireHeights(playerCount: number): { desktop: number; mobile:
   return {
     desktop: wrappedPerimeterHeight(Math.max(desktopCounts.right, desktopCounts.left), 88, 16, 12),
     mobile: wrappedPerimeterHeight(Math.max(mobileCounts.right, mobileCounts.left), 76, 12, 8),
+  };
+}
+
+function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
+  const suffix = step.id.split(":").at(-1) ?? step.id;
+  const known = firstNightOrder.find((candidate) => candidate.id === suffix || candidate.characterId === step.character);
+  if (suffix === "toDay") {
+    return {
+      id: step.id,
+      name: "낮으로",
+      support: step.support ?? "automated",
+      summary: "밤을 마치고 낮으로 전환합니다.",
+    };
+  }
+  if (suffix === "manual" && step.phase === "day") {
+    return {
+      id: step.id,
+      name: "낮 진행",
+      support: step.support ?? "manual",
+      summary: "능력 사용, 지명, 투표와 처형을 진행합니다.",
+    };
+  }
+  const character = characters.find((candidate) => candidate.id === step.character);
+  return {
+    id: step.id,
+    name: known?.name ?? character?.name ?? suffix,
+    characterId: step.character,
+    support: step.support ?? "automated",
+    summary: known?.summary ?? character?.summary ?? "이 단계를 진행합니다.",
+  };
+}
+
+function isTransitionStep(step: FirstNightStep) {
+  return step.id.split(":").at(-1) === "toDay";
+}
+
+function phaseLabel(phase: PlayPhase, currentStep?: PhaseStep | null) {
+  if (phase === "firstNight") return "1일차 밤";
+  const prefix = currentStep?.id.split(":")[0] ?? (phase === "day" ? "day" : "night");
+  const cycle = Number(prefix.match(/\d+$/)?.[0] ?? "1");
+  return `${cycle + 1}일차 ${phase === "day" ? "낮" : "밤"}`;
+}
+
+function phaseStepPresentation(
+  stepId: string,
+  index: number,
+  localIndex: number,
+  overview?: ReplayState["phaseOverview"],
+) {
+  const canonicalStatus = overview?.find((step) => step.id === stepId)?.status;
+  if (canonicalStatus) {
+    if (canonicalStatus === "current") return { className: "current", label: "현재" };
+    if (canonicalStatus === "waiting" || canonicalStatus === "needsFollowUp") return { className: "", label: "대기" };
+    if (canonicalStatus === "notApplicable") return { className: "complete", label: "해당 없음" };
+    return { className: "complete", label: "완료" };
+  }
+  if (index < localIndex) return { className: "complete", label: "완료" };
+  if (index === localIndex) return { className: "current", label: "현재" };
+  return { className: "", label: "대기" };
+}
+
+function createSectsAndVioletsGameFile(): GameFile {
+  const now = new Date().toISOString();
+  return {
+    schemaVersion: 3,
+    game: {
+      scriptId: SECTS_AND_VIOLETS,
+      id: "local-snv-game",
+      name: "Sects & Violets",
+      createdAt: now,
+      updatedAt: now,
+      events: [],
+    },
   };
 }
 
