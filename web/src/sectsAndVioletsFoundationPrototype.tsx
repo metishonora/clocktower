@@ -1040,7 +1040,9 @@ export function grimoireHeights(playerCount: number): { desktop: number; mobile:
 
 function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
   const suffix = step.id.split(":").at(-1) ?? step.id;
-  const known = firstNightOrder.find((candidate) => candidate.id === suffix || candidate.characterId === step.character);
+  const known = firstNightOrder.find((candidate) => (
+    candidate.id === suffix || (step.character !== undefined && candidate.characterId === step.character)
+  ));
   if (suffix === "toDay") {
     return {
       id: step.id,

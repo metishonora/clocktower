@@ -184,6 +184,7 @@ test("advances the production first-night step through the canonical phase comma
     expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
     { type: "confirmStep", payload: { stepId: "firstNight:minionInfo", input: null } },
   );
+  expect(await within(app).findByRole("heading", { name: "악마 정보" })).toBeTruthy();
 });
 
 test("records manual work and follows the canonical first-night to day boundary", async () => {
