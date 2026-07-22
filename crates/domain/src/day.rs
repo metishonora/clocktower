@@ -49,7 +49,9 @@ pub(crate) fn day_steps(
     loop {
         let nomination_id = format!("{prefix}:nomination:{nomination_number}");
         match step_status(&nomination_id, statuses) {
-            PhaseStepStatus::Complete => {
+            PhaseStepStatus::Complete
+            | PhaseStepStatus::ManualComplete
+            | PhaseStepStatus::NotApplicable => {
                 steps.push(nomination_step_for_players(
                     &prefix,
                     nomination_number,
@@ -151,6 +153,7 @@ pub(crate) fn day_steps(
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     });
@@ -190,6 +193,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
             optional: true,
         },
         can_skip: true,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -242,6 +246,7 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
             optional: true,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -274,6 +279,7 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }

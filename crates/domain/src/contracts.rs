@@ -59,6 +59,10 @@ pub(crate) enum Command {
     ConfirmStep { payload: PhaseStepCommandPayload },
     #[serde(rename = "skipStep")]
     SkipStep { payload: PhaseStepCommandPayload },
+    #[serde(rename = "resolveManualStep")]
+    ResolveManualStep {
+        payload: ResolveManualStepCommandPayload,
+    },
     #[serde(rename = "useSlayerAbility")]
     UseSlayerAbility {
         payload: UseSlayerAbilityCommandPayload,
@@ -69,6 +73,20 @@ pub(crate) enum Command {
     UpdatePlayerAnnotations {
         payload: UpdatePlayerAnnotationsCommandPayload,
     },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResolveManualStepCommandPayload {
+    pub(crate) step_id: String,
+    pub(crate) outcome: ManualPhaseStepOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ManualPhaseStepOutcome {
+    Handled,
+    NotApplicable,
 }
 
 #[derive(Debug, Deserialize)]
@@ -350,6 +368,10 @@ pub(crate) enum GameEventKind {
     PhaseStepSkipped { payload: StepIdPayload },
     #[serde(rename = "phaseStepNeedsFollowUp")]
     PhaseStepNeedsFollowUp { payload: StepIdPayload },
+    #[serde(rename = "manualPhaseStepResolved")]
+    ManualPhaseStepResolved {
+        payload: ManualPhaseStepResolvedPayload,
+    },
     #[serde(rename = "nominationVoteConfirmed")]
     NominationVoteConfirmed { payload: NominationEventPayload },
     #[serde(rename = "nominationStarted")]
@@ -384,6 +406,13 @@ pub(crate) enum GameEventKind {
     PlayerAnnotationsUpdated {
         payload: PlayerAnnotationsUpdatedPayload,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ManualPhaseStepResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) outcome: ManualPhaseStepOutcome,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

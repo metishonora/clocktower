@@ -126,6 +126,13 @@ const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevSectsAndVioletsFoundationPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./sectsAndVioletsFoundationPrototype");
+      return { default: module.SectsAndVioletsFoundationPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -135,6 +142,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevSectsAndVioletsFoundationPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "snv-foundation"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevSectsAndVioletsFoundationPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevScriptSelectionPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "script-selection"

@@ -15,7 +15,6 @@ pub(crate) enum ErrorKind {
     UnsupportedCommand,
     MalformedEvent,
     UnsupportedEvent,
-    ScriptNotImplemented,
     CommandNotSupportedByScript,
     EventNotSupportedByScript,
     MalformedRequest,
@@ -35,6 +34,8 @@ pub(crate) enum ErrorKind {
     NoCurrentStep,
     StaleStep,
     StepCannotBeSkipped,
+    StepRequiresManualResolution,
+    StepIsAutomated,
     NoExecutionCandidate,
     ExecutionSurvivalNotAllowed,
     MissingDeliveredInformation,
@@ -69,10 +70,6 @@ impl ErrorKind {
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),
             Self::MalformedEvent => ("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."),
             Self::UnsupportedEvent => ("UNSUPPORTED_EVENT", "지원하지 않는 이벤트입니다."),
-            Self::ScriptNotImplemented => (
-                "SCRIPT_NOT_IMPLEMENTED",
-                "현재 스크립트의 규칙은 아직 구현되지 않았습니다.",
-            ),
             Self::CommandNotSupportedByScript => (
                 "COMMAND_NOT_SUPPORTED_BY_SCRIPT",
                 "현재 스크립트에서 지원하지 않는 명령입니다.",
@@ -119,6 +116,14 @@ impl ErrorKind {
             Self::NoCurrentStep => ("NO_CURRENT_STEP", "진행할 현재 단계가 없습니다."),
             Self::StaleStep => ("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."),
             Self::StepCannotBeSkipped => ("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."),
+            Self::StepRequiresManualResolution => (
+                "STEP_REQUIRES_MANUAL_RESOLUTION",
+                "수동 단계는 수동 처리 결과로 완료해야 합니다.",
+            ),
+            Self::StepIsAutomated => (
+                "STEP_IS_AUTOMATED",
+                "자동화 단계는 수동 처리할 수 없습니다.",
+            ),
             Self::NoExecutionCandidate => ("NO_EXECUTION_CANDIDATE", "처형 후보가 없습니다."),
             Self::ExecutionSurvivalNotAllowed => (
                 "EXECUTION_SURVIVAL_NOT_ALLOWED",

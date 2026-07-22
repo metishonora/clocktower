@@ -1,0 +1,330 @@
+:root { color-scheme: dark; }
+
+.snvFoundationPrototype { position: relative; isolation: isolate; min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; transition: color .72s ease; }
+.snvScriptHomeLink { position: absolute; z-index: 20; top: 22px; left: 22px; display: grid; width: 44px; min-height: 44px; place-items: center; border: 1px solid rgba(230, 209, 237, .24); border-radius: 50%; color: inherit; background: rgba(17, 9, 23, .28); font-size: 1.2rem; text-decoration: none; }
+.snvFoundationPrototype::before { position: absolute; z-index: -1; inset: 0; opacity: 0; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); content: ""; pointer-events: none; transition: opacity .72s ease; }
+.snvFoundationPrototype.snvDayMode::before { opacity: 1; }
+.snvDayMode .snvScriptHomeLink { border-color: rgba(88, 55, 97, .2); background: rgba(255, 255, 255, .58); }
+.snvPrototypeHeader { display: flex; max-width: 1180px; margin: 0 auto 24px; align-items: center; justify-content: space-between; }
+.snvEyebrow { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
+.snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
+.snvPrototypeHeader p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
+.snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .72s ease, background .72s ease, border-color .72s ease, transform .72s ease; }
+.snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; gap: 8px; }
+.snvSurfaceTabs { display: flex; max-width: 1180px; margin: 0 auto 22px; gap: 8px; }
+.snvUtilityTabs button, .snvSurfaceTabs button, .snvChoiceRow button, .snvStepActions button, .snvConfirmRoster, .snvBackToRoster { border: 1px solid rgba(230, 209, 237, .2); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-weight: 800; cursor: pointer; }
+.snvUtilityTabs button { padding: 8px 14px; font-size: .72rem; }
+.snvUtilityTabs .snvNewGameTab { border-color: rgba(240, 101, 122, .34); color: #ffdce2; }
+.snvSurfaceTabs button { min-width: 104px; padding: 11px 20px; }
+.snvUtilityTabs button.active, .snvSurfaceTabs button.active, .snvChoiceRow button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; box-shadow: 0 8px 26px rgba(65, 23, 83, .42); }
+.snvSurfaceTabs button:disabled { color: #766d7b; cursor: not-allowed; }
+.snvSetupSurface, .snvManualSurface { display: grid; max-width: 1180px; margin: 0 auto; gap: 22px; }
+.snvSetupSurface { padding-bottom: 196px; grid-template-columns: minmax(300px, .8fr) minmax(420px, 1.2fr); }
+.snvSetupControls, .snvCatalogPreview, .snvManualSurface { border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); backdrop-filter: blur(18px); }
+.snvSetupControls { padding: 24px; }
+.snvControlCard + .snvControlCard { margin-top: 24px; }
+.snvControlCard > span { display: block; margin-bottom: 10px; color: #c7b4cf; font-size: .78rem; font-weight: 850; letter-spacing: .08em; }
+.snvChoiceRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.snvChoiceRow button { padding: 9px 13px; }
+.snvDistributionFlow { display: grid; margin-top: 28px; gap: 10px; }
+.snvDistributionCard h2 { margin: 0 0 8px; color: #c7b4cf; font-size: .72rem; letter-spacing: .08em; }
+.snvDistributionValues { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.snvDistributionValues > div { display: grid; min-height: 76px; place-content: center; border-radius: 18px; text-align: center; background: rgba(255, 255, 255, .055); }
+.snvDistributionCard.emphasized { padding: 12px; border: 1px solid rgba(214, 169, 226, .4); border-radius: 20px; background: rgba(130, 80, 154, .15); }
+.snvDistributionCard strong { font: 1.9rem Georgia, serif; }
+.snvDistributionCard span { color: #baaac3; font-size: .72rem; font-weight: 750; }
+.snvModifierNote { margin: 0; padding: 10px 12px; border-radius: 12px; color: #e7c1ef; background: rgba(255, 255, 255, .04); font-size: .78rem; font-weight: 800; text-align: center; }
+.snvConfirmRoster { width: 100%; margin-top: 18px; padding: 13px 18px; border-color: #d6a9e2; background: #82509a; }
+.snvStageForward { display: flex; align-items: center; justify-content: space-between; }
+.snvStageForward small { font-size: .7rem; font-weight: 900; opacity: .78; }
+.snvConfirmRoster.prominent { min-height: 60px; font-size: 1rem; }
+.snvConfirmRoster.prominent:not(:disabled) { border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
+.snvConfirmRoster:disabled { border-color: rgba(230, 209, 237, .12); color: #766d7b; background: rgba(255, 255, 255, .035); cursor: not-allowed; }
+.snvCatalogPreview { display: grid; padding: 24px; grid-template-rows: 1fr auto; gap: 22px; }
+.snvCatalogGroups { display: grid; align-content: start; grid-auto-rows: max-content; gap: 18px; }
+.snvCatalogPreview article { display: grid; grid-template-columns: 120px 1fr; gap: 16px; }
+.snvCatalogPreview h2 { margin: 3px 0; color: #cfb4d7; font-size: .78rem; }
+.snvCatalogPreview article div { display: flex; flex-wrap: wrap; gap: 7px; }
+.snvCatalogPreview article button { display: flex; box-sizing: border-box; min-height: 48px; padding: 7px 10px; align-items: center; gap: 7px; border: 1px solid rgba(235, 218, 240, .11); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .035); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+.snvCatalogPreview article button img { width: 30px; height: 30px; flex: 0 0 auto; object-fit: contain; }
+.snvCatalogPreview article button.selected { border-color: rgba(214, 169, 226, .68); background: rgba(130, 80, 154, .36); }
+.snvCatalogPreview article button:disabled { color: #776b7d; cursor: not-allowed; }
+.snvCatalogPreview article button.selected:disabled { color: #fff; opacity: 1; }
+.snvRoleDetail { display: grid; box-sizing: border-box; height: 180px; padding: 18px 20px; grid-template-columns: 68px minmax(0, 1fr) auto; gap: 16px; align-items: center; border: 1px solid rgba(214, 169, 226, .3); border-radius: 20px; background: linear-gradient(135deg, rgba(130, 80, 154, .22), rgba(255, 255, 255, .035)); overflow: hidden; }
+.snvRoleDetail.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(860px, calc(100vw - 32px)); margin: 0 auto; box-shadow: 0 18px 52px rgba(7, 3, 10, .72); backdrop-filter: blur(22px); }
+.snvRoleDetailIcon { width: 68px; height: 68px; object-fit: contain; }
+.snvRoleDetailCopy { min-width: 0; }
+.snvRoleDetailCopy > div { display: flex; align-items: center; justify-content: space-between; color: #c7b4cf; font-size: .7rem; font-weight: 850; }
+.snvRoleDetailCopy > div strong { color: #d9badf; }
+.snvRoleDetail h2 { margin: 10px 0 5px; color: #fff; font: 1.8rem Georgia, serif; }
+.snvRoleDetail p { display: -webkit-box; margin: 0; overflow: hidden; color: #c9bbcd; font-size: .82rem; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.snvRoleDetailButton { align-self: end; padding: 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #f8f0fb; background: rgba(255, 255, 255, .055); font: inherit; font-size: .7rem; font-weight: 850; cursor: pointer; }
+.snvRoleDetailActions { display: grid; min-width: 176px; gap: 8px; }
+.snvRoleDetailActions .snvRoleDetailButton { align-self: stretch; }
+.snvRoleDetailActions .snvConfirmRoster { min-height: 54px; margin: 0; padding: 10px 12px; font-size: .82rem; }
+.snvDetailsBackdrop { position: fixed; z-index: 150; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(8, 4, 11, .72); backdrop-filter: blur(8px); }
+.snvDetailsBackdrop.aboveSeatSheet { z-index: 220; }
+.snvDetailsDialog { width: min(440px, 100%); overflow: hidden; border: 1px solid rgba(214, 169, 226, .36); border-radius: 24px; background: #201426; box-shadow: 0 28px 90px rgba(0, 0, 0, .54); }
+.snvDetailsDialog > header { display: grid; padding: 20px; grid-template-columns: 58px minmax(0, 1fr) 38px; gap: 13px; align-items: center; border-bottom: 1px solid rgba(231, 208, 239, .12); }
+.snvDetailsDialog > header img { width: 58px; height: 58px; object-fit: contain; }
+.snvDetailsDialog > header span { color: #c7b4cf; font-size: .7rem; font-weight: 850; }
+.snvDetailsDialog > header h2 { margin: 3px 0 0; font: 1.55rem Georgia, serif; }
+.snvDetailsDialog > header button { width: 38px; height: 38px; border: 1px solid rgba(231, 208, 239, .18); border-radius: 50%; color: #fff; background: rgba(255, 255, 255, .05); font-size: 1.45rem; cursor: pointer; }
+.snvDetailsBody { display: grid; padding: 22px; gap: 20px; }
+.snvDetailsBody > div { display: flex; align-items: center; justify-content: space-between; color: #c7b4cf; font-size: .75rem; }
+.snvDetailsBody > div strong { padding: 5px 8px; border-radius: 999px; color: #f2d7a5; background: rgba(174, 115, 28, .27); }
+.snvDetailsBody h3 { margin: 0 0 8px; color: #d9badf; font-size: .76rem; }
+.snvDetailsBody p { margin: 0; color: #d0c4d4; line-height: 1.65; }
+.snvDetailsBody a { justify-self: start; color: #e2bceb; font-weight: 850; }
+.snvSeatingSurface { max-width: 1180px; margin: 0 auto; padding: 28px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
+.snvSeatingSurface.assignmentStarted { padding-bottom: 110px; }
+.snvSeatingSurface > header { display: flex; align-items: flex-end; justify-content: space-between; }
+.snvSeatingSurface > header span { color: #c9b4d1; font-size: .72rem; font-weight: 850; }
+.snvSeatingSurface > header h2 { margin: 6px 0 0; font: 2.2rem Georgia, serif; }
+.snvSeatingSurface > header > strong { color: #dfbee6; font-size: .8rem; }
+.snvSeatingToolbar { display: flex; justify-content: flex-end; gap: 8px; }
+.snvSeatingToolbar button { padding: 9px 13px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvSeatingToolbar .snvToolbarBack { width: 42px; height: 38px; margin-right: auto; padding: 0; font-size: 1.15rem; }
+.snvSeatingToolbar .snvToolbarBack.destructive { border-color: rgba(240, 101, 122, .72); color: #ffdce2; background: rgba(154, 38, 59, .62); box-shadow: 0 8px 24px rgba(112, 19, 38, .3); }
+.snvCurrentActorLegend { display: flex; min-height: 38px; padding: 0 11px; align-items: center; gap: 7px; color: #eadbc0; font-size: .7rem; font-weight: 850; }
+.snvCurrentActorLegend > span { width: 11px; height: 11px; border: 2px solid #f4d275; border-radius: 50%; background: rgba(244, 210, 117, .16); box-shadow: 0 0 12px rgba(244, 210, 117, .55); }
+.snvSeatingWorkspace { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
+.snvGrimoireDraft { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
+.snvGrimoireDraft > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
+.snvGrimoireDraft > button.unassigned { border-color: rgba(225, 197, 234, .36); background: #3a2543; }
+.snvGrimoireDraft > button.assigned { border-color: rgba(214, 169, 226, .3); background: #2d1a35; }
+.snvGrimoireDraft > button.assigned.alignment-good { border-color: rgba(111, 195, 226, .78); background: linear-gradient(145deg, #203847, #28233b); }
+.snvGrimoireDraft > button.assigned.alignment-evil { border-color: rgba(224, 103, 127, .8); background: linear-gradient(145deg, #4a222e, #2b1b31); }
+.snvGrimoireDraft > button.kind-townsfolk { --kind-accent: #6dc5ea; }
+.snvGrimoireDraft > button.kind-outsider { --kind-accent: #b797ed; }
+.snvGrimoireDraft > button.kind-minion { --kind-accent: #e79862; }
+.snvGrimoireDraft > button.kind-demon { --kind-accent: #ed6679; }
+.snvGrimoireDraft > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
+.snvGrimoireDraft > button.selected, .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
+.snvGrimoireDraft > button.assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
+.snvGrimoireDraft > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
+.snvGrimoireDraft > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
+.snvGrimoireDraft > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.snvGrimoireDraft > button small { display: block; max-width: 100%; overflow: hidden; color: #aa98b2; font-size: .58rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.snvGrimoireCenter { position: absolute; left: 50%; top: 50%; display: grid; width: 94px; aspect-ratio: 1; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(214, 169, 226, .22); border-radius: 50%; text-align: center; background: rgba(15, 8, 19, .62); }
+.snvGrimoireCenter strong { font: 1.6rem Georgia, serif; }
+.snvGrimoireCenter span { color: #a996af; font-size: .65rem; font-weight: 850; }
+.snvGrimoireCenter.live { width: 126px; border-radius: 24px; aspect-ratio: auto; padding: 16px 8px; }
+.snvGrimoireCenter.live strong { font: 1.15rem Georgia, serif; }
+.snvGrimoireCenter.live span { margin-top: 4px; font-size: .78rem; }
+.snvGrimoireCenter.live button { margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 999px; color: #fff; background: #82509a; font: inherit; font-size: .68rem; font-weight: 900; cursor: pointer; }
+.snvSeatingTray { display: grid; box-sizing: border-box; height: auto; padding: 18px; align-self: start; align-content: start; gap: 14px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: visible; }
+.snvSeatingTray > header { display: flex; align-items: center; justify-content: space-between; color: #c9b4d1; font-size: .76rem; }
+.snvSelectedRosterTray { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.snvSelectedRosterTray button { display: flex; min-width: 0; padding: 7px 8px; align-items: center; gap: 6px; border: 1px solid rgba(230, 209, 237, .14); border-radius: 11px; color: #f4eaf7; background: rgba(255, 255, 255, .04); font: inherit; font-size: .7rem; font-weight: 800; cursor: pointer; }
+.snvSelectedRosterTray button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; }
+.snvSelectedRosterTray button.assigned { border-color: rgba(214, 169, 226, .34); color: #f4eaf7; background: rgba(130, 80, 154, .18); }
+.snvSelectedRosterTray button.selectedForSeat { border-color: #efd68d; color: #fff; background: linear-gradient(135deg, #82509a, #a36abc); box-shadow: 0 0 0 2px rgba(239, 214, 141, .18); }
+.snvSelectedRosterTray img { width: 32px; height: 32px; flex: 0 0 auto; object-fit: contain; }
+.snvSelectedRosterTray span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.snvMobileSeatPanelBackdrop { display: none; }
+.snvSeatInspector { display: grid; box-sizing: border-box; height: 96px; padding: 10px; align-content: start; grid-template-columns: 1fr; gap: 8px; border-radius: 14px; background: rgba(130, 80, 154, .15); overflow: hidden; }
+.snvSeatInspector > span { color: #bba9c3; font-size: .7rem; font-weight: 850; }
+.snvSeatInspector > strong { min-height: 24px; font: 1.12rem Georgia, serif; }
+.snvSeatInspectorHeader { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.snvSeatInspectorHeader > span:first-child { color: #c8b6cf; font-size: .72rem; font-weight: 850; }
+.snvSeatInspectorHeader > strong { min-width: 0; overflow: hidden; font: 1.05rem Georgia, serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.snvAlignmentIcon { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: .9rem; }
+.snvAlignmentIcon.alignment-good { color: #74d1ef; background: rgba(67, 154, 189, .16); }
+.snvAlignmentIcon.alignment-evil { color: #f17a90; background: rgba(196, 68, 94, .16); }
+.snvAlignmentIcon.unassigned { color: #8f8295; background: rgba(255, 255, 255, .035); }
+.snvSeatInspector input { box-sizing: border-box; width: 100%; padding: 9px 10px; border: 1px solid rgba(230, 209, 237, .2); border-radius: 9px; color: #f8f0fb; background: rgba(10, 5, 13, .42); font: inherit; font-size: .78rem; }
+.snvSeatInspector input::placeholder { color: #817486; }
+.snvSeatInspector button { margin-top: auto; padding: 8px 10px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 9px; color: inherit; background: rgba(255, 255, 255, .04); font: inherit; font-size: .68rem; font-weight: 800; cursor: pointer; }
+.snvSeatInspector button:disabled { color: #756a7a; cursor: not-allowed; }
+.snvSeatingActions { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 12px; }
+.snvSeatingActions .snvConfirmRoster { width: auto; min-width: 150px; }
+.snvOperationError { max-width: 760px; margin: 0 auto 18px; color: #ffd6dd; font-size: .8rem; font-weight: 800; text-align: center; }
+.snvDayMode .snvOperationError { color: #7b1836; }
+.snvConfirmSeating.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(380px, calc(100vw - 32px)); min-height: 60px; margin: 0 auto; border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
+.snvConfirmSeating.floatingAction:disabled { border-color: rgba(230, 209, 237, .18); color: #887d8d; background: rgba(36, 24, 42, .94); box-shadow: 0 12px 30px rgba(7, 3, 10, .46); }
+.snvLiveSeatDetails { display: grid; box-sizing: border-box; height: 100%; padding: 22px; align-content: start; gap: 22px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: auto; animation: snvPanelSwapIn .24s ease-out; }
+.snvLiveSeatDetails > header span { color: #bcaac4; font-size: .7rem; font-weight: 850; }
+.snvLiveSeatDetails > header h2 { margin: 7px 0 0; font: 1.9rem Georgia, serif; }
+.snvLiveIdentity { display: grid; padding: 14px; grid-template-columns: 58px minmax(0, 1fr); gap: 12px; align-items: center; border-radius: 15px; background: rgba(130, 80, 154, .17); }
+.snvLiveIdentity img { width: 58px; height: 58px; object-fit: contain; }
+.snvLiveIdentity div { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; align-items: center; }
+.snvLiveIdentity span { color: #bba8c2; font-size: .68rem; font-weight: 850; }
+.snvLiveIdentity strong { font: 1.3rem Georgia, serif; }
+.snvLiveStatuses { display: flex; flex-wrap: wrap; gap: 7px; }
+.snvLiveStatuses span { padding: 7px 9px; border: 1px solid rgba(214, 169, 226, .22); border-radius: 999px; color: #d9c4de; background: rgba(255, 255, 255, .045); font-size: .68rem; font-weight: 850; }
+.snvLiveSeatDetails > .snvRoleDetailButton { margin-top: auto; align-self: auto; }
+.snvReturnDialog { width: min(430px, 100%); padding: 24px; border: 1px solid rgba(214, 169, 226, .36); border-radius: 24px; background: #201426; box-shadow: 0 28px 90px rgba(0, 0, 0, .54); }
+.snvReturnDialog h2 { margin: 0; font: 1.7rem Georgia, serif; }
+.snvReturnDialog p { margin: 14px 0 24px; color: #c8bacd; line-height: 1.6; }
+.snvReturnDialog > div { display: flex; justify-content: flex-end; gap: 8px; }
+.snvReturnDialog button { padding: 10px 13px; border: 1px solid rgba(230, 209, 237, .2); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-weight: 800; cursor: pointer; }
+.snvReturnDialog button:last-child { border-color: rgba(214, 169, 226, .48); background: #82509a; }
+.snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
+@keyframes snvPanelSwapIn { from { transform: translateX(14px); } to { transform: translateX(0); } }
+.snvStorageSurface { display: grid; max-width: 1180px; margin: 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.snvStorageSurface article { display: grid; min-height: 260px; padding: 28px; align-content: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
+.snvStorageSurface article > span { color: #c9b4d1; font-size: .74rem; font-weight: 850; }
+.snvStorageSurface h2 { margin: 10px 0 34px; font: 2rem Georgia, serif; }
+.snvStorageSurface button { margin-top: auto; padding: 12px 16px; border: 1px solid rgba(214, 169, 226, .45); border-radius: 12px; color: inherit; background: #82509a; font: inherit; font-weight: 850; cursor: pointer; }
+.snvBackToRoster { margin-top: 18px; padding: 10px 15px; }
+.snvManualSurface { grid-template-columns: minmax(0, 1fr) 320px; padding: 28px; }
+.snvFirstNightHeader { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
+.snvFirstNightHeader h2 { grid-column: 2; margin: 0; text-align: center; font: clamp(2.4rem, 5vw, 4.4rem)/.95 Georgia, serif; }
+.snvFirstNightHeader button { grid-column: 1; grid-row: 1; justify-self: start; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvFirstNightPrimary { display: grid; gap: 18px; min-width: 0; }
+.snvPhaseContext { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .12); padding-bottom: 18px; }
+.snvPhaseContext span { color: #c9b4d1; font-size: .82rem; font-weight: 850; }
+.snvPhaseContext strong { color: #e4bced; font-size: .82rem; }
+.snvPhaseContext > div { display: flex; align-items: center; gap: 10px; }
+.snvPhaseContext button { padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .68rem; font-weight: 850; cursor: pointer; }
+.snvCurrentStep { min-height: 330px; padding: clamp(24px, 5vw, 48px); border-radius: 24px; background: linear-gradient(145deg, rgba(132, 75, 155, .38), rgba(50, 26, 62, .5)); }
+.snvCurrentStep header { display: flex; align-items: center; justify-content: space-between; }
+.snvCurrentStep header span { padding: 6px 10px; border-radius: 999px; font-size: .72rem; font-weight: 900; }
+.snvCurrentStep .manual { color: #f2d7a5; background: rgba(174, 115, 28, .27); }
+.snvCurrentStep .automated { color: #bee5d3; background: rgba(38, 135, 94, .28); }
+.snvCurrentStep .unsupported { margin-left: 8px; color: #e9c6ee; background: rgba(104, 61, 121, .5); }
+.snvCurrentStep h2, .snvCurrentStep h3 { margin: 48px 0 10px; font: clamp(2.6rem, 5vw, 4.4rem)/1 Georgia, serif; }
+.snvCurrentStep p { margin: 0; color: #c7b9cc; }
+.snvCurrentStep .snvCurrentStepLabel { margin-top: 0; color: #ead7ee; font-size: .72rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+.snvCurrentStep .snvCurrentStepLabel + h3 { margin-top: 8px; }
+.snvCurrentStepIdentity { display: flex; margin: 34px 0 12px; align-items: center; gap: 18px; }
+.snvCurrentStepIdentity.interactive { width: fit-content; padding: 8px 12px 8px 8px; border: 1px solid transparent; border-radius: 18px; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.snvCurrentStepIdentity.interactive:hover, .snvCurrentStepIdentity.interactive:focus-visible { border-color: rgba(214, 169, 226, .36); background: rgba(255, 255, 255, .055); outline: none; }
+.snvCurrentStepIdentity img { width: 82px; height: 82px; flex: 0 0 auto; object-fit: contain; filter: drop-shadow(0 9px 20px rgba(4, 2, 7, .32)); }
+.snvCurrentStepIdentity h3 { margin: 0; }
+.snvCurrentStepRoleName { font: clamp(2.6rem, 5vw, 4.4rem)/1 Georgia, serif; }
+.snvStepActions { display: flex; margin-top: 42px; gap: 10px; }
+.snvStepActions button { padding: 12px 18px; border-color: #c89bd3; background: #82509a; }
+.snvStepActions button.secondary { border-color: rgba(230, 209, 237, .2); background: transparent; }
+.snvStepActions button.informationReveal { background: rgba(255, 255, 255, .04); }
+.snvStepActions button.informationReveal.prominent { min-width: 132px; border-color: rgba(244, 210, 117, .72); color: #201426; background: #f4d275; box-shadow: 0 10px 28px rgba(205, 143, 45, .28); }
+.snvInformationRevealBackdrop { position: fixed; z-index: 400; inset: 0; display: grid; padding: clamp(20px, 6vw, 72px); place-items: center; background: #100a15; }
+.snvInformationReveal { display: grid; width: min(680px, 100%); min-height: min(520px, calc(100dvh - 40px)); padding: clamp(28px, 7vw, 72px); align-content: center; border: 1px solid rgba(244, 210, 117, .25); border-radius: 30px; background: radial-gradient(circle at 50% 35%, rgba(120, 76, 142, .32), rgba(20, 12, 26, .95)); box-shadow: 0 30px 100px rgba(0, 0, 0, .58); text-align: center; }
+.snvInformationReveal > span { color: #d7bd72; font-size: .72rem; font-weight: 900; letter-spacing: .14em; }
+.snvInformationReveal h2 { margin: 18px 0; font: clamp(2.8rem, 8vw, 5.4rem)/1 Georgia, serif; }
+.snvInformationReveal p { margin: 0 auto; color: #e1d5e4; font-size: clamp(1rem, 2.5vw, 1.35rem); line-height: 1.65; }
+.snvInformationReveal button { justify-self: center; margin-top: 52px; padding: 12px 24px; border: 1px solid rgba(230, 209, 237, .28); border-radius: 999px; color: #fff; background: rgba(255, 255, 255, .08); font: inherit; font-weight: 850; cursor: pointer; }
+.snvPhaseOverview { margin: 0; padding: 0; list-style: none; }
+.snvPhaseOverview li { display: flex; min-height: 62px; padding: 0 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .1); color: #9f90a7; }
+.snvPhaseOverview li.current { color: #fff; background: rgba(154, 94, 178, .18); }
+.snvPhaseOverview li.complete { color: #ccb7d3; }
+.snvPhaseOverview span { font-size: .7rem; font-weight: 850; }
+.snvPhaseOverview strong { font-size: .9rem; }
+.snvManualSurface.snvDaySurface { color: #2f2033; border-color: rgba(116, 77, 126, .24); background: radial-gradient(circle at 72% 5%, rgba(255, 255, 255, .78), transparent 34%), linear-gradient(145deg, rgba(245, 231, 248, .96), rgba(222, 197, 228, .94)); box-shadow: 0 22px 70px rgba(8, 3, 12, .18); }
+.snvDaySurface .snvFirstNightHeader { border-bottom-color: rgba(88, 51, 97, .16); }
+.snvDaySurface .snvFirstNightHeader button { border-color: rgba(88, 51, 97, .2); color: #442b49; background: rgba(255, 255, 255, .48); }
+.snvDaySurface .snvCurrentStep.snvDayStep { background: linear-gradient(145deg, rgba(255, 253, 249, .82), rgba(230, 209, 235, .76)); box-shadow: inset 0 0 0 1px rgba(100, 61, 110, .09); }
+.snvDaySurface .snvCurrentStep .snvCurrentStepLabel { color: #694c70; }
+.snvDaySurface .snvCurrentStep p { color: #624f67; }
+.snvDaySurface .snvStepActions button { border-color: #82509a; color: #fff; background: #82509a; }
+.snvDaySurface .snvPhaseOverview li { border-bottom-color: rgba(88, 51, 97, .12); color: #78667c; }
+.snvDaySurface .snvPhaseOverview li.current { color: #321f36; background: rgba(130, 80, 154, .12); }
+.snvDaySurface .snvPhaseOverview li.complete { color: #5f4a64; }
+.snvFoundationPrototype.snvDayMode { color: #302335; }
+.snvDayMode .snvEyebrow { color: #75547d; }
+.snvDayMode .snvPrototypeHeader p { color: #725f77; }
+.snvDayMode .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
+.snvDayMode .snvUtilityTabs button, .snvDayMode .snvSurfaceTabs button { border-color: rgba(92, 57, 101, .2); color: #442e49; background: rgba(255, 255, 255, .42); }
+.snvDayMode .snvUtilityTabs .snvNewGameTab { border-color: rgba(170, 50, 75, .34); color: #8f2f43; background: rgba(255, 248, 249, .7); }
+.snvDayMode .snvUtilityTabs button.active, .snvDayMode .snvSurfaceTabs button.active { border-color: #81508f; color: #fff; background: #82509a; box-shadow: 0 8px 26px rgba(88, 49, 101, .2); }
+.snvDayMode .snvSurfaceTabs button:disabled { color: #9b8b9f; }
+.snvDayMode .snvSetupControls, .snvDayMode .snvCatalogPreview, .snvDayMode .snvSeatingSurface, .snvDayMode .snvStorageSurface article { border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .64); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
+.snvDayMode .snvControlCard > span, .snvDayMode .snvCatalogPreview h2, .snvDayMode .snvDistributionCard h2, .snvDayMode .snvDistributionCard span, .snvDayMode .snvSeatingSurface > header span, .snvDayMode .snvSeatingSurface > header > strong, .snvDayMode .snvStorageSurface article > span { color: #6e5973; }
+.snvDayMode .snvCatalogPreview article button, .snvDayMode .snvChoiceRow button { border-color: rgba(92, 57, 101, .14); color: #3f3043; background: rgba(255, 255, 255, .48); }
+.snvDayMode .snvCatalogPreview article button.selected, .snvDayMode .snvChoiceRow button[aria-pressed="true"] { border-color: rgba(130, 80, 154, .55); background: rgba(199, 166, 210, .46); }
+.snvDayMode .snvModifierNote { color: #684a70; background: rgba(130, 80, 154, .09); }
+.snvDayMode .snvRoleDetail { border-color: rgba(96, 60, 105, .22); background: linear-gradient(135deg, rgba(255, 252, 249, .94), rgba(226, 204, 233, .94)); }
+.snvDayMode .snvRoleDetail h2 { color: #38273d; }
+.snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
+.snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
+.snvDayMode .snvGrimoireDraft { color: #35283a; border-color: rgba(88, 55, 97, .2); background: linear-gradient(145deg, #fffdfb, #eee5f0); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .62); }
+.snvDayMode .snvGrimoireDraft > button { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
+.snvDayMode .snvGrimoireDraft > button.unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
+.snvDayMode .snvGrimoireDraft > button.assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
+.snvDayMode .snvGrimoireDraft > button.assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
+.snvDayMode .snvGrimoireDraft > button.selected, .snvDayMode .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
+.snvDayMode .snvGrimoireDraft > button.assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
+.snvDayMode .snvGrimoireDraft > button .snvSeatNumber { color: #75637a; }
+.snvDayMode .snvGrimoireDraft > button .snvSeatPlayerName { color: #302535; }
+.snvDayMode .snvGrimoireDraft > button small { color: #6b5a70; }
+.snvDayMode .snvGrimoireCenter { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
+.snvDayMode .snvGrimoireCenter strong { color: #382b3d; }
+.snvDayMode .snvGrimoireCenter span { color: #705e75; }
+.snvDayMode .snvLiveSeatDetails { border-color: rgba(88, 55, 97, .18); color: #35283a; background: #f8f1f7; box-shadow: none; }
+.snvDayMode .snvLiveSeatDetails > header span { color: #715f76; }
+.snvDayMode .snvLiveIdentity { background: #e8d9eb; }
+.snvDayMode .snvLiveIdentity span { color: #6b5871; }
+.snvDayMode .snvLiveStatuses span { border-color: rgba(88, 55, 97, .18); color: #59475f; background: rgba(130, 80, 154, .08); }
+.snvDayMode .snvLiveSeatDetails.mobileOpen { color: #35283a; background: #f8f1f7; box-shadow: 0 -18px 58px rgba(73, 46, 80, .2); }
+.snvDayMode .snvDetailsBackdrop { background: rgba(43, 32, 47, .5); }
+.snvDayMode .snvDetailsDialog, .snvDayMode .snvReturnDialog { border-color: rgba(88, 55, 97, .24); color: #35283a; background: #f8f1f7; box-shadow: 0 26px 80px rgba(73, 46, 80, .28); }
+.snvDayMode .snvDetailsDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
+.snvDayMode .snvDetailsDialog > header span, .snvDayMode .snvDetailsBody > div { color: #705e75; }
+.snvDayMode .snvDetailsDialog > header button { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
+.snvDayMode .snvDetailsBody > div strong { color: #79551d; background: rgba(213, 165, 74, .2); }
+.snvDayMode .snvDetailsBody h3 { color: #644d6b; }
+.snvDayMode .snvDetailsBody p { color: #4f4054; }
+.snvDayMode .snvDetailsBody a { color: #70407d; }
+.snvDayMode .snvReturnDialog h2 { color: #35283a; }
+.snvDayMode .snvReturnDialog p { color: #594b5e; }
+.snvDayMode .snvReturnDialog button { border-color: rgba(88, 55, 97, .2); color: #47364c; background: rgba(255, 255, 255, .58); }
+.snvDayMode .snvReturnDialog button:last-child { border-color: #82509a; color: #fff; background: #82509a; }
+.snvDayMode .snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
+.snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition-duration: 0s; }
+}
+@keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
+@keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
+.snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
+.snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
+@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
+@media (max-width: 780px) {
+  .snvScriptHomeLink + .snvPrototypeHeader { padding-top: 52px; }
+  .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
+  .snvSetupSurface { padding-bottom: 104px; }
+  .snvManualSurface, .snvSeatingSurface { padding: 18px; }
+  .snvSurfaceTabs { max-width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .snvSurfaceTabs::-webkit-scrollbar { display: none; }
+  .snvSurfaceTabs button { flex: 0 0 auto; scroll-snap-align: center; }
+  .snvPhaseContext { grid-column: 1; }
+  .snvFirstNightHeader { grid-template-columns: 72px minmax(0, 1fr) 72px; }
+  .snvFirstNightHeader h2 { font-size: 2.2rem; }
+  .snvFirstNightHeader button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
+  .snvCurrentStepIdentity { margin-top: 28px; gap: 12px; }
+  .snvCurrentStepIdentity img { width: 64px; height: 64px; }
+  .snvFirstNightSurface .snvPhaseOverview { order: 3; }
+  .snvCatalogPreview article { grid-template-columns: 1fr; }
+  .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }
+  .snvRoleDetail { bottom: 10px; z-index: 4; height: auto; min-height: 72px; padding: 10px; grid-template-columns: 1fr; box-shadow: 0 14px 34px rgba(7, 3, 10, .72); }
+  .snvRoleDetail .mobileHidden { display: none; }
+  .snvRoleDetailActions { width: 100%; min-width: 0; grid-column: 1; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+  .snvRoleDetailActions .snvRoleDetailButton { grid-column: auto; justify-self: stretch; }
+  .snvRoleDetailActions .snvConfirmRoster { min-width: 0; min-height: 50px; }
+  .snvDetailsBackdrop { align-items: flex-end; padding: 0; }
+  .snvDetailsDialog, .snvReturnDialog { width: 100%; border-radius: 24px 24px 0 0; }
+  .snvSeatingWorkspace { height: auto; }
+  .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
+  .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
+  .snvGrimoireDraft > button img { width: 38px; height: 38px; }
+  .snvSeatingTray.mobileCollapsed, .snvLiveSeatDetails.mobileCollapsed { display: none; }
+  .snvSeatingTray.mobileOpen, .snvLiveSeatDetails.mobileOpen { position: fixed; z-index: 190; right: 0; bottom: 0; left: 0; display: grid; width: auto; height: auto; max-height: min(430px, calc(100dvh - 20px)); padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #201426; box-shadow: 0 -22px 70px rgba(0, 0, 0, .58); overflow: auto; animation: snvSeatPanelIn .22s ease-out; }
+  .snvSeatingTray > header { display: none; }
+  .snvMobileSeatPanelBackdrop { position: fixed; z-index: 189; inset: 0; display: block; width: 100%; border: 0; background: rgba(6, 3, 8, .62); }
+  .snvSelectedRosterTray { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .snvSelectedRosterTray button.compact { min-height: 36px; padding: 5px 7px; border-radius: 9px; gap: 6px; }
+  .snvSelectedRosterTray button.compact .compactIcon { width: 20px; height: 20px; }
+  .snvSelectedRosterTray button.compact span { color: #fff7ff; font-size: .66rem; font-weight: 900; }
+  .snvSeatInspector { height: 96px; padding: 10px; grid-template-columns: 1fr; gap: 8px; align-items: center; }
+  .snvSeatInspectorHeader { grid-template-columns: auto minmax(0, 1fr) 30px; }
+  .snvSeatInspector > span, .snvSeatInspector > strong { min-width: 0; }
+  .snvSeatInspector > strong { overflow: hidden; font-size: .96rem; text-overflow: ellipsis; white-space: nowrap; }
+  .snvSeatInspector > strong { grid-column: 1 / -1; }
+  .snvSeatInspector input { min-width: 0; padding: 8px 9px; }
+  .snvSeatInspector button { margin-top: 0; padding: 7px 8px; }
+  .snvLiveSeatDetails { order: -1; height: 520px; animation-name: snvMobilePanelSwapIn; }
+  .snvPhaseMark { width: 58px; }
+}
+@keyframes snvMobilePanelSwapIn { from { transform: translateY(-12px); } to { transform: translateY(0); } }
+@keyframes snvSeatPanelIn { from { transform: translateY(100%); } to { transform: translateY(0); } }

@@ -33,6 +33,11 @@ assert.ok(manifest.icons?.some((icon) => icon.purpose === "maskable"), "maskable
 
 assert.ok(files.includes("sw.js"), "generated Service Worker is missing");
 const serviceWorker = readFileSync(new URL("sw.js", root), "utf8");
+assert.equal(
+  serviceWorker.includes('createHandlerBoundToURL("/clocktower/index.html")'),
+  false,
+  "multi-page script routes must not be replaced by the landing page navigation fallback",
+);
 for (const requiredAsset of [
   "trouble-brewing/index.html",
   "sects-and-violets/index.html",
@@ -41,6 +46,8 @@ for (const requiredAsset of [
   ".wasm",
   "assets/characters/tb/washerwoman_g.webp",
   "assets/characters/tb/imp_e.webp",
+  "assets/characters/snv/clockmaker_g.webp",
+  "assets/characters/snv/fanggu_e.webp",
   "assets/community/ccc-parchment.png",
 ]) {
   assert.ok(serviceWorker.includes(requiredAsset), `Service Worker precache is missing ${requiredAsset}`);
@@ -48,6 +55,8 @@ for (const requiredAsset of [
 
 const characterIcons = files.filter((file) => /^assets\/characters\/tb\/.+_[ge]\.webp$/.test(file));
 assert.equal(characterIcons.length, 22, "production build must contain all 22 Trouble Brewing icons");
+const sectsAndVioletsIcons = files.filter((file) => /^assets\/characters\/snv\/.+_[ge]\.webp$/.test(file));
+assert.equal(sectsAndVioletsIcons.length, 25, "production build must contain all 25 Sects & Violets icons");
 assert.ok(files.includes("assets/community/ccc-parchment.png"), "CCC logo is missing from production build");
 assert.ok(files.some((file) => file.endsWith(".wasm")), "WASM core is missing from production build");
 

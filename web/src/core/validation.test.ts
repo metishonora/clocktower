@@ -21,6 +21,47 @@ test("imports schema-v2 events as typed GameEvent values", () => {
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");
 });
 
+test("accepts the S&V manual phase support and replayable outcomes", () => {
+  const manualEvent = {
+    id: "phase-2",
+    type: "manualPhaseStepResolved",
+    phase: "firstNight",
+    payload: { stepId: "firstNight:philosopher", outcome: "handled" },
+    summary: "수동 단계 처리: firstNight:philosopher",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+  equal(parseGameEvent(manualEvent).type, "manualPhaseStepResolved");
+
+  const manualStep = {
+    id: "firstNight:philosopher",
+    phase: "firstNight",
+    stepType: "character",
+    character: "philosopher",
+    playerId: "player-1",
+    requiredInput: { kind: "none", optional: false },
+    canSkip: false,
+    support: "manual",
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: { ...manualStep, id: "firstNight:minionInfo", support: "automated" },
+    phaseOverview: [
+      { ...manualStep, status: "manualComplete" },
+      { ...manualStep, id: "firstNight:minionInfo", support: "automated", status: "current" },
+      { ...manualStep, id: "firstNight:snakeCharmer", status: "notApplicable" },
+    ],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("rejects the canonical schema-v1 fixture", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
 

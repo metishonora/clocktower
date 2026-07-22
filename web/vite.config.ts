@@ -45,7 +45,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,webmanifest,wasm,png,svg,webp}"],
-        navigateFallback: "/clocktower/index.html",
+        navigateFallback: null,
       },
     }),
   ],

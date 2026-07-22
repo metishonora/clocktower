@@ -1,7 +1,7 @@
 # Bundled visual assets
 
-The Trouble Brewing character portraits and Community Created Content logo in this directory are
-official Blood on the Clocktower resources downloaded from `release.botc.app`. The script logos
+The Trouble Brewing and Sects & Violets character portraits and Community Created Content logo in
+this directory are official Blood on the Clocktower resources downloaded from `release.botc.app`. The script logos
 under `scripts/` are official assets downloaded from the Blood on the Clocktower Wiki:
 
 - `trouble-brewing.png`: https://wiki.bloodontheclocktower.com/images/a/a1/Logo_trouble_brewing.png

@@ -159,6 +159,10 @@ export type Command =
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | { type: "skipStep"; payload: { stepId: string; input?: null } }
+  | {
+      type: "resolveManualStep";
+      payload: { stepId: string; outcome: "handled" | "notApplicable" };
+    }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
@@ -356,6 +360,10 @@ export type GameEvent = EventCommon &
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
     | {
+        type: "manualPhaseStepResolved";
+        payload: { stepId: string; outcome: "handled" | "notApplicable" };
+      }
+    | {
         type: "nominationVoteConfirmed";
         payload: {
           stepId: string;
@@ -527,6 +535,7 @@ export type PhaseStep = {
   playerId?: string;
   requiredInput: RequiredInput;
   canSkip: boolean;
+  support?: "automated" | "manual";
   informationPrompt?: InformationPrompt;
   preActionReveal?: PreActionReveal;
 };
@@ -536,7 +545,14 @@ export type PreActionReveal = CharacterChangeRevealPayload & {
 };
 
 export type PhaseOverviewItem = PhaseStep & {
-  status: "waiting" | "current" | "complete" | "skipped" | "needsFollowUp";
+  status:
+    | "waiting"
+    | "current"
+    | "complete"
+    | "skipped"
+    | "needsFollowUp"
+    | "manualComplete"
+    | "notApplicable";
 };
 
 export type DayState = {

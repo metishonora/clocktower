@@ -34,6 +34,7 @@ pub(crate) fn simple_step(
         player_id: None,
         required_input,
         can_skip,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -71,6 +72,7 @@ pub(crate) fn phase_transition_step(
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
