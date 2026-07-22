@@ -324,11 +324,14 @@ export function SectsAndVioletsFoundationPrototype() {
         <span className="snvMoonMark" aria-hidden="true">☾</span>
       </header>
 
+      <nav className="snvUtilityTabs" aria-label="게임 데이터">
+        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
+      </nav>
+
       <nav className="snvSurfaceTabs" aria-label="작업 단계">
         <button type="button" className={activeTab === "roles" ? "active" : ""} aria-current={activeTab === "roles" ? "page" : undefined} onClick={() => navigateToTab("roles")}>직업</button>
         <button type="button" className={activeTab === "seating" ? "active" : ""} aria-current={activeTab === "seating" ? "page" : undefined} disabled={!rosterConfirmed} onClick={() => navigateToTab("seating")}>마도서</button>
         <button type="button" className={activeTab === "play" ? "active" : ""} aria-current={activeTab === "play" ? "page" : undefined} onClick={() => navigateToTab("play")}>진행</button>
-        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
       </nav>
 
       {activeTab === "roles" ? (
@@ -396,9 +399,10 @@ export function SectsAndVioletsFoundationPrototype() {
         <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
           <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
             {seatingConfirmed ? (
-              <button ref={returnTriggerRef} type="button" className="snvToolbarBack" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
+              <button ref={returnTriggerRef} type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
             ) : (
               <>
+              <button type="button" className="snvToolbarBack" aria-label="직업 선택으로 돌아가기" onClick={() => navigateToTab("roles")}><span aria-hidden="true">←</span></button>
               <button type="button" onClick={randomizeSeating}>무작위 배치</button>
               <button type="button" onClick={resetSeating}>배치 초기화</button>
               </>
@@ -461,7 +465,9 @@ export function SectsAndVioletsFoundationPrototype() {
                     <div className="snvLiveIdentity">
                       {selectedSeatAsset ? <img src={selectedSeatAsset.src} alt="" /> : null}
                       <div>
-                        <span>{seatAlignments[selectedSeat] === "evil" ? "악한 진영" : "선한 진영"}</span>
+                        <span className={`snvAlignmentIcon alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)}`} aria-label={`${(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악한" : "선한"} 진영`}>
+                          {(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악" : "선"}
+                        </span>
                         <strong>{selectedSeatCharacter.name}</strong>
                       </div>
                     </div>
@@ -493,7 +499,7 @@ export function SectsAndVioletsFoundationPrototype() {
                       <span
                         className={`snvAlignmentIcon ${seatAssignments[selectedSeat] ? `alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])}` : "unassigned"}`}
                         aria-label={seatAssignments[selectedSeat] ? `${(seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "악한" : "선한"} 진영` : "진영 미정"}
-                      >{seatAssignments[selectedSeat] ? ((seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "☾" : "☀") : "○"}</span>
+                      >{seatAssignments[selectedSeat] ? ((seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "악" : "선") : "-"}</span>
                     </div>
                     <input
                       type="text"
@@ -534,10 +540,7 @@ export function SectsAndVioletsFoundationPrototype() {
           </div>
           <div className={`snvSeatingActions ${seatingConfirmed ? "placeholder" : ""}`}>
             {!seatingConfirmed ? (
-              <>
-              <button type="button" className="snvBackToRoster" onClick={() => navigateToTab("roles")}>직업 선택으로 돌아가기</button>
               <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={() => { setSeatingConfirmed(true); setSelectedSeat(undefined); setPendingCharacterId(undefined); }}>배치 확정</button>
-              </>
             ) : null}
           </div>
         </section>

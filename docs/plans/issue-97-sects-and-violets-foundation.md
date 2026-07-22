@@ -97,6 +97,11 @@ and confirmation clears the selected seat so the board stays in place. The retur
 compact left-arrow in the top Grimoire toolbar. The edit sheet groups seat number, assigned role,
 and alignment icon on one row with the Player-name input beneath it. The separate setup-side role
 progress panel is removed because distribution and catalog group counts already expose that state.
+Both edit and confirmed Grimoire states place a compact back arrow at the left edge of the top
+toolbar; the confirmed-state arrow uses a destructive red treatment because returning clears live
+game state. Alignment badges use the literal `선` and `악` labels with the existing good/evil
+background colors in both edit and live Player details. Save/Load is a separate utility navigation
+above the three workflow tabs, so it never becomes a fourth horizontally scrolling stage.
 
 ## Approved Scope
 
