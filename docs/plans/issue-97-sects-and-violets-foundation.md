@@ -150,6 +150,13 @@ The approved prototype day numbering is `1일차 밤 → 2일차 낮 → 2일차
 tracks the same active label. Day uses an opaque light-lilac Grimoire with a pale center card; its
 wide Player-detail panel and mobile sheet use dark text, stronger metadata/status contrast, and a
 light identity card rather than inheriting the Night inspector palette.
+Day also owns light variants of the destructive return-confirmation dialog and the shared character
+detail dialog. Their headings, body copy, metadata, links, close/cancel actions, and destructive CTA
+use explicit Day contrast while the blurred backdrop remains dark enough to preserve modal focus.
+
+After the role selection is confirmed, the player count, demon choice, and selected roster are locked
+so an accidental click cannot discard seating or live-game state. Confirmed role cards remain usable for
+switching the role-description panel, but they no longer mutate the roster.
 
 ## Approved Scope
 

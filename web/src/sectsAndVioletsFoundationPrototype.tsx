@@ -224,6 +224,7 @@ export function SectsAndVioletsFoundationPrototype() {
   };
 
   const choosePlayerCount = (count: number) => {
+    if (rosterConfirmed) return;
     if (count === playerCount) return;
     setPlayerCount(count);
     setSelectedIds([demon]);
@@ -244,6 +245,7 @@ export function SectsAndVioletsFoundationPrototype() {
 
   const chooseDemon = (choice: DemonChoice) => {
     setActiveCharacterId(choice);
+    if (rosterConfirmed) return;
     if (choice === demon) return;
     setDemon(choice);
     setSelectedIds([choice]);
@@ -267,7 +269,7 @@ export function SectsAndVioletsFoundationPrototype() {
 
   const toggleCharacter = (character: CatalogCharacter) => {
     setActiveCharacterId(character.id);
-    if (character.kind === "demon") return;
+    if (rosterConfirmed || character.kind === "demon") return;
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
     setRevealedStepIds([]);
@@ -407,7 +409,7 @@ export function SectsAndVioletsFoundationPrototype() {
               <span>플레이어</span>
               <div className="snvChoiceRow">
                 {Object.keys(baseDistribution).map((count) => (
-                  <button key={count} type="button" aria-pressed={playerCount === Number(count)} onClick={() => choosePlayerCount(Number(count))}>{count}명</button>
+                  <button key={count} type="button" aria-pressed={playerCount === Number(count)} disabled={rosterConfirmed} onClick={() => choosePlayerCount(Number(count))}>{count}명</button>
                 ))}
               </div>
             </section>
@@ -415,7 +417,7 @@ export function SectsAndVioletsFoundationPrototype() {
               <span>악마 선택</span>
               <div className="snvChoiceRow">
                 {demonChoices.map((choice) => (
-                  <button key={choice.id} type="button" aria-pressed={demon === choice.id} onClick={() => chooseDemon(choice.id)}>{choice.name}</button>
+                  <button key={choice.id} type="button" aria-pressed={demon === choice.id} disabled={rosterConfirmed} onClick={() => chooseDemon(choice.id)}>{choice.name}</button>
                 ))}
               </div>
             </section>

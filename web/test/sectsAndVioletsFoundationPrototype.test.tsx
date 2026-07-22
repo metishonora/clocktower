@@ -62,6 +62,14 @@ test("selects a complete roster, shows the active character detail, and advances
   expect(within(seating).queryByRole("heading", { name: "그리모어 배치" })).toBeNull();
   expect(within(seating).queryByText("7개 직업")).toBeNull();
   expect(within(prototype).getByRole("button", { name: "마도서" }).getAttribute("aria-current")).toBe("page");
+  await user.click(within(prototype).getByRole("button", { name: "직업" }));
+  expect(within(prototype).getByRole("button", { name: "8명" }).hasAttribute("disabled")).toBe(true);
+  expect(within(prototype).getByRole("button", { name: "노 다시" }).hasAttribute("disabled")).toBe(true);
+  const confirmedClockmaker = within(prototype).getByRole("button", { name: "시계공" });
+  await user.click(confirmedClockmaker);
+  expect(confirmedClockmaker.getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).getByRole("button", { name: "마도서" }).hasAttribute("disabled")).toBe(false);
+  await user.click(within(prototype).getByRole("button", { name: "마도서" }));
   await user.click(within(prototype).getByRole("button", { name: "진행" }));
   await user.click(within(prototype).getByRole("button", { name: "마도서" }));
   expect(within(prototype).getByRole("region", { name: "그리모어 배치 단계" })).toBeTruthy();
