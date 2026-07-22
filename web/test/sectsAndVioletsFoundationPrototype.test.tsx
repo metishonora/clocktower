@@ -242,7 +242,8 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(prototype.classList.contains("tabForward")).toBe(true);
   let firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   expect(firstNight.classList.contains("snvTabPanel")).toBe(true);
-  expect(within(firstNight).getByRole("heading", { name: "첫날 밤" })).toBeTruthy();
+  expect(within(firstNight).getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
+  expect(firstNight.querySelector(".snvFirstNightMoon")).toBeNull();
   expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
   expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
   expect(within(firstNight).queryByText("수동")).toBeNull();
@@ -259,10 +260,20 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   await user.click(within(firstNight).getByRole("button", { name: "처리 완료" }));
   expect(within(firstNight).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  expect(within(firstNight).queryByText(/하수인에게 악마와 다른 하수인을 알려줍니다/)).toBeNull();
-  await user.click(within(firstNight).getByRole("button", { name: "Reveal" }));
   expect(within(firstNight).getByText(/하수인에게 악마와 다른 하수인을 알려줍니다/)).toBeTruthy();
+  const revealInformation = within(firstNight).getByRole("button", { name: "정보 공개" });
+  expect(revealInformation.classList.contains("prominent")).toBe(true);
   expect(within(firstNight).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+  await user.click(revealInformation);
+  const information = screen.getByRole("dialog", { name: "하수인 정보 공개" });
+  expect(information.parentElement?.classList.contains("snvInformationRevealBackdrop")).toBe(true);
+  expect(within(information).getByText(/하수인에게 악마와 다른 하수인을 알려줍니다/)).toBeTruthy();
+  await user.click(within(information).getByRole("button", { name: "정보 공개 닫기" }));
+  const revisitableInformation = within(firstNight).getByRole("button", { name: "정보 공개" });
+  expect(revisitableInformation.classList.contains("prominent")).toBe(false);
+  await user.click(revisitableInformation);
+  expect(screen.getByRole("dialog", { name: "하수인 정보 공개" })).toBeTruthy();
+  await user.click(within(screen.getByRole("dialog", { name: "하수인 정보 공개" })).getByRole("button", { name: "정보 공개 닫기" }));
   await user.click(within(prototype).getByRole("button", { name: "마도서로 이동" }));
   expect(prototype.classList.contains("tabBackward")).toBe(true);
   expect(within(prototype).getByRole("complementary", { name: "좌석 상세 정보" })).toBeTruthy();
@@ -397,7 +408,8 @@ test("starts the first night with the always-present evil information steps when
   await user.click(within(prototype).getByRole("button", { name: "진행" }));
   const phase = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
   expect(within(phase).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  expect(within(phase).getByRole("button", { name: "Reveal" })).toBeTruthy();
+  expect(within(phase).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+  expect(within(phase).getByRole("button", { name: "다음 단계" })).toBeTruthy();
   expect(within(phase).getByRole("list", { name: "첫날 밤 순서" }).textContent).toBe("현재하수인 정보대기악마 정보");
 });
 

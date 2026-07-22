@@ -113,11 +113,13 @@ export function SectsAndVioletsFoundationPrototype() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
-  const [revealedStepId, setRevealedStepId] = useState<string>();
+  const [revealedStepIds, setRevealedStepIds] = useState<string[]>([]);
+  const [informationStepId, setInformationStepId] = useState<string>();
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
   const returnCancelRef = useRef<HTMLButtonElement>(null);
+  const informationCloseRef = useRef<HTMLButtonElement>(null);
 
   const distribution = useMemo(() => {
     const base = baseDistribution[playerCount];
@@ -146,6 +148,7 @@ export function SectsAndVioletsFoundationPrototype() {
     [selectedIds],
   );
   const currentFirstNightStep = firstNightSteps[firstNightStepIndex];
+  const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
   const selectedSeatAsset = sectsAndVioletsCharacterAsset(selectedSeatCharacterId);
@@ -177,6 +180,16 @@ export function SectsAndVioletsFoundationPrototype() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [returnConfirmOpen]);
 
+  useEffect(() => {
+    if (!informationStepId) return;
+    informationCloseRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setInformationStepId(undefined);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [informationStepId]);
+
   const navigateToTab = (nextTab: PrototypeTab) => {
     const tabOrder: PrototypeTab[] = ["roles", "seating", "play", "storage"];
     setTabMotion(tabOrder.indexOf(nextTab) >= tabOrder.indexOf(activeTab) ? "tabForward" : "tabBackward");
@@ -199,7 +212,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setFirstNightStepIndex(0);
-    setRevealedStepId(undefined);
+    setRevealedStepIds([]);
+    setInformationStepId(undefined);
     navigateToTab("seating");
   };
 
@@ -215,7 +229,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
-    setRevealedStepId(undefined);
+    setRevealedStepIds([]);
+    setInformationStepId(undefined);
     setActiveTab("roles");
   };
 
@@ -231,7 +246,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
-    setRevealedStepId(undefined);
+    setRevealedStepIds([]);
+    setInformationStepId(undefined);
     setSeatAssignments({});
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
@@ -244,7 +260,8 @@ export function SectsAndVioletsFoundationPrototype() {
     if (character.kind === "demon") return;
     setRosterConfirmed(false);
     setFirstNightStepIndex(0);
-    setRevealedStepId(undefined);
+    setRevealedStepIds([]);
+    setInformationStepId(undefined);
     setSelectedIds((selected) => {
       if (selected.includes(character.id)) return selected.filter((id) => id !== character.id);
       if (selectedByKind[character.kind] >= requiredByKind[character.kind]) return selected;
@@ -253,8 +270,14 @@ export function SectsAndVioletsFoundationPrototype() {
   };
 
   const advanceFirstNight = () => {
-    setRevealedStepId(undefined);
+    setInformationStepId(undefined);
     setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
+  };
+
+  const showCurrentStepInformation = () => {
+    if (!currentFirstNightStep) return;
+    setRevealedStepIds((current) => current.includes(currentFirstNightStep.id) ? current : [...current, currentFirstNightStep.id]);
+    setInformationStepId(currentFirstNightStep.id);
   };
 
   const assignCharacterToSeat = (characterId: string, seat: number, preserveSelectedSeat = false) => {
@@ -576,8 +599,7 @@ export function SectsAndVioletsFoundationPrototype() {
       ) : activeTab === "play" ? (
         <section className="snvManualSurface snvFirstNightSurface snvTabPanel" aria-label="첫날 밤 진행">
           <header className="snvFirstNightHeader">
-            <div><span>1일차</span><h2>첫날 밤</h2></div>
-            <span className="snvFirstNightMoon" aria-hidden="true">☾</span>
+            <h2>1일차 밤</h2>
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
           </header>
 
@@ -586,13 +608,16 @@ export function SectsAndVioletsFoundationPrototype() {
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 <h3>{currentFirstNightStep.name}</h3>
-                {currentFirstNightStep.support === "manual" || revealedStepId === currentFirstNightStep.id
-                  ? <p>{currentFirstNightStep.summary}</p>
-                  : <p className="snvRevealPlaceholder">정보를 확인할 준비가 되면 Reveal을 누르세요.</p>}
+                <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
-                  {currentFirstNightStep.support === "automated" && revealedStepId !== currentFirstNightStep.id
-                    ? <button type="button" className="reveal" onClick={() => setRevealedStepId(currentFirstNightStep.id)}>Reveal</button>
-                    : <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>}
+                  {currentFirstNightStep.support === "automated" ? (
+                    <button
+                      type="button"
+                      className={`informationReveal ${revealedStepIds.includes(currentFirstNightStep.id) ? "" : "prominent"}`}
+                      onClick={showCurrentStepInformation}
+                    >정보 공개</button>
+                  ) : null}
+                  <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
                   {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" onClick={advanceFirstNight}>해당 없음</button> : null}
                 </div>
               </article>
@@ -657,6 +682,16 @@ export function SectsAndVioletsFoundationPrototype() {
               <section><h3>능력 요약</h3><p>{activeCharacter.summary}</p></section>
               <a href={`https://wiki.bloodontheclocktower.com/${wikiSlugs[activeCharacter.id]}`} target="_blank" rel="noreferrer">공식 규칙</a>
             </div>
+          </section>
+        </div>
+      ) : null}
+      {informationStep ? (
+        <div className="snvInformationRevealBackdrop">
+          <section className="snvInformationReveal" role="dialog" aria-modal="true" aria-label={`${informationStep.name} 공개`}>
+            <span>정보 공개</span>
+            <h2>{informationStep.name}</h2>
+            <p>{informationStep.summary}</p>
+            <button ref={informationCloseRef} type="button" aria-label="정보 공개 닫기" onClick={() => setInformationStepId(undefined)}>닫기</button>
           </section>
         </div>
       ) : null}

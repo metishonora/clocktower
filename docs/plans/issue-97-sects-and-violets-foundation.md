@@ -117,9 +117,11 @@ the selected roster while retaining Minion and Demon information, and the read-o
 remains exclusively in the existing `마도서` tab. That tab highlights the Player whose character
 owns the current step with a yellow border and a top-right `현재 행동자` legend; the `진행` tab does
 not duplicate the board. The current-task card omits support and step-count badges. Automated
-information steps require an explicit `Reveal` before displaying their information and enabling the
-next-step action. This specimen intentionally does not add Day, later-night, persistence, or
-production runtime wiring yet.
+information steps place `정보 공개` and `다음 단계` together below the step description. Information
+opens in a full-screen, distraction-free overlay; the reveal action is prominent until first used
+for that step and remains available without emphasis afterward. The phase header is the centered
+single label `n일차 밤` without a separate Night icon. This specimen intentionally does not add Day,
+later-night, persistence, or production runtime wiring yet.
 
 ## Approved Scope
 
