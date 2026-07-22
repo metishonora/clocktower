@@ -473,7 +473,6 @@ export function SectsAndVioletsFoundationPrototype() {
                     </div>
                     <div className="snvLiveStatuses" aria-label="현재 상태">
                       <span>생존</span>
-                      <span>상태 이상 없음</span>
                     </div>
                     <button
                       ref={detailTriggerRef}
@@ -612,7 +611,7 @@ export function SectsAndVioletsFoundationPrototype() {
         </aside>
       ) : null}
       {detailsOpen ? (
-        <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDetails(); }}>
+        <div className="snvDetailsBackdrop aboveSeatSheet" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDetails(); }}>
           <section className="snvDetailsDialog" role="dialog" aria-modal="true" aria-label={`${activeCharacter.name} 상세 정보`}>
             <header>
               {activeCharacterAsset ? <img src={activeCharacterAsset.src} alt="" /> : null}

@@ -219,8 +219,13 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(liveAlignment.textContent).toBe("선");
   expect(within(details).getByText("시계공")).toBeTruthy();
   expect(within(details).getByText("생존")).toBeTruthy();
-  expect(within(details).getByText("상태 이상 없음")).toBeTruthy();
-  expect(within(details).getByRole("button", { name: "시계공 상세 정보" })).toBeTruthy();
+  expect(within(details).queryByText("상태 이상 없음")).toBeNull();
+  const openRoleDetails = within(details).getByRole("button", { name: "시계공 상세 정보" });
+  await user.click(openRoleDetails);
+  const roleDialog = screen.getByRole("dialog", { name: "시계공 상세 정보" });
+  const roleDialogBackdrop = roleDialog.parentElement as HTMLElement;
+  expect(roleDialogBackdrop.classList.contains("aboveSeatSheet")).toBe(true);
+  await user.click(within(roleDialog).getByRole("button", { name: "상세 정보 닫기" }));
   expect(within(details).queryByRole("button", { name: "배치 편집" })).toBeNull();
   expect(details.classList.contains("transitionIn")).toBe(true);
   await user.click(within(seating).getByRole("button", { name: "좌석 설정 패널 닫기 배경" }));

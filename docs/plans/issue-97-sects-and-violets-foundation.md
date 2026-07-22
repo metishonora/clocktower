@@ -102,6 +102,9 @@ toolbar; the confirmed-state arrow uses a destructive red treatment because retu
 game state. Alignment badges use the literal `선` and `악` labels with the existing good/evil
 background colors in both edit and live Player details. Save/Load is a separate utility navigation
 above the three workflow tabs, so it never becomes a fourth horizontally scrolling stage.
+Live Player details omit an empty `상태 이상 없음` chip; status-effect chips appear only when an
+effect actually exists. Character-detail dialogs use a layer above the mobile seat sheet so their
+content cannot be obscured by the Player panel that launched them.
 
 ## Approved Scope
 
