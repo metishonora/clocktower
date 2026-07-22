@@ -379,14 +379,14 @@ export function SectsAndVioletsFoundationPrototype() {
   };
 
   return (
-    <main className={`snvFoundationPrototype ${tabMotion}`} aria-label="Sects & Violets 기반 화면 프로토타입">
+    <main className={`snvFoundationPrototype ${tabMotion} ${playPhase === "day" ? "snvDayMode" : "snvNightMode"}`} aria-label="Sects & Violets 기반 화면 프로토타입">
       <header className="snvPrototypeHeader">
         <div>
           <span className="snvEyebrow">ISSUE 97 · REVIEW PROTOTYPE</span>
           <h1>Sects &amp; Violets</h1>
           <p>7–15명 · 일부 자동화</p>
         </div>
-        <span className="snvMoonMark" aria-hidden="true">☾</span>
+        <span className={`snvPhaseMark ${playPhase === "day" ? "snvSunMark" : "snvMoonMark"}`} aria-hidden="true">{playPhase === "day" ? "☀" : "☾"}</span>
       </header>
 
       <nav className="snvUtilityTabs" aria-label="게임 데이터">

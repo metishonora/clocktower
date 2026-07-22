@@ -133,6 +133,10 @@ The first Day specimen now connects that CTA to a brighter ivory/lilac `1일차 
 Day operational and deliberately manual: one concise card covers ability use, nominations, voting,
 and execution before `낮 종료`. Completion shows `1일차 낮 종료`, and `2일차 밤으로` establishes the
 later-Night boundary and header without yet specifying its character order or automation.
+Day theme ownership lives at the workflow root rather than only on the Play panel: the page
+background, header, navigation, setup/reference surfaces, and floating details all adopt the
+ivory/lilac palette, while the top-right phase mark changes from a moon to a sun. Entering the next
+Night restores the dark palette and moon everywhere, including when another workflow tab is open.
 
 ## Approved Scope
 
