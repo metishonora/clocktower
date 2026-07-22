@@ -4,9 +4,14 @@ import type { CoreAdapter } from "./core/coreAdapter";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
 import type { GameEvent, GameFile, PhaseStep, ReplayState, SetupDistribution } from "./core/types";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import {
+  sectsAndVioletsCharacters as characters,
+  sectsAndVioletsWikiSlugs as wikiSlugs,
+  type SectsAndVioletsCharacter as CatalogCharacter,
+  type SectsAndVioletsCharacterKind as CharacterKind,
+} from "./sectsAndVioletsCharacters";
 
 type DemonChoice = "fangGu" | "vigormortis" | "noDashii" | "vortox";
-type CharacterKind = "townsfolk" | "outsider" | "minion" | "demon";
 type Alignment = "good" | "evil";
 type PrototypeTab = "roles" | "seating" | "play" | "storage";
 type TabMotion = "tabForward" | "tabBackward" | "";
@@ -16,13 +21,6 @@ type FirstNightStep = {
   name: string;
   characterId?: string;
   support: "manual" | "automated";
-  summary: string;
-};
-
-type CatalogCharacter = {
-  id: string;
-  kind: CharacterKind;
-  name: string;
   summary: string;
 };
 
@@ -49,44 +47,7 @@ const firstNightOrder: FirstNightStep[] = [
   { id: "mathematician", name: "수학자", characterId: "mathematician", support: "automated", summary: "비정상적으로 작동한 능력의 수를 알려줍니다." },
 ];
 
-const characters: CatalogCharacter[] = [
-  { id: "clockmaker", kind: "townsfolk", name: "시계공", summary: "게임 시작 시, 악마와 가장 가까운 하수인 사이의 거리를 압니다." },
-  { id: "dreamer", kind: "townsfolk", name: "꿈꾸는 자", summary: "매일 밤 플레이어 1명을 골라 선한 직업 1개와 악한 직업 1개를 압니다. 둘 중 하나가 그 플레이어의 직업입니다." },
-  { id: "snakeCharmer", kind: "townsfolk", name: "뱀 조련사", summary: "매일 밤 살아있는 플레이어 1명을 고릅니다. 악마라면 서로 직업과 성향을 바꾸고, 이전 악마는 중독됩니다." },
-  { id: "mathematician", kind: "townsfolk", name: "수학자", summary: "매일 밤 새벽 이후 다른 직업 능력 때문에 능력이 비정상적으로 작동한 플레이어 수를 압니다." },
-  { id: "flowergirl", kind: "townsfolk", name: "꽃팔이 소녀", summary: "첫날을 제외한 매일 밤, 오늘 악마가 투표했는지 압니다." },
-  { id: "townCrier", kind: "townsfolk", name: "포고꾼", summary: "첫날을 제외한 매일 밤, 오늘 하수인이 지명했는지 압니다." },
-  { id: "oracle", kind: "townsfolk", name: "예언자", summary: "첫날을 제외한 매일 밤, 죽은 플레이어 중 악한 플레이어가 몇 명인지 압니다." },
-  { id: "savant", kind: "townsfolk", name: "백치천재", summary: "매일 낮 이야기꾼에게 비공개 정보 두 가지를 들을 수 있습니다. 하나는 참이고 하나는 거짓입니다." },
-  { id: "seamstress", kind: "townsfolk", name: "재봉사", summary: "게임 중 한 번 밤에 자신이 아닌 플레이어 2명을 골라 두 사람의 성향이 같은지 압니다." },
-  { id: "philosopher", kind: "townsfolk", name: "철학자", summary: "게임 중 한 번 밤에 선한 직업 하나의 능력을 얻습니다. 그 직업이 플레이 중이면 해당 플레이어는 취합니다." },
-  { id: "artist", kind: "townsfolk", name: "화가", summary: "게임 중 한 번 낮에 이야기꾼에게 예 또는 아니요로 답할 수 있는 질문을 합니다." },
-  { id: "juggler", kind: "townsfolk", name: "곡예사", summary: "첫날 낮에 최대 5명의 직업을 공개적으로 추측하고, 그날 밤 맞힌 수를 압니다." },
-  { id: "sage", kind: "townsfolk", name: "현자", summary: "악마에게 죽으면 악마가 두 플레이어 중 한 명이라는 정보를 압니다." },
-  { id: "mutant", kind: "outsider", name: "변종", summary: "자신이 외부인이라고 광기에 빠지면 처형될 수도 있습니다." },
-  { id: "sweetheart", kind: "outsider", name: "사랑꾼", summary: "죽으면 플레이어 1명이 그때부터 취합니다." },
-  { id: "barber", kind: "outsider", name: "이발사", summary: "오늘 낮이나 밤에 죽었다면 악마가 다른 악마를 제외한 플레이어 2명의 직업을 바꿀 수 있습니다." },
-  { id: "klutz", kind: "outsider", name: "얼뜨기", summary: "자신이 죽었다는 사실을 알면 살아있는 플레이어 1명을 공개적으로 고릅니다. 그가 악하면 선한 팀이 패배합니다." },
-  { id: "evilTwin", kind: "minion", name: "사악한 쌍둥이", summary: "서로 반대 성향인 쌍둥이는 서로를 압니다." },
-  { id: "witch", kind: "minion", name: "마녀", summary: "매일 밤 플레이어 1명을 저주합니다. 그가 다음 날 지명하면 죽습니다. 생존자가 3명 이하이면 능력을 잃습니다." },
-  { id: "cerenovus", kind: "minion", name: "세레노버스", summary: "매일 밤 플레이어 1명과 선한 직업 하나를 골라 다음 날 그 직업이라고 광기에 빠뜨립니다." },
-  { id: "pitHag", kind: "minion", name: "마귀할멈", summary: "매일 밤 플레이어 1명과 직업 하나를 골라 그 직업으로 바꿉니다. 새 직업이면 그날 밤 죽음은 임의로 발생합니다." },
-  { id: "fangGu", kind: "demon", name: "팡 구", summary: "첫날을 제외한 매일 밤 플레이어 1명을 죽입니다. 처음 이렇게 죽은 외부인은 악한 팡 구가 되고 기존 팡 구가 대신 죽습니다." },
-  { id: "vigormortis", kind: "demon", name: "비고르모르티스", summary: "첫날을 제외한 매일 밤 플레이어 1명을 죽입니다. 죽인 하수인은 능력을 유지하고 인접한 마을 주민 1명을 중독시킵니다." },
-  { id: "noDashii", kind: "demon", name: "노 다시", summary: "첫날을 제외한 매일 밤 플레이어 1명을 죽입니다. 자신의 양옆에서 가장 가까운 마을 주민 2명은 중독됩니다." },
-  { id: "vortox", kind: "demon", name: "보르톡스", summary: "첫날을 제외한 매일 밤 플레이어 1명을 죽입니다. 마을 주민은 거짓 정보만 얻으며, 낮에 아무도 처형되지 않으면 악한 팀이 승리합니다." },
-];
-
 const demonChoices = characters.filter((character) => character.kind === "demon") as Array<CatalogCharacter & { id: DemonChoice }>;
-
-const wikiSlugs: Record<string, string> = {
-  clockmaker: "Clockmaker", dreamer: "Dreamer", snakeCharmer: "Snake_Charmer", mathematician: "Mathematician",
-  flowergirl: "Flowergirl", townCrier: "Town_Crier", oracle: "Oracle", savant: "Savant", seamstress: "Seamstress",
-  philosopher: "Philosopher", artist: "Artist", juggler: "Juggler", sage: "Sage", mutant: "Mutant",
-  sweetheart: "Sweetheart", barber: "Barber", klutz: "Klutz", evilTwin: "Evil_Twin", witch: "Witch",
-  cerenovus: "Cerenovus", pitHag: "Pit-Hag", fangGu: "Fang_Gu", vigormortis: "Vigormortis",
-  noDashii: "No_Dashii", vortox: "Vortox",
-};
 
 const baseDistribution: Record<number, [number, number, number, number]> = {
   7: [5, 0, 1, 1],
@@ -620,7 +581,7 @@ export function SectsAndVioletsFoundation({
         <div>
           <span className="snvEyebrow">{production ? "STORYTELLER CONSOLE" : "ISSUE 97 · REVIEW PROTOTYPE"}</span>
           <h1>Sects &amp; Violets</h1>
-          <p>7–15명 · 일부 자동화</p>
+          <p>7–15명</p>
         </div>
         <span className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`} aria-hidden="true">{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
       </header>
@@ -965,7 +926,7 @@ export function SectsAndVioletsFoundation({
           <div className="snvRoleDetailCopy mobileHidden">
             <div><span>{kindLabels[activeCharacter.kind]}</span></div>
             <h2>{activeCharacter.name}</h2>
-            <p>{activeCharacter.summary}</p>
+            <p>{activeCharacter.ability}</p>
           </div>
           <div className="snvRoleDetailActions">
             <button ref={detailTriggerRef} type="button" className="snvRoleDetailButton" aria-haspopup="dialog" aria-expanded={detailsOpen} onClick={() => setDetailsOpen(true)}>{activeCharacter.name} 상세 정보</button>
@@ -984,8 +945,7 @@ export function SectsAndVioletsFoundation({
               <button ref={detailCloseRef} type="button" aria-label="상세 정보 닫기" onClick={closeDetails}>×</button>
             </header>
             <div className="snvDetailsBody">
-              <div><span>자동화 지원</span><strong>수동 처리</strong></div>
-              <section><h3>능력 요약</h3><p>{activeCharacter.summary}</p></section>
+              <section><h3>능력 요약</h3><p>{activeCharacter.ability}</p></section>
               <a href={`https://wiki.bloodontheclocktower.com/${wikiSlugs[activeCharacter.id]}`} target="_blank" rel="noreferrer">공식 규칙</a>
             </div>
           </section>
@@ -1065,7 +1025,7 @@ function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
     name: known?.name ?? character?.name ?? suffix,
     characterId: step.character,
     support: step.support ?? "automated",
-    summary: known?.summary ?? character?.summary ?? "이 단계를 진행합니다.",
+    summary: known?.summary ?? character?.ability ?? "이 단계를 진행합니다.",
   };
 }
 
