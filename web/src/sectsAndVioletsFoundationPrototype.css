@@ -184,7 +184,12 @@
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
 .snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray, .snvLiveSeatDetails { order: -1; height: 520px; } .snvSeatInspector.idle { display: none; } .snvLiveSeatDetails { animation-name: snvMobilePanelSwapIn; } }
+@media (max-width: 1200px) {
+  .snvSeatingTray > header.tabletHidden { display: none; }
+  .snvSeatInspector.tabletCompact { height: 96px; padding: 10px; grid-template-columns: 1fr; gap: 8px; align-items: center; }
+  .snvSeatInspector.tabletHiddenWhenIdle.idle { display: none; }
+}
+@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.grimoireHeightBound, .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); } .snvLiveSeatDetails { animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
   .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
   .snvSetupSurface { padding-bottom: 104px; }

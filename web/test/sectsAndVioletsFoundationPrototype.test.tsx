@@ -107,7 +107,9 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
   expect(editBack.textContent).toContain("←");
   expect(editBack.classList.contains("destructive")).toBe(false);
   expect(within(seating).getAllByRole("button", { name: "직업 선택으로 돌아가기" })).toHaveLength(1);
-  expect(within(seating).getByLabelText("좌석 편집기").classList.contains("idle")).toBe(true);
+  const idleInspector = within(seating).getByLabelText("좌석 편집기");
+  expect(idleInspector.classList.contains("idle")).toBe(true);
+  expect(idleInspector.classList.contains("tabletHiddenWhenIdle")).toBe(true);
 
   await user.click(within(seating).getByRole("button", { name: "무작위 배치" }));
   expect(within(seating).queryAllByRole("button", { name: /미할당/ })).toHaveLength(0);
@@ -122,6 +124,8 @@ test("assigns roles to Grimoire seats in role-first and seat-first order", async
 
   const seatingTray = within(seating).getByRole("complementary", { name: "선택한 직업" });
   expect(seatingTray.classList.contains("mobileCollapsed")).toBe(true);
+  expect(seatingTray.classList.contains("grimoireHeightBound")).toBe(true);
+  expect(seatingTray.querySelector(":scope > header")?.classList.contains("tabletHidden")).toBe(true);
   await user.click(within(seating).getByRole("button", { name: /1번 좌석.*미할당/ }));
   expect(seatingTray.classList.contains("mobileOpen")).toBe(true);
   expect(within(seatingTray).getByRole("textbox", { name: "1번 좌석 이름" })).toBeTruthy();
@@ -273,6 +277,8 @@ test("distributes fifteen seats around non-overlapping desktop and mobile rectan
   expect((grimoire as HTMLElement).style.getPropertyValue("--mobile-grimoire-height")).toBe("708px");
   await user.click(within(grimoire).getByRole("button", { name: /^1번 좌석.*미할당/ }));
   const seatPanel = within(prototype).getByRole("complementary", { name: "선택한 직업" });
+  expect(seatPanel.classList.contains("grimoireHeightBound")).toBe(true);
+  expect(seatPanel.querySelector(":scope > header")?.classList.contains("tabletHidden")).toBe(true);
   expect(within(seatPanel).getAllByRole("button", { name: /배치$/ })).toHaveLength(15);
   await user.click(within(prototype).getByRole("button", { name: "좌석 설정 패널 닫기 배경" }));
   const seats = within(grimoire).getAllByRole("button") as HTMLElement[];

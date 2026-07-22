@@ -487,9 +487,9 @@ export function SectsAndVioletsFoundationPrototype() {
               </aside>
             ) : (
             <>
-            <aside className={`snvSeatingTray ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
-              <header><span>직업</span><strong>{assignedCount}/{playerCount}</strong></header>
-              <div className={`snvSeatInspector fixed ${!selectedSeat && !pendingCharacterId ? "idle" : ""}`} aria-label="좌석 편집기">
+            <aside className={`snvSeatingTray grimoireHeightBound ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
+              <header className="tabletHidden"><span>직업</span><strong>{assignedCount}/{playerCount}</strong></header>
+              <div className={`snvSeatInspector fixed tabletCompact tabletHiddenWhenIdle ${!selectedSeat && !pendingCharacterId ? "idle" : ""}`} aria-label="좌석 편집기">
                 {selectedSeat ? (
                   <>
                     <div className="snvSeatInspectorHeader" aria-label="좌석 편집기 머리글">
