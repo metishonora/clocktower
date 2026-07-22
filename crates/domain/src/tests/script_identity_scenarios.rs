@@ -96,7 +96,7 @@ fn sects_and_violets_event_log_is_not_replayed_as_trouble_brewing() {
     .unwrap();
 
     assert_eq!(actual["ok"], false, "{actual}");
-    assert_eq!(actual["error"]["code"], "EVENT_NOT_SUPPORTED_BY_SCRIPT");
+    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn sects_and_violets_commands_do_not_fall_through_to_tb_validation() {
     });
     let created: Value =
         serde_json::from_str(&propose_json(&empty.to_string(), &create.to_string())).unwrap();
-    assert_eq!(created["error"]["code"], "SCRIPT_NOT_IMPLEMENTED");
+    assert_eq!(created["error"]["code"], "INVALID_PLAYER_COUNT");
 
     let slayer = json!({
         "type": "useSlayerAbility",
@@ -161,5 +161,6 @@ fn setup_distribution_requires_script_and_keeps_script_specific_behavior_separat
         r#"{"scriptId":"sectsAndViolets","playerCount":7,"actualCharacters":["clockmaker"]}"#,
     ))
     .unwrap();
-    assert_eq!(sv_character["error"]["code"], "SCRIPT_NOT_IMPLEMENTED");
+    assert_eq!(sv_character["value"]["Townsfolk"], 5);
+    assert_eq!(sv_character["value"]["Outsider"], 0);
 }

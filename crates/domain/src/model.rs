@@ -41,6 +41,13 @@ pub(crate) enum StepType {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PhaseStepSupport {
+    Automated,
+    Manual,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 pub(crate) enum RequiredInputKind {
     #[serde(rename = "none")]
     None,
@@ -330,6 +337,7 @@ pub(crate) struct PhaseStep {
     pub(crate) player_id: Option<String>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -440,6 +448,7 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) player_id: Option<String>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
     pub(crate) status: PhaseStepStatus,
@@ -602,10 +611,18 @@ pub(crate) enum PhaseStepStatus {
     Complete,
     Skipped,
     NeedsFollowUp,
+    ManualComplete,
+    NotApplicable,
 }
 
 impl PhaseStepStatus {
     pub(crate) fn is_done(self) -> bool {
-        matches!(self, PhaseStepStatus::Complete | PhaseStepStatus::Skipped)
+        matches!(
+            self,
+            PhaseStepStatus::Complete
+                | PhaseStepStatus::Skipped
+                | PhaseStepStatus::ManualComplete
+                | PhaseStepStatus::NotApplicable
+        )
     }
 }

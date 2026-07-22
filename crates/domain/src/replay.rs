@@ -25,6 +25,9 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
+        return crate::characters::replay_snv(game_file);
+    }
     crate::characters::rules(game_file.script_id).validate_replay_events(&game_file.game.events)?;
     let events = &game_file.game.events;
     let ended_positions = events
@@ -489,6 +492,7 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -553,6 +557,7 @@ pub(crate) fn replay_phase_state(
                 player_id: step.player_id,
                 required_input: step.required_input,
                 can_skip: false,
+                support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
                 status: PhaseStepStatus::Current,
             }],
@@ -571,6 +576,7 @@ pub(crate) fn replay_phase_state(
                 player_id: step.player_id,
                 required_input: step.required_input,
                 can_skip: false,
+                support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
                 status: PhaseStepStatus::Current,
             }],
@@ -601,6 +607,8 @@ pub(crate) fn replay_phase_state(
                     PhaseStepStatus::Complete => PhaseStepStatus::Complete,
                     PhaseStepStatus::Skipped => PhaseStepStatus::Skipped,
                     PhaseStepStatus::NeedsFollowUp => PhaseStepStatus::NeedsFollowUp,
+                    PhaseStepStatus::ManualComplete => PhaseStepStatus::ManualComplete,
+                    PhaseStepStatus::NotApplicable => PhaseStepStatus::NotApplicable,
                     PhaseStepStatus::Waiting if Some(step.id.as_str()) == current_step_id => {
                         PhaseStepStatus::Current
                     }
@@ -615,6 +623,7 @@ pub(crate) fn replay_phase_state(
                     player_id: step.player_id,
                     required_input: step.required_input,
                     can_skip: step.can_skip,
+                    support: step.support,
                     information_prompt: step.information_prompt,
                     status,
                 }
@@ -1093,6 +1102,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
         character: None,
         player_id: Some(player_id.into()),
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
         required_input: RequiredInput {

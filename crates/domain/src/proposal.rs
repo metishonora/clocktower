@@ -32,14 +32,20 @@ use crate::{
     phase::validate_required_input,
     replay::{pending_demon_succession, replay_phase_state, replay_players, replay_rule_state},
     setup::{
-        normalized_setup_player, player_from_setup_input, validate_setup_inputs,
-        validate_setup_warnings,
+        normalized_setup_player_for_script, player_from_setup_input_for_script,
+        validate_setup_inputs_for_script, validate_setup_warnings_for_script,
     },
 };
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
     crate::characters::rules(game_file.script_id).validate_command(&command)?;
+    if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
+        return match command {
+            Command::CreateGame { payload } => propose_create_game(&game_file, payload),
+            command => crate::characters::propose_snv_phase_command(&game_file, command),
+        };
+    }
     if game_file
         .game
         .events
@@ -69,6 +75,9 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::CreateGame { payload } => propose_create_game(&game_file, payload),
         Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
         Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
+        Command::ResolveManualStep { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
         Command::UpdatePlayerAnnotations { payload } => {
@@ -304,18 +313,18 @@ pub(crate) fn propose_create_game(
         return Err(ErrorKind::GameAlreadyHasEvents.into_error());
     }
 
-    validate_setup_inputs(&payload.players)?;
+    validate_setup_inputs_for_script(game_file.script_id, &payload.players)?;
 
     let players = payload
         .players
         .iter()
-        .map(normalized_setup_player)
+        .map(|player| normalized_setup_player_for_script(game_file.script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
     let derived_players = players
         .iter()
-        .map(player_from_setup_input)
+        .map(|player| player_from_setup_input_for_script(game_file.script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
-    let warnings = validate_setup_warnings(&derived_players);
+    let warnings = validate_setup_warnings_for_script(game_file.script_id, &derived_players);
     let count = players.len();
 
     Ok(Proposal {
