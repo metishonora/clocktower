@@ -111,6 +111,12 @@ two-row seat/role/alignment and Player-name block precedes the role grid. The as
 its content height instead of stretching to the Grimoire height, removing both the large empty
 inspector area and the empty lower panel area without introducing internal scrolling.
 
+Gate C is approved. Gate D now has a First Night-only review specimen: the large Night identity and
+current task lead the surface, the right rail contains the official First Night order filtered to
+the selected roster while retaining Minion and Demon information, and the read-only visual Grimoire
+highlights the Player whose character owns the current step. This specimen intentionally does not
+add Day, later-night, persistence, or production runtime wiring yet.
+
 ## Approved Scope
 
 - Add the official Sects & Violets catalog: 13 Townsfolk, 4 Outsiders, 4 Minions, and 4 Demons.

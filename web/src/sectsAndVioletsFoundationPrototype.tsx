@@ -7,7 +7,13 @@ type CharacterKind = "townsfolk" | "outsider" | "minion" | "demon";
 type Alignment = "good" | "evil";
 type PrototypeTab = "roles" | "seating" | "play" | "storage";
 type TabMotion = "tabForward" | "tabBackward" | "";
-type ManualView = "philosopher" | "evilInfo" | "day";
+type FirstNightStep = {
+  id: string;
+  name: string;
+  characterId?: string;
+  support: "manual" | "automated";
+  summary: string;
+};
 
 type CatalogCharacter = {
   id: string;
@@ -24,6 +30,20 @@ const kindLabels: Record<CharacterKind, string> = {
 };
 
 const kindOrder: CharacterKind[] = ["townsfolk", "outsider", "minion", "demon"];
+
+const firstNightOrder: FirstNightStep[] = [
+  { id: "philosopher", name: "철학자", characterId: "philosopher", support: "manual", summary: "철학자의 선택과 능력 획득을 마도서에서 처리합니다." },
+  { id: "minionInfo", name: "하수인 정보", support: "automated", summary: "하수인에게 악마와 다른 하수인을 알려줍니다." },
+  { id: "demonInfo", name: "악마 정보", support: "automated", summary: "악마에게 하수인과 블러프 직업을 알려줍니다." },
+  { id: "snakeCharmer", name: "뱀 조련사", characterId: "snakeCharmer", support: "manual", summary: "선택한 플레이어를 확인하고 필요하면 직업과 성향을 교환합니다." },
+  { id: "evilTwin", name: "사악한 쌍둥이", characterId: "evilTwin", support: "manual", summary: "두 쌍둥이가 서로를 확인하도록 안내합니다." },
+  { id: "witch", name: "마녀", characterId: "witch", support: "manual", summary: "저주할 플레이어를 선택합니다." },
+  { id: "cerenovus", name: "세레노버스", characterId: "cerenovus", support: "manual", summary: "플레이어와 광기 직업을 선택합니다." },
+  { id: "clockmaker", name: "시계공", characterId: "clockmaker", support: "automated", summary: "악마와 가장 가까운 하수인 사이의 거리를 알려줍니다." },
+  { id: "dreamer", name: "꿈꾸는 자", characterId: "dreamer", support: "manual", summary: "플레이어를 선택하고 직업 정보 두 개를 확인합니다." },
+  { id: "seamstress", name: "재봉사", characterId: "seamstress", support: "manual", summary: "선택한 두 플레이어의 성향이 같은지 확인합니다." },
+  { id: "mathematician", name: "수학자", characterId: "mathematician", support: "automated", summary: "비정상적으로 작동한 능력의 수를 알려줍니다." },
+];
 
 const characters: CatalogCharacter[] = [
   { id: "clockmaker", kind: "townsfolk", name: "시계공", summary: "게임 시작 시, 악마와 가장 가까운 하수인 사이의 거리를 압니다." },
@@ -92,8 +112,7 @@ export function SectsAndVioletsFoundationPrototype() {
   const [activeCharacterId, setActiveCharacterId] = useState("fangGu");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
-  const [manualView, setManualView] = useState<ManualView>("philosopher");
-  const [philosopherOutcome, setPhilosopherOutcome] = useState<"handled" | "notApplicable">();
+  const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -121,6 +140,11 @@ export function SectsAndVioletsFoundationPrototype() {
   const selectedDemon = demonChoices.find((choice) => choice.id === demon) ?? demonChoices[0];
   const assignedCount = Object.keys(seatAssignments).length;
   const seatingComplete = assignedCount === playerCount;
+  const firstNightSteps = useMemo(
+    () => firstNightOrder.filter((step) => !step.characterId || selectedIds.includes(step.characterId)),
+    [selectedIds],
+  );
+  const currentFirstNightStep = firstNightSteps[firstNightStepIndex];
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
   const selectedSeatAsset = sectsAndVioletsCharacterAsset(selectedSeatCharacterId);
@@ -173,8 +197,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
-    setManualView("philosopher");
-    setPhilosopherOutcome(undefined);
+    setFirstNightStepIndex(0);
     navigateToTab("seating");
   };
 
@@ -189,6 +212,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
+    setFirstNightStepIndex(0);
     setActiveTab("roles");
   };
 
@@ -203,6 +227,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setRosterConfirmed(false);
+    setFirstNightStepIndex(0);
     setSeatAssignments({});
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
@@ -214,6 +239,7 @@ export function SectsAndVioletsFoundationPrototype() {
     setActiveCharacterId(character.id);
     if (character.kind === "demon") return;
     setRosterConfirmed(false);
+    setFirstNightStepIndex(0);
     setSelectedIds((selected) => {
       if (selected.includes(character.id)) return selected.filter((id) => id !== character.id);
       if (selectedByKind[character.kind] >= requiredByKind[character.kind]) return selected;
@@ -221,10 +247,7 @@ export function SectsAndVioletsFoundationPrototype() {
     });
   };
 
-  const resolvePhilosopher = (outcome: "handled" | "notApplicable") => {
-    setPhilosopherOutcome(outcome);
-    setManualView("evilInfo");
-  };
+  const advanceFirstNight = () => setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
 
   const assignCharacterToSeat = (characterId: string, seat: number, preserveSelectedSeat = false) => {
     const previousSeat = Object.entries(seatAssignments).find(([, assignedCharacterId]) => assignedCharacterId === characterId)?.[0];
@@ -539,40 +562,76 @@ export function SectsAndVioletsFoundationPrototype() {
           </div>
         </section>
       ) : activeTab === "play" ? (
-        <section className="snvManualSurface snvTabPanel" aria-label="수동 단계 검토">
-          <div className="snvPhaseContext">
-            <span>{manualView === "day" ? "1일차" : "첫날 밤"}</span>
-            <div><strong>{manualView === "day" ? "낮 수동 진행" : "일부 자동화"}</strong><button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button></div>
+        <section className="snvManualSurface snvFirstNightSurface snvTabPanel" aria-label="첫날 밤 진행">
+          <header className="snvFirstNightHeader">
+            <div><span>1일차</span><h2>첫날 밤</h2></div>
+            <span className="snvFirstNightMoon" aria-hidden="true">☾</span>
+            <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
+          </header>
+
+          <div className="snvFirstNightPrimary">
+            {currentFirstNightStep ? (
+              <article className="snvCurrentStep">
+                <header>
+                  <span className={currentFirstNightStep.support}>{currentFirstNightStep.support === "manual" ? "수동" : "자동"}</span>
+                  <small>{firstNightStepIndex + 1} / {firstNightSteps.length}</small>
+                </header>
+                <p className="snvCurrentStepLabel">현재 할 일</p>
+                <h3>{currentFirstNightStep.name}</h3>
+                <p>{currentFirstNightStep.summary}</p>
+                <div className="snvStepActions">
+                  <button type="button" onClick={advanceFirstNight}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
+                  {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" onClick={advanceFirstNight}>해당 없음</button> : null}
+                </div>
+              </article>
+            ) : (
+              <article className="snvCurrentStep complete">
+                <p className="snvCurrentStepLabel">첫날 밤</p>
+                <h3>모든 단계 완료</h3>
+                <p>첫날 밤 순서의 마지막까지 확인했습니다.</p>
+              </article>
+            )}
+
+            <div className="snvPlayGrimoire" aria-label="진행 마도서" style={grimoireSizeStyle}>
+              {Array.from({ length: playerCount }, (_, index) => {
+                const seat = index + 1;
+                const characterId = seatAssignments[seat];
+                const character = characters.find((candidate) => candidate.id === characterId);
+                const asset = sectsAndVioletsCharacterAsset(characterId);
+                const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
+                const desktopPosition = desktopSeatPositions[index];
+                const mobilePosition = mobileSeatPositions[index];
+                const isCurrentActor = Boolean(characterId && currentFirstNightStep?.characterId === characterId);
+                return (
+                  <div
+                    key={seat}
+                    className={`snvPlaySeat ${isCurrentActor ? "currentActor " : ""}${character ? `alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
+                    aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
+                    style={{
+                      "--seat-x": `${desktopPosition.x}%`,
+                      "--seat-y": `${desktopPosition.y}%`,
+                      "--mobile-seat-x": `${mobilePosition.x}%`,
+                      "--mobile-seat-y": `${mobilePosition.y}%`,
+                    } as CSSProperties}
+                  >
+                    <span>{seat}</span>
+                    {asset ? <img src={asset.src} alt="" /> : null}
+                    <strong>{playerName}</strong>
+                    <small>{character?.name ?? "미할당"}</small>
+                  </div>
+                );
+              })}
+              <div className="snvPlayGrimoireCenter"><strong>1일차</strong><span>첫날 밤</span></div>
+            </div>
           </div>
 
-          {manualView === "day" ? (
-            <article className="snvCurrentStep snvDayStep">
-              <header><span className="manual">수동</span><span className="unsupported">자동 규칙 미지원</span></header>
-              <h2>낮 수동 진행</h2>
-              <p>마도서 상태를 정리한 뒤 다음 밤으로 진행합니다.</p>
-              <div className="snvStepActions"><button type="button">처리 완료</button><button type="button" className="secondary">해당 없음</button></div>
-            </article>
-          ) : manualView === "philosopher" ? (
-            <article className="snvCurrentStep">
-              <header><span className="manual">수동</span><small>1 / 9</small></header>
-              <h2>철학자</h2>
-              <p>능력 처리를 마도서에서 직접 진행합니다.</p>
-              <div className="snvStepActions"><button type="button" onClick={() => resolvePhilosopher("handled")}>처리 완료</button><button type="button" className="secondary" onClick={() => resolvePhilosopher("notApplicable")}>해당 없음</button></div>
-            </article>
-          ) : (
-            <article className="snvCurrentStep">
-              <header><span className="automated">자동</span><small>2 / 9</small></header>
-              <h2>악 정보</h2>
-              <p>하수인과 악마 정보를 확인합니다.</p>
-              <div className="snvStepActions"><button type="button" onClick={() => setManualView("day")}>낮 수동 진행 보기</button></div>
-            </article>
-          )}
-
-          <ol className="snvPhaseOverview" aria-label="단계 개요">
-            <li className={philosopherOutcome ? "complete" : "current"}><span>{philosopherOutcome ? "수동 완료" : "현재"}</span><strong>철학자</strong></li>
-            <li className={manualView === "evilInfo" ? "current" : ""}><span>{manualView === "evilInfo" ? "현재" : "대기"}</span><strong>악 정보</strong></li>
-            <li><span>대기</span><strong>뱀 조련사</strong></li>
-            <li><span>대기</span><strong>마녀</strong></li>
+          <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
+            {firstNightSteps.map((step, index) => (
+              <li key={step.id} className={index < firstNightStepIndex ? "complete" : index === firstNightStepIndex ? "current" : ""}>
+                <span>{index < firstNightStepIndex ? "완료" : index === firstNightStepIndex ? "현재" : "대기"}</span>
+                <strong>{step.name}</strong>
+              </li>
+            ))}
           </ol>
         </section>
       ) : (

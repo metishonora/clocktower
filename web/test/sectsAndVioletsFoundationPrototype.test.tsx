@@ -196,11 +196,11 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   render(<SectsAndVioletsFoundationPrototype />);
   const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
 
-  const roster = ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"];
+  const roster = ["시계공", "꿈꾸는 자", "뱀 조련사", "철학자", "변종", "사악한 쌍둥이"];
   for (const character of roster) await user.click(within(prototype).getByRole("button", { name: character }));
   await user.click(within(prototype).getByRole("button", { name: "직업 선택 확정" }));
   const seating = within(prototype).getByRole("region", { name: "그리모어 배치 단계" });
-  const assignments = ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이", "팡 구"];
+  const assignments = ["시계공", "꿈꾸는 자", "뱀 조련사", "철학자", "변종", "사악한 쌍둥이", "팡 구"];
   for (let index = 0; index < assignments.length; index += 1) {
     await user.click(within(seating).getByRole("button", { name: `${assignments[index]} 배치` }));
     await user.click(within(seating).getByRole("button", { name: new RegExp(`${index + 1}번 좌석.*미할당`) }));
@@ -240,9 +240,19 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
 
   await user.click(within(seating).getByRole("button", { name: "진행으로 이동" }));
   expect(prototype.classList.contains("tabForward")).toBe(true);
-  expect(within(prototype).getByRole("region", { name: "수동 단계 검토" }).classList.contains("snvTabPanel")).toBe(true);
-  await user.click(within(prototype).getByRole("button", { name: "처리 완료" }));
-  expect(within(prototype).getByRole("heading", { name: "악 정보" })).toBeTruthy();
+  const firstNight = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
+  expect(firstNight.classList.contains("snvTabPanel")).toBe(true);
+  expect(within(firstNight).getByRole("heading", { name: "첫날 밤" })).toBeTruthy();
+  expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
+  expect(within(firstNight).getByRole("list", { name: "첫날 밤 순서" }).textContent).toMatch(
+    /철학자.*하수인 정보.*악마 정보.*뱀 조련사.*사악한 쌍둥이.*시계공.*꿈꾸는 자/,
+  );
+  expect(within(firstNight).queryByText("마녀")).toBeNull();
+  const currentActor = within(firstNight).getByLabelText(/4번 좌석.*철학자.*현재 행동자/);
+  expect(currentActor.classList.contains("currentActor")).toBe(true);
+  await user.click(within(firstNight).getByRole("button", { name: "처리 완료" }));
+  expect(within(firstNight).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
+  expect(within(firstNight).getByText("자동")).toBeTruthy();
   await user.click(within(prototype).getByRole("button", { name: "마도서로 이동" }));
   expect(prototype.classList.contains("tabBackward")).toBe(true);
   expect(within(prototype).getByRole("complementary", { name: "좌석 상세 정보" })).toBeTruthy();
@@ -369,24 +379,16 @@ test("keeps a fixed character summary slot with icons and opens the baseline det
   expect(screen.queryByRole("dialog", { name: "시계공 상세 정보" })).toBeNull();
 });
 
-test("previews manual phase outcomes on the separate Play surface", async () => {
+test("starts the first night with the always-present evil information steps when no acting role is selected", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsFoundationPrototype />);
   const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
 
   await user.click(within(prototype).getByRole("button", { name: "진행" }));
-  const phase = within(prototype).getByRole("region", { name: "수동 단계 검토" });
-  expect(within(phase).getByRole("heading", { name: "철학자" })).toBeTruthy();
-  expect(within(phase).getByText("수동")).toBeTruthy();
-  await user.click(within(phase).getByRole("button", { name: "처리 완료" }));
-  expect(within(phase).getByText("수동 완료")).toBeTruthy();
-  expect(within(phase).getByRole("heading", { name: "악 정보" })).toBeTruthy();
+  const phase = within(prototype).getByRole("region", { name: "첫날 밤 진행" });
+  expect(within(phase).getByRole("heading", { name: "하수인 정보" })).toBeTruthy();
   expect(within(phase).getByText("자동")).toBeTruthy();
-
-  await user.click(within(phase).getByRole("button", { name: "낮 수동 진행 보기" }));
-  expect(within(phase).getByRole("heading", { name: "낮 수동 진행" })).toBeTruthy();
-  expect(within(phase).getByText("자동 규칙 미지원")).toBeTruthy();
-  expect(within(phase).getByRole("button", { name: "해당 없음" })).toBeTruthy();
+  expect(within(phase).getByRole("list", { name: "첫날 밤 순서" }).textContent).toBe("현재하수인 정보대기악마 정보");
 });
 
 function expectNoSeatOverlap(
