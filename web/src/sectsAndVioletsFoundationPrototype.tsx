@@ -511,7 +511,7 @@ export function SectsAndVioletsFoundationPrototype() {
                 );
               })}
               <div className={`snvGrimoireCenter ${seatingConfirmed ? "live" : ""}`}>
-                <strong>{seatingConfirmed ? "1일차 밤" : `${assignedCount}/${playerCount}`}</strong>
+                <strong>{seatingConfirmed ? (playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "2일차 낮" : "2일차 밤") : `${assignedCount}/${playerCount}`}</strong>
                 <span>{seatingConfirmed ? "00:00" : "배치"}</span>
                 {seatingConfirmed ? <button type="button" aria-label="진행으로 이동" onClick={() => navigateToTab("play")}>진행 →</button> : null}
               </div>
@@ -615,7 +615,7 @@ export function SectsAndVioletsFoundationPrototype() {
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
-            <h2>{playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "1일차 낮" : "2일차 밤"}</h2>
+            <h2>{playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "2일차 낮" : "2일차 밤"}</h2>
           </header>
 
           <div className="snvFirstNightPrimary">
@@ -667,7 +667,7 @@ export function SectsAndVioletsFoundationPrototype() {
               </article>
             ) : playPhase === "day" ? (
               <article className="snvCurrentStep snvDayStep complete">
-                <h3>1일차 낮 종료</h3>
+                <h3>2일차 낮 종료</h3>
                 <div className="snvStepActions">
                   <button type="button" onClick={() => setPlayPhase("laterNight")}>2일차 밤으로</button>
                 </div>

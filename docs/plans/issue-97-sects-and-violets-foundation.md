@@ -146,6 +146,10 @@ gradient is not reused because it lets the light page show through and reads as 
 Its center labels explicitly retain the light Grimoire foreground instead of inheriting the Day
 page text color. Character-owned Play steps show the official role icon beside the task title; that
 icon/title group opens the existing baseline character-detail dialog and returns focus on close.
+The approved prototype day numbering is `1일차 밤 → 2일차 낮 → 2일차 밤`, and the Grimoire center
+tracks the same active label. Day uses an opaque light-lilac Grimoire with a pale center card; its
+wide Player-detail panel and mobile sheet use dark text, stronger metadata/status contrast, and a
+light identity card rather than inheriting the Night inspector palette.
 
 ## Approved Scope
 

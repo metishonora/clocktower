@@ -231,9 +231,16 @@
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
 .snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
 .snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
-.snvDayMode .snvGrimoireDraft { color: #f8f0fb; background: #2a2130; box-shadow: none; }
-.snvDayMode .snvGrimoireCenter strong { color: #f8f0fb; }
-.snvDayMode .snvGrimoireCenter span { color: #c7b6cc; }
+.snvDayMode .snvGrimoireDraft { color: #35283a; border-color: rgba(88, 55, 97, .26); background: #cbb9d1; box-shadow: none; }
+.snvDayMode .snvGrimoireCenter { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
+.snvDayMode .snvGrimoireCenter strong { color: #382b3d; }
+.snvDayMode .snvGrimoireCenter span { color: #705e75; }
+.snvDayMode .snvLiveSeatDetails { border-color: rgba(88, 55, 97, .18); color: #35283a; background: #f8f1f7; box-shadow: none; }
+.snvDayMode .snvLiveSeatDetails > header span { color: #715f76; }
+.snvDayMode .snvLiveIdentity { background: #e8d9eb; }
+.snvDayMode .snvLiveIdentity span { color: #6b5871; }
+.snvDayMode .snvLiveStatuses span { border-color: rgba(88, 55, 97, .18); color: #59475f; background: rgba(130, 80, 154, .08); }
+.snvDayMode .snvLiveSeatDetails.mobileOpen { color: #35283a; background: #f8f1f7; box-shadow: 0 -18px 58px rgba(73, 46, 80, .2); }
 .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
   .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition-duration: 0s; }

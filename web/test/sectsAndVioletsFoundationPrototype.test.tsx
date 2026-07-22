@@ -432,12 +432,12 @@ test("starts the first night with the always-present evil information steps when
   expect((prototype.querySelector(".snvPhaseMark") as HTMLElement).textContent).toBe("☀");
   expect(prototype.querySelector(".snvMoonMark")).toBeNull();
   expect(day.classList.contains("snvDaySurface")).toBe(true);
-  expect(within(day).getByRole("heading", { name: "1일차 낮" })).toBeTruthy();
+  expect(within(day).getByRole("heading", { name: "2일차 낮" })).toBeTruthy();
   expect(within(day).getByRole("heading", { name: "낮 진행" })).toBeTruthy();
   expect(within(day).getByRole("button", { name: "낮 종료" })).toBeTruthy();
 
   await user.click(within(day).getByRole("button", { name: "낮 종료" }));
-  expect(within(day).getByRole("heading", { name: "1일차 낮 종료" })).toBeTruthy();
+  expect(within(day).getByRole("heading", { name: "2일차 낮 종료" })).toBeTruthy();
   await user.click(within(day).getByRole("button", { name: "2일차 밤으로" }));
 
   const laterNight = within(prototype).getByRole("region", { name: "이후 밤 진행" });
