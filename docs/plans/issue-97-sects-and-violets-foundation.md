@@ -141,6 +141,8 @@ The two root backgrounds cross-fade over 720 ms, with matching header and surfac
 and a reduced-motion opt-out. Tab selection remains immediate so active labels never fade through a
 low-contrast state. Day mode does not add a shadow to the Grimoire board, and its floating character
 detail action uses an explicit dark foreground on the light panel.
+The Day Grimoire itself uses an opaque solid dark surface. The Night board's translucent radial
+gradient is not reused because it lets the light page show through and reads as a large grey shadow.
 
 ## Approved Scope
 

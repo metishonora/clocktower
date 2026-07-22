@@ -225,7 +225,7 @@
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
 .snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
 .snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
-.snvDayMode .snvGrimoireDraft { box-shadow: none; }
+.snvDayMode .snvGrimoireDraft { background: #1c1622; box-shadow: none; }
 .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
   .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition-duration: 0s; }
