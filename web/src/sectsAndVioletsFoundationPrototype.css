@@ -1,11 +1,13 @@
 :root { color-scheme: dark; }
 
-.snvFoundationPrototype { min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; }
+.snvFoundationPrototype { position: relative; isolation: isolate; min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; transition: color .72s ease; }
+.snvFoundationPrototype::before { position: absolute; z-index: -1; inset: 0; opacity: 0; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); content: ""; pointer-events: none; transition: opacity .72s ease; }
+.snvFoundationPrototype.snvDayMode::before { opacity: 1; }
 .snvPrototypeHeader { display: flex; max-width: 1180px; margin: 0 auto 24px; align-items: center; justify-content: space-between; }
 .snvEyebrow { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
 .snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
 .snvPrototypeHeader p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
-.snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .28s ease, background .28s ease, border-color .28s ease, transform .28s ease; }
+.snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .72s ease, background .72s ease, border-color .72s ease, transform .72s ease; }
 .snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; }
 .snvSurfaceTabs { display: flex; max-width: 1180px; margin: 0 auto 22px; gap: 8px; }
 .snvUtilityTabs button, .snvSurfaceTabs button, .snvChoiceRow button, .snvStepActions button, .snvConfirmRoster, .snvBackToRoster { border: 1px solid rgba(230, 209, 237, .2); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-weight: 800; cursor: pointer; }
@@ -207,7 +209,7 @@
 .snvDaySurface .snvPhaseOverview li { border-bottom-color: rgba(88, 51, 97, .12); color: #78667c; }
 .snvDaySurface .snvPhaseOverview li.current { color: #321f36; background: rgba(130, 80, 154, .12); }
 .snvDaySurface .snvPhaseOverview li.complete { color: #5f4a64; }
-.snvFoundationPrototype.snvDayMode { color: #302335; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); }
+.snvFoundationPrototype.snvDayMode { color: #302335; }
 .snvDayMode .snvEyebrow { color: #75547d; }
 .snvDayMode .snvPrototypeHeader p { color: #725f77; }
 .snvDayMode .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
@@ -222,7 +224,12 @@
 .snvDayMode .snvRoleDetail { border-color: rgba(96, 60, 105, .22); background: linear-gradient(135deg, rgba(255, 252, 249, .94), rgba(226, 204, 233, .94)); }
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
 .snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
-.snvDayMode .snvGrimoireDraft { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 18px 54px rgba(78, 43, 88, .2); }
+.snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
+.snvDayMode .snvGrimoireDraft { box-shadow: none; }
+.snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton { transition-duration: 0s; }
+}
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }

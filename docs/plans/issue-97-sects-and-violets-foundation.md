@@ -137,6 +137,10 @@ Day theme ownership lives at the workflow root rather than only on the Play pane
 background, header, navigation, setup/reference surfaces, and floating details all adopt the
 ivory/lilac palette, while the top-right phase mark changes from a moon to a sun. Entering the next
 Night restores the dark palette and moon everywhere, including when another workflow tab is open.
+The two root backgrounds cross-fade over 720 ms, with matching header and surface color transitions
+and a reduced-motion opt-out. Tab selection remains immediate so active labels never fade through a
+low-contrast state. Day mode does not add a shadow to the Grimoire board, and its floating character
+detail action uses an explicit dark foreground on the light panel.
 
 ## Approved Scope
 
