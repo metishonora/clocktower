@@ -33,6 +33,11 @@ assert.ok(manifest.icons?.some((icon) => icon.purpose === "maskable"), "maskable
 
 assert.ok(files.includes("sw.js"), "generated Service Worker is missing");
 const serviceWorker = readFileSync(new URL("sw.js", root), "utf8");
+assert.equal(
+  serviceWorker.includes('createHandlerBoundToURL("/clocktower/index.html")'),
+  false,
+  "multi-page script routes must not be replaced by the landing page navigation fallback",
+);
 for (const requiredAsset of [
   "trouble-brewing/index.html",
   "sects-and-violets/index.html",
