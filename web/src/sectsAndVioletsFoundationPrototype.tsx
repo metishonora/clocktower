@@ -487,11 +487,9 @@ export function SectsAndVioletsFoundationPrototype() {
               </aside>
             ) : (
             <>
-            <aside className={`snvSeatingTray grimoireHeightBound ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
-              <header className="tabletHidden"><span>직업</span><strong>{assignedCount}/{playerCount}</strong></header>
-              <div className={`snvSeatInspector fixed tabletCompact tabletHiddenWhenIdle ${!selectedSeat && !pendingCharacterId ? "idle" : ""}`} aria-label="좌석 편집기">
-                {selectedSeat ? (
-                  <>
+            <aside className={`snvSeatingTray contentHeight ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
+              {selectedSeat ? (
+                <div className="snvSeatInspector fixed compactTwoRow" aria-label="좌석 편집기">
                     <div className="snvSeatInspectorHeader" aria-label="좌석 편집기 머리글">
                       <span>{selectedSeat}번 좌석</span>
                       <strong>{characters.find((character) => character.id === seatAssignments[selectedSeat])?.name ?? "미할당"}</strong>
@@ -507,11 +505,8 @@ export function SectsAndVioletsFoundationPrototype() {
                       value={seatNames[selectedSeat] ?? ""}
                       onChange={(event) => setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }))}
                     />
-                  </>
-                ) : (
-                  <><span>{pendingCharacterId ? "배치할 좌석 선택" : "좌석 또는 직업 선택"}</span><strong>{pendingCharacterId ? characters.find((character) => character.id === pendingCharacterId)?.name : ""}</strong></>
-                )}
-              </div>
+                </div>
+              ) : null}
               <div className="snvSelectedRosterTray">
                 {selectedIds.map((id) => {
                   const character = characters.find((candidate) => candidate.id === id)!;

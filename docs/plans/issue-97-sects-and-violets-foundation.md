@@ -105,11 +105,11 @@ above the three workflow tabs, so it never becomes a fourth horizontally scrolli
 Live Player details omit an empty `상태 이상 없음` chip; status-effect chips appear only when an
 effect actually exists. Character-detail dialogs use a layer above the mobile seat sheet so their
 content cannot be obscured by the Player panel that launched them.
-Tablet Grimoire editing hides both the roster-count header and the idle selection prompt. Once a
-seat is selected, only the compact two-row seat/role/alignment and Player-name block precedes the
-role grid. At stacked tablet widths the selection panel inherits the Player-count-derived mobile
-Grimoire height instead of retaining a fixed 520 px height, preventing unnecessary internal scroll
-for small games while giving 15-Player role grids the larger canvas they require.
+Grimoire editing omits both the roster-count header and the idle selection prompt at every viewport
+width, including iPad Safari desktop-width layouts. Once a seat is selected, only the compact
+two-row seat/role/alignment and Player-name block precedes the role grid. The assignment panel uses
+its content height instead of stretching to the Grimoire height, removing both the large empty
+inspector area and the empty lower panel area without introducing internal scrolling.
 
 ## Approved Scope
 

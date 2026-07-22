@@ -105,7 +105,7 @@
 .snvGrimoireCenter.live strong { font: 1.15rem Georgia, serif; }
 .snvGrimoireCenter.live span { margin-top: 4px; font-size: .78rem; }
 .snvGrimoireCenter.live button { margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 999px; color: #fff; background: #82509a; font: inherit; font-size: .68rem; font-weight: 900; cursor: pointer; }
-.snvSeatingTray { display: grid; box-sizing: border-box; height: 100%; padding: 18px; align-content: start; gap: 14px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: auto; }
+.snvSeatingTray { display: grid; box-sizing: border-box; height: auto; padding: 18px; align-self: start; align-content: start; gap: 14px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: visible; }
 .snvSeatingTray > header { display: flex; align-items: center; justify-content: space-between; color: #c9b4d1; font-size: .76rem; }
 .snvSelectedRosterTray { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .snvSelectedRosterTray button { display: flex; min-width: 0; padding: 7px 8px; align-items: center; gap: 6px; border: 1px solid rgba(230, 209, 237, .14); border-radius: 11px; color: #f4eaf7; background: rgba(255, 255, 255, .04); font: inherit; font-size: .7rem; font-weight: 800; cursor: pointer; }
@@ -115,7 +115,7 @@
 .snvSelectedRosterTray img { width: 32px; height: 32px; flex: 0 0 auto; object-fit: contain; }
 .snvSelectedRosterTray span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .snvMobileSeatPanelBackdrop { display: none; }
-.snvSeatInspector { display: grid; box-sizing: border-box; height: 178px; padding: 14px; align-content: start; gap: 7px; border-radius: 14px; background: rgba(130, 80, 154, .15); overflow: hidden; }
+.snvSeatInspector { display: grid; box-sizing: border-box; height: 96px; padding: 10px; align-content: start; grid-template-columns: 1fr; gap: 8px; border-radius: 14px; background: rgba(130, 80, 154, .15); overflow: hidden; }
 .snvSeatInspector > span { color: #bba9c3; font-size: .7rem; font-weight: 850; }
 .snvSeatInspector > strong { min-height: 24px; font: 1.12rem Georgia, serif; }
 .snvSeatInspectorHeader { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
@@ -184,12 +184,7 @@
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
 .snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-@media (max-width: 1200px) {
-  .snvSeatingTray > header.tabletHidden { display: none; }
-  .snvSeatInspector.tabletCompact { height: 96px; padding: 10px; grid-template-columns: 1fr; gap: 8px; align-items: center; }
-  .snvSeatInspector.tabletHiddenWhenIdle.idle { display: none; }
-}
-@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.grimoireHeightBound, .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); } .snvLiveSeatDetails { animation-name: snvMobilePanelSwapIn; } }
+@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
   .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
   .snvSetupSurface { padding-bottom: 104px; }
