@@ -4,6 +4,7 @@ export type GameFile = {
   schemaVersion: 3;
   ui?: {
     seatLayout?: SeatLayoutState;
+    sectsAndVioletsSession?: SectsAndVioletsSessionState;
   };
   game: {
     scriptId: ScriptId;
@@ -13,6 +14,35 @@ export type GameFile = {
     updatedAt: string;
     events: GameEvent[];
   };
+};
+
+export type SectsAndVioletsTab = "roles" | "seating" | "play" | "storage";
+
+export type SectsAndVioletsPhaseCheckpoint = {
+  id: string;
+  kind: "setup" | "phase";
+  eventCount: number;
+  summary: string;
+  activeTab: SectsAndVioletsTab;
+};
+
+export type SectsAndVioletsSetupSession = {
+  playerCount: number;
+  demon: "fangGu" | "vigormortis" | "noDashii" | "vortox";
+  selectedIds: string[];
+  seatAssignments: Record<number, string>;
+  seatAlignments: Record<number, "good" | "evil">;
+  seatNames: Record<number, string>;
+  rosterConfirmed: boolean;
+  seatingConfirmed: boolean;
+};
+
+export type SectsAndVioletsSessionState = {
+  version: 1;
+  activeTab: SectsAndVioletsTab;
+  savedAt: string;
+  setup: SectsAndVioletsSetupSession;
+  phaseCheckpoints: SectsAndVioletsPhaseCheckpoint[];
 };
 
 export type SeatPosition = {
