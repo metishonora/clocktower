@@ -197,6 +197,16 @@
 .snvPhaseOverview li.complete { color: #ccb7d3; }
 .snvPhaseOverview span { font-size: .7rem; font-weight: 850; }
 .snvPhaseOverview strong { font-size: .9rem; }
+.snvManualSurface.snvDaySurface { color: #2f2033; border-color: rgba(116, 77, 126, .24); background: radial-gradient(circle at 72% 5%, rgba(255, 255, 255, .78), transparent 34%), linear-gradient(145deg, rgba(245, 231, 248, .96), rgba(222, 197, 228, .94)); box-shadow: 0 22px 70px rgba(8, 3, 12, .18); }
+.snvDaySurface .snvFirstNightHeader { border-bottom-color: rgba(88, 51, 97, .16); }
+.snvDaySurface .snvFirstNightHeader button { border-color: rgba(88, 51, 97, .2); color: #442b49; background: rgba(255, 255, 255, .48); }
+.snvDaySurface .snvCurrentStep.snvDayStep { background: linear-gradient(145deg, rgba(255, 253, 249, .82), rgba(230, 209, 235, .76)); box-shadow: inset 0 0 0 1px rgba(100, 61, 110, .09); }
+.snvDaySurface .snvCurrentStep .snvCurrentStepLabel { color: #694c70; }
+.snvDaySurface .snvCurrentStep p { color: #624f67; }
+.snvDaySurface .snvStepActions button { border-color: #82509a; color: #fff; background: #82509a; }
+.snvDaySurface .snvPhaseOverview li { border-bottom-color: rgba(88, 51, 97, .12); color: #78667c; }
+.snvDaySurface .snvPhaseOverview li.current { color: #321f36; background: rgba(130, 80, 154, .12); }
+.snvDaySurface .snvPhaseOverview li.complete { color: #5f4a64; }
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
 .snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }

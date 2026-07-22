@@ -420,7 +420,26 @@ test("starts the first night with the always-present evil information steps when
   await user.click(within(phase).getByRole("button", { name: "다음 단계" }));
   expect(within(phase).getByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
   expect(within(phase).queryByText(/모든 단계 완료/)).toBeNull();
-  expect(within(phase).getByRole("button", { name: "낮으로" })).toBeTruthy();
+  await user.click(within(phase).getByRole("button", { name: "낮으로" }));
+
+  const day = within(prototype).getByRole("region", { name: "낮 진행" });
+  expect(day.classList.contains("snvDaySurface")).toBe(true);
+  expect(within(day).getByRole("heading", { name: "1일차 낮" })).toBeTruthy();
+  expect(within(day).getByRole("heading", { name: "낮 진행" })).toBeTruthy();
+  expect(within(day).getByRole("button", { name: "낮 종료" })).toBeTruthy();
+
+  await user.click(within(day).getByRole("button", { name: "낮 종료" }));
+  expect(within(day).getByRole("heading", { name: "1일차 낮 종료" })).toBeTruthy();
+  await user.click(within(day).getByRole("button", { name: "2일차 밤으로" }));
+
+  const laterNight = within(prototype).getByRole("region", { name: "이후 밤 진행" });
+  expect(laterNight.classList.contains("snvNightSurface")).toBe(true);
+  expect(within(laterNight).getByRole("heading", { name: "2일차 밤" })).toBeTruthy();
+
+  await user.click(within(prototype).getByRole("button", { name: "직업" }));
+  await user.click(within(prototype).getByRole("button", { name: "시계공" }));
+  await user.click(within(prototype).getByRole("button", { name: "진행" }));
+  expect(within(prototype).getByRole("region", { name: "첫날 밤 진행" })).toBeTruthy();
 });
 
 function expectNoSeatOverlap(

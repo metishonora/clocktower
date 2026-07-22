@@ -7,6 +7,7 @@ type CharacterKind = "townsfolk" | "outsider" | "minion" | "demon";
 type Alignment = "good" | "evil";
 type PrototypeTab = "roles" | "seating" | "play" | "storage";
 type TabMotion = "tabForward" | "tabBackward" | "";
+type PlayPhase = "firstNight" | "day" | "laterNight";
 type FirstNightStep = {
   id: string;
   name: string;
@@ -115,6 +116,8 @@ export function SectsAndVioletsFoundationPrototype() {
   const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
   const [revealedStepIds, setRevealedStepIds] = useState<string[]>([]);
   const [informationStepId, setInformationStepId] = useState<string>();
+  const [playPhase, setPlayPhase] = useState<PlayPhase>("firstNight");
+  const [dayComplete, setDayComplete] = useState(false);
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -214,6 +217,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setFirstNightStepIndex(0);
     setRevealedStepIds([]);
     setInformationStepId(undefined);
+    setPlayPhase("firstNight");
+    setDayComplete(false);
     navigateToTab("seating");
   };
 
@@ -231,6 +236,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setFirstNightStepIndex(0);
     setRevealedStepIds([]);
     setInformationStepId(undefined);
+    setPlayPhase("firstNight");
+    setDayComplete(false);
     setActiveTab("roles");
   };
 
@@ -248,6 +255,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setFirstNightStepIndex(0);
     setRevealedStepIds([]);
     setInformationStepId(undefined);
+    setPlayPhase("firstNight");
+    setDayComplete(false);
     setSeatAssignments({});
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
@@ -262,6 +271,8 @@ export function SectsAndVioletsFoundationPrototype() {
     setFirstNightStepIndex(0);
     setRevealedStepIds([]);
     setInformationStepId(undefined);
+    setPlayPhase("firstNight");
+    setDayComplete(false);
     setSelectedIds((selected) => {
       if (selected.includes(character.id)) return selected.filter((id) => id !== character.id);
       if (selectedByKind[character.kind] >= requiredByKind[character.kind]) return selected;
@@ -597,14 +608,17 @@ export function SectsAndVioletsFoundationPrototype() {
           </div>
         </section>
       ) : activeTab === "play" ? (
-        <section className="snvManualSurface snvFirstNightSurface snvTabPanel" aria-label="첫날 밤 진행">
+        <section
+          className={`snvManualSurface snvFirstNightSurface snvTabPanel ${playPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
+          aria-label={playPhase === "firstNight" ? "첫날 밤 진행" : playPhase === "day" ? "낮 진행" : "이후 밤 진행"}
+        >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
-            <h2>1일차 밤</h2>
+            <h2>{playPhase === "firstNight" ? "1일차 밤" : playPhase === "day" ? "1일차 낮" : "2일차 밤"}</h2>
           </header>
 
           <div className="snvFirstNightPrimary">
-            {currentFirstNightStep ? (
+            {playPhase === "firstNight" && currentFirstNightStep ? (
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 <h3>{currentFirstNightStep.name}</h3>
@@ -621,22 +635,59 @@ export function SectsAndVioletsFoundationPrototype() {
                   {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" onClick={advanceFirstNight}>해당 없음</button> : null}
                 </div>
               </article>
-            ) : (
+            ) : playPhase === "firstNight" ? (
               <article className="snvCurrentStep complete">
                 <h3>1일차 밤 종료</h3>
-                <div className="snvStepActions"><button type="button">낮으로</button></div>
+                <div className="snvStepActions">
+                  <button type="button" onClick={() => { setPlayPhase("day"); setDayComplete(false); }}>낮으로</button>
+                </div>
+              </article>
+            ) : playPhase === "day" && !dayComplete ? (
+              <article className="snvCurrentStep snvDayStep">
+                <p className="snvCurrentStepLabel">현재 할 일</p>
+                <h3>낮 진행</h3>
+                <p>능력 사용, 지명, 투표와 처형을 진행합니다.</p>
+                <div className="snvStepActions">
+                  <button type="button" onClick={() => setDayComplete(true)}>낮 종료</button>
+                </div>
+              </article>
+            ) : playPhase === "day" ? (
+              <article className="snvCurrentStep snvDayStep complete">
+                <h3>1일차 낮 종료</h3>
+                <div className="snvStepActions">
+                  <button type="button" onClick={() => setPlayPhase("laterNight")}>2일차 밤으로</button>
+                </div>
+              </article>
+            ) : (
+              <article className="snvCurrentStep">
+                <p className="snvCurrentStepLabel">현재 할 일</p>
+                <h3>밤 진행 준비</h3>
+                <p>오늘 밤 행동 순서를 확인하고 첫 번째 플레이어를 깨울 준비를 합니다.</p>
               </article>
             )}
           </div>
 
-          <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
-            {firstNightSteps.map((step, index) => (
-              <li key={step.id} className={index < firstNightStepIndex ? "complete" : index === firstNightStepIndex ? "current" : ""}>
-                <span>{index < firstNightStepIndex ? "완료" : index === firstNightStepIndex ? "현재" : "대기"}</span>
-                <strong>{step.name}</strong>
+          {playPhase === "firstNight" ? (
+            <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
+              {firstNightSteps.map((step, index) => (
+                <li key={step.id} className={index < firstNightStepIndex ? "complete" : index === firstNightStepIndex ? "current" : ""}>
+                  <span>{index < firstNightStepIndex ? "완료" : index === firstNightStepIndex ? "현재" : "대기"}</span>
+                  <strong>{step.name}</strong>
+                </li>
+              ))}
+            </ol>
+          ) : playPhase === "day" ? (
+            <ol className="snvPhaseOverview" aria-label="낮 순서">
+              <li className={dayComplete ? "complete" : "current"}>
+                <span>{dayComplete ? "완료" : "현재"}</span>
+                <strong>낮 진행</strong>
               </li>
-            ))}
-          </ol>
+            </ol>
+          ) : (
+            <ol className="snvPhaseOverview" aria-label="이후 밤 순서">
+              <li className="current"><span>현재</span><strong>밤 진행 준비</strong></li>
+            </ol>
+          )}
         </section>
       ) : (
         <section className="snvStorageSurface snvTabPanel" aria-label="저장 및 불러오기">

@@ -127,7 +127,12 @@ The Play header places `← 마도서` immediately left of the centered `n일차
 seat styling uses a prototype-prefixed class so the production phase-control `.currentActor` rules
 cannot truncate or reposition seat contents. Completing the order replaces explanatory completion
 copy with the concise `n일차 밤 종료` state and a single `낮으로` transition CTA; the Day destination
-remains outside this First Night specimen.
+was intentionally deferred until the next specimen.
+
+The first Day specimen now connects that CTA to a brighter ivory/lilac `1일차 낮` surface. It keeps
+Day operational and deliberately manual: one concise card covers ability use, nominations, voting,
+and execution before `낮 종료`. Completion shows `1일차 낮 종료`, and `2일차 밤으로` establishes the
+later-Night boundary and header without yet specifying its character order or automation.
 
 ## Approved Scope
 
