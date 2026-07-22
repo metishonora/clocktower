@@ -1,9 +1,30 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
-import type { GameEvent, GameFile, PhaseStep, ReplayState, SetupDistribution } from "./core/types";
+import type {
+  GameEvent,
+  GameFile,
+  PhaseStep,
+  ReplayState,
+  SectsAndVioletsPhaseCheckpoint,
+  SectsAndVioletsSessionState,
+  SetupDistribution,
+} from "./core/types";
+import {
+  exportGameFileJson,
+  importGameFileJson,
+  loadLatestGame,
+  saveLatestGame,
+  type GameStorageDriver,
+} from "./gameStorage";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import {
+  exportLatestSectsAndVioletsCheckpoint,
+  inferSectsAndVioletsCheckpoints,
+  removeLatestSectsAndVioletsPhaseCheckpoint,
+  withSectsAndVioletsSession,
+} from "./sectsAndVioletsSession";
 
 type DemonChoice = "fangGu" | "vigormortis" | "noDashii" | "vortox";
 type CharacterKind = "townsfolk" | "outsider" | "minion" | "demon";
@@ -102,6 +123,7 @@ const baseDistribution: Record<number, [number, number, number, number]> = {
 
 export type SectsAndVioletsFoundationPrototypeProps = {
   coreAdapter?: CoreAdapter;
+  storageDriver?: GameStorageDriver;
   production?: boolean;
 };
 
@@ -111,6 +133,7 @@ export function SectsAndVioletsFoundationPrototype() {
 
 export function SectsAndVioletsFoundation({
   coreAdapter,
+  storageDriver,
   production = false,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
@@ -129,6 +152,7 @@ export function SectsAndVioletsFoundation({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
+  const [undoCheckpoint, setUndoCheckpoint] = useState<SectsAndVioletsPhaseCheckpoint>();
   const [firstNightStepIndex, setFirstNightStepIndex] = useState(0);
   const [revealedStepIds, setRevealedStepIds] = useState<string[]>([]);
   const [informationStepId, setInformationStepId] = useState<string>();
@@ -136,9 +160,20 @@ export function SectsAndVioletsFoundation({
   const [dayComplete, setDayComplete] = useState(false);
   const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
   const [replayState, setReplayState] = useState<ReplayState>();
+  const [phaseCheckpoints, setPhaseCheckpoints] = useState<SectsAndVioletsPhaseCheckpoint[]>([]);
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationError, setOperationError] = useState<string>();
+  const [storageReady, setStorageReady] = useState(!storageDriver);
+  const [autosaveRecoveryBlocked, setAutosaveRecoveryBlocked] = useState(false);
+  const [autosaveRevision, setAutosaveRevision] = useState(0);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<string>();
+  const lastEnqueuedAutosaveRevisionRef = useRef(0);
+  const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
+  const autosaveInFlightRef = useRef(false);
+  const textAutosaveTimerRef = useRef<number | undefined>(undefined);
+  const textAutosaveDirtyRef = useRef(false);
   const detailTriggerRef = useRef<HTMLButtonElement>(null);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -146,6 +181,8 @@ export function SectsAndVioletsFoundation({
   const newGameTriggerRef = useRef<HTMLButtonElement>(null);
   const newGameCancelRef = useRef<HTMLButtonElement>(null);
   const informationCloseRef = useRef<HTMLButtonElement>(null);
+  const undoCancelRef = useRef<HTMLButtonElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const localDistribution = useMemo(() => {
     const base = baseDistribution[playerCount];
@@ -213,6 +250,10 @@ export function SectsAndVioletsFoundation({
     "--grimoire-height": `${heights.desktop}px`,
     "--mobile-grimoire-height": `${heights.mobile}px`,
   } as CSSProperties;
+  const latestUndoCheckpoint = [...phaseCheckpoints].reverse().find(
+    (checkpoint) => checkpoint.kind === "phase",
+  );
+  const storageLoading = Boolean(storageDriver && !storageReady);
 
   useEffect(() => {
     if (!detailsOpen) return;
@@ -245,6 +286,16 @@ export function SectsAndVioletsFoundation({
   }, [newGameConfirmOpen]);
 
   useEffect(() => {
+    if (!undoCheckpoint) return;
+    undoCancelRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setUndoCheckpoint(undefined);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [undoCheckpoint]);
+
+  useEffect(() => {
     if (!informationStepId) return;
     informationCloseRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -254,8 +305,83 @@ export function SectsAndVioletsFoundation({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [informationStepId]);
 
+  useEffect(() => () => {
+    if (textAutosaveTimerRef.current !== undefined) {
+      window.clearTimeout(textAutosaveTimerRef.current);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!coreAdapter) return;
+    if (!coreAdapter || !storageDriver) return;
+    let cancelled = false;
+    loadLatestGame(storageDriver)
+      .then(async (storedGameFile) => {
+        if (cancelled) return;
+        if (!storedGameFile) {
+          setAutosaveRecoveryBlocked(false);
+          setStorageReady(true);
+          return;
+        }
+        const replayed = await coreAdapter.replay(storedGameFile);
+        if (cancelled) return;
+        if (!replayed.ok) {
+          setOperationError(replayed.error.messageKo);
+          setAutosaveRecoveryBlocked(true);
+          setStorageReady(true);
+          return;
+        }
+        restoreStoredSession(storedGameFile, replayed.value);
+        setStorageReady(true);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setOperationError(error instanceof Error ? error.message : "저장된 게임 로드 실패");
+          setAutosaveRecoveryBlocked(true);
+          setStorageReady(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [coreAdapter, storageDriver]);
+
+  useEffect(() => {
+    if (
+      !storageDriver ||
+      !storageReady ||
+      autosaveRecoveryBlocked ||
+      autosaveRevision === 0 ||
+      lastEnqueuedAutosaveRevisionRef.current === autosaveRevision
+    ) {
+      return;
+    }
+    lastEnqueuedAutosaveRevisionRef.current = autosaveRevision;
+    const savedAt = new Date().toISOString();
+    pendingAutosaveRef.current = withSectsAndVioletsSession(
+      gameFile,
+      currentSessionState(savedAt),
+    );
+    void drainAutosaveQueue();
+  }, [
+    activeTab,
+    autosaveRecoveryBlocked,
+    autosaveRevision,
+    demon,
+    gameFile,
+    phaseCheckpoints,
+    playerCount,
+    rosterConfirmed,
+    seatAlignments,
+    seatAssignments,
+    seatNames,
+    seatingConfirmed,
+    selectedIds,
+    storageDriver,
+    storageReady,
+  ]);
+
+  useEffect(() => {
+    if (!coreAdapter || (storageDriver && !storageReady)) return;
     let cancelled = false;
     coreAdapter.replay(gameFile)
       .then((result) => {
@@ -273,7 +399,7 @@ export function SectsAndVioletsFoundation({
     return () => {
       cancelled = true;
     };
-  }, [coreAdapter, gameFile]);
+  }, [coreAdapter, gameFile, storageDriver, storageReady]);
 
   useEffect(() => {
     if (!coreAdapter || rosterConfirmed) return;
@@ -300,6 +426,133 @@ export function SectsAndVioletsFoundation({
     setActiveTab(nextTab);
   };
 
+  function markAutosaveNeeded() {
+    if (!storageDriver) return;
+    setAutosaveRevision((current) => current + 1);
+  }
+
+  function scheduleTextAutosave() {
+    textAutosaveDirtyRef.current = true;
+    if (textAutosaveTimerRef.current !== undefined) {
+      window.clearTimeout(textAutosaveTimerRef.current);
+    }
+    textAutosaveTimerRef.current = window.setTimeout(() => {
+      textAutosaveTimerRef.current = undefined;
+      textAutosaveDirtyRef.current = false;
+      markAutosaveNeeded();
+    }, 350);
+  }
+
+  function flushTextAutosave() {
+    if (!textAutosaveDirtyRef.current) return;
+    if (textAutosaveTimerRef.current !== undefined) {
+      window.clearTimeout(textAutosaveTimerRef.current);
+      textAutosaveTimerRef.current = undefined;
+    }
+    textAutosaveDirtyRef.current = false;
+    markAutosaveNeeded();
+  }
+
+  function currentSessionState(savedAt: string): SectsAndVioletsSessionState {
+    return {
+      version: 1,
+      activeTab,
+      savedAt,
+      setup: {
+        playerCount,
+        demon,
+        selectedIds: [...selectedIds],
+        seatAssignments: structuredClone(seatAssignments),
+        seatAlignments: structuredClone(seatAlignments),
+        seatNames: structuredClone(seatNames),
+        rosterConfirmed,
+        seatingConfirmed,
+      },
+      phaseCheckpoints: structuredClone(phaseCheckpoints),
+    };
+  }
+
+  async function drainAutosaveQueue() {
+    if (!storageDriver || autosaveInFlightRef.current) return;
+    const candidate = pendingAutosaveRef.current;
+    if (!candidate) return;
+    pendingAutosaveRef.current = undefined;
+    autosaveInFlightRef.current = true;
+    setAutosaveStatus("saving");
+    let saved = false;
+    try {
+      await saveLatestGame(candidate, storageDriver);
+      const savedAt = candidate.ui?.sectsAndVioletsSession?.savedAt;
+      setLastSavedAt(savedAt);
+      setAutosaveStatus("saved");
+      saved = true;
+    } catch {
+      pendingAutosaveRef.current = undefined;
+      setAutosaveStatus("error");
+    } finally {
+      autosaveInFlightRef.current = false;
+    }
+    if (saved && pendingAutosaveRef.current) void drainAutosaveQueue();
+  }
+
+  function restoreStoredSession(storedGameFile: GameFile, replayed: ReplayState) {
+    const storedSession = storedGameFile.ui?.sectsAndVioletsSession;
+    const canonicalPlayers = replayed.players;
+    const canonicalDemon = canonicalPlayers.find((player) =>
+      demonChoices.some((choice) => choice.id === player.actualCharacter),
+    )?.actualCharacter as DemonChoice | undefined;
+    const fallbackSetup = {
+      playerCount: canonicalPlayers.length || 7,
+      demon: canonicalDemon ?? "fangGu",
+      selectedIds: canonicalPlayers.length
+        ? canonicalPlayers.map((player) => player.actualCharacter)
+        : ["fangGu"],
+      seatAssignments: Object.fromEntries(
+        canonicalPlayers.map((player) => [player.seat, player.actualCharacter]),
+      ),
+      seatAlignments: Object.fromEntries(
+        canonicalPlayers.map((player) => [player.seat, player.alignment]),
+      ),
+      seatNames: Object.fromEntries(canonicalPlayers.map((player) => [player.seat, player.name])),
+      rosterConfirmed: canonicalPlayers.length > 0,
+      seatingConfirmed: canonicalPlayers.length > 0,
+    } satisfies SectsAndVioletsSessionState["setup"];
+    const setup = storedSession?.setup ?? fallbackSetup;
+    const fallbackTab: PrototypeTab = replayed.eventCount > 1
+      ? "play"
+      : replayed.eventCount === 1
+        ? "seating"
+        : "roles";
+    const requestedTab = storedSession?.activeTab ?? fallbackTab;
+    const restoredTab = requestedTab === "play" && !setup.seatingConfirmed
+      ? setup.rosterConfirmed ? "seating" : "roles"
+      : requestedTab === "seating" && !setup.rosterConfirmed
+        ? "roles"
+        : requestedTab;
+
+    setGameFile(storedGameFile);
+    setReplayState(replayed);
+    setPlayerCount(setup.playerCount);
+    setDemon(setup.demon);
+    setSelectedIds([...setup.selectedIds]);
+    setSeatAssignments(structuredClone(setup.seatAssignments));
+    setSeatAlignments(structuredClone(setup.seatAlignments));
+    setSeatNames(structuredClone(setup.seatNames));
+    setRosterConfirmed(setup.rosterConfirmed);
+    setSeatingConfirmed(setup.seatingConfirmed);
+    setPhaseCheckpoints(
+      storedSession?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
+    );
+    setActiveTab(restoredTab);
+    setPlayPhase(
+      replayed.phase === "firstNight" ? "firstNight" : replayed.phase === "day" ? "day" : "laterNight",
+    );
+    setLastSavedAt(storedSession?.savedAt);
+    setAutosaveStatus(storedSession?.savedAt ? "saved" : "idle");
+    setOperationError(undefined);
+    setAutosaveRecoveryBlocked(false);
+  }
+
   const closeDetails = () => {
     setDetailsOpen(false);
     window.setTimeout(() => detailTriggerRef.current?.focus(), 0);
@@ -322,7 +575,10 @@ export function SectsAndVioletsFoundation({
     setDayComplete(false);
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
+    setPhaseCheckpoints([]);
+    setAutosaveRecoveryBlocked(false);
     navigateToTab("seating");
+    markAutosaveNeeded();
   };
 
   const closeNewGameConfirmation = () => {
@@ -352,10 +608,110 @@ export function SectsAndVioletsFoundation({
     setDayComplete(false);
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
+    setPhaseCheckpoints([]);
     setCanonicalDistribution(undefined);
     setOperationError(undefined);
+    setAutosaveRecoveryBlocked(false);
     navigateToTab("roles");
+    markAutosaveNeeded();
   };
+
+  const confirmPhaseUndo = async () => {
+    if (!undoCheckpoint || !coreAdapter || operationBusy) return;
+    const currentWithSession = withSectsAndVioletsSession(
+      gameFile,
+      currentSessionState(new Date().toISOString()),
+    );
+    const removal = removeLatestSectsAndVioletsPhaseCheckpoint(currentWithSession);
+    if (!removal || removal.removed.id !== undoCheckpoint.id) {
+      setUndoCheckpoint(undefined);
+      setOperationError("최근 페이즈가 변경되어 되돌리지 않았습니다.");
+      return;
+    }
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const replayed = await coreAdapter.replay(removal.gameFile).catch((error: unknown) => ({
+      ok: false as const,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "페이즈 되돌리기 실패",
+      },
+    }));
+    if (!replayed.ok) {
+      setOperationBusy(false);
+      setUndoCheckpoint(undefined);
+      setOperationError(replayed.error.messageKo);
+      return;
+    }
+    setGameFile(removal.gameFile);
+    setReplayState(replayed.value);
+    setPhaseCheckpoints(removal.gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? []);
+    setProposalTransientStateAfterHistoryChange();
+    setUndoCheckpoint(undefined);
+    setOperationBusy(false);
+    markAutosaveNeeded();
+  };
+
+  const exportCurrentCheckpoint = () => {
+    const currentWithSession = withSectsAndVioletsSession(
+      gameFile,
+      currentSessionState(new Date().toISOString()),
+    );
+    const exported = exportLatestSectsAndVioletsCheckpoint(currentWithSession);
+    const blob = new Blob([exportGameFileJson(exported)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `clocktower-sects-and-violets-${new Date().toISOString()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importCheckpoint = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file || !coreAdapter || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    try {
+      const imported = importGameFileJson(await file.text(), SECTS_AND_VIOLETS);
+      const replayed = await coreAdapter.replay(imported);
+      if (!replayed.ok) {
+        setOperationError(replayed.error.messageKo);
+        return;
+      }
+      if (hasMeaningfulCurrentSession() && !window.confirm("현재 게임을 가져온 게임으로 교체할까요?")) {
+        return;
+      }
+      restoreStoredSession(imported, replayed.value);
+      setAutosaveRecoveryBlocked(false);
+      setProposalTransientStateAfterHistoryChange();
+      markAutosaveNeeded();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : "게임 파일 가져오기 실패");
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  function hasMeaningfulCurrentSession() {
+    return gameFile.game.events.length > 0 ||
+      playerCount !== 7 ||
+      demon !== "fangGu" ||
+      selectedIds.length !== 1 ||
+      selectedIds[0] !== "fangGu" ||
+      Object.keys(seatAssignments).length > 0 ||
+      Object.values(seatNames).some(Boolean);
+  }
+
+  function setProposalTransientStateAfterHistoryChange() {
+    setSelectedSeat(undefined);
+    setPendingCharacterId(undefined);
+    setInformationStepId(undefined);
+    setRevealedStepIds([]);
+    setDayComplete(false);
+    setDetailsOpen(false);
+  }
 
   const choosePlayerCount = (count: number) => {
     if (rosterConfirmed) return;
@@ -376,6 +732,7 @@ export function SectsAndVioletsFoundation({
     setPlayPhase("firstNight");
     setDayComplete(false);
     setActiveTab("roles");
+    markAutosaveNeeded();
   };
 
   const chooseDemon = (choice: DemonChoice) => {
@@ -397,6 +754,7 @@ export function SectsAndVioletsFoundation({
     setPlayPhase("firstNight");
     setDayComplete(false);
     setActiveTab("roles");
+    markAutosaveNeeded();
   };
 
   const toggleCharacter = (character: CatalogCharacter) => {
@@ -413,6 +771,7 @@ export function SectsAndVioletsFoundation({
       if (selectedByKind[character.kind] >= requiredByKind[character.kind]) return selected;
       return [...selected, character.id];
     });
+    markAutosaveNeeded();
   };
 
   const advanceFirstNight = async (manualOutcome: "handled" | "notApplicable" = "handled") => {
@@ -436,7 +795,7 @@ export function SectsAndVioletsFoundation({
         setOperationError(result.error.messageKo);
         return;
       }
-      await applyCanonicalEvent(result.value.event);
+      await applyCanonicalEvent(result.value.event, "phase");
       setOperationBusy(false);
       return;
     }
@@ -469,6 +828,7 @@ export function SectsAndVioletsFoundation({
     });
     setSelectedSeat(preserveSelectedSeat ? seat : undefined);
     setPendingCharacterId(undefined);
+    markAutosaveNeeded();
   };
 
   const chooseSeat = (seat: number) => {
@@ -495,6 +855,7 @@ export function SectsAndVioletsFoundation({
       return next;
     });
     setSeatingConfirmed(false);
+    markAutosaveNeeded();
   };
 
   const chooseCharacterForSeating = (characterId: string) => {
@@ -527,6 +888,7 @@ export function SectsAndVioletsFoundation({
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setSeatingConfirmed(false);
+    markAutosaveNeeded();
   };
 
   const resetSeating = () => {
@@ -535,6 +897,7 @@ export function SectsAndVioletsFoundation({
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
     setSeatingConfirmed(false);
+    markAutosaveNeeded();
   };
 
   const confirmSeating = async () => {
@@ -574,7 +937,7 @@ export function SectsAndVioletsFoundation({
       return;
     }
 
-    const applied = await applyCanonicalEvent(result.value.event);
+    const applied = await applyCanonicalEvent(result.value.event, "setup");
     if (!applied) {
       setOperationBusy(false);
       return;
@@ -585,7 +948,10 @@ export function SectsAndVioletsFoundation({
     setPendingCharacterId(undefined);
   };
 
-  const applyCanonicalEvent = async (event: GameEvent): Promise<boolean> => {
+  const applyCanonicalEvent = async (
+    event: GameEvent,
+    checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"],
+  ): Promise<boolean> => {
     if (!coreAdapter) return false;
     const nextGameFile: GameFile = {
       ...gameFile,
@@ -608,14 +974,26 @@ export function SectsAndVioletsFoundation({
     }
     setReplayState(replayed.value);
     setGameFile(nextGameFile);
+    setPhaseCheckpoints((current) => [
+      ...current,
+      {
+        id: event.id,
+        kind: checkpointKind,
+        eventCount: nextGameFile.game.events.length,
+        summary: event.summary,
+        activeTab: checkpointKind === "setup" ? "seating" : activeTab,
+      },
+    ]);
     setInformationStepId(undefined);
     setDayComplete(false);
+    markAutosaveNeeded();
     return true;
   };
 
   return (
     <main className={`snvFoundationPrototype ${tabMotion} ${effectivePlayPhase === "day" ? "snvDayMode" : "snvNightMode"}`} aria-label={production ? "Sects & Violets 게임" : "Sects & Violets 기반 화면 프로토타입"}>
       {production ? <a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a> : null}
+      {production ? <input ref={importInputRef} hidden type="file" accept=".json,application/json" onChange={(event) => void importCheckpoint(event)} /> : null}
       <header className="snvPrototypeHeader">
         <div>
           <span className="snvEyebrow">{production ? "STORYTELLER CONSOLE" : "ISSUE 97 · REVIEW PROTOTYPE"}</span>
@@ -626,9 +1004,18 @@ export function SectsAndVioletsFoundation({
       </header>
 
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
-        <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
-        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} disabled={production} title={production ? "Issue #115에서 연결 예정" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
+        <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" disabled={storageLoading} onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
+        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
       </nav>
+      {autosaveStatus !== "idle" ? (
+        <p className={`snvAutosaveStatus ${autosaveStatus}`} role="status" aria-live="polite">
+          {autosaveStatus === "saving"
+            ? "자동 저장 중…"
+            : autosaveStatus === "error"
+              ? "자동 저장 실패"
+              : `자동 저장 완료 ${formatAutosaveTime(lastSavedAt)}`}
+        </p>
+      ) : null}
 
       <nav className="snvSurfaceTabs" aria-label="작업 단계">
         <button type="button" className={activeTab === "roles" ? "active" : ""} aria-current={activeTab === "roles" ? "page" : undefined} onClick={() => navigateToTab("roles")}>직업</button>
@@ -644,7 +1031,7 @@ export function SectsAndVioletsFoundation({
               <span>플레이어</span>
               <div className="snvChoiceRow">
                 {Object.keys(baseDistribution).map((count) => (
-                  <button key={count} type="button" aria-pressed={playerCount === Number(count)} disabled={rosterConfirmed} onClick={() => choosePlayerCount(Number(count))}>{count}명</button>
+                  <button key={count} type="button" aria-pressed={playerCount === Number(count)} disabled={storageLoading || rosterConfirmed} onClick={() => choosePlayerCount(Number(count))}>{count}명</button>
                 ))}
               </div>
             </section>
@@ -652,7 +1039,7 @@ export function SectsAndVioletsFoundation({
               <span>악마 선택</span>
               <div className="snvChoiceRow">
                 {demonChoices.map((choice) => (
-                  <button key={choice.id} type="button" aria-pressed={demon === choice.id} disabled={rosterConfirmed} onClick={() => chooseDemon(choice.id)}>{choice.name}</button>
+                  <button key={choice.id} type="button" aria-pressed={demon === choice.id} disabled={storageLoading || rosterConfirmed} onClick={() => chooseDemon(choice.id)}>{choice.name}</button>
                 ))}
               </div>
             </section>
@@ -685,7 +1072,7 @@ export function SectsAndVioletsFoundation({
                         className={selected ? "selected" : ""}
                         aria-label={ariaLabel}
                         aria-pressed={selected}
-                        disabled={demonLocked || capacityReached}
+                        disabled={storageLoading || demonLocked || capacityReached}
                         onClick={() => toggleCharacter(character)}
                       >
                         {sectsAndVioletsCharacterAsset(character.id) ? <img src={sectsAndVioletsCharacterAsset(character.id)?.src} alt="" /> : null}
@@ -815,7 +1202,11 @@ export function SectsAndVioletsFoundation({
                       aria-label={`${selectedSeat}번 좌석 이름`}
                       placeholder="플레이어 이름"
                       value={seatNames[selectedSeat] ?? ""}
-                      onChange={(event) => setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }))}
+                      onChange={(event) => {
+                        setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }));
+                        scheduleTextAutosave();
+                      }}
+                      onBlur={flushTextAutosave}
                     />
                 </div>
               ) : null}
@@ -950,13 +1341,24 @@ export function SectsAndVioletsFoundation({
           <article>
             <span>현재 게임</span>
             <h2>이 기기에 저장</h2>
-            <button type="button">export JSON</button>
+            <button type="button" disabled={!phaseCheckpoints.length} onClick={exportCurrentCheckpoint}>export JSON</button>
           </article>
           <article>
             <span>저장된 게임</span>
             <h2>계속 진행</h2>
-            <button type="button">import JSON</button>
+            <button type="button" disabled={storageLoading || operationBusy} onClick={() => importInputRef.current?.click()}>import JSON</button>
           </article>
+          {latestUndoCheckpoint ? (
+            <article>
+              <span>최근 완료 페이즈</span>
+              <h2>{latestUndoCheckpoint.summary}</h2>
+              <button
+                type="button"
+                disabled={operationBusy}
+                onClick={() => setUndoCheckpoint(latestUndoCheckpoint)}
+              >최근 페이즈 되돌리기</button>
+            </article>
+          ) : null}
         </section>
       )}
       {activeTab === "roles" ? (
@@ -969,7 +1371,7 @@ export function SectsAndVioletsFoundation({
           </div>
           <div className="snvRoleDetailActions">
             <button ref={detailTriggerRef} type="button" className="snvRoleDetailButton" aria-haspopup="dialog" aria-expanded={detailsOpen} onClick={() => setDetailsOpen(true)}>{activeCharacter.name} 상세 정보</button>
-            <button type="button" className="snvConfirmRoster snvStageForward prominent" disabled={!rosterComplete} onClick={() => { setRosterConfirmed(true); navigateToTab("seating"); }}>
+            <button type="button" className="snvConfirmRoster snvStageForward prominent" disabled={storageLoading || !rosterComplete} onClick={() => { setRosterConfirmed(true); navigateToTab("seating"); markAutosaveNeeded(); }}>
               <span>직업 선택 확정</span><small aria-hidden="true">마도서 →</small>
             </button>
           </div>
@@ -1021,6 +1423,18 @@ export function SectsAndVioletsFoundation({
             <div>
               <button ref={newGameCancelRef} type="button" onClick={closeNewGameConfirmation}>취소</button>
               <button type="button" className="snvDestructiveAction" onClick={startNewGame}>새 게임 시작</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {undoCheckpoint ? (
+        <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setUndoCheckpoint(undefined); }}>
+          <section className="snvReturnDialog" role="dialog" aria-modal="true" aria-label="최근 페이즈 되돌리기">
+            <h2>최근 페이즈를 되돌릴까요?</h2>
+            <p>{undoCheckpoint.summary}</p>
+            <div>
+              <button ref={undoCancelRef} type="button" onClick={() => setUndoCheckpoint(undefined)}>취소</button>
+              <button type="button" className="snvDestructiveAction" onClick={() => void confirmPhaseUndo()}>되돌리기</button>
             </div>
           </section>
         </div>
@@ -1111,6 +1525,16 @@ function createSectsAndVioletsGameFile(): GameFile {
       events: [],
     },
   };
+}
+
+function formatAutosaveTime(value: string | undefined) {
+  if (!value) return "--:--:--";
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
 }
 
 export function rectangularSeatPositions(playerCount: number, mobile: boolean): Array<{ x: number; y: number }> {

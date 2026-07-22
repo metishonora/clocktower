@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import type { GameFile, SetupPlayerInput } from "../src/core/types";
+import type { GameStorageDriver } from "../src/gameStorage";
 
 const core = vi.hoisted(() => ({
   replay: vi.fn(async (gameFile: GameFile) => {
@@ -235,3 +236,311 @@ test("starts a production new game with fresh canonical history", async () => {
   await waitFor(() => expect(core.replay.mock.calls.at(-1)?.[0].game.events).toEqual([]));
   expect(within(app).getByRole("button", { name: "마도서" }).hasAttribute("disabled")).toBe(true);
 });
+
+test("autosaves a meaningful S&V setup choice and reports the completed time", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(within(app).getByRole("button", { name: "9명" }));
+
+  await waitFor(() => expect(storage.savedGames).toHaveLength(1));
+  expect(storage.savedGames[0]).toMatchObject({
+    schemaVersion: 3,
+    game: { scriptId: "sectsAndViolets", events: [] },
+    ui: {
+      sectsAndVioletsSession: {
+        version: 1,
+        activeTab: "roles",
+        setup: { playerCount: 9, demon: "fangGu", selectedIds: ["fangGu"] },
+      },
+    },
+  });
+  expect(within(app).getByRole("status").textContent).toMatch(/^자동 저장 완료 \d{2}:\d{2}:\d{2}$/);
+});
+
+test("waits for stored S&V recovery before accepting a new setup choice", async () => {
+  let finishLoad: ((gameFile: GameFile | undefined) => void) | undefined;
+  const storage: GameStorageDriver = {
+    loadLatestGame: () => new Promise((resolve) => { finishLoad = resolve; }),
+    saveLatestGame: vi.fn(),
+  };
+
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const ninePlayers = within(app).getByRole("button", { name: "9명" });
+
+  expect(ninePlayers.hasAttribute("disabled")).toBe(true);
+  finishLoad?.(undefined);
+  await waitFor(() => expect(ninePlayers.hasAttribute("disabled")).toBe(false));
+});
+
+test("restores the page captured by the last meaningful input without saving navigation alone", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const first = render(<SectsAndVioletsApp storageDriver={storage} />);
+  let app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(within(app).getByRole("button", { name: "9명" }));
+  await waitFor(() => expect(storage.savedGames).toHaveLength(1));
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+  expect(within(app).getByRole("button", { name: "저장 / 불러오기" }).getAttribute("aria-current")).toBe("page");
+  await new Promise((resolve) => window.setTimeout(resolve, 20));
+  expect(storage.saveAttempts).toBe(1);
+
+  first.unmount();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await waitFor(() => expect(within(app).getByRole("button", { name: "9명" }).getAttribute("aria-pressed")).toBe("true"));
+  expect(within(app).getByRole("button", { name: "직업" }).getAttribute("aria-current")).toBe("page");
+  expect(storage.saveAttempts).toBe(1);
+});
+
+test("does not retry a failed autosave until the next meaningful input", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  storage.failNextSave = true;
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(within(app).getByRole("button", { name: "9명" }));
+  await waitFor(() => expect(within(app).getByRole("status").textContent).toBe("자동 저장 실패"));
+  await new Promise((resolve) => window.setTimeout(resolve, 20));
+  expect(storage.saveAttempts).toBe(1);
+  expect(storage.savedGames).toHaveLength(0);
+
+  await user.click(within(app).getByRole("button", { name: "8명" }));
+  await waitFor(() => expect(storage.savedGames).toHaveLength(1));
+  expect(storage.saveAttempts).toBe(2);
+  expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(8);
+  expect(within(app).getByRole("status").textContent).toMatch(/^자동 저장 완료 \d{2}:\d{2}:\d{2}$/);
+});
+
+test("undoes one completed S&V phase checkpoint while keeping the current page", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await completeSevenPlayerSetup(user, app);
+  await user.click(within(app).getByRole("button", { name: "진행" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2));
+
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+  const storagePage = within(app).getByRole("region", { name: "저장 및 불러오기" });
+  const undo = within(storagePage).getByRole("button", { name: "최근 페이즈 되돌리기" });
+  const savesBeforeCancel = storage.saveAttempts;
+  await user.click(undo);
+  let dialog = screen.getByRole("dialog", { name: "최근 페이즈 되돌리기" });
+  expect(within(dialog).getByText(/단계 확정: firstNight:minionInfo/)).toBeTruthy();
+  await user.click(within(dialog).getByRole("button", { name: "취소" }));
+  expect(storage.saveAttempts).toBe(savesBeforeCancel);
+  expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2);
+
+  await user.click(within(storagePage).getByRole("button", { name: "최근 페이즈 되돌리기" }));
+  dialog = screen.getByRole("dialog", { name: "최근 페이즈 되돌리기" });
+  await user.click(within(dialog).getByRole("button", { name: "되돌리기" }));
+
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1));
+  expect(within(app).getByRole("button", { name: "저장 / 불러오기" }).getAttribute("aria-current")).toBe("page");
+});
+
+test("imports a replay-valid S&V checkpoint and restores its saved page", async () => {
+  const sourceStorage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const source = render(<SectsAndVioletsApp storageDriver={sourceStorage} />);
+  let app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await completeSevenPlayerSetup(user, app);
+  await user.click(within(app).getByRole("button", { name: "진행" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await waitFor(() => expect(sourceStorage.savedGames.at(-1)?.game.events).toHaveLength(2));
+  const exported = sourceStorage.savedGames.at(-1)!;
+  expect(exported.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
+  source.unmount();
+
+  const targetStorage = new MemorySectsAndVioletsStorageDriver();
+  const target = render(<SectsAndVioletsApp storageDriver={targetStorage} />);
+  app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+  const input = target.container.querySelector<HTMLInputElement>('input[type="file"]');
+  expect(input).not.toBeNull();
+  await user.upload(input!, new File([JSON.stringify(exported)], "sv.json", { type: "application/json" }));
+
+  await waitFor(() => expect(within(app).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
+  expect(targetStorage.savedGames.at(-1)?.game.events).toHaveLength(2);
+  expect(targetStorage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
+});
+
+test("replaces autosave with a fresh baseline only after new-game confirmation", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await completeSevenPlayerSetup(user, app);
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1));
+
+  await user.click(within(app).getByRole("button", { name: "새 게임" }));
+  let dialog = screen.getByRole("dialog", { name: "새 게임 시작 확인" });
+  const attemptsBeforeCancel = storage.saveAttempts;
+  await user.click(within(dialog).getByRole("button", { name: "취소" }));
+  expect(storage.saveAttempts).toBe(attemptsBeforeCancel);
+  expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1);
+
+  await user.click(within(app).getByRole("button", { name: "새 게임" }));
+  dialog = screen.getByRole("dialog", { name: "새 게임 시작 확인" });
+  await user.click(within(dialog).getByRole("button", { name: "새 게임 시작" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(0));
+  expect(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession).toMatchObject({
+    activeTab: "roles",
+    setup: {
+      playerCount: 7,
+      demon: "fangGu",
+      selectedIds: ["fangGu"],
+      rosterConfirmed: false,
+      seatingConfirmed: false,
+    },
+  });
+});
+
+test("returns to the preserved roster and seating with progress removed", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await completeSevenPlayerSetup(user, app);
+  await user.click(within(app).getByRole("button", { name: "진행" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2));
+  await user.click(within(app).getByRole("button", { name: "마도서" }));
+
+  await user.click(within(app).getByRole("button", { name: "배치로 돌아가기" }));
+  let dialog = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
+  const attemptsBeforeCancel = storage.saveAttempts;
+  await user.click(within(dialog).getByRole("button", { name: "취소" }));
+  expect(storage.saveAttempts).toBe(attemptsBeforeCancel);
+  expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2);
+
+  await user.click(within(app).getByRole("button", { name: "배치로 돌아가기" }));
+  dialog = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
+  await user.click(within(dialog).getByRole("button", { name: "초기화하고 돌아가기" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(0));
+  const baseline = storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession;
+  expect(baseline).toMatchObject({
+    activeTab: "seating",
+    setup: { rosterConfirmed: true, seatingConfirmed: false },
+    phaseCheckpoints: [],
+  });
+  expect(Object.keys(baseline?.setup.seatAssignments ?? {})).toHaveLength(7);
+  expect(baseline?.setup.selectedIds).toHaveLength(7);
+});
+
+test("invalid import and valid replacement cancellation preserve the current S&V session", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  const view = render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await completeSevenPlayerSetup(user, app);
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1));
+  const current = structuredClone(storage.savedGames.at(-1)!);
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+  const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
+
+  await user.upload(input, new File([
+    JSON.stringify({ ...current, schemaVersion: 1 }),
+  ], "invalid.json", { type: "application/json" }));
+  expect((await within(app).findByRole("alert")).textContent).toContain("지원하지 않는 게임 파일 버전");
+  expect(confirm).not.toHaveBeenCalled();
+  expect(storage.savedGames.at(-1)).toEqual(current);
+
+  const replacement = structuredClone(current);
+  replacement.game.id = "replacement";
+  await user.upload(input, new File([JSON.stringify(replacement)], "valid.json", { type: "application/json" }));
+  await waitFor(() => expect(confirm).toHaveBeenCalledWith("현재 게임을 가져온 게임으로 교체할까요?"));
+  expect(storage.savedGames.at(-1)).toEqual(current);
+  expect(within(app).getByRole("button", { name: "저장 / 불러오기" }).getAttribute("aria-current")).toBe("page");
+  confirm.mockRestore();
+});
+
+test("preserves an unreadable autosave until confirmed new-game recovery", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  storage.loadError = new Error("지원하지 않는 게임 파일 버전입니다.");
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  expect((await within(app).findByRole("alert")).textContent).toContain("지원하지 않는 게임 파일 버전");
+
+  await user.click(within(app).getByRole("button", { name: "9명" }));
+  await new Promise((resolve) => window.setTimeout(resolve, 20));
+  expect(storage.saveAttempts).toBe(0);
+
+  await user.click(within(app).getByRole("button", { name: "새 게임" }));
+  await user.click(within(screen.getByRole("dialog", { name: "새 게임 시작 확인" })).getByRole("button", { name: "새 게임 시작" }));
+  await waitFor(() => expect(storage.savedGames).toHaveLength(1));
+  expect(storage.savedGames[0]?.game.events).toEqual([]);
+  expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(7);
+});
+
+test("downloads the latest completed S&V checkpoint as JSON", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const originalCreateObjectUrl = URL.createObjectURL;
+  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  const createObjectUrl = vi.fn((_value: Blob | MediaSource) => "blob:sv-checkpoint");
+  const revokeObjectUrl = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectUrl });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectUrl });
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+  try {
+    render(<SectsAndVioletsApp storageDriver={storage} />);
+    const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+    await completeSevenPlayerSetup(user, app);
+    await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+    await user.click(within(app).getByRole("button", { name: "export JSON" }));
+
+    expect(createObjectUrl).toHaveBeenCalledOnce();
+    expect(createObjectUrl.mock.calls[0][0]).toBeInstanceOf(Blob);
+    expect(anchorClick).toHaveBeenCalledOnce();
+    expect(revokeObjectUrl).toHaveBeenCalledWith("blob:sv-checkpoint");
+  } finally {
+    anchorClick.mockRestore();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: originalCreateObjectUrl });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: originalRevokeObjectUrl });
+  }
+});
+
+class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
+  readonly savedGames: GameFile[] = [];
+  saveAttempts = 0;
+  failNextSave = false;
+  loadError?: Error;
+
+  async loadLatestGame(): Promise<GameFile | undefined> {
+    if (this.loadError) throw this.loadError;
+    const latest = this.savedGames.at(-1);
+    return latest ? structuredClone(latest) : undefined;
+  }
+
+  async saveLatestGame(gameFile: GameFile): Promise<void> {
+    this.saveAttempts += 1;
+    if (this.failNextSave) {
+      this.failNextSave = false;
+      throw new Error("테스트 저장 실패");
+    }
+    this.savedGames.push(structuredClone(gameFile));
+  }
+}
+
+async function completeSevenPlayerSetup(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+) {
+  for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
+    await user.click(within(app).getByRole("button", { name: character }));
+  }
+  await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
+  await user.click(within(app).getByRole("button", { name: "무작위 배치" }));
+  await user.click(within(app).getByRole("button", { name: "배치 확정" }));
+}

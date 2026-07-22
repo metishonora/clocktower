@@ -3,9 +3,11 @@ import { parseGameEvent } from "./core/validation.js";
 import {
   isScriptId,
   scriptStorageKey,
+  SECTS_AND_VIOLETS,
   TROUBLE_BREWING,
   type ScriptId,
 } from "./core/scripts.js";
+import { parseSectsAndVioletsSessionState } from "./sectsAndVioletsSession.js";
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -122,10 +124,21 @@ function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile 
 
   const events = value.game.events.map(parseGameEvent);
   const seatLayout = parseSeatLayout(value.ui, events);
+  const sectsAndVioletsSession = parseSectsAndVioletsSession(
+    value.ui,
+    scriptId,
+    events.length,
+  );
+  const ui = seatLayout || sectsAndVioletsSession
+    ? {
+        ...(seatLayout ? { seatLayout } : {}),
+        ...(sectsAndVioletsSession ? { sectsAndVioletsSession } : {}),
+      }
+    : undefined;
 
   return {
     schemaVersion: 3,
-    ...(seatLayout ? { ui: { seatLayout } } : {}),
+    ...(ui ? { ui } : {}),
     game: {
       scriptId,
       id: value.game.id,
@@ -135,6 +148,18 @@ function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile 
       events,
     },
   };
+}
+
+function parseSectsAndVioletsSession(
+  ui: unknown,
+  scriptId: ScriptId,
+  eventCount: number,
+) {
+  if (ui === undefined) return undefined;
+  if (!isRecord(ui)) throw new Error("게임 파일 형식이 올바르지 않습니다.");
+  if (ui.sectsAndVioletsSession === undefined) return undefined;
+  if (scriptId !== SECTS_AND_VIOLETS) throw scriptMismatch();
+  return parseSectsAndVioletsSessionState(ui.sectsAndVioletsSession, eventCount);
 }
 
 function parseStoredScriptId(schemaVersion: unknown, value: unknown): ScriptId {
