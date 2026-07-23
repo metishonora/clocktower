@@ -315,6 +315,10 @@ export function SectsAndVioletsFoundation({
   }, [pendingIdentityReveals.length, acknowledgedIdentityRevealKeys.length, openedIdentityRevealKey]);
 
   useEffect(() => {
+    if (nextIdentityRevealKey && !identityRevealOpen) setActiveTab("seating");
+  }, [nextIdentityRevealKey, identityRevealOpen]);
+
+  useEffect(() => {
     if (!returnConfirmOpen) return;
     returnCancelRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -1369,7 +1373,7 @@ export function SectsAndVioletsFoundation({
           type="button"
           className={activeTab === "play" ? "active" : ""}
           aria-current={activeTab === "play" ? "page" : undefined}
-          disabled={(production && !seatingConfirmed) || Boolean(liveHandoff && !liveHandoff.complete)}
+          disabled={(production && !seatingConfirmed) || Boolean(liveHandoff && !liveHandoff.complete) || Boolean(nextIdentityReveal)}
           onClick={() => navigateToTab("play")}
         >{liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행"}</button>
       </nav>
@@ -1445,6 +1449,14 @@ export function SectsAndVioletsFoundation({
           nomineeId={liveNomineeId}
           voterIds={liveVoterIds}
           targetId={liveTargetId}
+          centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
+            <SnakeCharmerIdentityRevealPrompt
+              player={identityRevealPlayer}
+              sequence={nextIdentityReveal.sequence}
+              total={pendingIdentityReveals.length}
+              onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+            />
+          ) : undefined}
           operationBusy={operationBusy}
           tokensByPlayerId={canonicalTokensByPlayerId}
           onSeatClick={chooseLiveSeat}
@@ -1846,13 +1858,6 @@ export function SectsAndVioletsFoundation({
           reveal={nextIdentityReveal}
           total={pendingIdentityReveals.length}
           onConfirm={acknowledgeIdentityReveal}
-        />
-      ) : nextIdentityReveal ? (
-        <SnakeCharmerIdentityRevealPrompt
-          player={identityRevealPlayer}
-          sequence={nextIdentityReveal.sequence}
-          total={pendingIdentityReveals.length}
-          onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
         />
       ) : null}
     </main>

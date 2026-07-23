@@ -40,9 +40,21 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   );
 
   const firstPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" });
-  expect(within(firstPrompt).getByText("직업이 변경됩니다.")).toBeTruthy();
-  expect(within(firstPrompt).getByText("1번 가람을 깨우세요")).toBeTruthy();
+  expect(within(firstPrompt).getByText("직업이 변경됩니다")).toBeTruthy();
+  expect(within(firstPrompt).getByText("플레이어 1")).toBeTruthy();
+  expect(firstPrompt.getAttribute("aria-modal")).toBeNull();
+  expect(firstPrompt.closest(".snvGrimoireCenter")).toBeTruthy();
+  expect(firstPrompt.closest(".snakeCharmerRevealBackdrop")).toBeNull();
   expect(within(firstPrompt).queryByText("비고르모르티스")).toBeNull();
+  expect(within(app).queryByText("00:00")).toBeNull();
+  expect(within(app).queryByRole("button", { name: "다음 →" })).toBeNull();
+  expect((within(app).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(true);
+
+  const undo = within(app).getByRole("button", { name: /최근 행동 되돌리기/ });
+  await user.click(undo);
+  const undoDialog = screen.getByRole("dialog", { name: "Undo" });
+  await user.click(within(undoDialog).getByRole("button", { name: "취소" }));
+  expect(screen.getByRole("dialog", { name: "직업 변경 안내 1/2" })).toBe(firstPrompt);
   await user.click(within(firstPrompt).getByRole("button", { name: "공개" }));
 
   const firstReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" });
@@ -59,7 +71,8 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   await user.click(within(firstReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
 
   const secondPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 2/2" });
-  expect(within(secondPrompt).getByText("7번 도윤을 깨우세요")).toBeTruthy();
+  expect(within(secondPrompt).getByText("플레이어 7")).toBeTruthy();
+  expect(secondPrompt.closest(".snvGrimoireCenter")).toBeTruthy();
   await user.click(within(secondPrompt).getByRole("button", { name: "공개" }));
 
   const secondReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 2/2" });
@@ -87,6 +100,23 @@ test("starts the pending reveal sequence from the first player after a reload", 
 
   render(<SectsAndVioletsApp coreAdapter={core} storageDriver={storage} />);
   expect(await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" })).toBeTruthy();
+});
+
+test("undoes the swap while the centered change prompt is waiting", async () => {
+  const storage = new MemoryGameStorageDriver(savedGame(true));
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={snakeCharmerCore()} storageDriver={storage} />);
+  expect(await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" })).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: /최근 행동 되돌리기: 뱀 조련사 교환/ }));
+  const undoDialog = screen.getByRole("dialog", { name: "Undo" });
+  await user.click(within(undoDialog).getByRole("button", { name: "되돌리기" }));
+
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "직업 변경 안내 1/2" })).toBeNull();
+  });
+  expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1);
 });
 
 function snakeCharmerCore(): CoreAdapter {
@@ -155,7 +185,16 @@ function savedGame(swapped = false): GameFile {
           rosterConfirmed: true,
           seatingConfirmed: true,
         },
-        phaseCheckpoints: [],
+        phaseCheckpoints: [
+          { id: "setup-1", kind: "setup", eventCount: 1, summary: "초기 설정", activeTab: "seating" },
+          ...(swapped ? [{
+            id: "snake-charmer-2",
+            kind: "phase" as const,
+            eventCount: 2,
+            summary: "뱀 조련사 교환",
+            activeTab: "seating" as const,
+          }] : []),
+        ],
       },
     },
     game: {

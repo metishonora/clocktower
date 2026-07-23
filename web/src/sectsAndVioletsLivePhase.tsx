@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
 import {
   PlayerTokenCountBadge,
@@ -159,6 +159,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId,
   voterIds,
   targetId,
+  centerPrompt,
   operationBusy,
   tokensByPlayerId = {},
   onSeatClick,
@@ -178,6 +179,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId?: string;
   voterIds: string[];
   targetId?: string;
+  centerPrompt?: ReactNode;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
   onSeatClick: (playerId: string) => void;
@@ -322,7 +324,11 @@ export function SectsAndVioletsLiveGrimoire({
               mobilePositions={mobilePositions}
             />
           ) : null}
-          {!handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
+          {centerPrompt ? (
+            <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
+              {centerPrompt}
+            </div>
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <span>00:00</span>
@@ -330,7 +336,7 @@ export function SectsAndVioletsLiveGrimoire({
             </div>
           ) : null}
         </div>
-        {handoff ? (
+        {handoff && !centerPrompt ? (
           <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">
               <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : handoff.kind === "snakeCharmer" ? "뱀 조련사" : "Demon 공격"}</h2>
