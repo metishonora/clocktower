@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import {
+  PlayerTokenList,
+  type PlayerTokenPresentation,
+} from "./features/grimoire/playerTokenPresentation";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue121TokenOverviewPrototype.css";
 
-export type PlayerTokenPresentation = Readonly<{
-  instanceId: string;
-  label: string;
-  sourceLabel: string;
-  sourceIconSrc: string;
-  visualKind: "assignment" | "impairment" | "relationship" | "usage";
-  description?: string;
-}>;
+export type { PlayerTokenPresentation } from "./features/grimoire/playerTokenPresentation";
 
 type PrototypePlayer = {
   id: string;
@@ -256,21 +253,7 @@ function PlayerDetails({
             <span>캐릭터 능력</span>
             <p>{character?.ability}</p>
           </section>
-          <section className="issue121PinnedTokenArea" aria-label="부착된 토큰">
-            {currentPlayer.tokens.length > 0 ? (
-              <ul aria-label={`부착된 토큰 ${currentPlayer.tokens.length}개`}>
-                {currentPlayer.tokens.map((currentToken) => (
-                  <li aria-label={`${currentToken.label} · 출처 ${currentToken.sourceLabel}`} key={currentToken.instanceId}>
-                    <div className={`issue121PinnedToken ${currentToken.visualKind}`} title={currentToken.description}>
-                      <span className="issue121TokenSource">{currentToken.sourceLabel}</span>
-                      <img src={currentToken.sourceIconSrc} alt={`${currentToken.sourceLabel} 출처`} />
-                      <strong>{currentToken.label}</strong>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </section>
+          <PlayerTokenList tokens={currentPlayer.tokens} />
         </div>
       </section>
     </div>
