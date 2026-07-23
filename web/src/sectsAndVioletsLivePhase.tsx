@@ -362,6 +362,7 @@ export function SectsAndVioletsLiveGrimoire({
             characterKindLabel: characterKindLabel(detailsPlayer.characterKind),
             characterIconSrc: detailsAsset?.src,
             characterAbility: detailsCharacter.ability,
+            alignment: detailsPlayer.alignment,
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
           theme={currentStep?.phase === "day" ? "day" : "night"}

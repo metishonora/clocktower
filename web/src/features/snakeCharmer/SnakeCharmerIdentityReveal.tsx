@@ -39,3 +39,33 @@ export function SnakeCharmerIdentityReveal({
     </div>
   );
 }
+
+export function SnakeCharmerIdentityRevealPrompt({
+  player,
+  sequence,
+  total,
+  onReveal,
+}: {
+  player?: Player;
+  sequence: number;
+  total: number;
+  onReveal: () => void;
+}) {
+  return (
+    <div className="snakeCharmerRevealBackdrop">
+      <section
+        className="snakeCharmerRevealPrompt"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`직업 변경 안내 ${sequence}/${total}`}
+      >
+        <header><span>직업 변경</span><b>{sequence} / {total}</b></header>
+        <div>
+          <strong>직업이 변경됩니다.</strong>
+          <p>{player ? `${player.seat}번 ${player.name}을 깨우세요` : "대상 플레이어를 깨우세요"}</p>
+        </div>
+        <button type="button" onClick={onReveal}>공개</button>
+      </section>
+    </div>
+  );
+}

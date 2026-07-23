@@ -11,3 +11,10 @@
 .snakeCharmerRevealIdentity h2 { margin: 0; font: 700 clamp(2rem, 6vw, 3.4rem)/1.05 Georgia, serif; }
 .snakeCharmerRevealIdentity strong { margin-top: 10px; color: #c9bbc2; font-size: .82rem; }
 .snakeCharmerReveal > button { min-width: 260px; padding: 13px 24px; justify-self: center; border: 1px solid rgba(238, 217, 153, .45); border-radius: 999px; color: #201524; background: #ecd47e; font: inherit; font-weight: 850; cursor: pointer; }
+.snakeCharmerRevealPrompt { display: grid; width: min(500px, 100%); min-height: 360px; padding: clamp(26px, 6vw, 48px); align-content: space-between; border: 1px solid rgba(238, 215, 126, .24); border-radius: 30px; background: radial-gradient(circle at 50% 35%, rgba(102, 71, 52, .42), #18101f 72%); box-shadow: 0 30px 100px rgba(0, 0, 0, .72); text-align: center; }
+.snakeCharmerRevealPrompt header { display: flex; justify-content: space-between; color: #bbaec1; font-size: .8rem; font-weight: 850; }
+.snakeCharmerRevealPrompt header b { color: #efd477; }
+.snakeCharmerRevealPrompt > div { display: grid; gap: 14px; }
+.snakeCharmerRevealPrompt > div strong { font: 700 clamp(1.65rem, 5vw, 2.5rem)/1.15 Georgia, serif; }
+.snakeCharmerRevealPrompt > div p { margin: 0; color: #d7c8dc; font-size: 1rem; font-weight: 800; }
+.snakeCharmerRevealPrompt > button { min-width: 180px; padding: 13px 24px; justify-self: center; border: 1px solid rgba(238, 217, 153, .45); border-radius: 999px; color: #201524; background: #ecd47e; font: inherit; font-weight: 850; cursor: pointer; }

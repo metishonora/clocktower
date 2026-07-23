@@ -39,10 +39,20 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
     },
   );
 
+  const firstPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" });
+  expect(within(firstPrompt).getByText("직업이 변경됩니다.")).toBeTruthy();
+  expect(within(firstPrompt).getByText("1번 가람을 깨우세요")).toBeTruthy();
+  expect(within(firstPrompt).queryByText("비고르모르티스")).toBeNull();
+  await user.click(within(firstPrompt).getByRole("button", { name: "공개" }));
+
   const firstReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" });
   expect(within(firstReveal).getByText("비고르모르티스")).toBeTruthy();
   expect(within(firstReveal).getByText("악한 진영")).toBeTruthy();
   await user.click(within(firstReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+
+  const secondPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 2/2" });
+  expect(within(secondPrompt).getByText("7번 도윤을 깨우세요")).toBeTruthy();
+  await user.click(within(secondPrompt).getByRole("button", { name: "공개" }));
 
   const secondReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 2/2" });
   expect(within(secondReveal).getByText("뱀 조련사")).toBeTruthy();
@@ -51,6 +61,7 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
 
   await user.click(within(app).getByRole("button", { name: /7번 좌석, 도윤, 뱀 조련사, 토큰 1개/ }));
   const details = await screen.findByRole("dialog", { name: "7번 도윤 플레이어 상세" });
+  expect(within(details).getByText("현재 진영 · 선")).toBeTruthy();
   expect(within(details).getByText("중독")).toBeTruthy();
   expect(within(details).getByLabelText("중독 · 출처 뱀 조련사")).toBeTruthy();
 });
@@ -60,11 +71,11 @@ test("starts the pending reveal sequence from the first player after a reload", 
   const core = snakeCharmerCore();
 
   const first = render(<SectsAndVioletsApp coreAdapter={core} storageDriver={storage} />);
-  expect(await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" })).toBeTruthy();
+  expect(await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" })).toBeTruthy();
   first.unmount();
 
   render(<SectsAndVioletsApp coreAdapter={core} storageDriver={storage} />);
-  expect(await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" })).toBeTruthy();
+  expect(await screen.findByRole("dialog", { name: "직업 변경 안내 1/2" })).toBeTruthy();
 });
 
 function snakeCharmerCore(): CoreAdapter {

@@ -25,6 +25,7 @@ export type PlayerTokenDetailIdentity = Readonly<{
   characterKindLabel: string;
   characterIconSrc?: string;
   characterAbility: string;
+  alignment: "good" | "evil";
 }>;
 
 export function PlayerTokenCountBadge({
@@ -150,6 +151,9 @@ export function PlayerTokenDetailDialog({
           <div>
             <span>좌석 {player.seat} · {player.characterKindLabel}</span>
             <h2>{player.name}</h2>
+            <span className={`playerTokenCurrentAlignment ${player.alignment}`}>
+              현재 진영 · {player.alignment === "evil" ? "악" : "선"}
+            </span>
           </div>
           <button ref={closeRef} className="playerTokenDetailClose" type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
         </header>

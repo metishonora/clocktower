@@ -3,7 +3,7 @@ import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets"
 import { rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue101SnakeCharmerPrototype.css";
 
-type Stage = "selection" | "revealOne" | "revealTwo" | "complete";
+type Stage = "selection" | "promptOne" | "revealOne" | "promptTwo" | "revealTwo" | "complete";
 
 const players = [
   { id: "player-1", seat: 1, name: "민서", before: "snakeCharmer", after: "vigormortis" },
@@ -51,7 +51,7 @@ export function Issue101SnakeCharmerPrototype() {
               <img src={sectsAndVioletsCharacterAsset("snakeCharmer")?.src} alt="" />
               <h2>7번 도윤</h2>
               <p>살아있는 플레이어 · 악마</p>
-              <button type="button" onClick={() => setStage("revealOne")}>선택 확정</button>
+              <button type="button" onClick={() => setStage("promptOne")}>선택 확정</button>
             </>
           )}
         </section>
@@ -91,6 +91,13 @@ export function Issue101SnakeCharmerPrototype() {
         <button type="button" onClick={() => setStage("selection")}>처음부터</button>
       </footer>
 
+      {stage === "promptOne" ? (
+        <IdentityRevealPrompt
+          order={1}
+          playerInstruction="1번 민서를"
+          onReveal={() => setStage("revealOne")}
+        />
+      ) : null}
       {stage === "revealOne" ? (
         <IdentityReveal
           order={1}
@@ -98,8 +105,15 @@ export function Issue101SnakeCharmerPrototype() {
           alignment="악"
           characterId="vigormortis"
           title="첫 번째 역할 변경 공개"
-          onConfirm={() => setStage("revealTwo")}
-          onReload={() => setStage("revealOne")}
+          onConfirm={() => setStage("promptTwo")}
+          onReload={() => setStage("promptOne")}
+        />
+      ) : null}
+      {stage === "promptTwo" ? (
+        <IdentityRevealPrompt
+          order={2}
+          playerInstruction="7번 도윤을"
+          onReveal={() => setStage("revealTwo")}
         />
       ) : null}
       {stage === "revealTwo" ? (
@@ -110,10 +124,38 @@ export function Issue101SnakeCharmerPrototype() {
           characterId="snakeCharmer"
           title="두 번째 역할 변경 공개"
           onConfirm={() => setStage("complete")}
-          onReload={() => setStage("revealOne")}
+          onReload={() => setStage("promptOne")}
         />
       ) : null}
     </main>
+  );
+}
+
+function IdentityRevealPrompt({
+  order,
+  playerInstruction,
+  onReveal,
+}: {
+  order: 1 | 2;
+  playerInstruction: string;
+  onReveal: () => void;
+}) {
+  return (
+    <div className="issue101RevealBackdrop">
+      <section
+        className="issue101Reveal issue101RevealPrompt"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`직업 변경 안내 ${order}/2`}
+      >
+        <header><span>직업 변경</span><b>{order} / 2</b></header>
+        <div>
+          <strong>직업이 변경됩니다.</strong>
+          <p>{playerInstruction} 깨우세요</p>
+        </div>
+        <button className="issue101RevealConfirm" type="button" onClick={onReveal}>공개</button>
+      </section>
+    </div>
   );
 }
 

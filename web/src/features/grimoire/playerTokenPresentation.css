@@ -54,6 +54,8 @@
 .playerTokenCharacterIdentityButton > strong { color: #caa5d3; font-size: .72rem; }
 .playerTokenDetailDialog > header span { color: #b8a5bd; font-size: .66rem; font-weight: 850; }
 .playerTokenDetailDialog > header h2 { margin: 3px 0; font: 1.75rem Georgia, serif; }
+.playerTokenDetailDialog > header .playerTokenCurrentAlignment { display: inline-flex; margin-top: 3px; padding: 3px 8px; border: 1px solid rgba(164, 202, 226, .3); border-radius: 999px; color: #b9daf0; }
+.playerTokenDetailDialog > header .playerTokenCurrentAlignment.evil { border-color: rgba(225, 132, 142, .35); color: #efa7ae; }
 .playerTokenDetailDialog > header strong { color: #caa5d3; font-size: .72rem; }
 .playerTokenDetailDialog > header .playerTokenDetailClose { width: 44px; height: 44px; border: 1px solid rgba(228, 202, 235, .18); border-radius: 50%; color: #f8f1fa; background: rgba(255, 255, 255, .04); font-size: 1.4rem; cursor: pointer; }
 
@@ -106,6 +108,8 @@
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog { border-left-color: rgba(88, 55, 97, .22); color: #35283a; background: #f8f1f7; box-shadow: -24px 0 70px rgba(73, 46, 80, .28); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header span { color: #715f76; }
+.playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenCurrentAlignment { border-color: rgba(56, 126, 170, .3); color: #2f739e; }
+.playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenCurrentAlignment.evil { border-color: rgba(174, 62, 76, .3); color: #a43f4b; }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header strong { color: #765386; }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenDetailClose { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
 .playerTokenDetailBackdrop.day .playerTokenCharacterIdentityButton:hover { background: rgba(96, 60, 105, .08); }

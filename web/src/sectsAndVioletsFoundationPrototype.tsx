@@ -33,7 +33,10 @@ import {
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
-import { SnakeCharmerIdentityReveal } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
+import {
+  SnakeCharmerIdentityReveal,
+  SnakeCharmerIdentityRevealPrompt,
+} from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
 import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   exportLatestSectsAndVioletsCheckpoint,
@@ -152,6 +155,7 @@ export function SectsAndVioletsFoundation({
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
+  const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
@@ -238,6 +242,10 @@ export function SectsAndVioletsFoundation({
   const nextIdentityReveal = pendingIdentityReveals.find(
     (reveal) => !acknowledgedIdentityRevealKeys.includes(identityRevealKey(gameFile.game.id, reveal.sourceEventId, reveal.sequence)),
   );
+  const nextIdentityRevealKey = nextIdentityReveal
+    ? identityRevealKey(gameFile.game.id, nextIdentityReveal.sourceEventId, nextIdentityReveal.sequence)
+    : undefined;
+  const identityRevealOpen = nextIdentityRevealKey === openedIdentityRevealKey;
   const identityRevealPlayer = replayState?.players.find(
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
@@ -299,10 +307,11 @@ export function SectsAndVioletsFoundation({
   }, [warningKey]);
 
   useEffect(() => {
-    if (pendingIdentityReveals.length === 0 && acknowledgedIdentityRevealKeys.length > 0) {
-      setAcknowledgedIdentityRevealKeys([]);
+    if (pendingIdentityReveals.length === 0) {
+      if (acknowledgedIdentityRevealKeys.length > 0) setAcknowledgedIdentityRevealKeys([]);
+      if (openedIdentityRevealKey !== undefined) setOpenedIdentityRevealKey(undefined);
     }
-  }, [pendingIdentityReveals.length, acknowledgedIdentityRevealKeys.length]);
+  }, [pendingIdentityReveals.length, acknowledgedIdentityRevealKeys.length, openedIdentityRevealKey]);
 
   useEffect(() => {
     if (!returnConfirmOpen) return;
@@ -1175,6 +1184,7 @@ export function SectsAndVioletsFoundation({
 
   const acknowledgeIdentityReveal = () => {
     if (!nextIdentityReveal) return;
+    setOpenedIdentityRevealKey(undefined);
     setAcknowledgedIdentityRevealKeys((current) => [
       ...current,
       identityRevealKey(gameFile.game.id, nextIdentityReveal.sourceEventId, nextIdentityReveal.sequence),
@@ -1821,12 +1831,19 @@ export function SectsAndVioletsFoundation({
           <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
         </aside>
       ) : null}
-      {nextIdentityReveal ? (
+      {nextIdentityReveal && identityRevealOpen ? (
         <SnakeCharmerIdentityReveal
           reveal={nextIdentityReveal}
           player={identityRevealPlayer}
           total={pendingIdentityReveals.length}
           onConfirm={acknowledgeIdentityReveal}
+        />
+      ) : nextIdentityReveal ? (
+        <SnakeCharmerIdentityRevealPrompt
+          player={identityRevealPlayer}
+          sequence={nextIdentityReveal.sequence}
+          total={pendingIdentityReveals.length}
+          onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
         />
       ) : null}
     </main>
