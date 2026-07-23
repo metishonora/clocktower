@@ -81,7 +81,7 @@ test("long-press opens the production annotation sheet without an edit icon or t
   expect(within(dialog).getByRole("heading", { name: "Bert" })).toBeTruthy();
   expect(within(dialog).getByText("좌석 2")).toBeTruthy();
   expect(within(dialog).getByText("요리사")).toBeTruthy();
-  expect(within(dialog).getByRole("button", { name: "요리사 세부 규칙 보기" })).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "요리사 캐릭터 상세 열기" })).toBeTruthy();
   expect(within(dialog).getByRole("group", { name: "System Tokens" })).toBeTruthy();
   expect(within(dialog).getByRole("group", { name: "Script Tokens" })).toBeTruthy();
   expect(document.activeElement).toBe(dialog);
@@ -92,14 +92,14 @@ test.each([5, 15])("keeps character-rules controls off the %i-player seat map", 
   renderGrimoire({ players: roster });
 
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
-  expect(within(grimoire).queryAllByRole("button", { name: /세부 규칙 보기/ })).toHaveLength(0);
+  expect(within(grimoire).queryAllByRole("button", { name: /캐릭터 상세 열기/ })).toHaveLength(0);
 
   const player = roster[playerCount - 1]!;
   longPressSeat(new RegExp(`${player.seat}번 ${player.name} 좌석 선택`));
   const dialog = screen.getByRole("dialog", { name: `${player.seat}번 ${player.name} 토큰 및 Notes` });
   expect(within(dialog).getByAltText("임프 공식 캐릭터 아이콘")).toBeTruthy();
   expect(within(dialog).getByText(`좌석 ${player.seat}`)).toBeTruthy();
-  expect(within(dialog).getByRole("button", { name: "임프 세부 규칙 보기" })).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "임프 캐릭터 상세 열기" })).toBeTruthy();
 });
 
 test("closing character rules returns to the player detail and preserves its draft", async () => {
@@ -108,12 +108,12 @@ test("closing character rules returns to the player detail and preserves its dra
   longPressSeat(/1번 Ada 좌석 선택/);
   const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
   const notes = within(detail).getByRole("textbox", { name: "Notes" });
-  const trigger = within(detail).getByRole("button", { name: "세탁부 세부 규칙 보기" });
+  const trigger = within(detail).getByRole("button", { name: "세탁부 캐릭터 상세 열기" });
   await user.type(notes, "다음 밤 확인");
   await user.click(trigger);
 
-  const rules = screen.getByRole("dialog", { name: "세탁부 세부 규칙" });
-  await user.click(within(rules).getByRole("button", { name: "세부 규칙 닫기" }));
+  const rules = screen.getByRole("dialog", { name: "세탁부 캐릭터 상세" });
+  await user.click(within(rules).getByRole("button", { name: "캐릭터 상세 닫기" }));
 
   expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
   expect((notes as HTMLTextAreaElement).value).toBe("다음 밤 확인");
@@ -126,22 +126,22 @@ test("Escape and the rules backdrop close only the nested rules card", async () 
   longPressSeat(/1번 Ada 좌석 선택/);
   const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
   const notes = within(detail).getByRole("textbox", { name: "Notes" });
-  const trigger = within(detail).getByRole("button", { name: "세탁부 세부 규칙 보기" });
+  const trigger = within(detail).getByRole("button", { name: "세탁부 캐릭터 상세 열기" });
   await user.type(notes, "입력 유지");
 
   await user.click(trigger);
   await user.keyboard("{Escape}");
-  expect(screen.queryByRole("dialog", { name: "세탁부 세부 규칙" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "세탁부 캐릭터 상세" })).toBeNull();
   expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
   expect((notes as HTMLTextAreaElement).value).toBe("입력 유지");
   expect(document.activeElement).toBe(trigger);
 
   await user.click(trigger);
-  const rules = screen.getByRole("dialog", { name: "세탁부 세부 규칙" });
+  const rules = screen.getByRole("dialog", { name: "세탁부 캐릭터 상세" });
   const backdrop = rules.parentElement;
   if (!backdrop) throw new Error("character rules backdrop was not rendered");
   fireEvent.mouseDown(backdrop);
-  expect(screen.queryByRole("dialog", { name: "세탁부 세부 규칙" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "세탁부 캐릭터 상세" })).toBeNull();
   expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBe(detail);
   expect((notes as HTMLTextAreaElement).value).toBe("입력 유지");
   await waitFor(() => expect(document.activeElement).toBe(trigger));

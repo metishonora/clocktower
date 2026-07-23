@@ -40,8 +40,8 @@ test("selects a complete roster, shows the active character detail, and advances
   expect(confirmRoster.hasAttribute("disabled")).toBe(true);
   const initialDetail = within(prototype).getByRole("complementary", { name: "직업 설명" });
   expect(initialDetail.classList.contains("floatingAction")).toBe(true);
-  expect(initialDetail.querySelector(".snvRoleDetailIcon")?.classList.contains("mobileHidden")).toBe(true);
-  expect(initialDetail.querySelector(".snvRoleDetailCopy")?.classList.contains("mobileHidden")).toBe(true);
+  expect(initialDetail.querySelector(".snvRoleDetailIcon")?.classList.contains("mobileHidden")).toBe(false);
+  expect(initialDetail.querySelector(".snvRoleDetailCopy")?.classList.contains("mobileHidden")).toBe(false);
   expect(within(initialDetail).getByRole("button", { name: "직업 선택 확정" })).toBe(confirmRoster);
   expect(within(prototype).queryByRole("status")).toBeNull();
   expect(within(prototype).queryByText(/자리 남음|구성 완료/)).toBeNull();
@@ -232,12 +232,13 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(within(details).getByText("시계공")).toBeTruthy();
   expect(within(details).getByText("생존")).toBeTruthy();
   expect(within(details).queryByText("상태 이상 없음")).toBeNull();
-  const openRoleDetails = within(details).getByRole("button", { name: "시계공 상세 정보" });
+  const openRoleDetails = within(details).getByRole("button", { name: "시계공 캐릭터 상세 열기" });
   await user.click(openRoleDetails);
-  const roleDialog = screen.getByRole("dialog", { name: "시계공 상세 정보" });
+  const roleDialog = screen.getByRole("dialog", { name: "시계공 캐릭터 상세" });
   const roleDialogBackdrop = roleDialog.parentElement as HTMLElement;
-  expect(roleDialogBackdrop.classList.contains("aboveSeatSheet")).toBe(true);
-  await user.click(within(roleDialog).getByRole("button", { name: "상세 정보 닫기" }));
+  expect(roleDialogBackdrop.classList.contains("characterRulesBackdrop")).toBe(true);
+  expect(roleDialogBackdrop.parentElement).toBe(document.body);
+  await user.click(within(roleDialog).getByRole("button", { name: "캐릭터 상세 닫기" }));
   expect(within(details).queryByRole("button", { name: "배치 편집" })).toBeNull();
   expect(details.classList.contains("transitionIn")).toBe(true);
   await user.click(within(seating).getByRole("button", { name: "좌석 설정 패널 닫기 배경" }));
@@ -257,10 +258,10 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(firstNight.querySelector(".snvFirstNightMoon")).toBeNull();
   expect(within(firstNight).getByRole("heading", { name: "철학자" })).toBeTruthy();
   expect(within(firstNight).getByRole("img", { name: "철학자 공식 캐릭터 아이콘" })).toBeTruthy();
-  await user.click(within(firstNight).getByRole("button", { name: "철학자 상세 정보" }));
-  const currentRoleDialog = screen.getByRole("dialog", { name: "철학자 상세 정보" });
+  await user.click(within(firstNight).getByRole("button", { name: "철학자 캐릭터 상세 열기" }));
+  const currentRoleDialog = screen.getByRole("dialog", { name: "철학자 캐릭터 상세" });
   expect(within(currentRoleDialog).getByText(/선한 캐릭터 1명을 선택합니다/)).toBeTruthy();
-  await user.click(within(currentRoleDialog).getByRole("button", { name: "상세 정보 닫기" }));
+  await user.click(within(currentRoleDialog).getByRole("button", { name: "캐릭터 상세 닫기" }));
   expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
   expect(within(firstNight).queryByText("수동")).toBeNull();
   expect(within(firstNight).queryByText("1 / 7")).toBeNull();
@@ -423,7 +424,7 @@ test("starts a fresh game from the utility navigation after destructive confirma
   expect(within(prototype).getByRole("button", { name: "마도서" }).hasAttribute("disabled")).toBe(true);
 });
 
-test("keeps a fixed character summary slot with icons and opens the baseline detail dialog", async () => {
+test("keeps a fixed character summary slot and opens rich details from the icon and name", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsFoundationPrototype />);
   const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
@@ -435,16 +436,39 @@ test("keeps a fixed character summary slot with icons and opens the baseline det
   const summary = within(prototype).getByRole("complementary", { name: "직업 설명" });
   expect(summary.classList.contains("fixed")).toBe(true);
   expect(within(summary).queryByText(/선택됨|선택 안 됨/)).toBeNull();
-  expect(within(summary).getByRole("img", { name: "시계공 공식 캐릭터 아이콘" })).toBeTruthy();
-  await user.click(within(summary).getByRole("button", { name: "시계공 상세 정보" }));
+  const trigger = within(summary).getByRole("button", { name: "시계공 캐릭터 상세 열기" });
+  expect(within(trigger).getByRole("img", { name: "시계공 공식 캐릭터 아이콘" })).toBeTruthy();
+  expect(within(trigger).getByRole("heading", { name: "시계공" })).toBeTruthy();
+  expect(trigger.textContent).not.toContain("ⓘ");
+  await user.click(trigger);
 
-  const dialog = screen.getByRole("dialog", { name: "시계공 상세 정보" });
+  const dialog = screen.getByRole("dialog", { name: "시계공 캐릭터 상세" });
   expect(within(dialog).queryByText("자동화 지원")).toBeNull();
   expect(within(dialog).queryByText("수동 처리")).toBeNull();
-  expect(within(dialog).getByRole("link", { name: "공식 규칙" }).getAttribute("href"))
+  expect(within(dialog).getByText("공식 능력")).toBeTruthy();
+  expect(within(dialog).getByText("핵심 판정")).toBeTruthy();
+  expect(within(dialog).getByText("진행 방법")).toBeTruthy();
+  expect(within(dialog).getByText("공식 예시 3개 보기").closest("details")?.hasAttribute("open")).toBe(false);
+  expect(within(dialog).getByRole("link", { name: "공식 규칙 열기" }).getAttribute("href"))
     .toBe("https://wiki.bloodontheclocktower.com/Clockmaker");
-  await user.click(within(dialog).getByRole("button", { name: "상세 정보 닫기" }));
-  expect(screen.queryByRole("dialog", { name: "시계공 상세 정보" })).toBeNull();
+  await user.click(within(dialog).getByRole("button", { name: "캐릭터 상세 닫기" }));
+  expect(screen.queryByRole("dialog", { name: "시계공 캐릭터 상세" })).toBeNull();
+});
+
+test("shows official reminder inventory without developer metadata", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsFoundationPrototype />);
+  const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
+
+  await user.click(within(prototype).getByRole("button", { name: "뱀 조련사" }));
+  const summary = within(prototype).getByRole("complementary", { name: "직업 설명" });
+  await user.click(within(summary).getByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" }));
+
+  const dialog = screen.getByRole("dialog", { name: "뱀 조련사 캐릭터 상세" });
+  expect(within(dialog).getByText("리마인더")).toBeTruthy();
+  expect(within(dialog).getByText("중독됨 × 1")).toBeTruthy();
+  expect(within(dialog).getByText("악마와 교환한 새 뱀 조련사의 중독을 표시합니다.")).toBeTruthy();
+  expect(within(dialog).queryByText(/ownerIssue|revision|checkedAt|회귀/)).toBeNull();
 });
 
 test("starts the first night with the always-present evil information steps when no acting role is selected", async () => {

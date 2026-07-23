@@ -33,7 +33,8 @@ import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
 import { CharacterIcon } from "../../components/CharacterIcon";
-import { CharacterRulesButton } from "../../components/CharacterRulesCard";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
+import { troubleBrewingCharacterDetail } from "../../characterDetails";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -467,16 +468,15 @@ function CurrentStepPane({
             ) : null}
             {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? (
               <section className="currentActor" aria-label="현재 행동자">
-                <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
+                <CharacterDetailButton
+                  details={troubleBrewingCharacterDetail(currentStep.character)}
+                  className="currentActorCharacterButton"
+                >
+                  <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
+                  <h3>{currentCharacter?.label ?? currentStep.character}</h3>
+                </CharacterDetailButton>
                 <div>
                   <small>행동자</small>
-                  <div className="currentActorTitle">
-                    <h3>{currentCharacter?.label ?? currentStep.character}</h3>
-                    <CharacterRulesButton
-                      characterId={currentStep.character}
-                      ariaLabel={`현재 단계 ${currentCharacter?.label ?? currentStep.character} 세부 규칙 보기`}
-                    />
-                  </div>
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}

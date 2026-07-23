@@ -1,38 +1,53 @@
-.characterRulesInfoButton {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  border: 1px solid rgba(31, 111, 91, 0.35);
-  border-radius: 50%;
-  background: #fffdf8;
-  color: var(--primary-dark);
-  box-shadow: 0 3px 10px rgba(54, 43, 28, 0.12);
-  font-size: 1rem;
-  font-weight: 900;
-  line-height: 1;
+.characterDetailIdentityButton {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-.characterRulesInfoButton:hover { border-color: var(--primary); background: #f3f8f5; }
-.characterRulesInfoButton:focus-visible { outline: 3px solid rgba(31, 111, 91, 0.3); outline-offset: 2px; }
+.characterDetailIdentityButton:hover,
+.characterDetailIdentityButton:active,
+.characterDetailIdentityButton:visited { text-decoration: none; }
+.characterDetailIdentityButton:focus-visible { outline: 3px solid rgba(31, 111, 91, 0.3); outline-offset: 3px; }
 
 .characterRulesBackdrop {
   position: fixed;
-  z-index: 120;
+  z-index: 320;
   inset: 0;
   display: flex;
   justify-content: flex-end;
   background: rgba(26, 22, 17, 0.42);
 }
 
+.characterRulesBackdrop.snv-night {
+  --character-detail-bg: #160f1a;
+  --character-detail-surface: #211628;
+  --character-detail-line: rgba(221, 202, 226, 0.2);
+  --character-detail-ink: #fff7ff;
+  --character-detail-muted: #c9b9cf;
+  --character-detail-accent: #d5a8e2;
+}
+
+.characterRulesBackdrop.snv-day {
+  --character-detail-bg: #fffaf5;
+  --character-detail-surface: #f6ebf7;
+  --character-detail-line: rgba(96, 60, 105, 0.22);
+  --character-detail-ink: #38273d;
+  --character-detail-muted: #6b5970;
+  --character-detail-accent: #765281;
+}
+
 .characterRulesCard {
   width: min(440px, 100%);
   height: 100%;
   overflow-y: auto;
-  border-left: 1px solid var(--line);
-  background: #fffdf8;
+  border-left: 1px solid var(--character-detail-line, var(--line));
+  background: var(--character-detail-bg, #fffdf8);
   box-shadow: -18px 0 48px rgba(38, 29, 20, 0.24);
+  color: var(--character-detail-ink, var(--ink));
 }
 
 .characterRulesHeader {
@@ -44,36 +59,39 @@
   gap: 12px;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255, 253, 248, 0.97);
+  border-bottom: 1px solid var(--character-detail-line, var(--line));
+  background: var(--character-detail-bg, rgba(255, 253, 248, 0.97));
 }
 
 .characterRulesIcon { width: 56px; height: 56px; object-fit: contain; }
-.characterRulesHeader small { color: var(--muted); font-size: 0.72rem; font-weight: 900; }
+.characterRulesHeader small { color: var(--character-detail-muted, var(--muted)); font-size: 0.72rem; font-weight: 900; }
 .characterRulesHeader h2 { margin: 3px 0 0; font-size: 1.25rem; }
 .characterRulesClose {
   width: 38px;
   height: 38px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--character-detail-line, var(--line));
   border-radius: 50%;
-  background: white;
-  color: var(--ink);
+  background: var(--character-detail-surface, white);
+  color: var(--character-detail-ink, var(--ink));
   font-size: 1.5rem;
   line-height: 1;
 }
 
 .characterRulesBody { display: grid; gap: 22px; padding: 22px 24px 34px; }
 .characterRulesBody section { display: grid; gap: 9px; }
-.characterRulesBody h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.04em; color: var(--primary-dark); }
+.characterRulesBody h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.04em; color: var(--character-detail-accent, var(--primary-dark)); }
 .characterRulesBody p { margin: 0; line-height: 1.65; }
 .characterRulesBody ul,
 .characterRulesBody ol { display: grid; gap: 8px; margin: 0; padding-left: 1.25rem; line-height: 1.55; }
-.characterRulesAbility { padding: 14px; border-left: 3px solid var(--primary); background: #f3f8f5; font-weight: 800; }
-.characterRulesExample { border: 1px solid var(--line); border-radius: 8px; background: white; }
+.characterRulesAbility { padding: 14px; border-left: 3px solid var(--character-detail-accent, var(--primary)); background: var(--character-detail-surface, #f3f8f5); font-weight: 800; }
+.characterRulesReminders ul { padding: 0; list-style: none; }
+.characterRulesReminders li { display: grid; gap: 3px; border: 1px solid var(--character-detail-line, var(--line)); border-radius: 8px; padding: 11px 12px; background: var(--character-detail-surface, white); }
+.characterRulesReminders span { color: var(--character-detail-muted, var(--muted)); font-size: 0.82rem; }
+.characterRulesExample { border: 1px solid var(--character-detail-line, var(--line)); border-radius: 8px; background: var(--character-detail-surface, white); }
 .characterRulesExample summary { cursor: pointer; padding: 13px 14px; font-weight: 900; }
-.characterRulesExample ol { gap: 10px; padding: 0 18px 14px 2.1rem; color: var(--muted); }
+.characterRulesExample ol { gap: 10px; padding: 0 18px 14px 2.1rem; color: var(--character-detail-muted, var(--muted)); }
 .characterRulesExample li { white-space: pre-line; }
-.characterRulesBody > a { justify-self: start; color: var(--primary-dark); font-weight: 900; }
+.characterRulesBody > a { justify-self: start; color: var(--character-detail-accent, var(--primary-dark)); font-weight: 900; }
 
 @media (max-width: 640px) {
   .characterRulesBackdrop { align-items: flex-end; }

@@ -48,11 +48,14 @@
   border-bottom: 1px solid rgba(228, 202, 235, .1);
 }
 
-.playerTokenDetailDialog > header > img { width: 68px; height: 68px; object-fit: contain; }
+.playerTokenCharacterIdentityButton { display: grid; justify-items: center; gap: 2px; border-radius: 12px; padding: 3px; }
+.playerTokenCharacterIdentityButton:hover { background: rgba(255, 255, 255, .07); }
+.playerTokenCharacterIdentityButton > img { width: 68px; height: 68px; object-fit: contain; }
+.playerTokenCharacterIdentityButton > strong { color: #caa5d3; font-size: .72rem; }
 .playerTokenDetailDialog > header span { color: #b8a5bd; font-size: .66rem; font-weight: 850; }
 .playerTokenDetailDialog > header h2 { margin: 3px 0; font: 1.75rem Georgia, serif; }
 .playerTokenDetailDialog > header strong { color: #caa5d3; font-size: .72rem; }
-.playerTokenDetailDialog > header button { width: 44px; height: 44px; border: 1px solid rgba(228, 202, 235, .18); border-radius: 50%; color: #f8f1fa; background: rgba(255, 255, 255, .04); font-size: 1.4rem; cursor: pointer; }
+.playerTokenDetailDialog > header .playerTokenDetailClose { width: 44px; height: 44px; border: 1px solid rgba(228, 202, 235, .18); border-radius: 50%; color: #f8f1fa; background: rgba(255, 255, 255, .04); font-size: 1.4rem; cursor: pointer; }
 
 .playerTokenDetailBody { display: grid; padding: 24px; gap: 28px; }
 .playerTokenCharacterSummary > span { color: #aa92b1; font-size: .66rem; font-weight: 900; letter-spacing: .06em; }
@@ -104,7 +107,8 @@
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header span { color: #715f76; }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header strong { color: #765386; }
-.playerTokenDetailBackdrop.day .playerTokenDetailDialog > header button { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
+.playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenDetailClose { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
+.playerTokenDetailBackdrop.day .playerTokenCharacterIdentityButton:hover { background: rgba(96, 60, 105, .08); }
 .playerTokenDetailBackdrop.day .playerTokenCharacterSummary > span { color: #715f76; }
 .playerTokenDetailBackdrop.day .playerTokenCharacterSummary p { color: #4d3d52; }
 
@@ -119,7 +123,7 @@
   .playerTokenDetailBackdrop { align-items: flex-end; }
   .playerTokenDetailDialog { width: 100%; height: auto; max-height: min(78dvh, 660px); border-top: 1px solid rgba(227, 198, 234, .22); border-left: 0; border-radius: 26px 26px 0 0; animation-name: playerTokenSheetIn; }
   .playerTokenDetailDialog > header { padding: 17px; grid-template-columns: 54px minmax(0, 1fr) 44px; }
-  .playerTokenDetailDialog > header > img { width: 54px; height: 54px; }
+  .playerTokenCharacterIdentityButton > img { width: 54px; height: 54px; }
   .playerTokenDetailBody { padding: 19px 17px max(22px, env(safe-area-inset-bottom)); gap: 22px; }
   .playerPinnedTokenArea { min-height: 150px; padding: 10px 8px; }
   .playerPinnedTokenArea ul { min-height: 130px; padding: 8px 4px; row-gap: 10px; }

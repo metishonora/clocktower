@@ -1,5 +1,7 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import "./playerTokenPresentation.css";
 
 export type PlayerTokenVisualKind = "assignment" | "impairment" | "relationship" | "usage";
@@ -16,6 +18,7 @@ export type PlayerTokenPresentation = Readonly<{
 export type PlayerTokensByPlayerId = Readonly<Record<string, readonly PlayerTokenPresentation[]>>;
 
 export type PlayerTokenDetailIdentity = Readonly<{
+  characterId: string;
   seat: number;
   name: string;
   characterLabel: string;
@@ -92,10 +95,12 @@ export function PlayerTokenDetailDialog({
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [characterDetailOpen, setCharacterDetailOpen] = useState(false);
 
   useEffect(() => {
     closeRef.current?.focus();
     function handleKeyDown(event: KeyboardEvent) {
+      if (characterDetailOpen) return;
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
@@ -118,7 +123,7 @@ export function PlayerTokenDetailDialog({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [characterDetailOpen, onClose]);
 
   return createPortal(
     <div
@@ -133,13 +138,20 @@ export function PlayerTokenDetailDialog({
         aria-label={`${player.seat}번 ${player.name} 플레이어 상세`}
       >
         <header>
-          {player.characterIconSrc ? <img src={player.characterIconSrc} alt="" /> : null}
+          <CharacterDetailButton
+            details={sectsAndVioletsCharacterDetail(player.characterId)}
+            className="playerTokenCharacterIdentityButton"
+            theme={theme === "day" ? "snv-day" : "snv-night"}
+            onOpenChange={setCharacterDetailOpen}
+          >
+            {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
+            <strong>{player.characterLabel}</strong>
+          </CharacterDetailButton>
           <div>
             <span>좌석 {player.seat} · {player.characterKindLabel}</span>
             <h2>{player.name}</h2>
-            <strong>{player.characterLabel}</strong>
           </div>
-          <button ref={closeRef} type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
+          <button ref={closeRef} className="playerTokenDetailClose" type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
         </header>
         <div className="playerTokenDetailBody">
           <section className="playerTokenCharacterSummary" aria-label="캐릭터 정보">

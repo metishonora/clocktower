@@ -9,7 +9,8 @@ import type {
   SystemTokenId,
 } from "../../core/types";
 import { CharacterIcon } from "../../components/CharacterIcon";
-import { CharacterRulesButton } from "../../components/CharacterRulesCard";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
+import { troubleBrewingCharacterDetail } from "../../characterDetails";
 import { characterLabel } from "../../setupDraft";
 import { sameScriptToken, scriptTokens, systemTokens } from "./playerAnnotations";
 
@@ -100,19 +101,18 @@ export function PlayerAnnotationsDialog({
         aria-label={`${player.seat}번 ${player.name} 토큰 및 Notes`}
       >
         <header>
-          <CharacterIcon characterId={player.actualCharacter} className="playerAnnotationsCharacterIcon" />
+          <CharacterDetailButton
+            details={troubleBrewingCharacterDetail(player.actualCharacter)}
+            className="playerAnnotationsCharacterButton"
+            onOpenChange={setRulesOpen}
+          >
+            <CharacterIcon characterId={player.actualCharacter} className="playerAnnotationsCharacterIcon" />
+            <strong>{characterLabel(player.actualCharacter)}</strong>
+          </CharacterDetailButton>
           <div className="playerAnnotationsIdentity">
             <h2>{player.name}</h2>
             <div className="playerAnnotationsMeta">
               <span>좌석 {player.seat}</span>
-              <i aria-hidden="true" />
-              <strong>{characterLabel(player.actualCharacter)}</strong>
-              <CharacterRulesButton
-                characterId={player.actualCharacter}
-                className="playerAnnotationsRulesButton"
-                ariaLabel={`${characterLabel(player.actualCharacter)} 세부 규칙 보기`}
-                onOpenChange={setRulesOpen}
-              />
             </div>
           </div>
           <button className="playerAnnotationsClose" type="button" aria-label="닫기" disabled={pending} onClick={onCancel}>×</button>
