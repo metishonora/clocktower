@@ -49,6 +49,7 @@
 .snvDayMode .issue120PagePlaceholder { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .68); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
 .snvDayMode .issue120PagePlaceholder > span, .snvDayMode .issue120PagePlaceholder p { color: #6e5973; }
 .issue120DialogBackdrop { position: fixed; z-index: 120; inset: 0; display: grid; padding: 22px; place-items: center; background: rgba(17, 9, 22, .7); backdrop-filter: blur(5px); }
+.snvDayMode .issue120DialogBackdrop { background: rgba(67, 47, 72, .34); backdrop-filter: blur(5px) saturate(.9); }
 .issue120Dialog { display: grid; box-sizing: border-box; width: min(500px, 100%); padding: 25px; gap: 13px; border: 1px solid rgba(231, 208, 239, .28); border-radius: 22px; color: #f9f1fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 28px 90px rgba(4, 1, 7, .58); }
 .issue120Dialog h2 { margin: 0; font: 1.75rem Georgia, serif; }
 .issue120Dialog p { margin: 0; color: #cabace; font-size: .84rem; line-height: 1.55; }
@@ -63,9 +64,19 @@
 .issue120Dialog footer { display: flex; margin-top: 7px; justify-content: flex-end; gap: 8px; }
 .issue120Dialog button { min-width: 92px; min-height: 44px; border: 1px solid rgba(231, 208, 239, .24); border-radius: 11px; color: inherit; background: rgba(255, 255, 255, .07); font: inherit; font-weight: 850; cursor: pointer; }
 .issue120Dialog button.destructive { border-color: #bc405b; color: #fff; background: #a92f4b; }
+.issue120Dialog[data-theme="day"] { border-color: rgba(91, 58, 99, .2); color: #3b2840; background: linear-gradient(145deg, #fffdf9, #f3eaf4); box-shadow: 0 28px 80px rgba(67, 43, 74, .28); }
+.issue120Dialog[data-theme="day"] p { color: #68556d; }
+.issue120Dialog[data-theme="day"] .issue120UndoLabel { color: #5d3f65; }
+.issue120Dialog[data-theme="day"] .issue120UndoEventStack { border-color: rgba(165, 47, 73, .2); background: rgba(165, 47, 73, .055); scrollbar-color: rgba(165, 47, 73, .38) transparent; }
+.issue120Dialog[data-theme="day"] .issue120UndoEventStack li { border-color: rgba(165, 47, 73, .12); }
+.issue120Dialog[data-theme="day"] .issue120UndoEventStack li > span { color: #9c5362; }
+.issue120Dialog[data-theme="day"] .issue120UndoEventStack li p { color: #432c48; }
+.issue120UndoDialog[data-theme="day"] button:not(.destructive) { border-color: rgba(91, 58, 99, .28); background: rgba(255, 255, 255, .68); }
 .issue120ErrorDialog { border-color: rgba(255, 103, 126, .42); }
 .issue120ErrorDialog h2 { color: #ffb0bd; font-size: clamp(2.2rem, 7vw, 3rem); line-height: 1.05; }
-.issue120ErrorDialog footer button { border-color: #c55a70; background: #9e324b; }
+.issue120ErrorDialog[data-theme="day"] { border-color: rgba(158, 50, 75, .24); }
+.issue120ErrorDialog[data-theme="day"] h2 { color: #9e324b; }
+.issue120ErrorDialog footer button { border-color: #c55a70; color: #fff; background: #9e324b; }
 .issue120WarningNotification { position: fixed; z-index: 105; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; box-sizing: border-box; width: min(520px, calc(100vw - 36px)); min-height: 82px; padding: 14px 14px 14px 16px; grid-template-columns: 34px minmax(0, 1fr) 36px; align-items: start; gap: 10px; border: 1px solid #d3a73d; border-radius: 17px; color: #33240b; background: #fff6d6; box-shadow: 0 18px 54px rgba(38, 25, 5, .32); }
 .issue120WarningNotification > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff8dd; background: #9c6e11; font-weight: 950; }
 .issue120WarningNotification strong { font-size: .76rem; }

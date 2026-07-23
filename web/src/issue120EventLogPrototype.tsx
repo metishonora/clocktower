@@ -4,6 +4,7 @@ import "./issue120EventLogPrototype.css";
 
 type ActiveTab = "roles" | "grimoire" | "play" | "storage";
 type Scenario = "normal" | "setupOnly" | "busy";
+type PrototypeTheme = "day" | "night";
 
 type PrototypeEvent = {
   id: string;
@@ -202,9 +203,9 @@ export function Issue120EventLogPrototype() {
       )}
 
       {undoCheckpoint ? (
-        <UndoDialog events={undoEvents} onCancel={closeUndo} onConfirm={confirmUndo} />
+        <UndoDialog theme={isDay ? "day" : "night"} events={undoEvents} onCancel={closeUndo} onConfirm={confirmUndo} />
       ) : null}
-      {errorOpen ? <ErrorDialog onClose={closeError} /> : null}
+      {errorOpen ? <ErrorDialog theme={isDay ? "day" : "night"} onClose={closeError} /> : null}
       {warningVisible ? (
         <aside className="issue120WarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
           <span aria-hidden="true">!</span>
@@ -255,7 +256,8 @@ function PrototypePage({ activeTab, isDay }: { activeTab: Exclude<ActiveTab, "st
   );
 }
 
-function UndoDialog({ events, onCancel, onConfirm }: {
+function UndoDialog({ theme, events, onCancel, onConfirm }: {
+  theme: PrototypeTheme;
   events: NumberedPrototypeEvent[];
   onCancel: () => void;
   onConfirm: () => void;
@@ -288,7 +290,7 @@ function UndoDialog({ events, onCancel, onConfirm }: {
   }, [onCancel]);
   return (
     <div className="issue120DialogBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
-      <section ref={dialogRef} className="issue120Dialog issue120UndoDialog" role="dialog" aria-modal="true" aria-labelledby="issue120-undo-title">
+      <section ref={dialogRef} className="issue120Dialog issue120UndoDialog" data-theme={theme} role="dialog" aria-modal="true" aria-labelledby="issue120-undo-title">
         <h2 id="issue120-undo-title">Undo</h2>
         <p className="issue120UndoLabel">되돌릴 행동</p>
         <ol className="issue120UndoEventStack" aria-label="취소될 이벤트">
@@ -306,7 +308,7 @@ function UndoDialog({ events, onCancel, onConfirm }: {
   );
 }
 
-function ErrorDialog({ onClose }: { onClose: () => void }) {
+function ErrorDialog({ theme, onClose }: { theme: PrototypeTheme; onClose: () => void }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     confirmRef.current?.focus();
@@ -324,7 +326,7 @@ function ErrorDialog({ onClose }: { onClose: () => void }) {
   }, [onClose]);
   return (
     <div className="issue120DialogBackdrop">
-      <section className="issue120Dialog issue120ErrorDialog" role="dialog" aria-modal="true" aria-labelledby="issue120-error-title">
+      <section className="issue120Dialog issue120ErrorDialog" data-theme={theme} role="dialog" aria-modal="true" aria-labelledby="issue120-error-title">
         <h2 id="issue120-error-title">작업 실패</h2><p>{severeError}</p>
         <footer><button ref={confirmRef} type="button" onClick={onClose}>확인</button></footer>
       </section>

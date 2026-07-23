@@ -15,6 +15,7 @@ Review targets:
 - Storage/Load shows a permanently open, internally scrollable Event Log with newest events first.
 - The Event Log contains no separate latest-event or Undo panel and only reports its event count.
 - Severe import/replay failure uses a modal and states that the current game is preserved.
+- Undo and severe-error modals follow the active Day/Night theme.
 - Core warnings use a persistent dismissible bottom notification instead of Event Log allocation.
 - Use the review controls to compare Day/Night themes and the normal, setup-only, busy, error, and
   warning states.

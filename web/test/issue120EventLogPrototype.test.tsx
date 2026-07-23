@@ -54,6 +54,7 @@ test("stacks every event removed by the latest checkpoint before confirmation", 
 
   await user.click(undo);
   let dialog = screen.getByRole("dialog", { name: "Undo" });
+  expect(dialog.getAttribute("data-theme")).toBe("day");
   expect(within(dialog).getByRole("heading", { name: "Undo" })).toBeTruthy();
   expect(within(dialog).getByText("되돌릴 행동")).toBeTruthy();
   const removedEvents = within(dialog).getByRole("list", { name: "취소될 이벤트" });
@@ -74,8 +75,10 @@ test("stacks every event removed by the latest checkpoint before confirmation", 
   await user.click(cancel);
   await waitFor(() => expect(document.activeElement).toBe(undo));
 
+  await user.click(within(prototype).getByRole("button", { name: "밤 화면 보기" }));
   await user.click(undo);
   dialog = screen.getByRole("dialog", { name: "Undo" });
+  expect(dialog.getAttribute("data-theme")).toBe("night");
   await user.click(within(dialog).getByRole("button", { name: "되돌리기" }));
   await user.click(within(prototype).getByRole("button", { name: "저장 / 불러오기" }));
 
@@ -109,10 +112,17 @@ test("uses a modal for serious failures and a persistent bottom notification for
   const prototype = screen.getByRole("main", { name: "이슈 120 이벤트 로그 프로토타입" });
 
   await user.click(within(prototype).getByRole("button", { name: "심각한 오류 보기" }));
-  const errorDialog = screen.getByRole("dialog", { name: "작업 실패" });
+  let errorDialog = screen.getByRole("dialog", { name: "작업 실패" });
+  expect(errorDialog.getAttribute("data-theme")).toBe("day");
   expect(within(errorDialog).getByRole("heading", { name: "작업 실패" })).toBeTruthy();
   expect(within(errorDialog).getByText("가져온 게임을 끝까지 재생하지 못했습니다. 현재 게임은 그대로 유지됩니다.")).toBeTruthy();
   expect(within(errorDialog).queryByText("작업을 완료하지 못했습니다")).toBeNull();
+  await user.click(within(errorDialog).getByRole("button", { name: "확인" }));
+
+  await user.click(within(prototype).getByRole("button", { name: "밤 화면 보기" }));
+  await user.click(within(prototype).getByRole("button", { name: "심각한 오류 보기" }));
+  errorDialog = screen.getByRole("dialog", { name: "작업 실패" });
+  expect(errorDialog.getAttribute("data-theme")).toBe("night");
   await user.click(within(errorDialog).getByRole("button", { name: "확인" }));
 
   await user.click(within(prototype).getByRole("button", { name: "경고 보기" }));
