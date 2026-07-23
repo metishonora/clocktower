@@ -1,6 +1,12 @@
-import { useMemo, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
+import {
+  PlayerTokenCountBadge,
+  PlayerTokenDetailDialog,
+  type PlayerTokensByPlayerId,
+} from "./features/grimoire/playerTokenPresentation";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue116PhaseHandoffPrototype.css";
 
@@ -122,6 +128,7 @@ export function SectsAndVioletsLiveGrimoire({
   voterIds,
   targetId,
   operationBusy,
+  tokensByPlayerId = {},
   onSeatClick,
   onConfirm,
   onReturn,
@@ -140,6 +147,7 @@ export function SectsAndVioletsLiveGrimoire({
   voterIds: string[];
   targetId?: string;
   operationBusy: boolean;
+  tokensByPlayerId?: PlayerTokensByPlayerId;
   onSeatClick: (playerId: string) => void;
   onConfirm: () => void;
   onReturn: () => void;
@@ -148,6 +156,8 @@ export function SectsAndVioletsLiveGrimoire({
   onGoToProgress: () => void;
   onReturnToSetup: () => void;
 }) {
+  const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
+  const seatRefs = useRef(new Map<string, HTMLButtonElement>());
   const desktopPositions = useMemo(() => rectangularSeatPositions(players.length, false), [players.length]);
   const mobilePositions = useMemo(() => rectangularSeatPositions(players.length, true), [players.length]);
   const heights = grimoireHeights(players.length);
@@ -164,8 +174,23 @@ export function SectsAndVioletsLiveGrimoire({
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
+  const detailsPlayer = playerById(players, detailsPlayerId);
+  const detailsCharacter = sectsAndVioletsCharacters.find(
+    (character) => character.id === detailsPlayer?.actualCharacter,
+  );
+  const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
     : handoff?.kind === "demon" ? Boolean(targetId) : true;
+
+  const closePlayerDetails = useCallback(() => {
+    const returningPlayerId = detailsPlayerId;
+    setDetailsPlayerId(undefined);
+    requestAnimationFrame(() => returningPlayerId && seatRefs.current.get(returningPlayerId)?.focus());
+  }, [detailsPlayerId]);
+
+  useEffect(() => {
+    if (handoff) setDetailsPlayerId(undefined);
+  }, [handoff]);
 
   return (
     <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
@@ -185,6 +210,7 @@ export function SectsAndVioletsLiveGrimoire({
       <div className={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}`} style={sizeStyle}>
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
           {players.map((player, index) => {
+            const playerTokens = tokensByPlayerId[player.id] ?? [];
             const selected = handoff?.kind === "nomination"
               ? player.id === nominatorId || player.id === nomineeId
               : handoff?.kind === "vote" ? voterIds.includes(player.id) : player.id === targetId;
@@ -212,28 +238,43 @@ export function SectsAndVioletsLiveGrimoire({
                   : ineligible ? "사망, 피지명 불가" : "사망, 피지명 가능"
               : undefined;
             const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
+            const tokenCountLabel = playerTokens.length > 0
+              ? `, 토큰 ${playerTokens.length}개`
+              : ", 토큰 없음";
             return (
-              <button
-                key={player.id}
-                type="button"
-                className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${actorId === player.id ? " snvCurrentActorSeat" : ""}${selected ? " issue116SelectedSeat" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${deadState === "available" ? " issue116GhostVoteSeat" : deadState === "spent" ? " issue116GhostVoteSpentSeat" : ""}`}
-                aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}${actorId === player.id ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : ""}${deathLabel ? `, ${deathLabel}` : ineligible ? ", 선택 불가" : ""}`}
-                aria-pressed={selected}
-                disabled={!handoff || handoff.complete || ineligible || spentGhostCannotVote || operationBusy}
-                style={{
-                  "--seat-x": `${desktopPositions[index].x}%`,
-                  "--seat-y": `${desktopPositions[index].y}%`,
-                  "--mobile-seat-x": `${mobilePositions[index].x}%`,
-                  "--mobile-seat-y": `${mobilePositions[index].y}%`,
-                } as CSSProperties}
-                onClick={() => onSeatClick(player.id)}
-              >
-                <span className="snvSeatNumber">{player.seat}</span>
-                {deadState === "available" ? <GhostIcon /> : asset ? <img src={asset.src} alt="" /> : null}
-                {deadState === "spent" ? <DeathShroud /> : null}
-                <span className="snvSeatPlayerName">{player.name}</span>
-                <small>{selectionRole ?? player.characterName}</small>
-              </button>
+              <Fragment key={player.id}>
+                <button
+                  ref={(node) => {
+                    if (node) seatRefs.current.set(player.id, node);
+                    else seatRefs.current.delete(player.id);
+                  }}
+                  type="button"
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${actorId === player.id ? " snvCurrentActorSeat" : ""}${selected ? " issue116SelectedSeat" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${deadState === "available" ? " issue116GhostVoteSeat" : deadState === "spent" ? " issue116GhostVoteSpentSeat" : ""}`}
+                  aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}${handoff ? "" : tokenCountLabel}${actorId === player.id ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : ""}${deathLabel ? `, ${deathLabel}` : ineligible ? ", 선택 불가" : ""}`}
+                  aria-pressed={handoff ? selected : undefined}
+                  disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
+                  style={{
+                    "--seat-x": `${desktopPositions[index].x}%`,
+                    "--seat-y": `${desktopPositions[index].y}%`,
+                    "--mobile-seat-x": `${mobilePositions[index].x}%`,
+                    "--mobile-seat-y": `${mobilePositions[index].y}%`,
+                  } as CSSProperties}
+                  onClick={() => handoff ? onSeatClick(player.id) : setDetailsPlayerId(player.id)}
+                >
+                  <span className="snvSeatNumber">{player.seat}</span>
+                  {deadState === "available" ? <GhostIcon /> : asset ? <img src={asset.src} alt="" /> : null}
+                  {deadState === "spent" ? <DeathShroud /> : null}
+                  <span className="snvSeatPlayerName">{player.name}</span>
+                  <small>{selectionRole ?? player.characterName}</small>
+                </button>
+                {!handoff ? (
+                  <PlayerTokenCountBadge
+                    count={playerTokens.length}
+                    position={desktopPositions[index]}
+                    mobilePosition={mobilePositions[index]}
+                  />
+                ) : null}
+              </Fragment>
             );
           })}
           {handoff?.kind === "nomination" && nominator && nominee ? (
@@ -279,6 +320,21 @@ export function SectsAndVioletsLiveGrimoire({
           </aside>
         ) : null}
       </div>
+      {!handoff && detailsPlayer && detailsCharacter ? (
+        <PlayerTokenDetailDialog
+          player={{
+            seat: detailsPlayer.seat,
+            name: detailsPlayer.name,
+            characterLabel: detailsPlayer.characterName,
+            characterKindLabel: characterKindLabel(detailsPlayer.characterKind),
+            characterIconSrc: detailsAsset?.src,
+            characterAbility: detailsCharacter.ability,
+          }}
+          tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
+          theme={currentStep?.phase === "day" ? "day" : "night"}
+          onClose={closePlayerDetails}
+        />
+      ) : null}
     </section>
   );
 }
@@ -321,6 +377,13 @@ function playerById<T extends Player>(players: T[], id?: string) {
 
 function playerLabel(player?: Player) {
   return player ? `${player.seat}번 ${player.name}` : "미선택";
+}
+
+function characterKindLabel(kind: LivePlayer["characterKind"]) {
+  if (kind === "townsfolk") return "주민";
+  if (kind === "outsider") return "외지인";
+  if (kind === "minion") return "하수인";
+  return "악마";
 }
 
 function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Player, votes = 0, target?: Player) {
