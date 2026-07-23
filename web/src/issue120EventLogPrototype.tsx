@@ -46,7 +46,7 @@ const severeError = "가져온 게임을 끝까지 재생하지 못했습니다.
 const warningMessage = "보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요.";
 
 export function Issue120EventLogPrototype() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("play");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("storage");
   const [scenario, setScenario] = useState<Scenario>("normal");
   const [isDay, setIsDay] = useState(true);
   const [events, setEvents] = useState(initialEvents);
@@ -200,7 +200,7 @@ function StoragePage({ events }: { events: PrototypeEvent[] }) {
         <article><span>저장된 게임</span><h2>JSON 가져오기</h2><button type="button">import JSON</button></article>
       </div>
       <section className="issue120EventLog" aria-label="이벤트 로그">
-        <header><div><span>CONFIRMED EVENTS</span><h2>이벤트 로그</h2></div><strong>{events.length}건</strong></header>
+        <div className="issue120EventLogHeader"><div><span>CONFIRMED EVENTS</span><h2>이벤트 로그</h2></div><strong>{events.length}건</strong></div>
         {newestFirst.length ? (
           <ol className="issue120ScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
             {newestFirst.map((event, index) => (

@@ -21,13 +21,13 @@
 .issue120StorageSurface { display: grid; max-width: 1180px; margin: 0 auto; gap: 20px; }
 .issue120StorageActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .issue120StorageActions article { display: grid; min-height: 142px; padding: 20px 22px; align-content: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 22px; background: rgba(20, 12, 26, .58); box-shadow: 0 18px 52px rgba(8, 3, 12, .22); }
-.issue120StorageActions span, .issue120EventLog header span { color: #c9b4d1; font-size: .68rem; font-weight: 900; letter-spacing: .1em; }
+.issue120StorageActions span, .issue120EventLogHeader span { color: #c9b4d1; font-size: .68rem; font-weight: 900; letter-spacing: .1em; }
 .issue120StorageActions h2 { margin: 7px 0 18px; font: 1.35rem Georgia, serif; }
 .issue120StorageActions button, .issue120PagePlaceholder button { width: max-content; margin-top: auto; padding: 10px 14px; border: 1px solid rgba(214, 169, 226, .45); border-radius: 11px; color: inherit; background: #82509a; font: inherit; font-size: .76rem; font-weight: 850; cursor: pointer; }
 .issue120EventLog { min-width: 0; overflow: hidden; border: 1px solid rgba(231, 208, 239, .16); border-radius: 24px; background: rgba(20, 12, 26, .64); box-shadow: 0 22px 64px rgba(8, 3, 12, .3); }
-.issue120EventLog > header { display: flex; padding: 20px 22px 17px; align-items: end; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
+.issue120EventLogHeader { display: flex; padding: 20px 22px 17px; align-items: end; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
 .issue120EventLog h2 { margin: 5px 0 0; font: 1.8rem Georgia, serif; }
-.issue120EventLog header > strong { color: #f2d8f7; font-size: .82rem; }
+.issue120EventLogHeader > strong { color: #f2d8f7; font-size: .82rem; }
 .issue120ScrollableEventList { box-sizing: border-box; max-height: min(42dvh, 32rem); margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: rgba(214, 169, 226, .52) transparent; }
 .issue120ScrollableEventList:focus-visible { outline: 2px solid #d6a9e2; outline-offset: -3px; }
 .issue120ScrollableEventList li { display: grid; min-height: 64px; padding: 13px 22px; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid rgba(231, 208, 239, .09); }
@@ -37,9 +37,9 @@
 .issue120ScrollableEventList small { padding: 4px 7px; border-radius: 999px; color: #f3d8f8; background: rgba(130, 80, 154, .42); font-size: .62rem; font-weight: 900; white-space: nowrap; }
 .issue120EmptyLog { margin: 0; padding: 48px 22px; color: #baaac3; text-align: center; }
 .snvDayMode .issue120StorageActions article, .snvDayMode .issue120EventLog { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .7); box-shadow: 0 20px 54px rgba(83, 51, 92, .13); }
-.snvDayMode .issue120StorageActions span, .snvDayMode .issue120EventLog header span { color: #715c76; }
-.snvDayMode .issue120EventLog > header, .snvDayMode .issue120ScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
-.snvDayMode .issue120EventLog header > strong { color: #70477b; }
+.snvDayMode .issue120StorageActions span, .snvDayMode .issue120EventLogHeader span { color: #715c76; }
+.snvDayMode .issue120EventLogHeader, .snvDayMode .issue120ScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
+.snvDayMode .issue120EventLogHeader > strong { color: #70477b; }
 .snvDayMode .issue120ScrollableEventList li > span { color: #917c96; }
 .snvDayMode .issue120ScrollableEventList small { color: #fff; background: #82509a; }
 .issue120PagePlaceholder { display: grid; box-sizing: border-box; max-width: 1180px; min-height: 410px; margin: 0 auto; padding: 42px; align-content: center; justify-items: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
@@ -78,7 +78,7 @@
   .issue120ReviewBar button { flex: 1 1 auto; }
   .issue120StorageActions { grid-template-columns: 1fr; }
   .issue120StorageActions article { min-height: 120px; }
-  .issue120EventLog > header { padding: 17px 16px 14px; }
+  .issue120EventLogHeader { padding: 17px 16px 14px; }
   .issue120EventLog h2 { font-size: 1.5rem; }
   .issue120ScrollableEventList { max-height: 40dvh; }
   .issue120ScrollableEventList li { min-height: 60px; padding: 12px 16px; grid-template-columns: 27px minmax(0, 1fr); gap: 9px; }
