@@ -140,6 +140,13 @@ const DevIssue116PhaseHandoffPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue114CharacterDetailsPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue114CharacterDetailsPrototype");
+      return { default: module.Issue114CharacterDetailsPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -149,6 +156,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue114CharacterDetailsPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-114-character-details"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue114CharacterDetailsPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue116PhaseHandoffPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-116-phase-handoff"

@@ -23,6 +23,7 @@
     "prototype:issue-64-evil-info": "vite --host 0.0.0.0",
     "prototype:character-rules-tooltip": "vite --host 0.0.0.0",
     "prototype:script-selection": "vite --host 0.0.0.0",
+    "prototype:issue-114-character-details": "vite --host 0.0.0.0",
     "prototype:issue-116-phase-handoff": "vite --host 0.0.0.0",
     "prototype:issue-120-event-log": "vite --host 0.0.0.0",
     "prototype:issue-121-token-overview": "vite --host 0.0.0.0",
