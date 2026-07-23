@@ -7,7 +7,7 @@ Run `pnpm prototype:issue-120-event-log`, then open:
 Review targets:
 
 - The red global Undo icon remains directly before the Day/Night phase mark on every page.
-- Setup-only keeps a transparent, inactive Undo placeholder so the phase mark does not shift;
+- Setup-only keeps a desaturated, inactive Undo placeholder so the phase mark does not shift;
   transition work leaves an eligible Undo visible but disabled.
 - Undo opens a safe confirmation that stacks every canonical event owned by the latest completed
   checkpoint. The mock latest checkpoint owns two events so grouped removal is visible before and

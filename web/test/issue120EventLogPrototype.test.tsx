@@ -86,14 +86,17 @@ test("stacks every event removed by the latest checkpoint before confirmation", 
   expect(within(prototype).getByRole("button", { name: /최근 행동 되돌리기: 2번 현우 → 4번 도윤 지명 투표/ })).toBeTruthy();
 });
 
-test("keeps a transparent Undo placeholder for setup-only and disables eligible Undo while busy", async () => {
+test("keeps a desaturated Undo placeholder for setup-only and disables eligible Undo while busy", async () => {
   const user = userEvent.setup();
   render(<Issue120EventLogPrototype />);
   const prototype = screen.getByRole("main", { name: "이슈 120 이벤트 로그 프로토타입" });
 
   await user.click(within(prototype).getByRole("button", { name: "설정만 확정" }));
   expect(within(prototype).queryByRole("button", { name: /최근 행동 되돌리기/ })).toBeNull();
-  expect(prototype.querySelector(".issue120GlobalUndo.empty")).toBeTruthy();
+  const emptyUndo = prototype.querySelector<HTMLElement>(".issue120GlobalUndo.empty");
+  expect(emptyUndo).toBeTruthy();
+  expect(emptyUndo?.getAttribute("data-visual-state")).toBe("muted");
+  expect(emptyUndo?.querySelector("svg")).toBeTruthy();
 
   await user.click(within(prototype).getByRole("button", { name: "전환 중" }));
   const undo = within(prototype).getByRole("button", { name: /최근 행동 되돌리기/ }) as HTMLButtonElement;

@@ -142,6 +142,7 @@ export function Issue120EventLogPrototype() {
             <button
               type="button"
               className="issue120GlobalUndo empty"
+              data-visual-state="muted"
               aria-hidden="true"
               tabIndex={-1}
               disabled

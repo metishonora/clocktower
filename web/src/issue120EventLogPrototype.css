@@ -4,10 +4,11 @@
 .issue120GlobalUndo svg { width: 27px; height: 27px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .issue120GlobalUndo:hover:not(:disabled), .issue120GlobalUndo:focus-visible { color: #fff; background: #b73552; box-shadow: 0 0 0 4px rgba(255, 114, 139, .18), 0 12px 30px rgba(63, 8, 25, .38); outline: none; }
 .issue120GlobalUndo:disabled { opacity: .42; cursor: wait; }
-.issue120GlobalUndo.empty { opacity: 0; pointer-events: none; }
+.issue120GlobalUndo.empty { opacity: .34; filter: grayscale(1); box-shadow: none; pointer-events: none; cursor: default; }
 .issue120IconTooltip { position: absolute; z-index: 8; top: calc(100% + 9px); right: 0; width: max-content; padding: 7px 9px; border: 1px solid rgba(235, 216, 240, .18); border-radius: 8px; color: #f8edf9; background: rgba(25, 13, 31, .94); box-shadow: 0 9px 22px rgba(9, 3, 12, .32); font-size: .7rem; font-weight: 850; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
 .issue120GlobalUndo:hover .issue120IconTooltip, .issue120GlobalUndo:focus-visible .issue120IconTooltip { opacity: 1; transform: translateY(0); }
 .snvDayMode .issue120GlobalUndo { border-color: rgba(156, 40, 65, .34); color: #a52f49; background: rgba(255, 241, 244, .82); box-shadow: 0 10px 26px rgba(114, 36, 56, .16); }
+.snvDayMode .issue120GlobalUndo.empty { box-shadow: none; }
 .snvDayMode .issue120GlobalUndo:hover:not(:disabled), .snvDayMode .issue120GlobalUndo:focus-visible { color: #fff; background: #a52f49; }
 .snvDayMode .issue120IconTooltip { border-color: rgba(76, 41, 83, .12); color: #fff; background: rgba(53, 29, 59, .94); }
 .issue120ReviewBar { display: flex; max-width: 1180px; margin: 0 auto 16px; padding: 11px 13px; justify-content: space-between; gap: 16px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 17px; background: rgba(20, 12, 26, .48); }
