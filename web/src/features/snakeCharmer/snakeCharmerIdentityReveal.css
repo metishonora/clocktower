@@ -1,13 +1,13 @@
 .snakeCharmerRevealBackdrop { position: fixed; z-index: 100; inset: 0; display: grid; padding: 24px; place-items: center; color: #f7f1fb; background: #09060d; }
-.snakeCharmerReveal { display: grid; width: min(560px, 100%); min-height: min(690px, calc(100dvh - 48px)); padding: clamp(24px, 6vw, 58px); grid-template-rows: 1fr auto; border: 1px solid rgba(232, 218, 239, .17); border-radius: 34px; background: radial-gradient(circle at 50% 35%, rgba(95, 58, 111, .48), #18101f 68%); box-shadow: 0 30px 100px rgba(0, 0, 0, .72); }
-.snakeCharmerReveal.evil { background: radial-gradient(circle at 50% 35%, rgba(133, 47, 65, .45), #1c0e17 68%); }
+.snvInformationReveal.snakeCharmerReveal { width: min(560px, 100%); min-height: min(690px, calc(100dvh - 48px)); padding: clamp(24px, 6vw, 58px); grid-template-rows: 1fr auto; align-content: stretch; border-color: rgba(232, 218, 239, .17); border-radius: 34px; background: radial-gradient(circle at 50% 35%, rgba(95, 58, 111, .48), #18101f 68%); box-shadow: 0 30px 100px rgba(0, 0, 0, .72); }
+.snvInformationReveal.snakeCharmerReveal.evil { background: radial-gradient(circle at 50% 35%, rgba(133, 47, 65, .45), #1c0e17 68%); }
 .snakeCharmerRevealIdentity { display: grid; align-self: center; justify-items: center; text-align: center; }
 .snakeCharmerRevealIdentity > span { display: grid; width: 48px; height: 48px; margin-bottom: 8px; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: #b4d7ef; font: 700 1.2rem Georgia, serif; }
-.snakeCharmerReveal.evil .snakeCharmerRevealIdentity > span { color: #ef9a9f; }
+.snvInformationReveal.snakeCharmerReveal.evil .snakeCharmerRevealIdentity > span { color: #ef9a9f; }
 .snakeCharmerRevealIdentity img { width: clamp(150px, 30vw, 220px); height: clamp(150px, 30vw, 220px); object-fit: contain; filter: drop-shadow(0 20px 36px rgba(0, 0, 0, .55)); }
 .snakeCharmerRevealIdentity h1 { margin: 18px 0 10px; color: #eee3f1; font: 750 clamp(1.35rem, 3.2vw, 2rem)/1.2 Georgia, serif; }
 .snakeCharmerRevealIdentity h2 { margin: 0; font: 700 clamp(2rem, 6vw, 3.4rem)/1.05 Georgia, serif; }
-.snakeCharmerReveal > button { min-width: 260px; padding: 13px 24px; justify-self: center; border: 1px solid rgba(238, 217, 153, .45); border-radius: 999px; color: #201524; background: #ecd47e; font: inherit; font-weight: 850; cursor: pointer; }
+.snvInformationReveal.snakeCharmerReveal > button { min-width: 260px; margin-top: 0; padding: 13px 24px; border-color: rgba(238, 217, 153, .45); color: #201524; background: #ecd47e; }
 .snakeCharmerRevealPrompt { display: grid; width: min(500px, 100%); min-height: 360px; padding: clamp(26px, 6vw, 48px); align-content: space-between; border: 1px solid rgba(238, 215, 126, .24); border-radius: 30px; background: radial-gradient(circle at 50% 35%, rgba(102, 71, 52, .42), #18101f 72%); box-shadow: 0 30px 100px rgba(0, 0, 0, .72); text-align: center; }
 .snakeCharmerRevealPrompt header { display: flex; justify-content: space-between; color: #bbaec1; font-size: .8rem; font-weight: 850; }
 .snakeCharmerRevealPrompt header b { color: #efd477; }

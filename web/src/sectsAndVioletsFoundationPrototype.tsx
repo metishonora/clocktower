@@ -33,6 +33,7 @@ import {
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
+import { SectsAndVioletsReveal } from "./features/reveal/SectsAndVioletsReveal";
 import {
   SnakeCharmerIdentityReveal,
   SnakeCharmerIdentityRevealPrompt,
@@ -1761,14 +1762,17 @@ export function SectsAndVioletsFoundation({
         </aside>
       ) : null}
       {informationStep ? (
-        <div className="snvInformationRevealBackdrop">
-          <section className="snvInformationReveal" role="dialog" aria-modal="true" aria-label={`${informationStep.name} 공개`}>
-            <span>정보 공개</span>
-            <h2>{informationStep.name}</h2>
-            <p>{informationStep.summary}</p>
-            <button ref={informationCloseRef} type="button" aria-label="정보 공개 닫기" onClick={() => setInformationStepId(undefined)}>닫기</button>
-          </section>
-        </div>
+        <SectsAndVioletsReveal
+          dialogLabel={`${informationStep.name} 공개`}
+          closeLabel="닫기"
+          closeAriaLabel="정보 공개 닫기"
+          closeButtonRef={informationCloseRef}
+          onClose={() => setInformationStepId(undefined)}
+        >
+          <span>정보 공개</span>
+          <h2>{informationStep.name}</h2>
+          <p>{informationStep.summary}</p>
+        </SectsAndVioletsReveal>
       ) : null}
       {returnConfirmOpen ? (
         <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeReturnConfirmation(); }}>

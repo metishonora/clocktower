@@ -1,5 +1,6 @@
 import type { PendingIdentityReveal, Player } from "../../core/types";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
+import { SectsAndVioletsReveal } from "../reveal/SectsAndVioletsReveal";
 import "./snakeCharmerIdentityReveal.css";
 
 export function SnakeCharmerIdentityReveal({
@@ -14,22 +15,19 @@ export function SnakeCharmerIdentityReveal({
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const evil = reveal.payload.alignment === "evil";
   return (
-    <div className="snakeCharmerRevealBackdrop">
-      <section
-        className={`snakeCharmerReveal ${evil ? "evil" : "good"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`역할 변경 공개 ${reveal.sequence}/${total}`}
-      >
-        <div className="snakeCharmerRevealIdentity">
-          <span>{evil ? "악" : "선"}</span>
-          {asset ? <img src={asset.src} alt="" /> : null}
-          <h1>당신의 직업이 변경되었습니다</h1>
-          <h2>{asset?.label ?? reveal.payload.characterId}</h2>
-        </div>
-        <button type="button" onClick={onConfirm}>확인했다면 눈을 감으세요</button>
-      </section>
-    </div>
+    <SectsAndVioletsReveal
+      dialogLabel={`역할 변경 공개 ${reveal.sequence}/${total}`}
+      className={`snakeCharmerReveal ${evil ? "evil" : "good"}`}
+      closeLabel="확인했다면 눈을 감으세요"
+      onClose={onConfirm}
+    >
+      <div className="snakeCharmerRevealIdentity">
+        <span>{evil ? "악" : "선"}</span>
+        {asset ? <img src={asset.src} alt="" /> : null}
+        <h1>당신의 직업이 변경되었습니다</h1>
+        <h2>{asset?.label ?? reveal.payload.characterId}</h2>
+      </div>
+    </SectsAndVioletsReveal>
   );
 }
 
