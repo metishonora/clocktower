@@ -1,0 +1,354 @@
+import { useMemo, type CSSProperties } from "react";
+import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
+import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import "./issue116PhaseHandoffPrototype.css";
+
+export type LiveHandoffKind = "nomination" | "vote" | "demon";
+export type LiveHandoff = { kind: LiveHandoffKind; complete: boolean };
+
+export type LivePlayer = Player & {
+  characterName: string;
+  characterKind: "townsfolk" | "outsider" | "minion" | "demon";
+};
+
+export function SectsAndVioletsLiveProgress({
+  replayState,
+  phaseLabel,
+  operationBusy,
+  actorRoleName,
+  actorSummary,
+  onGoToGrimoire,
+  onStartNomination,
+  onEndNominations,
+  onConfirmExecution,
+  onStartDemonAttack,
+  onAdvance,
+  onResolveManual,
+  onShowActorDetails,
+}: {
+  replayState: ReplayState;
+  phaseLabel: string;
+  operationBusy: boolean;
+  actorRoleName?: string;
+  actorSummary?: string;
+  onGoToGrimoire: () => void;
+  onStartNomination: () => void;
+  onEndNominations: () => void;
+  onConfirmExecution: () => void;
+  onStartDemonAttack: () => void;
+  onAdvance: () => void;
+  onResolveManual: (outcome: "handled" | "notApplicable") => void;
+  onShowActorDetails: () => void;
+}) {
+  const step = replayState.currentStep;
+  const dayState = replayState.dayState;
+  const candidate = playerById(replayState.players, dayState?.executionCandidate?.nomineeId);
+  const actor = playerById(replayState.players, step?.playerId);
+  const isDay = replayState.phase === "day";
+
+  return (
+    <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "낮 진행" : "이후 밤 진행"}>
+      <header className="snvFirstNightHeader">
+        <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
+        <h2>{phaseLabel}</h2>
+      </header>
+      <div className="snvFirstNightPrimary">
+        {step?.requiredInput.kind === "nomination" ? (
+          <article className="snvCurrentStep issue116CurrentStep">
+            <h3>지명 및 투표</h3>
+            <div className="issue116CandidateSummary" aria-label="현재 최고 득표">
+              <strong>{candidate?.name ?? "후보 없음"}</strong>
+              <span>{dayState?.highestVoteCount ?? 0}표</span>
+            </div>
+            <div className="snvStepActions issue116NominationActions">
+              <button type="button" disabled={operationBusy} onClick={onStartNomination}>← 지명하기</button>
+              <button type="button" className="secondary" disabled={operationBusy} onClick={onEndNominations}>지명 종료</button>
+            </div>
+          </article>
+        ) : step?.stepType === "execution" || step?.stepType === "executionDeath" ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116ExecutionStep" role="group" aria-label="처형 결정">
+            <div className="issue116ExecutionTarget">
+              <span>처형 대상</span>
+              <strong>{candidate?.name ?? "없음"}</strong>
+            </div>
+            <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>확정</button>
+          </article>
+        ) : step?.id.endsWith(":demon") && actor ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="악마 공격">
+            <div className="issue116ActorIdentity">
+              <button type="button" className="issue116ActorRoleButton" aria-label={`${actorRoleName} 상세 정보`} onClick={onShowActorDetails}>
+                {sectsAndVioletsCharacterAsset(actor.actualCharacter) ? <img src={sectsAndVioletsCharacterAsset(actor.actualCharacter)!.src} alt="" /> : null}
+                <h3>{actorRoleName}</h3>
+              </button>
+              <strong>{actor.name}</strong>
+            </div>
+            <p className="issue116AbilitySummary">{actorSummary}</p>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartDemonAttack}>← 공격</button></div>
+          </article>
+        ) : step ? (
+          <article className={`snvCurrentStep issue116CurrentStep${isDay ? " snvDayStep" : ""}`}>
+            {actor && step.character ? (
+              <button type="button" className="snvCurrentStepIdentity interactive" aria-label={`${actorRoleName} 상세 정보`} onClick={onShowActorDetails}>
+                {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt="" /> : null}
+                <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorRoleName}</span>
+              </button>
+            ) : <h3>{stepLabel(step)}</h3>}
+            {actor ? <p>{actor.name}</p> : null}
+            <div className="snvStepActions">
+              {step.support === "manual" ? (
+                <>
+                  <button type="button" disabled={operationBusy} onClick={() => onResolveManual("handled")}>처리 완료</button>
+                  <button type="button" className="secondary" disabled={operationBusy} onClick={() => onResolveManual("notApplicable")}>해당 없음</button>
+                </>
+              ) : <button type="button" disabled={operationBusy} onClick={onAdvance}>{advanceLabel(step)}</button>}
+            </div>
+          </article>
+        ) : null}
+      </div>
+      <PhaseOverview replayState={replayState} />
+    </section>
+  );
+}
+
+export function SectsAndVioletsLiveGrimoire({
+  players,
+  phaseLabel,
+  currentStep,
+  dayState,
+  handoff,
+  nominatorId,
+  nomineeId,
+  voterIds,
+  targetId,
+  operationBusy,
+  onSeatClick,
+  onConfirm,
+  onReturn,
+  onCancelNomination,
+  onGoToProgress,
+  onReturnToSetup,
+}: {
+  players: LivePlayer[];
+  phaseLabel: string;
+  currentStep: PhaseStep | null;
+  dayState?: DayState;
+  handoff?: LiveHandoff;
+  nominatorId?: string;
+  nomineeId?: string;
+  voterIds: string[];
+  targetId?: string;
+  operationBusy: boolean;
+  onSeatClick: (playerId: string) => void;
+  onConfirm: () => void;
+  onReturn: () => void;
+  onCancelNomination: () => void;
+  onGoToProgress: () => void;
+  onReturnToSetup: () => void;
+}) {
+  const desktopPositions = useMemo(() => rectangularSeatPositions(players.length, false), [players.length]);
+  const mobilePositions = useMemo(() => rectangularSeatPositions(players.length, true), [players.length]);
+  const heights = grimoireHeights(players.length);
+  const sizeStyle = {
+    "--grimoire-height": `${heights.desktop}px`,
+    "--mobile-grimoire-height": `${heights.mobile}px`,
+  } as CSSProperties;
+  const actorId = currentStep?.playerId;
+  const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
+  const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
+  const modeClass = handoff?.kind === "nomination"
+    ? " issue116NominationMode"
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" ? " issue116AttackMode" : "";
+  const nominator = playerById(players, nominatorId);
+  const nominee = playerById(players, nomineeId);
+  const target = playerById(players, targetId);
+  const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
+    : handoff?.kind === "demon" ? Boolean(targetId) : true;
+
+  return (
+    <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
+      {handoff ? (
+        <div className="snvSeatingToolbar" aria-label="마도서 도구">
+          <span className="issue116PhaseChip">{phaseLabel}</span>
+          {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
+          {handoff.kind === "nomination" ? <button type="button" onClick={onCancelNomination}>지명 취소 →</button> : null}
+        </div>
+      ) : (
+        <div className="snvSeatingToolbar" aria-label="마도서 도구">
+          <button type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={onReturnToSetup}><span aria-hidden="true">←</span></button>
+        </div>
+      )}
+      <div className={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}`} style={sizeStyle}>
+        <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
+          {players.map((player, index) => {
+            const selected = handoff?.kind === "nomination"
+              ? player.id === nominatorId || player.id === nomineeId
+              : handoff?.kind === "vote" ? voterIds.includes(player.id) : player.id === targetId;
+            const selectionRole = handoff?.kind === "nomination"
+              ? player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
+              : handoff?.kind === "vote" && selected ? "투표" : handoff?.kind === "demon" && selected ? "공격 대상" : undefined;
+            const selectionClass = selectionRole === "지명자" ? " issue116NominatorSeat"
+              : selectionRole === "피지명자" ? " issue116NomineeSeat"
+                : selectionRole === "투표" ? " issue116VoterSeat"
+                  : selectionRole === "공격 대상" ? " issue116DemonTargetSeat" : "";
+            const nominationSelectingNominator = handoff?.kind === "nomination" && !nominatorId;
+            const ineligible = nominationSelectingNominator
+              ? !dayState?.eligibleNominatorIds.includes(player.id)
+              : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id) : false;
+            const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
+            const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
+            const deadState = showDeadVoteState && !player.alive ? player.ghostVoteUsed ? "spent" : "available" : undefined;
+            const deathLabel = deadState
+              ? handoff?.kind === "vote"
+                ? spentGhostCannotVote ? "사망, 투표 불가" : "사망, 투표 가능"
+                : nominationSelectingNominator ? "사망, 지명 불가"
+                  : ineligible ? "사망, 피지명 불가" : "사망, 피지명 가능"
+              : undefined;
+            const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
+            return (
+              <button
+                key={player.id}
+                type="button"
+                className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${actorId === player.id ? " snvCurrentActorSeat" : ""}${selected ? " issue116SelectedSeat" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${deadState === "available" ? " issue116GhostVoteSeat" : deadState === "spent" ? " issue116GhostVoteSpentSeat" : ""}`}
+                aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}${actorId === player.id ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : ""}${deathLabel ? `, ${deathLabel}` : ineligible ? ", 선택 불가" : ""}`}
+                aria-pressed={selected}
+                disabled={!handoff || handoff.complete || ineligible || spentGhostCannotVote || operationBusy}
+                style={{
+                  "--seat-x": `${desktopPositions[index].x}%`,
+                  "--seat-y": `${desktopPositions[index].y}%`,
+                  "--mobile-seat-x": `${mobilePositions[index].x}%`,
+                  "--mobile-seat-y": `${mobilePositions[index].y}%`,
+                } as CSSProperties}
+                onClick={() => onSeatClick(player.id)}
+              >
+                <span className="snvSeatNumber">{player.seat}</span>
+                {deadState === "available" ? <GhostIcon /> : asset ? <img src={asset.src} alt="" /> : null}
+                {deadState === "spent" ? <DeathShroud /> : null}
+                <span className="snvSeatPlayerName">{player.name}</span>
+                <small>{selectionRole ?? player.characterName}</small>
+              </button>
+            );
+          })}
+          {handoff?.kind === "nomination" && nominator && nominee ? (
+            <NominationArrow
+              nominatorIndex={players.indexOf(nominator)}
+              nomineeIndex={players.indexOf(nominee)}
+              label={`${nominator.name}에서 ${nominee.name}으로 지명`}
+              desktopPositions={desktopPositions}
+              mobilePositions={mobilePositions}
+            />
+          ) : null}
+          {!handoff || handoff.kind === "demon" ? (
+            <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
+              <strong>{phaseLabel}</strong>
+              <span>00:00</span>
+              {!handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
+            </div>
+          ) : null}
+        </div>
+        {handoff ? (
+          <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
+            <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : "Demon 공격"}</h2>
+            {handoff.kind === "nomination" ? (
+              <dl><div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div><div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div></dl>
+            ) : handoff.kind === "vote" ? (
+              <dl className="issue116VoteSummary">
+                <div><dt>지명</dt><dd>{playerLabel(nominator)} → {playerLabel(nominee)}</dd></div>
+                <div><dt>현재</dt><dd className={voterIds.length >= targetVotes ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>{isFirstVote ? `처형 기준 ${targetVotes}표` : `후보 기준 ${targetVotes}표`}</dd></div>
+              </dl>
+            ) : (
+              <dl><div><dt>행동자</dt><dd>{playerLabel(playerById(players, actorId))}</dd></div><div><dt>공격 대상</dt><dd>{playerLabel(target)}</dd></div></dl>
+            )}
+            {handoff.complete ? (
+              <button type="button" className={`issue116PrimaryAction${handoff.kind === "vote" ? " issue116VoteCompleteAction" : " issue116NextAction"}`} onClick={onReturn}>{handoff.kind === "vote" ? "투표 완료 →" : "다음 →"}</button>
+            ) : (
+              <button type="button" className="issue116PrimaryAction" disabled={!ready || operationBusy} onClick={onConfirm}>{confirmLabel(handoff.kind, nominator, nominee, voterIds.length, target)}</button>
+            )}
+          </aside>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function PhaseOverview({ replayState }: { replayState: ReplayState }) {
+  return (
+    <ol className="snvPhaseOverview" aria-label={replayState.phase === "day" ? "낮 순서" : "이후 밤 순서"}>
+      {replayState.phaseOverview.map((step) => (
+        <li key={step.id} className={step.status === "current" ? "current" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
+          <span>{step.status === "current" ? "현재" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
+          <strong>{stepLabel(step)}</strong>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function stepLabel(step: PhaseStep) {
+  const suffix = step.id.split(":").at(-1);
+  if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
+  if (step.stepType === "execution" || step.stepType === "executionDeath") return "처형";
+  if (suffix === "announceDeaths") return "아침 사망 발표";
+  if (suffix === "whisper") return "밀담";
+  if (suffix === "discussion") return "낮 진행";
+  if (suffix === "toNight") return "밤으로";
+  if (suffix === "toDay") return "낮으로";
+  return step.character ?? suffix ?? step.id;
+}
+
+function advanceLabel(step: PhaseStep) {
+  if (step.id.endsWith(":announceDeaths")) return "발표 완료";
+  if (step.id.endsWith(":whisper")) return "밀담 종료";
+  if (step.id.endsWith(":discussion")) return "지명 시작";
+  return "다음 →";
+}
+
+function playerById<T extends Player>(players: T[], id?: string) {
+  return id ? players.find((player) => player.id === id) : undefined;
+}
+
+function playerLabel(player?: Player) {
+  return player ? `${player.seat}번 ${player.name}` : "미선택";
+}
+
+function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Player, votes = 0, target?: Player) {
+  if (kind === "nomination") {
+    if (!nominator) return "지명자를 선택하세요";
+    if (!nominee) return "피지명자를 선택하세요";
+    return `${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
+  }
+  if (kind === "vote") return `${votes}표로 투표 확정`;
+  return target ? `${playerLabel(target)} 공격 확정` : "공격 대상을 선택하세요";
+}
+
+function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions, mobilePositions }: {
+  nominatorIndex: number;
+  nomineeIndex: number;
+  label: string;
+  desktopPositions: { x: number; y: number }[];
+  mobilePositions: { x: number; y: number }[];
+}) {
+  return <><ArrowGraphic className="desktop" label={label} start={desktopPositions[nominatorIndex]} end={desktopPositions[nomineeIndex]} /><ArrowGraphic className="mobile" start={mobilePositions[nominatorIndex]} end={mobilePositions[nomineeIndex]} /></>;
+}
+
+function ArrowGraphic({ className, label, start, end }: { className: string; label?: string; start: { x: number; y: number }; end: { x: number; y: number } }) {
+  const center = { x: 50, y: 50 };
+  const startDistance = Math.hypot(center.x - start.x, center.y - start.y);
+  const endDistance = Math.hypot(end.x - center.x, end.y - center.y);
+  const visibleStart = { x: start.x + (center.x - start.x) / startDistance * 7, y: start.y + (center.y - start.y) / startDistance * 7 };
+  const visibleEnd = { x: end.x - (end.x - center.x) / endDistance * 10, y: end.y - (end.y - center.y) / endDistance * 10 };
+  return (
+    <svg className={`issue116NominationArrow ${className}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
+      <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
+      <polyline points={`${visibleStart.x},${visibleStart.y} 50,50 ${visibleEnd.x},${visibleEnd.y}`} markerEnd={`url(#snvLiveArrow-${className})`} />
+    </svg>
+  );
+}
+
+function GhostIcon() {
+  return <svg className="issue116GhostIcon" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 50V30C14 18 21 10 32 10s18 8 18 20v20l-6-5-6 5-6-5-6 5-6-5-6 5Z" /></svg>;
+}
+
+function DeathShroud() {
+  return <span className="issue116DeathShroud" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="issue116DeathMark" d="M20 12v19M13 20h14" /></svg></span>;
+}

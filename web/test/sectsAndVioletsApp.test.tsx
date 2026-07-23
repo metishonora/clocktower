@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
-import type { GameFile, SetupPlayerInput } from "../src/core/types";
+import type { GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
 
 const core = vi.hoisted(() => ({
@@ -216,6 +216,90 @@ test("records manual work and follows the canonical first-night to day boundary"
   expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
   await user.click(within(app).getByRole("button", { name: "낮으로" }));
   expect(await within(app).findByRole("heading", { name: "2일차 낮" })).toBeTruthy();
+});
+
+test("shows the canonical nomination standing and sends the Storyteller to the Grimoire", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const players = Array.from({ length: 7 }, (_, index) => ({
+    id: `player-${index + 1}`,
+    seat: index + 1,
+    name: ["가람", "나래", "다온", "라온", "마루", "바다", "사라"][index],
+    actualCharacter: ["clockmaker", "dreamer", "snakeCharmer", "mathematician", "mutant", "evilTwin", "fangGu"][index],
+    shownCharacter: ["clockmaker", "dreamer", "snakeCharmer", "mathematician", "mutant", "evilTwin", "fangGu"][index],
+    alignment: index >= 5 ? "evil" as const : "good" as const,
+    alive: index !== 1,
+    ghostVoteUsed: index === 1,
+    deathAnnounced: index === 1,
+    systemTokenIds: [],
+    scriptTokens: [],
+    notes: "",
+  }));
+  const currentStep = {
+    id: "day:nomination:2",
+    phase: "day" as const,
+    stepType: "nomination" as const,
+    requiredInput: { kind: "nomination" as const, target: "players" as const, optional: true },
+    canSkip: true,
+    support: "automated" as const,
+  };
+  const replayState = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 8,
+    phase: "day",
+    players,
+    currentStep,
+    phaseOverview: [{ ...currentStep, status: "current" }],
+    dayState: {
+      nominations: [{
+        stepId: "day:nomination:1",
+        nominatorId: "player-1",
+        nomineeId: "player-7",
+        voterIds: ["player-1", "player-3", "player-4", "player-5"],
+        voteCount: 4,
+        ghostVoteSpentPlayerIds: [],
+      }],
+      eligibleNominatorIds: ["player-3", "player-4", "player-5", "player-6", "player-7"],
+      eligibleNomineeIds: ["player-1", "player-2", "player-3", "player-4", "player-5", "player-6"],
+      executionVoteThreshold: 3,
+      highestVoteCount: 4,
+      executionCandidate: { nomineeId: "player-7", voteCount: 4 },
+    },
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  } satisfies ReplayState;
+  core.replay
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never);
+  storage.savedGames.push(savedDayGame(players.map(({ seat, name, actualCharacter, shownCharacter }) => ({
+    seat,
+    name,
+    actualCharacter,
+    shownCharacter,
+  }))));
+
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  expect(await within(app).findByRole("heading", { name: "지명 및 투표" })).toBeTruthy();
+  expect(within(app).getByText("사라")).toBeTruthy();
+  expect(within(app).getByText("4표")).toBeTruthy();
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  expect(within(app).getByLabelText("7자리 그리모어")).toBeTruthy();
+  await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: /2번 좌석.*사망.*피지명 가능/ }));
+  await user.click(within(app).getByRole("button", { name: "3번 → 2번 지명 확정" }));
+  expect(core.propose).toHaveBeenLastCalledWith(
+    expect.anything(),
+    {
+      type: "confirmStep",
+      payload: {
+        stepId: "day:nomination:2",
+        input: { nominatorId: "player-3", nomineeId: "player-2" },
+      },
+    },
+  );
 });
 
 test("starts a production new game with fresh canonical history", async () => {
@@ -531,6 +615,37 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
     }
     this.savedGames.push(structuredClone(gameFile));
   }
+}
+
+function savedDayGame(players: SetupPlayerInput[]): GameFile {
+  return {
+    schemaVersion: 3,
+    game: {
+      scriptId: "sectsAndViolets",
+      id: "saved-day",
+      name: "S&V day",
+      createdAt: "2026-07-23T00:00:00.000Z",
+      updatedAt: "2026-07-23T00:01:00.000Z",
+      events: [
+        {
+          id: "setup-1",
+          type: "setupConfirmed",
+          phase: "setup",
+          payload: { players },
+          summary: "초기 설정 확정: 7명",
+          createdAt: "2026-07-23T00:00:00.000Z",
+        },
+        {
+          id: "phase-2",
+          type: "phaseStepConfirmed",
+          phase: "day",
+          payload: { stepId: "day:discussion", input: null },
+          summary: "낮 토론 완료",
+          createdAt: "2026-07-23T00:01:00.000Z",
+        },
+      ],
+    },
+  };
 }
 
 async function completeSevenPlayerSetup(

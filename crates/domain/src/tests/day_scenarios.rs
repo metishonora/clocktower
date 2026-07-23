@@ -837,7 +837,7 @@ fn proposal_rejects_repeated_nominators_nominees_and_dead_nominators() {
 }
 
 #[test]
-fn proposal_rejects_a_dead_nominee_with_invalid_step_input() {
+fn proposal_allows_a_dead_nominee() {
     let game = game_with_events(Value::Array(five_player_day_events_with_dead_player_two()));
     let command = json!({
         "type": "confirmStep",
@@ -854,12 +854,12 @@ fn proposal_rejects_a_dead_nominee_with_invalid_step_input() {
     let actual: Value =
         serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
 
-    assert_eq!(actual["ok"], false, "dead nominee was accepted as {actual}");
-    assert_eq!(actual["error"]["code"], "INVALID_STEP_INPUT");
+    assert_eq!(actual["ok"], true, "dead nominee was rejected as {actual}");
+    assert_eq!(actual["value"]["event"]["payload"]["nomineeId"], "player-2");
 }
 
 #[test]
-fn replay_rejects_a_dead_nominee_without_returning_partial_state() {
+fn replay_accepts_a_dead_nominee_and_keeps_them_out_of_the_next_nominee_list() {
     let mut events = five_player_day_events_with_dead_player_two();
     events.push(nomination_event_with_ghost_spending(
         1,
@@ -874,11 +874,17 @@ fn replay_rejects_a_dead_nominee_without_returning_partial_state() {
     ))
     .unwrap();
 
-    assert_eq!(actual["ok"], false, "dead nominee replayed as {actual}");
-    assert_eq!(actual["error"]["code"], "REPLAY_FAILED");
-    assert!(
-        actual.get("value").is_none(),
-        "partial replay leaked as {actual}"
+    assert_eq!(
+        actual["ok"], true,
+        "dead nominee failed to replay as {actual}"
+    );
+    assert_eq!(
+        actual["value"]["dayState"]["nominations"][0]["nomineeId"],
+        "player-2"
+    );
+    assert_eq!(
+        actual["value"]["dayState"]["eligibleNomineeIds"],
+        json!(["player-1", "player-3", "player-4", "player-5"])
     );
 }
 
@@ -906,7 +912,7 @@ fn day_state_exposes_independent_nomination_role_eligibility_in_seat_order() {
     );
     assert_eq!(
         replayed["value"]["dayState"]["eligibleNomineeIds"],
-        json!(["player-1", "player-3", "player-4"])
+        json!(["player-1", "player-2", "player-3", "player-4"])
     );
 
     let swapped_roles = json!({
@@ -960,7 +966,7 @@ fn self_nomination_is_allowed_and_uses_both_roles_for_the_day() {
     );
     assert_eq!(
         replayed["value"]["dayState"]["eligibleNomineeIds"],
-        json!(["player-1", "player-4", "player-5"])
+        json!(["player-1", "player-2", "player-4", "player-5"])
     );
 }
 

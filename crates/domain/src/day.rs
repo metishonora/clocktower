@@ -465,7 +465,7 @@ pub(crate) fn nomination_eligibility(
         .collect();
     let eligible_nominee_ids = players
         .iter()
-        .filter(|player| player.alive && !used_nominee_ids.contains(player.id.as_str()))
+        .filter(|player| !used_nominee_ids.contains(player.id.as_str()))
         .map(|player| player.id.clone())
         .collect();
 
@@ -651,7 +651,7 @@ fn nomination_eligibility_from_pairs(
             .collect(),
         players
             .iter()
-            .filter(|player| player.alive && !used_nominee_ids.contains(player.id.as_str()))
+            .filter(|player| !used_nominee_ids.contains(player.id.as_str()))
             .map(|player| player.id.clone())
             .collect(),
     )

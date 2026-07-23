@@ -52,7 +52,17 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
     let state = replay(demon, events);
     assert_eq!(state["ok"], true, "replay failed: {state}");
     let step = &state["value"]["currentStep"];
-    let command = if step["support"] == "manual" {
+    let command = if step["requiredInput"]["kind"] == "nomination" {
+        json!({
+            "type": "skipStep",
+            "payload": { "stepId": step["id"] }
+        })
+    } else if step["requiredInput"]["kind"] == "executionDecision" {
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": step["id"], "input": { "execute": false } }
+        })
+    } else if step["support"] == "manual" {
         json!({
             "type": "resolveManualStep",
             "payload": { "stepId": step["id"], "outcome": "handled" }

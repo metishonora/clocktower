@@ -7,6 +7,10 @@ use crate::{
         NightActionResolvedPayload, NightDeath, NightDeathCause, NightDeathsAnnouncedPayload,
         PhaseStepEventPayload, Proposal, ReplayState, RuleState,
     },
+    day::{
+        day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
+        validate_nomination_start_roles,
+    },
     error::{CoreError, ErrorKind},
     model::{
         Alignment, CharacterKind, CoreWarning, InputTarget, Phase, PhaseOverviewItem, PhaseStep,
@@ -66,34 +70,6 @@ fn character_step(phase: Phase, prefix: &str, character: &str, player: &Player) 
         information_prompt: None,
         pre_action_reveal: None,
     }
-}
-
-fn manual_day_step(cycle: usize) -> PhaseStep {
-    let prefix = crate::phase::phase_prefix("day", cycle);
-    PhaseStep {
-        id: format!("{prefix}:manual"),
-        phase: Phase::Day,
-        step_type: StepType::Discussion,
-        character: None,
-        player_id: None,
-        required_input: required_none(),
-        can_skip: false,
-        support: PhaseStepSupport::Manual,
-        information_prompt: None,
-        pre_action_reveal: None,
-    }
-}
-
-fn announcement_step(cycle: usize) -> PhaseStep {
-    let prefix = crate::phase::phase_prefix("day", cycle);
-    simple_step(
-        Phase::Day,
-        &prefix,
-        "announceDeaths",
-        StepType::Announcement,
-        required_none(),
-        false,
-    )
 }
 
 fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<PhaseStep> {
@@ -200,26 +176,52 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     steps
 }
 
-fn phase_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
-    let mut steps = first_night_steps(players);
-    for cycle in 1..=(events.len() + 1).max(1) {
-        let previous_night_had_canonical_demon_action = cycle > 1 && {
-            let previous_prefix = crate::phase::phase_prefix("night", cycle - 1);
-            events.iter().any(|event| {
-                matches!(
-                    &event.kind,
-                    GameEventKind::NightActionResolved { payload }
-                        if payload.step_id == format!("{previous_prefix}:demon")
-                )
-            })
-        };
-        if previous_night_had_canonical_demon_action {
-            steps.push(announcement_step(cycle));
-        }
-        steps.push(manual_day_step(cycle));
-        steps.extend(later_night_steps(players, events, cycle));
+fn phase_sequences(
+    players: &[Player],
+    events: &[GameEvent],
+    max_cycles: usize,
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> Vec<(Phase, Vec<PhaseStep>)> {
+    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players))];
+    for cycle in 1..=max_cycles.max(1) {
+        let prefix = crate::phase::phase_prefix("day", cycle);
+        let executed_player_id = events.iter().find_map(|event| match &event.kind {
+            GameEventKind::ExecutionConfirmed { payload }
+                if payload.step_id == format!("{prefix}:execution") =>
+            {
+                payload.input.player_id.clone()
+            }
+            _ => None,
+        });
+        sequences.push((
+            Phase::Day,
+            day_steps(cycle, statuses, executed_player_id, events, players),
+        ));
+        sequences.push((Phase::Night, later_night_steps(players, events, cycle)));
     }
-    steps
+    sequences
+}
+
+fn current_phase_steps(
+    players: &[Player],
+    events: &[GameEvent],
+    max_cycles: usize,
+    statuses: &HashMap<String, PhaseStepStatus>,
+) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
+    for (phase, steps) in phase_sequences(players, events, max_cycles, statuses) {
+        if steps
+            .iter()
+            .all(|step| crate::phase::step_status(&step.id, statuses).is_done())
+        {
+            continue;
+        }
+        let current = steps
+            .iter()
+            .find(|step| !crate::phase::step_status(&step.id, statuses).is_done())
+            .cloned();
+        return Some((phase, steps, current));
+    }
+    None
 }
 
 fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
@@ -326,6 +328,27 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
     let mut players = setup_players(events)?;
     for (event_index, event) in events.iter().enumerate().skip(1) {
         match &event.kind {
+            GameEventKind::DeathConfirmed { payload } => {
+                let Some(player) = players
+                    .iter_mut()
+                    .find(|player| player.id == payload.player_id && player.alive)
+                else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                player.alive = false;
+            }
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                for player_id in &payload.ghost_vote_spent_player_ids {
+                    let Some(player) = players.iter_mut().find(|player| player.id == *player_id)
+                    else {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    };
+                    if player.alive || player.ghost_vote_used {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    player.ghost_vote_used = true;
+                }
+            }
             GameEventKind::NightActionResolved { payload } => {
                 let Some(actor_character_id) = payload.actor_character_id.as_deref() else {
                     return Err(ErrorKind::ReplayFailed.into_error());
@@ -458,10 +481,44 @@ fn phase_state(
     players: &[Player],
     events: &[GameEvent],
 ) -> Result<(Phase, Option<PhaseStep>, Vec<PhaseOverviewItem>), CoreError> {
-    let steps = phase_steps(players, events);
     let mut statuses = HashMap::new();
 
-    for event in events.iter().skip(1) {
+    for (event_index, event) in events.iter().enumerate().skip(1) {
+        if let GameEventKind::ManualPhaseStepResolved { payload } = &event.kind {
+            if let Some(prefix) = payload.step_id.strip_suffix(":manual") {
+                let players_at_event = replay_players(&events[..event_index])?;
+                let Some((phase, _, current)) = current_phase_steps(
+                    &players_at_event,
+                    &events[..event_index],
+                    events.len() + 2,
+                    &statuses,
+                ) else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                if phase != Phase::Day
+                    || event.phase != Phase::Day
+                    || !current.is_some_and(|step| step.id.starts_with(&format!("{prefix}:")))
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                for suffix in [
+                    "announceDeaths",
+                    "whisper",
+                    "discussion",
+                    "execution",
+                    "toNight",
+                ] {
+                    statuses.insert(
+                        format!("{prefix}:{suffix}"),
+                        PhaseStepStatus::ManualComplete,
+                    );
+                }
+                statuses.insert(format!("{prefix}:nomination:1"), PhaseStepStatus::Skipped);
+                statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
+                continue;
+            }
+        }
+
         let (event_step_id, status) = match &event.kind {
             GameEventKind::PhaseStepConfirmed { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
@@ -479,12 +536,37 @@ fn phase_state(
             GameEventKind::NightDeathsAnnounced { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
+            GameEventKind::NominationStarted { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::PhaseStepSkipped { payload } => {
+                (&payload.step_id, PhaseStepStatus::Skipped)
+            }
+            GameEventKind::ExecutionConfirmed { payload }
+            | GameEventKind::NoExecutionConfirmed { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::DeathConfirmed { payload } => (
+                payload
+                    .step_id
+                    .as_ref()
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+                PhaseStepStatus::Complete,
+            ),
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         };
-        let current = steps
-            .iter()
-            .find(|step| !statuses.contains_key(&step.id))
-            .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+        let players_at_event = replay_players(&events[..event_index])?;
+        let Some((_, _, Some(current))) = current_phase_steps(
+            &players_at_event,
+            &events[..event_index],
+            events.len() + 2,
+            &statuses,
+        ) else {
+            return Err(ErrorKind::ReplayFailed.into_error());
+        };
         let legacy_manual_demon =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current.id.ends_with(":demon")
@@ -495,9 +577,12 @@ fn phase_state(
         if (current.id != *event_step_id && !legacy_manual_demon) || current.phase != event.phase {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
+        if matches!(status, PhaseStepStatus::Skipped) && !current.can_skip {
+            return Err(ErrorKind::ReplayFailed.into_error());
+        }
         match (&event.kind, current.support) {
             (GameEventKind::PhaseStepConfirmed { payload }, PhaseStepSupport::Automated) => {
-                validate_required_input(&current.required_input, &payload.input, players)
+                validate_required_input(&current.required_input, &payload.input, &players_at_event)
                     .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
             }
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Manual) => {}
@@ -514,24 +599,69 @@ fn phase_state(
                     ) => {}
             (GameEventKind::NightDeathsAnnounced { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Announcement => {}
+            (GameEventKind::NominationStarted { payload }, PhaseStepSupport::Automated)
+                if current.required_input.kind == RequiredInputKind::Nomination =>
+            {
+                let prefix = step_prefix(&payload.step_id)?;
+                validate_nomination_start_roles(
+                    &players_at_event,
+                    &events[..event_index],
+                    &prefix,
+                    &payload.nominator_id,
+                    &payload.nominee_id,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
+            (GameEventKind::NominationVoteConfirmed { payload }, PhaseStepSupport::Automated)
+                if current.required_input.kind == RequiredInputKind::NominationVote =>
+            {
+                validate_nomination_event_input(payload, &players_at_event, &events[..event_index])
+                    .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
+            (GameEventKind::PhaseStepSkipped { .. }, PhaseStepSupport::Automated)
+                if current.step_type == StepType::Nomination => {}
+            (GameEventKind::ExecutionConfirmed { payload }, PhaseStepSupport::Automated)
+                if current.step_type == StepType::Execution =>
+            {
+                let prefix = step_prefix(&payload.step_id)?;
+                let expected =
+                    replay_day_state(&events[..event_index], &players_at_event, &prefix)?
+                        .execution_candidate
+                        .map(|candidate| candidate.nominee_id)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                if !payload.input.execute
+                    || payload.input.player_id.as_deref() != Some(expected.as_str())
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
+            (GameEventKind::NoExecutionConfirmed { payload }, PhaseStepSupport::Automated)
+                if current.step_type == StepType::Execution
+                    && !payload.input.execute
+                    && payload.input.player_id.is_none() => {}
+            (GameEventKind::DeathConfirmed { payload }, PhaseStepSupport::Automated)
+                if current.step_type == StepType::ExecutionDeath
+                    && current.player_id.as_deref() == Some(payload.player_id.as_str()) => {}
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         }
         statuses.insert(current.id.clone(), status);
+        if let GameEventKind::NoExecutionConfirmed { payload } = &event.kind {
+            let prefix = step_prefix(&payload.step_id)?;
+            statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
+        }
     }
 
-    let current = steps
-        .iter()
-        .find(|step| !statuses.contains_key(&step.id))
-        .cloned();
-    let phase = current.as_ref().map_or(Phase::Night, |step| step.phase);
+    let Some((phase, steps, current)) =
+        current_phase_steps(players, events, events.len() + 2, &statuses)
+    else {
+        return Ok((Phase::Night, None, vec![]));
+    };
     let current_id = current.as_ref().map(|step| step.id.as_str());
-    let current_prefix = current_id.and_then(|id| id.split(':').next());
     let overview = if current.is_none() {
         vec![]
     } else {
         steps
             .into_iter()
-            .filter(|step| step.id.split(':').next() == current_prefix)
             .map(|step| PhaseOverviewItem {
                 status: statuses.get(&step.id).copied().unwrap_or_else(|| {
                     if Some(step.id.as_str()) == current_id {
@@ -574,6 +704,15 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let players = replay_players(&game_file.game.events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &players);
     let (phase, current_step, phase_overview) = phase_state(&players, &game_file.game.events)?;
+    let day_state = if phase == Phase::Day {
+        current_step
+            .as_ref()
+            .and_then(|step| step_prefix(&step.id).ok())
+            .map(|prefix| replay_day_state(&game_file.game.events, &players, &prefix))
+            .transpose()?
+    } else {
+        None
+    };
     let unannounced_night_death_player_ids =
         unannounced_night_death_player_ids(&game_file.game.events);
     if !unannounced_night_death_player_ids.is_empty() {
@@ -608,7 +747,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         players,
         current_step,
         phase_overview,
-        day_state: None,
+        day_state,
         warnings,
         rule_state,
         game_end: None,
@@ -624,6 +763,18 @@ pub(crate) fn propose_phase_command(
     let current_step = current_step.ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
 
     match command {
+        Command::SkipStep { payload } => {
+            if payload.step_id != current_step.id {
+                return Err(ErrorKind::StaleStep.into_error());
+            }
+            if !current_step.can_skip {
+                return Err(ErrorKind::StepCannotBeSkipped.into_error());
+            }
+            if current_step.step_type == StepType::Nomination {
+                return crate::proposal::propose_nomination_closed(game_file, &current_step);
+            }
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::ResolveManualStep { payload } => {
             if payload.step_id != current_step.id {
                 return Err(ErrorKind::StaleStep.into_error());
@@ -652,6 +803,39 @@ pub(crate) fn propose_phase_command(
                 return Err(ErrorKind::StepRequiresManualResolution.into_error());
             }
             validate_required_input(&current_step.required_input, &payload.input, &players)?;
+            if current_step.required_input.kind == RequiredInputKind::Nomination {
+                return crate::proposal::propose_nomination_started(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                    payload.registration_judgments,
+                );
+            }
+            if current_step.required_input.kind == RequiredInputKind::NominationVote {
+                return crate::proposal::propose_nomination_vote(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
+            if current_step.step_type == StepType::Execution {
+                return crate::proposal::propose_execution_decision(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
+            if current_step.step_type == StepType::ExecutionDeath {
+                return crate::proposal::propose_execution_death(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
             if current_step.id.ends_with(":demon") {
                 return propose_demon_attack(game_file, &current_step, &players, payload.input);
             }

@@ -3,6 +3,7 @@ import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
 import type {
+  Command,
   GameEvent,
   GameFile,
   PhaseStep,
@@ -11,6 +12,17 @@ import type {
   SectsAndVioletsSessionState,
   SetupDistribution,
 } from "./core/types";
+import {
+  SectsAndVioletsLiveGrimoire,
+  SectsAndVioletsLiveProgress,
+  type LiveHandoff,
+  type LivePlayer,
+} from "./sectsAndVioletsLivePhase";
+import {
+  grimoireHeights,
+  rectangularSeatPositions,
+} from "./sectsAndVioletsGrimoireLayout";
+export { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import {
   exportGameFileJson,
   importGameFileJson,
@@ -169,6 +181,11 @@ export function SectsAndVioletsFoundation({
   const [autosaveRevision, setAutosaveRevision] = useState(0);
   const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<string>();
+  const [liveHandoff, setLiveHandoff] = useState<LiveHandoff>();
+  const [liveNominatorId, setLiveNominatorId] = useState<string>();
+  const [liveNomineeId, setLiveNomineeId] = useState<string>();
+  const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
+  const [liveTargetId, setLiveTargetId] = useState<string>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
@@ -239,6 +256,16 @@ export function SectsAndVioletsFoundation({
     ? replayState.phase === "firstNight" ? "firstNight" : replayState.phase === "day" ? "day" : "laterNight"
     : playPhase;
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
+  const livePlayers = useMemo<LivePlayer[]>(() => (replayState?.players ?? []).map((player) => {
+    const character = characters.find((candidate) => candidate.id === player.actualCharacter);
+    return {
+      ...player,
+      characterName: character?.name ?? player.actualCharacter,
+      characterKind: character?.kind ?? "townsfolk",
+    };
+  }), [replayState?.players]);
+  const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
+  const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -711,6 +738,11 @@ export function SectsAndVioletsFoundation({
     setRevealedStepIds([]);
     setDayComplete(false);
     setDetailsOpen(false);
+    setLiveHandoff(undefined);
+    setLiveNominatorId(undefined);
+    setLiveNomineeId(undefined);
+    setLiveVoterIds([]);
+    setLiveTargetId(undefined);
   }
 
   const choosePlayerCount = (count: number) => {
@@ -951,14 +983,15 @@ export function SectsAndVioletsFoundation({
   const applyCanonicalEvent = async (
     event: GameEvent,
     checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"],
-  ): Promise<boolean> => {
-    if (!coreAdapter) return false;
+    baseGameFile: GameFile = gameFile,
+  ): Promise<{ gameFile: GameFile; replayState: ReplayState } | undefined> => {
+    if (!coreAdapter) return undefined;
     const nextGameFile: GameFile = {
-      ...gameFile,
+      ...baseGameFile,
       game: {
-        ...gameFile.game,
+        ...baseGameFile.game,
         updatedAt: new Date().toISOString(),
-        events: [...gameFile.game.events, event],
+        events: [...baseGameFile.game.events, event],
       },
     };
     const replayed = await coreAdapter.replay(nextGameFile).catch((error: unknown) => ({
@@ -970,7 +1003,7 @@ export function SectsAndVioletsFoundation({
     }));
     if (!replayed.ok) {
       setOperationError(replayed.error.messageKo);
-      return false;
+      return undefined;
     }
     setReplayState(replayed.value);
     setGameFile(nextGameFile);
@@ -987,7 +1020,156 @@ export function SectsAndVioletsFoundation({
     setInformationStepId(undefined);
     setDayComplete(false);
     markAutosaveNeeded();
-    return true;
+    return { gameFile: nextGameFile, replayState: replayed.value };
+  };
+
+  const proposeAndApplyLiveCommand = async (
+    command: Command,
+    baseGameFile: GameFile = gameFile,
+  ) => {
+    if (!coreAdapter) return undefined;
+    const result = await coreAdapter.propose(baseGameFile, command).catch((error: unknown) => ({
+      ok: false as const,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "단계 확정 실패",
+      },
+    }));
+    if (!result.ok) {
+      setOperationError(result.error.messageKo);
+      return undefined;
+    }
+    return applyCanonicalEvent(result.value.event, "phase", baseGameFile);
+  };
+
+  const startLiveHandoff = (kind: LiveHandoff["kind"]) => {
+    setLiveHandoff({ kind, complete: false });
+    if (kind === "nomination") {
+      setLiveNominatorId(undefined);
+      setLiveNomineeId(undefined);
+      setLiveVoterIds([]);
+    }
+    if (kind === "demon") setLiveTargetId(undefined);
+    navigateToTab("seating");
+  };
+
+  const chooseLiveSeat = (playerId: string) => {
+    if (!liveHandoff || liveHandoff.complete) return;
+    if (liveHandoff.kind === "nomination") {
+      if (!liveNominatorId) {
+        if (!replayState?.dayState?.eligibleNominatorIds.includes(playerId)) return;
+        setLiveNominatorId(playerId);
+        return;
+      }
+      if (playerId === liveNominatorId) {
+        setLiveNominatorId(undefined);
+        setLiveNomineeId(undefined);
+        return;
+      }
+      if (!replayState?.dayState?.eligibleNomineeIds.includes(playerId)) return;
+      setLiveNomineeId((current) => current === playerId ? undefined : playerId);
+      return;
+    }
+    if (liveHandoff.kind === "vote") {
+      const player = replayState?.players.find((candidate) => candidate.id === playerId);
+      if (!player || (!player.alive && player.ghostVoteUsed)) return;
+      setLiveVoterIds((current) => current.includes(playerId)
+        ? current.filter((candidate) => candidate !== playerId)
+        : [...current, playerId]);
+      return;
+    }
+    setLiveTargetId((current) => current === playerId ? undefined : playerId);
+  };
+
+  const confirmLiveHandoff = async () => {
+    const step = replayState?.currentStep;
+    if (!step || !liveHandoff || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    if (liveHandoff.kind === "nomination") {
+      if (!liveNominatorId || !liveNomineeId) {
+        setOperationBusy(false);
+        return;
+      }
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: {
+          stepId: step.id,
+          input: { nominatorId: liveNominatorId, nomineeId: liveNomineeId },
+        },
+      });
+      if (applied) {
+        setLiveVoterIds([]);
+        setLiveHandoff({ kind: "vote", complete: false });
+      }
+    } else if (liveHandoff.kind === "vote") {
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { voterIds: liveVoterIds } },
+      });
+      if (applied) setLiveHandoff({ kind: "vote", complete: true });
+    } else if (liveTargetId) {
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { playerIds: [liveTargetId] } },
+      });
+      if (applied) setLiveHandoff({ kind: "demon", complete: true });
+    }
+    setOperationBusy(false);
+  };
+
+  const returnFromLiveHandoff = () => {
+    setLiveHandoff(undefined);
+    setLiveNominatorId(undefined);
+    setLiveNomineeId(undefined);
+    setLiveVoterIds([]);
+    setLiveTargetId(undefined);
+    navigateToTab("play");
+  };
+
+  const cancelLiveNomination = () => {
+    setLiveHandoff(undefined);
+    setLiveNominatorId(undefined);
+    setLiveNomineeId(undefined);
+    navigateToTab("play");
+  };
+
+  const endLiveNominations = async () => {
+    const step = replayState?.currentStep;
+    if (!step || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    await proposeAndApplyLiveCommand({ type: "skipStep", payload: { stepId: step.id } });
+    setOperationBusy(false);
+  };
+
+  const confirmLiveExecution = async () => {
+    const step = replayState?.currentStep;
+    if (!step || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    if (step.stepType === "executionDeath") {
+      await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { died: true } },
+      });
+      setOperationBusy(false);
+      return;
+    }
+    const first = await proposeAndApplyLiveCommand({
+      type: "confirmStep",
+      payload: {
+        stepId: step.id,
+        input: { execute: Boolean(replayState.dayState?.executionCandidate) },
+      },
+    });
+    if (first?.replayState.currentStep?.stepType === "executionDeath") {
+      await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: first.replayState.currentStep.id, input: { died: true } },
+      }, first.gameFile);
+    }
+    setOperationBusy(false);
   };
 
   return (
@@ -1020,7 +1202,13 @@ export function SectsAndVioletsFoundation({
       <nav className="snvSurfaceTabs" aria-label="작업 단계">
         <button type="button" className={activeTab === "roles" ? "active" : ""} aria-current={activeTab === "roles" ? "page" : undefined} onClick={() => navigateToTab("roles")}>직업</button>
         <button type="button" className={activeTab === "seating" ? "active" : ""} aria-current={activeTab === "seating" ? "page" : undefined} disabled={!rosterConfirmed} onClick={() => navigateToTab("seating")}>마도서</button>
-        <button type="button" className={activeTab === "play" ? "active" : ""} aria-current={activeTab === "play" ? "page" : undefined} disabled={production && !seatingConfirmed} onClick={() => navigateToTab("play")}>진행</button>
+        <button
+          type="button"
+          className={activeTab === "play" ? "active" : ""}
+          aria-current={activeTab === "play" ? "page" : undefined}
+          disabled={(production && !seatingConfirmed) || Boolean(liveHandoff && !liveHandoff.complete)}
+          onClick={() => navigateToTab("play")}
+        >{liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행"}</button>
       </nav>
       {operationError ? <p className="snvOperationError" role="alert">{operationError}</p> : null}
 
@@ -1085,7 +1273,26 @@ export function SectsAndVioletsFoundation({
             </div>
           </section>
         </section>
-      ) : activeTab === "seating" ? (
+      ) : activeTab === "seating" ? production && seatingConfirmed && replayState?.currentStep ? (
+        <SectsAndVioletsLiveGrimoire
+          players={livePlayers}
+          phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          currentStep={replayState.currentStep}
+          dayState={replayState.dayState}
+          handoff={liveHandoff}
+          nominatorId={liveNominatorId}
+          nomineeId={liveNomineeId}
+          voterIds={liveVoterIds}
+          targetId={liveTargetId}
+          operationBusy={operationBusy}
+          onSeatClick={chooseLiveSeat}
+          onConfirm={() => void confirmLiveHandoff()}
+          onReturn={returnFromLiveHandoff}
+          onCancelNomination={cancelLiveNomination}
+          onGoToProgress={() => navigateToTab("play")}
+          onReturnToSetup={() => setReturnConfirmOpen(true)}
+        />
+      ) : (
         <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
           <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
             {seatingConfirmed ? (
@@ -1241,7 +1448,27 @@ export function SectsAndVioletsFoundation({
             ) : null}
           </div>
         </section>
-      ) : activeTab === "play" ? (
+      ) : activeTab === "play" ? production && replayState?.currentStep && effectivePlayPhase !== "firstNight" ? (
+        <SectsAndVioletsLiveProgress
+          replayState={replayState}
+          phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          operationBusy={operationBusy}
+          actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
+          actorSummary={liveActorCharacter?.summary}
+          onGoToGrimoire={() => navigateToTab("seating")}
+          onStartNomination={() => startLiveHandoff("nomination")}
+          onEndNominations={() => void endLiveNominations()}
+          onConfirmExecution={() => void confirmLiveExecution()}
+          onStartDemonAttack={() => startLiveHandoff("demon")}
+          onAdvance={() => void advanceFirstNight()}
+          onResolveManual={(outcome) => void advanceFirstNight(outcome)}
+          onShowActorDetails={() => {
+            if (!liveActor?.actualCharacter) return;
+            setActiveCharacterId(liveActor.actualCharacter);
+            setDetailsOpen(true);
+          }}
+        />
+      ) : (
         <section
           className={`snvManualSurface snvFirstNightSurface snvTabPanel ${effectivePlayPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
           aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "낮 진행" : "이후 밤 진행"}
@@ -1443,15 +1670,6 @@ export function SectsAndVioletsFoundation({
   );
 }
 
-export function grimoireHeights(playerCount: number): { desktop: number; mobile: number } {
-  const desktopCounts = perimeterCounts(playerCount, false);
-  const mobileCounts = perimeterCounts(playerCount, true);
-  return {
-    desktop: wrappedPerimeterHeight(Math.max(desktopCounts.right, desktopCounts.left), 88, 16, 12),
-    mobile: wrappedPerimeterHeight(Math.max(mobileCounts.right, mobileCounts.left), 76, 12, 8),
-  };
-}
-
 function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
   const suffix = step.id.split(":").at(-1) ?? step.id;
   const known = firstNightOrder.find((candidate) => (
@@ -1535,55 +1753,6 @@ function formatAutosaveTime(value: string | undefined) {
     second: "2-digit",
     hour12: false,
   }).format(new Date(value));
-}
-
-export function rectangularSeatPositions(playerCount: number, mobile: boolean): Array<{ x: number; y: number }> {
-  const counts = perimeterCounts(playerCount, mobile);
-  const horizontalStart = mobile ? 30 : 28;
-  const horizontalEnd = mobile ? 70 : 72;
-  const leftX = mobile ? 14 : 10;
-  const rightX = mobile ? 86 : 90;
-  const seatHeight = mobile ? 76 : 88;
-  const gap = mobile ? 12 : 16;
-  const padding = mobile ? 8 : 12;
-  const height = mobile ? grimoireHeights(playerCount).mobile : grimoireHeights(playerCount).desktop;
-  const topY = (padding + seatHeight / 2) / height * 100;
-  const bottomY = (height - padding - seatHeight / 2) / height * 100;
-  const maximumSideCount = Math.max(counts.right, counts.left);
-  const positions: Array<{ x: number; y: number }> = [];
-
-  positions.push(...distributedLine(counts.top, horizontalStart, horizontalEnd).map((x) => ({ x, y: topY })));
-  positions.push(...sideSlotCenters(counts.right, maximumSideCount, seatHeight, gap, padding, height).map((y) => ({ x: rightX, y })));
-  positions.push(...distributedLine(counts.bottom, horizontalEnd, horizontalStart).map((x) => ({ x, y: bottomY })));
-  positions.push(...sideSlotCenters(counts.left, maximumSideCount, seatHeight, gap, padding, height).reverse().map((y) => ({ x: leftX, y })));
-  return positions;
-}
-
-function perimeterCounts(playerCount: number, mobile: boolean) {
-  const top = mobile ? Math.min(2, playerCount) : Math.ceil(playerCount / 4);
-  const bottom = Math.min(mobile ? 2 : Math.ceil(playerCount / 4), playerCount - top);
-  const vertical = playerCount - top - bottom;
-  const right = Math.ceil(vertical / 2);
-  return { top, right, bottom, left: vertical - right };
-}
-
-function wrappedPerimeterHeight(maximumSideCount: number, seatHeight: number, gap: number, padding: number) {
-  const sideLaneHeight = maximumSideCount * seatHeight + Math.max(0, maximumSideCount - 1) * gap;
-  return padding * 2 + seatHeight * 2 + gap * 2 + sideLaneHeight;
-}
-
-function sideSlotCenters(count: number, maximumCount: number, seatHeight: number, gap: number, padding: number, height: number) {
-  if (count <= 0) return [];
-  const maximumLaneHeight = maximumCount * seatHeight + Math.max(0, maximumCount - 1) * gap;
-  const occupiedHeight = count * seatHeight + Math.max(0, count - 1) * gap;
-  const laneTop = padding + seatHeight + gap + (maximumLaneHeight - occupiedHeight) / 2;
-  return Array.from({ length: count }, (_, index) => (laneTop + seatHeight / 2 + index * (seatHeight + gap)) / height * 100);
-}
-
-function distributedLine(count: number, start: number, end: number): number[] {
-  if (count <= 0) return [];
-  if (count === 1) return [(start + end) / 2];
-  return Array.from({ length: count }, (_, index) => start + ((end - start) * index) / (count - 1));
 }
 
 function defaultAlignment(characterId: string): Alignment {

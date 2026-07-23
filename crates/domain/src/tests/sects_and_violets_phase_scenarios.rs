@@ -156,7 +156,7 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
 }
 
 #[test]
-fn first_night_enters_a_manual_day_bridge_then_the_official_later_night_order() {
+fn first_night_enters_the_canonical_day_flow_then_the_official_later_night_order() {
     let mut events = vec![setup_event()];
     for _ in 0..9 {
         append_current_resolution(&mut events);
@@ -164,10 +164,89 @@ fn first_night_enters_a_manual_day_bridge_then_the_official_later_night_order() 
 
     let day: Value = serde_json::from_str(&replay_json(&game(events.clone()).to_string())).unwrap();
     assert_eq!(day["value"]["phase"], "day", "{day}");
-    assert_eq!(day["value"]["currentStep"]["id"], "day:manual");
-    assert_eq!(day["value"]["currentStep"]["support"], "manual");
+    assert_eq!(day["value"]["currentStep"]["id"], "day:announceDeaths");
+    assert_eq!(day["value"]["currentStep"]["support"], "automated");
 
+    for _ in 0..3 {
+        append_current_resolution(&mut events);
+    }
+    let nomination: Value =
+        serde_json::from_str(&replay_json(&game(events.clone()).to_string())).unwrap();
+    assert_eq!(nomination["value"]["currentStep"]["id"], "day:nomination:1");
+    assert_eq!(
+        nomination["value"]["dayState"]["eligibleNominatorIds"],
+        json!(["player-1", "player-2", "player-3", "player-4", "player-5", "player-6", "player-7"])
+    );
+
+    append_proposed_event(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "day:nomination:1",
+                "input": { "nominatorId": "player-1", "nomineeId": "player-5" }
+            }
+        }),
+    );
+    let vote: Value =
+        serde_json::from_str(&replay_json(&game(events.clone()).to_string())).unwrap();
+    assert_eq!(
+        vote["value"]["currentStep"]["id"], "day:nomination:1:vote",
+        "{vote}"
+    );
+    assert_eq!(
+        vote["value"]["dayState"]["activeNomination"]["nomineeId"],
+        "player-5"
+    );
+
+    append_proposed_event(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "day:nomination:1:vote",
+                "input": { "voterIds": ["player-1", "player-2", "player-3", "player-4"] }
+            }
+        }),
+    );
+    let next_nomination: Value =
+        serde_json::from_str(&replay_json(&game(events.clone()).to_string())).unwrap();
+    assert_eq!(
+        next_nomination["value"]["currentStep"]["id"],
+        "day:nomination:2"
+    );
+    assert_eq!(next_nomination["value"]["dayState"]["highestVoteCount"], 4);
+    assert_eq!(
+        next_nomination["value"]["dayState"]["executionCandidate"]["nomineeId"],
+        "player-5"
+    );
+
+    append_proposed_event(
+        &mut events,
+        json!({
+            "type": "skipStep",
+            "payload": { "stepId": "day:nomination:2" }
+        }),
+    );
+    let execution: Value =
+        serde_json::from_str(&replay_json(&game(events.clone()).to_string())).unwrap();
+    assert_eq!(execution["value"]["currentStep"]["id"], "day:execution");
+    append_proposed_event(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "day:execution", "input": { "execute": true } }
+        }),
+    );
+    append_proposed_event(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "day:executionDeath", "input": { "died": true } }
+        }),
+    );
     append_current_resolution(&mut events);
+
     let night: Value = serde_json::from_str(&replay_json(&game(events).to_string())).unwrap();
     assert_eq!(night["value"]["phase"], "night", "{night}");
     let ids = night["value"]["phaseOverview"]
@@ -190,6 +269,14 @@ fn first_night_enters_a_manual_day_bridge_then_the_official_later_night_order() 
     );
     assert_eq!(night["value"]["phaseOverview"][3]["character"], "vortox");
     assert_eq!(night["value"]["phaseOverview"][3]["support"], "automated");
+}
+
+fn append_proposed_event(events: &mut Vec<Value>, command: Value) {
+    let before = game(events.clone());
+    let proposed: Value =
+        serde_json::from_str(&propose_json(&before.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposed["ok"], true, "{proposed}");
+    events.push(proposed["value"]["event"].clone());
 }
 
 #[test]
