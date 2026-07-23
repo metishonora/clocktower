@@ -4,6 +4,7 @@
 .issue120GlobalUndo svg { width: 27px; height: 27px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .issue120GlobalUndo:hover:not(:disabled), .issue120GlobalUndo:focus-visible { color: #fff; background: #b73552; box-shadow: 0 0 0 4px rgba(255, 114, 139, .18), 0 12px 30px rgba(63, 8, 25, .38); outline: none; }
 .issue120GlobalUndo:disabled { opacity: .42; cursor: wait; }
+.issue120GlobalUndo.empty { opacity: 0; pointer-events: none; }
 .issue120IconTooltip { position: absolute; z-index: 8; top: calc(100% + 9px); right: 0; width: max-content; padding: 7px 9px; border: 1px solid rgba(235, 216, 240, .18); border-radius: 8px; color: #f8edf9; background: rgba(25, 13, 31, .94); box-shadow: 0 9px 22px rgba(9, 3, 12, .32); font-size: .7rem; font-weight: 850; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
 .issue120GlobalUndo:hover .issue120IconTooltip, .issue120GlobalUndo:focus-visible .issue120IconTooltip { opacity: 1; transform: translateY(0); }
 .snvDayMode .issue120GlobalUndo { border-color: rgba(156, 40, 65, .34); color: #a52f49; background: rgba(255, 241, 244, .82); box-shadow: 0 10px 26px rgba(114, 36, 56, .16); }
@@ -21,27 +22,25 @@
 .issue120StorageSurface { display: grid; max-width: 1180px; margin: 0 auto; gap: 20px; }
 .issue120StorageActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .issue120StorageActions article { display: grid; min-height: 142px; padding: 20px 22px; align-content: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 22px; background: rgba(20, 12, 26, .58); box-shadow: 0 18px 52px rgba(8, 3, 12, .22); }
-.issue120StorageActions span, .issue120EventLogHeader span { color: #c9b4d1; font-size: .68rem; font-weight: 900; letter-spacing: .1em; }
+.issue120StorageActions span { color: #c9b4d1; font-size: .68rem; font-weight: 900; letter-spacing: .1em; }
 .issue120StorageActions h2 { margin: 7px 0 18px; font: 1.35rem Georgia, serif; }
 .issue120StorageActions button, .issue120PagePlaceholder button { width: max-content; margin-top: auto; padding: 10px 14px; border: 1px solid rgba(214, 169, 226, .45); border-radius: 11px; color: inherit; background: #82509a; font: inherit; font-size: .76rem; font-weight: 850; cursor: pointer; }
 .issue120EventLog { min-width: 0; overflow: hidden; border: 1px solid rgba(231, 208, 239, .16); border-radius: 24px; background: rgba(20, 12, 26, .64); box-shadow: 0 22px 64px rgba(8, 3, 12, .3); }
 .issue120EventLogHeader { display: flex; padding: 20px 22px 17px; align-items: end; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
-.issue120EventLog h2 { margin: 5px 0 0; font: 1.8rem Georgia, serif; }
+.issue120EventLog h2 { margin: 0; font: 1.8rem Georgia, serif; }
 .issue120EventLogHeader > strong { color: #f2d8f7; font-size: .82rem; }
 .issue120ScrollableEventList { box-sizing: border-box; max-height: min(42dvh, 32rem); margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: rgba(214, 169, 226, .52) transparent; }
 .issue120ScrollableEventList:focus-visible { outline: 2px solid #d6a9e2; outline-offset: -3px; }
-.issue120ScrollableEventList li { display: grid; min-height: 64px; padding: 13px 22px; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid rgba(231, 208, 239, .09); }
+.issue120ScrollableEventList li { display: grid; min-height: 64px; padding: 13px 22px; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; border-bottom: 1px solid rgba(231, 208, 239, .09); }
 .issue120ScrollableEventList li:last-child { border-bottom: 0; }
 .issue120ScrollableEventList li > span { color: #987fa1; font: .74rem Georgia, serif; }
 .issue120ScrollableEventList p { min-width: 0; margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
-.issue120ScrollableEventList small { padding: 4px 7px; border-radius: 999px; color: #f3d8f8; background: rgba(130, 80, 154, .42); font-size: .62rem; font-weight: 900; white-space: nowrap; }
 .issue120EmptyLog { margin: 0; padding: 48px 22px; color: #baaac3; text-align: center; }
 .snvDayMode .issue120StorageActions article, .snvDayMode .issue120EventLog { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .7); box-shadow: 0 20px 54px rgba(83, 51, 92, .13); }
-.snvDayMode .issue120StorageActions span, .snvDayMode .issue120EventLogHeader span { color: #715c76; }
+.snvDayMode .issue120StorageActions span { color: #715c76; }
 .snvDayMode .issue120EventLogHeader, .snvDayMode .issue120ScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
 .snvDayMode .issue120EventLogHeader > strong { color: #70477b; }
 .snvDayMode .issue120ScrollableEventList li > span { color: #917c96; }
-.snvDayMode .issue120ScrollableEventList small { color: #fff; background: #82509a; }
 .issue120PagePlaceholder { display: grid; box-sizing: border-box; max-width: 1180px; min-height: 410px; margin: 0 auto; padding: 42px; align-content: center; justify-items: start; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
 .issue120PagePlaceholder > span { color: #c9b4d1; font-size: .72rem; font-weight: 900; letter-spacing: .1em; }
 .issue120PagePlaceholder h2 { margin: 9px 0 12px; font: clamp(2rem, 5vw, 3.5rem) Georgia, serif; }
@@ -50,15 +49,21 @@
 .snvDayMode .issue120PagePlaceholder > span, .snvDayMode .issue120PagePlaceholder p { color: #6e5973; }
 .issue120DialogBackdrop { position: fixed; z-index: 120; inset: 0; display: grid; padding: 22px; place-items: center; background: rgba(17, 9, 22, .7); backdrop-filter: blur(5px); }
 .issue120Dialog { display: grid; box-sizing: border-box; width: min(500px, 100%); padding: 25px; gap: 13px; border: 1px solid rgba(231, 208, 239, .28); border-radius: 22px; color: #f9f1fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 28px 90px rgba(4, 1, 7, .58); }
-.issue120Dialog > span { color: #d6addf; font-size: .66rem; font-weight: 900; letter-spacing: .13em; }
 .issue120Dialog h2 { margin: 0; font: 1.75rem Georgia, serif; }
-.issue120Dialog > strong { padding: 13px 14px; border: 1px solid rgba(255, 115, 137, .28); border-radius: 12px; color: #ffdce2; background: rgba(139, 38, 62, .19); line-height: 1.5; }
 .issue120Dialog p { margin: 0; color: #cabace; font-size: .84rem; line-height: 1.55; }
+.issue120UndoDialog h2 { font-size: clamp(2.4rem, 8vw, 3.4rem); line-height: 1; }
+.issue120Dialog .issue120UndoLabel { margin-top: 5px; color: #f2d8f7; font-size: .78rem; font-weight: 900; }
+.issue120UndoEventStack { max-height: min(34dvh, 18rem); margin: 0; padding: 0; overflow-y: auto; border: 1px solid rgba(255, 115, 137, .28); border-radius: 14px; background: rgba(139, 38, 62, .13); list-style: none; overscroll-behavior: contain; scrollbar-color: rgba(255, 156, 173, .54) transparent; }
+.issue120UndoEventStack li { display: grid; min-height: 58px; padding: 11px 13px; grid-template-columns: 31px minmax(0, 1fr); align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 156, 173, .14); }
+.issue120UndoEventStack li:last-child { border-bottom: 0; }
+.issue120UndoEventStack li > span { color: #e6aebb; font: .72rem Georgia, serif; }
+.issue120UndoEventStack li p { color: #ffe8ed; overflow-wrap: anywhere; }
+.issue120Dialog .issue120UndoNotice { margin-top: 2px; }
 .issue120Dialog footer { display: flex; margin-top: 7px; justify-content: flex-end; gap: 8px; }
 .issue120Dialog button { min-width: 92px; min-height: 44px; border: 1px solid rgba(231, 208, 239, .24); border-radius: 11px; color: inherit; background: rgba(255, 255, 255, .07); font: inherit; font-weight: 850; cursor: pointer; }
 .issue120Dialog button.destructive { border-color: #bc405b; color: #fff; background: #a92f4b; }
 .issue120ErrorDialog { border-color: rgba(255, 103, 126, .42); }
-.issue120ErrorDialog > span { color: #ff9cad; }
+.issue120ErrorDialog h2 { color: #ffb0bd; font-size: clamp(2.2rem, 7vw, 3rem); line-height: 1.05; }
 .issue120ErrorDialog footer button { border-color: #c55a70; background: #9e324b; }
 .issue120WarningNotification { position: fixed; z-index: 105; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; box-sizing: border-box; width: min(520px, calc(100vw - 36px)); min-height: 82px; padding: 14px 14px 14px 16px; grid-template-columns: 34px minmax(0, 1fr) 36px; align-items: start; gap: 10px; border: 1px solid #d3a73d; border-radius: 17px; color: #33240b; background: #fff6d6; box-shadow: 0 18px 54px rgba(38, 25, 5, .32); }
 .issue120WarningNotification > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff8dd; background: #9c6e11; font-weight: 950; }
@@ -82,7 +87,6 @@
   .issue120EventLog h2 { font-size: 1.5rem; }
   .issue120ScrollableEventList { max-height: 40dvh; }
   .issue120ScrollableEventList li { min-height: 60px; padding: 12px 16px; grid-template-columns: 27px minmax(0, 1fr); gap: 9px; }
-  .issue120ScrollableEventList small { grid-column: 2; width: max-content; }
   .issue120PagePlaceholder { min-height: 350px; padding: 28px 24px; }
   .issue120WarningNotification { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
 }

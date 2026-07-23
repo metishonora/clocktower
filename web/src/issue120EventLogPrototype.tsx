@@ -17,6 +17,11 @@ type PrototypeCheckpoint = {
   summary: string;
 };
 
+type NumberedPrototypeEvent = {
+  event: PrototypeEvent;
+  number: number;
+};
+
 const initialEvents: PrototypeEvent[] = [
   { id: "setup", checkpointId: "setup", summary: "초기 설정 확정: 7명" },
   { id: "philosopher", checkpointId: "philosopher", summary: "철학자 단계 처리 완료" },
@@ -59,6 +64,12 @@ export function Issue120EventLogPrototype() {
   const warningTriggerRef = useRef<HTMLButtonElement>(null);
 
   const latestUndoCheckpoint = [...checkpoints].reverse().find((checkpoint) => checkpoint.kind === "phase");
+  const undoEvents: NumberedPrototypeEvent[] = undoCheckpoint
+    ? events
+        .map((event, index) => ({ event, number: index + 1 }))
+        .filter(({ event }) => event.checkpointId === undoCheckpoint.id)
+        .reverse()
+    : [];
   const transitionBusy = scenario === "busy";
 
   function changeScenario(nextScenario: Scenario) {
@@ -127,7 +138,20 @@ export function Issue120EventLogPrototype() {
               </svg>
               <span className="issue120IconTooltip" role="tooltip">최근 행동 되돌리기</span>
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              className="issue120GlobalUndo empty"
+              aria-hidden="true"
+              tabIndex={-1}
+              disabled
+            >
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+                <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+              </svg>
+            </button>
+          )}
           <span
             className={`snvPhaseMark ${isDay ? "snvSunMark" : "snvMoonMark"}`}
             role="img"
@@ -177,7 +201,7 @@ export function Issue120EventLogPrototype() {
       )}
 
       {undoCheckpoint ? (
-        <UndoDialog checkpoint={undoCheckpoint} onCancel={closeUndo} onConfirm={confirmUndo} />
+        <UndoDialog events={undoEvents} onCancel={closeUndo} onConfirm={confirmUndo} />
       ) : null}
       {errorOpen ? <ErrorDialog onClose={closeError} /> : null}
       {warningVisible ? (
@@ -200,14 +224,13 @@ function StoragePage({ events }: { events: PrototypeEvent[] }) {
         <article><span>저장된 게임</span><h2>JSON 가져오기</h2><button type="button">import JSON</button></article>
       </div>
       <section className="issue120EventLog" aria-label="이벤트 로그">
-        <div className="issue120EventLogHeader"><div><span>CONFIRMED EVENTS</span><h2>이벤트 로그</h2></div><strong>{events.length}건</strong></div>
+        <div className="issue120EventLogHeader"><h2>이벤트 로그</h2><strong>{events.length}건</strong></div>
         {newestFirst.length ? (
           <ol className="issue120ScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
             {newestFirst.map((event, index) => (
               <li key={event.id}>
                 <span>{String(events.length - index).padStart(2, "0")}</span>
                 <p>{event.summary}</p>
-                {index === 0 ? <small>가장 최근</small> : null}
               </li>
             ))}
           </ol>
@@ -231,8 +254,8 @@ function PrototypePage({ activeTab, isDay }: { activeTab: Exclude<ActiveTab, "st
   );
 }
 
-function UndoDialog({ checkpoint, onCancel, onConfirm }: {
-  checkpoint: PrototypeCheckpoint;
+function UndoDialog({ events, onCancel, onConfirm }: {
+  events: NumberedPrototypeEvent[];
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -265,10 +288,17 @@ function UndoDialog({ checkpoint, onCancel, onConfirm }: {
   return (
     <div className="issue120DialogBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
       <section ref={dialogRef} className="issue120Dialog issue120UndoDialog" role="dialog" aria-modal="true" aria-labelledby="issue120-undo-title">
-        <span>UNDO CHECKPOINT</span>
-        <h2 id="issue120-undo-title">최근 완료 행동을 되돌릴까요?</h2>
-        <strong>되돌릴 행동: {checkpoint.summary}</strong>
-        <p>이 행동에 속한 확정 이벤트를 제거하고 직전 상태를 다시 재생합니다.</p>
+        <h2 id="issue120-undo-title">Undo</h2>
+        <p className="issue120UndoLabel">되돌릴 행동</p>
+        <ol className="issue120UndoEventStack" aria-label="취소될 이벤트">
+          {events.map(({ event, number }) => (
+            <li key={event.id}>
+              <span>{String(number).padStart(2, "0")}</span>
+              <p>{event.summary}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="issue120UndoNotice">위 이벤트를 취소하고 직전 상태로 돌아갑니다.</p>
         <footer><button ref={cancelRef} type="button" onClick={onCancel}>취소</button><button type="button" className="destructive" onClick={onConfirm}>되돌리기</button></footer>
       </section>
     </div>
@@ -294,7 +324,7 @@ function ErrorDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="issue120DialogBackdrop">
       <section className="issue120Dialog issue120ErrorDialog" role="dialog" aria-modal="true" aria-labelledby="issue120-error-title">
-        <span>작업 실패</span><h2 id="issue120-error-title">작업을 완료하지 못했습니다</h2><p>{severeError}</p>
+        <h2 id="issue120-error-title">작업 실패</h2><p>{severeError}</p>
         <footer><button ref={confirmRef} type="button" onClick={onClose}>확인</button></footer>
       </section>
     </div>

@@ -42,17 +42,28 @@ test("shows an always-open scrollable Event Log in newest-first presentation ord
   const summaries = within(list).getAllByRole("listitem").map((item) => item.textContent);
   expect(summaries[0]).toContain("처형 결과: 4번 도윤 사망");
   expect(summaries.at(-1)).toContain("초기 설정 확정: 7명");
+  expect(within(log).queryByText("CONFIRMED EVENTS")).toBeNull();
+  expect(within(log).queryByText("가장 최근")).toBeNull();
 });
 
-test("confirms the latest checkpoint summary and removes its grouped events", async () => {
+test("stacks every event removed by the latest checkpoint before confirmation", async () => {
   const user = userEvent.setup();
   render(<Issue120EventLogPrototype />);
   const prototype = screen.getByRole("main", { name: "이슈 120 이벤트 로그 프로토타입" });
   const undo = within(prototype).getByRole("button", { name: /최근 행동 되돌리기/ });
 
   await user.click(undo);
-  let dialog = screen.getByRole("dialog", { name: "최근 완료 행동을 되돌릴까요?" });
-  expect(within(dialog).getByText("되돌릴 행동: 4번 도윤 처형 · 사망")).toBeTruthy();
+  let dialog = screen.getByRole("dialog", { name: "Undo" });
+  expect(within(dialog).getByRole("heading", { name: "Undo" })).toBeTruthy();
+  expect(within(dialog).getByText("되돌릴 행동")).toBeTruthy();
+  const removedEvents = within(dialog).getByRole("list", { name: "취소될 이벤트" });
+  const removedItems = within(removedEvents).getAllByRole("listitem").map((item) => item.textContent);
+  expect(removedItems).toEqual([
+    "10처형 결과: 4번 도윤 사망",
+    "094번 도윤 처형 확정",
+  ]);
+  expect(within(dialog).getByText("위 이벤트를 취소하고 직전 상태로 돌아갑니다.")).toBeTruthy();
+  expect(within(dialog).queryByText(/4번 도윤 처형 · 사망/)).toBeNull();
   const cancel = within(dialog).getByRole("button", { name: "취소" });
   const confirm = within(dialog).getByRole("button", { name: "되돌리기" });
   await waitFor(() => expect(document.activeElement).toBe(cancel));
@@ -64,7 +75,7 @@ test("confirms the latest checkpoint summary and removes its grouped events", as
   await waitFor(() => expect(document.activeElement).toBe(undo));
 
   await user.click(undo);
-  dialog = screen.getByRole("dialog", { name: "최근 완료 행동을 되돌릴까요?" });
+  dialog = screen.getByRole("dialog", { name: "Undo" });
   await user.click(within(dialog).getByRole("button", { name: "되돌리기" }));
   await user.click(within(prototype).getByRole("button", { name: "저장 / 불러오기" }));
 
@@ -75,13 +86,14 @@ test("confirms the latest checkpoint summary and removes its grouped events", as
   expect(within(prototype).getByRole("button", { name: /최근 행동 되돌리기: 2번 현우 → 4번 도윤 지명 투표/ })).toBeTruthy();
 });
 
-test("hides setup-only Undo and disables an eligible Undo while a transition is busy", async () => {
+test("keeps a transparent Undo placeholder for setup-only and disables eligible Undo while busy", async () => {
   const user = userEvent.setup();
   render(<Issue120EventLogPrototype />);
   const prototype = screen.getByRole("main", { name: "이슈 120 이벤트 로그 프로토타입" });
 
   await user.click(within(prototype).getByRole("button", { name: "설정만 확정" }));
   expect(within(prototype).queryByRole("button", { name: /최근 행동 되돌리기/ })).toBeNull();
+  expect(prototype.querySelector(".issue120GlobalUndo.empty")).toBeTruthy();
 
   await user.click(within(prototype).getByRole("button", { name: "전환 중" }));
   const undo = within(prototype).getByRole("button", { name: /최근 행동 되돌리기/ }) as HTMLButtonElement;
@@ -94,8 +106,10 @@ test("uses a modal for serious failures and a persistent bottom notification for
   const prototype = screen.getByRole("main", { name: "이슈 120 이벤트 로그 프로토타입" });
 
   await user.click(within(prototype).getByRole("button", { name: "심각한 오류 보기" }));
-  const errorDialog = screen.getByRole("dialog", { name: "작업을 완료하지 못했습니다" });
+  const errorDialog = screen.getByRole("dialog", { name: "작업 실패" });
+  expect(within(errorDialog).getByRole("heading", { name: "작업 실패" })).toBeTruthy();
   expect(within(errorDialog).getByText("가져온 게임을 끝까지 재생하지 못했습니다. 현재 게임은 그대로 유지됩니다.")).toBeTruthy();
+  expect(within(errorDialog).queryByText("작업을 완료하지 못했습니다")).toBeNull();
   await user.click(within(errorDialog).getByRole("button", { name: "확인" }));
 
   await user.click(within(prototype).getByRole("button", { name: "경고 보기" }));

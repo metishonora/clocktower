@@ -7,9 +7,11 @@ Run `pnpm prototype:issue-120-event-log`, then open:
 Review targets:
 
 - The red global Undo icon remains directly before the Day/Night phase mark on every page.
-- Setup-only hides generic Undo; transition work leaves an eligible Undo visible but disabled.
-- Undo opens a safe confirmation that identifies the latest completed checkpoint. The mock latest
-  checkpoint owns two Confirmed Events so the grouped-removal contract is visible after confirmation.
+- Setup-only keeps a transparent, inactive Undo placeholder so the phase mark does not shift;
+  transition work leaves an eligible Undo visible but disabled.
+- Undo opens a safe confirmation that stacks every canonical event owned by the latest completed
+  checkpoint. The mock latest checkpoint owns two events so grouped removal is visible before and
+  after confirmation.
 - Storage/Load shows a permanently open, internally scrollable Event Log with newest events first.
 - The Event Log contains no separate latest-event or Undo panel and only reports its event count.
 - Severe import/replay failure uses a modal and states that the current game is preserved.
