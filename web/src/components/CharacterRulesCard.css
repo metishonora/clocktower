@@ -91,13 +91,14 @@
 .characterRulesExample summary { cursor: pointer; padding: 13px 14px; font-weight: 900; }
 .characterRulesExample ol { gap: 10px; padding: 0 18px 14px 2.1rem; color: var(--character-detail-muted, var(--muted)); }
 .characterRulesExample li { white-space: pre-line; }
-.characterRulesBody > a { justify-self: start; color: var(--character-detail-accent, var(--primary-dark)); font-weight: 900; }
+.characterRulesBody > a { justify-self: start; color: var(--character-detail-link, var(--character-detail-accent, var(--primary-dark))); font-weight: 900; }
 
 @media (max-width: 640px) {
   .characterRulesBackdrop.snv-night {
-    --character-detail-ink: #f8f5f9;
-    --character-detail-muted: #ded8e1;
-    --character-detail-accent: #f8f5f9;
+    --character-detail-ink: #f1edf2;
+    --character-detail-muted: #aaa4ad;
+    --character-detail-accent: #c6bec8;
+    --character-detail-link: #e4c77f;
   }
   .characterRulesBackdrop { align-items: flex-end; }
   .characterRulesCard {
