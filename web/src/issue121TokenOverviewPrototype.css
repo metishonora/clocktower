@@ -26,7 +26,8 @@ button { font: inherit; }
 .issue121PhaseMark span { margin-top: 2px; color: #bca8c1; font-size: .57rem; font-weight: 850; }
 
 .issue121ReviewBar { display: flex; width: fit-content; margin: 18px auto 4px; padding: 5px; align-items: center; gap: 5px; border: 1px solid rgba(229, 204, 235, .16); border-radius: 13px; background: rgba(255, 255, 255, .035); }
-.issue121ReviewBar > span { padding: 0 8px; color: #a995ae; font-size: .64rem; font-weight: 850; }
+.issue121PlayerCount { display: flex; min-height: 38px; padding: 0 8px 0 10px; align-items: center; gap: 7px; border-right: 1px solid rgba(229, 204, 235, .12); color: #a995ae; font-size: .64rem; font-weight: 850; }
+.issue121PlayerCount select { min-height: 28px; padding: 0 24px 0 9px; border: 1px solid rgba(229, 204, 235, .14); border-radius: 8px; color: #eee4f1; background: #2b1931; font: inherit; font-size: .68rem; font-weight: 850; line-height: 1; cursor: pointer; }
 .issue121ReviewBar button { min-height: 38px; padding: 0 13px; border: 0; border-radius: 9px; color: #c8b8cd; background: transparent; font-size: .7rem; font-weight: 850; cursor: pointer; }
 .issue121ReviewBar button[aria-pressed="true"] { color: #211027; background: #e1c4e7; box-shadow: 0 6px 20px rgba(181, 121, 197, .22); }
 
@@ -47,11 +48,7 @@ button { font: inherit; }
 .issue121Seat strong { max-width: 100%; margin-top: 2px; overflow: hidden; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
 .issue121Seat small { max-width: 100%; overflow: hidden; color: #b8b2bd; font-size: .57rem; text-overflow: ellipsis; white-space: nowrap; }
 
-.issue121TokenCount { position: absolute; z-index: 6; display: grid; min-width: 43px; height: 32px; padding: 0 9px; place-items: center; border: 1px solid rgba(244, 205, 94, .72); border-radius: 999px; color: #ffe080; background: rgba(35, 20, 38, .96); box-shadow: 0 6px 18px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 255, 255, .05); font-size: .76rem; font-weight: 1000; }
-.edge-top .issue121TokenCount { top: calc(100% + 7px); left: 50%; transform: translateX(-50%); }
-.edge-right .issue121TokenCount { top: 50%; right: calc(100% + 7px); transform: translateY(-50%); }
-.edge-bottom .issue121TokenCount { bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); }
-.edge-left .issue121TokenCount { top: 50%; left: calc(100% + 7px); transform: translateY(-50%); }
+.issue121TokenCount { position: absolute; top: 50%; left: 50%; z-index: 6; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(244, 205, 94, .82); border-radius: 50%; color: #ffe080; background: rgba(35, 20, 38, .97); box-shadow: 0 6px 18px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 255, 255, .06); font-size: .72rem; font-weight: 1000; transform: translate(calc(-50% + var(--badge-x)), calc(-50% + var(--badge-y))); }
 
 .issue121ActionTray { position: fixed; z-index: 20; right: 22px; bottom: 22px; display: grid; min-width: 260px; padding: 15px; grid-template-columns: 1fr auto; gap: 5px 16px; align-items: center; border: 1px solid rgba(237, 207, 126, .3); border-radius: 18px; background: rgba(31, 18, 35, .94); box-shadow: 0 18px 52px rgba(0, 0, 0, .48); backdrop-filter: blur(16px); }
 .issue121ActionTray span { color: #ae9bb4; font-size: .65rem; font-weight: 850; }
@@ -68,25 +65,25 @@ button { font: inherit; }
 .issue121PlayerDetail > header strong { color: #caa5d3; font-size: .72rem; }
 .issue121PlayerDetail > header button { width: 42px; height: 42px; border: 1px solid rgba(228, 202, 235, .18); border-radius: 50%; color: #f8f1fa; background: rgba(255, 255, 255, .04); font-size: 1.4rem; cursor: pointer; }
 .issue121DetailBody { display: grid; padding: 24px; gap: 28px; }
-.issue121CharacterSummary > span, .issue121CurrentTokens > header span { color: #aa92b1; font-size: .66rem; font-weight: 900; letter-spacing: .06em; }
+.issue121CharacterSummary > span { color: #aa92b1; font-size: .66rem; font-weight: 900; letter-spacing: .06em; }
 .issue121CharacterSummary p { margin: 10px 0 0; color: #d4c8d7; font-size: .82rem; line-height: 1.7; }
-.issue121CurrentTokens > header { display: flex; align-items: center; justify-content: space-between; }
-.issue121CurrentTokens > header strong { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; color: #2c182f; background: #e2c3e8; font-size: .75rem; }
-.issue121CurrentTokens ul { display: grid; margin: 14px 0 0; padding: 0; gap: 14px; list-style: none; }
-.issue121CurrentTokens li { display: grid; min-height: 96px; padding: 12px; grid-template-columns: 74px minmax(0, 1fr); gap: 14px; align-items: center; border: 1px solid rgba(230, 205, 236, .12); border-radius: 17px; background: rgba(255, 255, 255, .025); }
-.issue121TokenFace { position: relative; display: grid; width: 72px; height: 72px; place-items: center; border: 3px double #cab172; border-radius: 50%; color: #392c1f; background: radial-gradient(circle at 40% 32%, #fff4ce, #d5b96e 72%, #9d7c36); box-shadow: 0 5px 13px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(57, 43, 21, .22); }
-.issue121TokenFace::before, .issue121TokenFace::after { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(58, 42, 21, .58); content: ""; }
-.issue121TokenFace::before { top: 7px; }
-.issue121TokenFace::after { bottom: 7px; }
-.issue121TokenFace.impairment { color: #143c50; background: radial-gradient(circle at 40% 32%, #dff7ff, #66b8d0 72%, #28748d); border-color: #79c7db; }
-.issue121TokenFace.relationship { color: #46233f; background: radial-gradient(circle at 40% 32%, #f8e3f4, #c78ab7 72%, #7f476e); border-color: #d6a6c8; }
-.issue121TokenFace.usage { color: #4b2125; background: radial-gradient(circle at 40% 32%, #ffe8df, #d9907f 72%, #914b4e); border-color: #dda092; }
-.issue121TokenFace span { max-width: 58px; font: 900 .72rem/1.1 Georgia, serif; text-align: center; }
-.issue121CurrentTokens li > div:last-child { display: grid; min-width: 0; gap: 3px; }
-.issue121CurrentTokens li > div:last-child > strong { font-size: .92rem; }
-.issue121CurrentTokens li > div:last-child > span { color: #c6a0cf; font-size: .67rem; font-weight: 850; }
-.issue121CurrentTokens li > div:last-child > small { margin-top: 4px; color: #afa2b3; font-size: .66rem; line-height: 1.45; }
-.issue121EmptyTokenSlot { display: grid; min-height: 96px; margin-top: 14px; place-items: center; border: 1px dashed rgba(227, 201, 233, .14); border-radius: 17px; color: #66566a; font: 1.4rem Georgia, serif; }
+.issue121PinnedTokenArea { min-height: 180px; padding: 18px; border-radius: 24px; background: radial-gradient(circle at 28% 20%, rgba(75, 50, 82, .36), transparent 34%), linear-gradient(145deg, rgba(13, 8, 17, .72), rgba(26, 14, 31, .7)); box-shadow: inset 0 0 0 1px rgba(233, 210, 239, .06), inset 0 14px 38px rgba(0, 0, 0, .22); }
+.issue121PinnedTokenArea ul { display: flex; min-height: 144px; margin: 0; padding: 12px 10px; align-items: center; justify-content: center; list-style: none; }
+.issue121PinnedTokenArea li { position: relative; margin-left: -18px; }
+.issue121PinnedTokenArea li:first-child { margin-left: 0; transform: rotate(-4deg); }
+.issue121PinnedTokenArea li:nth-child(2) { transform: translateY(7px) rotate(4deg); }
+.issue121PinnedTokenArea li:nth-child(3) { transform: translateY(-4px) rotate(-2deg); }
+.issue121PinnedToken { position: relative; display: grid; width: 126px; height: 126px; padding: 13px 8px 11px; grid-template-rows: 18px 1fr 20px; place-items: center; border: 3px double #cab172; border-radius: 50%; color: #fff6d8; background: radial-gradient(circle at 38% 28%, #604e24, #211b14 70%, #080706); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(228, 194, 104, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.issue121PinnedToken::before, .issue121PinnedToken::after { position: absolute; left: 50%; width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 238, 183, .62); content: ""; transform: translateX(-50%); }
+.issue121PinnedToken::before { top: 7px; }
+.issue121PinnedToken::after { bottom: 7px; }
+.issue121PinnedToken.impairment { border-color: #69c4de; background: radial-gradient(circle at 38% 28%, #204c65, #101e2b 70%, #05090d); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(105, 196, 222, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.issue121PinnedToken.relationship { border-color: #d59ac7; background: radial-gradient(circle at 38% 28%, #543050, #261626 70%, #0b060a); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(213, 154, 199, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.issue121PinnedToken.usage { border-color: #dc907f; background: radial-gradient(circle at 38% 28%, #5d322e, #291817 70%, #0c0707); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(220, 144, 127, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.issue121PinnedToken img { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .65)); }
+.issue121PinnedToken span, .issue121PinnedToken strong { max-width: 102px; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.issue121TokenSource { color: #e5dbe8; font-size: .59rem; font-weight: 850; letter-spacing: .02em; }
+.issue121PinnedToken strong { color: #fff; font: 900 .74rem/1 Georgia, serif; text-shadow: 0 1px 3px #000; }
 
 @keyframes issue121PanelIn { from { opacity: 0; transform: translateX(32px); } }
 
@@ -95,7 +92,8 @@ button { font: inherit; }
   .issue121Header { padding: 0 6px; }
   .issue121Header p { display: none; }
   .issue121ReviewBar { width: 100%; margin-top: 14px; }
-  .issue121ReviewBar > span { display: none; }
+  .issue121PlayerCount { padding-left: 6px; }
+  .issue121PlayerCount > span { display: none; }
   .issue121ReviewBar button { flex: 1; padding: 0 7px; }
   .issue121Grimoire { height: 690px; min-height: 690px; border-radius: 24px; }
   .issue121Seat { top: var(--mobile-seat-y); left: var(--mobile-seat-x); width: 82px; min-height: 78px; padding: 6px; border-radius: 16px; }
@@ -103,9 +101,7 @@ button { font: inherit; }
   .issue121Seat strong { font-size: .63rem; }
   .issue121Seat small { font-size: .5rem; }
   .issue121SeatNumber { top: 5px; left: 6px; font-size: .5rem; }
-  .issue121TokenCount { min-width: 36px; height: 28px; padding: 0 7px; font-size: .68rem; }
-  .issue121Seat.mobile-edge-right .issue121TokenCount { top: 50%; right: calc(100% + 7px); bottom: auto; left: auto; transform: translateY(-50%); }
-  .issue121Seat.mobile-edge-left .issue121TokenCount { top: 50%; right: auto; bottom: auto; left: calc(100% + 7px); transform: translateY(-50%); }
+  .issue121TokenCount { width: 30px; height: 30px; font-size: .65rem; transform: translate(calc(-50% + var(--mobile-badge-x)), calc(-50% + var(--mobile-badge-y))); }
   .issue121Center { width: 112px; min-height: 102px; padding: 14px; border-radius: 20px; }
   .issue121Center strong { font-size: .92rem; }
   .issue121Center span { font-size: .72rem; }
@@ -115,9 +111,11 @@ button { font: inherit; }
   .issue121PlayerDetail > header { padding: 17px; grid-template-columns: 54px minmax(0, 1fr) 42px; }
   .issue121PlayerDetail > header img { width: 54px; height: 54px; }
   .issue121DetailBody { padding: 19px 17px max(22px, env(safe-area-inset-bottom)); gap: 22px; }
-  .issue121CurrentTokens ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .issue121CurrentTokens li { display: grid; min-height: 150px; padding: 10px; grid-template-columns: 1fr; place-items: center; text-align: center; }
-  .issue121CurrentTokens li > div:last-child > small { display: none; }
+  .issue121PinnedTokenArea { min-height: 150px; padding: 10px 8px; }
+  .issue121PinnedTokenArea ul { min-height: 130px; padding: 8px 4px; }
+  .issue121PinnedTokenArea li { margin-left: -25px; }
+  .issue121PinnedToken { width: 112px; height: 112px; padding: 11px 7px 9px; grid-template-rows: 16px 1fr 18px; }
+  .issue121PinnedToken img { width: 47px; height: 47px; }
 }
 
 @keyframes issue121SheetIn { from { opacity: 0; transform: translateY(36px); } }

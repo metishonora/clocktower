@@ -3,7 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { Issue121TokenOverviewPrototype } from "../src/issue121TokenOverviewPrototype";
 
-test("keeps the overview to token counts and opens the complete token list from a seat", async () => {
+test("shows inward token badges on every seat for each supported player count", async () => {
+  const user = userEvent.setup();
+  render(<Issue121TokenOverviewPrototype />);
+
+  const prototype = screen.getByRole("main", { name: "이슈 121 토큰 표시 프로토타입" });
+  const playerCount = within(prototype).getByRole("combobox", { name: "프로토타입 인원" });
+
+  for (let count = 5; count <= 15; count += 1) {
+    await user.selectOptions(playerCount, String(count));
+    const grimoire = within(prototype).getByRole("region", { name: "평상시 마도서 overview" });
+    expect(within(grimoire).getAllByRole("button", { name: /좌석, .*토큰 \d+개/ })).toHaveLength(count);
+    expect(within(grimoire).getAllByText(/^\+\d+$/)).toHaveLength(count);
+  }
+});
+
+test("pins complete tokens with their source character icons inside player details", async () => {
   const user = userEvent.setup();
   render(<Issue121TokenOverviewPrototype />);
 
@@ -22,9 +37,12 @@ test("keeps the overview to token counts and opens the complete token list from 
   const detail = within(prototype).getByRole("dialog", { name: "6번 유나 플레이어 상세" });
   expect(within(detail).getByRole("heading", { name: "유나" })).toBeTruthy();
   expect(within(detail).getByText("꿈꾸는 자")).toBeTruthy();
-  const tokens = within(detail).getByRole("list", { name: "현재 토큰 2개" });
+  const tokens = within(detail).getByRole("list", { name: "부착된 토큰 2개" });
   expect(within(tokens).getByLabelText("중독 · 출처 노 다시")).toBeTruthy();
   expect(within(tokens).getByLabelText("쌍둥이 · 출처 사악한 쌍둥이")).toBeTruthy();
+  expect(within(tokens).getByRole("img", { name: "노 다시 출처" })).toBeTruthy();
+  expect(within(tokens).getByRole("img", { name: "사악한 쌍둥이 출처" })).toBeTruthy();
+  expect(within(detail).queryByText("현재 토큰")).toBeNull();
   expect(within(detail).queryByRole("button", { name: /저장|확정|추가|제거/ })).toBeNull();
 });
 
