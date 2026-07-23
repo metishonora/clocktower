@@ -1834,7 +1834,6 @@ export function SectsAndVioletsFoundation({
       {nextIdentityReveal && identityRevealOpen ? (
         <SnakeCharmerIdentityReveal
           reveal={nextIdentityReveal}
-          player={identityRevealPlayer}
           total={pendingIdentityReveals.length}
           onConfirm={acknowledgeIdentityReveal}
         />

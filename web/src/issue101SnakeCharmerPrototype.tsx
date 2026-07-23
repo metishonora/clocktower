@@ -100,8 +100,6 @@ export function Issue101SnakeCharmerPrototype() {
       ) : null}
       {stage === "revealOne" ? (
         <IdentityReveal
-          order={1}
-          player="1번 민서"
           alignment="악"
           characterId="vigormortis"
           title="첫 번째 역할 변경 공개"
@@ -118,8 +116,6 @@ export function Issue101SnakeCharmerPrototype() {
       ) : null}
       {stage === "revealTwo" ? (
         <IdentityReveal
-          order={2}
-          player="7번 도윤"
           alignment="선"
           characterId="snakeCharmer"
           title="두 번째 역할 변경 공개"
@@ -160,16 +156,12 @@ function IdentityRevealPrompt({
 }
 
 function IdentityReveal({
-  order,
-  player,
   alignment,
   characterId,
   title,
   onConfirm,
   onReload,
 }: {
-  order: 1 | 2;
-  player: string;
   alignment: "선" | "악";
   characterId: "vigormortis" | "snakeCharmer";
   title: string;
@@ -180,11 +172,10 @@ function IdentityReveal({
   return (
     <div className="issue101RevealBackdrop">
       <section className={`issue101Reveal ${alignment === "악" ? "evil" : "good"}`} role="dialog" aria-modal="true" aria-label={title}>
-        <header><span>{player}</span><b>{order} / 2</b></header>
         <div className="issue101RevealIdentity">
           <span>{alignment}</span>
           <img src={asset.src} alt="" />
-          <p>당신의 역할이 변경되었습니다</p>
+          <h1>당신의 직업이 변경되었습니다</h1>
           <h2>{asset.label}</h2>
         </div>
         <button className="issue101RevealConfirm" type="button" onClick={onConfirm}>확인했다면 눈을 감으세요</button>

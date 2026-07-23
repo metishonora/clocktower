@@ -20,7 +20,9 @@ test("shows the two private identity reveals in order, then the canonical poison
   await user.click(within(prompt).getByRole("button", { name: "공개" }));
 
   let reveal = screen.getByRole("dialog", { name: "첫 번째 역할 변경 공개" });
-  expect(within(reveal).getByText("1 / 2")).toBeTruthy();
+  expect(within(reveal).getByRole("heading", { level: 1, name: "당신의 직업이 변경되었습니다" })).toBeTruthy();
+  expect(within(reveal).queryByText("1번 민서")).toBeNull();
+  expect(within(reveal).queryByText("1 / 2")).toBeNull();
   expect(within(reveal).getByText("비고르모르티스")).toBeTruthy();
   expect(within(reveal).getByText("악")).toBeTruthy();
   await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
@@ -31,7 +33,8 @@ test("shows the two private identity reveals in order, then the canonical poison
   await user.click(within(prompt).getByRole("button", { name: "공개" }));
 
   reveal = screen.getByRole("dialog", { name: "두 번째 역할 변경 공개" });
-  expect(within(reveal).getByText("2 / 2")).toBeTruthy();
+  expect(within(reveal).queryByText("7번 도윤")).toBeNull();
+  expect(within(reveal).queryByText("2 / 2")).toBeNull();
   expect(within(reveal).getByText("뱀 조련사")).toBeTruthy();
   expect(within(reveal).getByText("선")).toBeTruthy();
   await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
