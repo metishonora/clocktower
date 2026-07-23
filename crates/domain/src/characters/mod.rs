@@ -53,6 +53,12 @@ impl ScriptRules {
                             | GameEventKind::ManualPhaseStepResolved { .. }
                             | GameEventKind::NightActionResolved { .. }
                             | GameEventKind::NightDeathsAnnounced { .. }
+                            | GameEventKind::NominationStarted { .. }
+                            | GameEventKind::NominationVoteConfirmed { .. }
+                            | GameEventKind::PhaseStepSkipped { .. }
+                            | GameEventKind::ExecutionConfirmed { .. }
+                            | GameEventKind::NoExecutionConfirmed { .. }
+                            | GameEventKind::DeathConfirmed { .. }
                     )
                 }) =>
             {
@@ -68,6 +74,7 @@ impl ScriptRules {
                 Self::SectsAndViolets,
                 Command::CreateGame { .. }
                 | Command::ConfirmStep { .. }
+                | Command::SkipStep { .. }
                 | Command::ResolveManualStep { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),

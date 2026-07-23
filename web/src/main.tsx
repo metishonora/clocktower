@@ -133,6 +133,13 @@ const DevSectsAndVioletsFoundationPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue116PhaseHandoffPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue116PhaseHandoffPrototype");
+      return { default: module.Issue116PhaseHandoffPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -142,6 +149,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue116PhaseHandoffPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-116-phase-handoff"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue116PhaseHandoffPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevSectsAndVioletsFoundationPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "snv-foundation"
