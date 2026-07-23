@@ -62,6 +62,78 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
+test("accepts the Snake Charmer swap event, identity history, impairment, and pending reveals", () => {
+  const beforeSnake = { actualCharacter: "snakeCharmer", shownCharacter: "snakeCharmer", alignment: "good" };
+  const afterSnake = { actualCharacter: "vigormortis", shownCharacter: "vigormortis", alignment: "evil" };
+  const beforeDemon = { actualCharacter: "vigormortis", shownCharacter: "vigormortis", alignment: "evil" };
+  const afterDemon = { actualCharacter: "snakeCharmer", shownCharacter: "snakeCharmer", alignment: "good" };
+  const impairment = {
+    kind: "poisoned",
+    playerId: "player-7",
+    sourceEventId: "snake-1",
+    sourceCharacterId: "snakeCharmer",
+    expires: "never",
+  };
+  const event = {
+    id: "snake-1",
+    type: "snakeCharmerActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:snakeCharmer:player-1",
+      actorPlayerId: "player-1",
+      targetPlayerId: "player-7",
+      outcome: {
+        kind: "swap",
+        identityTransitions: [
+          { playerId: "player-1", before: beforeSnake, after: afterSnake },
+          { playerId: "player-7", before: beforeDemon, after: afterDemon },
+        ],
+        impairment,
+      },
+    },
+    summary: "뱀 조련사 교환",
+    createdAt: "2026-07-23T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(event), event);
+
+  const player = {
+    id: "player-1",
+    seat: 1,
+    name: "민서",
+    ...afterSnake,
+    alive: true,
+    ghostVoteUsed: false,
+    deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
+    notes: "",
+    identityHistory: [{ sourceEventId: "snake-1", phase: "night", before: beforeSnake, after: afterSnake }],
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 3,
+    phase: "night",
+    players: [player],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [], activeImpairments: [impairment] },
+    warnings: [],
+    gameEnd: null,
+    pendingIdentityReveals: [
+      {
+        sourceEventId: "snake-1",
+        sequence: 1,
+        payload: { kind: "characterChange", playerId: "player-1", alignment: "evil", characterId: "vigormortis" },
+      },
+    ],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+  const outOfOrder = structuredClone(replay);
+  outOfOrder.pendingIdentityReveals[0].sequence = 2;
+  throws(() => parseReplayState(outOfOrder), /코어 응답 형식/);
+});
+
 test("accepts the generic S&V Demon attack while preserving the Imp payload contract", () => {
   const demonAttack = {
     id: "phase-7",

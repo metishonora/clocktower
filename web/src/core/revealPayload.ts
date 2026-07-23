@@ -1,7 +1,11 @@
 import type { CharacterChangeRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
 import { characters } from "../setupDraft.js";
+import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 
-const characterIds = new Set(characters.map((character) => character.id));
+const characterIds = new Set([
+  ...characters.map((character) => character.id),
+  ...sectsAndVioletsCharacters.map((character) => character.id),
+]);
 const spyPayloadKeys = ["kind", "players"];
 const spyPlayerKeys = [
   "alive",

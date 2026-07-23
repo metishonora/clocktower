@@ -12,6 +12,13 @@ const DevIssue120EventLogPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue101SnakeCharmerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue101SnakeCharmerPrototype");
+      return { default: module.Issue101SnakeCharmerPrototype };
+    })
+  : undefined;
+
 const DevIssue121TokenOverviewPrototype = import.meta.env.DEV
   ? React.lazy(async () => {
       const module = await import("./issue121TokenOverviewPrototype");
@@ -24,6 +31,11 @@ const showIssue120Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
 );
 
+const showIssue101Prototype = Boolean(
+  DevIssue101SnakeCharmerPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-101-snake-charmer",
+);
+
 const showIssue121Prototype = Boolean(
   DevIssue121TokenOverviewPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-121-token-overview",
@@ -31,7 +43,11 @@ const showIssue121Prototype = Boolean(
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue121Prototype && DevIssue121TokenOverviewPrototype ? (
+    {showIssue101Prototype && DevIssue101SnakeCharmerPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue101SnakeCharmerPrototype />
+      </React.Suspense>
+    ) : showIssue121Prototype && DevIssue121TokenOverviewPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue121TokenOverviewPrototype />
       </React.Suspense>

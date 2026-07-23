@@ -167,6 +167,7 @@ fn player_from_normalized_setup_input(
         system_token_ids: vec![],
         script_tokens: vec![],
         notes: String::new(),
+        identity_history: vec![],
     })
 }
 

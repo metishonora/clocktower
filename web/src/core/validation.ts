@@ -13,7 +13,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
-import { isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { isScriptId } from "./scripts.js";
 
@@ -217,6 +217,9 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
       break;
+    case "snakeCharmerActionResolved":
+      if (!isSnakeCharmerActionPayload(payload)) throw invalidEvent();
+      break;
     case "playerAnnotationsUpdated":
       if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
       break;
@@ -249,6 +252,8 @@ export function parseReplayState(value: unknown): ReplayState {
     !isRuleState(value.ruleState) ||
     !Array.isArray(value.warnings) ||
     !value.warnings.every(isWarning) ||
+    (value.pendingIdentityReveals !== undefined &&
+      !isPendingIdentityRevealList(value.pendingIdentityReveals)) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -641,6 +646,7 @@ function isRuleState(value: unknown): boolean {
       "slayerAbility",
       "virginAbility",
       "butlerVote",
+      "activeImpairments",
     ]) &&
     isOptionalString(value.redHerringPlayerId) &&
     (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
@@ -664,7 +670,9 @@ function isRuleState(value: unknown): boolean {
         hasOnlyKeys(value.butlerVote, ["butlerPlayerId", "masterPlayerId", "restrictionApplies"]) &&
         typeof value.butlerVote.butlerPlayerId === "string" &&
         isOptionalString(value.butlerVote.masterPlayerId) &&
-        typeof value.butlerVote.restrictionApplies === "boolean"))
+        typeof value.butlerVote.restrictionApplies === "boolean")) &&
+    (value.activeImpairments === undefined ||
+      (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment)))
   );
 }
 
@@ -939,8 +947,80 @@ function isPlayer(value: unknown): boolean {
     typeof value.deathAnnounced === "boolean" &&
     isSystemTokenList(value.systemTokenIds) &&
     isScriptTokenList(value.scriptTokens) &&
-    typeof value.notes === "string"
+    typeof value.notes === "string" &&
+    (value.identityHistory === undefined ||
+      (Array.isArray(value.identityHistory) && value.identityHistory.every(isIdentityHistoryEntry)))
   );
+}
+
+function isIdentityState(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["actualCharacter", "shownCharacter", "alignment"]) &&
+    typeof value.actualCharacter === "string" &&
+    typeof value.shownCharacter === "string" &&
+    (value.alignment === "good" || value.alignment === "evil");
+}
+
+function isIdentityHistoryEntry(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["sourceEventId", "phase", "before", "after"]) &&
+    typeof value.sourceEventId === "string" &&
+    isPhase(value.phase) &&
+    isIdentityState(value.before) &&
+    isIdentityState(value.after);
+}
+
+function isPlayerIdentityTransition(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["playerId", "before", "after"]) &&
+    typeof value.playerId === "string" &&
+    isIdentityState(value.before) &&
+    isIdentityState(value.after);
+}
+
+function isActiveImpairment(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["kind", "playerId", "sourceEventId", "sourceCharacterId", "expires"]) &&
+    value.kind === "poisoned" &&
+    typeof value.playerId === "string" &&
+    typeof value.sourceEventId === "string" &&
+    typeof value.sourceCharacterId === "string" &&
+    value.expires === "never";
+}
+
+function isPendingIdentityReveal(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["sourceEventId", "sequence", "payload"]) &&
+    typeof value.sourceEventId === "string" &&
+    Number.isInteger(value.sequence) &&
+    (value.sequence as number) > 0 &&
+    isCharacterChangeRevealPayload(value.payload);
+}
+
+function isPendingIdentityRevealList(value: unknown): boolean {
+  if (!Array.isArray(value) || !value.every(isPendingIdentityReveal)) return false;
+  const sourceEventId = value[0]?.sourceEventId;
+  return value.every((reveal, index) =>
+    reveal.sourceEventId === sourceEventId && reveal.sequence === index + 1);
+}
+
+function isSnakeCharmerActionPayload(value: unknown): boolean {
+  if (!isRecord(value) ||
+    !hasExactKeys(value, ["stepId", "actorPlayerId", "targetPlayerId", "outcome"]) ||
+    typeof value.stepId !== "string" ||
+    typeof value.actorPlayerId !== "string" ||
+    typeof value.targetPlayerId !== "string" ||
+    !isRecord(value.outcome)) return false;
+  if (value.outcome.kind === "noSwap") {
+    return hasExactKeys(value.outcome, ["kind", "reason"]) &&
+      (value.outcome.reason === "targetNotDemon" || value.outcome.reason === "actorImpaired");
+  }
+  return value.outcome.kind === "swap" &&
+    hasExactKeys(value.outcome, ["kind", "identityTransitions", "impairment"]) &&
+    Array.isArray(value.outcome.identityTransitions) &&
+    value.outcome.identityTransitions.length === 2 &&
+    value.outcome.identityTransitions.every(isPlayerIdentityTransition) &&
+    isActiveImpairment(value.outcome.impairment);
 }
 
 function isPlayerAnnotationsPayload(value: unknown): boolean {

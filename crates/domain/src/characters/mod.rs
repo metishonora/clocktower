@@ -59,6 +59,7 @@ impl ScriptRules {
                             | GameEventKind::ExecutionConfirmed { .. }
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }
+                            | GameEventKind::SnakeCharmerActionResolved { .. }
                     )
                 }) =>
             {

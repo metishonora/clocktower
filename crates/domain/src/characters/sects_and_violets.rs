@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{
-        Command, DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent, GameEventKind, GameFile,
-        ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload, NightActionResolution,
-        NightActionResolvedPayload, NightDeath, NightDeathCause, NightDeathsAnnouncedPayload,
-        PhaseStepEventPayload, Proposal, ReplayState, RuleState,
+        ActiveImpairment, Command, DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent,
+        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, ManualPhaseStepOutcome,
+        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
+        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingIdentityReveal,
+        PhaseStepEventPayload, Proposal, ReplayState, RevealPayload, RuleState,
+        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -13,8 +15,9 @@ use crate::{
     },
     error::{CoreError, ErrorKind},
     model::{
-        Alignment, CharacterKind, CoreWarning, InputTarget, Phase, PhaseOverviewItem, PhaseStep,
-        PhaseStepStatus, PhaseStepSupport, Player, RequiredInput, RequiredInputKind, StepType,
+        Alignment, CharacterKind, CoreWarning, IdentityHistoryEntry, IdentityState, InputTarget,
+        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, PhaseStepSupport, Player,
+        PlayerIdentityTransition, RequiredInput, RequiredInputKind, StepType,
     },
     phase::{phase_transition_step, required_none, simple_step, validate_required_input},
     setup::{
@@ -57,28 +60,75 @@ pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     }
 }
 
-fn character_step(phase: Phase, prefix: &str, character: &str, player: &Player) -> PhaseStep {
+fn character_step(
+    phase: Phase,
+    prefix: &str,
+    character: &str,
+    player: &Player,
+    players: &[Player],
+) -> PhaseStep {
+    let snake_charmer = character == "snakeCharmer";
     PhaseStep {
-        id: format!("{prefix}:{character}"),
+        id: if snake_charmer {
+            format!("{prefix}:{character}:{}", player.id)
+        } else {
+            format!("{prefix}:{character}")
+        },
         phase,
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: required_none(),
+        required_input: if snake_charmer {
+            RequiredInput {
+                kind: RequiredInputKind::PlayerIds,
+                target: Some(InputTarget::Player),
+                min_selections: Some(1),
+                max_selections: Some(1),
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: None,
+                allowed_player_ids: Some(
+                    players
+                        .iter()
+                        .filter(|candidate| candidate.alive)
+                        .map(|candidate| candidate.id.clone())
+                        .collect(),
+                ),
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            }
+        } else {
+            required_none()
+        },
         can_skip: false,
-        support: PhaseStepSupport::Manual,
+        support: if snake_charmer {
+            PhaseStepSupport::Automated
+        } else {
+            PhaseStepSupport::Manual
+        },
         information_prompt: None,
         pre_action_reveal: None,
     }
 }
 
 fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<PhaseStep> {
-    let step_id = format!("{prefix}:demon");
     let resolved_actor = events.iter().find_map(|event| match &event.kind {
-        GameEventKind::NightActionResolved { payload } if payload.step_id == step_id => payload
-            .actor_character_id
-            .as_ref()
-            .map(|character| (payload.actor_player_id.as_str(), character.as_str())),
+        GameEventKind::NightActionResolved { payload }
+            if payload.step_id == format!("{prefix}:demon")
+                || payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+        {
+            payload
+                .actor_character_id
+                .as_ref()
+                .map(|character| (payload.actor_player_id.as_str(), character.as_str()))
+        }
         GameEventKind::ManualPhaseStepResolved { payload }
             if payload.step_id.starts_with(&format!("{prefix}:"))
                 && DEMONS.iter().any(|demon| payload.step_id.ends_with(demon)) =>
@@ -97,7 +147,7 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
             .map(|player| (player.id.as_str(), player.actual_character.as_str()))
     })?;
     Some(PhaseStep {
-        id: step_id,
+        id: format!("{prefix}:demon:{}", actor),
         phase: Phase::Night,
         step_type: StepType::Character,
         character: Some(character.to_string()),
@@ -138,11 +188,26 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
         "cerenovus",
         "pitHag",
     ] {
-        if let Some(player) = players
+        let mut matching = players
             .iter()
-            .find(|player| player.actual_character == character)
-        {
-            steps.push(character_step(Phase::Night, &prefix, character, player));
+            .filter(|player| {
+                player.actual_character == character
+                    && (character != "snakeCharmer"
+                        || (player.alive
+                            && !became_snake_charmer_from_swap_in_phase(
+                                &player.id, &prefix, events,
+                            )))
+            })
+            .collect::<Vec<_>>();
+        matching.sort_by_key(|player| player.seat);
+        for player in matching {
+            steps.push(character_step(
+                Phase::Night,
+                &prefix,
+                character,
+                player,
+                players,
+            ));
         }
     }
     if let Some(step) = demon_step(players, events, &prefix) {
@@ -160,11 +225,22 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
         "juggler",
         "mathematician",
     ] {
-        if let Some(player) = players
+        let mut matching = players
             .iter()
-            .find(|player| player.actual_character == character)
-        {
-            steps.push(character_step(Phase::Night, &prefix, character, player));
+            .filter(|player| {
+                player.actual_character == character
+                    && (character != "snakeCharmer" || player.alive)
+            })
+            .collect::<Vec<_>>();
+        matching.sort_by_key(|player| player.seat);
+        for player in matching {
+            steps.push(character_step(
+                Phase::Night,
+                &prefix,
+                character,
+                player,
+                players,
+            ));
         }
     }
     steps.push(phase_transition_step(
@@ -182,7 +258,7 @@ fn phase_sequences(
     max_cycles: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
 ) -> Vec<(Phase, Vec<PhaseStep>)> {
-    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players))];
+    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players, events))];
     for cycle in 1..=max_cycles.max(1) {
         let prefix = crate::phase::phase_prefix("day", cycle);
         let executed_player_id = events.iter().find_map(|event| match &event.kind {
@@ -224,20 +300,33 @@ fn current_phase_steps(
     None
 }
 
-fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
+fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
     let mut steps = Vec::new();
-    let player_for = |character: &str| {
-        players
+    let players_for = |character: &str| {
+        let mut matching = players
             .iter()
-            .find(|player| player.actual_character == character)
+            .filter(|player| {
+                player.actual_character == character
+                    && (character != "snakeCharmer"
+                        || (player.alive
+                            && !became_snake_charmer_from_swap_in_phase(
+                                &player.id,
+                                "firstNight",
+                                events,
+                            )))
+            })
+            .collect::<Vec<_>>();
+        matching.sort_by_key(|player| player.seat);
+        matching
     };
 
-    if let Some(player) = player_for("philosopher") {
+    for player in players_for("philosopher") {
         steps.push(character_step(
             Phase::FirstNight,
             "firstNight",
             "philosopher",
             player,
+            players,
         ));
     }
     if players
@@ -276,12 +365,13 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         "seamstress",
         "mathematician",
     ] {
-        if let Some(player) = player_for(character) {
+        for player in players_for(character) {
             steps.push(character_step(
                 Phase::FirstNight,
                 "firstNight",
                 character,
                 player,
+                players,
             ));
         }
     }
@@ -292,6 +382,24 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         crate::model::RequiredInputKind::Day,
     ));
     steps
+}
+
+fn became_snake_charmer_from_swap_in_phase(
+    player_id: &str,
+    prefix: &str,
+    events: &[GameEvent],
+) -> bool {
+    events.iter().any(|event| match &event.kind {
+        GameEventKind::SnakeCharmerActionResolved { payload }
+            if payload.target_player_id == player_id
+                && payload
+                    .step_id
+                    .starts_with(&format!("{prefix}:snakeCharmer:")) =>
+        {
+            matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. })
+        }
+        _ => false,
+    })
 }
 
 fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
@@ -324,8 +432,17 @@ fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
         .collect()
 }
 
+fn identity_state(player: &Player) -> IdentityState {
+    IdentityState {
+        actual_character: player.actual_character.clone(),
+        shown_character: player.shown_character.clone(),
+        alignment: player.alignment,
+    }
+}
+
 fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
     let mut players = setup_players(events)?;
+    let mut active_impairments = Vec::<ActiveImpairment>::new();
     for (event_index, event) in events.iter().enumerate().skip(1) {
         match &event.kind {
             GameEventKind::DeathConfirmed { payload } => {
@@ -434,6 +551,115 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
                     player.death_announced = true;
                 }
             }
+            GameEventKind::SnakeCharmerActionResolved { payload } => {
+                let Some(actor) = players.iter().find(|player| {
+                    player.id == payload.actor_player_id
+                        && player.alive
+                        && player.actual_character == "snakeCharmer"
+                }) else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                if !payload
+                    .step_id
+                    .ends_with(&format!(":snakeCharmer:{}", actor.id))
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                let actor_before = identity_state(actor);
+                let actor_alignment = actor.alignment;
+                let Some(target) = players
+                    .iter()
+                    .find(|player| player.id == payload.target_player_id && player.alive)
+                else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                let target_before = identity_state(target);
+                let target_alignment = target.alignment;
+                let actor_impaired = active_impairments.iter().any(|impairment| {
+                    impairment.player_id == payload.actor_player_id
+                        && impairment.kind == ImpairmentKind::Poisoned
+                });
+                let target_is_demon =
+                    character_kind(&target.actual_character) == Some(CharacterKind::Demon);
+
+                if !target_is_demon {
+                    if payload.outcome
+                        != (SnakeCharmerActionOutcome::NoSwap {
+                            reason: SnakeCharmerNoSwapReason::TargetNotDemon,
+                        })
+                    {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    continue;
+                }
+                if actor_impaired {
+                    if payload.outcome
+                        != (SnakeCharmerActionOutcome::NoSwap {
+                            reason: SnakeCharmerNoSwapReason::ActorImpaired,
+                        })
+                    {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    continue;
+                }
+
+                let transitions = vec![
+                    PlayerIdentityTransition {
+                        player_id: payload.actor_player_id.clone(),
+                        before: actor_before.clone(),
+                        after: IdentityState {
+                            actual_character: target_before.actual_character.clone(),
+                            shown_character: target_before.shown_character.clone(),
+                            alignment: target_alignment,
+                        },
+                    },
+                    PlayerIdentityTransition {
+                        player_id: payload.target_player_id.clone(),
+                        before: target_before.clone(),
+                        after: IdentityState {
+                            actual_character: "snakeCharmer".into(),
+                            shown_character: "snakeCharmer".into(),
+                            alignment: actor_alignment,
+                        },
+                    },
+                ];
+                let impairment = ActiveImpairment {
+                    kind: ImpairmentKind::Poisoned,
+                    player_id: payload.target_player_id.clone(),
+                    source_event_id: event.id.clone(),
+                    source_character_id: "snakeCharmer".into(),
+                    expires: ImpairmentExpiry::Never,
+                };
+                if payload.outcome
+                    != (SnakeCharmerActionOutcome::Swap {
+                        identity_transitions: transitions.clone(),
+                        impairment: impairment.clone(),
+                    })
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                for transition in transitions {
+                    let Some(player) = players
+                        .iter_mut()
+                        .find(|player| player.id == transition.player_id)
+                    else {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    };
+                    if identity_state(player) != transition.before {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    player.actual_character = transition.after.actual_character.clone();
+                    player.shown_character = transition.after.shown_character.clone();
+                    player.alignment = transition.after.alignment;
+                    player.identity_history.push(IdentityHistoryEntry {
+                        source_event_id: event.id.clone(),
+                        phase: event.phase,
+                        before: transition.before,
+                        after: transition.after,
+                    });
+                }
+                active_impairments.push(impairment);
+            }
             _ => {}
         }
     }
@@ -474,6 +700,52 @@ fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
     deaths
         .into_iter()
         .filter(|player_id| !announced.contains(player_id))
+        .collect()
+}
+
+fn active_snake_charmer_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
+    events
+        .iter()
+        .filter_map(|event| match &event.kind {
+            GameEventKind::SnakeCharmerActionResolved { payload } => match &payload.outcome {
+                SnakeCharmerActionOutcome::Swap { impairment, .. } => Some(impairment.clone()),
+                SnakeCharmerActionOutcome::NoSwap { .. } => None,
+            },
+            _ => None,
+        })
+        .collect()
+}
+
+fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> {
+    let Some(event) = events.last() else {
+        return vec![];
+    };
+    let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind else {
+        return vec![];
+    };
+    let SnakeCharmerActionOutcome::Swap {
+        identity_transitions,
+        ..
+    } = &payload.outcome
+    else {
+        return vec![];
+    };
+    identity_transitions
+        .iter()
+        .enumerate()
+        .map(|(index, transition)| PendingIdentityReveal {
+            source_event_id: event.id.clone(),
+            sequence: (index + 1) as u8,
+            payload: RevealPayload::CharacterChange {
+                kind: "characterChange",
+                player_id: transition.player_id.clone(),
+                alignment: match transition.after.alignment {
+                    Alignment::Good => "good".into(),
+                    Alignment::Evil => "evil".into(),
+                },
+                character_id: transition.after.shown_character.clone(),
+            },
+        })
         .collect()
 }
 
@@ -536,6 +808,9 @@ fn phase_state(
             GameEventKind::NightDeathsAnnounced { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
+            GameEventKind::SnakeCharmerActionResolved { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
             GameEventKind::NominationStarted { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
@@ -569,12 +844,27 @@ fn phase_state(
         };
         let legacy_manual_demon =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
-                && current.id.ends_with(":demon")
+                && current
+                    .character
+                    .as_deref()
+                    .is_some_and(|character| DEMONS.contains(&character))
                 && current.character.as_ref().is_some_and(|character| {
-                    event_step_id
-                        == &format!("{}:{character}", current.id.trim_end_matches(":demon"))
+                    let prefix = current.id.split(":demon:").next().unwrap_or_default();
+                    event_step_id == &format!("{prefix}:{character}")
                 });
-        if (current.id != *event_step_id && !legacy_manual_demon) || current.phase != event.phase {
+        let legacy_player_scoped_step = current.player_id.as_ref().is_some_and(|player_id| {
+            current
+                .id
+                .strip_suffix(&format!(":{player_id}"))
+                .is_some_and(|legacy_id| legacy_id == *event_step_id)
+        });
+        let legacy_manual_snake_charmer =
+            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
+                && current.character.as_deref() == Some("snakeCharmer")
+                && legacy_player_scoped_step;
+        if (current.id != *event_step_id && !legacy_manual_demon && !legacy_player_scoped_step)
+            || current.phase != event.phase
+        {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         if matches!(status, PhaseStepStatus::Skipped) && !current.can_skip {
@@ -587,9 +877,12 @@ fn phase_state(
             }
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Manual) => {}
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Automated)
-                if legacy_manual_demon => {}
+                if legacy_manual_demon || legacy_manual_snake_charmer => {}
             (GameEventKind::NightActionResolved { payload }, PhaseStepSupport::Automated)
-                if current.id.ends_with(":demon")
+                if current
+                    .character
+                    .as_deref()
+                    .is_some_and(|character| DEMONS.contains(&character))
                     && payload.actor_player_id
                         == current.player_id.as_deref().unwrap_or_default()
                     && payload.actor_character_id.as_deref() == current.character.as_deref()
@@ -597,6 +890,22 @@ fn phase_state(
                         payload.resolution,
                         NightActionResolution::DemonAttack { .. }
                     ) => {}
+            (
+                GameEventKind::SnakeCharmerActionResolved { payload },
+                PhaseStepSupport::Automated,
+            ) if current.character.as_deref() == Some("snakeCharmer")
+                && current.player_id.as_deref() == Some(payload.actor_player_id.as_str()) =>
+            {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(vec![payload.target_player_id.clone()]),
+                        ..Default::default()
+                    }),
+                    &players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
             (GameEventKind::NightDeathsAnnounced { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Announcement => {}
             (GameEventKind::NominationStarted { payload }, PhaseStepSupport::Automated)
@@ -645,6 +954,23 @@ fn phase_state(
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         }
         statuses.insert(current.id.clone(), status);
+        if let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind {
+            if matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. }) {
+                let prefix = current
+                    .id
+                    .split(":snakeCharmer:")
+                    .next()
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                statuses.insert(
+                    format!("{prefix}:snakeCharmer:{}", payload.target_player_id),
+                    PhaseStepStatus::NotApplicable,
+                );
+                statuses.insert(
+                    format!("firstNight:snakeCharmer:{}", payload.target_player_id),
+                    PhaseStepStatus::NotApplicable,
+                );
+            }
+        }
         if let GameEventKind::NoExecutionConfirmed { payload } = &event.kind {
             let prefix = step_prefix(&payload.step_id)?;
             statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
@@ -699,6 +1025,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             warnings: vec![],
             rule_state: RuleState::default(),
             game_end: None,
+            pending_identity_reveals: vec![],
         });
     }
     let players = replay_players(&game_file.game.events)?;
@@ -737,8 +1064,10 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
+        active_impairments: Some(active_snake_charmer_impairments(&game_file.game.events)),
         ..RuleState::default()
     };
+    let pending_identity_reveals = pending_identity_reveals(&game_file.game.events);
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -751,6 +1080,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         warnings,
         rule_state,
         game_end: None,
+        pending_identity_reveals,
     })
 }
 
@@ -836,7 +1166,19 @@ pub(crate) fn propose_phase_command(
                     payload.input,
                 );
             }
-            if current_step.id.ends_with(":demon") {
+            if current_step.character.as_deref() == Some("snakeCharmer") {
+                return propose_snake_charmer_action(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
+            if current_step
+                .character
+                .as_deref()
+                .is_some_and(|character| DEMONS.contains(&character))
+            {
                 return propose_demon_attack(game_file, &current_step, &players, payload.input);
             }
             if current_step.step_type == StepType::Announcement {
@@ -858,6 +1200,108 @@ pub(crate) fn propose_phase_command(
         }
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn propose_snake_charmer_action(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let actor_player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let actor = players
+        .iter()
+        .find(|player| {
+            player.id == actor_player_id
+                && player.alive
+                && player.actual_character == "snakeCharmer"
+        })
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let target_player_id = input
+        .as_ref()
+        .and_then(|fields| fields.player_ids.as_ref())
+        .and_then(|ids| ids.first())
+        .cloned()
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == target_player_id && player.alive)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let event_id = format!("snake-charmer-{}", game_file.game.events.len() + 1);
+    let actor_impaired = active_snake_charmer_impairments(&game_file.game.events)
+        .iter()
+        .any(|impairment| impairment.player_id == actor.id);
+    let target_is_demon = character_kind(&target.actual_character) == Some(CharacterKind::Demon);
+    let outcome = if !target_is_demon {
+        SnakeCharmerActionOutcome::NoSwap {
+            reason: SnakeCharmerNoSwapReason::TargetNotDemon,
+        }
+    } else if actor_impaired {
+        SnakeCharmerActionOutcome::NoSwap {
+            reason: SnakeCharmerNoSwapReason::ActorImpaired,
+        }
+    } else {
+        SnakeCharmerActionOutcome::Swap {
+            identity_transitions: vec![
+                PlayerIdentityTransition {
+                    player_id: actor.id.clone(),
+                    before: identity_state(actor),
+                    after: IdentityState {
+                        actual_character: target.actual_character.clone(),
+                        shown_character: target.shown_character.clone(),
+                        alignment: target.alignment,
+                    },
+                },
+                PlayerIdentityTransition {
+                    player_id: target.id.clone(),
+                    before: identity_state(target),
+                    after: IdentityState {
+                        actual_character: "snakeCharmer".into(),
+                        shown_character: "snakeCharmer".into(),
+                        alignment: actor.alignment,
+                    },
+                },
+            ],
+            impairment: ActiveImpairment {
+                kind: ImpairmentKind::Poisoned,
+                player_id: target.id.clone(),
+                source_event_id: event_id.clone(),
+                source_character_id: "snakeCharmer".into(),
+                expires: ImpairmentExpiry::Never,
+            },
+        }
+    };
+    let summary = match outcome {
+        SnakeCharmerActionOutcome::Swap { .. } => "뱀 조련사 교환 확정",
+        SnakeCharmerActionOutcome::NoSwap { .. } => "뱀 조련사 선택 확정",
+    };
+    Ok(Proposal {
+        event: GameEvent {
+            id: event_id,
+            kind: GameEventKind::SnakeCharmerActionResolved {
+                payload: SnakeCharmerActionResolvedPayload {
+                    step_id: step.id.clone(),
+                    actor_player_id,
+                    target_player_id,
+                    outcome,
+                },
+            },
+            phase: step.phase,
+            summary: summary.into(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    })
 }
 
 fn phase_proposal(

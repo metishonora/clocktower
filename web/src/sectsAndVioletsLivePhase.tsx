@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
 import {
   PlayerTokenCountBadge,
@@ -12,8 +12,12 @@ import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue116PhaseHandoffPrototype.css";
 
-export type LiveHandoffKind = "nomination" | "vote" | "demon";
-export type LiveHandoff = { kind: LiveHandoffKind; complete: boolean };
+export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer";
+export type LiveHandoff = {
+  kind: LiveHandoffKind;
+  complete: boolean;
+  actorPlayerId?: string;
+};
 
 export type LivePlayer = Player & {
   characterName: string;
@@ -32,6 +36,7 @@ export function SectsAndVioletsLiveProgress({
   onEndNominations,
   onConfirmExecution,
   onStartDemonAttack,
+  onStartSnakeCharmer,
   onAdvance,
   onResolveManual,
 }: {
@@ -46,6 +51,7 @@ export function SectsAndVioletsLiveProgress({
   onEndNominations: () => void;
   onConfirmExecution: () => void;
   onStartDemonAttack: () => void;
+  onStartSnakeCharmer: () => void;
   onAdvance: () => void;
   onResolveManual: (outcome: "handled" | "notApplicable") => void;
 }) {
@@ -82,7 +88,23 @@ export function SectsAndVioletsLiveProgress({
             </div>
             <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>확정</button>
           </article>
-        ) : step?.id.endsWith(":demon") && actor ? (
+        ) : step?.character === "snakeCharmer" && step.requiredInput.kind === "playerIds" && actor ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="뱀 조련사 대상 선택">
+            <div className="issue116ActorIdentity">
+              <CharacterDetailButton
+                details={sectsAndVioletsCharacterDetail("snakeCharmer")}
+                className="issue116ActorRoleButton"
+                theme="snv-night"
+              >
+                {sectsAndVioletsCharacterAsset("snakeCharmer") ? <img src={sectsAndVioletsCharacterAsset("snakeCharmer")!.src} alt="뱀 조련사 공식 캐릭터 아이콘" /> : null}
+                <h3>뱀 조련사</h3>
+              </CharacterDetailButton>
+              <strong>{actor.name}</strong>
+            </div>
+            <p className="issue116AbilitySummary">{actorSummary}</p>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartSnakeCharmer}>대상 선택</button></div>
+          </article>
+        ) : step && isDemonCharacter(step.character) && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="악마 공격">
             <div className="issue116ActorIdentity">
               <CharacterDetailButton
@@ -137,6 +159,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId,
   voterIds,
   targetId,
+  centerPrompt,
   operationBusy,
   tokensByPlayerId = {},
   onSeatClick,
@@ -156,6 +179,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId?: string;
   voterIds: string[];
   targetId?: string;
+  centerPrompt?: ReactNode;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
   onSeatClick: (playerId: string) => void;
@@ -175,12 +199,12 @@ export function SectsAndVioletsLiveGrimoire({
     "--grimoire-height": `${heights.desktop}px`,
     "--mobile-grimoire-height": `${heights.mobile}px`,
   } as CSSProperties;
-  const actorId = currentStep?.playerId;
+  const actorId = handoff?.actorPlayerId ?? currentStep?.playerId;
   const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -190,7 +214,7 @@ export function SectsAndVioletsLiveGrimoire({
   );
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
-    : handoff?.kind === "demon" ? Boolean(targetId) : true;
+    : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId) : true;
 
   const closePlayerDetails = useCallback(() => {
     const returningPlayerId = detailsPlayerId;
@@ -228,16 +252,20 @@ export function SectsAndVioletsLiveGrimoire({
               && player.id === nominatorId && player.id === nomineeId;
             const selectionRole = handoff?.kind === "nomination"
               ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
-              : handoff?.kind === "vote" && selected ? "투표" : handoff?.kind === "demon" && selected ? "공격 대상" : undefined;
+              : handoff?.kind === "vote" && selected ? "투표"
+                : handoff?.kind === "demon" && selected ? "공격 대상"
+                  : handoff?.kind === "snakeCharmer" && selected ? "선택 대상" : undefined;
             const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
                 : selectionRole === "투표" ? " issue116VoterSeat"
-                  : selectionRole === "공격 대상" ? " issue116DemonTargetSeat" : "";
+                  : selectionRole === "공격 대상" || selectionRole === "선택 대상" ? " issue116DemonTargetSeat" : "";
             const nominationSelectingNominator = handoff?.kind === "nomination" && !nominatorId;
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
-              : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id) : false;
+              : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id)
+                : handoff?.kind === "snakeCharmer" ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
+                  : false;
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
             const deadState = showDeadVoteState && !player.alive ? player.ghostVoteUsed ? "spent" : "available" : undefined;
@@ -277,7 +305,7 @@ export function SectsAndVioletsLiveGrimoire({
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
-                {!handoff ? (
+                {!centerPrompt && (!handoff || handoff.complete) ? (
                   <PlayerTokenCountBadge
                     count={playerTokens.length}
                     position={desktopPositions[index]}
@@ -296,7 +324,11 @@ export function SectsAndVioletsLiveGrimoire({
               mobilePositions={mobilePositions}
             />
           ) : null}
-          {!handoff || handoff.kind === "demon" ? (
+          {centerPrompt ? (
+            <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
+              {centerPrompt}
+            </div>
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <span>00:00</span>
@@ -304,10 +336,10 @@ export function SectsAndVioletsLiveGrimoire({
             </div>
           ) : null}
         </div>
-        {handoff ? (
+        {handoff && !centerPrompt ? (
           <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">
-              <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : "Demon 공격"}</h2>
+              <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : handoff.kind === "snakeCharmer" ? "뱀 조련사" : "Demon 공격"}</h2>
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
               ) : null}
@@ -320,7 +352,7 @@ export function SectsAndVioletsLiveGrimoire({
                 <div><dt>현재</dt><dd className={voterIds.length >= targetVotes ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>{isFirstVote ? `처형 기준 ${targetVotes}표` : `후보 기준 ${targetVotes}표`}</dd></div>
               </dl>
             ) : (
-              <dl><div><dt>행동자</dt><dd>{playerLabel(playerById(players, actorId))}</dd></div><div><dt>공격 대상</dt><dd>{playerLabel(target)}</dd></div></dl>
+              <dl><div><dt>행동자</dt><dd>{playerLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerLabel(target)}</dd></div></dl>
             )}
             {handoff.complete ? (
               <button type="button" className={`issue116PrimaryAction${handoff.kind === "vote" ? " issue116VoteCompleteAction" : " issue116NextAction"}`} onClick={onReturn}>{handoff.kind === "vote" ? "투표 완료 →" : "다음 →"}</button>
@@ -340,6 +372,7 @@ export function SectsAndVioletsLiveGrimoire({
             characterKindLabel: characterKindLabel(detailsPlayer.characterKind),
             characterIconSrc: detailsAsset?.src,
             characterAbility: detailsCharacter.ability,
+            alignment: detailsPlayer.alignment,
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
           theme={currentStep?.phase === "day" ? "day" : "night"}
@@ -404,7 +437,12 @@ function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Playe
     return `${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
   }
   if (kind === "vote") return `${votes}표로 투표 확정`;
+  if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
   return target ? `${playerLabel(target)} 공격 확정` : "공격 대상을 선택하세요";
+}
+
+function isDemonCharacter(character?: string) {
+  return character === "fangGu" || character === "vigormortis" || character === "noDashii" || character === "vortox";
 }
 
 function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions, mobilePositions }: {

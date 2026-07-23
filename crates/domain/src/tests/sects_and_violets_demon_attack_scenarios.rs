@@ -86,9 +86,9 @@ fn advance_to_demon(demon: &str, events: &mut Vec<Value>) -> Value {
     for _ in 0..32 {
         let state = replay(demon, events);
         assert_eq!(state["ok"], true, "replay failed: {state}");
-        if state["value"]["currentStep"]["id"]
+        if state["value"]["currentStep"]["character"]
             .as_str()
-            .is_some_and(|id| id.ends_with(":demon"))
+            .is_some_and(|character| DEMONS.contains(&character))
         {
             return state;
         }
@@ -127,7 +127,7 @@ fn all_four_snv_demons_share_one_canonical_baseline_attack_contract() {
     for demon in DEMONS {
         let mut events = vec![setup_event(demon)];
         let before = advance_to_demon(demon, &mut events);
-        assert_eq!(before["value"]["currentStep"]["id"], "night:demon");
+        assert_eq!(before["value"]["currentStep"]["id"], "night:demon:player-7");
         assert_eq!(before["value"]["currentStep"]["character"], demon);
         assert_eq!(before["value"]["currentStep"]["playerId"], "player-7");
         assert_eq!(before["value"]["currentStep"]["support"], "automated");
@@ -144,7 +144,7 @@ fn all_four_snv_demons_share_one_canonical_baseline_attack_contract() {
         assert_eq!(
             proposal["value"]["event"]["payload"],
             json!({
-                "stepId": "night:demon",
+                "stepId": "night:demon:player-7",
                 "actorPlayerId": "player-7",
                 "actorCharacterId": demon,
                 "resolution": {
@@ -176,7 +176,7 @@ fn all_four_snv_demons_share_one_canonical_baseline_attack_contract() {
 
         let undone = replay(demon, &events[..events.len() - 1]);
         assert_eq!(undone["value"]["players"][3]["alive"], true);
-        assert_eq!(undone["value"]["currentStep"]["id"], "night:demon");
+        assert_eq!(undone["value"]["currentStep"]["id"], "night:demon:player-7");
     }
 }
 
@@ -189,7 +189,7 @@ fn a_dead_target_is_a_legal_audited_no_effect_and_does_not_die_twice() {
     for _ in 0..48 {
         let state = replay(demon, &events);
         let step = &state["value"]["currentStep"];
-        if step["id"] == "night2:demon" {
+        if step["id"] == "night2:demon:player-7" {
             break;
         }
         append_current_resolution(demon, &mut events);
@@ -315,7 +315,7 @@ fn historical_manual_demon_steps_remain_replayable_after_automation() {
     let demon = "vortox";
     let mut events = vec![setup_event(demon)];
     let before = advance_to_demon(demon, &mut events);
-    assert_eq!(before["value"]["currentStep"]["id"], "night:demon");
+    assert_eq!(before["value"]["currentStep"]["id"], "night:demon:player-7");
     events.push(json!({
         "id": "legacy-manual-vortox",
         "type": "manualPhaseStepResolved",
@@ -327,12 +327,15 @@ fn historical_manual_demon_steps_remain_replayable_after_automation() {
 
     let replayed = replay(demon, &events);
     assert_eq!(replayed["ok"], true, "legacy replay failed: {replayed}");
-    assert_ne!(replayed["value"]["currentStep"]["id"], "night:demon");
+    assert_ne!(
+        replayed["value"]["currentStep"]["id"],
+        "night:demon:player-7"
+    );
     let demon_status = replayed["value"]["phaseOverview"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|step| step["id"] == "night:demon")
+        .find(|step| step["id"] == "night:demon:player-7")
         .map(|step| &step["status"]);
     assert_eq!(demon_status, Some(&json!("manualComplete")));
 
