@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { Issue116PhaseHandoffPrototype } from "../src/issue116PhaseHandoffPrototype";
+import { rectangularSeatPositions } from "../src/sectsAndVioletsGrimoireLayout";
 
 test("keeps nomination and voting in one Grimoire visit before returning to the day overview", async () => {
   const user = userEvent.setup();
@@ -27,7 +28,15 @@ test("keeps nomination and voting in one Grimoire visit before returning to the 
   await user.click(within(grimoire).getByRole("button", { name: /1번 좌석.*민지/ }));
   await user.click(within(grimoire).getByRole("button", { name: /4번 좌석.*도윤/ }));
   const nominationArrow = within(grimoire).getByLabelText("1번 민지에서 4번 도윤으로 지명");
-  expect(nominationArrow.querySelector("polyline")?.getAttribute("points")).toContain("50,50");
+  const arrowPoints = nominationArrow.querySelector("polyline")?.getAttribute("points");
+  expect(arrowPoints).toContain("50,50");
+  const [arrowStart, , arrowEnd] = arrowPoints!.split(" ").map((point) => {
+    const [x, y] = point.split(",").map(Number);
+    return { x, y };
+  });
+  const seatPositions = rectangularSeatPositions(7, false);
+  expect(Math.hypot(arrowStart.x - seatPositions[0].x, arrowStart.y - seatPositions[0].y)).toBeGreaterThanOrEqual(11);
+  expect(Math.hypot(arrowEnd.x - seatPositions[3].x, arrowEnd.y - seatPositions[3].y)).toBeGreaterThanOrEqual(14);
 
   await user.click(within(grimoire).getByRole("button", { name: "1번 → 4번 지명 확정" }));
 

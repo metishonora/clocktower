@@ -29,6 +29,21 @@ export function rectangularSeatPositions(playerCount: number, mobile: boolean): 
   return positions;
 }
 
+export function centeredArrowPoints(start: { x: number; y: number }, end: { x: number; y: number }): string {
+  const center = { x: 50, y: 50 };
+  const startDistance = Math.hypot(center.x - start.x, center.y - start.y);
+  const endDistance = Math.hypot(end.x - center.x, end.y - center.y);
+  const visibleStart = {
+    x: start.x + (center.x - start.x) / startDistance * 12,
+    y: start.y + (center.y - start.y) / startDistance * 12,
+  };
+  const visibleEnd = {
+    x: end.x - (end.x - center.x) / endDistance * 15,
+    y: end.y - (end.y - center.y) / endDistance * 15,
+  };
+  return `${visibleStart.x},${visibleStart.y} 50,50 ${visibleEnd.x},${visibleEnd.y}`;
+}
+
 function perimeterCounts(playerCount: number, mobile: boolean) {
   const top = mobile ? Math.min(2, playerCount) : Math.ceil(playerCount / 4);
   const bottom = Math.min(mobile ? 2 : Math.ceil(playerCount / 4), playerCount - top);

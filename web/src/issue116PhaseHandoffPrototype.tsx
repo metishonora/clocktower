@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import {
+  centeredArrowPoints,
   grimoireHeights,
   rectangularSeatPositions,
 } from "./sectsAndVioletsGrimoireLayout";
@@ -595,13 +596,6 @@ function ArrowGraphic({ className, label, start, end }: {
   start: { x: number; y: number };
   end: { x: number; y: number };
 }) {
-  const center = { x: 50, y: 50 };
-  const startDistance = Math.hypot(center.x - start.x, center.y - start.y);
-  const startUnit = { x: (center.x - start.x) / startDistance, y: (center.y - start.y) / startDistance };
-  const endDistance = Math.hypot(end.x - center.x, end.y - center.y);
-  const endUnit = { x: (end.x - center.x) / endDistance, y: (end.y - center.y) / endDistance };
-  const visibleStart = { x: start.x + startUnit.x * 7, y: start.y + startUnit.y * 7 };
-  const visibleEnd = { x: end.x - endUnit.x * 10, y: end.y - endUnit.y * 10 };
   return (
     <svg
       className={`issue116NominationArrow ${className}`}
@@ -612,7 +606,7 @@ function ArrowGraphic({ className, label, start, end }: {
     >
       <defs><marker id={`issue116Arrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
       <polyline
-        points={`${visibleStart.x},${visibleStart.y} 50,50 ${visibleEnd.x},${visibleEnd.y}`}
+        points={centeredArrowPoints(start, end)}
         markerEnd={`url(#issue116Arrow-${className})`}
       />
     </svg>

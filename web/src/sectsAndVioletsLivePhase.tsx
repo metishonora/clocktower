@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from "react";
 import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
-import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import { centeredArrowPoints, grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue116PhaseHandoffPrototype.css";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon";
@@ -332,15 +332,10 @@ function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions
 }
 
 function ArrowGraphic({ className, label, start, end }: { className: string; label?: string; start: { x: number; y: number }; end: { x: number; y: number } }) {
-  const center = { x: 50, y: 50 };
-  const startDistance = Math.hypot(center.x - start.x, center.y - start.y);
-  const endDistance = Math.hypot(end.x - center.x, end.y - center.y);
-  const visibleStart = { x: start.x + (center.x - start.x) / startDistance * 7, y: start.y + (center.y - start.y) / startDistance * 7 };
-  const visibleEnd = { x: end.x - (end.x - center.x) / endDistance * 10, y: end.y - (end.y - center.y) / endDistance * 10 };
   return (
     <svg className={`issue116NominationArrow ${className}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
       <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
-      <polyline points={`${visibleStart.x},${visibleStart.y} 50,50 ${visibleEnd.x},${visibleEnd.y}`} markerEnd={`url(#snvLiveArrow-${className})`} />
+      <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />
     </svg>
   );
 }
