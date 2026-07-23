@@ -94,11 +94,16 @@
 .characterRulesBody > a { justify-self: start; color: var(--character-detail-accent, var(--primary-dark)); font-weight: 900; }
 
 @media (max-width: 640px) {
+  .characterRulesBackdrop.snv-night {
+    --character-detail-ink: #f8f5f9;
+    --character-detail-muted: #ded8e1;
+    --character-detail-accent: #f8f5f9;
+  }
   .characterRulesBackdrop { align-items: flex-end; }
   .characterRulesCard {
     width: 100%;
     height: min(78vh, 680px);
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--character-detail-line, var(--line));
     border-left: 0;
     border-radius: 18px 18px 0 0;
     box-shadow: 0 -18px 48px rgba(38, 29, 20, 0.24);
