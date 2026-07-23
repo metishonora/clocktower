@@ -1,0 +1,264 @@
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
+import { rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import "./issue121TokenOverviewPrototype.css";
+
+export type PlayerTokenPresentation = Readonly<{
+  instanceId: string;
+  label: string;
+  sourceLabel: string;
+  visualKind: "assignment" | "impairment" | "relationship" | "usage";
+  description?: string;
+}>;
+
+type PrototypePlayer = {
+  id: string;
+  seat: number;
+  name: string;
+  characterId: string;
+  tokens: PlayerTokenPresentation[];
+};
+
+const prototypePlayers: PrototypePlayer[] = [
+  player(1, "민서", "mutant"),
+  player(2, "준호", "philosopher"),
+  player(3, "서준", "fangGu"),
+  player(4, "지우", "clockmaker", [
+    token("cerenovus-clockmaker", "집착", "세레노버스", "assignment", "시계공이라고 집착해야 합니다."),
+  ]),
+  player(5, "현우", "juggler"),
+  player(6, "유나", "dreamer", [
+    token("no-dashii-poison", "중독", "노 다시", "impairment", "노 다시에게 가장 가까운 주민입니다."),
+    token("evil-twin-pair", "쌍둥이", "사악한 쌍둥이", "relationship", "사악한 쌍둥이와 짝인 선한 플레이어입니다."),
+  ]),
+  player(7, "도윤", "pitHag"),
+  player(8, "하린", "sweetheart"),
+  player(9, "예진", "artist", [
+    token("sweetheart-drunk", "취함", "사랑꾼", "impairment", "사랑꾼의 죽음으로 취한 상태입니다."),
+  ]),
+  player(10, "민재", "witch"),
+  player(11, "채원", "oracle"),
+  player(12, "수아", "noDashii"),
+  player(13, "다은", "savant"),
+  player(14, "지호", "townCrier"),
+  player(15, "태윤", "sage"),
+];
+
+export function Issue121TokenOverviewPrototype() {
+  const [mode, setMode] = useState<"overview" | "action">("overview");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>();
+  const [actionPlayerId, setActionPlayerId] = useState<string>();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const seatRefs = useRef(new Map<string, HTMLButtonElement>());
+  const desktopPositions = useMemo(() => rectangularSeatPositions(prototypePlayers.length, false), []);
+  const mobilePositions = useMemo(() => rectangularSeatPositions(prototypePlayers.length, true), []);
+  const selectedPlayer = prototypePlayers.find((player) => player.id === selectedPlayerId);
+
+  useEffect(() => {
+    if (!selectedPlayer) return;
+    closeButtonRef.current?.focus();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      } else if (event.key === "Escape") {
+        closeDetails();
+      }
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedPlayer]);
+
+  function changeMode(nextMode: "overview" | "action") {
+    setMode(nextMode);
+    setSelectedPlayerId(undefined);
+    setActionPlayerId(undefined);
+  }
+
+  function closeDetails() {
+    const returningPlayerId = selectedPlayerId;
+    setSelectedPlayerId(undefined);
+    requestAnimationFrame(() => returningPlayerId && seatRefs.current.get(returningPlayerId)?.focus());
+  }
+
+  return (
+    <main className="issue121Prototype" aria-label="이슈 121 토큰 표시 프로토타입">
+      <header className="issue121Header">
+        <div>
+          <span>ISSUE 121 · PLAYER TOKEN REVIEW</span>
+          <h1>Sects &amp; Violets</h1>
+          <p>마도서 토큰 정보 위계</p>
+        </div>
+        <div className="issue121PhaseMark" aria-label="2일차 낮">
+          <b>2</b><span>낮</span>
+        </div>
+      </header>
+
+      <section className="issue121ReviewBar" aria-label="프로토타입 화면 선택">
+        <span>좌석 동작</span>
+        <button type="button" aria-pressed={mode === "overview"} onClick={() => changeMode("overview")}>평상시 overview</button>
+        <button type="button" aria-pressed={mode === "action"} onClick={() => changeMode("action")}>지명 · 투표 · 공격</button>
+      </section>
+
+      <section
+        className={`issue121Grimoire ${mode}`}
+        role="region"
+        aria-label={mode === "overview" ? "평상시 마도서 overview" : "액션 선택 마도서"}
+      >
+        <div className="issue121TableGlow" aria-hidden="true" />
+        <div className="issue121Center">
+          <strong>2일차 낮</strong>
+          <span>12:38</span>
+          <button type="button">진행 →</button>
+        </div>
+
+        {prototypePlayers.map((currentPlayer, index) => {
+          const character = characterFor(currentPlayer.characterId);
+          const asset = sectsAndVioletsCharacterAsset(currentPlayer.characterId);
+          const position = desktopPositions[index];
+          const mobilePosition = mobilePositions[index];
+          const indicatorEdge = tokenIndicatorEdge(position);
+          const mobileIndicatorEdge = mobilePosition.x > 50 ? "right" : "left";
+          const actionSelected = actionPlayerId === currentPlayer.id;
+          const tokenCountLabel = currentPlayer.tokens.length > 0
+            ? `, 토큰 ${currentPlayer.tokens.length}개`
+            : ", 토큰 없음";
+          const accessibleName = mode === "overview"
+            ? `${currentPlayer.seat}번 ${currentPlayer.name} 좌석, ${character?.name ?? "미할당"}${tokenCountLabel}`
+            : `${currentPlayer.seat}번 ${currentPlayer.name} ${actionSelected ? "선택됨" : "선택"}`;
+
+          return (
+            <button
+              ref={(node) => {
+                if (node) seatRefs.current.set(currentPlayer.id, node);
+                else seatRefs.current.delete(currentPlayer.id);
+              }}
+              type="button"
+              className={`issue121Seat kind-${character?.kind ?? "townsfolk"} edge-${indicatorEdge} mobile-edge-${mobileIndicatorEdge}${actionSelected ? " actionSelected" : ""}`}
+              style={{
+                "--seat-x": `${position.x}%`,
+                "--seat-y": `${position.y}%`,
+                "--mobile-seat-x": `${mobilePosition.x}%`,
+                "--mobile-seat-y": `${mobilePosition.y}%`,
+              } as CSSProperties}
+              aria-label={accessibleName}
+              aria-pressed={mode === "action" ? actionSelected : undefined}
+              onClick={() => {
+                if (mode === "action") {
+                  setActionPlayerId((current) => current === currentPlayer.id ? undefined : currentPlayer.id);
+                } else {
+                  setSelectedPlayerId(currentPlayer.id);
+                }
+              }}
+              key={currentPlayer.id}
+            >
+              <span className="issue121SeatNumber">{currentPlayer.seat}</span>
+              {asset ? <img src={asset.src} alt="" /> : <span className="issue121MissingAsset">?</span>}
+              <strong>{currentPlayer.name}</strong>
+              <small>{character?.name}</small>
+              {mode === "overview" && currentPlayer.tokens.length > 0 ? (
+                <span className="issue121TokenCount" aria-hidden="true">+{currentPlayer.tokens.length}</span>
+              ) : null}
+            </button>
+          );
+        })}
+      </section>
+
+      {mode === "action" ? (
+        <aside className="issue121ActionTray" aria-label="현재 마도서 작업">
+          <span>지명 대상</span>
+          <strong>{prototypePlayers.find((player) => player.id === actionPlayerId)?.name ?? "선택 대기"}</strong>
+          <button type="button" disabled={!actionPlayerId}>선택 확정</button>
+        </aside>
+      ) : null}
+
+      {selectedPlayer ? (
+        <PlayerDetails player={selectedPlayer} closeButtonRef={closeButtonRef} onClose={closeDetails} />
+      ) : null}
+    </main>
+  );
+}
+
+function PlayerDetails({
+  player: currentPlayer,
+  closeButtonRef,
+  onClose,
+}: {
+  player: PrototypePlayer;
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+}) {
+  const character = characterFor(currentPlayer.characterId);
+  const asset = sectsAndVioletsCharacterAsset(currentPlayer.characterId);
+  return (
+    <div className="issue121DetailBackdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="issue121PlayerDetail" role="dialog" aria-modal="true" aria-label={`${currentPlayer.seat}번 ${currentPlayer.name} 플레이어 상세`}>
+        <header>
+          {asset ? <img src={asset.src} alt="" /> : null}
+          <div>
+            <span>좌석 {currentPlayer.seat}</span>
+            <h2>{currentPlayer.name}</h2>
+            <strong>{character?.name}</strong>
+          </div>
+          <button ref={closeButtonRef} type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
+        </header>
+        <div className="issue121DetailBody">
+          <section className="issue121CharacterSummary" aria-label="캐릭터 정보">
+            <span>캐릭터 능력</span>
+            <p>{character?.ability}</p>
+          </section>
+          <section className="issue121CurrentTokens" aria-label="현재 토큰">
+            <header><span>현재 토큰</span><strong>{currentPlayer.tokens.length}</strong></header>
+            {currentPlayer.tokens.length > 0 ? (
+              <ul aria-label={`현재 토큰 ${currentPlayer.tokens.length}개`}>
+                {currentPlayer.tokens.map((currentToken) => (
+                  <li aria-label={`${currentToken.label} · 출처 ${currentToken.sourceLabel}`} key={currentToken.instanceId}>
+                    <div className={`issue121TokenFace ${currentToken.visualKind}`} aria-hidden="true">
+                      <span>{currentToken.label}</span>
+                    </div>
+                    <div>
+                      <strong>{currentToken.label}</strong>
+                      <span>{currentToken.sourceLabel}</span>
+                      {currentToken.description ? <small>{currentToken.description}</small> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : <div className="issue121EmptyTokenSlot" aria-label="현재 토큰 없음">0</div>}
+          </section>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function player(
+  seat: number,
+  name: string,
+  characterId: string,
+  tokens: PlayerTokenPresentation[] = [],
+): PrototypePlayer {
+  return { id: `player-${seat}`, seat, name, characterId, tokens };
+}
+
+function token(
+  instanceId: string,
+  label: string,
+  sourceLabel: string,
+  visualKind: PlayerTokenPresentation["visualKind"],
+  description: string,
+): PlayerTokenPresentation {
+  return { instanceId, label, sourceLabel, visualKind, description };
+}
+
+function characterFor(characterId: string) {
+  return sectsAndVioletsCharacters.find((character) => character.id === characterId);
+}
+
+function tokenIndicatorEdge(position: { x: number; y: number }): "top" | "right" | "bottom" | "left" {
+  if (position.y < 24) return "top";
+  if (position.x > 76) return "right";
+  if (position.y > 76) return "bottom";
+  return "left";
+}
