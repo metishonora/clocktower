@@ -115,6 +115,18 @@ test("uses the approved setup, Grimoire, and progression shell on the production
   const utilities = within(app).getByRole("navigation", { name: "게임 데이터" });
   expect(within(utilities).getByRole("button", { name: "새 게임" })).toBeTruthy();
   expect(within(utilities).getByRole("button", { name: "저장 / 불러오기" })).toBeTruthy();
+  const phaseActions = app.querySelector(".snvPhaseActions");
+  const emptyUndo = phaseActions?.querySelector(".snvGlobalUndo.empty");
+  expect(emptyUndo?.getAttribute("data-visual-state")).toBe("muted");
+  expect(emptyUndo?.querySelector("svg")).toBeTruthy();
+  expect(emptyUndo?.nextElementSibling?.classList.contains("snvPhaseMark")).toBe(true);
+  expect(within(app).queryByRole("button", { name: /최근 행동 되돌리기/ })).toBeNull();
+
+  await userEvent.setup().click(within(utilities).getByRole("button", { name: "저장 / 불러오기" }));
+  const eventLog = within(app).getByRole("region", { name: "이벤트 로그" });
+  expect(within(eventLog).getByText("0건")).toBeTruthy();
+  expect(within(eventLog).getByText("확정된 이벤트가 없습니다.")).toBeTruthy();
+  expect(eventLog.querySelector("details")).toBeNull();
   await waitFor(() => expect(core.setupDistribution).toHaveBeenCalledWith({
     scriptId: "sectsAndViolets",
     playerCount: 7,
@@ -160,7 +172,10 @@ test("keeps the seating draft intact when canonical setup confirmation fails", a
   core.propose.mockRejectedValueOnce(new Error("구성을 다시 확인하세요"));
   await user.click(within(app).getByRole("button", { name: "배치 확정" }));
 
-  expect((await within(app).findByRole("alert")).textContent).toContain("구성을 다시 확인하세요");
+  const errorDialog = await screen.findByRole("dialog", { name: "작업 실패" });
+  expect(within(errorDialog).getByText("구성을 다시 확인하세요")).toBeTruthy();
+  expect(errorDialog.getAttribute("data-theme")).toBe("night");
+  expect(within(errorDialog).getByRole("button", { name: "확인" })).toBeTruthy();
   expect(within(app).getByLabelText("7자리 그리모어")).toBeTruthy();
   expect(within(app).queryAllByRole("button", { name: /미할당/ })).toHaveLength(0);
   expect(within(app).getByRole("button", { name: "배치 확정" }).hasAttribute("disabled")).toBe(false);
@@ -419,23 +434,95 @@ test("undoes one completed S&V phase checkpoint while keeping the current page",
   await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2));
 
+  const headerUndo = within(app).getByRole("button", { name: /최근 행동 되돌리기: 단계 확정: firstNight:minionInfo/ });
+  expect(headerUndo.nextElementSibling?.classList.contains("snvPhaseMark")).toBe(true);
   await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
   const storagePage = within(app).getByRole("region", { name: "저장 및 불러오기" });
-  const undo = within(storagePage).getByRole("button", { name: "최근 페이즈 되돌리기" });
+  expect(within(storagePage).queryByRole("button", { name: /되돌리기/ })).toBeNull();
+  const eventLog = within(storagePage).getByRole("region", { name: "이벤트 로그" });
+  expect(within(eventLog).getByText("2건")).toBeTruthy();
+  const eventItems = within(within(eventLog).getByRole("list", { name: "확정 이벤트 최신순" }))
+    .getAllByRole("listitem")
+    .map((item) => item.textContent);
+  expect(eventItems).toEqual([
+    "02단계 확정: firstNight:minionInfo",
+    "01초기 설정 확정: 7명",
+  ]);
   const savesBeforeCancel = storage.saveAttempts;
-  await user.click(undo);
-  let dialog = screen.getByRole("dialog", { name: "최근 페이즈 되돌리기" });
-  expect(within(dialog).getByText(/단계 확정: firstNight:minionInfo/)).toBeTruthy();
-  await user.click(within(dialog).getByRole("button", { name: "취소" }));
+  await user.click(headerUndo);
+  let dialog = screen.getByRole("dialog", { name: "Undo" });
+  expect(dialog.getAttribute("data-theme")).toBe("night");
+  expect(within(dialog).getByText("되돌릴 행동")).toBeTruthy();
+  expect(within(within(dialog).getByRole("list", { name: "취소될 이벤트" })).getByRole("listitem").textContent)
+    .toBe("02단계 확정: firstNight:minionInfo");
+  expect(within(dialog).getByText("위 이벤트를 취소하고 직전 상태로 돌아갑니다.")).toBeTruthy();
+  const cancel = within(dialog).getByRole("button", { name: "취소" });
+  const confirm = within(dialog).getByRole("button", { name: "되돌리기" });
+  await waitFor(() => expect(document.activeElement).toBe(cancel));
+  await user.tab({ shift: true });
+  expect(document.activeElement).toBe(confirm);
+  await user.tab();
+  expect(document.activeElement).toBe(cancel);
+  await user.click(cancel);
   expect(storage.saveAttempts).toBe(savesBeforeCancel);
   expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2);
 
-  await user.click(within(storagePage).getByRole("button", { name: "최근 페이즈 되돌리기" }));
-  dialog = screen.getByRole("dialog", { name: "최근 페이즈 되돌리기" });
+  await user.click(headerUndo);
+  dialog = screen.getByRole("dialog", { name: "Undo" });
   await user.click(within(dialog).getByRole("button", { name: "되돌리기" }));
 
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(1));
   expect(within(app).getByRole("button", { name: "저장 / 불러오기" }).getAttribute("aria-current")).toBe("page");
+  expect(within(eventLog).getByText("1건")).toBeTruthy();
+  expect(within(eventLog).queryByText("단계 확정: firstNight:minionInfo")).toBeNull();
+  expect(within(app).queryByRole("button", { name: /최근 행동 되돌리기/ })).toBeNull();
+  expect(app.querySelector(".snvGlobalUndo.empty")?.getAttribute("data-visual-state")).toBe("muted");
+});
+
+test("lists every canonical event owned by the latest S&V checkpoint", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const players: SetupPlayerInput[] = [
+    "clockmaker", "dreamer", "snakeCharmer", "mathematician", "mutant", "evilTwin", "fangGu",
+  ].map((actualCharacter, index) => ({ seat: index + 1, name: `플레이어 ${index + 1}`, actualCharacter }));
+  const grouped = savedDayGame(players);
+  grouped.game.events.push({
+    id: "phase-3",
+    type: "phaseStepConfirmed",
+    phase: "day",
+    payload: { stepId: "day:executionDeath", input: { died: true } },
+    summary: "처형 결과: 4번 도윤 사망",
+    createdAt: "2026-07-23T00:02:00.000Z",
+  });
+  grouped.ui = {
+    sectsAndVioletsSession: {
+      version: 1,
+      activeTab: "storage",
+      savedAt: "2026-07-23T00:02:00.000Z",
+      setup: {
+        playerCount: 7,
+        demon: "fangGu",
+        selectedIds: players.map(({ actualCharacter }) => actualCharacter),
+        seatAssignments: Object.fromEntries(players.map(({ seat, actualCharacter }) => [seat, actualCharacter])),
+        seatAlignments: Object.fromEntries(players.map(({ seat }, index) => [seat, index >= 5 ? "evil" : "good"])),
+        seatNames: Object.fromEntries(players.map(({ seat, name }) => [seat, name])),
+        rosterConfirmed: true,
+        seatingConfirmed: true,
+      },
+      phaseCheckpoints: [
+        { id: "setup-1", kind: "setup", eventCount: 1, summary: "초기 설정 확정: 7명", activeTab: "seating" },
+        { id: "execution", kind: "phase", eventCount: 3, summary: "4번 도윤 처형 · 사망", activeTab: "play" },
+      ],
+    },
+  };
+  storage.savedGames.push(grouped);
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(await within(app).findByRole("button", { name: "최근 행동 되돌리기: 4번 도윤 처형 · 사망" }));
+  const dialog = screen.getByRole("dialog", { name: "Undo" });
+  expect(within(within(dialog).getByRole("list", { name: "취소될 이벤트" })).getAllByRole("listitem").map((item) => item.textContent))
+    .toEqual(["03처형 결과: 4번 도윤 사망", "02낮 토론 완료"]);
 });
 
 test("imports a replay-valid S&V checkpoint and restores its saved page", async () => {
@@ -542,7 +629,9 @@ test("invalid import and valid replacement cancellation preserve the current S&V
   await user.upload(input, new File([
     JSON.stringify({ ...current, schemaVersion: 1 }),
   ], "invalid.json", { type: "application/json" }));
-  expect((await within(app).findByRole("alert")).textContent).toContain("지원하지 않는 게임 파일 버전");
+  const errorDialog = await screen.findByRole("dialog", { name: "작업 실패" });
+  expect(within(errorDialog).getByText(/지원하지 않는 게임 파일 버전/)).toBeTruthy();
+  await user.click(within(errorDialog).getByRole("button", { name: "확인" }));
   expect(confirm).not.toHaveBeenCalled();
   expect(storage.savedGames.at(-1)).toEqual(current);
 
@@ -561,7 +650,9 @@ test("preserves an unreadable autosave until confirmed new-game recovery", async
   const user = userEvent.setup();
   render(<SectsAndVioletsApp storageDriver={storage} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
-  expect((await within(app).findByRole("alert")).textContent).toContain("지원하지 않는 게임 파일 버전");
+  const errorDialog = await screen.findByRole("dialog", { name: "작업 실패" });
+  expect(within(errorDialog).getByText(/지원하지 않는 게임 파일 버전/)).toBeTruthy();
+  await user.click(within(errorDialog).getByRole("button", { name: "확인" }));
 
   await user.click(within(app).getByRole("button", { name: "9명" }));
   await new Promise((resolve) => window.setTimeout(resolve, 20));
@@ -572,6 +663,31 @@ test("preserves an unreadable autosave until confirmed new-game recovery", async
   await waitFor(() => expect(storage.savedGames).toHaveLength(1));
   expect(storage.savedGames[0]?.game.events).toEqual([]);
   expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(7);
+});
+
+test("shows replay warnings as a dismissible bottom notification", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const warningState = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 0,
+    phase: "setup",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [{ code: "VORTOX_INFO", severity: "warning", messageKo: "보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요." }],
+    gameEnd: null,
+  } satisfies ReplayState;
+  core.replay.mockResolvedValue({ ok: true, value: warningState } as never);
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  const warning = await within(app).findByRole("status", { name: "게임 경고" });
+  expect(within(warning).getByText("보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요.")).toBeTruthy();
+  await user.click(within(warning).getByRole("button", { name: "경고 닫기" }));
+  expect(within(app).queryByRole("status", { name: "게임 경고" })).toBeNull();
 });
 
 test("downloads the latest completed S&V checkpoint as JSON", async () => {
