@@ -13,6 +13,7 @@ test("selects a complete roster, shows the active character detail, and advances
 
   const prototype = await screen.findByRole("main", { name: "Sects & Violets 기반 화면 프로토타입" });
   expect(within(prototype).getByRole("heading", { name: "Sects & Violets" })).toBeTruthy();
+  expect(within(prototype).queryByText(/일부 자동화/)).toBeNull();
   expect(within(prototype).getByRole("button", { name: "직업" })).toBeTruthy();
   expect(within(prototype).getByRole("button", { name: "마도서" }).hasAttribute("disabled")).toBe(true);
   expect(within(prototype).getByRole("button", { name: "저장 / 불러오기" })).toBeTruthy();
@@ -52,7 +53,7 @@ test("selects a complete roster, shows the active character detail, and advances
   expect(within(within(prototype).getByRole("button", { name: "팡 구 고정됨" })).queryByText("고정")).toBeNull();
   const detail = within(prototype).getByRole("complementary", { name: "직업 설명" });
   expect(within(detail).getByRole("heading", { name: "사악한 쌍둥이" })).toBeTruthy();
-  expect(within(detail).getByText("서로 반대 성향인 쌍둥이는 서로를 압니다.")).toBeTruthy();
+  expect(within(detail).getByText(/당신과 선한 쌍둥이는 서로를 알아봅니다/)).toBeTruthy();
   expect(within(prototype).queryByText(/자리 남음|구성 완료/)).toBeNull();
   expect(confirmRoster.hasAttribute("disabled")).toBe(false);
 
@@ -258,7 +259,7 @@ test("turns a confirmed Grimoire into a live reference surface with seat details
   expect(within(firstNight).getByRole("img", { name: "철학자 공식 캐릭터 아이콘" })).toBeTruthy();
   await user.click(within(firstNight).getByRole("button", { name: "철학자 상세 정보" }));
   const currentRoleDialog = screen.getByRole("dialog", { name: "철학자 상세 정보" });
-  expect(within(currentRoleDialog).getByText(/선한 직업 하나의 능력을 얻습니다/)).toBeTruthy();
+  expect(within(currentRoleDialog).getByText(/선한 캐릭터 1명을 선택합니다/)).toBeTruthy();
   await user.click(within(currentRoleDialog).getByRole("button", { name: "상세 정보 닫기" }));
   expect(within(firstNight).queryByLabelText("진행 마도서")).toBeNull();
   expect(within(firstNight).queryByText("수동")).toBeNull();
@@ -438,7 +439,8 @@ test("keeps a fixed character summary slot with icons and opens the baseline det
   await user.click(within(summary).getByRole("button", { name: "시계공 상세 정보" }));
 
   const dialog = screen.getByRole("dialog", { name: "시계공 상세 정보" });
-  expect(within(dialog).getByText("수동 처리")).toBeTruthy();
+  expect(within(dialog).queryByText("자동화 지원")).toBeNull();
+  expect(within(dialog).queryByText("수동 처리")).toBeNull();
   expect(within(dialog).getByRole("link", { name: "공식 규칙" }).getAttribute("href"))
     .toBe("https://wiki.bloodontheclocktower.com/Clockmaker");
   await user.click(within(dialog).getByRole("button", { name: "상세 정보 닫기" }));
