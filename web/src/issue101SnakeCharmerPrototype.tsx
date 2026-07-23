@@ -173,10 +173,10 @@ function IdentityReveal({
     <div className="issue101RevealBackdrop">
       <section className={`issue101Reveal ${alignment === "악" ? "evil" : "good"}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="issue101RevealIdentity">
-          <span>{alignment}</span>
-          <img src={asset.src} alt="" />
           <h1>당신의 직업이 변경되었습니다</h1>
+          <img src={asset.src} alt="" />
           <h2>{asset.label}</h2>
+          <span className="issue101RevealAlignment" aria-label={`현재 진영 · ${alignment}`}>{alignment}</span>
         </div>
         <button className="issue101RevealConfirm" type="button" onClick={onConfirm}>확인했다면 눈을 감으세요</button>
         <button className="issue101ReloadRehearsal" type="button" onClick={onReload}>새로고침 동작 재현</button>

@@ -22,10 +22,12 @@ export function SnakeCharmerIdentityReveal({
       onClose={onConfirm}
     >
       <div className="snakeCharmerRevealIdentity">
-        <span>{evil ? "악" : "선"}</span>
-        {asset ? <img src={asset.src} alt="" /> : null}
         <h1>당신의 직업이 변경되었습니다</h1>
+        {asset ? <img src={asset.src} alt="" /> : null}
         <h2>{asset?.label ?? reveal.payload.characterId}</h2>
+        <span className="snakeCharmerRevealAlignment" aria-label={`현재 진영 · ${evil ? "악" : "선"}`}>
+          {evil ? "악" : "선"}
+        </span>
       </div>
     </SectsAndVioletsReveal>
   );

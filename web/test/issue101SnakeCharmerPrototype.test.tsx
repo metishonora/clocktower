@@ -21,6 +21,9 @@ test("shows the two private identity reveals in order, then the canonical poison
 
   let reveal = screen.getByRole("dialog", { name: "첫 번째 역할 변경 공개" });
   expect(within(reveal).getByRole("heading", { level: 1, name: "당신의 직업이 변경되었습니다" })).toBeTruthy();
+  expect(
+    Array.from(reveal.querySelector(".issue101RevealIdentity")?.children ?? []).map((element) => element.tagName),
+  ).toEqual(["H1", "IMG", "H2", "SPAN"]);
   expect(within(reveal).queryByText("1번 민서")).toBeNull();
   expect(within(reveal).queryByText("1 / 2")).toBeNull();
   expect(within(reveal).getByText("비고르모르티스")).toBeTruthy();

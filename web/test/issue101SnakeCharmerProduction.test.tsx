@@ -48,7 +48,11 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   const firstReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" });
   expect(firstReveal.classList.contains("snvInformationReveal")).toBe(true);
   expect(within(firstReveal).getByRole("heading", { level: 1, name: "당신의 직업이 변경되었습니다" })).toBeTruthy();
+  expect(
+    Array.from(firstReveal.querySelector(".snakeCharmerRevealIdentity")?.children ?? []).map((element) => element.tagName),
+  ).toEqual(["H1", "IMG", "H2", "SPAN"]);
   expect(within(firstReveal).getByText("비고르모르티스")).toBeTruthy();
+  expect(within(firstReveal).getByText("악")).toBeTruthy();
   expect(within(firstReveal).queryByText("1번 가람")).toBeNull();
   expect(within(firstReveal).queryByText("1 / 2")).toBeNull();
   expect(within(firstReveal).queryByText("악한 진영")).toBeNull();
