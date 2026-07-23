@@ -1096,7 +1096,13 @@ export function SectsAndVioletsFoundation({
   };
 
   const startLiveHandoff = (kind: LiveHandoff["kind"]) => {
-    setLiveHandoff({ kind, complete: false });
+    setLiveHandoff({
+      kind,
+      complete: false,
+      actorPlayerId: kind === "demon" || kind === "snakeCharmer"
+        ? replayState?.currentStep?.playerId
+        : undefined,
+    });
     if (kind === "nomination") {
       setLiveNominatorId(undefined);
       setLiveNomineeId(undefined);
@@ -1168,7 +1174,7 @@ export function SectsAndVioletsFoundation({
         type: "confirmStep",
         payload: { stepId: step.id, input: { playerIds: [liveTargetId] } },
       });
-      if (applied) setLiveHandoff({ kind: liveHandoff.kind, complete: true });
+      if (applied) setLiveHandoff({ ...liveHandoff, complete: true });
     }
     setOperationBusy(false);
   };

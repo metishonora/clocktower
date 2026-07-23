@@ -116,20 +116,52 @@ test("hides token affordances and keeps seat clicks in action selection mode", a
   expect(screen.queryByRole("dialog", { name: /플레이어 상세/ })).toBeNull();
 });
 
+test("keeps the completed Demon handoff actor highlighted until Next", () => {
+  const handoffPlayers: LivePlayer[] = [
+    livePlayer("demon", 1, "악마", "fangGu", "팡 구", "demon"),
+    livePlayer("next", 2, "다음 행동자", "dreamer", "꿈꾸는 자", "townsfolk"),
+  ];
+  const nextStep: PhaseStep = {
+    id: "night:dreamer",
+    phase: "night",
+    stepType: "character",
+    character: "dreamer",
+    playerId: "next",
+    requiredInput: { kind: "none", optional: false },
+    canSkip: false,
+    support: "manual",
+  };
+
+  renderGrimoire({
+    players: handoffPlayers,
+    currentStep: nextStep,
+    handoff: { kind: "demon", complete: true, actorPlayerId: "demon" },
+  });
+
+  const grimoire = screen.getByLabelText("밤 마도서");
+  expect(within(grimoire).getByRole("button", { name: /1번 좌석.*현재 행동자/ })).toBeTruthy();
+  expect(within(grimoire).queryByRole("button", { name: /2번 좌석.*현재 행동자/ })).toBeNull();
+  expect(within(grimoire).getByRole("button", { name: "다음 →" })).toBeTruthy();
+});
+
 function renderGrimoire({
+  players: visiblePlayers = players,
+  currentStep = dayStep,
   tokensByPlayerId: tokenPresentations = {},
   handoff,
   onSeatClick = vi.fn(),
 }: {
+  players?: LivePlayer[];
+  currentStep?: PhaseStep | null;
   tokensByPlayerId?: PlayerTokensByPlayerId;
   handoff?: LiveHandoff;
   onSeatClick?: (playerId: string) => void;
 } = {}) {
   return render(
     <SectsAndVioletsLiveGrimoire
-      players={players}
+      players={visiblePlayers}
       phaseLabel="2일차 낮"
-      currentStep={dayStep}
+      currentStep={currentStep}
       handoff={handoff}
       voterIds={[]}
       operationBusy={false}

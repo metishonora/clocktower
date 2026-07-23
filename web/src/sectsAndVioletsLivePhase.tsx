@@ -13,7 +13,11 @@ import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectang
 import "./issue116PhaseHandoffPrototype.css";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer";
-export type LiveHandoff = { kind: LiveHandoffKind; complete: boolean };
+export type LiveHandoff = {
+  kind: LiveHandoffKind;
+  complete: boolean;
+  actorPlayerId?: string;
+};
 
 export type LivePlayer = Player & {
   characterName: string;
@@ -193,7 +197,7 @@ export function SectsAndVioletsLiveGrimoire({
     "--grimoire-height": `${heights.desktop}px`,
     "--mobile-grimoire-height": `${heights.mobile}px`,
   } as CSSProperties;
-  const actorId = currentStep?.playerId;
+  const actorId = handoff?.actorPlayerId ?? currentStep?.playerId;
   const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"

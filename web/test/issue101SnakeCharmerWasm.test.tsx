@@ -50,6 +50,9 @@ test("the production UI continues to the later role after both swap reveals", as
   await user.click(within(app).getByRole("button", { name: /7번 좌석, Vigormortis/ }));
   await user.click(within(app).getByRole("button", { name: "7번 Vigormortis 선택 확정" }));
 
+  expect(within(app).getByRole("button", { name: /1번 좌석.*현재 행동자/ })).toBeTruthy();
+  expect(within(app).queryByRole("button", { name: /6번 좌석.*현재 행동자/ })).toBeNull();
+
   for (const sequence of [1, 2]) {
     const prompt = await screen.findByRole("dialog", { name: `직업 변경 안내 ${sequence}/2` });
     await user.click(within(prompt).getByRole("button", { name: "공개" }));
