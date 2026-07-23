@@ -105,6 +105,12 @@ test("allows a living player to nominate themself", async () => {
   const seatDistanceFromCenter = Math.hypot(selfSeat.x - 50, selfSeat.y - 50);
   expect(pathPoints.every((point) => Math.hypot(point.x - 50, point.y - 50) < seatDistanceFromCenter)).toBe(true);
   expect(pathPoints[0]).not.toEqual(pathPoints.at(-1));
+  const inward = { x: (50 - selfSeat.x) / seatDistanceFromCenter, y: (50 - selfSeat.y) / seatDistanceFromCenter };
+  const tangent = { x: -inward.y, y: inward.x };
+  const inwardOffsets = pathPoints.map((point) => (point.x - selfSeat.x) * inward.x + (point.y - selfSeat.y) * inward.y);
+  const tangentOffsets = pathPoints.map((point) => (point.x - selfSeat.x) * tangent.x + (point.y - selfSeat.y) * tangent.y);
+  expect(Math.max(...inwardOffsets)).toBeGreaterThanOrEqual(31);
+  expect(Math.max(...tangentOffsets) - Math.min(...tangentOffsets)).toBeGreaterThanOrEqual(42);
 });
 
 test("shows ghost-vote state visually only while voting and disables a spent ghost", async () => {

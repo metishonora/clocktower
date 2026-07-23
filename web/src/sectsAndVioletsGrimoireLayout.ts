@@ -53,10 +53,10 @@ export function inwardSelfNominationPath(position: { x: number; y: number }): st
     x: position.x + inward.x * inwardOffset + tangent.x * tangentOffset,
     y: position.y + inward.y * inwardOffset + tangent.y * tangentOffset,
   });
-  const start = point(12, 4);
-  const firstControl = point(24, 14);
-  const secondControl = point(24, -14);
-  const end = point(12, -4);
+  const start = point(13, 6);
+  const firstControl = point(32, 22);
+  const secondControl = point(32, -22);
+  const end = point(13, -6);
   return `M ${start.x},${start.y} C ${firstControl.x},${firstControl.y} ${secondControl.x},${secondControl.y} ${end.x},${end.y}`;
 }
 
