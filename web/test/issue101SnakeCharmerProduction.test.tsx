@@ -46,6 +46,7 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   await user.click(within(firstPrompt).getByRole("button", { name: "공개" }));
 
   const firstReveal = await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" });
+  expect(firstReveal.classList.contains("snvInformationReveal")).toBe(true);
   expect(within(firstReveal).getByRole("heading", { level: 1, name: "당신의 직업이 변경되었습니다" })).toBeTruthy();
   expect(within(firstReveal).getByText("비고르모르티스")).toBeTruthy();
   expect(within(firstReveal).queryByText("1번 가람")).toBeNull();
