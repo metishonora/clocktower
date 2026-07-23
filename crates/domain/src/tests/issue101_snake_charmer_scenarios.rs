@@ -196,6 +196,14 @@ fn official_no_swap_and_vigormortis_swap_are_atomic_replayable_events() {
             }
         ])
     );
+    assert!(
+        swapped["value"]["phaseOverview"]
+            .as_array()
+            .is_some_and(|steps| steps
+                .iter()
+                .all(|step| { step["id"] != "firstNight:snakeCharmer:player-7" })),
+        "new Snake Charmer must not get a generated first-night step"
+    );
 
     let undone = replay(&before);
     assert_eq!(
@@ -228,6 +236,16 @@ fn ongoing_night_swap_moves_the_later_demon_action_and_poison_blocks_the_next_sw
             "type": "confirmStep",
             "payload": { "stepId": snake_step_id(&night), "input": { "playerIds": ["player-7"] } }
         }),
+    );
+
+    let after_swap = replay(&events);
+    assert!(
+        after_swap["value"]["phaseOverview"]
+            .as_array()
+            .is_some_and(|steps| steps
+                .iter()
+                .all(|step| { step["id"] != "night:snakeCharmer:player-7" })),
+        "new Snake Charmer must not get a generated step in the swap night"
     );
 
     for _ in 0..8 {

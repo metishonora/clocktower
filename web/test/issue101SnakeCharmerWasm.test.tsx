@@ -21,9 +21,8 @@ test("the real WASM skips the newly poisoned Snake Charmer until the next night"
     character: "snakeCharmer",
     playerId: "player-7",
   });
-  expect(immediatelyAfterSwap.phaseOverview).toContainEqual(expect.objectContaining({
+  expect(immediatelyAfterSwap.phaseOverview).not.toContainEqual(expect.objectContaining({
     id: "night:snakeCharmer:player-7",
-    status: "notApplicable",
   }));
 
   const nextNight = await advanceToSnakeCharmer(game, true);
@@ -32,6 +31,22 @@ test("the real WASM skips the newly poisoned Snake Charmer until the next night"
     character: "snakeCharmer",
     playerId: "player-7",
   });
+});
+
+test("the real WASM never generates a first-night wake step for the new Snake Charmer", async () => {
+  const game = snakeCharmerGame();
+  const firstNight = await advanceToSnakeCharmer(game, false);
+
+  await choosePlayer(game, firstNight, "player-7");
+
+  const immediatelyAfterSwap = await replayOrThrow(game);
+  expect(immediatelyAfterSwap.currentStep).not.toMatchObject({
+    character: "snakeCharmer",
+    playerId: "player-7",
+  });
+  expect(immediatelyAfterSwap.phaseOverview).not.toContainEqual(expect.objectContaining({
+    id: "firstNight:snakeCharmer:player-7",
+  }));
 });
 
 test("the production UI continues to the later role after both swap reveals", async () => {

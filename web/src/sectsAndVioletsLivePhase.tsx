@@ -305,7 +305,7 @@ export function SectsAndVioletsLiveGrimoire({
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
-                {!handoff || handoff.complete ? (
+                {!centerPrompt && (!handoff || handoff.complete) ? (
                   <PlayerTokenCountBadge
                     count={playerTokens.length}
                     position={desktopPositions[index]}

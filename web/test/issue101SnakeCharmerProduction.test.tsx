@@ -48,6 +48,7 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   expect(within(firstPrompt).queryByText("비고르모르티스")).toBeNull();
   expect(within(app).queryByText("00:00")).toBeNull();
   expect(within(app).queryByRole("button", { name: "다음 →" })).toBeNull();
+  expect(within(app).queryByText("+1")).toBeNull();
   expect((within(app).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(true);
 
   const undo = within(app).getByRole("button", { name: /최근 행동 되돌리기/ });

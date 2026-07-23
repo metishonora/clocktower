@@ -192,7 +192,11 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .iter()
             .filter(|player| {
                 player.actual_character == character
-                    && (character != "snakeCharmer" || player.alive)
+                    && (character != "snakeCharmer"
+                        || (player.alive
+                            && !became_snake_charmer_from_swap_in_phase(
+                                &player.id, &prefix, events,
+                            )))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -254,7 +258,7 @@ fn phase_sequences(
     max_cycles: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
 ) -> Vec<(Phase, Vec<PhaseStep>)> {
-    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players))];
+    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players, events))];
     for cycle in 1..=max_cycles.max(1) {
         let prefix = crate::phase::phase_prefix("day", cycle);
         let executed_player_id = events.iter().find_map(|event| match &event.kind {
@@ -296,14 +300,20 @@ fn current_phase_steps(
     None
 }
 
-fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
+fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
     let mut steps = Vec::new();
     let players_for = |character: &str| {
         let mut matching = players
             .iter()
             .filter(|player| {
                 player.actual_character == character
-                    && (character != "snakeCharmer" || player.alive)
+                    && (character != "snakeCharmer"
+                        || (player.alive
+                            && !became_snake_charmer_from_swap_in_phase(
+                                &player.id,
+                                "firstNight",
+                                events,
+                            )))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -372,6 +382,24 @@ fn first_night_steps(players: &[Player]) -> Vec<PhaseStep> {
         crate::model::RequiredInputKind::Day,
     ));
     steps
+}
+
+fn became_snake_charmer_from_swap_in_phase(
+    player_id: &str,
+    prefix: &str,
+    events: &[GameEvent],
+) -> bool {
+    events.iter().any(|event| match &event.kind {
+        GameEventKind::SnakeCharmerActionResolved { payload }
+            if payload.target_player_id == player_id
+                && payload
+                    .step_id
+                    .starts_with(&format!("{prefix}:snakeCharmer:")) =>
+        {
+            matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. })
+        }
+        _ => false,
+    })
 }
 
 fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
