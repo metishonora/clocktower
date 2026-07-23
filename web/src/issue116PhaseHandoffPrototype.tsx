@@ -3,6 +3,7 @@ import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets"
 import {
   centeredArrowPoints,
   grimoireHeights,
+  inwardSelfNominationPath,
   rectangularSeatPositions,
 } from "./sectsAndVioletsGrimoireLayout";
 import "./sectsAndVioletsFoundationPrototype.css";
@@ -99,8 +100,8 @@ export function Issue116PhaseHandoffPrototype() {
         if (usedNominatorSeats.includes(seat)) return;
         setNominatorSeat(seat);
       } else if (nominatorSeat === seat) {
-        setNominatorSeat(undefined);
-        setNomineeSeat(undefined);
+        if (usedNomineeSeats.includes(seat)) return;
+        setNomineeSeat((current) => current === seat ? undefined : seat);
       } else if (nomineeSeat === seat) {
         setNomineeSeat(undefined);
       } else {
@@ -478,10 +479,14 @@ function GrimoireSurface({
             const ghostVoteState = deadDuringDaySelection
               ? spentGhostVoteSeats.includes(player.seat) ? "spent" : "available"
               : undefined;
+            const selfNominee = handoff?.kind === "nomination"
+              && player.seat === nominatorSeat && player.seat === nomineeSeat;
             const selectionRole = handoff?.kind === "nomination"
-              ? player.seat === nominatorSeat ? "지명자" : player.seat === nomineeSeat ? "피지명자" : undefined
+              ? selfNominee ? "지명자 · 피지명자" : player.seat === nominatorSeat ? "지명자" : player.seat === nomineeSeat ? "피지명자" : undefined
               : handoff?.kind === "vote" && selected ? "투표" : handoff?.kind === "demon" && selected ? "공격 대상" : undefined;
-            const selectionClass = selectionRole === "지명자"
+            const selectionClass = selfNominee
+              ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
+              : selectionRole === "지명자"
               ? " issue116NominatorSeat"
               : selectionRole === "피지명자"
                 ? " issue116NomineeSeat"
@@ -581,7 +586,7 @@ function NominationArrow({ nominatorSeat, nomineeSeat, desktopPositions, mobileP
   desktopPositions: { x: number; y: number }[];
   mobilePositions: { x: number; y: number }[];
 }) {
-  const label = `${seatLabel(nominatorSeat)}에서 ${seatLabel(nomineeSeat)}으로 지명`;
+  const label = `${seatLabel(nominatorSeat)} → ${seatLabel(nomineeSeat)} 지명`;
   return (
     <>
       <ArrowGraphic className="desktop" label={label} start={desktopPositions[nominatorSeat - 1]} end={desktopPositions[nomineeSeat - 1]} />
@@ -596,19 +601,21 @@ function ArrowGraphic({ className, label, start, end }: {
   start: { x: number; y: number };
   end: { x: number; y: number };
 }) {
+  const selfNomination = start.x === end.x && start.y === end.y;
   return (
     <svg
-      className={`issue116NominationArrow ${className}`}
+      className={`issue116NominationArrow ${className}${selfNomination ? " issue116SelfNominationArrow" : ""}`}
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
       <defs><marker id={`issue116Arrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
-      <polyline
-        points={centeredArrowPoints(start, end)}
-        markerEnd={`url(#issue116Arrow-${className})`}
-      />
+      {selfNomination ? (
+        <path d={inwardSelfNominationPath(start)} markerEnd={`url(#issue116Arrow-${className})`} />
+      ) : (
+        <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#issue116Arrow-${className})`} />
+      )}
     </svg>
   );
 }

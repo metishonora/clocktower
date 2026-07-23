@@ -27,7 +27,7 @@ test("keeps nomination and voting in one Grimoire visit before returning to the 
 
   await user.click(within(grimoire).getByRole("button", { name: /1번 좌석.*민지/ }));
   await user.click(within(grimoire).getByRole("button", { name: /4번 좌석.*도윤/ }));
-  const nominationArrow = within(grimoire).getByLabelText("1번 민지에서 4번 도윤으로 지명");
+  const nominationArrow = within(grimoire).getByLabelText("1번 민지 → 4번 도윤 지명");
   const arrowPoints = nominationArrow.querySelector("polyline")?.getAttribute("points");
   expect(arrowPoints).toContain("50,50");
   const [arrowStart, , arrowEnd] = arrowPoints!.split(" ").map((point) => {
@@ -79,6 +79,32 @@ test("excludes prior nominators and nominees at the matching selection step", as
   await user.click(within(grimoire).getByRole("button", { name: /6번 좌석/ }));
   await user.click(within(grimoire).getByRole("button", { name: "2번 → 6번 지명 확정" }));
   expect(within(grimoire).getByText("후보 기준 6표")).toBeTruthy();
+});
+
+test("allows a living player to nominate themself", async () => {
+  const user = userEvent.setup();
+  render(<Issue116PhaseHandoffPrototype />);
+  const prototype = screen.getByRole("main", { name: "이슈 116 낮과 이후 밤 프로토타입" });
+
+  await user.click(within(prototype).getByRole("button", { name: "← 지명하기" }));
+  const grimoire = within(prototype).getByRole("region", { name: "낮 마도서" });
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석.*민지/ }));
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석.*지명자/ }));
+
+  expect(within(grimoire).getByRole("button", { name: "1번 → 1번 지명 확정" })).toBeTruthy();
+  const selfArrow = within(grimoire).getByLabelText("1번 민지 → 1번 민지 지명");
+  expect(selfArrow.classList.contains("issue116SelfNominationArrow")).toBe(true);
+  expect(selfArrow.querySelector("polyline")).toBeNull();
+  const selfPath = selfArrow.querySelector("path[marker-end]");
+  const selfPathData = selfPath?.getAttribute("d");
+  expect(selfPathData).toContain(" C ");
+  expect(selfPath?.getAttribute("marker-end")).toContain("issue116Arrow-desktop");
+  const pathPoints = [...selfPathData!.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)]
+    .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+  const selfSeat = rectangularSeatPositions(7, false)[0];
+  const seatDistanceFromCenter = Math.hypot(selfSeat.x - 50, selfSeat.y - 50);
+  expect(pathPoints.every((point) => Math.hypot(point.x - 50, point.y - 50) < seatDistanceFromCenter)).toBe(true);
+  expect(pathPoints[0]).not.toEqual(pathPoints.at(-1));
 });
 
 test("shows ghost-vote state visually only while voting and disables a spent ghost", async () => {

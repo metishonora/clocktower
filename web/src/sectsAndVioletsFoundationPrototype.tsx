@@ -1062,8 +1062,8 @@ export function SectsAndVioletsFoundation({
         return;
       }
       if (playerId === liveNominatorId) {
-        setLiveNominatorId(undefined);
-        setLiveNomineeId(undefined);
+        if (!replayState?.dayState?.eligibleNomineeIds.includes(playerId)) return;
+        setLiveNomineeId((current) => current === playerId ? undefined : playerId);
         return;
       }
       if (!replayState?.dayState?.eligibleNomineeIds.includes(playerId)) return;

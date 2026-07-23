@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from "react";
 import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
-import { centeredArrowPoints, grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue116PhaseHandoffPrototype.css";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon";
@@ -184,10 +184,13 @@ export function SectsAndVioletsLiveGrimoire({
             const selected = handoff?.kind === "nomination"
               ? player.id === nominatorId || player.id === nomineeId
               : handoff?.kind === "vote" ? voterIds.includes(player.id) : player.id === targetId;
+            const selfNominee = handoff?.kind === "nomination"
+              && player.id === nominatorId && player.id === nomineeId;
             const selectionRole = handoff?.kind === "nomination"
-              ? player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
+              ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
               : handoff?.kind === "vote" && selected ? "투표" : handoff?.kind === "demon" && selected ? "공격 대상" : undefined;
-            const selectionClass = selectionRole === "지명자" ? " issue116NominatorSeat"
+            const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
+              : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
                 : selectionRole === "투표" ? " issue116VoterSeat"
                   : selectionRole === "공격 대상" ? " issue116DemonTargetSeat" : "";
@@ -233,7 +236,7 @@ export function SectsAndVioletsLiveGrimoire({
             <NominationArrow
               nominatorIndex={players.indexOf(nominator)}
               nomineeIndex={players.indexOf(nominee)}
-              label={`${nominator.name}에서 ${nominee.name}으로 지명`}
+              label={`${nominator.name} → ${nominee.name} 지명`}
               desktopPositions={desktopPositions}
               mobilePositions={mobilePositions}
             />
@@ -332,10 +335,11 @@ function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions
 }
 
 function ArrowGraphic({ className, label, start, end }: { className: string; label?: string; start: { x: number; y: number }; end: { x: number; y: number } }) {
+  const selfNomination = start.x === end.x && start.y === end.y;
   return (
-    <svg className={`issue116NominationArrow ${className}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
+    <svg className={`issue116NominationArrow ${className}${selfNomination ? " issue116SelfNominationArrow" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
       <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
-      <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />
+      {selfNomination ? <path d={inwardSelfNominationPath(start)} markerEnd={`url(#snvLiveArrow-${className})`} /> : <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />}
     </svg>
   );
 }

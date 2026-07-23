@@ -44,6 +44,22 @@ export function centeredArrowPoints(start: { x: number; y: number }, end: { x: n
   return `${visibleStart.x},${visibleStart.y} 50,50 ${visibleEnd.x},${visibleEnd.y}`;
 }
 
+export function inwardSelfNominationPath(position: { x: number; y: number }): string {
+  const center = { x: 50, y: 50 };
+  const distance = Math.hypot(center.x - position.x, center.y - position.y);
+  const inward = { x: (center.x - position.x) / distance, y: (center.y - position.y) / distance };
+  const tangent = { x: -inward.y, y: inward.x };
+  const point = (inwardOffset: number, tangentOffset: number) => ({
+    x: position.x + inward.x * inwardOffset + tangent.x * tangentOffset,
+    y: position.y + inward.y * inwardOffset + tangent.y * tangentOffset,
+  });
+  const start = point(12, 4);
+  const firstControl = point(24, 14);
+  const secondControl = point(24, -14);
+  const end = point(12, -4);
+  return `M ${start.x},${start.y} C ${firstControl.x},${firstControl.y} ${secondControl.x},${secondControl.y} ${end.x},${end.y}`;
+}
+
 function perimeterCounts(playerCount: number, mobile: boolean) {
   const top = mobile ? Math.min(2, playerCount) : Math.ceil(playerCount / 4);
   const bottom = Math.min(mobile ? 2 : Math.ceil(playerCount / 4), playerCount - top);

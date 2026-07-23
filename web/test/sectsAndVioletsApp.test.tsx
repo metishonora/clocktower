@@ -288,15 +288,15 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
   expect(within(app).getByLabelText("7자리 그리모어")).toBeTruthy();
   await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
-  await user.click(within(app).getByRole("button", { name: /2번 좌석.*사망.*피지명 가능/ }));
-  await user.click(within(app).getByRole("button", { name: "3번 → 2번 지명 확정" }));
+  await user.click(within(app).getByRole("button", { name: /3번 좌석.*지명자/ }));
+  await user.click(within(app).getByRole("button", { name: "3번 → 3번 지명 확정" }));
   expect(core.propose).toHaveBeenLastCalledWith(
     expect.anything(),
     {
       type: "confirmStep",
       payload: {
         stepId: "day:nomination:2",
-        input: { nominatorId: "player-3", nomineeId: "player-2" },
+        input: { nominatorId: "player-3", nomineeId: "player-3" },
       },
     },
   );
