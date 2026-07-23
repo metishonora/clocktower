@@ -59,7 +59,7 @@ fn sects_and_violets_first_night_interleaves_system_and_present_character_steps(
             "firstNight:philosopher",
             "firstNight:minionInfo",
             "firstNight:demonInfo",
-            "firstNight:snakeCharmer",
+            "firstNight:snakeCharmer:player-2",
             "firstNight:witch",
             "firstNight:clockmaker",
             "firstNight:seamstress",
@@ -137,7 +137,12 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
     let state: Value = serde_json::from_str(&replay_json(&before.to_string())).unwrap();
     assert_eq!(state["ok"], true, "{state}");
     let step = &state["value"]["currentStep"];
-    let command = if step["support"] == "manual" {
+    let command = if step["character"] == "snakeCharmer" {
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": step["id"], "input": { "playerIds": ["player-6"] } }
+        })
+    } else if step["support"] == "manual" {
         json!({
             "type": "resolveManualStep",
             "payload": { "stepId": step["id"], "outcome": "handled" }
@@ -259,9 +264,9 @@ fn first_night_enters_the_canonical_day_flow_then_the_official_later_night_order
         ids,
         [
             "night:philosopher",
-            "night:snakeCharmer",
+            "night:snakeCharmer:player-2",
             "night:witch",
-            "night:demon",
+            "night:demon:player-7",
             "night:seamstress",
             "night:mathematician",
             "night:toDay",

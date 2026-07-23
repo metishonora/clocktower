@@ -230,6 +230,13 @@ export type ReplayState = {
   ruleState: RuleState;
   warnings: CoreWarning[];
   gameEnd?: GameEndState | null;
+  pendingIdentityReveals?: PendingIdentityReveal[];
+};
+
+export type PendingIdentityReveal = {
+  sourceEventId: string;
+  sequence: number;
+  payload: CharacterChangeRevealPayload;
 };
 
 export type GameEndState = {
@@ -249,6 +256,15 @@ export type RuleState = {
     spentByNominationEventId?: string;
   };
   butlerVote?: ButlerVoteState;
+  activeImpairments?: ActiveImpairment[];
+};
+
+export type ActiveImpairment = {
+  kind: "poisoned";
+  playerId: string;
+  sourceEventId: string;
+  sourceCharacterId: string;
+  expires: "never";
 };
 
 export type ButlerVoteState = {
@@ -467,6 +483,21 @@ export type GameEvent = EventCommon &
         };
       }
     | {
+        type: "snakeCharmerActionResolved";
+        payload: {
+          stepId: string;
+          actorPlayerId: string;
+          targetPlayerId: string;
+          outcome:
+            | { kind: "noSwap"; reason: "targetNotDemon" | "actorImpaired" }
+            | {
+                kind: "swap";
+                identityTransitions: PlayerIdentityTransition[];
+                impairment: ActiveImpairment;
+              };
+        };
+      }
+    | {
         type: "playerAnnotationsUpdated";
         payload: {
           playerId: string;
@@ -571,6 +602,26 @@ export type Player = {
   systemTokenIds: SystemTokenId[];
   scriptTokens: ScriptTokenRef[];
   notes: string;
+  identityHistory?: IdentityHistoryEntry[];
+};
+
+export type IdentityState = {
+  actualCharacter: string;
+  shownCharacter: string;
+  alignment: "good" | "evil";
+};
+
+export type IdentityHistoryEntry = {
+  sourceEventId: string;
+  phase: Phase;
+  before: IdentityState;
+  after: IdentityState;
+};
+
+export type PlayerIdentityTransition = {
+  playerId: string;
+  before: IdentityState;
+  after: IdentityState;
 };
 
 export type CoreWarning = {

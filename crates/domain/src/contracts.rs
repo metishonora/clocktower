@@ -3,8 +3,8 @@ use serde_json::Value;
 
 use crate::model::{
     Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase,
-    PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, ScriptTokenRef, StepInput,
-    SystemTokenId,
+    PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, RegistrationJudgment,
+    ScriptTokenRef, StepInput, SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -207,6 +207,8 @@ pub(crate) struct ReplayState {
     pub(crate) warnings: Vec<CoreWarning>,
     pub(crate) rule_state: RuleState,
     pub(crate) game_end: Option<GameEndState>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) pending_identity_reveals: Vec<PendingIdentityReveal>,
 }
 
 #[derive(Debug, Serialize)]
@@ -232,6 +234,30 @@ pub(crate) struct RuleState {
     pub(crate) virgin_ability: Option<crate::model::VirginAbilityState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) butler_vote: Option<ButlerVoteState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ActiveImpairment {
+    pub(crate) kind: ImpairmentKind,
+    pub(crate) player_id: String,
+    pub(crate) source_event_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) expires: ImpairmentExpiry,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ImpairmentKind {
+    Poisoned,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ImpairmentExpiry {
+    Never,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -262,7 +288,7 @@ pub(crate) struct Proposal {
     pub(crate) reveal_payload: Option<RevealPayload>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub(crate) enum RevealPayload {
     SpyGrimoire {
@@ -323,13 +349,21 @@ pub(crate) enum RevealPayload {
         kind: &'static str,
         #[serde(rename = "playerId")]
         player_id: String,
-        alignment: &'static str,
+        alignment: String,
         #[serde(rename = "characterId")]
-        character_id: &'static str,
+        character_id: String,
     },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PendingIdentityReveal {
+    pub(crate) source_event_id: String,
+    pub(crate) sequence: u8,
+    pub(crate) payload: RevealPayload,
+}
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RevealPlayer {
     pub(crate) player_id: String,
@@ -337,7 +371,7 @@ pub(crate) struct RevealPlayer {
     pub(crate) name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RevealIdentity {
     pub(crate) seat: u8,
@@ -400,12 +434,49 @@ pub(crate) enum GameEventKind {
     DemonSuccessionConfirmed {
         payload: DemonSuccessionConfirmedPayload,
     },
+    #[serde(rename = "snakeCharmerActionResolved")]
+    SnakeCharmerActionResolved {
+        payload: SnakeCharmerActionResolvedPayload,
+    },
     #[serde(rename = "gameEnded")]
     GameEnded { payload: GameEndedPayload },
     #[serde(rename = "playerAnnotationsUpdated")]
     PlayerAnnotationsUpdated {
         payload: PlayerAnnotationsUpdatedPayload,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct SnakeCharmerActionResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) outcome: SnakeCharmerActionOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SnakeCharmerActionOutcome {
+    NoSwap {
+        reason: SnakeCharmerNoSwapReason,
+    },
+    Swap {
+        identity_transitions: Vec<PlayerIdentityTransition>,
+        impairment: ActiveImpairment,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SnakeCharmerNoSwapReason {
+    TargetNotDemon,
+    ActorImpaired,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

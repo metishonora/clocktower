@@ -175,6 +175,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         warnings,
         rule_state,
         game_end,
+        pending_identity_reveals: vec![],
     })
 }
 
@@ -1331,6 +1332,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,
+        active_impairments: None,
     }
 }
 

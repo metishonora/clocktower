@@ -33,6 +33,8 @@ import {
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
+import { SnakeCharmerIdentityReveal } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
+import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
@@ -149,6 +151,7 @@ export function SectsAndVioletsFoundation({
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
+  const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
@@ -231,6 +234,35 @@ export function SectsAndVioletsFoundation({
   }), [replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
+  const pendingIdentityReveals = replayState?.pendingIdentityReveals ?? [];
+  const nextIdentityReveal = pendingIdentityReveals.find(
+    (reveal) => !acknowledgedIdentityRevealKeys.includes(identityRevealKey(gameFile.game.id, reveal.sourceEventId, reveal.sequence)),
+  );
+  const identityRevealPlayer = replayState?.players.find(
+    (player) => player.id === nextIdentityReveal?.payload.playerId,
+  );
+  const canonicalTokensByPlayerId = useMemo<PlayerTokensByPlayerId>(() => {
+    const result: Record<string, Array<{
+      instanceId: string;
+      label: string;
+      sourceLabel: string;
+      sourceIconSrc?: string;
+      visualKind: "impairment";
+      description: string;
+    }>> = {};
+    for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
+      const token = {
+        instanceId: `canonical-${impairment.sourceEventId}-${impairment.playerId}`,
+        label: "중독",
+        sourceLabel: "뱀 조련사",
+        sourceIconSrc: sectsAndVioletsCharacterAsset(impairment.sourceCharacterId)?.src,
+        visualKind: "impairment" as const,
+        description: "뱀 조련사 교환으로 영구 중독된 상태입니다.",
+      };
+      (result[impairment.playerId] ??= []).push(token);
+    }
+    return result;
+  }, [replayState?.ruleState.activeImpairments]);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -265,6 +297,12 @@ export function SectsAndVioletsFoundation({
   useEffect(() => {
     if (!warningKey) setDismissedWarningKey(undefined);
   }, [warningKey]);
+
+  useEffect(() => {
+    if (pendingIdentityReveals.length === 0 && acknowledgedIdentityRevealKeys.length > 0) {
+      setAcknowledgedIdentityRevealKeys([]);
+    }
+  }, [pendingIdentityReveals.length, acknowledgedIdentityRevealKeys.length]);
 
   useEffect(() => {
     if (!returnConfirmOpen) return;
@@ -1055,7 +1093,7 @@ export function SectsAndVioletsFoundation({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer") setLiveTargetId(undefined);
     navigateToTab("seating");
   };
 
@@ -1120,7 +1158,7 @@ export function SectsAndVioletsFoundation({
         type: "confirmStep",
         payload: { stepId: step.id, input: { playerIds: [liveTargetId] } },
       });
-      if (applied) setLiveHandoff({ kind: "demon", complete: true });
+      if (applied) setLiveHandoff({ kind: liveHandoff.kind, complete: true });
     }
     setOperationBusy(false);
   };
@@ -1133,6 +1171,22 @@ export function SectsAndVioletsFoundation({
     setLiveTargetId(undefined);
     setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
+  };
+
+  const acknowledgeIdentityReveal = () => {
+    if (!nextIdentityReveal) return;
+    setAcknowledgedIdentityRevealKeys((current) => [
+      ...current,
+      identityRevealKey(gameFile.game.id, nextIdentityReveal.sourceEventId, nextIdentityReveal.sequence),
+    ]);
+    const isLast = pendingIdentityReveals.every(
+      (reveal) => reveal.sequence <= nextIdentityReveal.sequence,
+    );
+    if (isLast) {
+      setLiveHandoff(undefined);
+      setLiveTargetId(undefined);
+      navigateToTab("seating");
+    }
   };
 
   const resetLiveDaySelection = () => {
@@ -1375,6 +1429,7 @@ export function SectsAndVioletsFoundation({
           voterIds={liveVoterIds}
           targetId={liveTargetId}
           operationBusy={operationBusy}
+          tokensByPlayerId={canonicalTokensByPlayerId}
           onSeatClick={chooseLiveSeat}
           onConfirm={() => void confirmLiveHandoff()}
           onReturn={returnFromLiveHandoff}
@@ -1548,6 +1603,7 @@ export function SectsAndVioletsFoundation({
           onEndNominations={() => void endLiveNominations()}
           onConfirmExecution={() => void confirmLiveExecution()}
           onStartDemonAttack={() => startLiveHandoff("demon")}
+          onStartSnakeCharmer={() => startLiveHandoff("snakeCharmer")}
           onAdvance={() => void advanceFirstNight()}
           onResolveManual={(outcome) => void advanceFirstNight(outcome)}
         />
@@ -1577,15 +1633,19 @@ export function SectsAndVioletsFoundation({
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
-                  {currentFirstNightStep.support === "automated" ? (
+                  {replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds" ? null : currentFirstNightStep.support === "automated" ? (
                     <button
                       type="button"
                       className={`informationReveal ${revealedStepIds.includes(currentFirstNightStep.id) ? "" : "prominent"}`}
                       onClick={showCurrentStepInformation}
                     >정보 공개</button>
                   ) : null}
-                  <button type="button" disabled={operationBusy} onClick={() => void advanceFirstNight()}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
-                  {currentFirstNightStep.support === "manual" ? <button type="button" className="secondary" disabled={operationBusy} onClick={() => void advanceFirstNight("notApplicable")}>해당 없음</button> : null}
+                  {replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds" ? (
+                    <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("snakeCharmer")}>대상 선택</button>
+                  ) : (
+                    <button type="button" disabled={operationBusy} onClick={() => void advanceFirstNight()}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
+                  )}
+                  {currentFirstNightStep.support === "manual" && !(replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds") ? <button type="button" className="secondary" disabled={operationBusy} onClick={() => void advanceFirstNight("notApplicable")}>해당 없음</button> : null}
                 </div>
               </article>
             ) : effectivePlayPhase === "firstNight" ? (
@@ -1761,8 +1821,20 @@ export function SectsAndVioletsFoundation({
           <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
         </aside>
       ) : null}
+      {nextIdentityReveal ? (
+        <SnakeCharmerIdentityReveal
+          reveal={nextIdentityReveal}
+          player={identityRevealPlayer}
+          total={pendingIdentityReveals.length}
+          onConfirm={acknowledgeIdentityReveal}
+        />
+      ) : null}
     </main>
   );
+}
+
+function identityRevealKey(gameId: string, sourceEventId: string, sequence: number) {
+  return `${gameId}:${sourceEventId}:${sequence}`;
 }
 
 function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {

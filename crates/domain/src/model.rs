@@ -548,6 +548,33 @@ pub(crate) struct Player {
     pub(crate) system_token_ids: Vec<SystemTokenId>,
     pub(crate) script_tokens: Vec<ScriptTokenRef>,
     pub(crate) notes: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) identity_history: Vec<IdentityHistoryEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct IdentityState {
+    pub(crate) actual_character: String,
+    pub(crate) shown_character: String,
+    pub(crate) alignment: Alignment,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct IdentityHistoryEntry {
+    pub(crate) source_event_id: String,
+    pub(crate) phase: Phase,
+    pub(crate) before: IdentityState,
+    pub(crate) after: IdentityState,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerIdentityTransition {
+    pub(crate) player_id: String,
+    pub(crate) before: IdentityState,
+    pub(crate) after: IdentityState,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]

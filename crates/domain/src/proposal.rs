@@ -1063,8 +1063,8 @@ fn propose_demon_succession(
         reveal_payload: (pending.phase == Phase::Night).then(|| RevealPayload::CharacterChange {
             kind: "characterChange",
             player_id: successor.id.clone(),
-            alignment: "evil",
-            character_id: "imp",
+            alignment: "evil".into(),
+            character_id: "imp".into(),
         }),
     })
 }
