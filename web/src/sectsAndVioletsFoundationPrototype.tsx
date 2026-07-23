@@ -296,9 +296,11 @@ export function SectsAndVioletsFoundation({
       .map((event, index) => ({ event, number: previousEventCount + index + 1 }))
       .reverse();
   }, [gameFile.game.events, phaseCheckpoints, undoCheckpoint]);
-  const warnings = replayState?.warnings ?? [];
-  const warningKey = warnings.map((warning) => `${warning.code}:${warning.messageKo}`).join("\u001f");
-  const warningVisible = warnings.length > 0 && warningKey !== dismissedWarningKey;
+  const visibleWarnings = (replayState?.warnings ?? []).filter(
+    (warning) => warning.code !== "NIGHT_DEATH_UNANNOUNCED",
+  );
+  const warningKey = visibleWarnings.map((warning) => `${warning.code}:${warning.messageKo}`).join("\u001f");
+  const warningVisible = visibleWarnings.length > 0 && warningKey !== dismissedWarningKey;
   const storageLoading = Boolean(storageDriver && !storageReady);
 
   useEffect(() => {
@@ -1834,8 +1836,8 @@ export function SectsAndVioletsFoundation({
         <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
           <span aria-hidden="true">!</span>
           <div>
-            <strong>{warnings.length > 1 ? `게임 경고 · ${warnings.length}건` : "게임 경고"}</strong>
-            {warnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}
+            <strong>{visibleWarnings.length > 1 ? `게임 경고 · ${visibleWarnings.length}건` : "게임 경고"}</strong>
+            {visibleWarnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}
           </div>
           <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
         </aside>

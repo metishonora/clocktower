@@ -665,7 +665,7 @@ test("preserves an unreadable autosave until confirmed new-game recovery", async
   expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(7);
 });
 
-test("shows replay warnings as a dismissible bottom notification", async () => {
+test("shows actionable replay warnings but not the expected pending night-death state", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const warningState = {
     schemaVersion: 3,
@@ -675,8 +675,11 @@ test("shows replay warnings as a dismissible bottom notification", async () => {
     players: [],
     currentStep: null,
     phaseOverview: [],
-    ruleState: { unannouncedNightDeathPlayerIds: [] },
-    warnings: [{ code: "VORTOX_INFO", severity: "warning", messageKo: "보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요." }],
+    ruleState: { unannouncedNightDeathPlayerIds: ["player-4"] },
+    warnings: [
+      { code: "NIGHT_DEATH_UNANNOUNCED", severity: "warning", messageKo: "공개하지 않은 밤 사망이 있습니다." },
+      { code: "VORTOX_INFO", severity: "warning", messageKo: "보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요." },
+    ],
     gameEnd: null,
   } satisfies ReplayState;
   core.replay.mockResolvedValue({ ok: true, value: warningState } as never);
@@ -686,6 +689,7 @@ test("shows replay warnings as a dismissible bottom notification", async () => {
 
   const warning = await within(app).findByRole("status", { name: "게임 경고" });
   expect(within(warning).getByText("보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요.")).toBeTruthy();
+  expect(within(warning).queryByText("공개하지 않은 밤 사망이 있습니다.")).toBeNull();
   await user.click(within(warning).getByRole("button", { name: "경고 닫기" }));
   expect(within(app).queryByRole("status", { name: "게임 경고" })).toBeNull();
 });
