@@ -95,11 +95,15 @@
 
 @media (max-width: 640px) {
   .characterRulesBackdrop.snv-night {
-    --character-detail-ink: #f1edf2;
-    --character-detail-muted: #aaa4ad;
-    --character-detail-accent: #c6bec8;
-    --character-detail-link: #e4c77f;
+    --character-detail-ink: #cbc1cf;
+    --character-detail-muted: #958b9a;
+    --character-detail-accent: #e0bc69;
+    --character-detail-link: #e8cd86;
   }
+  .characterRulesBackdrop.snv-night .characterRulesHeader h2 { color: #f7f1f8; }
+  .characterRulesBackdrop.snv-night .characterRulesAbility { color: #f3e9f5; }
+  .characterRulesBackdrop.snv-night .characterRulesReminders strong { color: #f0dfaf; }
+  .characterRulesBackdrop.snv-night .characterRulesExample summary { color: #d8ceda; }
   .characterRulesBackdrop { align-items: flex-end; }
   .characterRulesCard {
     width: 100%;
