@@ -125,7 +125,8 @@ export function SectsAndVioletsLiveGrimoire({
   onSeatClick,
   onConfirm,
   onReturn,
-  onCancelNomination,
+  onCancelDayHandoff,
+  onResetDaySelection,
   onGoToProgress,
   onReturnToSetup,
 }: {
@@ -142,7 +143,8 @@ export function SectsAndVioletsLiveGrimoire({
   onSeatClick: (playerId: string) => void;
   onConfirm: () => void;
   onReturn: () => void;
-  onCancelNomination: () => void;
+  onCancelDayHandoff: () => void;
+  onResetDaySelection: () => void;
   onGoToProgress: () => void;
   onReturnToSetup: () => void;
 }) {
@@ -171,7 +173,9 @@ export function SectsAndVioletsLiveGrimoire({
         <div className="snvSeatingToolbar" aria-label="마도서 도구">
           <span className="issue116PhaseChip">{phaseLabel}</span>
           {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
-          {handoff.kind === "nomination" ? <button type="button" onClick={onCancelNomination}>지명 취소 →</button> : null}
+          {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
+            <button type="button" disabled={operationBusy} onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
+          ) : null}
         </div>
       ) : (
         <div className="snvSeatingToolbar" aria-label="마도서 도구">
@@ -251,7 +255,12 @@ export function SectsAndVioletsLiveGrimoire({
         </div>
         {handoff ? (
           <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
-            <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : "Demon 공격"}</h2>
+            <header className="issue116SelectionHeader">
+              <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : "Demon 공격"}</h2>
+              {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
+                <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
+              ) : null}
+            </header>
             {handoff.kind === "nomination" ? (
               <dl><div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div><div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div></dl>
             ) : handoff.kind === "vote" ? (

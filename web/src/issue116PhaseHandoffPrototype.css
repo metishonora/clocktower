@@ -52,6 +52,10 @@
 .issue116SelectionPanel { display: grid; box-sizing: border-box; min-height: 100%; padding: 24px; align-content: start; gap: 16px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); }
 .issue116SelectionPanel > span { color: #bca7c4; font-size: .72rem; font-weight: 900; letter-spacing: .08em; }
 .issue116SelectionPanel h2 { margin: 0; font: 2rem Georgia, serif; }
+.issue116SelectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.issue116SelectionHeader button { padding: 7px 9px; border: 0; border-radius: 9px; color: #7b667f; background: transparent; font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.issue116SelectionHeader button:hover:not(:disabled) { color: #4f3857; background: rgba(104, 66, 114, .08); }
+.issue116SelectionHeader button:disabled { opacity: .45; cursor: wait; }
 .issue116SelectionPanel p { color: #bdaec3; line-height: 1.55; }
 .issue116SelectionPanel dl { display: grid; margin: 8px 0 0; gap: 8px; }
 .issue116SelectionPanel dl > div { display: flex; min-height: 46px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 12px; border-radius: 12px; background: rgba(255, 255, 255, .045); }

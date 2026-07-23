@@ -271,6 +271,8 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   } satisfies ReplayState;
   core.replay
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(players.map(({ seat, name, actualCharacter, shownCharacter }) => ({
     seat,
@@ -278,6 +280,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
     actualCharacter,
     shownCharacter,
   }))));
+  const initialEventCount = storage.savedGames[0].game.events.length;
 
   const user = userEvent.setup();
   render(<SectsAndVioletsApp storageDriver={storage} />);
@@ -300,6 +303,10 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
       },
     },
   );
+  expect(within(app).getByRole("button", { name: "투표 취소 →" })).toBeTruthy();
+  await user.click(within(app).getByRole("button", { name: "투표 취소 →" }));
+  await waitFor(() => expect(core.replay.mock.calls.at(-1)?.[0].game.events).toHaveLength(initialEventCount));
+  expect(within(app).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
 });
 
 test("starts a production new game with fresh canonical history", async () => {

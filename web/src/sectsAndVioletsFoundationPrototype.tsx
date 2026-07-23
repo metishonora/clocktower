@@ -186,6 +186,7 @@ export function SectsAndVioletsFoundation({
   const [liveNomineeId, setLiveNomineeId] = useState<string>();
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
+  const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
@@ -743,6 +744,7 @@ export function SectsAndVioletsFoundation({
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
+    setLiveNominationCheckpointId(undefined);
   }
 
   const choosePlayerCount = (count: number) => {
@@ -1048,6 +1050,7 @@ export function SectsAndVioletsFoundation({
       setLiveNominatorId(undefined);
       setLiveNomineeId(undefined);
       setLiveVoterIds([]);
+      setLiveNominationCheckpointId(undefined);
     }
     if (kind === "demon") setLiveTargetId(undefined);
     navigateToTab("seating");
@@ -1100,6 +1103,7 @@ export function SectsAndVioletsFoundation({
       });
       if (applied) {
         setLiveVoterIds([]);
+        setLiveNominationCheckpointId(applied.gameFile.game.events.at(-1)?.id);
         setLiveHandoff({ kind: "vote", complete: false });
       }
     } else if (liveHandoff.kind === "vote") {
@@ -1124,14 +1128,62 @@ export function SectsAndVioletsFoundation({
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
+    setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
   };
 
-  const cancelLiveNomination = () => {
-    setLiveHandoff(undefined);
-    setLiveNominatorId(undefined);
-    setLiveNomineeId(undefined);
+  const resetLiveDaySelection = () => {
+    if (liveHandoff?.kind === "nomination") {
+      setLiveNominatorId(undefined);
+      setLiveNomineeId(undefined);
+    } else if (liveHandoff?.kind === "vote") {
+      setLiveVoterIds([]);
+    }
+  };
+
+  const cancelLiveDayHandoff = async () => {
+    if (operationBusy || (liveHandoff?.kind !== "nomination" && liveHandoff?.kind !== "vote")) return;
+    if (liveHandoff.kind === "nomination") {
+      setLiveHandoff(undefined);
+      setLiveNominatorId(undefined);
+      setLiveNomineeId(undefined);
+      setLiveVoterIds([]);
+      setLiveNominationCheckpointId(undefined);
+      navigateToTab("play");
+      return;
+    }
+    if (!coreAdapter || !liveNominationCheckpointId) return;
+    const currentWithSession = withSectsAndVioletsSession(
+      gameFile,
+      currentSessionState(new Date().toISOString()),
+    );
+    const removal = removeLatestSectsAndVioletsPhaseCheckpoint(currentWithSession);
+    if (!removal || removal.removed.id !== liveNominationCheckpointId) {
+      setOperationError("현재 지명 기록이 변경되어 투표를 취소하지 않았습니다.");
+      return;
+    }
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const replayed = await coreAdapter.replay(removal.gameFile).catch((error: unknown) => ({
+      ok: false as const,
+      error: {
+        code: "WASM_LOAD_FAILED",
+        messageKo: error instanceof Error ? error.message : "투표 취소 실패",
+      },
+    }));
+    if (!replayed.ok) {
+      setOperationBusy(false);
+      setOperationError(replayed.error.messageKo);
+      return;
+    }
+    setGameFile(removal.gameFile);
+    setReplayState(replayed.value);
+    setPhaseCheckpoints(removal.gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? []);
+    setProposalTransientStateAfterHistoryChange();
+    setLiveNominationCheckpointId(undefined);
+    setOperationBusy(false);
     navigateToTab("play");
+    markAutosaveNeeded();
   };
 
   const endLiveNominations = async () => {
@@ -1288,7 +1340,8 @@ export function SectsAndVioletsFoundation({
           onSeatClick={chooseLiveSeat}
           onConfirm={() => void confirmLiveHandoff()}
           onReturn={returnFromLiveHandoff}
-          onCancelNomination={cancelLiveNomination}
+          onCancelDayHandoff={() => void cancelLiveDayHandoff()}
+          onResetDaySelection={resetLiveDaySelection}
           onGoToProgress={() => navigateToTab("play")}
           onReturnToSetup={() => setReturnConfirmOpen(true)}
         />

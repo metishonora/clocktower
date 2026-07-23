@@ -160,12 +160,22 @@ export function Issue116PhaseHandoffPrototype() {
     if (completedKind === "vote") setDayStep("nominations");
   };
 
-  const cancelNomination = () => {
-    if (handoff?.kind !== "nomination") return;
+  const cancelDayHandoff = () => {
+    if (handoff?.kind !== "nomination" && handoff?.kind !== "vote") return;
     setHandoff(undefined);
     setNominatorSeat(undefined);
     setNomineeSeat(undefined);
+    setVoterSeats([]);
     setActiveTab("play");
+  };
+
+  const resetDaySelection = () => {
+    if (handoff?.kind === "nomination") {
+      setNominatorSeat(undefined);
+      setNomineeSeat(undefined);
+    } else if (handoff?.kind === "vote") {
+      setVoterSeats([]);
+    }
   };
 
   const directTabChange = (tab: ActiveTab) => {
@@ -244,7 +254,8 @@ export function Issue116PhaseHandoffPrototype() {
           onSeatClick={selectSeat}
           onConfirm={confirmHandoff}
           onReturn={returnToProgress}
-          onCancelNomination={cancelNomination}
+          onCancelDayHandoff={cancelDayHandoff}
+          onResetDaySelection={resetDaySelection}
           onGoToProgress={() => directTabChange("play")}
         />
       )}
@@ -419,7 +430,8 @@ function GrimoireSurface({
   onSeatClick,
   onConfirm,
   onReturn,
-  onCancelNomination,
+  onCancelDayHandoff,
+  onResetDaySelection,
   onGoToProgress,
 }: {
   isDay: boolean;
@@ -438,7 +450,8 @@ function GrimoireSurface({
   onSeatClick: (seat: number) => void;
   onConfirm: () => void;
   onReturn: () => void;
-  onCancelNomination: () => void;
+  onCancelDayHandoff: () => void;
+  onResetDaySelection: () => void;
   onGoToProgress: () => void;
 }) {
   const desktopPositions = useMemo(() => rectangularSeatPositions(seats.length, false), []);
@@ -466,7 +479,9 @@ function GrimoireSurface({
         <div className="snvSeatingToolbar" aria-label="마도서 도구">
           <span className="issue116PhaseChip">{phaseLabel}</span>
           {actorSeat ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
-          {handoff.kind === "nomination" ? <button type="button" onClick={onCancelNomination}>지명 취소 →</button> : null}
+          {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
+            <button type="button" onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
+          ) : null}
         </div>
       ) : null}
       <div className={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}`} style={sizeStyle}>
@@ -553,7 +568,12 @@ function GrimoireSurface({
         {handoff ? (
           <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
             <>
-              <h2>{taskLabel}</h2>
+              <header className="issue116SelectionHeader">
+                <h2>{taskLabel}</h2>
+                {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
+                  <button type="button" onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
+                ) : null}
+              </header>
               <SelectionSummary
                 kind={handoff.kind}
                 nominatorSeat={nominatorSeat}
