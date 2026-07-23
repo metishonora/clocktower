@@ -56,8 +56,26 @@ test("shows only an inward count in the overview and pins complete source tokens
   expect(within(detail).queryByText("현재 토큰")).toBeNull();
   expect(within(detail).queryByRole("button", { name: /저장|확정|추가|제거/ })).toBeNull();
 
+  const characterTrigger = within(detail).getByRole("button", { name: "꿈꾸는 자 캐릭터 상세 열기" });
+  expect(within(characterTrigger).getByRole("img", { name: "꿈꾸는 자 공식 캐릭터 아이콘" })).toBeTruthy();
+  expect(within(characterTrigger).getByText("꿈꾸는 자")).toBeTruthy();
+  expect(characterTrigger.textContent).not.toContain("ⓘ");
+  await user.click(characterTrigger);
+
+  const characterDetail = screen.getByRole("dialog", { name: "꿈꾸는 자 캐릭터 상세" });
+  expect(within(characterDetail).getByText("공식 능력")).toBeTruthy();
+  expect(within(characterDetail).getByText("핵심 판정")).toBeTruthy();
+  expect(within(characterDetail).getByText("진행 방법")).toBeTruthy();
+  expect(within(characterDetail).getByText("공식 예시 4개 보기").closest("details")?.hasAttribute("open")).toBe(false);
+  expect(within(characterDetail).queryByText("자동화 지원")).toBeNull();
+  expect(screen.getByRole("dialog", { name: "1번 가람 플레이어 상세" })).toBe(detail);
+
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog", { name: "꿈꾸는 자 캐릭터 상세" })).toBeNull();
+  expect(document.activeElement).toBe(characterTrigger);
+
   const close = within(detail).getByRole("button", { name: "플레이어 상세 닫기" });
-  expect(document.activeElement).toBe(close);
+  expect(document.activeElement).toBe(characterTrigger);
   await user.tab();
   expect(document.activeElement).toBe(close);
   await user.keyboard("{Escape}");

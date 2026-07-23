@@ -6,6 +6,8 @@ import {
   type PlayerTokensByPlayerId,
 } from "./features/grimoire/playerTokenPresentation";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacterDetail } from "./characterDetails";
+import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./issue116PhaseHandoffPrototype.css";
@@ -23,6 +25,7 @@ export function SectsAndVioletsLiveProgress({
   phaseLabel,
   operationBusy,
   actorRoleName,
+  actorCharacterId,
   actorSummary,
   onGoToGrimoire,
   onStartNomination,
@@ -31,12 +34,12 @@ export function SectsAndVioletsLiveProgress({
   onStartDemonAttack,
   onAdvance,
   onResolveManual,
-  onShowActorDetails,
 }: {
   replayState: ReplayState;
   phaseLabel: string;
   operationBusy: boolean;
   actorRoleName?: string;
+  actorCharacterId?: string;
   actorSummary?: string;
   onGoToGrimoire: () => void;
   onStartNomination: () => void;
@@ -45,7 +48,6 @@ export function SectsAndVioletsLiveProgress({
   onStartDemonAttack: () => void;
   onAdvance: () => void;
   onResolveManual: (outcome: "handled" | "notApplicable") => void;
-  onShowActorDetails: () => void;
 }) {
   const step = replayState.currentStep;
   const dayState = replayState.dayState;
@@ -83,10 +85,14 @@ export function SectsAndVioletsLiveProgress({
         ) : step?.id.endsWith(":demon") && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="악마 공격">
             <div className="issue116ActorIdentity">
-              <button type="button" className="issue116ActorRoleButton" aria-label={`${actorRoleName} 상세 정보`} onClick={onShowActorDetails}>
-                {sectsAndVioletsCharacterAsset(actor.actualCharacter) ? <img src={sectsAndVioletsCharacterAsset(actor.actualCharacter)!.src} alt="" /> : null}
+              <CharacterDetailButton
+                details={sectsAndVioletsCharacterDetail(actorCharacterId ?? actor.actualCharacter)}
+                className="issue116ActorRoleButton"
+                theme="snv-night"
+              >
+                {sectsAndVioletsCharacterAsset(actor.actualCharacter) ? <img src={sectsAndVioletsCharacterAsset(actor.actualCharacter)!.src} alt={`${actorRoleName} 공식 캐릭터 아이콘`} /> : null}
                 <h3>{actorRoleName}</h3>
-              </button>
+              </CharacterDetailButton>
               <strong>{actor.name}</strong>
             </div>
             <p className="issue116AbilitySummary">{actorSummary}</p>
@@ -95,10 +101,14 @@ export function SectsAndVioletsLiveProgress({
         ) : step ? (
           <article className={`snvCurrentStep issue116CurrentStep${isDay ? " snvDayStep" : ""}`}>
             {actor && step.character ? (
-              <button type="button" className="snvCurrentStepIdentity interactive" aria-label={`${actorRoleName} 상세 정보`} onClick={onShowActorDetails}>
-                {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt="" /> : null}
+              <CharacterDetailButton
+                details={sectsAndVioletsCharacterDetail(actorCharacterId ?? actor.actualCharacter)}
+                className="snvCurrentStepIdentity interactive"
+                theme={isDay ? "snv-day" : "snv-night"}
+              >
+                {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt={`${actorRoleName} 공식 캐릭터 아이콘`} /> : null}
                 <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorRoleName}</span>
-              </button>
+              </CharacterDetailButton>
             ) : <h3>{stepLabel(step)}</h3>}
             {actor ? <p>{actor.name}</p> : null}
             <div className="snvStepActions">
@@ -323,6 +333,7 @@ export function SectsAndVioletsLiveGrimoire({
       {!handoff && detailsPlayer && detailsCharacter ? (
         <PlayerTokenDetailDialog
           player={{
+            characterId: detailsPlayer.actualCharacter,
             seat: detailsPlayer.seat,
             name: detailsPlayer.name,
             characterLabel: detailsPlayer.characterName,

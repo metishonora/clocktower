@@ -265,9 +265,15 @@ test("uses the compact Demon attack handoff and a distinct next action", async (
   expect(within(attack).getByText("첫날을 제외한 매일 밤 플레이어 1명을 죽입니다.")).toBeTruthy();
   expect(within(attack).queryByText("7번 준호 · 보르톡스")).toBeNull();
 
-  await user.click(within(attack).getByRole("button", { name: "보르톡스 상세 정보" }));
-  expect(within(prototype).getByRole("dialog", { name: "보르톡스 상세 정보" })).toBeTruthy();
-  await user.click(within(prototype).getByRole("button", { name: "상세 정보 닫기" }));
+  const characterTrigger = within(attack).getByRole("button", { name: "보르톡스 캐릭터 상세 열기" });
+  expect(within(characterTrigger).getByRole("img", { name: "보르톡스 공식 캐릭터 아이콘" })).toBeTruthy();
+  expect(within(characterTrigger).getByRole("heading", { name: "보르톡스" })).toBeTruthy();
+  expect(characterTrigger.textContent).not.toContain("ⓘ");
+  await user.click(characterTrigger);
+  const characterDetail = screen.getByRole("dialog", { name: "보르톡스 캐릭터 상세" });
+  expect(within(characterDetail).getByText("공식 능력")).toBeTruthy();
+  expect(within(characterDetail).getByText("핵심 판정")).toBeTruthy();
+  await user.click(within(characterDetail).getByRole("button", { name: "캐릭터 상세 닫기" }));
 
   await user.click(within(attack).getByRole("button", { name: "← 공격" }));
   const grimoire = within(prototype).getByRole("region", { name: "밤 마도서" });

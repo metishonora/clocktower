@@ -24,7 +24,9 @@
 .issue116DemonStep { justify-content: center; }
 .issue116DemonStep .issue116ActorIdentity { margin: 0 0 22px; align-items: flex-start; flex-direction: column; gap: 4px; }
 .issue116ActorRoleButton { display: flex; padding: 5px 8px 5px 0; align-items: center; gap: 18px; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
-.issue116DemonStep .issue116ActorRoleButton h3 { margin: 0; font-size: 2rem; text-decoration: underline; text-decoration-color: rgba(221, 202, 226, .42); text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.issue116DemonStep .issue116ActorRoleButton h3 { margin: 0; font-size: 2rem; text-decoration: none; }
+.issue116ActorRoleButton { border-radius: 14px; text-decoration: none; }
+.issue116ActorRoleButton:hover { background: rgba(255, 255, 255, .055); }
 .issue116DemonStep .issue116ActorIdentity > strong { margin-left: 94px; color: #ddcae2; font-size: 1rem; }
 .issue116AbilitySummary { max-width: 520px; margin: 0 0 28px; color: #cdbed1; font-size: .86rem; line-height: 1.55; }
 .issue116ActorIdentity { display: flex; margin: 28px 0 14px; align-items: center; gap: 18px; }

@@ -1,5 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacterDetail } from "./characterDetails";
+import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import {
   centeredArrowPoints,
   grimoireHeights,
@@ -56,7 +58,6 @@ export function Issue116PhaseHandoffPrototype() {
   const [usedNomineeSeats, setUsedNomineeSeats] = useState<number[]>([]);
   const [activeVoteTarget, setActiveVoteTarget] = useState(4);
   const [activeVoteIsFirst, setActiveVoteIsFirst] = useState(true);
-  const [demonDetailsOpen, setDemonDetailsOpen] = useState(false);
 
   const isDay = scenario === "day";
   const phaseLabel = isDay ? "2일차 낮" : "2일차 밤";
@@ -79,7 +80,6 @@ export function Issue116PhaseHandoffPrototype() {
     setUsedNomineeSeats([]);
     setActiveVoteTarget(4);
     setActiveVoteIsFirst(true);
-    setDemonDetailsOpen(false);
   };
 
   const startHandoff = (kind: HandoffKind) => {
@@ -230,9 +230,7 @@ export function Issue116PhaseHandoffPrototype() {
           phaseLabel={phaseLabel}
           highestCandidateSeat={highestCandidateSeat}
           highestVotes={highestVotes}
-          demonDetailsOpen={demonDetailsOpen}
           onStartHandoff={startHandoff}
-          onShowDemonDetails={() => setDemonDetailsOpen(true)}
           onGoToGrimoire={() => directTabChange("grimoire")}
           onEndNominations={() => setDayStep("execution")}
         />
@@ -260,22 +258,6 @@ export function Issue116PhaseHandoffPrototype() {
         />
       )}
 
-      {demonDetailsOpen ? (
-        <div className="snvDetailsBackdrop aboveSeatSheet" onMouseDown={(event) => { if (event.target === event.currentTarget) setDemonDetailsOpen(false); }}>
-          <section className="snvDetailsDialog" role="dialog" aria-modal="true" aria-label="보르톡스 상세 정보">
-            <header>
-              <img src={sectsAndVioletsCharacterAsset("vortox")?.src} alt="" />
-              <div><span>악마</span><h2>보르톡스</h2></div>
-              <button type="button" aria-label="상세 정보 닫기" onClick={() => setDemonDetailsOpen(false)}>×</button>
-            </header>
-            <div className="snvDetailsBody">
-              <section><h3>능력 요약</h3><p>첫날을 제외한 매일 밤 플레이어 1명을 죽입니다. 마을 주민은 거짓 정보만 얻으며, 낮에 아무도 처형되지 않으면 악한 팀이 승리합니다.</p></section>
-              <a href="https://wiki.bloodontheclocktower.com/Vortox" target="_blank" rel="noreferrer">공식 규칙</a>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
     </main>
   );
 }
@@ -286,9 +268,7 @@ function ProgressSurface({
   phaseLabel,
   highestCandidateSeat,
   highestVotes,
-  demonDetailsOpen,
   onStartHandoff,
-  onShowDemonDetails,
   onGoToGrimoire,
   onEndNominations,
 }: {
@@ -297,9 +277,7 @@ function ProgressSurface({
   phaseLabel: string;
   highestCandidateSeat?: number;
   highestVotes: number;
-  demonDetailsOpen: boolean;
   onStartHandoff: (kind: HandoffKind) => void;
-  onShowDemonDetails: () => void;
   onGoToGrimoire: () => void;
   onEndNominations: () => void;
 }) {
@@ -323,17 +301,14 @@ function ProgressSurface({
         ) : scenario === "night" ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="악마 공격">
             <div className="issue116ActorIdentity">
-              <button
-                type="button"
+              <CharacterDetailButton
+                details={sectsAndVioletsCharacterDetail("vortox")}
                 className="issue116ActorRoleButton"
-                aria-label="보르톡스 상세 정보"
-                aria-haspopup="dialog"
-                aria-expanded={demonDetailsOpen}
-                onClick={onShowDemonDetails}
+                theme="snv-night"
               >
-                <img src={sectsAndVioletsCharacterAsset("vortox")?.src} alt="" />
+                <img src={sectsAndVioletsCharacterAsset("vortox")?.src} alt="보르톡스 공식 캐릭터 아이콘" />
                 <h3>보르톡스</h3>
-              </button>
+              </CharacterDetailButton>
               <strong>준호</strong>
             </div>
             <p className="issue116AbilitySummary">첫날을 제외한 매일 밤 플레이어 1명을 죽입니다.</p>

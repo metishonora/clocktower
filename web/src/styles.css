@@ -1288,14 +1288,9 @@ select {
   font-size: 1.05rem;
 }
 
-.currentActorTitle {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.currentActorTitle h3 { flex: 1; }
-.currentActorTitle .characterRulesInfoButton { width: 28px; height: 28px; }
+.currentActorCharacterButton { display: grid; justify-items: center; gap: 5px; border-radius: 10px; padding: 4px; }
+.currentActorCharacterButton:hover { background: rgba(31, 111, 91, 0.08); }
+.currentActorCharacterButton h3 { max-width: 92px; text-align: center; }
 
 .currentActor p {
   margin: 2px 0 0;
@@ -5546,15 +5541,15 @@ select {
   border-bottom: 1px solid #d6d0c5;
   padding: 14px 18px;
 }
+.playerAnnotationsCharacterButton { display: grid; grid-template-columns: 56px auto; align-items: center; gap: 9px; border-radius: 10px; padding: 2px 7px 2px 2px; }
+.playerAnnotationsCharacterButton:hover { background: rgba(31, 111, 91, 0.08); }
+.playerAnnotationsCharacterButton > strong { color: var(--primary-dark); font-size: 0.82rem; white-space: nowrap; }
 .playerAnnotationsCharacterIcon { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(35, 40, 36, 0.18)); }
 .playerAnnotationsIdentity { display: grid; min-width: 0; gap: 4px; }
 .playerAnnotationsIdentity h2 { overflow: hidden; margin: 0; font-size: 1.35rem; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 .playerAnnotationsMeta { display: flex; min-width: 0; align-items: center; gap: 7px; color: var(--muted); font-size: 0.76rem; font-weight: 800; }
-.playerAnnotationsMeta > span,
-.playerAnnotationsMeta > strong { white-space: nowrap; }
+.playerAnnotationsMeta > span { white-space: nowrap; }
 .playerAnnotationsMeta > i { width: 3px; height: 3px; flex: 0 0 auto; border-radius: 50%; background: #aaa397; }
-.playerAnnotationsMeta > strong { overflow: hidden; color: var(--primary-dark); text-overflow: ellipsis; }
-.playerAnnotationsDialog .playerAnnotationsRulesButton { width: 44px; height: 44px; flex: 0 0 auto; margin: -8px 0 -8px 1px; border-color: rgba(96, 81, 154, 0.34); color: #59478f; box-shadow: none; }
 .playerAnnotationsClose { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #eee9df; color: var(--ink); font-size: 1.4rem; }
 
 .playerAnnotationsContent { display: grid; align-content: start; gap: 16px; overflow: auto; padding: 16px 18px 28px; }

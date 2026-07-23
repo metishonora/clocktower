@@ -31,6 +31,8 @@ import {
   type GameStorageDriver,
 } from "./gameStorage";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacterDetail } from "./characterDetails";
+import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
@@ -39,7 +41,6 @@ import {
 } from "./sectsAndVioletsSession";
 import {
   sectsAndVioletsCharacters as characters,
-  sectsAndVioletsWikiSlugs as wikiSlugs,
   type SectsAndVioletsCharacter as CatalogCharacter,
   type SectsAndVioletsCharacterKind as CharacterKind,
 } from "./sectsAndVioletsCharacters";
@@ -122,7 +123,6 @@ export function SectsAndVioletsFoundation({
   const [selectedSeat, setSelectedSeat] = useState<number>();
   const [pendingCharacterId, setPendingCharacterId] = useState<string>();
   const [activeCharacterId, setActiveCharacterId] = useState("fangGu");
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
   const [undoCheckpoint, setUndoCheckpoint] = useState<SectsAndVioletsPhaseCheckpoint>();
@@ -154,8 +154,6 @@ export function SectsAndVioletsFoundation({
   const autosaveInFlightRef = useRef(false);
   const textAutosaveTimerRef = useRef<number | undefined>(undefined);
   const textAutosaveDirtyRef = useRef(false);
-  const detailTriggerRef = useRef<HTMLButtonElement>(null);
-  const detailCloseRef = useRef<HTMLButtonElement>(null);
   const returnTriggerRef = useRef<HTMLButtonElement>(null);
   const returnCancelRef = useRef<HTMLButtonElement>(null);
   const newGameTriggerRef = useRef<HTMLButtonElement>(null);
@@ -267,16 +265,6 @@ export function SectsAndVioletsFoundation({
   useEffect(() => {
     if (!warningKey) setDismissedWarningKey(undefined);
   }, [warningKey]);
-
-  useEffect(() => {
-    if (!detailsOpen) return;
-    detailCloseRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeDetails();
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [detailsOpen]);
 
   useEffect(() => {
     if (!returnConfirmOpen) return;
@@ -598,11 +586,6 @@ export function SectsAndVioletsFoundation({
     setAutosaveRecoveryBlocked(false);
   }
 
-  const closeDetails = () => {
-    setDetailsOpen(false);
-    window.setTimeout(() => detailTriggerRef.current?.focus(), 0);
-  };
-
   const closeReturnConfirmation = () => {
     setReturnConfirmOpen(false);
     window.setTimeout(() => returnTriggerRef.current?.focus(), 0);
@@ -638,7 +621,6 @@ export function SectsAndVioletsFoundation({
 
   const startNewGame = () => {
     setNewGameConfirmOpen(false);
-    setDetailsOpen(false);
     setReturnConfirmOpen(false);
     setRosterConfirmed(false);
     setSeatingConfirmed(false);
@@ -760,7 +742,6 @@ export function SectsAndVioletsFoundation({
     setInformationStepId(undefined);
     setRevealedStepIds([]);
     setDayComplete(false);
-    setDetailsOpen(false);
     setLiveHandoff(undefined);
     setLiveNominatorId(undefined);
     setLiveNomineeId(undefined);
@@ -1478,26 +1459,22 @@ export function SectsAndVioletsFoundation({
                       <span>{selectedSeat}번 좌석</span>
                       <h2>{seatNames[selectedSeat]?.trim() || `플레이어 ${selectedSeat}`}</h2>
                     </header>
-                    <div className="snvLiveIdentity">
-                      {selectedSeatAsset ? <img src={selectedSeatAsset.src} alt="" /> : null}
+                    <CharacterDetailButton
+                      details={sectsAndVioletsCharacterDetail(selectedSeatCharacter.id)}
+                      className="snvLiveIdentity"
+                      theme={effectivePlayPhase === "day" ? "snv-day" : "snv-night"}
+                    >
+                      {selectedSeatAsset ? <img src={selectedSeatAsset.src} alt={`${selectedSeatCharacter.name} 공식 캐릭터 아이콘`} /> : null}
                       <div>
                         <span className={`snvAlignmentIcon alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)}`} aria-label={`${(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악한" : "선한"} 진영`}>
                           {(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악" : "선"}
                         </span>
                         <strong>{selectedSeatCharacter.name}</strong>
                       </div>
-                    </div>
+                    </CharacterDetailButton>
                     <div className="snvLiveStatuses" aria-label="현재 상태">
                       <span>생존</span>
                     </div>
-                    <button
-                      ref={detailTriggerRef}
-                      type="button"
-                      className="snvRoleDetailButton"
-                      onClick={() => { setActiveCharacterId(selectedSeatCharacter.id); setDetailsOpen(true); }}
-                    >
-                      {selectedSeatCharacter.name} 상세 정보
-                    </button>
                   </>
                 ) : <span>좌석을 선택하세요</span>}
               </aside>
@@ -1564,6 +1541,7 @@ export function SectsAndVioletsFoundation({
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
           operationBusy={operationBusy}
           actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
+          actorCharacterId={liveActor?.actualCharacter ?? replayState.currentStep.character}
           actorSummary={liveActorCharacter?.ability}
           onGoToGrimoire={() => navigateToTab("seating")}
           onStartNomination={() => startLiveHandoff("nomination")}
@@ -1572,11 +1550,6 @@ export function SectsAndVioletsFoundation({
           onStartDemonAttack={() => startLiveHandoff("demon")}
           onAdvance={() => void advanceFirstNight()}
           onResolveManual={(outcome) => void advanceFirstNight(outcome)}
-          onShowActorDetails={() => {
-            if (!liveActor?.actualCharacter) return;
-            setActiveCharacterId(liveActor.actualCharacter);
-            setDetailsOpen(true);
-          }}
         />
       ) : (
         <section
@@ -1593,18 +1566,14 @@ export function SectsAndVioletsFoundation({
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
                 {currentFirstNightAsset && currentFirstNightStep.characterId ? (
-                  <button
-                    ref={detailTriggerRef}
-                    type="button"
+                  <CharacterDetailButton
+                    details={sectsAndVioletsCharacterDetail(currentFirstNightStep.characterId)}
                     className="snvCurrentStepIdentity interactive"
-                    aria-label={`${currentFirstNightStep.name} 상세 정보`}
-                    aria-haspopup="dialog"
-                    aria-expanded={detailsOpen}
-                    onClick={() => { setActiveCharacterId(currentFirstNightStep.characterId!); setDetailsOpen(true); }}
+                    theme="snv-night"
                   >
                     <img src={currentFirstNightAsset.src} alt={`${currentFirstNightStep.name} 공식 캐릭터 아이콘`} />
                     <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{currentFirstNightStep.name}</span>
-                  </button>
+                  </CharacterDetailButton>
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
@@ -1702,34 +1671,24 @@ export function SectsAndVioletsFoundation({
       )}
       {activeTab === "roles" ? (
         <aside className="snvRoleDetail fixed floatingAction" aria-label="직업 설명">
-          {activeCharacterAsset ? <img className="snvRoleDetailIcon mobileHidden" src={activeCharacterAsset.src} alt={`${activeCharacter.name} 공식 캐릭터 아이콘`} /> : null}
-          <div className="snvRoleDetailCopy mobileHidden">
-            <div><span>{kindLabels[activeCharacter.kind]}</span></div>
-            <h2>{activeCharacter.name}</h2>
-            <p>{activeCharacter.ability}</p>
-          </div>
+          <CharacterDetailButton
+            details={sectsAndVioletsCharacterDetail(activeCharacter.id)}
+            className="snvRoleDetailIdentity"
+            theme={effectivePlayPhase === "day" ? "snv-day" : "snv-night"}
+          >
+            {activeCharacterAsset ? <img className="snvRoleDetailIcon" src={activeCharacterAsset.src} alt={`${activeCharacter.name} 공식 캐릭터 아이콘`} /> : null}
+            <div className="snvRoleDetailCopy">
+              <div><span>{kindLabels[activeCharacter.kind]}</span></div>
+              <h2>{activeCharacter.name}</h2>
+              <p>{activeCharacter.ability}</p>
+            </div>
+          </CharacterDetailButton>
           <div className="snvRoleDetailActions">
-            <button ref={detailTriggerRef} type="button" className="snvRoleDetailButton" aria-haspopup="dialog" aria-expanded={detailsOpen} onClick={() => setDetailsOpen(true)}>{activeCharacter.name} 상세 정보</button>
             <button type="button" className="snvConfirmRoster snvStageForward prominent" disabled={storageLoading || !rosterComplete} onClick={() => { setRosterConfirmed(true); navigateToTab("seating"); markAutosaveNeeded(); }}>
               <span>직업 선택 확정</span><small aria-hidden="true">마도서 →</small>
             </button>
           </div>
         </aside>
-      ) : null}
-      {detailsOpen ? (
-        <div className="snvDetailsBackdrop aboveSeatSheet" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDetails(); }}>
-          <section className="snvDetailsDialog" role="dialog" aria-modal="true" aria-label={`${activeCharacter.name} 상세 정보`}>
-            <header>
-              {activeCharacterAsset ? <img src={activeCharacterAsset.src} alt="" /> : null}
-              <div><span>{kindLabels[activeCharacter.kind]}</span><h2>{activeCharacter.name}</h2></div>
-              <button ref={detailCloseRef} type="button" aria-label="상세 정보 닫기" onClick={closeDetails}>×</button>
-            </header>
-            <div className="snvDetailsBody">
-              <section><h3>능력 요약</h3><p>{activeCharacter.ability}</p></section>
-              <a href={`https://wiki.bloodontheclocktower.com/${wikiSlugs[activeCharacter.id]}`} target="_blank" rel="noreferrer">공식 규칙</a>
-            </div>
-          </section>
-        </div>
       ) : null}
       {informationStep ? (
         <div className="snvInformationRevealBackdrop">
