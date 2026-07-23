@@ -176,6 +176,7 @@ export function SectsAndVioletsFoundation({
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationError, setOperationError] = useState<string>();
+  const [dismissedWarningKey, setDismissedWarningKey] = useState<string>();
   const [storageReady, setStorageReady] = useState(!storageDriver);
   const [autosaveRecoveryBlocked, setAutosaveRecoveryBlocked] = useState(false);
   const [autosaveRevision, setAutosaveRevision] = useState(0);
@@ -199,7 +200,11 @@ export function SectsAndVioletsFoundation({
   const newGameTriggerRef = useRef<HTMLButtonElement>(null);
   const newGameCancelRef = useRef<HTMLButtonElement>(null);
   const informationCloseRef = useRef<HTMLButtonElement>(null);
+  const undoTriggerRef = useRef<HTMLButtonElement>(null);
+  const undoDialogRef = useRef<HTMLElement>(null);
   const undoCancelRef = useRef<HTMLButtonElement>(null);
+  const errorDialogRef = useRef<HTMLElement>(null);
+  const errorConfirmRef = useRef<HTMLButtonElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const localDistribution = useMemo(() => {
@@ -281,7 +286,26 @@ export function SectsAndVioletsFoundation({
   const latestUndoCheckpoint = [...phaseCheckpoints].reverse().find(
     (checkpoint) => checkpoint.kind === "phase",
   );
+  const undoEventEntries = useMemo(() => {
+    if (!undoCheckpoint) return [];
+    const checkpointIndex = phaseCheckpoints.findIndex((checkpoint) => checkpoint.id === undoCheckpoint.id);
+    if (checkpointIndex < 0) return [];
+    const previousEventCount = phaseCheckpoints[checkpointIndex - 1]?.eventCount ?? 0;
+    return gameFile.game.events
+      .slice(previousEventCount, undoCheckpoint.eventCount)
+      .map((event, index) => ({ event, number: previousEventCount + index + 1 }))
+      .reverse();
+  }, [gameFile.game.events, phaseCheckpoints, undoCheckpoint]);
+  const visibleWarnings = (replayState?.warnings ?? []).filter(
+    (warning) => warning.code !== "NIGHT_DEATH_UNANNOUNCED",
+  );
+  const warningKey = visibleWarnings.map((warning) => `${warning.code}:${warning.messageKo}`).join("\u001f");
+  const warningVisible = visibleWarnings.length > 0 && warningKey !== dismissedWarningKey;
   const storageLoading = Boolean(storageDriver && !storageReady);
+
+  useEffect(() => {
+    if (!warningKey) setDismissedWarningKey(undefined);
+  }, [warningKey]);
 
   useEffect(() => {
     if (!detailsOpen) return;
@@ -317,11 +341,43 @@ export function SectsAndVioletsFoundation({
     if (!undoCheckpoint) return;
     undoCancelRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setUndoCheckpoint(undefined);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeUndoConfirmation();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(undoDialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [undoCheckpoint]);
+
+  useEffect(() => {
+    if (!operationError) return;
+    errorConfirmRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOperationError(undefined);
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        errorConfirmRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [operationError]);
 
   useEffect(() => {
     if (!informationStepId) return;
@@ -612,6 +668,11 @@ export function SectsAndVioletsFoundation({
   const closeNewGameConfirmation = () => {
     setNewGameConfirmOpen(false);
     window.setTimeout(() => newGameTriggerRef.current?.focus(), 0);
+  };
+
+  const closeUndoConfirmation = () => {
+    setUndoCheckpoint(undefined);
+    window.setTimeout(() => undoTriggerRef.current?.focus(), 0);
   };
 
   const startNewGame = () => {
@@ -1234,7 +1295,44 @@ export function SectsAndVioletsFoundation({
           <h1>Sects &amp; Violets</h1>
           <p>7–15명 · 일부 자동화</p>
         </div>
-        <span className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`} aria-hidden="true">{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
+        <div className="snvPhaseActions" aria-label="현재 페이즈와 되돌리기">
+          {latestUndoCheckpoint ? (
+            <button
+              ref={undoTriggerRef}
+              type="button"
+              className="snvGlobalUndo"
+              aria-label={`최근 행동 되돌리기: ${latestUndoCheckpoint.summary}`}
+              aria-haspopup="dialog"
+              disabled={operationBusy}
+              onClick={() => setUndoCheckpoint(latestUndoCheckpoint)}
+            >
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+                <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+              </svg>
+              <span className="snvIconTooltip" role="tooltip">최근 행동 되돌리기</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="snvGlobalUndo empty"
+              data-visual-state="muted"
+              aria-hidden="true"
+              tabIndex={-1}
+              disabled
+            >
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+                <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+              </svg>
+            </button>
+          )}
+          <span
+            className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`}
+            role="img"
+            aria-label={effectivePlayPhase === "day" ? "낮" : "밤"}
+          >{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
+        </div>
       </header>
 
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
@@ -1262,8 +1360,6 @@ export function SectsAndVioletsFoundation({
           onClick={() => navigateToTab("play")}
         >{liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행"}</button>
       </nav>
-      {operationError ? <p className="snvOperationError" role="alert">{operationError}</p> : null}
-
       {activeTab === "roles" ? (
         <section className="snvSetupSurface snvTabPanel" aria-label="S&V 설정 검토">
           <div className="snvSetupControls">
@@ -1628,17 +1724,19 @@ export function SectsAndVioletsFoundation({
             <h2>계속 진행</h2>
             <button type="button" disabled={storageLoading || operationBusy} onClick={() => importInputRef.current?.click()}>import JSON</button>
           </article>
-          {latestUndoCheckpoint ? (
-            <article>
-              <span>최근 완료 페이즈</span>
-              <h2>{latestUndoCheckpoint.summary}</h2>
-              <button
-                type="button"
-                disabled={operationBusy}
-                onClick={() => setUndoCheckpoint(latestUndoCheckpoint)}
-              >최근 페이즈 되돌리기</button>
-            </article>
-          ) : null}
+          <section className="snvEventLog" aria-label="이벤트 로그">
+            <header><h2>이벤트 로그</h2><strong>{gameFile.game.events.length}건</strong></header>
+            {gameFile.game.events.length ? (
+              <ol className="snvScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
+                {[...gameFile.game.events].reverse().map((event, index) => (
+                  <li key={event.id}>
+                    <span>{String(gameFile.game.events.length - index).padStart(2, "0")}</span>
+                    <p>{event.summary}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="snvEmptyEventLog">확정된 이벤트가 없습니다.</p>}
+          </section>
         </section>
       )}
       {activeTab === "roles" ? (
@@ -1708,16 +1806,41 @@ export function SectsAndVioletsFoundation({
         </div>
       ) : null}
       {undoCheckpoint ? (
-        <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setUndoCheckpoint(undefined); }}>
-          <section className="snvReturnDialog" role="dialog" aria-modal="true" aria-label="최근 페이즈 되돌리기">
-            <h2>최근 페이즈를 되돌릴까요?</h2>
-            <p>{undoCheckpoint.summary}</p>
-            <div>
-              <button ref={undoCancelRef} type="button" onClick={() => setUndoCheckpoint(undefined)}>취소</button>
+        <div className="snvDetailsBackdrop snvHistoryDialogBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeUndoConfirmation(); }}>
+          <section ref={undoDialogRef} className="snvHistoryDialog snvUndoHistoryDialog" data-theme={effectivePlayPhase === "day" ? "day" : "night"} role="dialog" aria-modal="true" aria-labelledby="snv-undo-title">
+            <h2 id="snv-undo-title">Undo</h2>
+            <p className="snvUndoLabel">되돌릴 행동</p>
+            <ol className="snvUndoEventStack" aria-label="취소될 이벤트">
+              {undoEventEntries.map(({ event, number }) => (
+                <li key={event.id}><span>{String(number).padStart(2, "0")}</span><p>{event.summary}</p></li>
+              ))}
+            </ol>
+            <p className="snvUndoNotice">위 이벤트를 취소하고 직전 상태로 돌아갑니다.</p>
+            <footer>
+              <button ref={undoCancelRef} type="button" onClick={closeUndoConfirmation}>취소</button>
               <button type="button" className="snvDestructiveAction" onClick={() => void confirmPhaseUndo()}>되돌리기</button>
-            </div>
+            </footer>
           </section>
         </div>
+      ) : null}
+      {operationError ? (
+        <div className="snvDetailsBackdrop snvHistoryDialogBackdrop">
+          <section ref={errorDialogRef} className="snvHistoryDialog snvFailureDialog" data-theme={effectivePlayPhase === "day" ? "day" : "night"} role="dialog" aria-modal="true" aria-labelledby="snv-error-title">
+            <h2 id="snv-error-title">작업 실패</h2>
+            <p>{operationError}</p>
+            <footer><button ref={errorConfirmRef} type="button" onClick={() => setOperationError(undefined)}>확인</button></footer>
+          </section>
+        </div>
+      ) : null}
+      {warningVisible ? (
+        <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
+          <span aria-hidden="true">!</span>
+          <div>
+            <strong>{visibleWarnings.length > 1 ? `게임 경고 · ${visibleWarnings.length}건` : "게임 경고"}</strong>
+            {visibleWarnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}
+          </div>
+          <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
+        </aside>
       ) : null}
     </main>
   );

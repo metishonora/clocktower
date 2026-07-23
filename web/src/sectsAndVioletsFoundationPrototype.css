@@ -9,6 +9,14 @@
 .snvEyebrow { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
 .snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
 .snvPrototypeHeader p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
+.snvPhaseActions { display: flex; align-items: center; gap: 12px; }
+.snvGlobalUndo { position: relative; display: grid; width: 52px; height: 52px; padding: 0; place-items: center; border: 1px solid rgba(255, 116, 133, .52); border-radius: 50%; color: #ff9caa; background: rgba(102, 21, 43, .52); box-shadow: 0 10px 28px rgba(49, 4, 18, .28); cursor: pointer; }
+.snvGlobalUndo svg { width: 27px; height: 27px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.snvGlobalUndo:hover:not(:disabled), .snvGlobalUndo:focus-visible { color: #fff; background: #b73552; box-shadow: 0 0 0 4px rgba(255, 114, 139, .18), 0 12px 30px rgba(63, 8, 25, .38); outline: none; }
+.snvGlobalUndo:disabled { opacity: .42; cursor: wait; }
+.snvGlobalUndo.empty { opacity: .34; filter: grayscale(1); box-shadow: none; pointer-events: none; cursor: default; }
+.snvIconTooltip { position: absolute; z-index: 8; top: calc(100% + 9px); right: 0; width: max-content; padding: 7px 9px; border: 1px solid rgba(235, 216, 240, .18); border-radius: 8px; color: #f8edf9; background: rgba(25, 13, 31, .94); box-shadow: 0 9px 22px rgba(9, 3, 12, .32); font-size: .7rem; font-weight: 850; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
+.snvGlobalUndo:hover .snvIconTooltip, .snvGlobalUndo:focus-visible .snvIconTooltip { opacity: 1; transform: translateY(0); }
 .snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .72s ease, background .72s ease, border-color .72s ease, transform .72s ease; }
 .snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; gap: 8px; }
 .snvAutosaveStatus { width: min(1180px, 100%); margin: -2px auto 8px; color: #c7b8cf; font-size: .76rem; font-weight: 850; text-align: right; }
@@ -171,6 +179,41 @@
 .snvStorageSurface article > span { color: #c9b4d1; font-size: .74rem; font-weight: 850; }
 .snvStorageSurface h2 { margin: 10px 0 34px; font: 2rem Georgia, serif; }
 .snvStorageSurface button { margin-top: auto; padding: 12px 16px; border: 1px solid rgba(214, 169, 226, .45); border-radius: 12px; color: inherit; background: #82509a; font: inherit; font-weight: 850; cursor: pointer; }
+.snvEventLog { min-width: 0; grid-column: 1 / -1; overflow: hidden; border: 1px solid rgba(231, 208, 239, .16); border-radius: 24px; background: rgba(20, 12, 26, .64); box-shadow: 0 22px 64px rgba(8, 3, 12, .3); }
+.snvEventLog > header { display: flex; padding: 20px 22px 17px; align-items: end; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
+.snvStorageSurface .snvEventLog h2 { margin: 0; font: 1.8rem Georgia, serif; }
+.snvEventLog > header > strong { color: #f2d8f7; font-size: .82rem; }
+.snvScrollableEventList { box-sizing: border-box; max-height: min(42dvh, 32rem); margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: rgba(214, 169, 226, .52) transparent; }
+.snvScrollableEventList:focus-visible { outline: 2px solid #d6a9e2; outline-offset: -3px; }
+.snvScrollableEventList li { display: grid; min-height: 64px; padding: 13px 22px; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; border-bottom: 1px solid rgba(231, 208, 239, .09); }
+.snvScrollableEventList li:last-child { border-bottom: 0; }
+.snvScrollableEventList li > span { color: #987fa1; font: .74rem Georgia, serif; }
+.snvScrollableEventList p { min-width: 0; margin: 0; line-height: 1.45; overflow-wrap: anywhere; }
+.snvEmptyEventLog { margin: 0; padding: 48px 22px; color: #baaac3; text-align: center; }
+.snvHistoryDialogBackdrop { align-items: center; padding: 22px; backdrop-filter: blur(5px); }
+.snvHistoryDialog { display: grid; box-sizing: border-box; width: min(500px, 100%); padding: 25px; gap: 13px; border: 1px solid rgba(231, 208, 239, .28); border-radius: 22px; color: #f9f1fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 28px 90px rgba(4, 1, 7, .58); }
+.snvHistoryDialog h2 { margin: 0; font: 1.75rem Georgia, serif; }
+.snvHistoryDialog p { margin: 0; color: #cabace; font-size: .84rem; line-height: 1.55; }
+.snvUndoHistoryDialog h2 { font-size: clamp(2.4rem, 8vw, 3.4rem); line-height: 1; }
+.snvHistoryDialog .snvUndoLabel { margin-top: 5px; color: #f2d8f7; font-size: .78rem; font-weight: 900; }
+.snvUndoEventStack { max-height: min(34dvh, 18rem); margin: 0; padding: 0; overflow-y: auto; border: 1px solid rgba(255, 115, 137, .28); border-radius: 14px; background: rgba(139, 38, 62, .13); list-style: none; overscroll-behavior: contain; scrollbar-color: rgba(255, 156, 173, .54) transparent; }
+.snvUndoEventStack li { display: grid; min-height: 58px; padding: 11px 13px; grid-template-columns: 31px minmax(0, 1fr); align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 156, 173, .14); }
+.snvUndoEventStack li:last-child { border-bottom: 0; }
+.snvUndoEventStack li > span { color: #e6aebb; font: .72rem Georgia, serif; }
+.snvUndoEventStack li p { color: #ffe8ed; overflow-wrap: anywhere; }
+.snvHistoryDialog .snvUndoNotice { margin-top: 2px; }
+.snvHistoryDialog footer { display: flex; margin-top: 7px; justify-content: flex-end; gap: 8px; }
+.snvHistoryDialog button { min-width: 92px; min-height: 44px; border: 1px solid rgba(231, 208, 239, .24); border-radius: 11px; color: inherit; background: rgba(255, 255, 255, .07); font: inherit; font-weight: 850; cursor: pointer; }
+.snvHistoryDialog button.snvDestructiveAction { border-color: #bc405b; color: #fff; background: #a92f4b; }
+.snvFailureDialog { border-color: rgba(255, 103, 126, .42); }
+.snvFailureDialog h2 { color: #ffb0bd; font-size: clamp(2.2rem, 7vw, 3rem); line-height: 1.05; }
+.snvFailureDialog footer button { border-color: #c55a70; color: #fff; background: #9e324b; }
+.snvWarningNotification { position: fixed; z-index: 140; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; box-sizing: border-box; width: min(520px, calc(100vw - 36px)); min-height: 82px; padding: 14px 14px 14px 16px; grid-template-columns: 34px minmax(0, 1fr) 36px; align-items: start; gap: 10px; border: 1px solid #d3a73d; border-radius: 17px; color: #33240b; background: #fff6d6; box-shadow: 0 18px 54px rgba(38, 25, 5, .32); }
+.snvWarningNotification > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff8dd; background: #9c6e11; font-weight: 950; }
+.snvWarningNotification strong { font-size: .76rem; }
+.snvWarningNotification p { margin: 4px 0 0; font-size: .78rem; line-height: 1.45; }
+.snvWarningNotification button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: #634b18; background: transparent; font-size: 1.25rem; cursor: pointer; }
+.snvWarningNotification button:hover, .snvWarningNotification button:focus-visible { background: rgba(109, 75, 13, .1); }
 .snvBackToRoster { margin-top: 18px; padding: 10px 15px; }
 .snvManualSurface { grid-template-columns: minmax(0, 1fr) 320px; padding: 28px; }
 .snvFirstNightHeader { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
@@ -229,11 +272,19 @@
 .snvDayMode .snvEyebrow { color: #75547d; }
 .snvDayMode .snvPrototypeHeader p { color: #725f77; }
 .snvDayMode .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
+.snvDayMode .snvGlobalUndo { border-color: rgba(156, 40, 65, .34); color: #a52f49; background: rgba(255, 241, 244, .82); box-shadow: 0 10px 26px rgba(114, 36, 56, .16); }
+.snvDayMode .snvGlobalUndo.empty { box-shadow: none; }
+.snvDayMode .snvGlobalUndo:hover:not(:disabled), .snvDayMode .snvGlobalUndo:focus-visible { color: #fff; background: #a52f49; }
+.snvDayMode .snvIconTooltip { border-color: rgba(76, 41, 83, .12); color: #fff; background: rgba(53, 29, 59, .94); }
 .snvDayMode .snvUtilityTabs button, .snvDayMode .snvSurfaceTabs button { border-color: rgba(92, 57, 101, .2); color: #442e49; background: rgba(255, 255, 255, .42); }
 .snvDayMode .snvUtilityTabs .snvNewGameTab { border-color: rgba(170, 50, 75, .34); color: #8f2f43; background: rgba(255, 248, 249, .7); }
 .snvDayMode .snvUtilityTabs button.active, .snvDayMode .snvSurfaceTabs button.active { border-color: #81508f; color: #fff; background: #82509a; box-shadow: 0 8px 26px rgba(88, 49, 101, .2); }
 .snvDayMode .snvSurfaceTabs button:disabled { color: #9b8b9f; }
 .snvDayMode .snvSetupControls, .snvDayMode .snvCatalogPreview, .snvDayMode .snvSeatingSurface, .snvDayMode .snvStorageSurface article { border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .64); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
+.snvDayMode .snvEventLog { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .7); box-shadow: 0 20px 54px rgba(83, 51, 92, .13); }
+.snvDayMode .snvEventLog > header, .snvDayMode .snvScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
+.snvDayMode .snvEventLog > header > strong { color: #70477b; }
+.snvDayMode .snvScrollableEventList li > span { color: #917c96; }
 .snvDayMode .snvControlCard > span, .snvDayMode .snvCatalogPreview h2, .snvDayMode .snvDistributionCard h2, .snvDayMode .snvDistributionCard span, .snvDayMode .snvSeatingSurface > header span, .snvDayMode .snvSeatingSurface > header > strong, .snvDayMode .snvStorageSurface article > span { color: #6e5973; }
 .snvDayMode .snvCatalogPreview article button, .snvDayMode .snvChoiceRow button { border-color: rgba(92, 57, 101, .14); color: #3f3043; background: rgba(255, 255, 255, .48); }
 .snvDayMode .snvCatalogPreview article button.selected, .snvDayMode .snvChoiceRow button[aria-pressed="true"] { border-color: rgba(130, 80, 154, .55); background: rgba(199, 166, 210, .46); }
@@ -262,6 +313,17 @@
 .snvDayMode .snvLiveStatuses span { border-color: rgba(88, 55, 97, .18); color: #59475f; background: rgba(130, 80, 154, .08); }
 .snvDayMode .snvLiveSeatDetails.mobileOpen { color: #35283a; background: #f8f1f7; box-shadow: 0 -18px 58px rgba(73, 46, 80, .2); }
 .snvDayMode .snvDetailsBackdrop { background: rgba(43, 32, 47, .5); }
+.snvDayMode .snvHistoryDialogBackdrop { background: rgba(67, 47, 72, .34); backdrop-filter: blur(5px) saturate(.9); }
+.snvHistoryDialog[data-theme="day"] { border-color: rgba(91, 58, 99, .2); color: #3b2840; background: linear-gradient(145deg, #fffdf9, #f3eaf4); box-shadow: 0 28px 80px rgba(67, 43, 74, .28); }
+.snvHistoryDialog[data-theme="day"] p { color: #68556d; }
+.snvHistoryDialog[data-theme="day"] .snvUndoLabel { color: #5d3f65; }
+.snvHistoryDialog[data-theme="day"] .snvUndoEventStack { border-color: rgba(165, 47, 73, .2); background: rgba(165, 47, 73, .055); scrollbar-color: rgba(165, 47, 73, .38) transparent; }
+.snvHistoryDialog[data-theme="day"] .snvUndoEventStack li { border-color: rgba(165, 47, 73, .12); }
+.snvHistoryDialog[data-theme="day"] .snvUndoEventStack li > span { color: #9c5362; }
+.snvHistoryDialog[data-theme="day"] .snvUndoEventStack li p { color: #432c48; }
+.snvUndoHistoryDialog[data-theme="day"] button:not(.snvDestructiveAction) { border-color: rgba(91, 58, 99, .28); background: rgba(255, 255, 255, .68); }
+.snvFailureDialog[data-theme="day"] { border-color: rgba(158, 50, 75, .24); }
+.snvFailureDialog[data-theme="day"] h2 { color: #9e324b; }
 .snvDayMode .snvDetailsDialog, .snvDayMode .snvReturnDialog { border-color: rgba(88, 55, 97, .24); color: #35283a; background: #f8f1f7; box-shadow: 0 26px 80px rgba(73, 46, 80, .28); }
 .snvDayMode .snvDetailsDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
 .snvDayMode .snvDetailsDialog > header span, .snvDayMode .snvDetailsBody > div { color: #705e75; }
@@ -307,6 +369,7 @@
   .snvRoleDetailActions .snvRoleDetailButton { grid-column: auto; justify-self: stretch; }
   .snvRoleDetailActions .snvConfirmRoster { min-width: 0; min-height: 50px; }
   .snvDetailsBackdrop { align-items: flex-end; padding: 0; }
+  .snvHistoryDialogBackdrop { align-items: center; padding: 22px; }
   .snvDetailsDialog, .snvReturnDialog { width: 100%; border-radius: 24px 24px 0 0; }
   .snvSeatingWorkspace { height: auto; }
   .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
@@ -329,6 +392,14 @@
   .snvSeatInspector button { margin-top: 0; padding: 7px 8px; }
   .snvLiveSeatDetails { order: -1; height: 520px; animation-name: snvMobilePanelSwapIn; }
   .snvPhaseMark { width: 58px; }
+  .snvPhaseActions { gap: 8px; }
+  .snvGlobalUndo { width: 44px; height: 44px; }
+  .snvGlobalUndo svg { width: 24px; height: 24px; }
+  .snvEventLog > header { padding: 17px 16px 14px; }
+  .snvStorageSurface .snvEventLog h2 { font-size: 1.5rem; }
+  .snvScrollableEventList { max-height: 40dvh; }
+  .snvScrollableEventList li { min-height: 60px; padding: 12px 16px; grid-template-columns: 27px minmax(0, 1fr); gap: 9px; }
+  .snvWarningNotification { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
 }
 @keyframes snvMobilePanelSwapIn { from { transform: translateY(-12px); } to { transform: translateY(0); } }
 @keyframes snvSeatPanelIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
