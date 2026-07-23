@@ -37,6 +37,8 @@ const prototypePlayers: PrototypePlayer[] = [
   player(6, "유나", "dreamer", [
     token("no-dashii-poison", "중독", "노 다시", "noDashii", "impairment", "노 다시에게 가장 가까운 주민입니다."),
     token("evil-twin-pair", "쌍둥이", "사악한 쌍둥이", "evilTwin", "relationship", "사악한 쌍둥이와 짝인 선한 플레이어입니다."),
+    token("witch-curse-review-4", "저주", "마녀", "witch", "assignment", "마녀가 지목한 플레이어입니다."),
+    token("sweetheart-drunk-review-4", "취함", "사랑꾼", "sweetheart", "impairment", "사랑꾼의 죽음으로 취한 상태입니다."),
   ]),
   player(7, "도윤", "pitHag", [
     token("witch-curse", "저주", "마녀", "witch", "assignment", "마녀가 지목한 플레이어입니다."),
@@ -51,6 +53,9 @@ const prototypePlayers: PrototypePlayer[] = [
     token("witch-cursed", "저주", "마녀", "witch", "assignment", "마녀가 지목한 플레이어입니다."),
     token("no-dashii-poison-2", "중독", "노 다시", "noDashii", "impairment", "노 다시에게 가장 가까운 주민입니다."),
     token("evil-twin-pair-2", "쌍둥이", "사악한 쌍둥이", "evilTwin", "relationship", "사악한 쌍둥이와 연결되어 있습니다."),
+    token("mathematician-abnormal-review-6", "비정상", "수학자", "mathematician", "usage", "비정상적으로 작동한 능력을 표시합니다."),
+    token("philosopher-ability-review-6", "능력", "철학자", "philosopher", "usage", "철학자가 얻은 능력을 표시합니다."),
+    token("juggler-used-review-6", "사용", "곡예사", "juggler", "usage", "곡예를 한 플레이어입니다."),
   ]),
   player(11, "채원", "oracle", [
     token("no-dashii-poison-3", "중독", "노 다시", "noDashii", "impairment", "노 다시에게 가장 가까운 주민입니다."),
@@ -66,6 +71,14 @@ const prototypePlayers: PrototypePlayer[] = [
   ]),
   player(15, "태윤", "sage", [
     token("evil-twin-pair-3", "쌍둥이", "사악한 쌍둥이", "evilTwin", "relationship", "사악한 쌍둥이와 짝인 선한 플레이어입니다."),
+    token("no-dashii-poison-review-9", "중독", "노 다시", "noDashii", "impairment", "노 다시에게 가장 가까운 주민입니다."),
+    token("witch-curse-review-9", "저주", "마녀", "witch", "assignment", "마녀가 지목한 플레이어입니다."),
+    token("sweetheart-drunk-review-9", "취함", "사랑꾼", "sweetheart", "impairment", "사랑꾼의 죽음으로 취한 상태입니다."),
+    token("mathematician-abnormal-review-9", "비정상", "수학자", "mathematician", "usage", "비정상적으로 작동한 능력을 표시합니다."),
+    token("cerenovus-sage-review-9", "집착", "세레노버스", "cerenovus", "assignment", "세레노버스가 지정한 캐릭터라고 주장해야 합니다."),
+    token("town-crier-review-9", "지목", "포고꾼", "townCrier", "usage", "오늘 하수인이 지명했음을 표시합니다."),
+    token("philosopher-ability-review-9", "능력", "철학자", "philosopher", "usage", "철학자가 얻은 능력을 표시합니다."),
+    token("juggler-used-review-9", "사용", "곡예사", "juggler", "usage", "곡예를 한 플레이어입니다."),
   ]),
 ];
 
