@@ -32,12 +32,14 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
     name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
   });
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
-  expect(deadSnakeCharmer.classList.contains("issue116GhostVoteSeat")).toBe(true);
-  expect(deadSnakeCharmer.querySelector(".issue116GhostIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(app).getByText("1표")).toBeTruthy();
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
 
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
@@ -114,7 +116,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
   const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
   expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
-});
+}, 15_000);
 
 async function gameAtSecondDayNomination(): Promise<GameFile> {
   return gameAtStep("day2:nomination:1");

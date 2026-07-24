@@ -36,11 +36,14 @@ test("resumes a saved nomination vote with an unused dead-player ghost vote sele
     name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
   });
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
-  expect(deadSnakeCharmer.classList.contains("issue116GhostVoteSeat")).toBe(true);
+  expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(grimoire).getByText("1표")).toBeTruthy();
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
 });
 
 function savedVoteGame(): GameFile {
