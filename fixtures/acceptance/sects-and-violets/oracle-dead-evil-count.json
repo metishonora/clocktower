@@ -1,0 +1,397 @@
+{
+  "game": {
+    "createdAt": "2026-07-24T00:00:00.000Z",
+    "events": [
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "setup-1",
+        "payload": {
+          "players": [
+            {
+              "actualCharacter": "clockmaker",
+              "id": "player-1",
+              "name": "Clockmaker",
+              "seat": 1,
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "actualCharacter": "flowergirl",
+              "id": "player-2",
+              "name": "Flowergirl",
+              "seat": 2,
+              "shownCharacter": "flowergirl"
+            },
+            {
+              "actualCharacter": "townCrier",
+              "id": "player-3",
+              "name": "Town Crier",
+              "seat": 3,
+              "shownCharacter": "townCrier"
+            },
+            {
+              "actualCharacter": "oracle",
+              "id": "player-4",
+              "name": "Oracle",
+              "seat": 4,
+              "shownCharacter": "oracle"
+            },
+            {
+              "actualCharacter": "dreamer",
+              "id": "player-5",
+              "name": "Dreamer",
+              "seat": 5,
+              "shownCharacter": "dreamer"
+            },
+            {
+              "actualCharacter": "pitHag",
+              "id": "player-6",
+              "name": "Pit-Hag",
+              "seat": 6,
+              "shownCharacter": "pitHag"
+            },
+            {
+              "actualCharacter": "fangGu",
+              "id": "player-7",
+              "name": "Fang Gu",
+              "seat": 7,
+              "shownCharacter": "fangGu"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 7명",
+        "type": "setupConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-2",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:minionInfo"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:minionInfo",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-3",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:demonInfo"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:demonInfo",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-4",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "clockmaker",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:clockmaker"
+        },
+        "phase": "firstNight",
+        "summary": "1번 Clockmaker(알 수 없음)가 악마와 하수인의 거리 1칸을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-5",
+        "payload": {
+          "outcome": "handled",
+          "stepId": "firstNight:dreamer"
+        },
+        "phase": "firstNight",
+        "summary": "수동 단계 처리: firstNight:dreamer",
+        "type": "manualPhaseStepResolved"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-6",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:toDay"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-7",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "새벽 발표 · 사망자 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-8",
+        "payload": {
+          "input": null,
+          "stepId": "day:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-9",
+        "payload": {
+          "input": null,
+          "stepId": "day:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "nomination-started-10",
+        "payload": {
+          "nominatorId": "player-5",
+          "nomineeId": "player-6",
+          "registrationJudgments": [],
+          "stepId": "day:nomination:1",
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 5번 Dreamer(알 수 없음) → 6번 Pit-Hag(알 수 없음)",
+        "type": "nominationStarted"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "nomination-vote-11",
+        "payload": {
+          "ghostVoteSpentPlayerIds": [],
+          "nominationEventId": "nomination-started-10",
+          "stepId": "day:nomination:1:vote",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4"
+          ]
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 5번 Dreamer(알 수 없음) → 6번 Pit-Hag(알 수 없음), 4표",
+        "type": "nominationVoteConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "nomination-closed-12",
+        "payload": {
+          "stepId": "day:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "execution-13",
+        "payload": {
+          "input": {
+            "execute": true,
+            "playerId": "player-6"
+          },
+          "stepId": "day:execution"
+        },
+        "phase": "day",
+        "summary": "처형 확정: 6번 Pit-Hag(알 수 없음)",
+        "type": "executionConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "execution-death-14",
+        "payload": {
+          "playerId": "player-6",
+          "stepId": "day:executionDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 6번 Pit-Hag(알 수 없음)",
+        "type": "deathConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-15",
+        "payload": {
+          "input": null,
+          "stepId": "day:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-16",
+        "payload": {
+          "outcome": "handled",
+          "stepId": "night:pitHag"
+        },
+        "phase": "night",
+        "summary": "수동 단계 처리: night:pitHag",
+        "type": "manualPhaseStepResolved"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-17",
+        "payload": {
+          "actorCharacterId": "fangGu",
+          "actorPlayerId": "player-7",
+          "resolution": {
+            "kind": "demonAttack",
+            "outcome": {
+              "deaths": [
+                {
+                  "cause": {
+                    "actorCharacterId": "fangGu",
+                    "actorPlayerId": "player-7",
+                    "kind": "demonAttack",
+                    "targetPlayerId": "player-5"
+                  },
+                  "playerId": "player-5"
+                }
+              ],
+              "kind": "deaths"
+            },
+            "targetPlayerId": "player-5"
+          },
+          "stepId": "night:demon:player-7"
+        },
+        "phase": "night",
+        "summary": "7번 Fang Gu(fangGu) → 5번 Dreamer 공격 · 사망",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-18",
+        "payload": {
+          "outcome": "handled",
+          "stepId": "night:dreamer"
+        },
+        "phase": "night",
+        "summary": "수동 단계 처리: night:dreamer",
+        "type": "manualPhaseStepResolved"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-19",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "flowergirl",
+              "playerId": "player-2"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night:flowergirl"
+        },
+        "phase": "night",
+        "summary": "2번 Flowergirl(알 수 없음)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-20",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "townCrier",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night:townCrier"
+        },
+        "phase": "night",
+        "summary": "3번 Town Crier(알 수 없음)가 오늘 하수인의 지목을 확인했습니다: 지목하지 않음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-21",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "oracle",
+              "playerId": "player-4"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night:oracle"
+        },
+        "phase": "night",
+        "summary": "4번 Oracle(알 수 없음)가 죽은 악한 플레이어 1명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      }
+    ],
+    "id": "game-issue-96",
+    "name": "Issue 96 information",
+    "scriptId": "sectsAndViolets",
+    "updatedAt": "2026-07-24T00:00:00.000Z"
+  },
+  "schemaVersion": 3
+}

@@ -158,10 +158,22 @@ pub(crate) fn phase_step_reveal_payload(
             })
         }
         InformationResult::Number { value }
-            if matches!(step.character.as_deref(), Some("chef" | "empath")) =>
+            if matches!(
+                step.character.as_deref(),
+                Some("chef" | "empath" | "clockmaker" | "oracle")
+            ) =>
         {
             Some(RevealPayload::NumericInformation {
                 kind: "numericInformation",
+                character_id: step.character.clone()?,
+                value: *value,
+            })
+        }
+        InformationResult::Boolean { value }
+            if matches!(step.character.as_deref(), Some("flowergirl" | "townCrier")) =>
+        {
+            Some(RevealPayload::BooleanInformation {
+                kind: "booleanInformation",
                 character_id: step.character.clone()?,
                 value: *value,
             })
@@ -269,6 +281,32 @@ pub(crate) fn phase_step_summary(
             format!(
                 "{actor_label}가 살아있는 양옆 이웃 중 악한 팀 {count}명을 확인했습니다.{audit}"
             )
+        }),
+        "clockmaker" => number_result(information).map(|count| {
+            format!("{actor_label}가 악마와 하수인의 거리 {count}칸을 확인했습니다.{audit}")
+        }),
+        "flowergirl" => boolean_result(information).map(|voted| {
+            format!(
+                "{actor_label}가 오늘 악마의 투표를 확인했습니다: {}{audit}",
+                if voted {
+                    "투표함"
+                } else {
+                    "투표하지 않음"
+                }
+            )
+        }),
+        "townCrier" => boolean_result(information).map(|nominated| {
+            format!(
+                "{actor_label}가 오늘 하수인의 지목을 확인했습니다: {}{audit}",
+                if nominated {
+                    "지목함"
+                } else {
+                    "지목하지 않음"
+                }
+            )
+        }),
+        "oracle" => number_result(information).map(|count| {
+            format!("{actor_label}가 죽은 악한 플레이어 {count}명을 확인했습니다.{audit}")
         }),
         "fortuneTeller" => boolean_result(information).map(|has_demon| {
             format!(
@@ -381,6 +419,24 @@ fn information_result_label(kind: &str, result: &InformationResult) -> Option<St
         }
         InformationResult::Number { value } if kind == "chef" => Some(format!("{value}쌍")),
         InformationResult::Number { value } if kind == "empath" => Some(format!("{value}명")),
+        InformationResult::Number { value } if kind == "clockmaker" => Some(format!("{value}칸")),
+        InformationResult::Number { value } if kind == "oracle" => Some(format!("{value}명")),
+        InformationResult::Boolean { value } if kind == "flowergirl" => Some(
+            if *value {
+                "투표함"
+            } else {
+                "투표하지 않음"
+            }
+            .into(),
+        ),
+        InformationResult::Boolean { value } if kind == "townCrier" => Some(
+            if *value {
+                "지목함"
+            } else {
+                "지목하지 않음"
+            }
+            .into(),
+        ),
         _ => None,
     }
 }

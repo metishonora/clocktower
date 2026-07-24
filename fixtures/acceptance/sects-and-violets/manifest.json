@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "script": "sectsAndViolets",
+  "issue": 96,
+  "officialSources": [
+    "https://wiki.bloodontheclocktower.com/Clockmaker",
+    "https://wiki.bloodontheclocktower.com/Flowergirl",
+    "https://wiki.bloodontheclocktower.com/Town_Crier",
+    "https://wiki.bloodontheclocktower.com/Oracle"
+  ],
+  "cases": [
+    {
+      "id": "clockmaker-fixed-distance",
+      "characterId": "clockmaker",
+      "file": "clockmaker-fixed-distance.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Clockmaker",
+      "officialExample": "clockmaker-example-1",
+      "phaseBoundary": "firstNight:clockmaker",
+      "summaryFragment": "악마와 하수인의 거리 1칸",
+      "deliveredValue": 1,
+      "undoCurrentStepId": "firstNight:clockmaker"
+    },
+    {
+      "id": "flowergirl-demon-voted",
+      "characterId": "flowergirl",
+      "file": "flowergirl-demon-voted.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Flowergirl",
+      "officialExample": "flowergirl-example-2",
+      "phaseBoundary": "night:flowergirl",
+      "summaryFragment": "오늘 악마의 투표를 확인했습니다: 투표함",
+      "deliveredValue": true,
+      "reminderLabel": "악마 투표함"
+    },
+    {
+      "id": "town-crier-minion-nominated",
+      "characterId": "townCrier",
+      "file": "town-crier-minion-nominated.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Town_Crier",
+      "officialExample": "townCrier-example-1",
+      "phaseBoundary": "night:townCrier",
+      "summaryFragment": "오늘 하수인의 지목을 확인했습니다: 지목함",
+      "deliveredValue": true,
+      "reminderLabel": "하수인 지목함"
+    },
+    {
+      "id": "oracle-dead-evil-count",
+      "characterId": "oracle",
+      "file": "oracle-dead-evil-count.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Oracle",
+      "officialExample": "oracle-example-1",
+      "phaseBoundary": "night:oracle",
+      "summaryFragment": "죽은 악한 플레이어 1명",
+      "deliveredValue": 1
+    }
+  ]
+}

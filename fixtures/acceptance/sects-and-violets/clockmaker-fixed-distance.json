@@ -1,0 +1,123 @@
+{
+  "game": {
+    "createdAt": "2026-07-24T00:00:00.000Z",
+    "events": [
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "setup-1",
+        "payload": {
+          "players": [
+            {
+              "actualCharacter": "clockmaker",
+              "id": "player-1",
+              "name": "Clockmaker",
+              "seat": 1,
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "actualCharacter": "flowergirl",
+              "id": "player-2",
+              "name": "Flowergirl",
+              "seat": 2,
+              "shownCharacter": "flowergirl"
+            },
+            {
+              "actualCharacter": "townCrier",
+              "id": "player-3",
+              "name": "Town Crier",
+              "seat": 3,
+              "shownCharacter": "townCrier"
+            },
+            {
+              "actualCharacter": "oracle",
+              "id": "player-4",
+              "name": "Oracle",
+              "seat": 4,
+              "shownCharacter": "oracle"
+            },
+            {
+              "actualCharacter": "dreamer",
+              "id": "player-5",
+              "name": "Dreamer",
+              "seat": 5,
+              "shownCharacter": "dreamer"
+            },
+            {
+              "actualCharacter": "pitHag",
+              "id": "player-6",
+              "name": "Pit-Hag",
+              "seat": 6,
+              "shownCharacter": "pitHag"
+            },
+            {
+              "actualCharacter": "fangGu",
+              "id": "player-7",
+              "name": "Fang Gu",
+              "seat": 7,
+              "shownCharacter": "fangGu"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 7명",
+        "type": "setupConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-2",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:minionInfo"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:minionInfo",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-3",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:demonInfo"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:demonInfo",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-07-24T00:00:00.000Z",
+        "id": "phase-4",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "clockmaker",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:clockmaker"
+        },
+        "phase": "firstNight",
+        "summary": "1번 Clockmaker(알 수 없음)가 악마와 하수인의 거리 1칸을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      }
+    ],
+    "id": "game-issue-96",
+    "name": "Issue 96 information",
+    "scriptId": "sectsAndViolets",
+    "updatedAt": "2026-07-24T00:00:00.000Z"
+  },
+  "schemaVersion": 3
+}

@@ -7,6 +7,7 @@ mod issue11_virgin_scenarios;
 mod issue86_fortune_teller_former_imp_scenarios;
 mod issue88_butler_vote_scenarios;
 mod issue89_execution_succession_scenarios;
+mod issue96_sects_and_violets_information_scenarios;
 mod night_action_contracts;
 mod ongoing_night_acceptance_scenarios;
 mod ongoing_night_actions_scenarios;

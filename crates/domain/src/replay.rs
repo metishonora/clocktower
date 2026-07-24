@@ -1333,6 +1333,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         virgin_ability: None,
         butler_vote,
         active_impairments: None,
+        automatic_reminders: vec![],
     }
 }
 

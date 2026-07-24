@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{
-        ActiveImpairment, Command, DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent,
-        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, ManualPhaseStepOutcome,
-        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
-        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingIdentityReveal,
-        PhaseStepEventPayload, Proposal, ReplayState, RevealPayload, RuleState,
-        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
+        ActiveImpairment, AutomaticReminder, Command, DemonAttackNoEffectReason,
+        DemonAttackOutcome, GameEvent, GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind,
+        ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload, NightActionResolution,
+        NightActionResolvedPayload, NightDeath, NightDeathCause, NightDeathsAnnouncedPayload,
+        PendingIdentityReveal, PhaseStepEventPayload, Proposal, ReplayState, RevealPayload,
+        RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
+        SnakeCharmerNoSwapReason,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -15,9 +16,12 @@ use crate::{
     },
     error::{CoreError, ErrorKind},
     model::{
-        Alignment, CharacterKind, CoreWarning, IdentityHistoryEntry, IdentityState, InputTarget,
-        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, PhaseStepSupport, Player,
-        PlayerIdentityTransition, RequiredInput, RequiredInputKind, StepType,
+        Alignment, BooleanInformationChoice, CharacterKind, ConfirmedInformation, CoreWarning,
+        DeliveryContext, DeliveryReason, IdentityHistoryEntry, IdentityState, InformationActor,
+        InformationDeliveryMode, InformationPrompt, InformationResult, InputTarget,
+        NumberInformationChoice, Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus,
+        PhaseStepSupport, Player, PlayerIdentityTransition, RequiredInput, RequiredInputKind,
+        StepType,
     },
     phase::{phase_transition_step, required_none, simple_step, validate_required_input},
     setup::{
@@ -68,6 +72,8 @@ fn character_step(
     players: &[Player],
 ) -> PhaseStep {
     let snake_charmer = character == "snakeCharmer";
+    let numeric_information = matches!(character, "clockmaker" | "oracle");
+    let information = numeric_information || matches!(character, "flowergirl" | "townCrier");
     PhaseStep {
         id: if snake_charmer {
             format!("{prefix}:{character}:{}", player.id)
@@ -104,11 +110,17 @@ fn character_step(
                 demon_succession: None,
                 optional: false,
             }
+        } else if numeric_information {
+            RequiredInput {
+                kind: RequiredInputKind::Number,
+                target: Some(InputTarget::Number),
+                ..required_none()
+            }
         } else {
             required_none()
         },
         can_skip: false,
-        support: if snake_charmer {
+        support: if snake_charmer || information {
             PhaseStepSupport::Automated
         } else {
             PhaseStepSupport::Manual
@@ -229,7 +241,9 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .iter()
             .filter(|player| {
                 player.actual_character == character
-                    && (character != "snakeCharmer" || player.alive)
+                    && ((!matches!(character, "flowergirl" | "townCrier" | "oracle")
+                        || player.alive)
+                        && (character != "snakeCharmer" || player.alive))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -307,13 +321,14 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
             .iter()
             .filter(|player| {
                 player.actual_character == character
-                    && (character != "snakeCharmer"
-                        || (player.alive
-                            && !became_snake_charmer_from_swap_in_phase(
-                                &player.id,
-                                "firstNight",
-                                events,
-                            )))
+                    && ((!matches!(character, "clockmaker") || player.alive)
+                        && (character != "snakeCharmer"
+                            || (player.alive
+                                && !became_snake_charmer_from_swap_in_phase(
+                                    &player.id,
+                                    "firstNight",
+                                    events,
+                                ))))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -400,6 +415,341 @@ fn became_snake_charmer_from_swap_in_phase(
         }
         _ => false,
     })
+}
+
+fn is_information_character(character: Option<&str>) -> bool {
+    matches!(
+        character,
+        Some("clockmaker" | "flowergirl" | "townCrier" | "oracle")
+    )
+}
+
+fn preceding_day_prefix(step_id: &str) -> Option<String> {
+    let night_prefix = step_id.split(':').next()?;
+    let suffix = night_prefix.strip_prefix("night")?;
+    let cycle = if suffix.is_empty() {
+        1
+    } else {
+        suffix.parse().ok()?
+    };
+    Some(crate::phase::phase_prefix("day", cycle))
+}
+
+fn clockmaker_distance(players: &[Player]) -> Option<usize> {
+    let mut seated = players.iter().collect::<Vec<_>>();
+    seated.sort_by_key(|player| player.seat);
+    let demons = seated
+        .iter()
+        .enumerate()
+        .filter_map(|(index, player)| {
+            (character_kind(&player.actual_character) == Some(CharacterKind::Demon))
+                .then_some(index)
+        })
+        .collect::<Vec<_>>();
+    let minions = seated
+        .iter()
+        .enumerate()
+        .filter_map(|(index, player)| {
+            (character_kind(&player.actual_character) == Some(CharacterKind::Minion))
+                .then_some(index)
+        })
+        .collect::<Vec<_>>();
+    demons
+        .iter()
+        .flat_map(|demon| minions.iter().map(move |minion| demon.abs_diff(*minion)))
+        .map(|distance| distance.min(seated.len() - distance))
+        .min()
+}
+
+fn preceding_day_role_action(
+    step: &PhaseStep,
+    events: &[GameEvent],
+    role: CharacterKind,
+) -> Result<bool, CoreError> {
+    let prefix =
+        preceding_day_prefix(&step.id).ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    day_role_action(&prefix, events, role)
+}
+
+fn day_role_action(
+    prefix: &str,
+    events: &[GameEvent],
+    role: CharacterKind,
+) -> Result<bool, CoreError> {
+    for (event_index, event) in events.iter().enumerate() {
+        let candidate_ids = match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload }
+                if role == CharacterKind::Demon
+                    && payload.step_id.starts_with(&format!("{prefix}:")) =>
+            {
+                payload.voter_ids.clone()
+            }
+            GameEventKind::NominationStarted { payload }
+                if role == CharacterKind::Minion
+                    && payload.step_id.starts_with(&format!("{prefix}:")) =>
+            {
+                vec![payload.nominator_id.clone()]
+            }
+            _ => continue,
+        };
+        let players_at_event = replay_players(&events[..event_index])?;
+        if candidate_ids.iter().any(|player_id| {
+            players_at_event.iter().any(|player| {
+                player.id == *player_id && character_kind(&player.actual_character) == Some(role)
+            })
+        }) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn automatic_information_reminders(
+    phase: Phase,
+    current_step: Option<&PhaseStep>,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Result<Vec<AutomaticReminder>, CoreError> {
+    let Some(step) = current_step else {
+        return Ok(vec![]);
+    };
+    let day_prefix = match phase {
+        Phase::Day => step.id.split(':').next().map(str::to_string),
+        Phase::Night => preceding_day_prefix(&step.id),
+        _ => None,
+    };
+    let Some(day_prefix) = day_prefix else {
+        return Ok(vec![]);
+    };
+    let demon_voted = day_role_action(&day_prefix, events, CharacterKind::Demon)?;
+    let minion_nominated = day_role_action(&day_prefix, events, CharacterKind::Minion)?;
+    let mut reminders = vec![];
+    for (character_id, triggered, false_token, false_label, true_token, true_label, description) in [
+        (
+            "flowergirl",
+            demon_voted,
+            "demonDidNotVote",
+            "악마 투표 안 함",
+            "demonVoted",
+            "악마 투표함",
+            if demon_voted {
+                "오늘 악마가 처형 투표에 참여했습니다."
+            } else {
+                "오늘 악마가 처형 투표에 참여하지 않았습니다."
+            },
+        ),
+        (
+            "townCrier",
+            minion_nominated,
+            "minionDidNotNominate",
+            "하수인 지목 안 함",
+            "minionNominated",
+            "하수인 지목함",
+            if minion_nominated {
+                "오늘 하수인이 처형 지목에 나섰습니다."
+            } else {
+                "오늘 하수인이 처형 지목에 나서지 않았습니다."
+            },
+        ),
+    ] {
+        let Some(player) = players
+            .iter()
+            .find(|player| player.alive && player.actual_character == character_id)
+        else {
+            continue;
+        };
+        reminders.push(AutomaticReminder {
+            player_id: player.id.clone(),
+            character_id: character_id.into(),
+            token_id: if triggered { true_token } else { false_token }.into(),
+            label: if triggered { true_label } else { false_label }.into(),
+            description: description.into(),
+        });
+    }
+    Ok(reminders)
+}
+
+fn snv_information_result(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Result<Option<InformationResult>, CoreError> {
+    Ok(match step.character.as_deref() {
+        Some("clockmaker") => {
+            clockmaker_distance(players).map(|value| InformationResult::Number { value })
+        }
+        Some("flowergirl") => Some(InformationResult::Boolean {
+            value: preceding_day_role_action(step, events, CharacterKind::Demon)?,
+        }),
+        Some("townCrier") => Some(InformationResult::Boolean {
+            value: preceding_day_role_action(step, events, CharacterKind::Minion)?,
+        }),
+        Some("oracle") => Some(InformationResult::Number {
+            value: players
+                .iter()
+                .filter(|player| !player.alive && player.alignment == Alignment::Evil)
+                .count(),
+        }),
+        _ => None,
+    })
+}
+
+fn snv_information_prompt(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Result<Option<InformationPrompt>, CoreError> {
+    let Some(computed_result) = snv_information_result(step, players, events)? else {
+        return Ok(None);
+    };
+    let active_reasons = active_information_reasons(step, events);
+    let impaired = !active_reasons.is_empty();
+    let (number_choices, boolean_choices) = match computed_result {
+        InformationResult::Number { value } => (
+            if impaired {
+                let range = if step.character.as_deref() == Some("clockmaker") {
+                    1..=players.len() / 2
+                } else {
+                    0..=players.iter().filter(|player| !player.alive).count()
+                };
+                range
+                    .map(|candidate| NumberInformationChoice {
+                        value: candidate,
+                        is_computed: candidate == value,
+                        registration_judgments: vec![],
+                    })
+                    .collect()
+            } else {
+                vec![NumberInformationChoice {
+                    value,
+                    is_computed: true,
+                    registration_judgments: vec![],
+                }]
+            },
+            vec![],
+        ),
+        InformationResult::Boolean { value } => (
+            vec![],
+            if impaired {
+                [false, true]
+                    .into_iter()
+                    .map(|candidate| BooleanInformationChoice {
+                        value: candidate,
+                        is_computed: candidate == value,
+                        registration_judgments: vec![],
+                    })
+                    .collect()
+            } else {
+                vec![BooleanInformationChoice {
+                    value,
+                    is_computed: true,
+                    registration_judgments: vec![],
+                }]
+            },
+        ),
+        _ => return Err(ErrorKind::ReplayFailed.into_error()),
+    };
+    Ok(Some(InformationPrompt {
+        computed_result: Some(computed_result),
+        delivery_mode: if impaired {
+            InformationDeliveryMode::Selectable
+        } else {
+            InformationDeliveryMode::Fixed
+        },
+        active_reasons,
+        registration_candidate_player_ids: vec![],
+        number_choices,
+        boolean_choices,
+        setup_info_registration_options: vec![],
+        target_checks: vec![],
+    }))
+}
+
+fn active_information_reasons(step: &PhaseStep, events: &[GameEvent]) -> Vec<DeliveryReason> {
+    let Some(actor_id) = step.player_id.as_deref() else {
+        return vec![];
+    };
+    active_snake_charmer_impairments(events)
+        .into_iter()
+        .filter(|impairment| impairment.player_id == actor_id)
+        .filter_map(|impairment| {
+            events.iter().find_map(|event| {
+                if event.id != impairment.source_event_id {
+                    return None;
+                }
+                let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind else {
+                    return None;
+                };
+                Some(DeliveryReason::Poisoned {
+                    poisoner_player_id: payload.actor_player_id.clone(),
+                    poison_event_id: event.id.clone(),
+                })
+            })
+        })
+        .collect()
+}
+
+fn snv_confirmed_information(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+    delivered_result: Option<InformationResult>,
+    registration_judgments: &[crate::model::RegistrationJudgment],
+) -> Result<Option<ConfirmedInformation>, CoreError> {
+    let Some(computed_result) = snv_information_result(step, players, events)? else {
+        return Ok(None);
+    };
+    if !registration_judgments.is_empty() {
+        return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
+    }
+    let reasons = active_information_reasons(step, events);
+    let prompt = snv_information_prompt(step, players, events)?
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let delivered_result = if reasons.is_empty() {
+        let delivered = delivered_result.unwrap_or_else(|| computed_result.clone());
+        if delivered != computed_result {
+            return Err(ErrorKind::InvalidDeliveredInformation.into_error());
+        }
+        delivered
+    } else {
+        let delivered =
+            delivered_result.ok_or_else(|| ErrorKind::MissingDeliveredInformation.into_error())?;
+        let legal = match &delivered {
+            InformationResult::Number { value } => prompt
+                .number_choices
+                .iter()
+                .any(|choice| choice.value == *value),
+            InformationResult::Boolean { value } => prompt
+                .boolean_choices
+                .iter()
+                .any(|choice| choice.value == *value),
+            _ => false,
+        };
+        if !legal {
+            return Err(ErrorKind::InvalidDeliveredInformation.into_error());
+        }
+        delivered
+    };
+    Ok(Some(ConfirmedInformation {
+        actor: Some(InformationActor {
+            player_id: step
+                .player_id
+                .clone()
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+            character_id: step
+                .character
+                .clone()
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+        }),
+        target_player_ids: vec![],
+        computed_result: Some(computed_result),
+        delivered_result,
+        delivery_context: if reasons.is_empty() {
+            DeliveryContext::Fixed
+        } else {
+            DeliveryContext::Discretionary { reasons }
+        },
+    }))
 }
 
 fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
@@ -862,6 +1212,9 @@ fn phase_state(
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current.character.as_deref() == Some("snakeCharmer")
                 && legacy_player_scoped_step;
+        let legacy_manual_information =
+            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
+                && is_information_character(current.character.as_deref());
         if (current.id != *event_step_id && !legacy_manual_demon && !legacy_player_scoped_step)
             || current.phase != event.phase
         {
@@ -874,10 +1227,28 @@ fn phase_state(
             (GameEventKind::PhaseStepConfirmed { payload }, PhaseStepSupport::Automated) => {
                 validate_required_input(&current.required_input, &payload.input, &players_at_event)
                     .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                if is_information_character(current.character.as_deref()) {
+                    let expected = snv_confirmed_information(
+                        &current,
+                        &players_at_event,
+                        &events[..event_index],
+                        payload
+                            .information
+                            .as_ref()
+                            .map(|information| information.delivered_result.clone()),
+                        &[],
+                    )
+                    .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                    if payload.information != expected {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                }
             }
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Manual) => {}
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Automated)
-                if legacy_manual_demon || legacy_manual_snake_charmer => {}
+                if legacy_manual_demon
+                    || legacy_manual_snake_charmer
+                    || legacy_manual_information => {}
             (GameEventKind::NightActionResolved { payload }, PhaseStepSupport::Automated)
                 if current
                     .character
@@ -977,36 +1348,46 @@ fn phase_state(
         }
     }
 
-    let Some((phase, steps, current)) =
+    let Some((phase, steps, mut current)) =
         current_phase_steps(players, events, events.len() + 2, &statuses)
     else {
         return Ok((Phase::Night, None, vec![]));
     };
+    if let Some(step) = current.as_mut() {
+        step.information_prompt = snv_information_prompt(step, players, events)?;
+    }
     let current_id = current.as_ref().map(|step| step.id.as_str());
     let overview = if current.is_none() {
         vec![]
     } else {
         steps
             .into_iter()
-            .map(|step| PhaseOverviewItem {
-                status: statuses.get(&step.id).copied().unwrap_or_else(|| {
-                    if Some(step.id.as_str()) == current_id {
-                        PhaseStepStatus::Current
-                    } else {
-                        PhaseStepStatus::Waiting
-                    }
-                }),
-                id: step.id,
-                phase: step.phase,
-                step_type: step.step_type,
-                character: step.character,
-                player_id: step.player_id,
-                required_input: step.required_input,
-                can_skip: step.can_skip,
-                support: step.support,
-                information_prompt: None,
+            .map(|step| -> Result<PhaseOverviewItem, CoreError> {
+                let information_prompt = if Some(step.id.as_str()) == current_id {
+                    snv_information_prompt(&step, players, events)?
+                } else {
+                    None
+                };
+                Ok(PhaseOverviewItem {
+                    status: statuses.get(&step.id).copied().unwrap_or_else(|| {
+                        if Some(step.id.as_str()) == current_id {
+                            PhaseStepStatus::Current
+                        } else {
+                            PhaseStepStatus::Waiting
+                        }
+                    }),
+                    id: step.id,
+                    phase: step.phase,
+                    step_type: step.step_type,
+                    character: step.character,
+                    player_id: step.player_id,
+                    required_input: step.required_input,
+                    can_skip: step.can_skip,
+                    support: step.support,
+                    information_prompt,
+                })
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?
     };
     Ok((phase, current, overview))
 }
@@ -1065,6 +1446,12 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         active_impairments: Some(active_snake_charmer_impairments(&game_file.game.events)),
+        automatic_reminders: automatic_information_reminders(
+            phase,
+            current_step.as_ref(),
+            &players,
+            &game_file.game.events,
+        )?,
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(&game_file.game.events);
@@ -1183,6 +1570,43 @@ pub(crate) fn propose_phase_command(
             }
             if current_step.step_type == StepType::Announcement {
                 return propose_night_deaths_announcement(game_file, &current_step, &players);
+            }
+            if is_information_character(current_step.character.as_deref()) {
+                let information = snv_confirmed_information(
+                    &current_step,
+                    &players,
+                    &game_file.game.events,
+                    payload.delivered_result,
+                    &payload.registration_judgments,
+                )?
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                let summary = crate::messages::phase_step_summary(
+                    &current_step,
+                    &players,
+                    &payload.input,
+                    Some(&information),
+                )
+                .unwrap_or_else(|| format!("정보 확정: {}", current_step.id));
+                let reveal_payload = crate::messages::phase_step_reveal_payload(
+                    &current_step,
+                    &information,
+                    &players,
+                );
+                let mut proposal = phase_proposal(
+                    game_file,
+                    &current_step,
+                    GameEventKind::PhaseStepConfirmed {
+                        payload: Box::new(PhaseStepEventPayload {
+                            step_id: payload.step_id,
+                            input: payload.input,
+                            information: Some(information),
+                        }),
+                    },
+                    summary,
+                    vec![],
+                );
+                proposal.reveal_payload = reveal_payload;
+                return Ok(proposal);
             }
             Ok(phase_proposal(
                 game_file,

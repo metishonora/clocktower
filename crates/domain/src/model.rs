@@ -231,9 +231,19 @@ pub(crate) struct InformationPrompt {
     pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) registration_candidate_player_ids: Vec<String>,
     pub(crate) number_choices: Vec<NumberInformationChoice>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) boolean_choices: Vec<BooleanInformationChoice>,
     pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) target_checks: Vec<TargetInformationCheck>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BooleanInformationChoice {
+    pub(crate) value: bool,
+    pub(crate) is_computed: bool,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
