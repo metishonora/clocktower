@@ -107,6 +107,37 @@ test("Dreamer exposes the selected target truth and the full legal opposite-alig
   expect(screen.getByRole("combobox", { name: "악한 캐릭터" }).querySelectorAll("option")).toHaveLength(8);
 });
 
+test("Dreamer pending-target card keeps the established manual-step presentation", () => {
+  const dreamerStep: PhaseStep = {
+    ...step,
+    id: "firstNight:dreamer",
+    character: "dreamer",
+    requiredInput: { kind: "playerIds", target: "player", minSelections: 1, maxSelections: 1, allowedPlayerIds: ["player-2"], optional: false },
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: [], numberChoices: [], setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: ["player-2"],
+        computedResult: { kind: "character", characterId: "seamstress" },
+        choices: [{
+          result: { kind: "characterPair", characterIds: ["seamstress", "witch"] },
+          isComputed: true,
+          registrationJudgments: [],
+        }],
+      }],
+    },
+  };
+  const dreamer = { ...actor, actualCharacter: "dreamer", shownCharacter: "dreamer" };
+  render(<SectsAndVioletsInformationTask step={dreamerStep} actor={dreamer} revealed={false} busy={false} onChooseTargets={() => undefined} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "꿈꾸는 자 정보" });
+  expect(within(task).getByText("현재 할 일")).toBeTruthy();
+  const identity = within(task).getByRole("button", { name: "꿈꾸는 자 캐릭터 상세 열기" });
+  expect(identity.textContent).toBe("꿈꾸는 자민서");
+  expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
+});
+
 test("renders Flowergirl and Town Crier Reveal as status statements", () => {
   for (const payload of [
     { kind: "booleanInformation" as const, characterId: "flowergirl" as const, value: true },

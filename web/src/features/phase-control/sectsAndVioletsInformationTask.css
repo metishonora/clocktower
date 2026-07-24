@@ -1,5 +1,7 @@
 .snvInformationTask { min-height: 390px; }
+.snvInformationTaskPending { min-height: 330px; }
 .snvInformationIdentity { margin: 0 0 24px !important; }
+.snvInformationPendingIdentity { margin: 34px 0 12px !important; }
 .snvInformationIdentity > div { display: grid; gap: 7px; }
 .snvInformationIdentity strong { color: #ddcae2; font-size: .9rem; }
 .snvInformationAbility { max-width: 620px; color: #c7b9cc !important; font-size: .82rem; line-height: 1.58; }
@@ -12,6 +14,8 @@
 .snvInformationActions button { flex: 1 1 0; min-height: 50px; }
 .snvInformationTargetActions { margin-top: auto !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .snvInformationTargetActions button:only-child { grid-column: 1 / -1; }
+.snvInformationTaskPending .snvInformationTargetActions { display: flex !important; margin-top: 28px !important; }
+.snvInformationTaskPending .snvInformationTargetActions button { flex: 0 0 auto; min-width: 0; min-height: 44px; padding-inline: 22px; }
 .snvInformationTargetSummary { margin: 14px 0 0; color: #b7a5bd !important; font-size: .72rem; }
 .snvInformationTargetSummary strong { margin-left: 5px; color: #f7effa; }
 .snvInformationPairEditor, .snvInformationBinary { display: grid; margin: 14px 0 0; padding: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 14px; background: rgba(9, 5, 12, .26); }
@@ -41,7 +45,9 @@
 
 @media (max-width: 780px) {
   .snvInformationTask { min-height: 360px; }
+  .snvInformationTaskPending { min-height: 330px; }
   .snvInformationIdentity { margin-bottom: 20px !important; }
+  .snvInformationPendingIdentity { margin: 28px 0 12px !important; }
   .snvInformationValues > div { grid-template-columns: 1fr auto; }
   .snvProductionInformationReveal { min-height: calc(100dvh - 24px); border-radius: 22px; }
   .snvInformationPairEditor { grid-template-columns: 1fr; align-items: stretch; }

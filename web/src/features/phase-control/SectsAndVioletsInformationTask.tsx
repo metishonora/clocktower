@@ -38,12 +38,14 @@ export function SectsAndVioletsInformationTask({
   const selectedResult = deliveredResult ?? (choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
   const targeted = characterId === "dreamer" || characterId === "seamstress";
   const needsTargets = targeted && !targetCheck;
+  const usesManualStepLayout = needsTargets && characterId === "dreamer";
 
   return (
-    <article className="snvCurrentStep snvInformationTask" aria-label={`${character?.name ?? characterId} 정보`}>
+    <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
+      {usesManualStepLayout ? <p className="snvCurrentStepLabel">현재 할 일</p> : null}
       <CharacterDetailButton
         details={sectsAndVioletsCharacterDetail(characterId)}
-        className="snvCurrentStepIdentity interactive snvInformationIdentity"
+        className={`snvCurrentStepIdentity interactive snvInformationIdentity${usesManualStepLayout ? " snvInformationPendingIdentity" : ""}`}
         theme="snv-night"
       >
         {asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}
