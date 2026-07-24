@@ -251,6 +251,8 @@ test("records manual work and follows the canonical first-night to day boundary"
   await user.click(within(app).getByRole("button", { name: "다음 단계" }));
   await user.click(within(app).getByRole("button", { name: "다음 단계" }));
   expect(await within(app).findByRole("heading", { name: "뱀 조련사" })).toBeTruthy();
+  expect(within(app).getByText("매일 밤, 생존한 플레이어 1명을 선택합니다: 악마를 선택한다면, 악마는 당신과 소속 및 캐릭터를 맞바꾼 다음 중독됩니다.")).toBeTruthy();
+  expect(within(app).queryByText("선택한 플레이어를 확인하고 필요하면 직업과 성향을 교환합니다.")).toBeNull();
   await user.click(within(app).getByRole("button", { name: "마도서" }));
   expect(within(app).getByRole("button", { name: /3번 좌석.*현재 행동자/ })).toBeTruthy();
   await user.click(within(app).getByRole("button", { name: "진행" }));
