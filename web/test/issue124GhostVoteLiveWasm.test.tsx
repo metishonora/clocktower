@@ -33,12 +33,14 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
   });
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
-  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).toBeNull();
   expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(app).getByText("1표")).toBeTruthy();
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateStrong")).toBe(true);
   expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
 
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));

@@ -37,12 +37,14 @@ test("resumes a saved nomination vote with an unused dead-player ghost vote sele
   });
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
-  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).toBeNull();
   expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(grimoire).getByText("1표")).toBeTruthy();
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateStrong")).toBe(true);
   expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
 });
 

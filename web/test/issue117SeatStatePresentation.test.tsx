@@ -69,8 +69,9 @@ test("preserves diffuse actor and target emphasis when both players are dead", (
   expect(target.getAttribute("aria-pressed")).toBe("true");
 });
 
-test("preserves selection emphasis for a dead nominee and a dead ghost voter", () => {
-  const fixturePlayers = players(7, [2]);
+test("shows ghost-vote availability only while voting and preserves dead-seat selection emphasis", () => {
+  const fixturePlayers = players(7, [2, 3]);
+  fixturePlayers[2].ghostVoteUsed = true;
   const dayState: DayState = {
     nominations: [],
     eligibleNominatorIds: fixturePlayers.filter((player) => player.alive).map((player) => player.id),
@@ -89,6 +90,9 @@ test("preserves selection emphasis for a dead nominee and a dead ghost voter", (
   const deadNominee = screen.getByRole("button", { name: /2번 좌석.*사망.*피지명자/ });
   expect(deadNominee.classList.contains("snvDeadSeat")).toBe(true);
   expect(deadNominee.classList.contains("snvSeatStateSelected")).toBe(true);
+  expect(deadNominee.classList.contains("snvSeatStateStrong")).toBe(true);
+  expect(deadNominee.querySelector(".snvFuneralIcon")).toBeTruthy();
+  expect(deadNominee.querySelector(".snvGhostVoteIcon")).toBeNull();
   nomination.unmount();
 
   renderGrimoire({
@@ -101,6 +105,15 @@ test("preserves selection emphasis for a dead nominee and a dead ghost voter", (
   const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
   expect(deadVoter.classList.contains("snvDeadSeat")).toBe(true);
   expect(deadVoter.classList.contains("snvSeatStateSelected")).toBe(true);
+  expect(deadVoter.classList.contains("snvSeatStateStrong")).toBe(true);
+  expect(deadVoter.querySelector("img")).toBeTruthy();
+  expect(deadVoter.querySelector(".snvGhostVoteIcon")).toBeTruthy();
+  expect(deadVoter.querySelector(".snvFuneralIcon")).toBeNull();
+
+  const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
+  expect(spentGhost.hasAttribute("disabled")).toBe(true);
+  expect(spentGhost.querySelector(".snvFuneralIcon")).toBeTruthy();
+  expect(spentGhost.querySelector(".snvGhostVoteIcon")).toBeNull();
 });
 
 test("keeps the completed Demon actor and result prominent without a duplicate center result", () => {

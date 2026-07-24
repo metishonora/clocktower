@@ -295,6 +295,9 @@ export function SectsAndVioletsLiveGrimoire({
             const targetSeat = selectionRole === "공격 대상" || selectionRole === "선택 대상";
             const settledOther = Boolean(handoff?.complete && !actor && !targetSeat);
             const genericSelected = selected && !targetSeat;
+            const strongSelection = !player.alive && genericSelected
+              && (selectionRole === "피지명자" || selectionRole === "투표");
+            const showGhostVoteIndicator = handoff?.kind === "vote" && deadState === "available";
             const seatStateLabels = [
               handoff ? undefined : tokenCountLabel,
               player.alive ? "생존" : "사망",
@@ -310,7 +313,7 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
                   aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
@@ -324,7 +327,7 @@ export function SectsAndVioletsLiveGrimoire({
                 >
                   <span className="snvSeatNumber">{player.seat}</span>
                   {asset ? <img src={asset.src} alt="" /> : null}
-                  {!player.alive ? <FuneralIcon /> : null}
+                  {showGhostVoteIndicator ? <GhostVoteIcon /> : !player.alive ? <FuneralIcon /> : null}
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
@@ -502,4 +505,15 @@ function ArrowGraphic({ className, label, start, end }: { className: string; lab
 
 function FuneralIcon() {
   return <span className="snvFuneralIcon" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="snvFuneralMark" d="M20 12v19M13 20h14" /></svg></span>;
+}
+
+function GhostVoteIcon() {
+  return (
+    <span className="snvGhostVoteIcon" aria-hidden="true">
+      <svg viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="20" />
+        <path d="M12 34V22c0-8 4-13 10-13s10 5 10 13v12l-4-3-3 3-3-3-3 3-3-3-4 3Z" />
+      </svg>
+    </span>
+  );
 }
