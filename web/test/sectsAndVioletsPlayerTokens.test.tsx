@@ -41,7 +41,7 @@ test("shows only an inward count in the overview and pins complete source tokens
 
   const grimoire = screen.getByLabelText("낮 마도서");
   const tokenSeat = within(grimoire).getByRole("button", {
-    name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개",
+    name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개, 생존",
   });
   const countBadge = within(grimoire).getByText("+2");
   expect(countBadge.classList.contains("day")).toBe(true);
@@ -96,7 +96,7 @@ test("keeps count badges and pinned tokens on the night theme at night", async (
   expect(within(grimoire).getByText("+2").classList.contains("night")).toBe(true);
 
   await user.click(within(grimoire).getByRole("button", {
-    name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개",
+    name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개, 생존",
   }));
   const detail = screen.getByRole("dialog", { name: "1번 가람 플레이어 상세" });
   expect(within(detail).getByRole("region", { name: "부착된 토큰" }).classList.contains("night")).toBe(true);
@@ -108,7 +108,7 @@ test("omits every token surface when a player has no tokens", async () => {
 
   const grimoire = screen.getByLabelText("낮 마도서");
   const emptySeat = within(grimoire).getByRole("button", {
-    name: "2번 좌석, 나래, 변종, 토큰 없음",
+    name: "2번 좌석, 나래, 변종, 토큰 없음, 생존",
   });
   await user.click(emptySeat);
 

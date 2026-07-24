@@ -12,6 +12,7 @@ import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue116PhaseHandoffPrototype.css";
+import "./features/grimoire/sectsAndVioletsSeatStates.css";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer";
 export type LiveHandoff = {
@@ -272,7 +273,7 @@ export function SectsAndVioletsLiveGrimoire({
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
                 : selectionRole === "투표" ? " issue116VoterSeat"
-                  : selectionRole === "공격 대상" || selectionRole === "선택 대상" ? " issue116DemonTargetSeat" : "";
+                  : selectionRole === "공격 대상" || selectionRole === "선택 대상" ? " snvSeatStateTarget" : "";
             const nominationSelectingNominator = handoff?.kind === "nomination" && !nominatorId;
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
@@ -282,16 +283,25 @@ export function SectsAndVioletsLiveGrimoire({
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
             const deadState = showDeadVoteState && !player.alive ? player.ghostVoteUsed ? "spent" : "available" : undefined;
-            const deathLabel = deadState
+            const deadActionLabel = deadState
               ? handoff?.kind === "vote"
-                ? spentGhostCannotVote ? "사망, 투표 불가" : "사망, 투표 가능"
-                : nominationSelectingNominator ? "사망, 지명 불가"
-                  : ineligible ? "사망, 피지명 불가" : "사망, 피지명 가능"
+                ? spentGhostCannotVote ? "투표 불가" : "투표 가능"
+                : nominationSelectingNominator ? "지명 불가"
+                  : ineligible ? "피지명 불가" : "피지명 가능"
               : undefined;
             const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
-            const tokenCountLabel = playerTokens.length > 0
-              ? `, 토큰 ${playerTokens.length}개`
-              : ", 토큰 없음";
+            const tokenCountLabel = playerTokens.length > 0 ? `토큰 ${playerTokens.length}개` : "토큰 없음";
+            const actor = actorId === player.id;
+            const targetSeat = selectionRole === "공격 대상" || selectionRole === "선택 대상";
+            const settledOther = Boolean(handoff?.complete && !actor && !targetSeat);
+            const genericSelected = selected && !targetSeat;
+            const seatStateLabels = [
+              handoff ? undefined : tokenCountLabel,
+              player.alive ? "생존" : "사망",
+              actor ? "현재 행동자" : undefined,
+              selectionRole,
+              deadActionLabel ?? (ineligible ? "선택 불가" : undefined),
+            ].filter(Boolean).join(", ");
             return (
               <Fragment key={player.id}>
                 <button
@@ -300,8 +310,8 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${actorId === player.id ? " snvCurrentActorSeat" : ""}${selected ? " issue116SelectedSeat" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${deadState === "available" ? " issue116GhostVoteSeat" : deadState === "spent" ? " issue116GhostVoteSpentSeat" : ""}`}
-                  aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}${handoff ? "" : tokenCountLabel}${actorId === player.id ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : ""}${deathLabel ? `, ${deathLabel}` : ineligible ? ", 선택 불가" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
                   style={{
@@ -313,8 +323,8 @@ export function SectsAndVioletsLiveGrimoire({
                   onClick={() => handoff ? onSeatClick(player.id) : setDetailsPlayerId(player.id)}
                 >
                   <span className="snvSeatNumber">{player.seat}</span>
-                  {deadState === "available" ? <GhostIcon /> : asset ? <img src={asset.src} alt="" /> : null}
-                  {deadState === "spent" ? <DeathShroud /> : null}
+                  {asset ? <img src={asset.src} alt="" /> : null}
+                  {!player.alive ? <FuneralIcon /> : null}
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
@@ -351,9 +361,9 @@ export function SectsAndVioletsLiveGrimoire({
           ) : null}
         </div>
         {handoff && !centerPrompt ? (
-          <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
+          <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">
-              <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : handoff.kind === "snakeCharmer" ? "뱀 조련사" : "Demon 공격"}</h2>
+              <h2>{handoffPanelTitle(handoff.kind, handoff.complete)}</h2>
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
               ) : null}
@@ -366,7 +376,7 @@ export function SectsAndVioletsLiveGrimoire({
                 <div><dt>현재</dt><dd className={voterIds.length >= targetVotes ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>{isFirstVote ? `처형 기준 ${targetVotes}표` : `후보 기준 ${targetVotes}표`}</dd></div>
               </dl>
             ) : (
-              <dl><div><dt>행동자</dt><dd>{playerLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerLabel(target)}</dd></div></dl>
+              <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
             )}
             {handoff.complete ? (
               <button type="button" className={`issue116PrimaryAction${handoff.kind === "vote" ? " issue116VoteCompleteAction" : " issue116NextAction"}`} onClick={onReturn}>{handoff.kind === "vote" ? "투표 완료 →" : "다음 →"}</button>
@@ -437,6 +447,17 @@ function playerLabel(player?: Player) {
   return player ? `${player.seat}번 ${player.name}` : "미선택";
 }
 
+function playerStateLabel(player?: Player) {
+  return player ? `${playerLabel(player)} · ${player.alive ? "생존" : "사망"}` : "미선택";
+}
+
+function handoffPanelTitle(kind: LiveHandoffKind, complete: boolean) {
+  const task = kind === "nomination" ? "지명"
+    : kind === "vote" ? "투표"
+      : kind === "snakeCharmer" ? "뱀 조련사" : "악마 공격";
+  return complete ? `${task} 결과` : task;
+}
+
 function characterKindLabel(kind: LivePlayer["characterKind"]) {
   if (kind === "townsfolk") return "주민";
   if (kind === "outsider") return "외지인";
@@ -479,10 +500,6 @@ function ArrowGraphic({ className, label, start, end }: { className: string; lab
   );
 }
 
-function GhostIcon() {
-  return <svg className="issue116GhostIcon" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 50V30C14 18 21 10 32 10s18 8 18 20v20l-6-5-6 5-6-5-6 5-6-5-6 5Z" /></svg>;
-}
-
-function DeathShroud() {
-  return <span className="issue116DeathShroud" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="issue116DeathMark" d="M20 12v19M13 20h14" /></svg></span>;
+function FuneralIcon() {
+  return <span className="snvFuneralIcon" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="snvFuneralMark" d="M20 12v19M13 20h14" /></svg></span>;
 }
