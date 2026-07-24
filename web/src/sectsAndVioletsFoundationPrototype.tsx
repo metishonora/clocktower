@@ -354,6 +354,29 @@ export function SectsAndVioletsFoundation({
   }, [warningKey]);
 
   useEffect(() => {
+    const activeNomination = replayState?.dayState?.activeNomination;
+    if (
+      replayState?.currentStep?.requiredInput.kind !== "nominationVote" ||
+      !activeNomination
+    ) {
+      return;
+    }
+    setLiveHandoff((current) => current?.kind === "vote"
+      ? current
+      : { kind: "vote", complete: false });
+    setLiveNominatorId(activeNomination.nominatorId);
+    setLiveNomineeId(activeNomination.nomineeId);
+    setLiveNominationCheckpointId(activeNomination.eventId);
+  }, [
+    replayState?.currentStep?.id,
+    replayState?.currentStep?.requiredInput.kind,
+    replayState?.dayState?.activeNomination?.eventId,
+    replayState?.dayState?.activeNomination?.nominatorId,
+    replayState?.dayState?.activeNomination?.nomineeId,
+    liveHandoff?.kind,
+  ]);
+
+  useEffect(() => {
     if (informationCheckpoint) return;
     setSelectedInformationResult(canonicalInformationStep?.informationPrompt?.computedResult);
   }, [canonicalInformationStep?.id, informationCheckpoint]);
