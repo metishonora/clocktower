@@ -266,7 +266,7 @@ function PlayerDetails({
             <span>캐릭터 능력</span>
             <p>{character?.ability}</p>
           </section>
-          <PlayerTokenList tokens={currentPlayer.tokens} />
+          <PlayerTokenList tokens={currentPlayer.tokens} theme="night" />
         </div>
       </section>
     </div>

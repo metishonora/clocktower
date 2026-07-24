@@ -323,6 +323,7 @@ export function SectsAndVioletsLiveGrimoire({
                     count={playerTokens.length}
                     position={desktopPositions[index]}
                     mobilePosition={mobilePositions[index]}
+                    theme={currentStep?.phase === "day" ? "day" : "night"}
                   />
                 ) : null}
               </Fragment>

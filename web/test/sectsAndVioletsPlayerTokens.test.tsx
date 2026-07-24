@@ -43,13 +43,16 @@ test("shows only an inward count in the overview and pins complete source tokens
   const tokenSeat = within(grimoire).getByRole("button", {
     name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개",
   });
-  expect(within(grimoire).getByText("+2")).toBeTruthy();
+  const countBadge = within(grimoire).getByText("+2");
+  expect(countBadge.classList.contains("day")).toBe(true);
   expect(within(grimoire).queryByText("중독")).toBeNull();
 
   await user.click(tokenSeat);
   const detail = screen.getByRole("dialog", { name: "1번 가람 플레이어 상세" });
   expect(within(detail).getByText("꿈꾸는 자")).toBeTruthy();
-  const tokens = within(detail).getByRole("list", { name: "부착된 토큰 2개" });
+  const tokenArea = within(detail).getByRole("region", { name: "부착된 토큰" });
+  expect(tokenArea.classList.contains("day")).toBe(true);
+  const tokens = within(tokenArea).getByRole("list", { name: "부착된 토큰 2개" });
   expect(within(tokens).getByLabelText("중독 · 출처 노 다시")).toBeTruthy();
   expect(within(tokens).getByRole("img", { name: "노 다시 출처" })).toBeTruthy();
   expect(within(tokens).getByLabelText("쌍둥이 · 출처 사악한 쌍둥이")).toBeTruthy();
@@ -80,6 +83,23 @@ test("shows only an inward count in the overview and pins complete source tokens
   expect(document.activeElement).toBe(close);
   await user.keyboard("{Escape}");
   await waitFor(() => expect(document.activeElement).toBe(tokenSeat));
+});
+
+test("keeps count badges and pinned tokens on the night theme at night", async () => {
+  const user = userEvent.setup();
+  renderGrimoire({
+    tokensByPlayerId,
+    currentStep: { ...dayStep, id: "night:manual", phase: "night" },
+  });
+
+  const grimoire = screen.getByLabelText("밤 마도서");
+  expect(within(grimoire).getByText("+2").classList.contains("night")).toBe(true);
+
+  await user.click(within(grimoire).getByRole("button", {
+    name: "1번 좌석, 가람, 꿈꾸는 자, 토큰 2개",
+  }));
+  const detail = screen.getByRole("dialog", { name: "1번 가람 플레이어 상세" });
+  expect(within(detail).getByRole("region", { name: "부착된 토큰" }).classList.contains("night")).toBe(true);
 });
 
 test("omits every token surface when a player has no tokens", async () => {
