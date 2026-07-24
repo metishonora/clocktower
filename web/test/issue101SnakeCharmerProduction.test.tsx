@@ -24,6 +24,12 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   render(<SectsAndVioletsApp coreAdapter={core} storageDriver={storage} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
+  const task = within(app).getByRole("group", { name: "뱀 조련사 대상 선택" });
+  const identity = within(task).getByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" });
+  expect(within(identity).getByRole("heading", { level: 3, name: "뱀 조련사" })).toBeTruthy();
+  expect(within(identity).getByText("가람")).toBeTruthy();
+  expect(within(task).getByText("매일 밤, 생존한 플레이어 1명을 선택합니다: 악마를 선택한다면, 악마는 당신과 소속 및 캐릭터를 맞바꾼 다음 중독됩니다.")).toBeTruthy();
+
   await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
   await user.click(within(app).getByRole("button", { name: /7번 좌석, 도윤/ }));
   await user.click(within(app).getByRole("button", { name: "7번 도윤 선택 확정" }));
