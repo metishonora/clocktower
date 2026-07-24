@@ -439,7 +439,7 @@ function GrimoireSurface({
   const selectedSeats = handoff?.kind === "nomination"
     ? [nominatorSeat, nomineeSeat]
     : handoff?.kind === "vote" ? voterSeats : [demonTargetSeat];
-  const taskLabel = handoff ? handoffTaskLabel(handoff.kind) : undefined;
+  const taskLabel = handoff ? handoffTaskLabel(handoff.kind, handoff.complete) : undefined;
   const confirmLabel = handoff
     ? handoffConfirmLabel(handoff.kind, nominatorSeat, nomineeSeat, voterSeats, demonTargetSeat)
     : undefined;
@@ -668,10 +668,9 @@ function seatLabel(seat?: number) {
   return player ? `${player.seat}번 ${player.name}` : "미선택";
 }
 
-function handoffTaskLabel(kind: HandoffKind) {
-  if (kind === "nomination") return "지명";
-  if (kind === "vote") return "투표";
-  return "악마 공격";
+function handoffTaskLabel(kind: HandoffKind, complete: boolean) {
+  const task = kind === "nomination" ? "지명" : kind === "vote" ? "투표" : "악마 공격";
+  return complete ? `${task} 결과` : task;
 }
 
 function handoffReady(kind: HandoffKind, nominatorSeat?: number, nomineeSeat?: number, demonTargetSeat?: number) {

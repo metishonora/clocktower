@@ -56,31 +56,8 @@
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat { filter: saturate(.45); opacity: .5; }
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat.snvDeadSeat { filter: none; opacity: .46; }
 
-.snvSelectionCompleteCenter {
-  border-color: rgba(83, 190, 154, .38) !important;
-  color: #d8f5e9 !important;
-  background: rgba(23, 57, 48, .96) !important;
-  box-shadow: 0 10px 30px rgba(13, 66, 51, .32) !important;
-}
-
-.snvSelectionCompleteCenter strong { color: #e3f8ef !important; }
-.snvSelectionCompleteCenter > span:last-child { color: #9fd4c2; }
-.snvSelectionCompleteCheck { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; color: #fff !important; background: #278b78; font-size: 1rem; font-weight: 950; }
-
 .snvSelectionCompletePanel { border-color: rgba(83, 190, 154, .24) !important; background: rgba(24, 53, 46, .84) !important; }
-.snvSelectionCompletePanel .issue116SelectionHeader > span { color: #8bd2bb; font-size: .68rem; font-weight: 900; }
-
-.snvDayMode .snvSelectionCompleteCenter {
-  border-color: rgba(32, 126, 104, .35) !important;
-  color: #1c5f52 !important;
-  background: #eef9f5 !important;
-  box-shadow: 0 10px 30px rgba(32, 126, 104, .18) !important;
-}
-
-.snvDayMode .snvSelectionCompleteCenter strong { color: #18594d !important; }
-.snvDayMode .snvSelectionCompleteCenter > span:last-child { color: #4c756d; }
 .snvDayMode .snvSelectionCompletePanel { border-color: rgba(39, 139, 120, .24) !important; background: rgba(240, 251, 247, .82) !important; }
-.snvDayMode .snvSelectionCompletePanel .issue116SelectionHeader > span { color: #1d7565; }
 
 @media (max-width: 780px) {
   .snvFuneralIcon { top: 2px; right: 4px; width: 20px; height: 27px; }

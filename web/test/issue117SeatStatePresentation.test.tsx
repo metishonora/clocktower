@@ -91,21 +91,56 @@ test("keeps the completed Demon actor and result prominent without a duplicate c
   expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
 });
 
+test("keeps a completed Snake Charmer selection only in the result panel", () => {
+  renderGrimoire({
+    players: players(7, [1, 2]),
+    currentStep: snakeCharmerStep(),
+    phaseLabel: "2일차 밤",
+    handoff: { kind: "snakeCharmer", complete: true, actorPlayerId: "player-1" },
+    targetId: "player-2",
+  });
+
+  expect(screen.queryByRole("status", { name: "대상 선택 완료" })).toBeNull();
+  expect(screen.getByRole("group", { name: "현재 단계" }).textContent).toContain("2일차 밤");
+  const resultPanel = screen.getByLabelText("현재 마도서 작업");
+  expect(within(resultPanel).getByRole("heading", { name: "뱀 조련사 결과" })).toBeTruthy();
+  expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
+});
+
+test.each([
+  ["nomination", "지명 결과"],
+  ["vote", "투표 결과"],
+  ["demon", "악마 공격 결과"],
+  ["snakeCharmer", "뱀 조련사 결과"],
+] as const)("uses one result heading for a completed %s handoff", (kind, expectedHeading) => {
+  renderGrimoire({
+    players: players(7, []),
+    handoff: { kind, complete: true, actorPlayerId: "player-1" },
+    targetId: "player-2",
+  });
+
+  const resultPanel = screen.getByLabelText("현재 마도서 작업");
+  expect(within(resultPanel).getByRole("heading", { name: expectedHeading })).toBeTruthy();
+  expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
+});
+
 function renderGrimoire({
   players: fixturePlayers,
   currentStep = dayStep,
+  phaseLabel = "2일차 낮",
   handoff,
   targetId,
 }: {
   players: LivePlayer[];
   currentStep?: PhaseStep;
+  phaseLabel?: string;
   handoff?: LiveHandoff;
   targetId?: string;
 }) {
   return render(
     <SectsAndVioletsLiveGrimoire
       players={fixturePlayers}
-      phaseLabel="2일차 낮"
+      phaseLabel={phaseLabel}
       currentStep={currentStep}
       handoff={handoff}
       voterIds={[]}
@@ -120,6 +155,22 @@ function renderGrimoire({
       onReturnToSetup={vi.fn()}
     />,
   );
+}
+
+function snakeCharmerStep(): PhaseStep {
+  return {
+    ...dayStep,
+    id: "night:snakeCharmer:player-1",
+    phase: "night",
+    stepType: "character",
+    character: "snakeCharmer",
+    playerId: "player-1",
+    requiredInput: {
+      kind: "playerIds",
+      optional: false,
+      allowedPlayerIds: ["player-2", "player-3", "player-4", "player-5", "player-6", "player-7"],
+    },
+  };
 }
 
 function players(count: number, deadSeats: number[]): LivePlayer[] {

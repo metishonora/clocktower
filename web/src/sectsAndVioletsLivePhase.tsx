@@ -229,7 +229,6 @@ export function SectsAndVioletsLiveGrimoire({
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
     : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId) : true;
-  const showCenterCompletion = Boolean(handoff?.complete && handoff.kind === "snakeCharmer");
 
   const closePlayerDetails = useCallback(() => {
     const returningPlayerId = detailsPlayerId;
@@ -354,32 +353,17 @@ export function SectsAndVioletsLiveGrimoire({
               {centerPrompt}
             </div>
           ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
-            <div
-              className={`snvGrimoireCenter live issue116PhaseClock${showCenterCompletion ? " snvSelectionCompleteCenter" : ""}`}
-              role={showCenterCompletion ? "status" : "group"}
-              aria-label={showCenterCompletion ? "대상 선택 완료" : "현재 단계"}
-            >
-              {showCenterCompletion ? (
-                <>
-                  <span className="snvSelectionCompleteCheck" aria-hidden="true">✓</span>
-                  <strong>선택 완료</strong>
-                  <span>{target?.name ?? "처리 완료"}</span>
-                </>
-              ) : (
-                <>
-                  <strong>{phaseLabel}</strong>
-                  <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
-                  {!handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
-                </>
-              )}
+            <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
+              <strong>{phaseLabel}</strong>
+              <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
+              {!handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
             </div>
           ) : null}
         </div>
         {handoff && !centerPrompt ? (
           <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">
-              <h2>{handoff.kind === "nomination" ? "지명" : handoff.kind === "vote" ? "투표" : handoff.kind === "snakeCharmer" ? "뱀 조련사" : handoff.complete ? "악마 공격 결과" : "악마 공격"}</h2>
-              {handoff.complete && handoff.kind !== "demon" ? <span>처리 완료</span> : null}
+              <h2>{handoffPanelTitle(handoff.kind, handoff.complete)}</h2>
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
               ) : null}
@@ -465,6 +449,13 @@ function playerLabel(player?: Player) {
 
 function playerStateLabel(player?: Player) {
   return player ? `${playerLabel(player)} · ${player.alive ? "생존" : "사망"}` : "미선택";
+}
+
+function handoffPanelTitle(kind: LiveHandoffKind, complete: boolean) {
+  const task = kind === "nomination" ? "지명"
+    : kind === "vote" ? "투표"
+      : kind === "snakeCharmer" ? "뱀 조련사" : "악마 공격";
+  return complete ? `${task} 결과` : task;
 }
 
 function characterKindLabel(kind: LivePlayer["characterKind"]) {
