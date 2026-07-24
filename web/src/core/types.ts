@@ -151,6 +151,11 @@ export type InformationPrompt = {
   activeReasons: DeliveryReason[];
   registrationCandidatePlayerIds: string[];
   numberChoices: NumberChoice[];
+  booleanChoices?: Array<{
+    value: boolean;
+    isComputed: boolean;
+    registrationJudgments: RegistrationJudgment[];
+  }>;
   setupInfoRegistrationOptions: SetupInfoRegistrationOption[];
   targetChecks?: TargetCheck[];
 };
@@ -257,6 +262,13 @@ export type RuleState = {
   };
   butlerVote?: ButlerVoteState;
   activeImpairments?: ActiveImpairment[];
+  automaticReminders?: Array<{
+    playerId: string;
+    characterId: string;
+    tokenId: string;
+    label: string;
+    description: string;
+  }>;
 };
 
 export type ActiveImpairment = {
@@ -341,8 +353,14 @@ export type SetupInformationRevealPayload =
 
 export type NumericInformationRevealPayload = {
   kind: "numericInformation";
-  characterId: "chef" | "empath";
+  characterId: "chef" | "empath" | "clockmaker" | "oracle";
   value: number;
+};
+
+export type BooleanInformationRevealPayload = {
+  kind: "booleanInformation";
+  characterId: "flowergirl" | "townCrier";
+  value: boolean;
 };
 
 export type FortuneTellerInformationRevealPayload = {
@@ -368,6 +386,7 @@ export type CharacterChangeRevealPayload = {
 export type RoleInformationRevealPayload =
   | SetupInformationRevealPayload
   | NumericInformationRevealPayload
+  | BooleanInformationRevealPayload
   | FortuneTellerInformationRevealPayload
   | CharacterInformationRevealPayload
   | CharacterChangeRevealPayload

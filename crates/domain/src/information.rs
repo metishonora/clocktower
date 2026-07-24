@@ -61,6 +61,7 @@ pub(crate) fn information_prompt(
         active_reasons,
         registration_candidate_player_ids,
         number_choices,
+        boolean_choices: Vec::new(),
         setup_info_registration_options,
         target_checks,
     })

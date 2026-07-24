@@ -15,6 +15,7 @@ import type {
 } from "./types.js";
 import { isCharacterChangeRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
+import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
@@ -57,7 +58,10 @@ const inputTargets = new Set([
   "execution",
   "phase",
 ]);
-const characterIds = new Set(characters.map((character) => character.id));
+const characterIds = new Set([
+  ...characters.map((character) => character.id),
+  ...sectsAndVioletsCharacters.map((character) => character.id),
+]);
 const systemTokenIds = new Set(["drunk", "poisoned", "protected", "noAbility", "abilitySpent", "needsFollowUp"]);
 const scriptTokenKeys = new Set([
   "butler:master",
@@ -374,6 +378,8 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     !value.registrationCandidatePlayerIds.every(isString) ||
     !Array.isArray(value.numberChoices) ||
     !value.numberChoices.every(isNumberChoice) ||
+    (value.booleanChoices !== undefined &&
+      (!Array.isArray(value.booleanChoices) || !value.booleanChoices.every(isBooleanChoice))) ||
     !Array.isArray(value.setupInfoRegistrationOptions) ||
     !value.setupInfoRegistrationOptions.every(isSetupInfoRegistrationOption) ||
     (value.targetChecks !== undefined &&
@@ -398,20 +404,30 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   }
 
   if (value.targetChecks && value.targetChecks.length > 0) {
-    return value.computedResult === undefined && value.numberChoices.length === 0;
+    return value.computedResult === undefined && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (value.computedResult === undefined) {
-    return inputKind === "setupInfo" && value.numberChoices.length === 0;
+    return inputKind === "setupInfo" && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (!isInformationResult(value.computedResult)) return false;
-  if (value.computedResult.kind !== "number") return value.numberChoices.length === 0;
+  if (value.computedResult.kind === "boolean") {
+    const choices = value.booleanChoices ?? [];
+    const computedChoices = choices.filter((choice) => choice.isComputed);
+    return value.numberChoices.length === 0 && computedChoices.length === 1 &&
+      computedChoices[0]?.value === value.computedResult.value &&
+      new Set(choices.map((choice) => choice.value)).size === choices.length;
+  }
+  if (value.computedResult.kind !== "number") {
+    return value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
+  }
 
   const computedChoices = value.numberChoices.filter((choice) => choice.isComputed);
   const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
   return (
     computedChoices.length === 1 &&
     computedChoices[0]?.value === value.computedResult.value &&
-    uniqueValues.size === value.numberChoices.length
+    uniqueValues.size === value.numberChoices.length &&
+    (value.booleanChoices?.length ?? 0) === 0
   );
 }
 
@@ -562,6 +578,16 @@ function isNumberChoice(value: unknown): boolean {
   );
 }
 
+function isBooleanChoice(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.value === "boolean" &&
+    typeof value.isComputed === "boolean" &&
+    Array.isArray(value.registrationJudgments) &&
+    value.registrationJudgments.every(isRegistrationJudgment)
+  );
+}
+
 function isSetupInfoRegistrationOption(value: unknown): boolean {
   return (
     isRecord(value) &&
@@ -647,6 +673,7 @@ function isRuleState(value: unknown): boolean {
       "virginAbility",
       "butlerVote",
       "activeImpairments",
+      "automaticReminders",
     ]) &&
     isOptionalString(value.redHerringPlayerId) &&
     (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
@@ -672,8 +699,20 @@ function isRuleState(value: unknown): boolean {
         isOptionalString(value.butlerVote.masterPlayerId) &&
         typeof value.butlerVote.restrictionApplies === "boolean")) &&
     (value.activeImpairments === undefined ||
-      (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment)))
+      (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment))) &&
+    (value.automaticReminders === undefined ||
+      (Array.isArray(value.automaticReminders) && value.automaticReminders.every(isAutomaticReminder)))
   );
+}
+
+function isAutomaticReminder(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
+    typeof value.playerId === "string" &&
+    (value.characterId === "flowergirl" || value.characterId === "townCrier") &&
+    typeof value.tokenId === "string" &&
+    typeof value.label === "string" &&
+    typeof value.description === "string";
 }
 
 function isActiveRuleEffect(value: unknown): boolean {

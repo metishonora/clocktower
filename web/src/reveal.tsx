@@ -64,7 +64,16 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
       </>
     );
   } else if (payload.kind === "numericInformation") {
-    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "chef" ? "서로 이웃한 악한 팀" : "살아있는 양옆 이웃 중 악한 팀"}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : "명"}</strong></>;
+    const label = payload.characterId === "clockmaker"
+      ? "악마와 하수인의 거리"
+      : payload.characterId === "oracle"
+        ? "죽은 악한 플레이어"
+        : payload.characterId === "chef"
+          ? "서로 이웃한 악한 팀"
+          : "살아있는 양옆 이웃 중 악한 팀";
+    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{label}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : payload.characterId === "clockmaker" ? "칸" : "명"}</strong></>;
+  } else if (payload.kind === "booleanInformation") {
+    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "flowergirl" ? "오늘 악마가…" : "오늘 하수인이…"}</p><strong className="roleInformationValue boolean">{payload.characterId === "flowergirl" ? (payload.value ? "투표함" : "투표하지 않음") : (payload.value ? "지목함" : "지목하지 않음")}</strong></>;
   } else if (payload.kind === "fortuneTellerInformation") {
     content = <><h1>점쟁이 정보</h1><p>이 중에 악마는…</p><RevealPlayers players={payload.targetPlayers} /><strong className={`roleInformationValue boolean ${payload.hasDemon ? "yes" : "no"}`}>{payload.hasDemon ? "있음" : "없음"}</strong></>;
   } else if (payload.kind === "characterInformation") {

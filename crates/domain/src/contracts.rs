@@ -236,6 +236,18 @@ pub(crate) struct RuleState {
     pub(crate) butler_vote: Option<ButlerVoteState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) automatic_reminders: Vec<AutomaticReminder>,
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AutomaticReminder {
+    pub(crate) player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) token_id: String,
+    pub(crate) label: String,
+    pub(crate) description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -328,6 +340,12 @@ pub(crate) enum RevealPayload {
         #[serde(rename = "characterId")]
         character_id: String,
         value: usize,
+    },
+    BooleanInformation {
+        kind: &'static str,
+        #[serde(rename = "characterId")]
+        character_id: String,
+        value: bool,
     },
     FortuneTellerInformation {
         kind: &'static str,
