@@ -85,6 +85,9 @@ export type InformationResult =
   | { kind: "number"; value: number }
   | { kind: "boolean"; value: boolean }
   | { kind: "character"; characterId: string }
+  | { kind: "characterPair"; characterIds: [string, string] }
+  | { kind: "player"; playerId: string }
+  | { kind: "playerPair"; playerIds: [string, string] }
   | {
       kind: "setupInfo";
       playerIds: string[];
@@ -117,8 +120,10 @@ export type RegistrationJudgment = {
 };
 
 export type DeliveryReason =
+  | { type: "abilityChoice" }
   | { type: "drunk" }
   | { type: "poisoned"; poisonerPlayerId: string; poisonEventId: string }
+  | { type: "vortox"; demonPlayerId: string }
   | { type: "registrationJudgment"; judgments: RegistrationJudgment[] };
 
 export type DeliveryContext =
@@ -376,6 +381,22 @@ export type CharacterInformationRevealPayload = {
   revealedCharacterId: string;
 };
 
+export type DreamerInformationRevealPayload = {
+  kind: "dreamerInformation";
+  characterIds: [string, string];
+};
+
+export type SeamstressInformationRevealPayload = {
+  kind: "seamstressInformation";
+  targetPlayers: [RevealPlayer, RevealPlayer];
+  sameAlignment: boolean;
+};
+
+export type SageInformationRevealPayload = {
+  kind: "sageInformation";
+  candidatePlayers: [RevealPlayer, RevealPlayer];
+};
+
 export type CharacterChangeRevealPayload = {
   kind: "characterChange";
   playerId: string;
@@ -389,6 +410,9 @@ export type RoleInformationRevealPayload =
   | BooleanInformationRevealPayload
   | FortuneTellerInformationRevealPayload
   | CharacterInformationRevealPayload
+  | DreamerInformationRevealPayload
+  | SeamstressInformationRevealPayload
+  | SageInformationRevealPayload
   | CharacterChangeRevealPayload
   | EvilInformationRevealPayload;
 

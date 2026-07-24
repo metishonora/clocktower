@@ -6,7 +6,7 @@ import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
-test("real WASM confirms Clockmaker information before the approved repeatable Reveal", async () => {
+test("real WASM confirms Clockmaker information and advances when Reveal closes", async () => {
   const game = clockmakerGame();
   for (let index = 0; index < 2; index += 1) {
     const state = await replayOrThrow(game);
@@ -36,15 +36,8 @@ test("real WASM confirms Clockmaker information before the approved repeatable R
   expect(within(reveal).getByText("1칸")).toBeTruthy();
   await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
 
-  const confirmedTask = within(app).getByRole("article", { name: "시계공 정보" });
-  const repeatButton = within(confirmedTask).getByRole("button", { name: "정보 공개" });
-  expect(repeatButton.classList.contains("prominent")).toBe(false);
-  expect(within(confirmedTask).queryByText("Reveal 다시 보기")).toBeNull();
-  await user.click(repeatButton);
-  reveal = await screen.findByRole("dialog", { name: "시계공 정보 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
-  await user.click(within(confirmedTask).getByRole("button", { name: "다음" }));
   expect(await within(app).findByRole("heading", { name: "꿈꾸는 자" })).toBeTruthy();
+  expect(within(app).queryByRole("button", { name: "다음" })).toBeNull();
 });
 
 function clockmakerGame(): GameFile {

@@ -41,7 +41,6 @@ const step: PhaseStep = {
 
 test("uses the approved identity, ability, truth, information reveal, and next layout", async () => {
   const onReveal = vi.fn();
-  const onNext = vi.fn();
   const { rerender } = render(
     <SectsAndVioletsInformationTask
       step={step}
@@ -49,7 +48,6 @@ test("uses the approved identity, ability, truth, information reveal, and next l
       revealed={false}
       busy={false}
       onReveal={onReveal}
-      onNext={onNext}
     />,
   );
 
@@ -59,7 +57,7 @@ test("uses the approved identity, ability, truth, information reveal, and next l
   expect(within(task).getByText("진실").nextElementSibling?.textContent).toContain("1칸");
   const reveal = within(task).getByRole("button", { name: "정보 공개" });
   expect(reveal.classList.contains("prominent")).toBe(true);
-  expect(within(task).getByRole("button", { name: "다음" }).hasAttribute("disabled")).toBe(true);
+  expect(within(task).queryByRole("button", { name: "다음" })).toBeNull();
 
   await userEvent.setup().click(reveal);
   expect(onReveal).toHaveBeenCalledTimes(1);
@@ -71,7 +69,6 @@ test("uses the approved identity, ability, truth, information reveal, and next l
       revealed
       busy={false}
       onReveal={onReveal}
-      onNext={onNext}
     />,
   );
   const revealedTask = screen.getByRole("article", { name: "시계공 정보" });
@@ -80,8 +77,34 @@ test("uses the approved identity, ability, truth, information reveal, and next l
   expect(within(revealedTask).queryByText("Reveal 다시 보기")).toBeNull();
   await userEvent.setup().click(repeat);
   expect(onReveal).toHaveBeenCalledTimes(2);
-  await userEvent.setup().click(within(revealedTask).getByRole("button", { name: "다음" }));
-  expect(onNext).toHaveBeenCalledTimes(1);
+});
+
+test("Dreamer exposes the selected target truth and the full legal opposite-alignment catalog", () => {
+  const dreamerStep: PhaseStep = {
+    ...step,
+    id: "firstNight:dreamer",
+    character: "dreamer",
+    requiredInput: { kind: "playerIds", target: "player", minSelections: 1, maxSelections: 1, allowedPlayerIds: ["player-2"], optional: false },
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: [], numberChoices: [], setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: ["player-2"],
+        computedResult: { kind: "character", characterId: "seamstress" },
+        choices: ["evilTwin", "witch", "cerenovus", "pitHag", "fangGu", "vigormortis", "noDashii", "vortox"].map((evil) => ({
+          result: { kind: "characterPair" as const, characterIds: ["seamstress", evil] as [string, string] },
+          isComputed: true,
+          registrationJudgments: [],
+        })),
+      }],
+    },
+  };
+  const target: Player = { ...actor, id: "player-2", seat: 2, name: "유나", actualCharacter: "seamstress", shownCharacter: "seamstress" };
+  render(<SectsAndVioletsInformationTask step={dreamerStep} actor={{ ...actor, actualCharacter: "dreamer" }} players={[actor, target]} selectedPlayerIds={["player-2"]} revealed={false} busy={false} onReveal={() => undefined} />);
+  expect(screen.getByText("대상 ·").parentElement?.textContent).toContain("2번 유나");
+  expect(screen.getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
+  expect(screen.getByRole("combobox", { name: "악한 캐릭터" }).querySelectorAll("option")).toHaveLength(8);
 });
 
 test("renders Flowergirl and Town Crier Reveal as status statements", () => {

@@ -78,6 +78,19 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && isRevealPlayer(payload.targetPlayer)
       && hasExactKeys(payload, ["characterId", "kind", "revealedCharacterId", "targetPlayer"]);
   }
+  if (payload.kind === "dreamerInformation") {
+    return hasExactKeys(payload, ["characterIds", "kind"])
+      && Array.isArray(payload.characterIds) && payload.characterIds.length === 2
+      && payload.characterIds.every((id) => typeof id === "string" && characterIds.has(id));
+  }
+  if (payload.kind === "seamstressInformation") {
+    return hasExactKeys(payload, ["kind", "sameAlignment", "targetPlayers"])
+      && typeof payload.sameAlignment === "boolean" && isRevealPlayers(payload.targetPlayers, 2);
+  }
+  if (payload.kind === "sageInformation") {
+    return hasExactKeys(payload, ["candidatePlayers", "kind"])
+      && isRevealPlayers(payload.candidatePlayers, 2);
+  }
   if (payload.kind === "setupInformation") {
     const setupCharacter = payload.characterId === "washerwoman" || payload.characterId === "librarian" || payload.characterId === "investigator";
     if (!setupCharacter || typeof payload.zeroOutsiders !== "boolean" || !Array.isArray(payload.candidatePlayers)) return false;

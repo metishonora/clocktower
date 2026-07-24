@@ -76,6 +76,11 @@ fn advance_to_snake_charmer(events: &mut Vec<Value>, later_night_only: bool) -> 
             json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
         } else if step["id"].as_str().is_some_and(|id| id.contains(":demon:")) {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-2"] } } })
+        } else if step["character"] == "dreamer" {
+            let check = &step["informationPrompt"]["targetChecks"][0];
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })
+        } else if step["character"] == "seamstress" {
+            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
         } else {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } })
         };

@@ -101,6 +101,13 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
       payload: { stepId: step.id, input: { playerIds: ["player-3"] } },
     };
   }
+  if (step.character === "dreamer") {
+    const check = step.informationPrompt!.targetChecks![0];
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: check.targetPlayerIds }, deliveredResult: check.choices[0].result } };
+  }
+  if (step.character === "seamstress") {
+    return { type: "skipStep", payload: { stepId: step.id } };
+  }
   return { type: "confirmStep", payload: { stepId: step.id, input: null } };
 }
 

@@ -10,14 +10,44 @@
 .snvInformationValues select { min-width: 148px; padding: 9px 30px 9px 11px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .78rem system-ui, sans-serif; }
 .snvInformationActions { margin-top: auto !important; }
 .snvInformationActions button { flex: 1 1 0; min-height: 50px; }
+.snvInformationTargetActions { margin-top: auto !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.snvInformationTargetActions button:only-child { grid-column: 1 / -1; }
+.snvInformationTargetSummary { margin: 14px 0 0; color: #b7a5bd !important; font-size: .72rem; }
+.snvInformationTargetSummary strong { margin-left: 5px; color: #f7effa; }
+.snvInformationPairEditor, .snvInformationBinary { display: grid; margin: 14px 0 0; padding: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 14px; background: rgba(9, 5, 12, .26); }
+.snvInformationPairEditor { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 10px; }
+.snvInformationPairEditor legend, .snvInformationBinary legend { padding: 0 6px; color: #b7a5bd; font-size: .66rem; font-weight: 850; }
+.snvInformationPairEditor label { display: grid; gap: 6px; color: #b7a5bd; font-size: .65rem; font-weight: 800; }
+.snvInformationPairEditor select { width: 100%; min-height: 44px; padding: 8px 28px 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .76rem system-ui, sans-serif; }
+.snvInformationPairEditor select:disabled { color: #f4e9f7; opacity: 1; background: rgba(89, 55, 102, .5); }
+.snvInformationBinary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.snvInformationBinary button { min-height: 48px; border: 1px solid rgba(214, 169, 226, .25); border-radius: 11px; color: #eadfed; background: rgba(255, 255, 255, .04); font: inherit; font-size: .74rem; font-weight: 850; }
+.snvInformationBinary button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; }
+.snvSageSwap { width: 36px; height: 36px; margin-bottom: 4px; padding: 7px; border: 1px solid rgba(214, 169, 226, .3); border-radius: 999px; color: #eadfed; background: rgba(255, 255, 255, .05); }
+.snvSageSwap svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .snvProductionInformationReveal { min-height: min(520px, calc(100dvh - 40px)); }
 .snvProductionInformationReveal > img { width: 92px; height: 92px; margin: 0 auto 13px; object-fit: contain; filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .42)); }
 .snvProductionInformationReveal .snvInformationRevealLabel { margin-top: 22px; color: #e1d5e4; font: clamp(1.15rem, 3vw, 1.5rem)/1.35 Georgia, serif; }
 .snvInformationRevealValue { display: block; margin-top: 14px; color: #fff; font: clamp(3.1rem, 10vw, 6.2rem)/.95 Georgia, serif; }
+.snvTargetedRevealPair { display: grid; margin: 24px auto 0; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
+.snvTargetedRevealPair > div { display: grid; min-width: 0; padding: 14px; justify-items: center; gap: 10px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 18px; background: rgba(255, 255, 255, .04); }
+.snvRevealCharacterCard img { width: 82px; height: 82px; object-fit: contain; }
+.snvTargetedRevealPair strong { font: 1.35rem Georgia, serif; }
+.snvTargetedRevealPair > b { color: #d7bd72; font-size: .72rem; }
+.snvPlayerRevealPair { width: min(100%, 420px); }
+.snvRevealPlayerCard { min-height: 110px; align-content: center; }
+.snvRevealPlayerCard > span { color: #c7b6cc; font-size: .7rem; font-weight: 850; }
+.snvSeamstressRevealValue { font-size: clamp(2.5rem, 9vw, 5rem); }
 
 @media (max-width: 780px) {
   .snvInformationTask { min-height: 360px; }
   .snvInformationIdentity { margin-bottom: 20px !important; }
   .snvInformationValues > div { grid-template-columns: 1fr auto; }
   .snvProductionInformationReveal { min-height: calc(100dvh - 24px); border-radius: 22px; }
+  .snvInformationPairEditor { grid-template-columns: 1fr; align-items: stretch; }
+  .snvSageSwap { margin: 0; justify-self: center; transform: rotate(90deg); }
+  .snvTargetedRevealPair { gap: 8px; }
+  .snvTargetedRevealPair > div { padding: 10px 7px; }
+  .snvRevealCharacterCard img { width: 58px; height: 58px; }
+  .snvTargetedRevealPair strong { font-size: 1rem; }
 }

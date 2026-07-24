@@ -4,6 +4,7 @@ import { isRoleInformationRevealPayload, isSpyGrimoireRevealPayload } from "./co
 import { characterLabel } from "./setupDraft.js";
 import { spySeatPosition } from "./spyGrimoireLayout.js";
 import { CharacterIcon } from "./components/CharacterIcon.js";
+import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters.js";
 
 export function RevealPreview({
   payload,
@@ -78,6 +79,12 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
     content = <><h1>점쟁이 정보</h1><p>이 중에 악마는…</p><RevealPlayers players={payload.targetPlayers} /><strong className={`roleInformationValue boolean ${payload.hasDemon ? "yes" : "no"}`}>{payload.hasDemon ? "있음" : "없음"}</strong></>;
   } else if (payload.kind === "characterInformation") {
     content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>이 자의 직업은…</p><RevealPlayers players={[payload.targetPlayer]} /><CharacterResult characterId={payload.revealedCharacterId} /></>;
+  } else if (payload.kind === "dreamerInformation") {
+    content = <><h1>꿈꾸는 자 정보</h1><p>이 자는…</p><div className="roleInformationPair"><CharacterResult characterId={payload.characterIds[0]} /><b>또는</b><CharacterResult characterId={payload.characterIds[1]} /></div></>;
+  } else if (payload.kind === "seamstressInformation") {
+    content = <><h1>재봉사 정보</h1><p>{payload.targetPlayers.map((player) => `${player.seat}번 ${player.name}`).join(" · ")}</p><strong className="roleInformationValue boolean">{payload.sameAlignment ? "같은 진영" : "다른 진영"}</strong></>;
+  } else if (payload.kind === "sageInformation") {
+    content = <><h1>현자 정보</h1><p>당신을 죽인 악마는…</p><div className="roleInformationPair roleInformationPlayerPair"><RevealPlayers players={[payload.candidatePlayers[0]]} /><b>또는</b><RevealPlayers players={[payload.candidatePlayers[1]]} /></div></>;
   } else {
     content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} /></>;
   }
@@ -145,7 +152,11 @@ function RevealPlayers({ players }: { players: readonly RevealPlayer[] }) {
 }
 
 function CharacterResult({ characterId }: { characterId: string }) {
-  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{characterLabel(characterId)}</strong></div>;
+  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{displayCharacterLabel(characterId)}</strong></div>;
+}
+
+function displayCharacterLabel(characterId: string) {
+  return sectsAndVioletsCharacters.find((character) => character.id === characterId)?.name ?? characterLabel(characterId);
 }
 
 function setupInformationDescription(characterId: "washerwoman" | "librarian" | "investigator") {
@@ -157,6 +168,9 @@ function roleInformationTitle(payload: RoleInformationRevealPayload) {
   if (payload.kind === "fortuneTellerInformation") return "점쟁이 정보";
   if (payload.kind === "minionInformation") return "하수인 정보";
   if (payload.kind === "demonInformation") return "악마 정보";
+  if (payload.kind === "dreamerInformation") return "꿈꾸는 자 정보";
+  if (payload.kind === "seamstressInformation") return "재봉사 정보";
+  if (payload.kind === "sageInformation") return "현자 정보";
   return `${characterLabel(payload.characterId)} 정보`;
 }
 

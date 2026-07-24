@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
@@ -79,7 +79,7 @@ type FirstNightStep = {
 type InformationCheckpoint = {
   step: PhaseStep;
   actor: Player;
-  revealPayload: Extract<RevealPayload, { kind: "numericInformation" | "booleanInformation" }>;
+  revealPayload: Extract<RevealPayload, { kind: "numericInformation" | "booleanInformation" | "dreamerInformation" | "seamstressInformation" | "sageInformation" }>;
 };
 
 const kindLabels: Record<CharacterKind, string> = {
@@ -177,6 +177,8 @@ export function SectsAndVioletsFoundation({
   const [liveNomineeId, setLiveNomineeId] = useState<string>();
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
+  const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
+  const [selectedInformationTargetIds, setSelectedInformationTargetIds] = useState<string[]>([]);
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
@@ -272,7 +274,7 @@ export function SectsAndVioletsFoundation({
   }), [replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
-  const canonicalInformationStep = replayState?.currentStep?.informationPrompt && isIssue96InformationCharacter(replayState.currentStep.character)
+  const canonicalInformationStep = replayState?.currentStep?.informationPrompt && isAutomatedInformationCharacter(replayState.currentStep.character)
     ? replayState.currentStep
     : undefined;
   const activeInformationStep = informationCheckpoint?.step ?? canonicalInformationStep;
@@ -378,8 +380,15 @@ export function SectsAndVioletsFoundation({
 
   useEffect(() => {
     if (informationCheckpoint) return;
-    setSelectedInformationResult(canonicalInformationStep?.informationPrompt?.computedResult);
-  }, [canonicalInformationStep?.id, informationCheckpoint]);
+    const prompt = canonicalInformationStep?.informationPrompt;
+    const targetCheck = prompt?.targetChecks?.find((check) => check.targetPlayerIds.length === selectedInformationTargetIds.length && check.targetPlayerIds.every((id) => selectedInformationTargetIds.includes(id)))
+      ?? prompt?.targetChecks?.find((check) => check.targetPlayerIds.length === 0);
+    setSelectedInformationResult(targetCheck?.choices[0]?.result ?? prompt?.computedResult);
+  }, [canonicalInformationStep?.id, informationCheckpoint, selectedInformationTargetIds]);
+
+  useEffect(() => {
+    setSelectedInformationTargetIds([]);
+  }, [canonicalInformationStep?.id]);
 
   useEffect(() => {
     if (pendingIdentityReveals.length === 0) {
@@ -1006,12 +1015,13 @@ export function SectsAndVioletsFoundation({
     setOperationBusy(true);
     setOperationError(undefined);
     const deliveredResult = selectedInformationResult ?? canonicalInformationStep.informationPrompt?.computedResult;
+    const targeted = canonicalInformationStep.character === "dreamer" || canonicalInformationStep.character === "seamstress";
     const result = await coreAdapter.propose(gameFile, {
       type: "confirmStep",
       payload: {
         stepId: canonicalInformationStep.id,
-        input: null,
-        ...(canonicalInformationStep.informationPrompt?.deliveryMode === "selectable" && deliveredResult
+        input: targeted ? { playerIds: selectedInformationTargetIds } : null,
+        ...((canonicalInformationStep.informationPrompt?.deliveryMode === "selectable" || canonicalInformationStep.character === "dreamer" || canonicalInformationStep.character === "sage") && deliveredResult
           ? { deliveredResult }
           : {}),
       },
@@ -1027,7 +1037,7 @@ export function SectsAndVioletsFoundation({
       setOperationError(result.error.messageKo);
       return;
     }
-    const revealPayload = issue96RevealPayload(result.value.revealPayload);
+    const revealPayload = automatedInformationRevealPayload(result.value.revealPayload);
     if (!revealPayload) {
       setOperationBusy(false);
       setOperationError("공개할 정보가 없습니다.");
@@ -1050,7 +1060,18 @@ export function SectsAndVioletsFoundation({
   const advanceCanonicalInformation = () => {
     setInformationRevealOpen(false);
     setInformationCheckpoint(undefined);
-    setSelectedInformationResult(replayState?.currentStep?.informationPrompt?.computedResult);
+    setSelectedInformationTargetIds([]);
+    setSelectedInformationResult(undefined);
+  };
+
+  const skipCanonicalInformation = async () => {
+    if (!coreAdapter || !canonicalInformationStep || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const result = await coreAdapter.propose(gameFile, { type: "skipStep", payload: { stepId: canonicalInformationStep.id } }).catch((error: unknown) => ({ ok: false as const, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "단계 보류 실패" } }));
+    if (!result.ok) setOperationError(result.error.messageKo);
+    else await applyCanonicalEvent(result.value.event, "phase");
+    setOperationBusy(false);
   };
 
   const assignCharacterToSeat = (characterId: string, seat: number, preserveSelectedSeat = false) => {
@@ -1277,7 +1298,7 @@ export function SectsAndVioletsFoundation({
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "demon" || kind === "snakeCharmer"
+      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
     });
@@ -1288,6 +1309,7 @@ export function SectsAndVioletsFoundation({
       setLiveNominationCheckpointId(undefined);
     }
     if (kind === "demon" || kind === "snakeCharmer") setLiveTargetId(undefined);
+    if (kind === "dreamer" || kind === "seamstress") setLiveTargetIds(selectedInformationTargetIds);
     navigateToTab("seating");
   };
 
@@ -1314,6 +1336,14 @@ export function SectsAndVioletsFoundation({
       setLiveVoterIds((current) => current.includes(playerId)
         ? current.filter((candidate) => candidate !== playerId)
         : [...current, playerId]);
+      return;
+    }
+    if (liveHandoff.kind === "dreamer" || liveHandoff.kind === "seamstress") {
+      const max = liveHandoff.kind === "dreamer" ? 1 : 2;
+      if (!replayState?.currentStep?.requiredInput.allowedPlayerIds?.includes(playerId)) return;
+      setLiveTargetIds((current) => current.includes(playerId)
+        ? current.filter((candidate) => candidate !== playerId)
+        : current.length >= max ? (max === 1 ? [playerId] : current) : [...current, playerId]);
       return;
     }
     setLiveTargetId((current) => current === playerId ? undefined : playerId);
@@ -1347,6 +1377,13 @@ export function SectsAndVioletsFoundation({
         payload: { stepId: step.id, input: { voterIds: liveVoterIds } },
       });
       if (applied) setLiveHandoff({ kind: "vote", complete: true });
+    } else if (liveHandoff.kind === "dreamer" || liveHandoff.kind === "seamstress") {
+      const needed = liveHandoff.kind === "dreamer" ? 1 : 2;
+      if (liveTargetIds.length === needed) {
+        setSelectedInformationTargetIds(liveTargetIds);
+        setLiveHandoff(undefined);
+        navigateToTab("play");
+      }
     } else if (liveTargetId) {
       const applied = await proposeAndApplyLiveCommand({
         type: "confirmStep",
@@ -1363,6 +1400,7 @@ export function SectsAndVioletsFoundation({
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
+    setLiveTargetIds([]);
     setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
   };
@@ -1390,6 +1428,8 @@ export function SectsAndVioletsFoundation({
       setLiveNomineeId(undefined);
     } else if (liveHandoff?.kind === "vote") {
       setLiveVoterIds([]);
+    } else if (liveHandoff?.kind === "dreamer" || liveHandoff?.kind === "seamstress") {
+      setLiveTargetIds([]);
     }
   };
 
@@ -1624,6 +1664,7 @@ export function SectsAndVioletsFoundation({
           nomineeId={liveNomineeId}
           voterIds={liveVoterIds}
           targetId={liveTargetId}
+          targetIds={liveTargetIds}
           centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
             <SnakeCharmerIdentityRevealPrompt
               player={identityRevealPlayer}
@@ -1837,12 +1878,15 @@ export function SectsAndVioletsFoundation({
               <SectsAndVioletsInformationTask
                 step={activeInformationStep}
                 actor={activeInformationActor}
+                players={replayState?.players}
+                selectedPlayerIds={selectedInformationTargetIds}
                 revealed={Boolean(informationCheckpoint)}
                 busy={operationBusy}
                 deliveredResult={selectedInformationResult}
                 onDeliveredResultChange={setSelectedInformationResult}
+                onChooseTargets={() => startLiveHandoff(activeInformationStep.character === "seamstress" ? "seamstress" : "dreamer")}
+                onSkip={() => void skipCanonicalInformation()}
                 onReveal={() => void showCanonicalInformation()}
-                onNext={advanceCanonicalInformation}
               />
             ) : effectivePlayPhase === "firstNight" && currentFirstNightStep && !isTransitionStep(currentFirstNightStep) ? (
               <article className="snvCurrentStep">
@@ -2001,22 +2045,9 @@ export function SectsAndVioletsFoundation({
           closeLabel="확인"
           closeAriaLabel="정보 공개 닫기"
           closeButtonRef={informationCloseRef}
-          onClose={() => setInformationRevealOpen(false)}
+          onClose={advanceCanonicalInformation}
         >
-          {sectsAndVioletsCharacterAsset(informationCheckpoint.step.character)?.src ? (
-            <img
-              src={sectsAndVioletsCharacterAsset(informationCheckpoint.step.character)?.src}
-              alt={`${characters.find((character) => character.id === informationCheckpoint.step.character)?.name ?? informationCheckpoint.step.character} 공식 캐릭터 아이콘`}
-            />
-          ) : null}
-          <span>{characters.find((character) => character.id === informationCheckpoint.step.character)?.name}</span>
-          <p className="snvInformationRevealLabel">{informationRevealLabel(informationCheckpoint.step.character)}</p>
-          <strong className="snvInformationRevealValue">
-            {informationValueLabel(
-              informationCheckpoint.step.character ?? "",
-              informationResultFromReveal(informationCheckpoint.revealPayload),
-            )}
-          </strong>
+          <ProductionInformationRevealContent checkpoint={informationCheckpoint} />
         </SectsAndVioletsReveal>
       ) : null}
       {returnConfirmOpen ? (
@@ -2095,25 +2126,52 @@ function identityRevealKey(gameId: string, sourceEventId: string, sequence: numb
   return `${gameId}:${sourceEventId}:${sequence}`;
 }
 
-function isIssue96InformationCharacter(characterId: string | undefined): boolean {
-  return ["clockmaker", "flowergirl", "townCrier", "oracle"].includes(characterId ?? "");
+function isAutomatedInformationCharacter(characterId: string | undefined): boolean {
+  return ["clockmaker", "dreamer", "flowergirl", "townCrier", "oracle", "seamstress", "sage"].includes(characterId ?? "");
 }
 
-function issue96RevealPayload(
+function automatedInformationRevealPayload(
   payload: RevealPayload | undefined,
 ): InformationCheckpoint["revealPayload"] | undefined {
   if (!payload || !("kind" in payload)) return undefined;
   return payload.kind === "numericInformation" || payload.kind === "booleanInformation"
+    || payload.kind === "dreamerInformation" || payload.kind === "seamstressInformation" || payload.kind === "sageInformation"
     ? payload
     : undefined;
 }
 
 function informationResultFromReveal(
-  payload: InformationCheckpoint["revealPayload"],
+  payload: Extract<InformationCheckpoint["revealPayload"], { kind: "numericInformation" | "booleanInformation" }>,
 ): InformationResult {
   return payload.kind === "numericInformation"
     ? { kind: "number", value: payload.value }
     : { kind: "boolean", value: payload.value };
+}
+
+function ProductionInformationRevealContent({ checkpoint }: { checkpoint: InformationCheckpoint }) {
+  const payload = checkpoint.revealPayload;
+  if (payload.kind === "dreamerInformation") {
+    return <><span>꿈꾸는 자</span><p className="snvInformationRevealLabel">이 자는…</p><div className="snvTargetedRevealPair">{payload.characterIds.map((id, index) => <Fragment key={id}>{index ? <b>또는</b> : null}<RevealCharacterCard characterId={id} /></Fragment>)}</div></>;
+  }
+  if (payload.kind === "seamstressInformation") {
+    return <><span>재봉사</span><p className="snvInformationRevealLabel">{payload.targetPlayers.map((player) => `${player.seat}번 ${player.name}`).join(" · ")}</p><strong className="snvInformationRevealValue snvSeamstressRevealValue">{payload.sameAlignment ? "같은 진영" : "다른 진영"}</strong></>;
+  }
+  if (payload.kind === "sageInformation") {
+    return <><span>현자</span><p className="snvInformationRevealLabel">당신을 죽인 악마는…</p><div className="snvTargetedRevealPair snvPlayerRevealPair">{payload.candidatePlayers.map((player, index) => <Fragment key={player.playerId}>{index ? <b>또는</b> : null}<div className="snvRevealPlayerCard"><span>{player.seat}</span><strong>{player.name}</strong></div></Fragment>)}</div></>;
+  }
+  const asset = sectsAndVioletsCharacterAsset(checkpoint.step.character);
+  return <>
+    {asset?.src ? <img src={asset.src} alt={`${characters.find((character) => character.id === checkpoint.step.character)?.name ?? checkpoint.step.character} 공식 캐릭터 아이콘`} /> : null}
+    <span>{characters.find((character) => character.id === checkpoint.step.character)?.name}</span>
+    <p className="snvInformationRevealLabel">{informationRevealLabel(checkpoint.step.character)}</p>
+    <strong className="snvInformationRevealValue">{informationValueLabel(checkpoint.step.character ?? "", informationResultFromReveal(payload))}</strong>
+  </>;
+}
+
+function RevealCharacterCard({ characterId }: { characterId: string }) {
+  const character = characters.find((candidate) => candidate.id === characterId);
+  const asset = sectsAndVioletsCharacterAsset(characterId);
+  return <div className="snvRevealCharacterCard">{asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}<strong>{character?.name ?? characterId}</strong></div>;
 }
 
 function informationRevealLabel(characterId: string | undefined): string {

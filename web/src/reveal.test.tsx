@@ -48,6 +48,22 @@ test("role information Reveal renders the approved copy from narrow payloads", (
   }
 });
 
+test("targeted S&V Reveals preserve the approved pair copy and order", () => {
+  const payloads: RevealPayload[] = [
+    { kind: "dreamerInformation", characterIds: ["seamstress", "evilTwin"] },
+    { kind: "seamstressInformation", targetPlayers: [{ playerId: "p1", seat: 1, name: "민서" }, { playerId: "p6", seat: 6, name: "유나" }], sameAlignment: false },
+    { kind: "sageInformation", candidatePlayers: [{ playerId: "p2", seat: 2, name: "지우" }, { playerId: "p7", seat: 7, name: "현우" }] },
+  ];
+  const [dreamer, seamstress, sage] = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />));
+  equal(dreamer.includes("이 자는…"), true);
+  equal(dreamer.indexOf("재봉사") < dreamer.indexOf("사악한 쌍둥이"), true);
+  equal(seamstress.includes("1번 민서 · 6번 유나"), true);
+  equal(seamstress.includes("다른 진영"), true);
+  equal(sage.includes("당신을 죽인 악마는…"), true);
+  equal(sage.indexOf("지우") < sage.indexOf("현우"), true);
+  equal(sage.includes("사망"), false);
+});
+
 test("evil-team information Reveals render safe identities and official bluff icons", () => {
   const minionPayload = {
     kind: "minionInformation",

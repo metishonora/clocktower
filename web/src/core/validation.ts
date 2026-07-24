@@ -404,7 +404,8 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   }
 
   if (value.targetChecks && value.targetChecks.length > 0) {
-    return value.computedResult === undefined && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
+    return (value.computedResult === undefined || isInformationResult(value.computedResult))
+      && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (value.computedResult === undefined) {
     return inputKind === "setupInfo" && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
@@ -482,6 +483,14 @@ function isInformationResult(value: unknown): value is InformationResult {
       return typeof value.value === "boolean";
     case "character":
       return isKnownCharacter(value.characterId);
+    case "characterPair":
+      return Array.isArray(value.characterIds) && value.characterIds.length === 2
+        && value.characterIds.every(isKnownCharacter);
+    case "player":
+      return typeof value.playerId === "string";
+    case "playerPair":
+      return Array.isArray(value.playerIds) && value.playerIds.length === 2
+        && value.playerIds.every(isString) && new Set(value.playerIds).size === 2;
     case "setupInfo":
       return (
         Array.isArray(value.playerIds) &&
@@ -543,10 +552,12 @@ function isDeliveryContext(value: unknown): boolean {
 
 function isDeliveryReason(value: unknown): value is DeliveryReason {
   if (!isRecord(value)) return false;
+  if (value.type === "abilityChoice") return true;
   if (value.type === "drunk") return true;
   if (value.type === "poisoned") {
     return typeof value.poisonerPlayerId === "string" && typeof value.poisonEventId === "string";
   }
+  if (value.type === "vortox") return typeof value.demonPlayerId === "string";
   return (
     value.type === "registrationJudgment" &&
     Array.isArray(value.judgments) &&

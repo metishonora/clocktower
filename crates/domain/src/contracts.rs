@@ -363,6 +363,23 @@ pub(crate) enum RevealPayload {
         #[serde(rename = "revealedCharacterId")]
         revealed_character_id: String,
     },
+    DreamerInformation {
+        kind: &'static str,
+        #[serde(rename = "characterIds")]
+        character_ids: Vec<String>,
+    },
+    SeamstressInformation {
+        kind: &'static str,
+        #[serde(rename = "targetPlayers")]
+        target_players: Vec<RevealPlayer>,
+        #[serde(rename = "sameAlignment")]
+        same_alignment: bool,
+    },
+    SageInformation {
+        kind: &'static str,
+        #[serde(rename = "candidatePlayers")]
+        candidate_players: Vec<RevealPlayer>,
+    },
     CharacterChange {
         kind: &'static str,
         #[serde(rename = "playerId")]

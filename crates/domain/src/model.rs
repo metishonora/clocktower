@@ -111,8 +111,17 @@ pub(crate) enum InformationResult {
     Character {
         character_id: String,
     },
+    CharacterPair {
+        character_ids: Vec<String>,
+    },
     Number {
         value: usize,
+    },
+    Player {
+        player_id: String,
+    },
+    PlayerPair {
+        player_ids: Vec<String>,
     },
     SetupInfo {
         player_ids: Vec<String>,
@@ -186,10 +195,14 @@ pub(crate) struct InformationActor {
     rename_all_fields = "camelCase"
 )]
 pub(crate) enum DeliveryReason {
+    AbilityChoice,
     Drunk,
     Poisoned {
         poisoner_player_id: String,
         poison_event_id: String,
+    },
+    Vortox {
+        demon_player_id: String,
     },
     RegistrationJudgment {
         judgments: Vec<RegistrationJudgment>,

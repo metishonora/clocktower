@@ -21,7 +21,7 @@ use crate::{
         InformationDeliveryMode, InformationPrompt, InformationResult, InputTarget,
         NumberInformationChoice, Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus,
         PhaseStepSupport, Player, PlayerIdentityTransition, RequiredInput, RequiredInputKind,
-        StepType,
+        StepInput, StepType, TargetInformationCheck, TargetInformationChoice,
     },
     phase::{phase_transition_step, required_none, simple_step, validate_required_input},
     setup::{
@@ -73,7 +73,10 @@ fn character_step(
 ) -> PhaseStep {
     let snake_charmer = character == "snakeCharmer";
     let numeric_information = matches!(character, "clockmaker" | "oracle");
-    let information = numeric_information || matches!(character, "flowergirl" | "townCrier");
+    let targeted_information = matches!(character, "dreamer" | "seamstress");
+    let information = numeric_information
+        || targeted_information
+        || matches!(character, "flowergirl" | "townCrier" | "sage");
     PhaseStep {
         id: if snake_charmer {
             format!("{prefix}:{character}:{}", player.id)
@@ -84,19 +87,23 @@ fn character_step(
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: if snake_charmer {
+        required_input: if snake_charmer || targeted_information {
+            let selections = if character == "seamstress" { 2 } else { 1 };
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
-                min_selections: Some(1),
-                max_selections: Some(1),
+                min_selections: Some(selections),
+                max_selections: Some(selections),
                 setup_info: None,
                 character_kind: None,
                 allowed_character_ids: None,
                 allowed_player_ids: Some(
                     players
                         .iter()
-                        .filter(|candidate| candidate.alive)
+                        .filter(|candidate| {
+                            snake_charmer && candidate.alive
+                                || targeted_information && candidate.id != player.id
+                        })
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
@@ -119,7 +126,7 @@ fn character_step(
         } else {
             required_none()
         },
-        can_skip: false,
+        can_skip: character == "seamstress",
         support: if snake_charmer || information {
             PhaseStepSupport::Automated
         } else {
@@ -241,9 +248,15 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .iter()
             .filter(|player| {
                 player.actual_character == character
-                    && ((!matches!(character, "flowergirl" | "townCrier" | "oracle")
-                        || player.alive)
-                        && (character != "snakeCharmer" || player.alive))
+                    && ((!matches!(
+                        character,
+                        "dreamer" | "flowergirl" | "townCrier" | "oracle" | "seamstress"
+                    ) || player.alive)
+                        && (character != "snakeCharmer" || player.alive)
+                        && (character != "seamstress"
+                            || !seamstress_already_used(&player.id, events))
+                        && (character != "sage"
+                            || sage_killer(&prefix, &player.id, events).is_some()))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -420,7 +433,15 @@ fn became_snake_charmer_from_swap_in_phase(
 fn is_information_character(character: Option<&str>) -> bool {
     matches!(
         character,
-        Some("clockmaker" | "flowergirl" | "townCrier" | "oracle")
+        Some(
+            "clockmaker"
+                | "dreamer"
+                | "flowergirl"
+                | "townCrier"
+                | "oracle"
+                | "seamstress"
+                | "sage"
+        )
     )
 }
 
@@ -590,6 +611,12 @@ fn snv_information_result(
                 .filter(|player| !player.alive && player.alignment == Alignment::Evil)
                 .count(),
         }),
+        Some("sage") => sage_killer(
+            step.id.split(":sage").next().unwrap_or_default(),
+            step.player_id.as_deref().unwrap_or_default(),
+            events,
+        )
+        .map(|player_id| InformationResult::Player { player_id }),
         _ => None,
     })
 }
@@ -599,11 +626,48 @@ fn snv_information_prompt(
     players: &[Player],
     events: &[GameEvent],
 ) -> Result<Option<InformationPrompt>, CoreError> {
+    let active_reasons = active_information_reasons(step, players, events);
+    let impaired = !active_reasons.is_empty();
+    if matches!(step.character.as_deref(), Some("dreamer" | "seamstress")) {
+        let target_checks = targeted_information_checks(step, players, impaired)?;
+        return Ok(Some(InformationPrompt {
+            computed_result: None,
+            delivery_mode: if impaired || step.character.as_deref() == Some("dreamer") {
+                InformationDeliveryMode::Selectable
+            } else {
+                InformationDeliveryMode::Fixed
+            },
+            active_reasons,
+            registration_candidate_player_ids: vec![],
+            number_choices: vec![],
+            boolean_choices: vec![],
+            setup_info_registration_options: vec![],
+            target_checks,
+        }));
+    }
     let Some(computed_result) = snv_information_result(step, players, events)? else {
         return Ok(None);
     };
-    let active_reasons = active_information_reasons(step, events);
-    let impaired = !active_reasons.is_empty();
+    if step.character.as_deref() == Some("sage") {
+        let InformationResult::Player { player_id } = &computed_result else {
+            return Err(ErrorKind::ReplayFailed.into_error());
+        };
+        let choices = sage_choices(players, player_id, impaired);
+        return Ok(Some(InformationPrompt {
+            computed_result: Some(computed_result.clone()),
+            delivery_mode: InformationDeliveryMode::Selectable,
+            active_reasons,
+            registration_candidate_player_ids: vec![],
+            number_choices: vec![],
+            boolean_choices: vec![],
+            setup_info_registration_options: vec![],
+            target_checks: vec![TargetInformationCheck {
+                target_player_ids: vec![],
+                computed_result,
+                choices,
+            }],
+        }));
+    }
     let (number_choices, boolean_choices) = match computed_result {
         InformationResult::Number { value } => (
             if impaired {
@@ -665,11 +729,15 @@ fn snv_information_prompt(
     }))
 }
 
-fn active_information_reasons(step: &PhaseStep, events: &[GameEvent]) -> Vec<DeliveryReason> {
+fn active_information_reasons(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<DeliveryReason> {
     let Some(actor_id) = step.player_id.as_deref() else {
         return vec![];
     };
-    active_snake_charmer_impairments(events)
+    let mut reasons = active_snake_charmer_impairments(events)
         .into_iter()
         .filter(|impairment| impairment.player_id == actor_id)
         .filter_map(|impairment| {
@@ -686,23 +754,48 @@ fn active_information_reasons(step: &PhaseStep, events: &[GameEvent]) -> Vec<Del
                 })
             })
         })
-        .collect()
+        .collect::<Vec<_>>();
+    if step.character.as_deref().and_then(character_kind) == Some(CharacterKind::Townsfolk) {
+        if let Some(vortox) = players
+            .iter()
+            .find(|player| player.alive && player.actual_character == "vortox")
+        {
+            reasons.push(DeliveryReason::Vortox {
+                demon_player_id: vortox.id.clone(),
+            });
+        }
+    }
+    reasons
 }
 
 fn snv_confirmed_information(
     step: &PhaseStep,
     players: &[Player],
     events: &[GameEvent],
+    input: &StepInput,
     delivered_result: Option<InformationResult>,
     registration_judgments: &[crate::model::RegistrationJudgment],
 ) -> Result<Option<ConfirmedInformation>, CoreError> {
+    if matches!(
+        step.character.as_deref(),
+        Some("dreamer" | "seamstress" | "sage")
+    ) {
+        return confirmed_targeted_information(
+            step,
+            players,
+            events,
+            input,
+            delivered_result,
+            registration_judgments,
+        );
+    }
     let Some(computed_result) = snv_information_result(step, players, events)? else {
         return Ok(None);
     };
     if !registration_judgments.is_empty() {
         return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
     }
-    let reasons = active_information_reasons(step, events);
+    let reasons = active_information_reasons(step, players, events);
     let prompt = snv_information_prompt(step, players, events)?
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let delivered_result = if reasons.is_empty() {
@@ -750,6 +843,208 @@ fn snv_confirmed_information(
             DeliveryContext::Discretionary { reasons }
         },
     }))
+}
+
+fn targeted_information_checks(
+    step: &PhaseStep,
+    players: &[Player],
+    impaired: bool,
+) -> Result<Vec<TargetInformationCheck>, CoreError> {
+    let actor_id = step
+        .player_id
+        .as_deref()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let candidates = players
+        .iter()
+        .filter(|player| player.id != actor_id)
+        .collect::<Vec<_>>();
+    if step.character.as_deref() == Some("dreamer") {
+        return Ok(candidates
+            .into_iter()
+            .map(|target| {
+                let actual_good = matches!(
+                    character_kind(&target.actual_character),
+                    Some(CharacterKind::Townsfolk | CharacterKind::Outsider)
+                );
+                let choices = TOWNSFOLK
+                    .iter()
+                    .chain(OUTSIDERS.iter())
+                    .flat_map(|good| {
+                        MINIONS.iter().chain(DEMONS.iter()).filter_map(move |evil| {
+                            (impaired
+                                || actual_good && *good == target.actual_character
+                                || !actual_good && *evil == target.actual_character)
+                                .then(|| TargetInformationChoice {
+                                    result: InformationResult::CharacterPair {
+                                        character_ids: vec![(*good).into(), (*evil).into()],
+                                    },
+                                    is_computed: !impaired,
+                                    registration_judgments: vec![],
+                                })
+                        })
+                    })
+                    .collect();
+                TargetInformationCheck {
+                    target_player_ids: vec![target.id.clone()],
+                    computed_result: InformationResult::Character {
+                        character_id: target.actual_character.clone(),
+                    },
+                    choices,
+                }
+            })
+            .collect());
+    }
+    if step.character.as_deref() == Some("seamstress") {
+        let mut checks = vec![];
+        for (index, first) in candidates.iter().enumerate() {
+            for second in candidates.iter().skip(index + 1) {
+                let same = first.alignment == second.alignment;
+                checks.push(TargetInformationCheck {
+                    target_player_ids: vec![first.id.clone(), second.id.clone()],
+                    computed_result: InformationResult::Boolean { value: same },
+                    choices: if impaired {
+                        [false, true]
+                            .into_iter()
+                            .map(|value| TargetInformationChoice {
+                                result: InformationResult::Boolean { value },
+                                is_computed: value == same,
+                                registration_judgments: vec![],
+                            })
+                            .collect()
+                    } else {
+                        vec![TargetInformationChoice {
+                            result: InformationResult::Boolean { value: same },
+                            is_computed: true,
+                            registration_judgments: vec![],
+                        }]
+                    },
+                });
+            }
+        }
+        return Ok(checks);
+    }
+    Err(ErrorKind::ReplayFailed.into_error())
+}
+
+fn sage_choices(
+    players: &[Player],
+    killer_id: &str,
+    impaired: bool,
+) -> Vec<TargetInformationChoice> {
+    let mut choices = vec![];
+    for first in players {
+        for second in players {
+            if first.id == second.id
+                || (!impaired && first.id != killer_id && second.id != killer_id)
+            {
+                continue;
+            }
+            choices.push(TargetInformationChoice {
+                result: InformationResult::PlayerPair {
+                    player_ids: vec![first.id.clone(), second.id.clone()],
+                },
+                is_computed: !impaired,
+                registration_judgments: vec![],
+            });
+        }
+    }
+    choices
+}
+
+fn confirmed_targeted_information(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+    input: &StepInput,
+    delivered_result: Option<InformationResult>,
+    registration_judgments: &[crate::model::RegistrationJudgment],
+) -> Result<Option<ConfirmedInformation>, CoreError> {
+    if !registration_judgments.is_empty() {
+        return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
+    }
+    let prompt = snv_information_prompt(step, players, events)?
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let targets = input
+        .as_ref()
+        .and_then(|value| value.player_ids.clone())
+        .unwrap_or_default();
+    let check = prompt
+        .target_checks
+        .iter()
+        .find(|check| {
+            check.target_player_ids.len() == targets.len()
+                && check
+                    .target_player_ids
+                    .iter()
+                    .all(|id| targets.contains(id))
+        })
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let delivered = delivered_result
+        .or_else(|| (check.choices.len() == 1).then(|| check.choices[0].result.clone()))
+        .ok_or_else(|| ErrorKind::MissingDeliveredInformation.into_error())?;
+    if !check
+        .choices
+        .iter()
+        .any(|choice| choice.result == delivered)
+    {
+        return Err(ErrorKind::InvalidDeliveredInformation.into_error());
+    }
+    let mut reasons = active_information_reasons(step, players, events);
+    if matches!(step.character.as_deref(), Some("dreamer" | "sage")) {
+        reasons.push(DeliveryReason::AbilityChoice);
+    }
+    Ok(Some(ConfirmedInformation {
+        actor: Some(InformationActor {
+            player_id: step
+                .player_id
+                .clone()
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+            character_id: step
+                .character
+                .clone()
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
+        }),
+        target_player_ids: targets,
+        computed_result: Some(check.computed_result.clone()),
+        delivered_result: delivered,
+        delivery_context: if reasons.is_empty() {
+            DeliveryContext::Fixed
+        } else {
+            DeliveryContext::Discretionary { reasons }
+        },
+    }))
+}
+
+fn seamstress_already_used(player_id: &str, events: &[GameEvent]) -> bool {
+    events.iter().any(|event| matches!(&event.kind,
+        GameEventKind::PhaseStepConfirmed { payload }
+            if payload.information.as_ref().and_then(|info| info.actor.as_ref()).is_some_and(|actor| actor.player_id == player_id && actor.character_id == "seamstress")
+    ))
+}
+
+fn sage_killer(prefix: &str, sage_id: &str, events: &[GameEvent]) -> Option<String> {
+    events.iter().find_map(|event| match &event.kind {
+        GameEventKind::NightActionResolved { payload }
+            if payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+        {
+            let NightActionResolution::DemonAttack {
+                outcome: DemonAttackOutcome::Deaths { deaths },
+                ..
+            } = &payload.resolution
+            else {
+                return None;
+            };
+            deaths.iter().find_map(|death| match &death.cause {
+                NightDeathCause::DemonAttack {
+                    actor_player_id,
+                    target_player_id,
+                    ..
+                } if target_player_id == sage_id => Some(actor_player_id.clone()),
+                _ => None,
+            })
+        }
+        _ => None,
+    })
 }
 
 fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
@@ -1192,6 +1487,21 @@ fn phase_state(
         ) else {
             return Err(ErrorKind::ReplayFailed.into_error());
         };
+        let legacy_dead_targeted_information =
+            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
+                && current.id != *event_step_id
+                && current.phase == event.phase
+                && current.id.split(':').next() == event_step_id.split(':').next()
+                && ["dreamer", "seamstress"].iter().any(|character| {
+                    event_step_id.ends_with(&format!(":{character}"))
+                        && players_at_event
+                            .iter()
+                            .any(|player| !player.alive && player.actual_character == *character)
+                });
+        if legacy_dead_targeted_information {
+            statuses.insert(event_step_id.clone(), status);
+            continue;
+        }
         let legacy_manual_demon =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current
@@ -1232,6 +1542,7 @@ fn phase_state(
                         &current,
                         &players_at_event,
                         &events[..event_index],
+                        &payload.input,
                         payload
                             .information
                             .as_ref()
@@ -1300,6 +1611,8 @@ fn phase_state(
             }
             (GameEventKind::PhaseStepSkipped { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Nomination => {}
+            (GameEventKind::PhaseStepSkipped { .. }, PhaseStepSupport::Automated)
+                if current.character.as_deref() == Some("seamstress") => {}
             (GameEventKind::ExecutionConfirmed { payload }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Execution =>
             {
@@ -1490,6 +1803,19 @@ pub(crate) fn propose_phase_command(
             if current_step.step_type == StepType::Nomination {
                 return crate::proposal::propose_nomination_closed(game_file, &current_step);
             }
+            if current_step.character.as_deref() == Some("seamstress") {
+                return Ok(phase_proposal(
+                    game_file,
+                    &current_step,
+                    GameEventKind::PhaseStepSkipped {
+                        payload: crate::contracts::StepIdPayload {
+                            step_id: payload.step_id,
+                        },
+                    },
+                    "재봉사 능력 보류".into(),
+                    vec![],
+                ));
+            }
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
         Command::ResolveManualStep { payload } => {
@@ -1576,6 +1902,7 @@ pub(crate) fn propose_phase_command(
                     &current_step,
                     &players,
                     &game_file.game.events,
+                    &payload.input,
                     payload.delivered_result,
                     &payload.registration_judgments,
                 )?

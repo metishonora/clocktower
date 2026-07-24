@@ -1,5 +1,5 @@
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
-import type { InformationResult, PhaseStep, Player } from "../../core/types";
+import type { InformationResult, PhaseStep, Player, TargetCheck } from "../../core/types";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
@@ -8,29 +8,36 @@ import "./sectsAndVioletsInformationTask.css";
 export function SectsAndVioletsInformationTask({
   step,
   actor,
+  players = [],
+  selectedPlayerIds = [],
   revealed,
   busy,
   deliveredResult,
   onDeliveredResultChange,
+  onChooseTargets,
+  onSkip,
   onReveal,
-  onNext,
 }: {
   step: PhaseStep;
   actor: Player;
+  players?: Player[];
+  selectedPlayerIds?: string[];
   revealed: boolean;
   busy: boolean;
   deliveredResult?: InformationResult;
   onDeliveredResultChange?: (result: InformationResult) => void;
+  onChooseTargets?: () => void;
+  onSkip?: () => void;
   onReveal: () => void;
-  onNext: () => void;
 }) {
   const characterId = step.character ?? actor.actualCharacter;
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
   const asset = sectsAndVioletsCharacterAsset(characterId);
-  const prompt = step.informationPrompt;
-  const computedResult = prompt?.computedResult;
-  const choices = informationChoices(step);
-  const selectedResult = deliveredResult ?? computedResult;
+  const targetCheck = targetCheckForSelection(step, selectedPlayerIds);
+  const choices = targetCheck?.choices.map((choice) => choice.result) ?? informationChoices(step);
+  const selectedResult = deliveredResult ?? (choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
+  const targeted = characterId === "dreamer" || characterId === "seamstress";
+  const needsTargets = targeted && !targetCheck;
 
   return (
     <article className="snvCurrentStep snvInformationTask" aria-label={`${character?.name ?? characterId} 정보`}>
@@ -47,69 +54,95 @@ export function SectsAndVioletsInformationTask({
       </CharacterDetailButton>
 
       <p className="snvInformationAbility">{character?.ability}</p>
-      <dl className="snvInformationValues">
-        <div>
-          <dt>진실</dt>
-          <dd>{computedResult ? informationValueLabel(characterId, computedResult) : "-"}</dd>
+      {needsTargets ? (
+        <div className="snvStepActions snvInformationTargetActions">
+          <button type="button" className="prominent" disabled={busy} onClick={onChooseTargets}>대상 선택</button>
+          {characterId === "seamstress" ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>오늘 사용하지 않음</button> : null}
         </div>
-        {prompt?.deliveryMode === "selectable" && choices.length > 1 ? (
-          <div>
-            <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
-            <dd>
-              <select
-                id={`delivered-${step.id}`}
-                value={selectedResult ? informationResultKey(selectedResult) : ""}
-                disabled={busy || revealed}
-                onChange={(event) => {
-                  const choice = choices.find((candidate) => informationResultKey(candidate) === event.target.value);
-                  if (choice) onDeliveredResultChange?.(choice);
-                }}
-              >
-                {choices.map((choice) => (
-                  <option value={informationResultKey(choice)} key={informationResultKey(choice)}>
-                    {informationValueLabel(characterId, choice)}
-                  </option>
-                ))}
-              </select>
-            </dd>
+      ) : (
+        <>
+          {targetCheck?.targetPlayerIds.length ? <p className="snvInformationTargetSummary"><span>대상 ·</span> <strong>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</strong></p> : null}
+          <dl className="snvInformationValues">
+            <div>
+              <dt>{characterId === "sage" ? "살해자" : "진실"}</dt>
+              <dd>{characterId === "sage" && step.informationPrompt?.computedResult?.kind === "player" ? playerLabel(players, step.informationPrompt.computedResult.playerId) : informationValueLabel(characterId, targetCheck?.computedResult ?? step.informationPrompt?.computedResult)}</dd>
+            </div>
+          </dl>
+          {characterId === "dreamer" && targetCheck ? (
+            <DreamerEditor check={targetCheck} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
+          ) : characterId === "seamstress" && targetCheck && choices.length > 1 ? (
+            <SeamstressEditor value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
+          ) : characterId === "sage" ? (
+            <SageEditor players={players} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
+          ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
+            <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
+          ) : null}
+          <div className="snvStepActions snvInformationActions">
+            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
           </div>
-        ) : null}
-      </dl>
-
-      <div className="snvStepActions snvInformationActions">
-        <button
-          type="button"
-          className={`informationReveal ${revealed ? "" : "prominent"}`}
-          disabled={busy || !selectedResult}
-          onClick={onReveal}
-        >정보 공개</button>
-        <button type="button" disabled={busy || !revealed} onClick={onNext}>다음</button>
-      </div>
+        </>
+      )}
     </article>
   );
 }
 
-export function informationValueLabel(characterId: string, result: InformationResult): string {
-  if (result.kind === "number") {
-    return `${result.value}${characterId === "clockmaker" ? "칸" : "명"}`;
-  }
+function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
+  const pairs = check.choices.flatMap((choice) => choice.result.kind === "characterPair" ? [choice.result.characterIds] : []);
+  const current = value?.kind === "characterPair" ? value.characterIds : pairs[0];
+  if (!current) return null;
+  const good = [...new Set(pairs.map((pair) => pair[0]))];
+  const evil = [...new Set(pairs.map((pair) => pair[1]))];
+  const actual = check.computedResult.kind === "character" ? check.computedResult.characterId : "";
+  return <fieldset className="snvInformationPairEditor"><legend>전달할 캐릭터</legend>
+    <label>선한 캐릭터<select aria-label="선한 캐릭터" value={current[0]} disabled={busy || current[0] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [event.target.value, current[1]] })}>{good.map(option)}</select></label>
+    <label>악한 캐릭터<select aria-label="악한 캐릭터" value={current[1]} disabled={busy || current[1] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [current[0], event.target.value] })}>{evil.map(option)}</select></label>
+  </fieldset>;
+}
+
+function SeamstressEditor({ value, busy, onChange }: { value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
+  const selected = value?.kind === "boolean" ? value.value : undefined;
+  return <fieldset className="snvInformationBinary"><legend>전달할 정보</legend>{[[true, "같은 진영"], [false, "다른 진영"]].map(([candidate, label]) => <button key={String(candidate)} type="button" aria-pressed={selected === candidate} disabled={busy} onClick={() => onChange?.({ kind: "boolean", value: candidate as boolean })}>{label}</button>)}</fieldset>;
+}
+
+function SageEditor({ players, choices, value, busy, onChange }: { players: Player[]; choices: InformationResult[]; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
+  const pairs = choices.flatMap((choice) => choice.kind === "playerPair" ? [choice.playerIds] : []);
+  const current = value?.kind === "playerPair" ? value.playerIds : pairs[0];
+  if (!current) return null;
+  const optionsAt = (index: 0 | 1) => [...new Set(pairs.filter((pair) => pair[1 - index] === current[1 - index]).map((pair) => pair[index]))];
+  const change = (index: 0 | 1, id: string) => onChange?.({ kind: "playerPair", playerIds: index === 0 ? [id, current[1]] : [current[0], id] });
+  return <fieldset className="snvInformationPairEditor snvSageEditor"><legend>전달할 두 후보</legend>
+    <label>첫 번째 후보<select value={current[0]} disabled={busy || optionsAt(0).length === 1} onChange={(event) => change(0, event.target.value)}>{optionsAt(0).map((id) => <option key={id} value={id}>{playerLabel(players, id)}</option>)}</select></label>
+    <button type="button" className="snvSageSwap" aria-label="후보 순서 바꾸기" disabled={busy || !pairs.some((pair) => pair[0] === current[1] && pair[1] === current[0])} onClick={() => onChange?.({ kind: "playerPair", playerIds: [current[1], current[0]] })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg></button>
+    <label>두 번째 후보<select value={current[1]} disabled={busy || optionsAt(1).length === 1} onChange={(event) => change(1, event.target.value)}>{optionsAt(1).map((id) => <option key={id} value={id}>{playerLabel(players, id)}</option>)}</select></label>
+  </fieldset>;
+}
+
+function GenericEditor({ step, choices, value, busy, onChange }: { step: PhaseStep; choices: InformationResult[]; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
+  return <dl className="snvInformationValues"><div><dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt><dd><select id={`delivered-${step.id}`} value={value ? informationResultKey(value) : ""} disabled={busy} onChange={(event) => { const choice = choices.find((candidate) => informationResultKey(candidate) === event.target.value); if (choice) onChange?.(choice); }}>{choices.map((choice) => <option value={informationResultKey(choice)} key={informationResultKey(choice)}>{informationValueLabel(step.character ?? "", choice)}</option>)}</select></dd></div></dl>;
+}
+
+export function informationValueLabel(characterId: string, result?: InformationResult): string {
+  if (!result) return "-";
+  if (result.kind === "number") return `${result.value}${characterId === "clockmaker" ? "칸" : "명"}`;
   if (result.kind === "boolean") {
+    if (characterId === "seamstress") return result.value ? "같은 진영" : "다른 진영";
     if (characterId === "flowergirl") return result.value ? "투표함" : "투표하지 않음";
     return result.value ? "지목함" : "지목하지 않음";
   }
+  if (result.kind === "character") return characterName(result.characterId);
+  if (result.kind === "player") return result.playerId;
   return "-";
 }
 
 function informationChoices(step: PhaseStep): InformationResult[] {
   const prompt = step.informationPrompt;
   if (!prompt) return [];
-  return [
-    ...prompt.numberChoices.map((choice) => ({ kind: "number" as const, value: choice.value })),
-    ...(prompt.booleanChoices ?? []).map((choice) => ({ kind: "boolean" as const, value: choice.value })),
-  ];
+  if (prompt.targetChecks?.length === 1 && prompt.targetChecks[0].targetPlayerIds.length === 0) return prompt.targetChecks[0].choices.map((choice) => choice.result);
+  return [...prompt.numberChoices.map((choice) => ({ kind: "number" as const, value: choice.value })), ...(prompt.booleanChoices ?? []).map((choice) => ({ kind: "boolean" as const, value: choice.value }))];
 }
 
-function informationResultKey(result: InformationResult): string {
-  if (result.kind === "number" || result.kind === "boolean") return `${result.kind}:${result.value}`;
-  return result.kind;
-}
+function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
+function informationResultKey(result: InformationResult) { return JSON.stringify(result); }
+function characterName(id: string) { return sectsAndVioletsCharacters.find((character) => character.id === id)?.name ?? id; }
+function playerLabel(players: Player[], id: string) { const player = players.find((candidate) => candidate.id === id); return player ? `${player.seat}번 ${player.name}` : id; }
+function option(id: string) { return <option key={id} value={id}>{characterName(id)}</option>; }

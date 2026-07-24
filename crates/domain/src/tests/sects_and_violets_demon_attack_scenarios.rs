@@ -67,6 +67,14 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
             "type": "resolveManualStep",
             "payload": { "stepId": step["id"], "outcome": "handled" }
         })
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "number"
+    {
+        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"] } } })
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
+    {
+        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "boolean", "value": step["informationPrompt"]["booleanChoices"][0]["value"] } } })
     } else {
         json!({
             "type": "confirmStep",

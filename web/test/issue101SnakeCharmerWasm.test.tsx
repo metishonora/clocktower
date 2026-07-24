@@ -106,6 +106,11 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   if (step.id.includes(":demon:")) {
     return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-2"] } } };
   }
+  if (step.character === "dreamer") {
+    const check = step.informationPrompt!.targetChecks![0];
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: check.targetPlayerIds }, deliveredResult: check.choices[0].result } };
+  }
+  if (step.character === "seamstress") return { type: "skipStep", payload: { stepId: step.id } };
   return { type: "confirmStep", payload: { stepId: step.id, input: null } };
 }
 

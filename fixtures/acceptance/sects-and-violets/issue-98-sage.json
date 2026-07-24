@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "game-issue-98",
+    "name": "Issue 98 targeted information",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-07-25T00:00:00.000Z",
+    "updatedAt": "2026-07-25T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-98",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "Dreamer",
+              "actualCharacter": "dreamer",
+              "shownCharacter": "dreamer"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "Seamstress",
+              "actualCharacter": "seamstress",
+              "shownCharacter": "seamstress"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "Sage",
+              "actualCharacter": "sage",
+              "shownCharacter": "sage"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "Clockmaker",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "Oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "Evil Twin",
+              "actualCharacter": "evilTwin",
+              "shownCharacter": "evilTwin"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "Fang Gu",
+              "actualCharacter": "fangGu",
+              "shownCharacter": "fangGu"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:minionInfo",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:demonInfo",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "manualPhaseStepResolved",
+        "payload": {
+          "stepId": "firstNight:evilTwin",
+          "outcome": "handled"
+        },
+        "phase": "firstNight",
+        "summary": "수동 단계 처리: firstNight:evilTwin",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-5",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-4",
+              "characterId": "clockmaker"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "4번 Clockmaker(알 수 없음)가 악마와 하수인의 거리 1칸을 확인했습니다.",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:dreamer",
+          "input": {
+            "playerIds": [
+              "player-2"
+            ]
+          },
+          "information": {
+            "actor": {
+              "playerId": "player-1",
+              "characterId": "dreamer"
+            },
+            "targetPlayerIds": [
+              "player-2"
+            ],
+            "computedResult": {
+              "kind": "character",
+              "characterId": "seamstress"
+            },
+            "deliveredResult": {
+              "kind": "characterPair",
+              "characterIds": [
+                "seamstress",
+                "evilTwin"
+              ]
+            },
+            "deliveryContext": {
+              "type": "discretionary",
+              "reasons": [
+                {
+                  "type": "abilityChoice"
+                }
+              ]
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "1번 Dreamer(알 수 없음)가 2번 Seamstress(알 수 없음)의 캐릭터 후보를 확인했습니다. (실제 알 수 없음 · 능력 선택)",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:seamstress"
+        },
+        "phase": "firstNight",
+        "summary": "재봉사 능력 보류",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-8",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-9",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "새벽 발표 · 사망자 없음",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-10",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-11",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-12",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "execution-13",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-14",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-15",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:demon:player-7",
+          "actorPlayerId": "player-7",
+          "actorCharacterId": "fangGu",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-3",
+            "outcome": {
+              "kind": "deaths",
+              "deaths": [
+                {
+                  "playerId": "player-3",
+                  "cause": {
+                    "kind": "demonAttack",
+                    "actorPlayerId": "player-7",
+                    "actorCharacterId": "fangGu",
+                    "targetPlayerId": "player-3"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "7번 Fang Gu(fangGu) → 3번 Sage 공격 · 사망",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      },
+      {
+        "id": "phase-16",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:sage",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-3",
+              "characterId": "sage"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "player",
+              "playerId": "player-7"
+            },
+            "deliveredResult": {
+              "kind": "playerPair",
+              "playerIds": [
+                "player-1",
+                "player-7"
+              ]
+            },
+            "deliveryContext": {
+              "type": "discretionary",
+              "reasons": [
+                {
+                  "type": "abilityChoice"
+                }
+              ]
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "3번 Sage(알 수 없음)가 악마 후보 두 명을 확인했습니다. (능력 선택)",
+        "createdAt": "2026-07-25T00:00:00.000Z"
+      }
+    ]
+  }
+}

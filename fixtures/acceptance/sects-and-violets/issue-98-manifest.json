@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "script": "sectsAndViolets",
+  "issue": 98,
+  "cases": [
+    {
+      "id": "issue-98-dreamer",
+      "characterId": "dreamer",
+      "file": "issue-98-dreamer.json",
+      "phaseBoundary": "firstNight:dreamer",
+      "deliveredResult": {
+        "kind": "characterPair",
+        "characterIds": [
+          "seamstress",
+          "evilTwin"
+        ]
+      }
+    },
+    {
+      "id": "issue-98-seamstress",
+      "characterId": "seamstress",
+      "file": "issue-98-seamstress.json",
+      "phaseBoundary": "firstNight:seamstress",
+      "deliveredResult": {
+        "kind": "boolean",
+        "value": false
+      }
+    },
+    {
+      "id": "issue-98-sage",
+      "characterId": "sage",
+      "file": "issue-98-sage.json",
+      "phaseBoundary": "night:sage",
+      "deliveredResult": {
+        "kind": "playerPair",
+        "playerIds": [
+          "player-1",
+          "player-7"
+        ]
+      }
+    }
+  ]
+}

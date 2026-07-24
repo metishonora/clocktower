@@ -14,7 +14,7 @@ import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue116PhaseHandoffPrototype.css";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 
-export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer";
+export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "dreamer" | "seamstress";
 export type LiveHandoff = {
   kind: LiveHandoffKind;
   complete: boolean;
@@ -172,6 +172,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId,
   voterIds,
   targetId,
+  targetIds = [],
   centerPrompt,
   operationBusy,
   tokensByPlayerId = {},
@@ -193,6 +194,7 @@ export function SectsAndVioletsLiveGrimoire({
   nomineeId?: string;
   voterIds: string[];
   targetId?: string;
+  targetIds?: string[];
   centerPrompt?: ReactNode;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
@@ -218,7 +220,7 @@ export function SectsAndVioletsLiveGrimoire({
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -227,8 +229,10 @@ export function SectsAndVioletsLiveGrimoire({
     (character) => character.id === detailsPlayer?.actualCharacter,
   );
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
+  const informationTargetCount = handoff?.kind === "dreamer" ? 1 : handoff?.kind === "seamstress" ? 2 : 0;
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
-    : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId) : true;
+    : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId)
+      : informationTargetCount > 0 ? targetIds.length === informationTargetCount : true;
 
   const closePlayerDetails = useCallback(() => {
     const returningPlayerId = detailsPlayerId;
@@ -261,14 +265,15 @@ export function SectsAndVioletsLiveGrimoire({
             const playerTokens = tokensByPlayerId[player.id] ?? [];
             const selected = handoff?.kind === "nomination"
               ? player.id === nominatorId || player.id === nomineeId
-              : handoff?.kind === "vote" ? voterIds.includes(player.id) : player.id === targetId;
+              : handoff?.kind === "vote" ? voterIds.includes(player.id)
+                : informationTargetCount > 0 ? targetIds.includes(player.id) : player.id === targetId;
             const selfNominee = handoff?.kind === "nomination"
               && player.id === nominatorId && player.id === nomineeId;
             const selectionRole = handoff?.kind === "nomination"
               ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
               : handoff?.kind === "vote" && selected ? "투표"
                 : handoff?.kind === "demon" && selected ? "공격 대상"
-                  : handoff?.kind === "snakeCharmer" && selected ? "선택 대상" : undefined;
+                  : (handoff?.kind === "snakeCharmer" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
             const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
@@ -278,7 +283,7 @@ export function SectsAndVioletsLiveGrimoire({
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
               : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id)
-                : handoff?.kind === "snakeCharmer" ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
+                : handoff?.kind === "snakeCharmer" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
                   : false;
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
@@ -363,7 +368,7 @@ export function SectsAndVioletsLiveGrimoire({
             <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
               {centerPrompt}
             </div>
-          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" || informationTargetCount > 0 ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
@@ -374,11 +379,12 @@ export function SectsAndVioletsLiveGrimoire({
         {handoff && !centerPrompt ? (
           <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">
-              <h2>{handoffPanelTitle(handoff.kind, handoff.complete)}</h2>
+              {informationTargetCount === 0 ? <h2>{handoffPanelTitle(handoff.kind, handoff.complete)}</h2> : null}
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
-              ) : null}
+              ) : !handoff.complete && informationTargetCount > 0 ? <button type="button" disabled={operationBusy || targetIds.length === 0} onClick={onResetDaySelection}>초기화</button> : null}
             </header>
+            {informationTargetCount > 0 ? <h2>{informationTargetCount === 1 ? "한 명을 선택" : "두 명 선택"}</h2> : null}
             {handoff.kind === "nomination" ? (
               <dl><div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div><div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div></dl>
             ) : handoff.kind === "vote" ? (
@@ -386,6 +392,8 @@ export function SectsAndVioletsLiveGrimoire({
                 <div><dt>지명</dt><dd>{playerLabel(nominator)} → {playerLabel(nominee)}</dd></div>
                 <div><dt>현재</dt><dd className={voterIds.length >= targetVotes ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>{isFirstVote ? `처형 기준 ${targetVotes}표` : `후보 기준 ${targetVotes}표`}</dd></div>
               </dl>
+            ) : informationTargetCount > 0 ? (
+              <dl>{targetIds.map((id, index) => <div key={id}><dt>{index + 1}번째</dt><dd>{playerLabel(playerById(players, id))}</dd></div>)}</dl>
             ) : (
               <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
             )}
@@ -465,7 +473,9 @@ function playerStateLabel(player?: Player) {
 function handoffPanelTitle(kind: LiveHandoffKind, complete: boolean) {
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"
-      : kind === "snakeCharmer" ? "뱀 조련사" : "악마 공격";
+      : kind === "snakeCharmer" ? "뱀 조련사"
+        : kind === "dreamer" ? "꿈꾸는 자"
+          : kind === "seamstress" ? "재봉사" : "악마 공격";
   return complete ? `${task} 결과` : task;
 }
 
@@ -483,6 +493,7 @@ function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Playe
     return `${nominator.seat}번 → ${nominee.seat}번 지명 확정`;
   }
   if (kind === "vote") return `${votes}표로 투표 확정`;
+  if (kind === "dreamer" || kind === "seamstress") return "선택 확정";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
   return target ? `${playerLabel(target)} 공격 확정` : "공격 대상을 선택하세요";
 }

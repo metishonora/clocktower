@@ -157,6 +157,29 @@ pub(crate) fn phase_step_reveal_payload(
                 revealed_character_id: character_id.clone(),
             })
         }
+        InformationResult::CharacterPair { character_ids }
+            if step.character.as_deref() == Some("dreamer") =>
+        {
+            Some(RevealPayload::DreamerInformation {
+                kind: "dreamerInformation",
+                character_ids: character_ids.clone(),
+            })
+        }
+        InformationResult::Boolean { value } if step.character.as_deref() == Some("seamstress") => {
+            Some(RevealPayload::SeamstressInformation {
+                kind: "seamstressInformation",
+                target_players: reveal_players(players, &information.target_player_ids)?,
+                same_alignment: *value,
+            })
+        }
+        InformationResult::PlayerPair { player_ids }
+            if step.character.as_deref() == Some("sage") =>
+        {
+            Some(RevealPayload::SageInformation {
+                kind: "sageInformation",
+                candidate_players: reveal_players(players, player_ids)?,
+            })
+        }
         InformationResult::Number { value }
             if matches!(
                 step.character.as_deref(),
@@ -308,6 +331,20 @@ pub(crate) fn phase_step_summary(
         "oracle" => number_result(information).map(|count| {
             format!("{actor_label}가 죽은 악한 플레이어 {count}명을 확인했습니다.{audit}")
         }),
+        "dreamer" => Some(format!(
+            "{actor_label}가 {}의 캐릭터 후보를 확인했습니다.{audit}",
+            targets.join(", ")
+        )),
+        "seamstress" => boolean_result(information).map(|same| {
+            format!(
+                "{actor_label}가 {}의 진영을 비교했습니다: {}{audit}",
+                targets.join(", "),
+                if same { "같음" } else { "다름" }
+            )
+        }),
+        "sage" => Some(format!(
+            "{actor_label}가 악마 후보 두 명을 확인했습니다.{audit}"
+        )),
         "fortuneTeller" => boolean_result(information).map(|has_demon| {
             format!(
                 "{actor_label}가 {}를 확인: 악마 {}{audit}",
@@ -448,8 +485,10 @@ fn delivery_context_label(context: &DeliveryContext) -> String {
     let labels = reasons
         .iter()
         .map(|reason| match reason {
+            DeliveryReason::AbilityChoice => "능력 선택",
             DeliveryReason::Drunk => "술취함",
             DeliveryReason::Poisoned { .. } => "중독",
+            DeliveryReason::Vortox { .. } => "보르톡스",
             DeliveryReason::RegistrationJudgment { .. } => "등록 판정",
         })
         .collect::<Vec<_>>();
