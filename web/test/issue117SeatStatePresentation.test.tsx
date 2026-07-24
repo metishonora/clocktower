@@ -69,7 +69,7 @@ test("preserves diffuse actor and target emphasis when both players are dead", (
   expect(target.getAttribute("aria-pressed")).toBe("true");
 });
 
-test("keeps the completed actor and result prominent while settling unrelated seats", () => {
+test("keeps the completed Demon actor and result prominent without a duplicate center result", () => {
   renderGrimoire({
     players: players(7, [1, 2]),
     handoff: { kind: "demon", complete: true, actorPlayerId: "player-1" },
@@ -83,8 +83,12 @@ test("keeps the completed actor and result prominent while settling unrelated se
   expect(actor.classList.contains("snvSettledOtherSeat")).toBe(false);
   expect(target.classList.contains("snvSettledOtherSeat")).toBe(false);
   expect(unrelated.classList.contains("snvSettledOtherSeat")).toBe(true);
-  expect(screen.getByRole("status", { name: "대상 선택 완료" }).textContent).toContain("선택 완료");
-  expect(screen.getByLabelText("현재 마도서 작업").classList.contains("snvSelectionCompletePanel")).toBe(true);
+  expect(screen.queryByRole("status", { name: "대상 선택 완료" })).toBeNull();
+  expect(screen.getByRole("group", { name: "현재 단계" }).textContent).toContain("2일차 낮");
+  const resultPanel = screen.getByLabelText("현재 마도서 작업");
+  expect(resultPanel.classList.contains("snvSelectionCompletePanel")).toBe(true);
+  expect(within(resultPanel).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
+  expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
 });
 
 function renderGrimoire({

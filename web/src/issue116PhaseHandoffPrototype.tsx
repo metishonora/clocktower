@@ -671,7 +671,7 @@ function seatLabel(seat?: number) {
 function handoffTaskLabel(kind: HandoffKind) {
   if (kind === "nomination") return "지명";
   if (kind === "vote") return "투표";
-  return "Demon 공격";
+  return "악마 공격";
 }
 
 function handoffReady(kind: HandoffKind, nominatorSeat?: number, nomineeSeat?: number, demonTargetSeat?: number) {
