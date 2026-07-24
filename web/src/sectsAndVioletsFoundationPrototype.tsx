@@ -1219,7 +1219,12 @@ export function SectsAndVioletsFoundation({
       summary: event.summary,
       activeTab: checkpointKind === "setup" ? "seating" : activeTab,
     };
-    setPhaseCheckpoints((current) => [...current, checkpoint]);
+    const linkedNominationId = event.type === "nominationVoteConfirmed"
+      ? event.payload.nominationEventId
+      : undefined;
+    setPhaseCheckpoints((current) => linkedNominationId && current.at(-1)?.id === linkedNominationId
+      ? [...current.slice(0, -1), checkpoint]
+      : [...current, checkpoint]);
     setInformationStepId(undefined);
     setDayComplete(false);
     if (scheduleAutosave) markAutosaveNeeded();
