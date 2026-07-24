@@ -40,6 +40,12 @@ import {
 } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
 import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
+  browserRuntimeClock,
+  numberedPhaseForStep,
+  type RuntimeClock,
+} from "./features/phase-control/phaseRuntime";
+import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
+import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
   removeLatestSectsAndVioletsPhaseCheckpoint,
@@ -105,6 +111,7 @@ export type SectsAndVioletsFoundationPrototypeProps = {
   coreAdapter?: CoreAdapter;
   storageDriver?: GameStorageDriver;
   production?: boolean;
+  phaseRuntimeClock?: RuntimeClock;
 };
 
 export function SectsAndVioletsFoundationPrototype() {
@@ -115,6 +122,7 @@ export function SectsAndVioletsFoundation({
   coreAdapter,
   storageDriver,
   production = false,
+  phaseRuntimeClock = browserRuntimeClock,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
   const [tabMotion, setTabMotion] = useState<TabMotion>("");
@@ -159,6 +167,7 @@ export function SectsAndVioletsFoundation({
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
+  const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
   const textAutosaveTimerRef = useRef<number | undefined>(undefined);
   const textAutosaveDirtyRef = useRef(false);
@@ -228,6 +237,15 @@ export function SectsAndVioletsFoundation({
   const effectivePlayPhase: PlayPhase = coreAdapter && replayState?.phase && replayState.phase !== "setup"
     ? replayState.phase === "firstNight" ? "firstNight" : replayState.phase === "day" ? "day" : "laterNight"
     : playPhase;
+  const activeNumberedPhase = numberedPhaseForStep(
+    replayState?.phase,
+    replayState?.currentStep?.id,
+  );
+  const phaseRuntime = usePhaseRuntime({
+    activePhase: activeNumberedPhase,
+    gameSessionRevision: 0,
+    clock: phaseRuntimeClock,
+  });
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
   const livePlayers = useMemo<LivePlayer[]>(() => (replayState?.players ?? []).map((player) => {
     const character = characters.find((candidate) => candidate.id === player.actualCharacter);
@@ -442,11 +460,10 @@ export function SectsAndVioletsFoundation({
     }
     lastEnqueuedAutosaveRevisionRef.current = autosaveRevision;
     const savedAt = new Date().toISOString();
-    pendingAutosaveRef.current = withSectsAndVioletsSession(
+    enqueueAutosave(withSectsAndVioletsSession(
       gameFile,
       currentSessionState(savedAt),
-    );
-    void drainAutosaveQueue();
+    ));
   }, [
     activeTab,
     autosaveRecoveryBlocked,
@@ -561,7 +578,9 @@ export function SectsAndVioletsFoundation({
     if (!storageDriver || autosaveInFlightRef.current) return;
     const candidate = pendingAutosaveRef.current;
     if (!candidate) return;
+    const completion = pendingAutosaveCompletionRef.current;
     pendingAutosaveRef.current = undefined;
+    pendingAutosaveCompletionRef.current = undefined;
     autosaveInFlightRef.current = true;
     setAutosaveStatus("saving");
     let saved = false;
@@ -572,12 +591,27 @@ export function SectsAndVioletsFoundation({
       setAutosaveStatus("saved");
       saved = true;
     } catch {
-      pendingAutosaveRef.current = undefined;
+      discardPendingAutosave();
       setAutosaveStatus("error");
     } finally {
       autosaveInFlightRef.current = false;
     }
+    completion?.(saved);
     if (saved && pendingAutosaveRef.current) void drainAutosaveQueue();
+  }
+
+  function enqueueAutosave(candidate: GameFile, completion?: (saved: boolean) => void) {
+    pendingAutosaveCompletionRef.current?.(false);
+    pendingAutosaveRef.current = candidate;
+    pendingAutosaveCompletionRef.current = completion;
+    void drainAutosaveQueue();
+  }
+
+  function discardPendingAutosave() {
+    const completion = pendingAutosaveCompletionRef.current;
+    pendingAutosaveRef.current = undefined;
+    pendingAutosaveCompletionRef.current = undefined;
+    completion?.(false);
   }
 
   function restoreStoredSession(storedGameFile: GameFile, replayed: ReplayState) {
@@ -1026,10 +1060,25 @@ export function SectsAndVioletsFoundation({
       return;
     }
 
-    const applied = await applyCanonicalEvent(result.value.event, "setup");
+    const applied = await applyCanonicalEvent(result.value.event, "setup", gameFile, false);
     if (!applied) {
       setOperationBusy(false);
       return;
+    }
+    if (storageDriver) {
+      const savedAt = new Date().toISOString();
+      const confirmedSession = currentSessionState(savedAt);
+      const confirmedGameFile = withSectsAndVioletsSession(applied.gameFile, {
+        ...confirmedSession,
+        activeTab: "seating",
+        setup: {
+          ...confirmedSession.setup,
+          seatingConfirmed: true,
+        },
+        phaseCheckpoints: [...phaseCheckpoints, applied.checkpoint],
+      });
+      await new Promise<boolean>((resolve) => enqueueAutosave(confirmedGameFile, resolve));
+      setGameFile(confirmedGameFile);
     }
     setOperationBusy(false);
     setSeatingConfirmed(true);
@@ -1041,7 +1090,8 @@ export function SectsAndVioletsFoundation({
     event: GameEvent,
     checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"],
     baseGameFile: GameFile = gameFile,
-  ): Promise<{ gameFile: GameFile; replayState: ReplayState } | undefined> => {
+    scheduleAutosave = true,
+  ): Promise<{ gameFile: GameFile; replayState: ReplayState; checkpoint: SectsAndVioletsPhaseCheckpoint } | undefined> => {
     if (!coreAdapter) return undefined;
     const nextGameFile: GameFile = {
       ...baseGameFile,
@@ -1064,20 +1114,18 @@ export function SectsAndVioletsFoundation({
     }
     setReplayState(replayed.value);
     setGameFile(nextGameFile);
-    setPhaseCheckpoints((current) => [
-      ...current,
-      {
-        id: event.id,
-        kind: checkpointKind,
-        eventCount: nextGameFile.game.events.length,
-        summary: event.summary,
-        activeTab: checkpointKind === "setup" ? "seating" : activeTab,
-      },
-    ]);
+    const checkpoint: SectsAndVioletsPhaseCheckpoint = {
+      id: event.id,
+      kind: checkpointKind,
+      eventCount: nextGameFile.game.events.length,
+      summary: event.summary,
+      activeTab: checkpointKind === "setup" ? "seating" : activeTab,
+    };
+    setPhaseCheckpoints((current) => [...current, checkpoint]);
     setInformationStepId(undefined);
     setDayComplete(false);
-    markAutosaveNeeded();
-    return { gameFile: nextGameFile, replayState: replayed.value };
+    if (scheduleAutosave) markAutosaveNeeded();
+    return { gameFile: nextGameFile, replayState: replayed.value, checkpoint };
   };
 
   const proposeAndApplyLiveCommand = async (
@@ -1442,6 +1490,7 @@ export function SectsAndVioletsFoundation({
         <SectsAndVioletsLiveGrimoire
           players={livePlayers}
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          phaseRuntime={phaseRuntime ?? "00:00"}
           currentStep={replayState.currentStep}
           dayState={replayState.dayState}
           handoff={liveHandoff}
@@ -1623,6 +1672,7 @@ export function SectsAndVioletsFoundation({
         <SectsAndVioletsLiveProgress
           replayState={replayState}
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          phaseRuntime={phaseRuntime ?? "00:00"}
           operationBusy={operationBusy}
           actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
           actorCharacterId={liveActor?.actualCharacter ?? replayState.currentStep.character}
@@ -1643,7 +1693,17 @@ export function SectsAndVioletsFoundation({
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
-            <h2>{phaseLabel(effectivePlayPhase, replayState?.currentStep)}</h2>
+            <div className="snvProgressPhaseHeader">
+              <h2>{phaseLabel(effectivePlayPhase, replayState?.currentStep)}</h2>
+              {phaseRuntime ? (
+                <time
+                  className="snvProgressRuntime"
+                  aria-label={`${activeNumberedPhase?.label} 경과 시간 ${phaseRuntime}`}
+                >
+                  {phaseRuntime}
+                </time>
+              ) : null}
+            </div>
           </header>
 
           <div className="snvFirstNightPrimary">

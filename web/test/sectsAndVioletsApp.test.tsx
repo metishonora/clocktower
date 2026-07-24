@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
@@ -159,6 +159,38 @@ test("confirms the assigned production roster through the canonical S&V createGa
   );
 });
 
+test("does not expose a confirmed Grimoire until the canonical setup is durably saved", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const firstRender = render(<SectsAndVioletsApp storageDriver={storage} />);
+  let app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
+    await user.click(within(app).getByRole("button", { name: character }));
+  }
+  await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
+  await user.click(within(app).getByRole("button", { name: "무작위 배치" }));
+  await waitFor(() => expect(
+    Object.keys(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.setup.seatAssignments ?? {}),
+  ).toHaveLength(7));
+
+  storage.pauseCanonicalSave = true;
+  await user.click(within(app).getByRole("button", { name: "배치 확정" }));
+  await waitFor(() => expect(storage.canonicalSaveStarted).toBe(true));
+
+  expect(within(app).queryByLabelText("1일차 밤 경과 시간 00:00")).toBeNull();
+  expect(within(app).getByRole("button", { name: "확정 중" })).toBeTruthy();
+
+  storage.releaseCanonicalSave?.();
+  expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+
+  firstRender.unmount();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+  expect(screen.queryByRole("dialog", { name: "작업 실패" })).toBeNull();
+});
+
 test("keeps the seating draft intact when canonical setup confirmation fails", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsApp />);
@@ -231,6 +263,55 @@ test("records manual work and follows the canonical first-night to day boundary"
   expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
   await user.click(within(app).getByRole("button", { name: "낮으로" }));
   expect(await within(app).findByRole("heading", { name: "2일차 낮" })).toBeTruthy();
+});
+
+test("shows one transient S&V phase stopwatch across the Grimoire and progression surfaces", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  let now = Date.parse("2026-07-24T00:00:00.000Z");
+  const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+
+  try {
+    const firstRender = render(<SectsAndVioletsApp storageDriver={storage} />);
+    const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+    await completeSevenPlayerSetup(user, app);
+
+    expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+    const savesBeforeTick = storage.saveAttempts;
+    const replaysBeforeTick = core.replay.mock.calls.length;
+
+    now += 5 * 60_000 + 7_000;
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+
+    expect(within(app).getByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
+    expect(storage.saveAttempts).toBe(savesBeforeTick);
+    expect(core.replay).toHaveBeenCalledTimes(replaysBeforeTick);
+
+    await user.click(within(app).getByRole("button", { name: "진행" }));
+    const progression = within(app).getByRole("region", { name: "첫날 밤 진행" });
+    const progressionTimer = within(progression).getByLabelText("1일차 밤 경과 시간 05:07");
+    expect(progressionTimer.closest(".snvProgressPhaseHeader")).toBeTruthy();
+
+    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    expect(await within(app).findByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
+    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    await user.click(within(app).getByRole("button", { name: "처리 완료" }));
+    expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
+
+    now += 10_000;
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    expect(within(app).getByLabelText("1일차 밤 경과 시간 05:17")).toBeTruthy();
+
+    await user.click(within(app).getByRole("button", { name: "낮으로" }));
+    expect(await within(app).findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+
+    firstRender.unmount();
+    render(<SectsAndVioletsApp storageDriver={storage} />);
+    const restoredApp = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+    expect(await within(restoredApp).findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+  } finally {
+    dateNow.mockRestore();
+  }
 });
 
 test("shows the canonical nomination standing and sends the Storyteller to the Grimoire", async () => {
@@ -727,6 +808,9 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
   saveAttempts = 0;
   failNextSave = false;
   loadError?: Error;
+  pauseCanonicalSave = false;
+  canonicalSaveStarted = false;
+  releaseCanonicalSave?: () => void;
 
   async loadLatestGame(): Promise<GameFile | undefined> {
     if (this.loadError) throw this.loadError;
@@ -736,6 +820,11 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
 
   async saveLatestGame(gameFile: GameFile): Promise<void> {
     this.saveAttempts += 1;
+    if (this.pauseCanonicalSave && gameFile.game.events.length > 0) {
+      this.canonicalSaveStarted = true;
+      await new Promise<void>((resolve) => { this.releaseCanonicalSave = resolve; });
+      this.pauseCanonicalSave = false;
+    }
     if (this.failNextSave) {
       this.failNextSave = false;
       throw new Error("테스트 저장 실패");
