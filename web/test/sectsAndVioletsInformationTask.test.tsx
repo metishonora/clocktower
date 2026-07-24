@@ -102,8 +102,11 @@ test("Dreamer exposes the selected target truth and the full legal opposite-alig
   };
   const target: Player = { ...actor, id: "player-2", seat: 2, name: "유나", actualCharacter: "seamstress", shownCharacter: "seamstress" };
   render(<SectsAndVioletsInformationTask step={dreamerStep} actor={{ ...actor, actualCharacter: "dreamer" }} players={[actor, target]} selectedPlayerIds={["player-2"]} revealed={false} busy={false} onReveal={() => undefined} />);
-  expect(screen.getByText("대상 ·").parentElement?.textContent).toContain("2번 유나");
-  expect(screen.getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
+  const context = screen.getByRole("group", { name: "대상과 진실" });
+  expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나");
+  expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
+  expect(screen.getByRole("group", { name: "전달할 캐릭터" }).classList.contains("snvDreamerEditor")).toBe(true);
+  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvDreamerActions")).toBe(true);
   expect(screen.getByRole("combobox", { name: "악한 캐릭터" }).querySelectorAll("option")).toHaveLength(8);
 });
 

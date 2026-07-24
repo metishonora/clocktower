@@ -63,13 +63,22 @@ export function SectsAndVioletsInformationTask({
         </div>
       ) : (
         <>
-          {targetCheck?.targetPlayerIds.length ? <p className="snvInformationTargetSummary"><span>대상 ·</span> <strong>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</strong></p> : null}
-          <dl className="snvInformationValues">
-            <div>
-              <dt>{characterId === "sage" ? "살해자" : "진실"}</dt>
-              <dd>{characterId === "sage" && step.informationPrompt?.computedResult?.kind === "player" ? playerLabel(players, step.informationPrompt.computedResult.playerId) : informationValueLabel(characterId, targetCheck?.computedResult ?? step.informationPrompt?.computedResult)}</dd>
-            </div>
-          </dl>
+          {characterId === "dreamer" && targetCheck ? (
+            <dl className="snvInformationValues snvDreamerContext" role="group" aria-label="대상과 진실">
+              <div><dt>대상</dt><dd>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</dd></div>
+              <div><dt>진실</dt><dd>{informationValueLabel(characterId, targetCheck.computedResult)}</dd></div>
+            </dl>
+          ) : (
+            <>
+              {targetCheck?.targetPlayerIds.length ? <p className="snvInformationTargetSummary"><span>대상 ·</span> <strong>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</strong></p> : null}
+              <dl className="snvInformationValues">
+                <div>
+                  <dt>{characterId === "sage" ? "살해자" : "진실"}</dt>
+                  <dd>{characterId === "sage" && step.informationPrompt?.computedResult?.kind === "player" ? playerLabel(players, step.informationPrompt.computedResult.playerId) : informationValueLabel(characterId, targetCheck?.computedResult ?? step.informationPrompt?.computedResult)}</dd>
+                </div>
+              </dl>
+            </>
+          )}
           {characterId === "dreamer" && targetCheck ? (
             <DreamerEditor check={targetCheck} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : characterId === "seamstress" && targetCheck && choices.length > 1 ? (
@@ -79,7 +88,7 @@ export function SectsAndVioletsInformationTask({
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
-          <div className="snvStepActions snvInformationActions">
+          <div className={`snvStepActions snvInformationActions${characterId === "dreamer" ? " snvDreamerActions" : ""}`}>
             <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
           </div>
         </>
@@ -95,7 +104,7 @@ function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; v
   const good = [...new Set(pairs.map((pair) => pair[0]))];
   const evil = [...new Set(pairs.map((pair) => pair[1]))];
   const actual = check.computedResult.kind === "character" ? check.computedResult.characterId : "";
-  return <fieldset className="snvInformationPairEditor"><legend>전달할 캐릭터</legend>
+  return <fieldset className="snvInformationPairEditor snvDreamerEditor"><legend>전달할 캐릭터</legend>
     <label>선한 캐릭터<select aria-label="선한 캐릭터" value={current[0]} disabled={busy || current[0] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [event.target.value, current[1]] })}>{good.map(option)}</select></label>
     <label>악한 캐릭터<select aria-label="악한 캐릭터" value={current[1]} disabled={busy || current[1] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [current[0], event.target.value] })}>{evil.map(option)}</select></label>
   </fieldset>;
