@@ -53,6 +53,29 @@
   transform: translate(-50%, -50%);
 }
 
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected {
+  z-index: 4;
+  filter: none;
+  opacity: 1;
+  outline: 0;
+  transform: translate(-50%, -50%);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected.issue116NominatorSeat {
+  border-color: #8a5ab8;
+  box-shadow: 0 0 0 4px rgba(138, 90, 184, .24), 0 0 30px rgba(95, 55, 139, .34);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected.issue116NomineeSeat {
+  border-color: #b23f67;
+  box-shadow: 0 0 0 4px rgba(178, 63, 103, .22), 0 0 30px rgba(178, 63, 103, .34);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected.issue116VoterSeat {
+  border-color: #d48a24;
+  box-shadow: 0 0 0 4px rgba(226, 147, 34, .24), 0 0 30px rgba(226, 147, 34, .34);
+}
+
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat { filter: saturate(.45); opacity: .5; }
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat.snvDeadSeat { filter: none; opacity: .46; }
 

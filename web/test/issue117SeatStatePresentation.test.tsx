@@ -5,7 +5,7 @@ import {
   type LiveHandoff,
   type LivePlayer,
 } from "../src/sectsAndVioletsLivePhase";
-import type { PhaseStep } from "../src/core/types";
+import type { DayState, PhaseStep } from "../src/core/types";
 
 const dayStep: PhaseStep = {
   id: "day:discussion",
@@ -69,6 +69,40 @@ test("preserves diffuse actor and target emphasis when both players are dead", (
   expect(target.getAttribute("aria-pressed")).toBe("true");
 });
 
+test("preserves selection emphasis for a dead nominee and a dead ghost voter", () => {
+  const fixturePlayers = players(7, [2]);
+  const dayState: DayState = {
+    nominations: [],
+    eligibleNominatorIds: fixturePlayers.filter((player) => player.alive).map((player) => player.id),
+    eligibleNomineeIds: fixturePlayers.map((player) => player.id),
+    executionVoteThreshold: 4,
+    highestVoteCount: 0,
+  };
+  const nomination = renderGrimoire({
+    players: fixturePlayers,
+    dayState,
+    handoff: { kind: "nomination", complete: false },
+    nominatorId: "player-1",
+    nomineeId: "player-2",
+  });
+
+  const deadNominee = screen.getByRole("button", { name: /2번 좌석.*사망.*피지명자/ });
+  expect(deadNominee.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadNominee.classList.contains("snvSeatStateSelected")).toBe(true);
+  nomination.unmount();
+
+  renderGrimoire({
+    players: fixturePlayers,
+    dayState,
+    handoff: { kind: "vote", complete: false },
+    voterIds: ["player-2"],
+  });
+
+  const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
+  expect(deadVoter.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadVoter.classList.contains("snvSeatStateSelected")).toBe(true);
+});
+
 test("keeps the completed Demon actor and result prominent without a duplicate center result", () => {
   renderGrimoire({
     players: players(7, [1, 2]),
@@ -128,13 +162,21 @@ function renderGrimoire({
   players: fixturePlayers,
   currentStep = dayStep,
   phaseLabel = "2일차 낮",
+  dayState,
   handoff,
+  nominatorId,
+  nomineeId,
+  voterIds = [],
   targetId,
 }: {
   players: LivePlayer[];
   currentStep?: PhaseStep;
   phaseLabel?: string;
+  dayState?: DayState;
   handoff?: LiveHandoff;
+  nominatorId?: string;
+  nomineeId?: string;
+  voterIds?: string[];
   targetId?: string;
 }) {
   return render(
@@ -142,8 +184,11 @@ function renderGrimoire({
       players={fixturePlayers}
       phaseLabel={phaseLabel}
       currentStep={currentStep}
+      dayState={dayState}
       handoff={handoff}
-      voterIds={[]}
+      nominatorId={nominatorId}
+      nomineeId={nomineeId}
+      voterIds={voterIds}
       targetId={targetId}
       operationBusy={false}
       onSeatClick={vi.fn()}
