@@ -1,0 +1,56 @@
+.issue118Prototype { min-height: 100dvh; padding-bottom: 72px; }
+.issue118ReviewBar { display: flex; max-width: 1180px; margin: 0 auto 18px; padding: 12px 14px; align-items: center; justify-content: space-between; gap: 18px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 18px; background: rgba(20, 12, 26, .48); }
+.issue118ReviewBar > div { display: flex; gap: 7px; }
+.issue118ReviewBar button { min-width: 74px; padding: 8px 12px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .04); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.issue118ReviewBar button[aria-pressed="true"] { border-color: #d6a9e2; color: #fff; background: #82509a; }
+.issue118ReviewBar p { margin: 0; color: #c9b4d1; font-size: .76rem; font-weight: 750; }
+.snvDayMode .issue118ReviewBar { border-color: rgba(88, 55, 97, .16); background: rgba(255, 252, 249, .58); }
+.snvDayMode .issue118ReviewBar p { color: #68536d; }
+.snvDayMode .issue118ReviewBar button { border-color: rgba(88, 55, 97, .18); color: #442e49; background: rgba(255, 255, 255, .46); }
+.snvDayMode .issue118ReviewBar button[aria-pressed="true"] { color: #fff; background: #82509a; }
+
+.issue118ProgressHeader { align-items: start; }
+.issue118ProgressPhaseHeader { grid-column: 2; display: grid; justify-items: center; gap: 9px; }
+.issue118ProgressPhaseHeader h2 { grid-column: auto; }
+.issue118ProgressTimer { display: block; min-width: 5ch; color: #d8c1df; font: 800 1.15rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: .05em; }
+.snvDaySurface .issue118ProgressTimer { color: #724581; }
+.issue118CurrentStep { display: flex; min-height: 370px; flex-direction: column; }
+.issue118CurrentStep .snvStepActions { margin-top: auto; }
+.issue118DayStatus { display: grid; margin: 34px 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.issue118DayStatus div { display: grid; min-height: 84px; padding: 13px; place-content: center; gap: 8px; border: 1px solid rgba(88, 55, 97, .15); border-radius: 16px; text-align: center; background: rgba(255, 255, 255, .38); }
+.issue118DayStatus dt { color: #715977; font-size: .7rem; font-weight: 850; }
+.issue118DayStatus dd { margin: 0; font-size: 1.25rem; font-weight: 950; }
+.issue118Actor { display: flex; margin: 28px 0 16px; align-items: center; gap: 18px; }
+.issue118Actor img { width: 76px; height: 76px; object-fit: contain; }
+.issue118Actor h3 { margin: 0 0 6px; }
+.issue118Actor strong { color: #ddcae2; font-size: .82rem; }
+
+.issue118GrimoireWorkspace { grid-template-columns: minmax(0, 1fr); }
+.issue118GrimoireSurface .snvSeatingToolbar span { color: #d9c1df; font: 1.1rem Georgia, serif; }
+.snvDayMode .issue118GrimoireSurface .snvSeatingToolbar span { color: #4d3654; }
+.issue118GrimoireClock { z-index: 4; }
+.issue118GrimoireClock time { display: block; margin-top: 4px; color: #c4afcc; font: 800 .82rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: .05em; }
+.snvDayMode .issue118GrimoireClock { border-color: rgba(88, 55, 97, .22); background: rgba(255, 252, 249, .9); }
+.snvDayMode .issue118GrimoireClock strong { color: #412d47; }
+.snvDayMode .issue118GrimoireClock time { color: #724581; }
+
+@media (prefers-reduced-motion: reduce) {
+  .issue118Prototype, .issue118ProgressTimer, .issue118GrimoireClock { transition-duration: 0s; }
+}
+
+@media (max-width: 780px) {
+  .issue118ReviewBar { align-items: stretch; flex-direction: column; }
+  .issue118ReviewBar > div { width: 100%; }
+  .issue118ReviewBar button { flex: 1; }
+  .issue118ProgressHeader { grid-template-columns: 72px minmax(0, 1fr) 72px; }
+  .issue118ProgressPhaseHeader { gap: 7px; }
+  .issue118ProgressTimer { font-size: 1rem; }
+  .issue118CurrentStep { min-height: 340px; }
+  .issue118DayStatus { margin: 24px 0; }
+  .issue118DayStatus div { min-height: 72px; padding: 9px 6px; }
+  .issue118DayStatus dd { font-size: 1.05rem; }
+  .issue118GrimoireWorkspace { display: block; }
+  .snvGrimoireCenter.issue118GrimoireClock { box-sizing: border-box; width: 104px; padding: 12px 6px; }
+  .issue118GrimoireClock strong { font-size: 1rem; }
+  .issue118GrimoireClock button { margin-top: 8px; padding: 6px 8px; }
+}

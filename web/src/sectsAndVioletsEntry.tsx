@@ -26,6 +26,13 @@ const DevIssue121TokenOverviewPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue118TimerPlacementPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue118TimerPlacementPrototype");
+      return { default: module.Issue118TimerPlacementPrototype };
+    })
+  : undefined;
+
 const showIssue120Prototype = Boolean(
   DevIssue120EventLogPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
@@ -41,9 +48,18 @@ const showIssue121Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-121-token-overview",
 );
 
+const showIssue118Prototype = Boolean(
+  DevIssue118TimerPlacementPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-118-timer-placement",
+);
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue101Prototype && DevIssue101SnakeCharmerPrototype ? (
+    {showIssue118Prototype && DevIssue118TimerPlacementPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue118TimerPlacementPrototype />
+      </React.Suspense>
+    ) : showIssue101Prototype && DevIssue101SnakeCharmerPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue101SnakeCharmerPrototype />
       </React.Suspense>
