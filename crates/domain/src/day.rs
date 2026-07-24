@@ -127,36 +127,43 @@ pub(crate) fn day_steps(
         },
         false,
     ));
-    steps.push(PhaseStep {
-        id: format!("{prefix}:executionDeath"),
-        phase: Phase::Day,
-        step_type: StepType::ExecutionDeath,
-        character: None,
-        player_id: executed_player_id,
-        required_input: RequiredInput {
-            kind: RequiredInputKind::ExecutionDeathDecision,
-            target: Some(InputTarget::Execution),
-            min_selections: None,
-            max_selections: None,
-            setup_info: None,
-            character_kind: None,
-            allowed_character_ids: None,
-            allowed_player_ids: None,
-            player_registration_options: None,
-            zero_allowed: false,
-            supports_random_suggestion: false,
-            player_id: None,
-            survival_allowed: None,
-            execution_survival_allowed: false,
-            mayor_decision: None,
-            demon_succession: None,
-            optional: false,
-        },
-        can_skip: false,
-        support: crate::model::PhaseStepSupport::Automated,
-        information_prompt: None,
-        pre_action_reveal: None,
+    let execution_needs_death_confirmation = executed_player_id.as_ref().is_none_or(|player_id| {
+        players
+            .iter()
+            .any(|player| player.id == *player_id && player.alive)
     });
+    if execution_needs_death_confirmation {
+        steps.push(PhaseStep {
+            id: format!("{prefix}:executionDeath"),
+            phase: Phase::Day,
+            step_type: StepType::ExecutionDeath,
+            character: None,
+            player_id: executed_player_id,
+            required_input: RequiredInput {
+                kind: RequiredInputKind::ExecutionDeathDecision,
+                target: Some(InputTarget::Execution),
+                min_selections: None,
+                max_selections: None,
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: None,
+                allowed_player_ids: None,
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            },
+            can_skip: false,
+            support: crate::model::PhaseStepSupport::Automated,
+            information_prompt: None,
+            pre_action_reveal: None,
+        });
+    }
     steps.push(phase_transition_step(
         Phase::Day,
         &prefix,
