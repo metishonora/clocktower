@@ -1002,7 +1002,7 @@ pub(crate) fn phase_step_statuses(
                     || payload.input.player_id.as_deref() != Some(expected_player_id.as_str())
                     || !players_at_event
                         .iter()
-                        .any(|player| player.id == expected_player_id && player.alive)
+                        .any(|player| player.id == expected_player_id)
                 {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }

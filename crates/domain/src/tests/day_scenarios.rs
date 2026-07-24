@@ -232,6 +232,57 @@ fn execution_confirmation_is_separate_from_death_state() {
 }
 
 #[test]
+fn executing_an_already_dead_nominee_records_the_execution_without_a_second_death() {
+    let mut events = day_events(
+        setup_event_with_players(five_players()),
+        &five_player_first_night_steps(),
+        &["player-2"],
+    );
+    events.extend([
+        nomination_event_with_ghost_spending(
+            1,
+            "player-1",
+            "player-2",
+            &["player-1", "player-3"],
+            &[],
+        ),
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+    ]);
+    let game = game_with_events(Value::Array(events));
+    let command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "day:execution",
+            "input": { "execute": true }
+        }
+    });
+
+    let proposal: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap();
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(proposal["value"]["event"]["type"], "executionConfirmed");
+    assert_eq!(
+        proposal["value"]["event"]["payload"]["input"]["playerId"],
+        "player-2"
+    );
+
+    let mut confirmed_events = game["game"]["events"].as_array().unwrap().clone();
+    confirmed_events.push(proposal["value"]["event"].clone());
+    let replayed: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(confirmed_events)).to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(replayed["ok"], true, "replay failed as {replayed}");
+    assert_eq!(replayed["value"]["players"][1]["alive"], false);
+    assert_eq!(
+        replayed["value"]["dayState"]["confirmedExecution"]["playerId"],
+        "player-2"
+    );
+    assert_eq!(replayed["value"]["currentStep"]["id"], "day:toNight");
+}
+
+#[test]
 fn execution_death_confirmation_has_its_own_event_and_is_undoable() {
     let (game, after_execution) = confirmed_execution_game();
     assert_eq!(after_execution["value"]["players"][4]["alive"], true);
