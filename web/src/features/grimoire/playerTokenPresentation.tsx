@@ -32,17 +32,19 @@ export function PlayerTokenCountBadge({
   count,
   position,
   mobilePosition,
+  theme,
 }: {
   count: number;
   position: { x: number; y: number };
   mobilePosition: { x: number; y: number };
+  theme: "day" | "night";
 }) {
   if (count === 0) return null;
   const badgeOffset = inwardOffset(position, 48);
   const mobileBadgeOffset = inwardOffset(mobilePosition, 37);
   return (
     <span
-      className="playerTokenCountBadge"
+      className={`playerTokenCountBadge ${theme}`}
       aria-hidden="true"
       style={{
         "--token-seat-x": `${position.x}%`,
@@ -58,10 +60,16 @@ export function PlayerTokenCountBadge({
   );
 }
 
-export function PlayerTokenList({ tokens }: { tokens: readonly PlayerTokenPresentation[] }) {
+export function PlayerTokenList({
+  tokens,
+  theme,
+}: {
+  tokens: readonly PlayerTokenPresentation[];
+  theme: "day" | "night";
+}) {
   if (tokens.length === 0) return null;
   return (
-    <section className="playerPinnedTokenArea" aria-label="부착된 토큰">
+    <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
       <ul aria-label={`부착된 토큰 ${tokens.length}개`}>
         {tokens.map((token) => (
           <li aria-label={`${token.label} · 출처 ${token.sourceLabel}`} key={token.instanceId}>
@@ -164,7 +172,7 @@ export function PlayerTokenDetailDialog({
             <span>캐릭터 능력</span>
             <p>{player.characterAbility}</p>
           </section>
-          <PlayerTokenList tokens={tokens} />
+          <PlayerTokenList tokens={tokens} theme={theme} />
         </div>
       </section>
     </div>,
