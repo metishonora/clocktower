@@ -10,6 +10,7 @@ import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue116PhaseHandoffPrototype.css";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer";
@@ -100,18 +101,18 @@ export function SectsAndVioletsLiveProgress({
           </article>
         ) : step?.character === "snakeCharmer" && step.requiredInput.kind === "playerIds" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="뱀 조련사 대상 선택">
-            <div className="issue116ActorIdentity">
-              <CharacterDetailButton
-                details={sectsAndVioletsCharacterDetail("snakeCharmer")}
-                className="issue116ActorRoleButton"
-                theme="snv-night"
-              >
-                {sectsAndVioletsCharacterAsset("snakeCharmer") ? <img src={sectsAndVioletsCharacterAsset("snakeCharmer")!.src} alt="뱀 조련사 공식 캐릭터 아이콘" /> : null}
-                <h3>뱀 조련사</h3>
-              </CharacterDetailButton>
-              <strong>{actor.name}</strong>
-            </div>
-            <p className="issue116AbilitySummary">{actorSummary}</p>
+            <CharacterDetailButton
+              details={sectsAndVioletsCharacterDetail("snakeCharmer")}
+              className="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            >
+              {sectsAndVioletsCharacterAsset("snakeCharmer") ? <img src={sectsAndVioletsCharacterAsset("snakeCharmer")!.src} alt="뱀 조련사 공식 캐릭터 아이콘" /> : null}
+              <div>
+                <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>뱀 조련사</span>
+                <strong>{actor.name}</strong>
+              </div>
+            </CharacterDetailButton>
+            <p className="snvInformationAbility">{actorSummary}</p>
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartSnakeCharmer}>대상 선택</button></div>
           </article>
         ) : step && isDemonCharacter(step.character) && actor ? (
