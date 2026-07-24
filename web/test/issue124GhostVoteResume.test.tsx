@@ -38,8 +38,8 @@ test("resumes a saved nomination vote with an unused dead-player ghost vote sele
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
   expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
-  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).toBeNull();
-  expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector("img")).toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(grimoire).getByText("1표")).toBeTruthy();
