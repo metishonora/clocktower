@@ -40,6 +40,12 @@ import {
 } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
 import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
+  browserRuntimeClock,
+  numberedPhaseForStep,
+  type RuntimeClock,
+} from "./features/phase-control/phaseRuntime";
+import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
+import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
   removeLatestSectsAndVioletsPhaseCheckpoint,
@@ -105,6 +111,7 @@ export type SectsAndVioletsFoundationPrototypeProps = {
   coreAdapter?: CoreAdapter;
   storageDriver?: GameStorageDriver;
   production?: boolean;
+  phaseRuntimeClock?: RuntimeClock;
 };
 
 export function SectsAndVioletsFoundationPrototype() {
@@ -115,6 +122,7 @@ export function SectsAndVioletsFoundation({
   coreAdapter,
   storageDriver,
   production = false,
+  phaseRuntimeClock = browserRuntimeClock,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
   const [tabMotion, setTabMotion] = useState<TabMotion>("");
@@ -228,6 +236,15 @@ export function SectsAndVioletsFoundation({
   const effectivePlayPhase: PlayPhase = coreAdapter && replayState?.phase && replayState.phase !== "setup"
     ? replayState.phase === "firstNight" ? "firstNight" : replayState.phase === "day" ? "day" : "laterNight"
     : playPhase;
+  const activeNumberedPhase = numberedPhaseForStep(
+    replayState?.phase,
+    replayState?.currentStep?.id,
+  );
+  const phaseRuntime = usePhaseRuntime({
+    activePhase: activeNumberedPhase,
+    gameSessionRevision: 0,
+    clock: phaseRuntimeClock,
+  });
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
   const livePlayers = useMemo<LivePlayer[]>(() => (replayState?.players ?? []).map((player) => {
     const character = characters.find((candidate) => candidate.id === player.actualCharacter);
@@ -1442,6 +1459,7 @@ export function SectsAndVioletsFoundation({
         <SectsAndVioletsLiveGrimoire
           players={livePlayers}
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          phaseRuntime={phaseRuntime ?? "00:00"}
           currentStep={replayState.currentStep}
           dayState={replayState.dayState}
           handoff={liveHandoff}
@@ -1623,6 +1641,7 @@ export function SectsAndVioletsFoundation({
         <SectsAndVioletsLiveProgress
           replayState={replayState}
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          phaseRuntime={phaseRuntime ?? "00:00"}
           operationBusy={operationBusy}
           actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
           actorCharacterId={liveActor?.actualCharacter ?? replayState.currentStep.character}
@@ -1643,7 +1662,17 @@ export function SectsAndVioletsFoundation({
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
-            <h2>{phaseLabel(effectivePlayPhase, replayState?.currentStep)}</h2>
+            <div className="snvProgressPhaseHeader">
+              <h2>{phaseLabel(effectivePlayPhase, replayState?.currentStep)}</h2>
+              {phaseRuntime ? (
+                <time
+                  className="snvProgressRuntime"
+                  aria-label={`${activeNumberedPhase?.label} 경과 시간 ${phaseRuntime}`}
+                >
+                  {phaseRuntime}
+                </time>
+              ) : null}
+            </div>
           </header>
 
           <div className="snvFirstNightPrimary">

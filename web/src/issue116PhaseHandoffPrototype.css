@@ -107,7 +107,7 @@
 .issue116PhaseClock { z-index: 4; }
 .issue116AttackMode .issue116PhaseClock { border-color: rgba(240, 211, 131, .42); background: rgba(42, 20, 52, .9); box-shadow: 0 0 30px rgba(240, 211, 131, .18); }
 .issue116AttackMode .issue116PhaseClock strong { color: #f7e9bd; }
-.issue116AttackMode .issue116PhaseClock span { color: #ddcce3; }
+.issue116AttackMode .issue116PhaseClock span, .issue116AttackMode .issue116PhaseClock time { color: #ddcce3; }
 .snvNightMode .issue116GrimoireSurface .snvGrimoireDraft > button.issue116SelectedSeat { border-color: #f0d383; background: #684377; box-shadow: 0 0 0 4px rgba(240, 211, 131, .22), 0 0 30px rgba(240, 211, 131, .25); }
 .snvNightMode .issue116GrimoireSurface.issue116AttackMode .snvGrimoireDraft > button.issue116DemonTargetSeat { border-color: #d84f73; background: linear-gradient(145deg, #713148, #422235); box-shadow: 0 0 0 8px rgba(216, 79, 115, .34), 0 0 42px rgba(216, 79, 115, .58); }
 .snvNightMode .issue116GrimoireSurface.issue116AttackMode .snvGrimoireDraft > button.issue116DemonTargetSeat small { color: #ffd4df; }

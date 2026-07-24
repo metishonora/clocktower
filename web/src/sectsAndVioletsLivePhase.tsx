@@ -27,6 +27,7 @@ export type LivePlayer = Player & {
 export function SectsAndVioletsLiveProgress({
   replayState,
   phaseLabel,
+  phaseRuntime,
   operationBusy,
   actorRoleName,
   actorCharacterId,
@@ -42,6 +43,7 @@ export function SectsAndVioletsLiveProgress({
 }: {
   replayState: ReplayState;
   phaseLabel: string;
+  phaseRuntime: string;
   operationBusy: boolean;
   actorRoleName?: string;
   actorCharacterId?: string;
@@ -65,7 +67,15 @@ export function SectsAndVioletsLiveProgress({
     <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "낮 진행" : "이후 밤 진행"}>
       <header className="snvFirstNightHeader">
         <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
-        <h2>{phaseLabel}</h2>
+        <div className="snvProgressPhaseHeader">
+          <h2>{phaseLabel}</h2>
+          <time
+            className="snvProgressRuntime"
+            aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}
+          >
+            {phaseRuntime}
+          </time>
+        </div>
       </header>
       <div className="snvFirstNightPrimary">
         {step?.requiredInput.kind === "nomination" ? (
@@ -152,6 +162,7 @@ export function SectsAndVioletsLiveProgress({
 export function SectsAndVioletsLiveGrimoire({
   players,
   phaseLabel,
+  phaseRuntime = "00:00",
   currentStep,
   dayState,
   handoff,
@@ -172,6 +183,7 @@ export function SectsAndVioletsLiveGrimoire({
 }: {
   players: LivePlayer[];
   phaseLabel: string;
+  phaseRuntime?: string;
   currentStep: PhaseStep | null;
   dayState?: DayState;
   handoff?: LiveHandoff;
@@ -331,7 +343,7 @@ export function SectsAndVioletsLiveGrimoire({
           ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
-              <span>00:00</span>
+              <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
               {!handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
             </div>
           ) : null}

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
@@ -231,6 +231,55 @@ test("records manual work and follows the canonical first-night to day boundary"
   expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
   await user.click(within(app).getByRole("button", { name: "낮으로" }));
   expect(await within(app).findByRole("heading", { name: "2일차 낮" })).toBeTruthy();
+});
+
+test("shows one transient S&V phase stopwatch across the Grimoire and progression surfaces", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  let now = Date.parse("2026-07-24T00:00:00.000Z");
+  const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+
+  try {
+    const firstRender = render(<SectsAndVioletsApp storageDriver={storage} />);
+    const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+    await completeSevenPlayerSetup(user, app);
+
+    expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+    const savesBeforeTick = storage.saveAttempts;
+    const replaysBeforeTick = core.replay.mock.calls.length;
+
+    now += 5 * 60_000 + 7_000;
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+
+    expect(within(app).getByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
+    expect(storage.saveAttempts).toBe(savesBeforeTick);
+    expect(core.replay).toHaveBeenCalledTimes(replaysBeforeTick);
+
+    await user.click(within(app).getByRole("button", { name: "진행" }));
+    const progression = within(app).getByRole("region", { name: "첫날 밤 진행" });
+    const progressionTimer = within(progression).getByLabelText("1일차 밤 경과 시간 05:07");
+    expect(progressionTimer.closest(".snvProgressPhaseHeader")).toBeTruthy();
+
+    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    expect(await within(app).findByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
+    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    await user.click(within(app).getByRole("button", { name: "처리 완료" }));
+    expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
+
+    now += 10_000;
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    expect(within(app).getByLabelText("1일차 밤 경과 시간 05:17")).toBeTruthy();
+
+    await user.click(within(app).getByRole("button", { name: "낮으로" }));
+    expect(await within(app).findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+
+    firstRender.unmount();
+    render(<SectsAndVioletsApp storageDriver={storage} />);
+    const restoredApp = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+    expect(await within(restoredApp).findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
+  } finally {
+    dateNow.mockRestore();
+  }
 });
 
 test("shows the canonical nomination standing and sends the Storyteller to the Grimoire", async () => {

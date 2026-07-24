@@ -125,7 +125,7 @@
 .snvGrimoireCenter span { color: #a996af; font-size: .65rem; font-weight: 850; }
 .snvGrimoireCenter.live { width: 126px; border-radius: 24px; aspect-ratio: auto; padding: 16px 8px; }
 .snvGrimoireCenter.live strong { font: 1.15rem Georgia, serif; }
-.snvGrimoireCenter.live span { margin-top: 4px; font-size: .78rem; }
+.snvGrimoireCenter.live span, .snvGrimoireCenter.live time { margin-top: 4px; color: #a996af; font-size: .78rem; font-weight: 850; }
 .snvGrimoireCenter.live button { margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 999px; color: #fff; background: #82509a; font: inherit; font-size: .68rem; font-weight: 900; cursor: pointer; }
 .snvSeatingTray { display: grid; box-sizing: border-box; height: auto; padding: 18px; align-self: start; align-content: start; gap: 14px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: visible; }
 .snvSeatingTray > header { display: flex; align-items: center; justify-content: space-between; color: #c9b4d1; font-size: .76rem; }
@@ -221,6 +221,9 @@
 .snvFirstNightHeader { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
 .snvFirstNightHeader h2 { grid-column: 2; margin: 0; text-align: center; font: clamp(2.4rem, 5vw, 4.4rem)/.95 Georgia, serif; }
 .snvFirstNightHeader button { grid-column: 1; grid-row: 1; justify-self: start; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvProgressPhaseHeader { grid-column: 2; display: grid; justify-items: center; gap: 9px; }
+.snvProgressPhaseHeader h2 { grid-column: auto; }
+.snvProgressRuntime { display: block; min-width: 5ch; color: #d8c1df; font: 800 1.15rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: .05em; }
 .snvFirstNightPrimary { display: grid; gap: 18px; min-width: 0; }
 .snvPhaseContext { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .12); padding-bottom: 18px; }
 .snvPhaseContext span { color: #c9b4d1; font-size: .82rem; font-weight: 850; }
@@ -302,7 +305,8 @@
 .snvDayMode .snvGrimoireDraft > button small { color: #6b5a70; }
 .snvDayMode .snvGrimoireCenter { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
 .snvDayMode .snvGrimoireCenter strong { color: #382b3d; }
-.snvDayMode .snvGrimoireCenter span { color: #705e75; }
+.snvDayMode .snvGrimoireCenter span, .snvDayMode .snvGrimoireCenter time { color: #705e75; }
+.snvDaySurface .snvProgressRuntime { color: #724581; }
 .snvDayMode .snvLiveSeatDetails { border-color: rgba(88, 55, 97, .18); color: #35283a; background: #f8f1f7; box-shadow: none; }
 .snvDayMode .snvLiveSeatDetails > header span { color: #715f76; }
 .snvDayMode .snvLiveIdentity { background: #e8d9eb; }
@@ -355,6 +359,11 @@
   .snvFirstNightHeader { grid-template-columns: 72px minmax(0, 1fr) 72px; }
   .snvFirstNightHeader h2 { font-size: 2.2rem; }
   .snvFirstNightHeader button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
+  .snvProgressPhaseHeader { gap: 7px; }
+  .snvProgressRuntime { font-size: 1rem; }
+  .snvGrimoireCenter.live.issue116PhaseClock { box-sizing: border-box; width: 104px; padding: 12px 6px; }
+  .snvGrimoireCenter.live.issue116PhaseClock strong { font-size: 1rem; }
+  .snvGrimoireCenter.live.issue116PhaseClock button { margin-top: 8px; padding: 6px 8px; }
   .snvCurrentStepIdentity { margin-top: 28px; gap: 12px; }
   .snvCurrentStepIdentity img { width: 64px; height: 64px; }
   .snvFirstNightSurface .snvPhaseOverview { order: 3; }
