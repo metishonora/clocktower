@@ -159,6 +159,38 @@ test("confirms the assigned production roster through the canonical S&V createGa
   );
 });
 
+test("does not expose a confirmed Grimoire until the canonical setup is durably saved", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const firstRender = render(<SectsAndVioletsApp storageDriver={storage} />);
+  let app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
+    await user.click(within(app).getByRole("button", { name: character }));
+  }
+  await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
+  await user.click(within(app).getByRole("button", { name: "무작위 배치" }));
+  await waitFor(() => expect(
+    Object.keys(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.setup.seatAssignments ?? {}),
+  ).toHaveLength(7));
+
+  storage.pauseCanonicalSave = true;
+  await user.click(within(app).getByRole("button", { name: "배치 확정" }));
+  await waitFor(() => expect(storage.canonicalSaveStarted).toBe(true));
+
+  expect(within(app).queryByLabelText("1일차 밤 경과 시간 00:00")).toBeNull();
+  expect(within(app).getByRole("button", { name: "확정 중" })).toBeTruthy();
+
+  storage.releaseCanonicalSave?.();
+  expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+
+  firstRender.unmount();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  expect(await within(app).findByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+  expect(screen.queryByRole("dialog", { name: "작업 실패" })).toBeNull();
+});
+
 test("keeps the seating draft intact when canonical setup confirmation fails", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsApp />);
@@ -776,6 +808,9 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
   saveAttempts = 0;
   failNextSave = false;
   loadError?: Error;
+  pauseCanonicalSave = false;
+  canonicalSaveStarted = false;
+  releaseCanonicalSave?: () => void;
 
   async loadLatestGame(): Promise<GameFile | undefined> {
     if (this.loadError) throw this.loadError;
@@ -785,6 +820,11 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
 
   async saveLatestGame(gameFile: GameFile): Promise<void> {
     this.saveAttempts += 1;
+    if (this.pauseCanonicalSave && gameFile.game.events.length > 0) {
+      this.canonicalSaveStarted = true;
+      await new Promise<void>((resolve) => { this.releaseCanonicalSave = resolve; });
+      this.pauseCanonicalSave = false;
+    }
     if (this.failNextSave) {
       this.failNextSave = false;
       throw new Error("테스트 저장 실패");

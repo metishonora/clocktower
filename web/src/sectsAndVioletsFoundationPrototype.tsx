@@ -167,6 +167,7 @@ export function SectsAndVioletsFoundation({
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
+  const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
   const textAutosaveTimerRef = useRef<number | undefined>(undefined);
   const textAutosaveDirtyRef = useRef(false);
@@ -459,11 +460,10 @@ export function SectsAndVioletsFoundation({
     }
     lastEnqueuedAutosaveRevisionRef.current = autosaveRevision;
     const savedAt = new Date().toISOString();
-    pendingAutosaveRef.current = withSectsAndVioletsSession(
+    enqueueAutosave(withSectsAndVioletsSession(
       gameFile,
       currentSessionState(savedAt),
-    );
-    void drainAutosaveQueue();
+    ));
   }, [
     activeTab,
     autosaveRecoveryBlocked,
@@ -578,7 +578,9 @@ export function SectsAndVioletsFoundation({
     if (!storageDriver || autosaveInFlightRef.current) return;
     const candidate = pendingAutosaveRef.current;
     if (!candidate) return;
+    const completion = pendingAutosaveCompletionRef.current;
     pendingAutosaveRef.current = undefined;
+    pendingAutosaveCompletionRef.current = undefined;
     autosaveInFlightRef.current = true;
     setAutosaveStatus("saving");
     let saved = false;
@@ -589,12 +591,27 @@ export function SectsAndVioletsFoundation({
       setAutosaveStatus("saved");
       saved = true;
     } catch {
-      pendingAutosaveRef.current = undefined;
+      discardPendingAutosave();
       setAutosaveStatus("error");
     } finally {
       autosaveInFlightRef.current = false;
     }
+    completion?.(saved);
     if (saved && pendingAutosaveRef.current) void drainAutosaveQueue();
+  }
+
+  function enqueueAutosave(candidate: GameFile, completion?: (saved: boolean) => void) {
+    pendingAutosaveCompletionRef.current?.(false);
+    pendingAutosaveRef.current = candidate;
+    pendingAutosaveCompletionRef.current = completion;
+    void drainAutosaveQueue();
+  }
+
+  function discardPendingAutosave() {
+    const completion = pendingAutosaveCompletionRef.current;
+    pendingAutosaveRef.current = undefined;
+    pendingAutosaveCompletionRef.current = undefined;
+    completion?.(false);
   }
 
   function restoreStoredSession(storedGameFile: GameFile, replayed: ReplayState) {
@@ -1043,10 +1060,25 @@ export function SectsAndVioletsFoundation({
       return;
     }
 
-    const applied = await applyCanonicalEvent(result.value.event, "setup");
+    const applied = await applyCanonicalEvent(result.value.event, "setup", gameFile, false);
     if (!applied) {
       setOperationBusy(false);
       return;
+    }
+    if (storageDriver) {
+      const savedAt = new Date().toISOString();
+      const confirmedSession = currentSessionState(savedAt);
+      const confirmedGameFile = withSectsAndVioletsSession(applied.gameFile, {
+        ...confirmedSession,
+        activeTab: "seating",
+        setup: {
+          ...confirmedSession.setup,
+          seatingConfirmed: true,
+        },
+        phaseCheckpoints: [...phaseCheckpoints, applied.checkpoint],
+      });
+      await new Promise<boolean>((resolve) => enqueueAutosave(confirmedGameFile, resolve));
+      setGameFile(confirmedGameFile);
     }
     setOperationBusy(false);
     setSeatingConfirmed(true);
@@ -1058,7 +1090,8 @@ export function SectsAndVioletsFoundation({
     event: GameEvent,
     checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"],
     baseGameFile: GameFile = gameFile,
-  ): Promise<{ gameFile: GameFile; replayState: ReplayState } | undefined> => {
+    scheduleAutosave = true,
+  ): Promise<{ gameFile: GameFile; replayState: ReplayState; checkpoint: SectsAndVioletsPhaseCheckpoint } | undefined> => {
     if (!coreAdapter) return undefined;
     const nextGameFile: GameFile = {
       ...baseGameFile,
@@ -1081,20 +1114,18 @@ export function SectsAndVioletsFoundation({
     }
     setReplayState(replayed.value);
     setGameFile(nextGameFile);
-    setPhaseCheckpoints((current) => [
-      ...current,
-      {
-        id: event.id,
-        kind: checkpointKind,
-        eventCount: nextGameFile.game.events.length,
-        summary: event.summary,
-        activeTab: checkpointKind === "setup" ? "seating" : activeTab,
-      },
-    ]);
+    const checkpoint: SectsAndVioletsPhaseCheckpoint = {
+      id: event.id,
+      kind: checkpointKind,
+      eventCount: nextGameFile.game.events.length,
+      summary: event.summary,
+      activeTab: checkpointKind === "setup" ? "seating" : activeTab,
+    };
+    setPhaseCheckpoints((current) => [...current, checkpoint]);
     setInformationStepId(undefined);
     setDayComplete(false);
-    markAutosaveNeeded();
-    return { gameFile: nextGameFile, replayState: replayed.value };
+    if (scheduleAutosave) markAutosaveNeeded();
+    return { gameFile: nextGameFile, replayState: replayed.value, checkpoint };
   };
 
   const proposeAndApplyLiveCommand = async (
