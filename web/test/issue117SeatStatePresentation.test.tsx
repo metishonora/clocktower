@@ -106,14 +106,28 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
   expect(deadVoter.classList.contains("snvDeadSeat")).toBe(true);
   expect(deadVoter.classList.contains("snvSeatStateSelected")).toBe(true);
   expect(deadVoter.classList.contains("snvSeatStateStrong")).toBe(true);
-  expect(deadVoter.querySelector("img")).toBeTruthy();
+  expect(deadVoter.querySelector("img")).toBeNull();
   expect(deadVoter.querySelector(".snvGhostVoteIcon")).toBeTruthy();
-  expect(deadVoter.querySelector(".snvFuneralIcon")).toBeNull();
+  expect(deadVoter.querySelector(".snvFuneralIcon")).toBeTruthy();
 
   const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
   expect(spentGhost.hasAttribute("disabled")).toBe(true);
   expect(spentGhost.querySelector(".snvFuneralIcon")).toBeTruthy();
   expect(spentGhost.querySelector(".snvGhostVoteIcon")).toBeNull();
+});
+
+test("visibly dims a dead player whose ghost vote was already spent", () => {
+  const fixturePlayers = players(7, [3]);
+  fixturePlayers[2].ghostVoteUsed = true;
+  renderGrimoire({
+    players: fixturePlayers,
+    handoff: { kind: "vote", complete: false },
+  });
+
+  const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
+  expect(spentGhost.classList.contains("snvGhostVoteSpent")).toBe(true);
+  expect(getComputedStyle(spentGhost.querySelector("img")!).opacity).toBe("0.42");
+  expect(getComputedStyle(spentGhost).filter).toContain("grayscale");
 });
 
 test("keeps the completed Demon actor and result prominent without a duplicate center result", () => {

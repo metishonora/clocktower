@@ -34,8 +34,8 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
   expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
-  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).toBeNull();
-  expect(deadSnakeCharmer.querySelector("img")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector("img")).toBeNull();
 
   await user.click(deadSnakeCharmer);
   expect(within(app).getByText("1표")).toBeTruthy();
@@ -47,6 +47,22 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
   const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
   expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
+
+  await user.click(await within(app).findByRole("button", { name: "투표 완료 →" }));
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: /6번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: /8번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "6번 → 8번 지명 확정" }));
+
+  const spentSnakeCharmer = await within(app).findByRole("button", {
+    name: /3번 좌석.*뱀 조련사.*사망, 투표 불가/,
+  });
+  expect(spentSnakeCharmer.hasAttribute("disabled")).toBe(true);
+  expect(spentSnakeCharmer.classList.contains("snvGhostVoteSpent")).toBe(true);
+  expect(getComputedStyle(spentSnakeCharmer).filter).toContain("grayscale");
+  expect(getComputedStyle(spentSnakeCharmer.querySelector("img")!).opacity).toBe("0.42");
+  expect(spentSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(spentSnakeCharmer.querySelector(".snvGhostVoteIcon")).toBeNull();
 });
 
 test("the same mounted game keeps the swapped and killed Snake Charmer eligible for a later ghost vote", async () => {

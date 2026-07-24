@@ -298,6 +298,7 @@ export function SectsAndVioletsLiveGrimoire({
             const strongSelection = !player.alive && genericSelected
               && (selectionRole === "피지명자" || selectionRole === "투표");
             const showGhostVoteIndicator = handoff?.kind === "vote" && deadState === "available";
+            const showSpentGhostVoteState = handoff?.kind === "vote" && deadState === "spent";
             const seatStateLabels = [
               handoff ? undefined : tokenCountLabel,
               player.alive ? "생존" : "사망",
@@ -313,7 +314,7 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
                   aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
@@ -322,12 +323,19 @@ export function SectsAndVioletsLiveGrimoire({
                     "--seat-y": `${desktopPositions[index].y}%`,
                     "--mobile-seat-x": `${mobilePositions[index].x}%`,
                     "--mobile-seat-y": `${mobilePositions[index].y}%`,
+                    filter: showSpentGhostVoteState ? "grayscale(1)" : undefined,
                   } as CSSProperties}
                   onClick={() => handoff ? onSeatClick(player.id) : setDetailsPlayerId(player.id)}
                 >
                   <span className="snvSeatNumber">{player.seat}</span>
-                  {asset ? <img src={asset.src} alt="" /> : null}
-                  {showGhostVoteIndicator ? <GhostVoteIcon /> : !player.alive ? <FuneralIcon /> : null}
+                  {showGhostVoteIndicator ? <GhostVoteIcon /> : asset ? (
+                    <img
+                      src={asset.src}
+                      alt=""
+                      style={showSpentGhostVoteState ? { filter: "grayscale(1) blur(.45px)", opacity: .42 } : undefined}
+                    />
+                  ) : null}
+                  {!player.alive ? <FuneralIcon /> : null}
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
@@ -509,11 +517,8 @@ function FuneralIcon() {
 
 function GhostVoteIcon() {
   return (
-    <span className="snvGhostVoteIcon" aria-hidden="true">
-      <svg viewBox="0 0 44 44">
-        <circle cx="22" cy="22" r="20" />
-        <path d="M12 34V22c0-8 4-13 10-13s10 5 10 13v12l-4-3-3 3-3-3-3 3-3-3-4 3Z" />
-      </svg>
-    </span>
+    <svg className="snvGhostVoteIcon" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 50V30C14 18 21 10 32 10s18 8 18 20v20l-6-5-6 5-6-5-6 5-6-5-6 5Z" />
+    </svg>
   );
 }
