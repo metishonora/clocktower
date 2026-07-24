@@ -10,6 +10,17 @@
 - Keep live-play UI concise for a rule-literate Storyteller. Do not add explanatory sentences that merely restate visible labels, state, or already-decided behavior. Prefer actionable operational values such as thresholds, living-Player counts, vote counts, and eligibility. Keep explanatory copy only when it is needed to prevent a misleading or destructive action, communicate validation or failure, explain recovery, or satisfy an explicit user request.
 - For Rust domain changes, follow the module ownership and script-file conventions in `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
 
+## Prototype workflow
+
+- Treat isolated development-only prototypes as disposable decision artifacts, not production changes.
+- Build prototypes as static visual harnesses that match the current `develop` app shell, layout, styles, and target viewport; do not invent a separate visual shell.
+- Reuse production presentation components and styles where practical. Use only the minimal hard-coded fixture state needed for review; do not build mock APIs, stores, or domain behavior, or connect the real store, WASM, persistence, or commands.
+- Keep prototype controls and notes outside the production-like screen being reviewed.
+- Before user approval, skip test-first development, full regression suites, and the code-change completion checklist. Implement only enough to evaluate the proposed UI and interaction.
+- Verify only that the prototype renders, its review interactions work, and it is visually inspectable at the target viewports.
+- If a prototype changes shared or production code, routing, state, or build configuration, run focused checks for the affected surface.
+- After approval, finalize the acceptance criteria and implement production behavior under the normal test-first and completion workflows; do not assume prototype code is production-ready.
+
 ## Test-first behavior changes
 
 - Apply test-first development to non-trivial changes in domain rules, state transitions, voting or win conditions, persistence, undo/replay, WASM contracts, and user-visible workflows.
