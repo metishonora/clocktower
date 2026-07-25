@@ -24,6 +24,7 @@
 .snvInformationPairEditor label { display: grid; gap: 6px; color: #b7a5bd; font-size: .65rem; font-weight: 800; }
 .snvInformationPairEditor select { width: 100%; min-height: 44px; padding: 8px 28px 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .76rem system-ui, sans-serif; }
 .snvInformationPairEditor select:disabled { color: #f4e9f7; opacity: 1; background: rgba(89, 55, 102, .5); }
+.snvInformationPairEditor .snvDreamerLockedSelect:disabled { border-color: rgba(220, 217, 224, .32); color: #ddd9df; background: #514d55; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035); cursor: not-allowed; }
 .snvInformationBinary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .snvInformationBinary button { min-height: 48px; border: 1px solid rgba(214, 169, 226, .25); border-radius: 11px; color: #eadfed; background: rgba(255, 255, 255, .04); font: inherit; font-size: .74rem; font-weight: 850; }
 .snvInformationBinary button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; }

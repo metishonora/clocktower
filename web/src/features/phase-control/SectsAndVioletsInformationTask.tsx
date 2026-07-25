@@ -104,9 +104,11 @@ function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; v
   const good = [...new Set(pairs.map((pair) => pair[0]))];
   const evil = [...new Set(pairs.map((pair) => pair[1]))];
   const actual = check.computedResult.kind === "character" ? check.computedResult.characterId : "";
+  const goodLocked = current[0] === actual;
+  const evilLocked = current[1] === actual;
   return <fieldset className="snvInformationPairEditor snvDreamerEditor"><legend>전달할 캐릭터</legend>
-    <label>선한 캐릭터<select aria-label="선한 캐릭터" value={current[0]} disabled={busy || current[0] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [event.target.value, current[1]] })}>{good.map(option)}</select></label>
-    <label>악한 캐릭터<select aria-label="악한 캐릭터" value={current[1]} disabled={busy || current[1] === actual} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [current[0], event.target.value] })}>{evil.map(option)}</select></label>
+    <label>선한 캐릭터<select className={goodLocked ? "snvDreamerLockedSelect" : undefined} aria-label="선한 캐릭터" value={current[0]} disabled={busy || goodLocked} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [event.target.value, current[1]] })}>{good.map(option)}</select></label>
+    <label>악한 캐릭터<select className={evilLocked ? "snvDreamerLockedSelect" : undefined} aria-label="악한 캐릭터" value={current[1]} disabled={busy || evilLocked} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [current[0], event.target.value] })}>{evil.map(option)}</select></label>
   </fieldset>;
 }
 

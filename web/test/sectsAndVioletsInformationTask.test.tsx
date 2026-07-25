@@ -107,6 +107,10 @@ test("Dreamer exposes the selected target truth and the full legal opposite-alig
   expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
   expect(screen.getByRole("group", { name: "전달할 캐릭터" }).classList.contains("snvDreamerEditor")).toBe(true);
   expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvDreamerActions")).toBe(true);
+  const fixedGoodCharacter = screen.getByRole("combobox", { name: "선한 캐릭터" }) as HTMLSelectElement;
+  expect(fixedGoodCharacter.disabled).toBe(true);
+  expect(fixedGoodCharacter.classList.contains("snvDreamerLockedSelect")).toBe(true);
+  expect(screen.queryByText("고정")).toBeNull();
   expect(screen.getByRole("combobox", { name: "악한 캐릭터" }).querySelectorAll("option")).toHaveLength(8);
 });
 
