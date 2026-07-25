@@ -51,8 +51,10 @@
   .snvDreamerEditor { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 16px 18px; }
   .snvSageContext > div { min-height: 72px; padding: 14px 18px; }
   .snvSageEditor { gap: 16px; padding: 16px 18px; }
-  .snvTargetedInformationActions { justify-content: flex-end; margin-top: 20px !important; }
-  .snvTargetedInformationActions button { flex: 0 0 auto; min-width: 156px; min-height: 44px; padding-inline: 28px; }
+  .snvSpaciousInformationContext > div,
+  .snvSpaciousInformationEditor > div { min-height: 72px; padding: 14px 18px; }
+  .snvSpaciousInformationActions { justify-content: flex-end; margin-top: 20px !important; }
+  .snvSpaciousInformationActions button { flex: 0 0 auto; min-width: 156px; min-height: 44px; padding-inline: 28px; }
 }
 
 @media (max-width: 780px) {

@@ -71,7 +71,7 @@ export function SectsAndVioletsInformationTask({
           ) : (
             <>
               {targetCheck?.targetPlayerIds.length ? <p className="snvInformationTargetSummary"><span>대상 ·</span> <strong>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</strong></p> : null}
-              <dl className={`snvInformationValues${characterId === "sage" ? " snvSageContext" : ""}`} role={characterId === "sage" ? "group" : undefined} aria-label={characterId === "sage" ? "살해자 정보" : undefined}>
+              <dl className={`snvInformationValues${characterId === "sage" ? " snvSageContext" : ""}${usesSpaciousGenericInformationLayout(characterId) ? " snvSpaciousInformationContext" : ""}`} role={characterId === "sage" ? "group" : undefined} aria-label={characterId === "sage" ? "살해자 정보" : undefined}>
                 <div>
                   <dt>{characterId === "sage" ? "살해자" : "진실"}</dt>
                   <dd>{characterId === "sage" && step.informationPrompt?.computedResult?.kind === "player" ? playerLabel(players, step.informationPrompt.computedResult.playerId) : informationValueLabel(characterId, targetCheck?.computedResult ?? step.informationPrompt?.computedResult)}</dd>
@@ -88,7 +88,7 @@ export function SectsAndVioletsInformationTask({
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
-          <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}`}>
+          <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
             <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
           </div>
         </>
@@ -131,7 +131,8 @@ function SageEditor({ players, choices, value, busy, onChange }: { players: Play
 }
 
 function GenericEditor({ step, choices, value, busy, onChange }: { step: PhaseStep; choices: InformationResult[]; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
-  return <dl className="snvInformationValues"><div><dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt><dd><select id={`delivered-${step.id}`} value={value ? informationResultKey(value) : ""} disabled={busy} onChange={(event) => { const choice = choices.find((candidate) => informationResultKey(candidate) === event.target.value); if (choice) onChange?.(choice); }}>{choices.map((choice) => <option value={informationResultKey(choice)} key={informationResultKey(choice)}>{informationValueLabel(step.character ?? "", choice)}</option>)}</select></dd></div></dl>;
+  const characterId = step.character ?? "";
+  return <dl className={`snvInformationValues${usesSpaciousGenericInformationLayout(characterId) ? " snvSpaciousInformationEditor" : ""}`}><div><dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt><dd><select id={`delivered-${step.id}`} value={value ? informationResultKey(value) : ""} disabled={busy} onChange={(event) => { const choice = choices.find((candidate) => informationResultKey(candidate) === event.target.value); if (choice) onChange?.(choice); }}>{choices.map((choice) => <option value={informationResultKey(choice)} key={informationResultKey(choice)}>{informationValueLabel(characterId, choice)}</option>)}</select></dd></div></dl>;
 }
 
 export function informationValueLabel(characterId: string, result?: InformationResult): string {
@@ -156,6 +157,8 @@ function informationChoices(step: PhaseStep): InformationResult[] {
 
 function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
 function matchesTargetedInformationCharacter(characterId: string) { return characterId === "dreamer" || characterId === "seamstress" || characterId === "sage"; }
+function usesSpaciousGenericInformationLayout(characterId: string) { return characterId === "flowergirl" || characterId === "townCrier" || characterId === "oracle"; }
+function usesSpaciousInformationLayout(characterId: string) { return matchesTargetedInformationCharacter(characterId) || usesSpaciousGenericInformationLayout(characterId); }
 function informationResultKey(result: InformationResult) { return JSON.stringify(result); }
 function characterName(id: string) { return sectsAndVioletsCharacters.find((character) => character.id === id)?.name ?? id; }
 function playerLabel(players: Player[], id: string) { const player = players.find((candidate) => candidate.id === id); return player ? `${player.seat}번 ${player.name}` : id; }

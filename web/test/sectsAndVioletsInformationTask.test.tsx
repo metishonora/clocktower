@@ -213,6 +213,36 @@ test("Sage uses the spacious killer and candidate layout with compact tablet act
   expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
 });
 
+test("Flowergirl, Town Crier, and Oracle share the spacious tablet information layout", () => {
+  for (const characterId of ["flowergirl", "townCrier", "oracle"] as const) {
+    const informationPrompt: NonNullable<PhaseStep["informationPrompt"]> = characterId === "oracle" ? {
+      computedResult: { kind: "number", value: 1 },
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
+      registrationCandidatePlayerIds: [],
+      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+      setupInfoRegistrationOptions: [],
+    } : {
+      computedResult: { kind: "boolean", value: true },
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
+      registrationCandidatePlayerIds: [],
+      numberChoices: [],
+      booleanChoices: [true, false].map((value) => ({ value, isComputed: value, registrationJudgments: [] })),
+      setupInfoRegistrationOptions: [],
+    };
+    const informationStep: PhaseStep = { ...step, id: `night:${characterId}`, phase: "night", character: characterId, informationPrompt };
+    const roleActor = { ...actor, actualCharacter: characterId, shownCharacter: characterId };
+    const { unmount } = render(<SectsAndVioletsInformationTask step={informationStep} actor={roleActor} revealed={false} busy={false} onReveal={() => undefined} />);
+
+    const task = screen.getByRole("article", { name: `${characterId === "flowergirl" ? "꽃팔이 소녀" : characterId === "townCrier" ? "포고꾼" : "예언자"} 정보` });
+    expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
+    expect(task.querySelector(".snvSpaciousInformationEditor")).toBeTruthy();
+    expect(within(task).getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
+    unmount();
+  }
+});
+
 test("renders Flowergirl and Town Crier Reveal as status statements", () => {
   for (const payload of [
     { kind: "booleanInformation" as const, characterId: "flowergirl" as const, value: true },
