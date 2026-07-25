@@ -50,6 +50,10 @@ pub(crate) enum ErrorKind {
     SlayerAlreadyUsed,
     InvalidSlayerTarget,
     InvalidSlayerRegistration,
+    DayActionWrongPhase,
+    InvalidDayActionActor,
+    DayActionUnavailable,
+    InvalidDayActionRecord,
     MissingMayorDecision,
     InvalidMayorDecision,
     InvalidPlayerAnnotations,
@@ -172,6 +176,22 @@ impl ErrorKind {
             Self::InvalidSlayerRegistration => (
                 "INVALID_SLAYER_REGISTRATION",
                 "대상의 악마 등록 판정이 올바르지 않습니다.",
+            ),
+            Self::DayActionWrongPhase => (
+                "DAY_ACTION_WRONG_PHASE",
+                "낮에만 이 능력을 기록할 수 있습니다.",
+            ),
+            Self::InvalidDayActionActor => (
+                "INVALID_DAY_ACTION_ACTOR",
+                "현재 이 낮 능력을 사용할 수 있는 플레이어가 아닙니다.",
+            ),
+            Self::DayActionUnavailable => (
+                "DAY_ACTION_UNAVAILABLE",
+                "이 낮 능력의 사용 기회가 없습니다.",
+            ),
+            Self::InvalidDayActionRecord => (
+                "INVALID_DAY_ACTION_RECORD",
+                "낮 능력 기록의 형식이나 값이 올바르지 않습니다.",
             ),
             Self::MissingMayorDecision => (
                 "MISSING_MAYOR_DECISION",

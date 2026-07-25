@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
@@ -95,11 +95,13 @@ export function PlayerTokenDetailDialog({
   player,
   tokens,
   theme,
+  details,
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
+  details?: ReactNode;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -173,6 +175,7 @@ export function PlayerTokenDetailDialog({
             <p>{player.characterAbility}</p>
           </section>
           <PlayerTokenList tokens={tokens} theme={theme} />
+          {details}
         </div>
       </section>
     </div>,

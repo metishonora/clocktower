@@ -91,6 +91,7 @@ pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
             | "skipStep"
             | "resolveManualStep"
             | "useSlayerAbility"
+            | "recordDayAction"
             | "endGame"
             | "updatePlayerAnnotations"
     ) {
@@ -120,6 +121,7 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "nightActionResolved"
             | "nightDeathsAnnounced"
             | "slayerAbilityUsed"
+            | "dayActionRecorded"
             | "demonSuccessionConfirmed"
             | "snakeCharmerActionResolved"
             | "gameEnded"

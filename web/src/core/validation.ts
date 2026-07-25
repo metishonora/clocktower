@@ -1,6 +1,7 @@
 import type {
   ConfirmedInformation,
   CoreResult,
+  DayActionRecordInput,
   DeliveryReason,
   GameEvent,
   InformationPrompt,
@@ -218,6 +219,9 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "slayerAbilityUsed":
       if (!isSlayerAbilityPayload(payload)) throw invalidEvent();
       break;
+    case "dayActionRecorded":
+      if (!isDayActionRecordedPayload(payload)) throw invalidEvent();
+      break;
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
       break;
@@ -240,6 +244,57 @@ export function parseGameEvent(value: unknown): GameEvent {
   return value as GameEvent;
 }
 
+function isDayActionRecordedPayload(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["dayId", "actorPlayerId", "characterId", "record"]) ||
+    typeof value.dayId !== "string" ||
+    typeof value.actorPlayerId !== "string" ||
+    !isDayActionRecord(value.record)
+  ) return false;
+  return value.characterId === value.record.kind;
+}
+
+function isDayActionRecord(value: unknown): value is DayActionRecordInput {
+  if (!isRecord(value)) return false;
+  if (value.kind === "artist") {
+    return hasExactKeys(value, ["kind", "question", "answer"])
+      && typeof value.question === "string"
+      && ["yes", "no", "unknown"].includes(String(value.answer));
+  }
+  if (value.kind === "savant") {
+    return hasExactKeys(value, ["kind", "referenceSentences"])
+      && Array.isArray(value.referenceSentences)
+      && value.referenceSentences.length <= 2
+      && value.referenceSentences.every(isString);
+  }
+  if (value.kind === "juggler") {
+    return hasExactKeys(value, ["kind", "correctCount"])
+      && Number.isInteger(value.correctCount)
+      && Number(value.correctCount) >= 0
+      && Number(value.correctCount) <= 5;
+  }
+  return false;
+}
+
+function isAvailableDayAction(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["actorPlayerId", "characterId", "dayId"])
+    && typeof value.actorPlayerId === "string"
+    && ["artist", "savant", "juggler"].includes(String(value.characterId))
+    && typeof value.dayId === "string";
+}
+
+function isConfirmedDayActionRecord(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["eventId", "actorPlayerId", "characterId", "dayId", "record"])
+    && typeof value.eventId === "string"
+    && typeof value.actorPlayerId === "string"
+    && typeof value.dayId === "string"
+    && isDayActionRecord(value.record)
+    && value.characterId === value.record.kind;
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
@@ -258,6 +313,10 @@ export function parseReplayState(value: unknown): ReplayState {
     !value.warnings.every(isWarning) ||
     (value.pendingIdentityReveals !== undefined &&
       !isPendingIdentityRevealList(value.pendingIdentityReveals)) ||
+    (value.availableDayActions !== undefined &&
+      (!Array.isArray(value.availableDayActions) || !value.availableDayActions.every(isAvailableDayAction))) ||
+    (value.dayActionRecords !== undefined &&
+      (!Array.isArray(value.dayActionRecords) || !value.dayActionRecords.every(isConfirmedDayActionRecord))) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||

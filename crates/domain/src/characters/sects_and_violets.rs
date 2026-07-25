@@ -2,13 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{
-        ActiveImpairment, AutomaticReminder, Command, DemonAttackNoEffectReason,
-        DemonAttackOutcome, GameEvent, GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind,
-        ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload, NightActionResolution,
-        NightActionResolvedPayload, NightDeath, NightDeathCause, NightDeathsAnnouncedPayload,
-        PendingIdentityReveal, PhaseStepEventPayload, Proposal, ReplayState, RevealPayload,
-        RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
-        SnakeCharmerNoSwapReason,
+        ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction, Command,
+        ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload,
+        DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent, GameEventKind, GameFile,
+        ImpairmentExpiry, ImpairmentKind, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
+        NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
+        NightDeathsAnnouncedPayload, PendingIdentityReveal, PhaseStepEventPayload, Proposal,
+        RecordDayActionCommandPayload, ReplayState, RevealPayload, RuleState,
+        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -50,6 +51,170 @@ const OUTSIDERS: [&str; 4] = ["mutant", "sweetheart", "barber", "klutz"];
 const MINIONS: [&str; 4] = ["evilTwin", "witch", "cerenovus", "pitHag"];
 const DEMONS: [&str; 4] = ["fangGu", "vigormortis", "noDashii", "vortox"];
 
+fn day_action_character(record: &DayActionRecord) -> &'static str {
+    match record {
+        DayActionRecord::Artist { .. } => "artist",
+        DayActionRecord::Savant { .. } => "savant",
+        DayActionRecord::Juggler { .. } => "juggler",
+    }
+}
+
+fn validate_day_action_record(record: &DayActionRecord) -> Result<(), CoreError> {
+    let valid_text = |value: &str, max: usize| {
+        !value.is_empty() && value.trim() == value && value.chars().count() <= max
+    };
+    match record {
+        DayActionRecord::Artist {
+            question,
+            answer: ArtistAnswer::Yes | ArtistAnswer::No | ArtistAnswer::Unknown,
+        } => {
+            if !valid_text(question, 500) {
+                return Err(ErrorKind::InvalidDayActionRecord.into_error());
+            }
+        }
+        DayActionRecord::Savant {
+            reference_sentences,
+        } => {
+            if reference_sentences.len() > 2
+                || reference_sentences
+                    .iter()
+                    .any(|sentence| !valid_text(sentence, 240))
+                || reference_sentences
+                    .windows(2)
+                    .any(|pair| pair[0] == pair[1])
+            {
+                return Err(ErrorKind::InvalidDayActionRecord.into_error());
+            }
+        }
+        DayActionRecord::Juggler { correct_count } if *correct_count > 5 => {
+            return Err(ErrorKind::InvalidDayActionRecord.into_error());
+        }
+        DayActionRecord::Juggler { .. } => {}
+    }
+    Ok(())
+}
+
+fn day_action_is_available(
+    actor_player_id: &str,
+    character_id: &str,
+    day_id: &str,
+    events: &[GameEvent],
+) -> bool {
+    if character_id == "juggler" && day_id != "day" {
+        return false;
+    }
+    !events.iter().any(|event| match &event.kind {
+        GameEventKind::DayActionRecorded { payload }
+            if payload.actor_player_id == actor_player_id
+                && payload.character_id == character_id =>
+        {
+            character_id != "savant" || payload.day_id == day_id
+        }
+        _ => false,
+    })
+}
+
+fn validate_day_action_payload(
+    payload: &DayActionRecordedPayload,
+    event_phase: Phase,
+    current_step: &PhaseStep,
+    players: &[Player],
+    prior_events: &[GameEvent],
+) -> Result<(), CoreError> {
+    if event_phase != Phase::Day || current_step.phase != Phase::Day {
+        return Err(ErrorKind::DayActionWrongPhase.into_error());
+    }
+    let current_day_id = step_prefix(&current_step.id)?;
+    if payload.day_id != current_day_id {
+        return Err(ErrorKind::DayActionWrongPhase.into_error());
+    }
+    validate_day_action_record(&payload.record)?;
+    let expected_character = day_action_character(&payload.record);
+    if payload.character_id != expected_character {
+        return Err(ErrorKind::InvalidDayActionActor.into_error());
+    }
+    let actor = players
+        .iter()
+        .find(|player| player.id == payload.actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
+    if !actor.alive || actor.actual_character != expected_character {
+        return Err(ErrorKind::InvalidDayActionActor.into_error());
+    }
+    if !day_action_is_available(&actor.id, expected_character, &payload.day_id, prior_events) {
+        return Err(ErrorKind::DayActionUnavailable.into_error());
+    }
+    Ok(())
+}
+
+fn available_day_actions(
+    phase: Phase,
+    current_step: Option<&PhaseStep>,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AvailableDayAction> {
+    let Some(step) = current_step.filter(|step| phase == Phase::Day && step.phase == Phase::Day)
+    else {
+        return vec![];
+    };
+    let Ok(day_id) = step_prefix(&step.id) else {
+        return vec![];
+    };
+    players
+        .iter()
+        .filter(|player| {
+            player.alive
+                && matches!(
+                    player.actual_character.as_str(),
+                    "artist" | "savant" | "juggler"
+                )
+                && day_action_is_available(&player.id, &player.actual_character, &day_id, events)
+        })
+        .map(|player| AvailableDayAction {
+            actor_player_id: player.id.clone(),
+            character_id: player.actual_character.clone(),
+            day_id: day_id.clone(),
+        })
+        .collect()
+}
+
+fn confirmed_day_action_records(events: &[GameEvent]) -> Vec<ConfirmedDayActionRecord> {
+    events
+        .iter()
+        .filter_map(|event| match &event.kind {
+            GameEventKind::DayActionRecorded { payload } => Some(ConfirmedDayActionRecord {
+                event_id: event.id.clone(),
+                day_id: payload.day_id.clone(),
+                actor_player_id: payload.actor_player_id.clone(),
+                character_id: payload.character_id.clone(),
+                record: payload.record.clone(),
+            }),
+            _ => None,
+        })
+        .collect()
+}
+
+fn juggler_correct_count_for_night(
+    night_prefix: &str,
+    actor_player_id: &str,
+    events: &[GameEvent],
+) -> Option<u8> {
+    let suffix = night_prefix.strip_prefix("night")?;
+    let day_id = format!("day{suffix}");
+    events.iter().rev().find_map(|event| match &event.kind {
+        GameEventKind::DayActionRecorded { payload }
+            if payload.day_id == day_id
+                && payload.actor_player_id == actor_player_id
+                && payload.character_id == "juggler" =>
+        {
+            match payload.record {
+                DayActionRecord::Juggler { correct_count } => Some(correct_count),
+                _ => None,
+            }
+        }
+        _ => None,
+    })
+}
+
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     if TOWNSFOLK.contains(&character) {
         Some(CharacterKind::Townsfolk)
@@ -72,7 +237,7 @@ fn character_step(
     players: &[Player],
 ) -> PhaseStep {
     let snake_charmer = character == "snakeCharmer";
-    let numeric_information = matches!(character, "clockmaker" | "oracle");
+    let numeric_information = matches!(character, "clockmaker" | "oracle" | "juggler");
     let targeted_information = matches!(character, "dreamer" | "seamstress");
     let information = numeric_information
         || targeted_information
@@ -253,6 +418,10 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
                         "dreamer" | "flowergirl" | "townCrier" | "oracle" | "seamstress"
                     ) || player.alive)
                         && (character != "snakeCharmer" || player.alive)
+                        && (character != "juggler"
+                            || (player.alive
+                                && juggler_correct_count_for_night(&prefix, &player.id, events)
+                                    .is_some()))
                         && (character != "seamstress"
                             || !seamstress_already_used(&player.id, events))
                         && (character != "sage"
@@ -611,6 +780,14 @@ fn snv_information_result(
                 .filter(|player| !player.alive && player.alignment == Alignment::Evil)
                 .count(),
         }),
+        Some("juggler") => juggler_correct_count_for_night(
+            step.id.split(":juggler").next().unwrap_or_default(),
+            step.player_id.as_deref().unwrap_or_default(),
+            events,
+        )
+        .map(|value| InformationResult::Number {
+            value: usize::from(value),
+        }),
         Some("sage") => sage_killer(
             step.id.split(":sage").next().unwrap_or_default(),
             step.player_id.as_deref().unwrap_or_default(),
@@ -673,6 +850,8 @@ fn snv_information_prompt(
             if impaired {
                 let range = if step.character.as_deref() == Some("clockmaker") {
                     1..=players.len() / 2
+                } else if step.character.as_deref() == Some("juggler") {
+                    0..=5
                 } else {
                     0..=players.iter().filter(|player| !player.alive).count()
                 };
@@ -1401,6 +1580,26 @@ fn phase_state(
     let mut statuses = HashMap::new();
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
+        if let GameEventKind::DayActionRecorded { payload } = &event.kind {
+            let players_at_event = replay_players(&events[..event_index])?;
+            let Some((_, _, Some(current))) = current_phase_steps(
+                &players_at_event,
+                &events[..event_index],
+                events.len() + 2,
+                &statuses,
+            ) else {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            };
+            validate_day_action_payload(
+                payload,
+                event.phase,
+                &current,
+                &players_at_event,
+                &events[..event_index],
+            )
+            .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            continue;
+        }
         if let GameEventKind::ManualPhaseStepResolved { payload } = &event.kind {
             if let Some(prefix) = payload.step_id.strip_suffix(":manual") {
                 let players_at_event = replay_players(&events[..event_index])?;
@@ -1720,6 +1919,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             rule_state: RuleState::default(),
             game_end: None,
             pending_identity_reveals: vec![],
+            available_day_actions: vec![],
+            day_action_records: vec![],
         });
     }
     let players = replay_players(&game_file.game.events)?;
@@ -1768,6 +1969,13 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(&game_file.game.events);
+    let available_day_actions = available_day_actions(
+        phase,
+        current_step.as_ref(),
+        &players,
+        &game_file.game.events,
+    );
+    let day_action_records = confirmed_day_action_records(&game_file.game.events);
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -1781,6 +1989,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         rule_state,
         game_end: None,
         pending_identity_reveals,
+        available_day_actions,
+        day_action_records,
     })
 }
 
@@ -1949,8 +2159,66 @@ pub(crate) fn propose_phase_command(
                 vec![],
             ))
         }
+        Command::RecordDayAction { payload } => {
+            propose_day_action(game_file, &current_step, &players, payload)
+        }
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn propose_day_action(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    payload: RecordDayActionCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    let character_id = day_action_character(&payload.record).to_string();
+    let canonical = DayActionRecordedPayload {
+        day_id: payload.day_id,
+        actor_player_id: payload.actor_player_id,
+        character_id,
+        record: payload.record,
+    };
+    validate_day_action_payload(
+        &canonical,
+        Phase::Day,
+        current_step,
+        players,
+        &game_file.game.events,
+    )?;
+    let actor = players
+        .iter()
+        .find(|player| player.id == canonical.actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
+    let character_label = match canonical.character_id.as_str() {
+        "artist" => "화가",
+        "savant" => "백치천재",
+        "juggler" => "곡예사",
+        _ => return Err(ErrorKind::InvalidDayActionActor.into_error()),
+    };
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("day-action-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::DayActionRecorded { payload: canonical },
+            phase: Phase::Day,
+            summary: format!(
+                "{character_label} 자유 행동 기록: {}번 {}",
+                actor.seat, actor.name
+            ),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": format!("{character_label} 자유 행동 기록 완료") }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_snake_charmer_action(

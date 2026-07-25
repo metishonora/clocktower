@@ -1,0 +1,113 @@
+.snvDayActionScrollClearance { height: 112px; pointer-events: none; }
+.snvDayActionScrollClearance.open { height: min(600px, 72dvh); }
+
+.snvDayActionDock {
+  position: fixed;
+  z-index: 145;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.snvDayActionDock > button {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  padding: 6px;
+  place-items: center;
+  border: 1px solid rgba(91, 57, 101, .22);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 251, 253, .96);
+  box-shadow: 0 11px 30px rgba(65, 39, 73, .24);
+  cursor: pointer;
+}
+
+.snvDayActionDock > button img { width: 48px; height: 48px; object-fit: contain; }
+.snvDayActionDock > button span { font: 300 2.2rem/1 Georgia, serif; }
+.snvDayActionDock > button.selected { border-color: #8a58a0; background: #82509a; box-shadow: 0 0 0 4px rgba(130, 80, 154, .18), 0 12px 30px rgba(77, 42, 89, .3); }
+.snvDayActionDock > button:disabled { cursor: wait; opacity: .55; }
+
+.snvDayActionPanel {
+  position: fixed;
+  z-index: 140;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+  width: min(480px, calc(100vw - 28px));
+  max-height: min(64dvh, 620px);
+  padding: 18px;
+  overflow: auto;
+  border: 1px solid rgba(91, 57, 101, .18);
+  border-radius: 24px;
+  color: #3d3041;
+  background: rgba(255, 252, 250, .98);
+  box-shadow: 0 24px 70px rgba(64, 39, 73, .3);
+  overscroll-behavior: contain;
+}
+
+.snvDayActionHeader { display: grid; gap: 12px; }
+.snvDayActionIdentity { display: flex; width: 100%; padding: 0; align-items: center; gap: 12px; border-radius: 14px; text-align: left; }
+.snvDayActionIdentity:hover { background: rgba(98, 60, 108, .06); }
+.snvDayActionIdentity img { width: 58px; height: 58px; object-fit: contain; }
+.snvDayActionIdentity span { color: #775f7d; font-size: .65rem; font-weight: 850; }
+.snvDayActionIdentity h2 { margin: 3px 0 0; color: #38283d; font: 1.7rem Georgia, serif; }
+.snvDayActionHeader > p { margin: 0; padding: 11px 12px; border: 1px solid rgba(91, 57, 101, .1); border-radius: 11px; color: #5f4d64; background: rgba(130, 80, 154, .045); font-size: .75rem; line-height: 1.55; }
+
+.snvDayActionForm { display: grid; margin-top: 16px; gap: 14px; }
+.snvDayActionForm label, .snvDayActionForm legend { color: #6e5474; font-size: .68rem; font-weight: 900; }
+.snvArtistForm label { display: grid; gap: 7px; }
+.snvArtistForm textarea { width: 100%; min-height: 82px; resize: vertical; padding: 11px; border: 1px solid rgba(91, 57, 101, .16); border-radius: 12px; color: #3d3041; background: rgba(255, 255, 255, .74); font: inherit; line-height: 1.5; }
+.snvDayActionForm fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.snvDayActionForm fieldset > div { display: grid; margin-top: 7px; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.snvDayActionForm button { border: 1px solid rgba(91, 57, 101, .15); border-radius: 11px; color: #544259; background: rgba(255, 255, 255, .68); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.snvDayActionForm button.selected { border-color: #82509a; color: #663d70; background: rgba(130, 80, 154, .13); }
+.snvDayActionForm button:disabled { cursor: not-allowed; opacity: .43; }
+.snvArtistForm fieldset button { min-height: 43px; }
+.snvDayActionForm .snvDayActionConfirm { min-height: 48px; border-color: #82509a; color: #fff; background: #82509a; }
+
+.snvSavantSelectionCount { display: flex; align-items: center; justify-content: space-between; }
+.snvSavantSelectionCount span { color: #694d70; font-size: .68rem; font-weight: 900; }
+.snvSavantSelectionCount strong { display: grid; min-width: 44px; min-height: 28px; place-items: center; border-radius: 999px; color: #70477b; background: rgba(130, 80, 154, .1); font-size: .68rem; }
+.snvSavantReferenceList { display: grid; gap: 15px; }
+.snvSavantReferenceList section { display: grid; gap: 7px; }
+.snvSavantReferenceList h3 { display: flex; margin: 0; align-items: center; gap: 8px; color: #64496b; font-size: .68rem; }
+.snvSavantReferenceList h3::after { height: 1px; flex: 1; background: rgba(88, 55, 97, .12); content: ""; }
+.snvSavantReferenceList section > div { display: grid; gap: 6px; }
+.snvSavantReferenceList button { min-height: 45px; padding: 9px 11px; text-align: left; line-height: 1.45; }
+.snvSavantReferenceList button.selected { box-shadow: inset 3px 0 #82509a; }
+
+.snvJugglerCountSummary { display: grid; padding: 14px; grid-template-columns: 1fr auto; align-items: center; gap: 3px 12px; border: 1px solid rgba(88, 55, 97, .12); border-radius: 13px; background: rgba(255, 255, 255, .45); }
+.snvJugglerCountSummary span { color: #694d70; font-size: .68rem; font-weight: 900; }
+.snvJugglerCountSummary strong { grid-row: 1 / span 2; grid-column: 2; color: #724581; font: 2rem Georgia, serif; }
+.snvJugglerCountSummary small { color: #77647c; font-size: .64rem; }
+.snvJugglerCountChoices { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.snvJugglerCountChoices button { min-height: 44px; }
+
+.snvDayActionHistory { display: grid; gap: 10px; }
+.snvDayActionHistory > h3 { margin: 0; color: #aa92b1; font-size: .68rem; letter-spacing: .04em; }
+.snvDayActionHistory > ol { display: grid; margin: 0; padding: 0; gap: 9px; list-style: none; }
+.snvDayActionHistory > ol > li { display: grid; padding: 13px; gap: 6px; border: 1px solid rgba(228, 202, 235, .1); border-radius: 14px; background: rgba(255, 255, 255, .035); }
+.snvDayActionHistory span, .snvDayActionHistory small { color: #aa92b1; font-size: .64rem; font-weight: 850; }
+.snvDayActionHistory strong { color: #d2b3da; font-size: .82rem; }
+.snvDayActionHistory p { margin: 0; color: #d4c8d7; font-size: .76rem; line-height: 1.5; }
+.snvDayActionHistory em { color: #ead28f; font-size: .72rem; font-style: normal; font-weight: 900; }
+.snvDayActionHistory ul { display: grid; margin: 2px 0 0; padding-left: 18px; gap: 4px; color: #d4c8d7; font-size: .73rem; line-height: 1.45; }
+.playerTokenDetailBackdrop.day .snvDayActionHistory > h3, .playerTokenDetailBackdrop.day .snvDayActionHistory span, .playerTokenDetailBackdrop.day .snvDayActionHistory small { color: #715f76; }
+.playerTokenDetailBackdrop.day .snvDayActionHistory > ol > li { border-color: rgba(88, 55, 97, .12); background: rgba(130, 80, 154, .05); }
+.playerTokenDetailBackdrop.day .snvDayActionHistory strong { color: #70477b; }
+.playerTokenDetailBackdrop.day .snvDayActionHistory p, .playerTokenDetailBackdrop.day .snvDayActionHistory ul { color: #4d3d52; }
+.playerTokenDetailBackdrop.day .snvDayActionHistory em { color: #8b631e; }
+
+@media (max-width: 780px) {
+  .snvDayActionDock { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
+  .snvDayActionDock > button { width: 58px; height: 58px; }
+  .snvDayActionDock > button img { width: 45px; height: 45px; }
+  .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); width: calc(100vw - 20px); max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvDayActionScrollClearance.open { height: min(570px, 68dvh); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snvDayActionPanel, .snvDayActionDock > button { scroll-behavior: auto; transition: none; }
+}
