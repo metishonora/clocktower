@@ -60,18 +60,29 @@ describe("#105 madness free actions", () => {
     await user.click(within(dialog).getByRole("button", { name: "처형 확정" }));
     expect(onExecute).toHaveBeenCalledWith("assignment-1");
   });
+
+  it("exposes the current phase theme on the horizontal action dock and panel", async () => {
+    const user = userEvent.setup();
+    const { container } = renderDock([assignment()], vi.fn(), vi.fn(), "night");
+
+    expect(container.querySelector(".snvMadnessDock.night")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
+    expect(container.querySelector(".snvMadnessPanel.night")).toBeTruthy();
+  });
 });
 
 function renderDock(
   assignments: MadnessAssignmentState[],
   onRecord = vi.fn(),
   onExecute = vi.fn(),
+  theme: "day" | "night" = "day",
 ) {
   return render(
     <MadnessActionDock
       players={players}
       assignments={assignments}
       phaseLabel="2일차 낮"
+      theme={theme}
       busy={false}
       onRecord={onRecord}
       onExecute={onExecute}

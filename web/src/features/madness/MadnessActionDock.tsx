@@ -8,6 +8,7 @@ export function MadnessActionDock({
   players,
   assignments,
   phaseLabel,
+  theme,
   busy,
   onRecord,
   onExecute,
@@ -15,6 +16,7 @@ export function MadnessActionDock({
   players: Player[];
   assignments: MadnessAssignmentState[];
   phaseLabel: string;
+  theme: "day" | "night";
   busy: boolean;
   onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: (assignmentId: string) => void;
@@ -42,13 +44,14 @@ export function MadnessActionDock({
           assignment={active}
           players={players}
           phaseLabel={phaseLabel}
+          theme={theme}
           busy={busy}
           onRecord={onRecord}
           onExecute={() => setConfirmingId(active.assignmentId)}
           onClose={() => setActiveId(undefined)}
         />
       ) : null}
-      <div className="snvMadnessDock" aria-label="집착 확인 자유 행동">
+      <div className={`snvMadnessDock ${theme}`} aria-label="집착 확인 자유 행동">
         {assignments.map((assignment) => {
           const target = playerById(players, assignment.targetPlayerId);
           const sourceLabel = assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스";
@@ -74,6 +77,7 @@ export function MadnessActionDock({
         <MadnessExecutionDialog
           assignment={confirming}
           target={playerById(players, confirming.targetPlayerId)}
+          theme={theme}
           busy={busy}
           onCancel={() => setConfirmingId(undefined)}
           onConfirm={() => {
@@ -90,6 +94,7 @@ function MadnessPanel({
   assignment,
   players,
   phaseLabel,
+  theme,
   busy,
   onRecord,
   onExecute,
@@ -98,6 +103,7 @@ function MadnessPanel({
   assignment: MadnessAssignmentState;
   players: Player[];
   phaseLabel: string;
+  theme: "day" | "night";
   busy: boolean;
   onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: () => void;
@@ -112,7 +118,7 @@ function MadnessPanel({
       : "확인 전";
 
   return (
-    <section className="snvMadnessPanel" aria-label={`${targetLabel} 집착 확인`}>
+    <section className={`snvMadnessPanel ${theme}`} aria-label={`${targetLabel} 집착 확인`}>
       <header>
         <div>
           <span>{phaseLabel} · {mutant ? "변종" : "세레노버스"}</span>
@@ -149,9 +155,10 @@ function MadnessPanel({
   );
 }
 
-function MadnessExecutionDialog({ assignment, target, busy, onCancel, onConfirm }: {
+function MadnessExecutionDialog({ assignment, target, theme, busy, onCancel, onConfirm }: {
   assignment: MadnessAssignmentState;
   target?: Player;
+  theme: "day" | "night";
   busy: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -159,7 +166,7 @@ function MadnessExecutionDialog({ assignment, target, busy, onCancel, onConfirm 
   const targetLabel = playerLabel(target);
   return (
     <div className="snvMadnessDialogBackdrop">
-      <section className="snvMadnessDialog" role="alertdialog" aria-modal="true" aria-label={`${targetLabel} 처형 확인`}>
+      <section className={`snvMadnessDialog ${theme}`} role="alertdialog" aria-modal="true" aria-label={`${targetLabel} 처형 확인`}>
         <span>{assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스"} 집착 위반</span>
         <h2>{targetLabel}을 처형할까요?</h2>
         <p>처형을 확정하면 현재 진행이 중단됩니다. 사망은 다음 단계에서 별도로 확인합니다.</p>

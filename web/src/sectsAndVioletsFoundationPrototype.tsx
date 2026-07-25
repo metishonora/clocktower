@@ -334,6 +334,7 @@ export function SectsAndVioletsFoundation({
       });
     }
     for (const assignment of replayState?.madnessAssignments ?? []) {
+      if (assignment.sourceCharacterId === "mutant" && assignment.status !== "violated") continue;
       const requiredCharacter = characters.find((character) => character.id === assignment.requiredCharacterId);
       const status = assignment.status === "violated" ? "위반 발견" : assignment.status === "clear" ? "위반 없음" : "확인 전";
       (result[assignment.targetPlayerId] ??= []).push({
@@ -2163,6 +2164,7 @@ export function SectsAndVioletsFoundation({
             players={replayState.players}
             assignments={replayState.madnessAssignments ?? []}
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+            theme={replayState.phase === "day" ? "day" : "night"}
             busy={operationBusy}
             onRecord={(assignmentId, result) => void recordMadnessCheck(assignmentId, result)}
             onExecute={(assignmentId) => void executeMadness(assignmentId)}

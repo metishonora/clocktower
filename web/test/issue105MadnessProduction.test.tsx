@@ -6,6 +6,17 @@ import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
+test("an initial Mutant assignment does not pin outsider-madness before a violation", async () => {
+  const storage = new MemoryGameStorageDriver(baseMadnessGame());
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await user.click(await screen.findByRole("button", { name: "마도서" }));
+  await user.click(await screen.findByRole("button", { name: /1번 좌석, 민지, 변종/ }));
+  expect(screen.queryByRole("listitem", { name: "외지인 집착 · 출처 변종" })).toBeNull();
+});
+
 test("the production UI records and settles a Mutant violation with separate execution and death confirmations", async () => {
   const game = await firstDayMadnessGame();
   const storage = new MemoryGameStorageDriver(game);
@@ -18,6 +29,11 @@ test("the production UI records and settles a Mutant violation with separate exe
   await user.click(screen.getByRole("button", { name: "외지인임을 집착함" }));
 
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessCheckRecorded"));
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  await user.click(screen.getByRole("button", { name: /1번 좌석, 민지, 변종/ }));
+  expect(screen.getByRole("listitem", { name: "외지인 집착 · 출처 변종" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "플레이어 상세 닫기" }));
+  await user.click(screen.getByRole("button", { name: /^진행$/ }));
   await user.click(screen.getByRole("button", { name: "[1번 민지] 처형" }));
   const dialog = screen.getByRole("alertdialog", { name: "[1번 민지] 처형 확인" });
   await user.click(within(dialog).getByRole("button", { name: "처형 확정" }));
