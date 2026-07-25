@@ -748,6 +748,7 @@ export function SectsAndVioletsFoundation({
 
   const returnToSeating = () => {
     setReturnConfirmOpen(false);
+    setProposalTransientStateAfterHistoryChange();
     setSeatingConfirmed(false);
     setSelectedSeat(undefined);
     setPendingCharacterId(undefined);
@@ -780,6 +781,7 @@ export function SectsAndVioletsFoundation({
   const startNewGame = () => {
     setNewGameConfirmOpen(false);
     setReturnConfirmOpen(false);
+    setProposalTransientStateAfterHistoryChange();
     setRosterConfirmed(false);
     setSeatingConfirmed(false);
     setPlayerCount(7);
@@ -904,6 +906,7 @@ export function SectsAndVioletsFoundation({
     setInformationCheckpoint(undefined);
     setInformationRevealOpen(false);
     setSelectedInformationResult(undefined);
+    setSelectedInformationTargetIds([]);
     setRevealedStepIds([]);
     setDayComplete(false);
     setLiveHandoff(undefined);
@@ -911,6 +914,7 @@ export function SectsAndVioletsFoundation({
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
+    setLiveTargetIds([]);
     setLiveNominationCheckpointId(undefined);
   }
 
