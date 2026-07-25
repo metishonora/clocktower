@@ -41,6 +41,7 @@ const step: PhaseStep = {
 
 test("uses the approved identity, ability, truth, information reveal, and next layout", async () => {
   const onReveal = vi.fn();
+  const onContinue = vi.fn();
   const { rerender } = render(
     <SectsAndVioletsInformationTask
       step={step}
@@ -52,6 +53,7 @@ test("uses the approved identity, ability, truth, information reveal, and next l
   );
 
   const task = screen.getByRole("article", { name: "시계공 정보" });
+  expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
   expect(within(task).getByRole("button", { name: "시계공 캐릭터 상세 열기" }).textContent).toContain("시계공민서");
   expect(within(task).getByText("게임 시작 시, 악마와 가장 가까운 하수인 사이의 거리를 알게 됩니다.")).toBeTruthy();
   expect(within(task).getByText("진실").nextElementSibling?.textContent).toContain("1칸");
@@ -69,6 +71,7 @@ test("uses the approved identity, ability, truth, information reveal, and next l
       revealed
       busy={false}
       onReveal={onReveal}
+      onContinue={onContinue}
     />,
   );
   const revealedTask = screen.getByRole("article", { name: "시계공 정보" });
@@ -77,6 +80,26 @@ test("uses the approved identity, ability, truth, information reveal, and next l
   expect(within(revealedTask).queryByText("Reveal 다시 보기")).toBeNull();
   await userEvent.setup().click(repeat);
   expect(onReveal).toHaveBeenCalledTimes(2);
+  await userEvent.setup().click(within(revealedTask).getByRole("button", { name: "다음 단계" }));
+  expect(onContinue).toHaveBeenCalledTimes(1);
+});
+
+test("Clockmaker keeps its selectable information editor spacious when impaired", () => {
+  const impairedStep: PhaseStep = {
+    ...step,
+    informationPrompt: {
+      ...step.informationPrompt!,
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
+      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={impairedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "시계공 정보" });
+  expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
+  expect(task.querySelector(".snvSpaciousInformationEditor")).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
 });
 
 test("Dreamer exposes the selected target truth and the full legal opposite-alignment catalog", () => {
@@ -103,6 +126,7 @@ test("Dreamer exposes the selected target truth and the full legal opposite-alig
   const target: Player = { ...actor, id: "player-2", seat: 2, name: "유나", actualCharacter: "seamstress", shownCharacter: "seamstress" };
   render(<SectsAndVioletsInformationTask step={dreamerStep} actor={{ ...actor, actualCharacter: "dreamer" }} players={[actor, target]} selectedPlayerIds={["player-2"]} revealed={false} busy={false} onReveal={() => undefined} />);
   const context = screen.getByRole("group", { name: "대상과 진실" });
+  expect(context.classList.contains("snvMobileStackedInformationContext")).toBe(true);
   expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나");
   expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
   expect(screen.getByRole("group", { name: "전달할 캐릭터" }).classList.contains("snvDreamerEditor")).toBe(true);
@@ -176,6 +200,7 @@ test("Seamstress uses the spacious target context and compact tablet actions", (
 
   rerender(<SectsAndVioletsInformationTask step={seamstressStep} actor={seamstress} players={players} selectedPlayerIds={["player-2", "player-3"]} revealed={false} busy={false} onReveal={() => undefined} />);
   const context = screen.getByRole("group", { name: "대상과 진실" });
+  expect(context.classList.contains("snvMobileStackedInformationContext")).toBe(true);
   expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나 · 3번 도윤");
   expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("같은 진영");
   expect(screen.getByRole("group", { name: "전달할 정보" })).toBeTruthy();

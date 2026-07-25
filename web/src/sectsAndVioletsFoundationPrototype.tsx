@@ -79,6 +79,8 @@ type FirstNightStep = {
 type InformationCheckpoint = {
   step: PhaseStep;
   actor: Player;
+  targetPlayerIds: string[];
+  deliveredResult: InformationResult;
   revealPayload: Extract<RevealPayload, { kind: "numericInformation" | "booleanInformation" | "dreamerInformation" | "seamstressInformation" | "sageInformation" }>;
 };
 
@@ -283,6 +285,8 @@ export function SectsAndVioletsFoundation({
       ? replayState?.players.find((player) => player.id === activeInformationStep.playerId)
       : undefined
   );
+  const activeInformationTargetIds = informationCheckpoint?.targetPlayerIds ?? selectedInformationTargetIds;
+  const activeInformationResult = informationCheckpoint?.deliveredResult ?? selectedInformationResult;
   const pendingIdentityReveals = replayState?.pendingIdentityReveals ?? [];
   const nextIdentityReveal = pendingIdentityReveals.find(
     (reveal) => !acknowledgedIdentityRevealKeys.includes(identityRevealKey(gameFile.game.id, reveal.sourceEventId, reveal.sequence)),
@@ -1015,6 +1019,11 @@ export function SectsAndVioletsFoundation({
     setOperationBusy(true);
     setOperationError(undefined);
     const deliveredResult = selectedInformationResult ?? canonicalInformationStep.informationPrompt?.computedResult;
+    if (!deliveredResult) {
+      setOperationBusy(false);
+      setOperationError("공개할 정보가 없습니다.");
+      return;
+    }
     const targeted = canonicalInformationStep.character === "dreamer" || canonicalInformationStep.character === "seamstress";
     const result = await coreAdapter.propose(gameFile, {
       type: "confirmStep",
@@ -1051,6 +1060,8 @@ export function SectsAndVioletsFoundation({
     setInformationCheckpoint({
       step: canonicalInformationStep,
       actor: activeInformationActor,
+      targetPlayerIds: [...selectedInformationTargetIds],
+      deliveredResult,
       revealPayload,
     });
     setInformationRevealOpen(true);
@@ -1879,14 +1890,15 @@ export function SectsAndVioletsFoundation({
                 step={activeInformationStep}
                 actor={activeInformationActor}
                 players={replayState?.players}
-                selectedPlayerIds={selectedInformationTargetIds}
+                selectedPlayerIds={activeInformationTargetIds}
                 revealed={Boolean(informationCheckpoint)}
                 busy={operationBusy}
-                deliveredResult={selectedInformationResult}
+                deliveredResult={activeInformationResult}
                 onDeliveredResultChange={setSelectedInformationResult}
                 onChooseTargets={() => startLiveHandoff(activeInformationStep.character === "seamstress" ? "seamstress" : "dreamer")}
                 onSkip={() => void skipCanonicalInformation()}
                 onReveal={() => void showCanonicalInformation()}
+                onContinue={advanceCanonicalInformation}
               />
             ) : effectivePlayPhase === "firstNight" && currentFirstNightStep && !isTransitionStep(currentFirstNightStep) ? (
               <article className="snvCurrentStep">
@@ -2045,7 +2057,7 @@ export function SectsAndVioletsFoundation({
           closeLabel="확인"
           closeAriaLabel="정보 공개 닫기"
           closeButtonRef={informationCloseRef}
-          onClose={advanceCanonicalInformation}
+          onClose={() => setInformationRevealOpen(false)}
         >
           <ProductionInformationRevealContent checkpoint={informationCheckpoint} />
         </SectsAndVioletsReveal>
@@ -2233,7 +2245,9 @@ function phaseStepPresentation(
   if (stepId === heldCurrentStepId) return { className: "current", label: "현재" };
   const canonicalStatus = overview?.find((step) => step.id === stepId)?.status;
   if (canonicalStatus) {
-    if (canonicalStatus === "current") return { className: "current", label: "현재" };
+    if (canonicalStatus === "current") return heldCurrentStepId
+      ? { className: "", label: "대기" }
+      : { className: "current", label: "현재" };
     if (canonicalStatus === "waiting" || canonicalStatus === "needsFollowUp") return { className: "", label: "대기" };
     if (canonicalStatus === "notApplicable") return { className: "complete", label: "해당 없음" };
     return { className: "complete", label: "완료" };

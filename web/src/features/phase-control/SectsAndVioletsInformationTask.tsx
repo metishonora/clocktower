@@ -17,6 +17,7 @@ export function SectsAndVioletsInformationTask({
   onChooseTargets,
   onSkip,
   onReveal,
+  onContinue,
 }: {
   step: PhaseStep;
   actor: Player;
@@ -29,6 +30,7 @@ export function SectsAndVioletsInformationTask({
   onChooseTargets?: () => void;
   onSkip?: () => void;
   onReveal: () => void;
+  onContinue?: () => void;
 }) {
   const characterId = step.character ?? actor.actualCharacter;
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
@@ -41,7 +43,7 @@ export function SectsAndVioletsInformationTask({
   const usesManualStepLayout = needsTargets;
 
   return (
-    <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
+    <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}${characterId === "clockmaker" ? " snvClockmakerInformationTask" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
       {usesManualStepLayout ? <p className="snvCurrentStepLabel">현재 할 일</p> : null}
       <CharacterDetailButton
         details={sectsAndVioletsCharacterDetail(characterId)}
@@ -64,7 +66,7 @@ export function SectsAndVioletsInformationTask({
       ) : (
         <>
           {targeted && targetCheck ? (
-            <dl className="snvInformationValues snvTargetedInformationContext" role="group" aria-label="대상과 진실">
+            <dl className="snvInformationValues snvTargetedInformationContext snvMobileStackedInformationContext" role="group" aria-label="대상과 진실">
               <div><dt>대상</dt><dd>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</dd></div>
               <div><dt>진실</dt><dd>{informationValueLabel(characterId, targetCheck.computedResult)}</dd></div>
             </dl>
@@ -90,6 +92,7 @@ export function SectsAndVioletsInformationTask({
           ) : null}
           <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
             <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
+            {revealed && onContinue ? <button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button> : null}
           </div>
         </>
       )}
@@ -157,7 +160,7 @@ function informationChoices(step: PhaseStep): InformationResult[] {
 
 function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
 function matchesTargetedInformationCharacter(characterId: string) { return characterId === "dreamer" || characterId === "seamstress" || characterId === "sage"; }
-function usesSpaciousGenericInformationLayout(characterId: string) { return characterId === "flowergirl" || characterId === "townCrier" || characterId === "oracle"; }
+function usesSpaciousGenericInformationLayout(characterId: string) { return characterId === "clockmaker" || characterId === "flowergirl" || characterId === "townCrier" || characterId === "oracle"; }
 function usesSpaciousInformationLayout(characterId: string) { return matchesTargetedInformationCharacter(characterId) || usesSpaciousGenericInformationLayout(characterId); }
 function informationResultKey(result: InformationResult) { return JSON.stringify(result); }
 function characterName(id: string) { return sectsAndVioletsCharacters.find((character) => character.id === id)?.name ?? id; }

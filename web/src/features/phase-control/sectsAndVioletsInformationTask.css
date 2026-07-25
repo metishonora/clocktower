@@ -59,13 +59,13 @@
 
 @media (max-width: 780px) {
   .snvInformationTask { min-height: 360px; }
+  .snvClockmakerInformationTask .snvInformationValues > div { min-height: 72px; padding: 14px 18px; }
+  .snvClockmakerInformationTask .snvInformationActions { margin-top: 24px !important; }
   .snvInformationTaskPending { min-height: 330px; }
   .snvInformationIdentity { margin-bottom: 20px !important; }
   .snvInformationPendingIdentity { margin: 28px 0 12px !important; }
   .snvTargetedInformationContext { margin-top: 14px; }
-  .snvTargetedInformationContext > div:first-child { display: flex; min-height: 0; padding: 0; justify-content: flex-start; gap: 5px; border: 0; background: transparent; }
-  .snvTargetedInformationContext > div:first-child dt::after { content: " ·"; }
-  .snvTargetedInformationContext > div:first-child dd { color: #f7effa; font: 850 .72rem system-ui, sans-serif; }
+  .snvMobileStackedInformationContext { grid-template-columns: 1fr; gap: 8px; }
   .snvInformationValues > div { grid-template-columns: 1fr auto; }
   .snvProductionInformationReveal { min-height: calc(100dvh - 24px); border-radius: 22px; }
   .snvInformationPairEditor { grid-template-columns: 1fr; align-items: stretch; }

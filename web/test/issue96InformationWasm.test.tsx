@@ -1,12 +1,15 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import { importGameFileJson } from "../src/gameStorage";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
-test("real WASM confirms Clockmaker information and advances when Reveal closes", async () => {
+test("real WASM repeats Clockmaker information until explicit next-step progression", async () => {
   const game = clockmakerGame();
   for (let index = 0; index < 2; index += 1) {
     const state = await replayOrThrow(game);
@@ -36,8 +39,50 @@ test("real WASM confirms Clockmaker information and advances when Reveal closes"
   expect(within(reveal).getByText("1칸")).toBeTruthy();
   await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
 
+  const confirmedTask = await within(app).findByRole("article", { name: "시계공 정보" });
+  await user.click(within(confirmedTask).getByRole("button", { name: "정보 공개" }));
+  reveal = await screen.findByRole("dialog", { name: "시계공 정보 공개" });
+  expect(within(reveal).getByText("1칸")).toBeTruthy();
+  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+
+  await user.click(within(confirmedTask).getByRole("button", { name: "다음 단계" }));
   expect(await within(app).findByRole("heading", { name: "꿈꾸는 자" })).toBeTruthy();
   expect(within(app).queryByRole("button", { name: "다음" })).toBeNull();
+});
+
+test("real WASM keeps Dreamer targets available for repeated information reveals", async () => {
+  const fixturePath = resolve(process.cwd(), "../fixtures/acceptance/sects-and-violets/issue-98-dreamer.json");
+  const game = importGameFileJson(readFileSync(fixturePath, "utf8"), "sectsAndViolets");
+  game.game.events.pop();
+  game.ui = targetedInformationLiveSession();
+  const user = userEvent.setup();
+  render(
+    <SectsAndVioletsApp
+      coreAdapter={realWasmCore()}
+      storageDriver={new MemoryGameStorageDriver(game)}
+    />,
+  );
+
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
+  await user.click(await within(app).findByRole("button", { name: /2번 좌석.*Seamstress/ }));
+  await user.click(within(app).getByRole("button", { name: "선택 확정" }));
+
+  let task = await within(app).findByRole("article", { name: "꿈꾸는 자 정보" });
+  expect(within(task).getByRole("group", { name: "대상과 진실" }).textContent).toContain("2번 Seamstress");
+  await user.click(within(task).getByRole("button", { name: "정보 공개" }));
+  let reveal = await screen.findByRole("dialog", { name: "꿈꾸는 자 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+
+  task = await within(app).findByRole("article", { name: "꿈꾸는 자 정보" });
+  expect(within(task).getByRole("group", { name: "대상과 진실" }).textContent).toContain("2번 Seamstress");
+  expect(within(within(app).getByRole("list", { name: "첫날 밤 순서" })).getAllByText("현재")).toHaveLength(1);
+  await user.click(within(task).getByRole("button", { name: "정보 공개" }));
+  reveal = await screen.findByRole("dialog", { name: "꿈꾸는 자 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+
+  await user.click(within(task).getByRole("button", { name: "다음 단계" }));
+  expect(await within(app).findByRole("heading", { name: "재봉사" })).toBeTruthy();
 });
 
 function clockmakerGame(): GameFile {
@@ -87,6 +132,29 @@ function liveSession(): NonNullable<GameFile["ui"]> {
         seatAssignments: Object.fromEntries(ids.map((id, index) => [index + 1, id])),
         seatAlignments: Object.fromEntries(ids.map((_id, index) => [index + 1, index >= 5 ? "evil" : "good"])),
         seatNames: Object.fromEntries(["Clock", "Flower", "Crier", "Oracle", "Dreamer", "Pit-Hag", "Fang Gu"].map((name, index) => [index + 1, name])),
+        rosterConfirmed: true,
+        seatingConfirmed: true,
+      },
+      phaseCheckpoints: [],
+    },
+  };
+}
+
+function targetedInformationLiveSession(): NonNullable<GameFile["ui"]> {
+  const ids = ["dreamer", "seamstress", "sage", "clockmaker", "oracle", "evilTwin", "fangGu"];
+  const names = ["Dreamer", "Seamstress", "Sage", "Clockmaker", "Oracle", "Evil Twin", "Fang Gu"];
+  return {
+    sectsAndVioletsSession: {
+      version: 1,
+      activeTab: "play",
+      savedAt: "2026-07-25T00:00:00.000Z",
+      setup: {
+        playerCount: 7,
+        demon: "fangGu",
+        selectedIds: ids,
+        seatAssignments: Object.fromEntries(ids.map((id, index) => [index + 1, id])),
+        seatAlignments: Object.fromEntries(ids.map((_id, index) => [index + 1, index >= 5 ? "evil" : "good"])),
+        seatNames: Object.fromEntries(names.map((name, index) => [index + 1, name])),
         rosterConfirmed: true,
         seatingConfirmed: true,
       },
