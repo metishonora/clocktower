@@ -26,6 +26,13 @@ const DevIssue121TokenOverviewPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue105MadnessPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue105MadnessPrototype");
+      return { default: module.Issue105MadnessPrototype };
+    })
+  : undefined;
+
 const showIssue120Prototype = Boolean(
   DevIssue120EventLogPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
@@ -41,9 +48,18 @@ const showIssue121Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-121-token-overview",
 );
 
+const showIssue105Prototype = Boolean(
+  DevIssue105MadnessPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-105-madness",
+);
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue101Prototype && DevIssue101SnakeCharmerPrototype ? (
+    {showIssue105Prototype && DevIssue105MadnessPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue105MadnessPrototype />
+      </React.Suspense>
+    ) : showIssue101Prototype && DevIssue101SnakeCharmerPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue101SnakeCharmerPrototype />
       </React.Suspense>

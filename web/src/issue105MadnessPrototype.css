@@ -1,0 +1,104 @@
+.issue105Prototype { padding-bottom: 118px; }
+
+.issue105ScenarioBar {
+  display: flex;
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  padding: 12px 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(89, 57, 97, .18);
+  border-radius: 18px;
+  color: #49364e;
+  background: rgba(255, 252, 249, .58);
+  box-shadow: 0 10px 30px rgba(73, 46, 80, .1);
+}
+
+.snvNightMode .issue105ScenarioBar { color: #eee2f2; border-color: rgba(230, 209, 237, .18); background: rgba(20, 12, 26, .52); }
+.issue105ScenarioBar > span { font-size: .68rem; font-weight: 900; letter-spacing: .04em; }
+.issue105ScenarioBar > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.issue105ScenarioBar button { min-height: 38px; padding: 7px 13px; border: 1px solid rgba(91, 57, 101, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .48); font: inherit; font-size: .7rem; font-weight: 850; cursor: pointer; }
+.snvNightMode .issue105ScenarioBar button { background: rgba(255, 255, 255, .05); }
+.issue105ScenarioBar button[aria-pressed="true"] { border-color: #82509a; color: #fff; background: #82509a; box-shadow: 0 7px 20px rgba(88, 49, 101, .2); }
+
+.issue105Prototype .snvManualSurface { min-height: 650px; }
+.issue105Prototype .snvFirstNightHeader .snvProgressPhaseHeader { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 18px; }
+.issue105Prototype .snvFirstNightHeader time { color: #78617e; font-size: .74rem; font-weight: 850; }
+.snvNightMode.issue105Prototype .snvFirstNightHeader time { color: #bcaac2; }
+
+.issue105DiscussionCard, .issue105NominationCard, .issue105ExecutionDeathCard, .issue105NightResumeCard { display: grid; align-content: center; gap: 15px; }
+.issue105DiscussionCard > span, .issue105NominationCard > span, .issue105ExecutionDeathCard > span, .issue105NightResumeCard > span { color: #76547d; font-size: .67rem; font-weight: 900; letter-spacing: .05em; }
+.issue105DiscussionCard h3, .issue105NominationCard h3, .issue105ExecutionDeathCard h3, .issue105NightResumeCard h3 { margin: 0; font: 1.72rem Georgia, serif; }
+.issue105DiscussionCard p, .issue105ExecutionDeathCard p, .issue105NightResumeCard p { margin: 0; color: #6b5870; font-size: .76rem; line-height: 1.5; }
+.issue105DiscussionCard button, .issue105NominationCard button, .issue105ExecutionDeathCard button, .issue105NightResumeCard button { min-height: 48px; border: 0; border-radius: 14px; color: #fff; background: #82509a; font: inherit; font-weight: 900; cursor: pointer; }
+.issue105NominationCard > div { display: flex; padding: 13px; align-items: center; justify-content: space-between; border: 1px solid rgba(91, 57, 101, .12); border-radius: 13px; background: rgba(255, 255, 255, .5); }
+.issue105NominationCard > div strong { color: #70477b; }
+.issue105NominationCard > div small { color: #77647c; }
+
+.issue105ExecutionDeathCard { border-color: rgba(173, 55, 78, .26) !important; background: linear-gradient(145deg, rgba(255, 248, 249, .96), rgba(244, 218, 224, .94)) !important; }
+.issue105ExecutionDeathCard > div, .issue105NightResumeCard > div { display: flex; align-items: center; gap: 14px; }
+.issue105ExecutionDeathCard img, .issue105NightResumeCard img { width: 68px; height: 68px; object-fit: contain; }
+.issue105ExecutionDeathCard button { background: #aa344e; }
+.snvNightMode .issue105NightResumeCard > span, .snvNightMode .issue105NightResumeCard p { color: #baa9bf; }
+
+.snvPhaseOverview li.issue105Stopped { opacity: .62; }
+.snvPhaseOverview li.issue105Stopped span { color: #a43d53; background: rgba(174, 57, 81, .12); }
+.snvNightMode .snvPhaseOverview li.issue105Stopped span { color: #ffadbc; background: rgba(198, 67, 94, .15); }
+
+.issue105MadnessDock > button { position: relative; }
+.issue105MadnessDock > button.violated { border-color: #b53b55; background: #a9324b; box-shadow: 0 0 0 5px rgba(169, 50, 75, .17), 0 12px 30px rgba(103, 30, 47, .28); }
+.issue105MadnessDock > button.clear { border-color: #4d8a71; }
+.issue105CheckBadge { position: absolute; display: grid !important; width: 22px !important; height: 22px !important; right: -2px; bottom: -2px; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: #39745c; font: 900 .7rem/1 Inter, sans-serif !important; }
+.issue105MadnessDock > button.violated .issue105CheckBadge { background: #a52f49; }
+
+.issue105MadnessPanel.violated { border-color: rgba(173, 55, 78, .32); }
+.issue105ActionIdentity { display: grid; width: 100%; padding: 0; grid-template-columns: 58px 1fr auto; align-items: center; gap: 12px; border: 0; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.issue105ActionIdentity img { width: 58px; height: 58px; object-fit: contain; }
+.issue105ActionIdentity span { color: #775f7d; font-size: .65rem; font-weight: 850; }
+.issue105ActionIdentity h2 { margin: 3px 0 0; color: #38283d; font: 1.55rem Georgia, serif; }
+.issue105ActionIdentity b { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; color: #725b78; background: rgba(130, 80, 154, .08); font-size: 1.2rem; }
+.issue105MadnessForm fieldset > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.issue105MadnessForm fieldset button { min-height: 52px; padding: 8px; line-height: 1.35; }
+.issue105MadnessForm fieldset button.dangerChoice { border-color: rgba(174, 57, 81, .27); color: #9a2f47; background: rgba(174, 57, 81, .07); }
+.issue105ClearResult { padding: 10px 12px; border: 1px solid rgba(54, 124, 94, .18); border-radius: 11px; color: #306c54; background: rgba(54, 124, 94, .08); font-size: .72rem; font-weight: 900; }
+.issue105ViolationResult { display: grid; padding: 15px; gap: 8px; border: 1px solid rgba(174, 57, 81, .2); border-radius: 15px; background: rgba(174, 57, 81, .07); }
+.issue105ViolationResult span { color: #a12f48; font-size: .67rem; font-weight: 950; }
+.issue105ViolationResult strong { color: #612b38; font-size: .9rem; }
+.issue105ViolationResult small { color: #785760; font-size: .7rem; line-height: 1.5; }
+.issue105ViolationResult button { min-height: 50px; margin-top: 5px; border: 0; color: #fff; background: #a52f49; }
+
+.issue105DialogBackdrop { position: fixed; z-index: 300; display: grid; inset: 0; padding: 18px; place-items: center; background: rgba(47, 28, 53, .48); backdrop-filter: blur(8px); }
+.issue105ExecutionDialog { width: min(520px, 100%); overflow: hidden; border: 1px solid rgba(122, 59, 74, .25); border-radius: 24px; color: #422d33; background: #fffaf8; box-shadow: 0 28px 90px rgba(54, 27, 35, .38); }
+.issue105ExecutionDialog header, .issue105ExecutionDialog > div, .issue105ExecutionDialog footer { padding: 19px 22px; }
+.issue105ExecutionDialog header { display: grid; gap: 5px; border-bottom: 1px solid rgba(122, 59, 74, .12); }
+.issue105ExecutionDialog header span { color: #a3344d; font-size: .67rem; font-weight: 950; }
+.issue105ExecutionDialog header strong { font: 1.55rem Georgia, serif; }
+.issue105ExecutionDialog p { margin: 0 0 16px; color: #684d54; font-size: .78rem; line-height: 1.55; }
+.issue105ExecutionDialog dl { display: grid; margin: 0; gap: 7px; }
+.issue105ExecutionDialog dl > div { display: grid; padding: 10px 12px; grid-template-columns: 88px 1fr; gap: 10px; border-radius: 10px; background: rgba(174, 57, 81, .055); }
+.issue105ExecutionDialog dt { color: #967079; font-size: .68rem; font-weight: 900; }
+.issue105ExecutionDialog dd { margin: 0; font-size: .73rem; font-weight: 800; }
+.issue105ExecutionDialog footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(122, 59, 74, .12); }
+.issue105ExecutionDialog footer button { min-width: 108px; min-height: 44px; border: 1px solid rgba(122, 59, 74, .18); border-radius: 12px; color: #5f454c; background: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+.issue105ExecutionDialog footer button:last-child { border-color: #a52f49; color: #fff; background: #a52f49; }
+
+.issue105Grimoire .snvGrimoireDraft > button.issue105MadnessTarget { border-color: #a6344d; box-shadow: 0 0 0 4px rgba(166, 52, 77, .16), 0 9px 24px rgba(73, 46, 80, .16); }
+
+@media (max-width: 780px) {
+  .issue105Prototype { padding-bottom: 102px; }
+  .issue105ScenarioBar { align-items: stretch; flex-direction: column; }
+  .issue105ScenarioBar > div { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; }
+  .issue105ScenarioBar button { flex: 0 0 auto; }
+  .issue105Prototype .snvManualSurface { min-height: 720px; }
+  .issue105MadnessPanel { max-height: min(66dvh, 570px); }
+}
+
+@media (max-width: 430px) {
+  .issue105Prototype { padding-inline: 10px; }
+  .issue105ActionIdentity h2 { font-size: 1.35rem; word-break: keep-all; }
+  .issue105MadnessForm fieldset > div { grid-template-columns: 1fr; }
+  .issue105ExecutionDialog header, .issue105ExecutionDialog > div, .issue105ExecutionDialog footer { padding: 16px; }
+  .issue105ExecutionDialog footer { flex-direction: column-reverse; }
+  .issue105ExecutionDialog footer button { width: 100%; }
+}
