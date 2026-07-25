@@ -69,6 +69,14 @@ describe("#105 madness free actions", () => {
     await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
     expect(container.querySelector(".snvMadnessPanel.night")).toBeTruthy();
   });
+
+  it("offsets madness actions beside the existing daytime actions in one row", () => {
+    const { container } = renderDock([assignment()], vi.fn(), vi.fn(), "day", 3);
+    const dock = container.querySelector<HTMLElement>(".snvMadnessDock");
+
+    expect(dock?.style.getPropertyValue("--snv-madness-dock-offset")).toBe("186px");
+    expect(dock?.style.getPropertyValue("--snv-madness-mobile-dock-offset")).toBe("174px");
+  });
 });
 
 function renderDock(
@@ -76,6 +84,7 @@ function renderDock(
   onRecord = vi.fn(),
   onExecute = vi.fn(),
   theme: "day" | "night" = "day",
+  dayActionCount = 0,
 ) {
   return render(
     <MadnessActionDock
@@ -83,6 +92,7 @@ function renderDock(
       assignments={assignments}
       phaseLabel="2일차 낮"
       theme={theme}
+      precedingActionCount={dayActionCount}
       busy={false}
       onRecord={onRecord}
       onExecute={onExecute}

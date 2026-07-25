@@ -7,14 +7,14 @@
   right: max(22px, env(safe-area-inset-right));
   bottom: max(20px, env(safe-area-inset-bottom));
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .snvDayActionDock > button {
   display: grid;
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   padding: 6px;
   place-items: center;
   border: 1px solid rgba(91, 57, 101, .22);
@@ -25,7 +25,7 @@
   cursor: pointer;
 }
 
-.snvDayActionDock > button img { width: 48px; height: 48px; object-fit: contain; }
+.snvDayActionDock > button img { width: 42px; height: 42px; object-fit: contain; }
 .snvDayActionDock > button span { font: 300 2.2rem/1 Georgia, serif; }
 .snvDayActionDock > button.selected { border-color: #8a58a0; background: #82509a; box-shadow: 0 0 0 4px rgba(130, 80, 154, .18), 0 12px 30px rgba(77, 42, 89, .3); }
 .snvDayActionDock > button:disabled { cursor: wait; opacity: .55; }
@@ -102,8 +102,8 @@
 
 @media (max-width: 780px) {
   .snvDayActionDock { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
-  .snvDayActionDock > button { width: 58px; height: 58px; }
-  .snvDayActionDock > button img { width: 45px; height: 45px; }
+  .snvDayActionDock > button { width: 50px; height: 50px; }
+  .snvDayActionDock > button img { width: 40px; height: 40px; }
   .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); width: calc(100vw - 20px); max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
   .snvDayActionScrollClearance.open { height: min(570px, 68dvh); }
 }

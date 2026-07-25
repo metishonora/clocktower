@@ -1,18 +1,17 @@
 .snvMadnessDock {
   position: fixed;
   z-index: 145;
-  right: max(22px, env(safe-area-inset-right));
-  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+  right: calc(max(22px, env(safe-area-inset-right)) + var(--snv-madness-dock-offset));
+  bottom: max(20px, env(safe-area-inset-bottom));
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
-.snvMadnessDock.night { bottom: max(20px, env(safe-area-inset-bottom)); }
-.snvMadnessDock > button { position: relative; display: grid; width: 62px; height: 62px; padding: 6px; place-items: center; border-radius: 50%; cursor: pointer; }
+.snvMadnessDock > button { position: relative; display: grid; width: 54px; height: 54px; padding: 6px; place-items: center; border-radius: 50%; cursor: pointer; }
 .snvMadnessDock.day > button { border: 1px solid rgba(91, 57, 101, .22); color: #fff; background: rgba(255, 251, 253, .96); box-shadow: 0 11px 30px rgba(65, 39, 73, .24); }
 .snvMadnessDock.night > button { border: 1px solid rgba(230, 209, 237, .3); color: #f8f0fb; background: #2b1932; box-shadow: 0 11px 30px rgba(5, 2, 8, .45); }
-.snvMadnessDock img { width: 48px; height: 48px; object-fit: contain; }
+.snvMadnessDock img { width: 42px; height: 42px; object-fit: contain; }
 .snvMadnessDock > button > span { font: 300 2.2rem/1 Georgia, serif; }
 .snvMadnessDock.day > button.selected { border-color: #8a58a0; background: #82509a; box-shadow: 0 0 0 4px rgba(130, 80, 154, .18), 0 12px 30px rgba(77, 42, 89, .3); }
 .snvMadnessDock.night > button.selected { border-color: #f0d383; background: #684377; box-shadow: 0 0 0 4px rgba(240, 211, 131, .2), 0 12px 30px rgba(5, 2, 8, .48); }
@@ -24,7 +23,7 @@
   position: fixed;
   z-index: 140;
   right: max(14px, env(safe-area-inset-right));
-  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 152px);
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
   box-sizing: border-box;
   width: min(480px, calc(100vw - 28px));
   max-height: min(64dvh, 620px);
@@ -35,7 +34,7 @@
   overscroll-behavior: contain;
 }
 .snvMadnessPanel.day { border: 1px solid rgba(91, 57, 101, .18); color: #3d3041; background: rgba(255, 252, 250, .98); }
-.snvMadnessPanel.night { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px); border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 24px 70px rgba(4, 1, 7, .58); }
+.snvMadnessPanel.night { border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 24px 70px rgba(4, 1, 7, .58); }
 .snvMadnessPanel header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
 .snvMadnessPanel header span { color: #765783; font-size: .8rem; font-weight: 700; }
 .snvMadnessPanel.night header span { color: #c8b2ce; }
@@ -70,12 +69,10 @@
 .snvMadnessCharacterChoice select { min-height: 44px; padding: 0 12px; border: 1px solid #8d7198; border-radius: 10px; color: #382440; background: #fff; font: inherit; }
 
 @media (max-width: 780px) {
-  .snvMadnessDock { right: max(14px, env(safe-area-inset-right)); bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); }
-  .snvMadnessDock.night { bottom: max(14px, env(safe-area-inset-bottom)); }
-  .snvMadnessDock > button { width: 58px; height: 58px; }
-  .snvMadnessDock img { width: 45px; height: 45px; }
-  .snvMadnessPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 144px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
-  .snvMadnessPanel.night { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); }
+  .snvMadnessDock { right: calc(max(14px, env(safe-area-inset-right)) + var(--snv-madness-mobile-dock-offset)); bottom: max(14px, env(safe-area-inset-bottom)); }
+  .snvMadnessDock > button { width: 50px; height: 50px; }
+  .snvMadnessDock img { width: 40px; height: 40px; }
+  .snvMadnessPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

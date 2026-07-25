@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { MadnessAssignmentState, MadnessCheckResult, Player } from "../../core/types";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
@@ -9,6 +9,7 @@ export function MadnessActionDock({
   assignments,
   phaseLabel,
   theme,
+  precedingActionCount,
   busy,
   onRecord,
   onExecute,
@@ -17,6 +18,7 @@ export function MadnessActionDock({
   assignments: MadnessAssignmentState[];
   phaseLabel: string;
   theme: "day" | "night";
+  precedingActionCount: number;
   busy: boolean;
   onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: (assignmentId: string) => void;
@@ -37,6 +39,12 @@ export function MadnessActionDock({
 
   if (assignments.length === 0) return null;
 
+  const dockActionCount = Math.max(0, precedingActionCount);
+  const dockStyle = {
+    "--snv-madness-dock-offset": `${dockActionCount * 62}px`,
+    "--snv-madness-mobile-dock-offset": `${dockActionCount * 58}px`,
+  } as CSSProperties;
+
   return (
     <>
       {active ? (
@@ -51,7 +59,7 @@ export function MadnessActionDock({
           onClose={() => setActiveId(undefined)}
         />
       ) : null}
-      <div className={`snvMadnessDock ${theme}`} aria-label="집착 확인 자유 행동">
+      <div className={`snvMadnessDock ${theme}`} style={dockStyle} aria-label="집착 확인 자유 행동">
         {assignments.map((assignment) => {
           const target = playerById(players, assignment.targetPlayerId);
           const sourceLabel = assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스";

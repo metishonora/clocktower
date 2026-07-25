@@ -2165,6 +2165,7 @@ export function SectsAndVioletsFoundation({
             assignments={replayState.madnessAssignments ?? []}
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
             theme={replayState.phase === "day" ? "day" : "night"}
+            precedingActionCount={replayState.phase === "day" ? replayState.availableDayActions?.length ?? 0 : 0}
             busy={operationBusy}
             onRecord={(assignmentId, result) => void recordMadnessCheck(assignmentId, result)}
             onExecute={(assignmentId) => void executeMadness(assignmentId)}
