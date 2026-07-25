@@ -204,6 +204,7 @@ export type Command =
       payload: { stepId: string; outcome: "handled" | "notApplicable" };
     }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
+  | { type: "recordDayAction"; payload: RecordDayActionPayload }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
       type: "updatePlayerAnnotations";
@@ -224,6 +225,34 @@ export type UseSlayerAbilityPayload = {
   targetRegistration: { kind: "canonical" } | { kind: "recluseAsDemon"; registeredCharacterId: "imp" };
 };
 
+export type ArtistAnswer = "yes" | "no" | "unknown";
+
+export type DayActionRecordInput =
+  | { kind: "artist"; question: string; answer: ArtistAnswer }
+  | { kind: "savant"; referenceSentences: string[] }
+  | { kind: "juggler"; correctCount: number };
+
+export type RecordDayActionPayload = {
+  dayId: string;
+  expectedEventCount: number;
+  actorPlayerId: string;
+  record: DayActionRecordInput;
+};
+
+export type AvailableDayAction = {
+  actorPlayerId: string;
+  characterId: "artist" | "savant" | "juggler";
+  dayId: string;
+};
+
+export type ConfirmedDayActionRecord = {
+  eventId: string;
+  dayId: string;
+  actorPlayerId: string;
+  characterId: "artist" | "savant" | "juggler";
+  record: DayActionRecordInput;
+};
+
 export type CoreResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; messageKo: string } };
@@ -241,6 +270,8 @@ export type ReplayState = {
   warnings: CoreWarning[];
   gameEnd?: GameEndState | null;
   pendingIdentityReveals?: PendingIdentityReveal[];
+  availableDayActions?: AvailableDayAction[];
+  dayActionRecords?: ConfirmedDayActionRecord[];
 };
 
 export type PendingIdentityReveal = {
@@ -511,6 +542,15 @@ export type GameEvent = EventCommon &
           impairmentContext: { kind: "healthy" } | { kind: "poisoned"; sourcePlayerId: string; sourceEventId: string };
           registrationContext: { kind: "canonical"; registeredAsDemon: boolean } | { kind: "recluseDecision"; registeredAsDemon: boolean; registeredCharacterId?: "imp" };
           outcome: { kind: "noEffect"; reason: "actorPoisoned" | "targetNotDemon" | "targetAlreadyDead" } | { kind: "deathPending"; playerId: string };
+        };
+      }
+    | {
+        type: "dayActionRecorded";
+        payload: {
+          dayId: string;
+          actorPlayerId: string;
+          characterId: "artist" | "savant" | "juggler";
+          record: DayActionRecordInput;
         };
       }
     | {

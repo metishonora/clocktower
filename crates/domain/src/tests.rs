@@ -1,6 +1,7 @@
 mod contracts_scenarios;
 mod day_scenarios;
 mod issue101_snake_charmer_scenarios;
+mod issue102_day_action_scenarios;
 mod issue11_imp_attack_scenarios;
 mod issue11_succession_saint_scenarios;
 mod issue11_virgin_scenarios;

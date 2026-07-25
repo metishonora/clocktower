@@ -176,6 +176,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         rule_state,
         game_end,
         pending_identity_reveals: vec![],
+        available_day_actions: vec![],
+        day_action_records: vec![],
     })
 }
 

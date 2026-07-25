@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { DayState, PhaseStep, Player, ReplayState } from "./core/types";
+import type { ConfirmedDayActionRecord, DayState, PhaseStep, Player, ReplayState } from "./core/types";
 import {
   PlayerTokenCountBadge,
   PlayerTokenDetailDialog,
@@ -13,6 +13,7 @@ import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectang
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue116PhaseHandoffPrototype.css";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
+import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "dreamer" | "seamstress";
 export type LiveHandoff = {
@@ -176,6 +177,7 @@ export function SectsAndVioletsLiveGrimoire({
   centerPrompt,
   operationBusy,
   tokensByPlayerId = {},
+  dayActionRecords = [],
   onSeatClick,
   onConfirm,
   onReturn,
@@ -198,6 +200,7 @@ export function SectsAndVioletsLiveGrimoire({
   centerPrompt?: ReactNode;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
+  dayActionRecords?: ConfirmedDayActionRecord[];
   onSeatClick: (playerId: string) => void;
   onConfirm: () => void;
   onReturn: () => void;
@@ -418,6 +421,7 @@ export function SectsAndVioletsLiveGrimoire({
             alignment: detailsPlayer.alignment,
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
+          details={<DayActionRecordHistory records={dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)} />}
           theme={currentStep?.phase === "day" ? "day" : "night"}
           onClose={closePlayerDetails}
         />

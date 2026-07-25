@@ -60,6 +60,7 @@ impl ScriptRules {
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }
                             | GameEventKind::SnakeCharmerActionResolved { .. }
+                            | GameEventKind::DayActionRecorded { .. }
                     )
                 }) =>
             {
@@ -76,7 +77,8 @@ impl ScriptRules {
                 Command::CreateGame { .. }
                 | Command::ConfirmStep { .. }
                 | Command::SkipStep { .. }
-                | Command::ResolveManualStep { .. },
+                | Command::ResolveManualStep { .. }
+                | Command::RecordDayAction { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
             _ => Ok(()),

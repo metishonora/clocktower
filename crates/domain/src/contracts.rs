@@ -67,6 +67,10 @@ pub(crate) enum Command {
     UseSlayerAbility {
         payload: UseSlayerAbilityCommandPayload,
     },
+    #[serde(rename = "recordDayAction")]
+    RecordDayAction {
+        payload: RecordDayActionCommandPayload,
+    },
     #[serde(rename = "endGame")]
     EndGame { payload: EndGameCommandPayload },
     #[serde(rename = "updatePlayerAnnotations")]
@@ -114,6 +118,15 @@ pub(crate) struct UseSlayerAbilityCommandPayload {
     pub(crate) actor_player_id: String,
     pub(crate) target_player_id: String,
     pub(crate) target_registration: SlayerTargetRegistration,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct RecordDayActionCommandPayload {
+    pub(crate) day_id: String,
+    pub(crate) expected_event_count: usize,
+    pub(crate) actor_player_id: String,
+    pub(crate) record: DayActionRecord,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -209,6 +222,28 @@ pub(crate) struct ReplayState {
     pub(crate) game_end: Option<GameEndState>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) pending_identity_reveals: Vec<PendingIdentityReveal>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) available_day_actions: Vec<AvailableDayAction>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) day_action_records: Vec<ConfirmedDayActionRecord>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AvailableDayAction {
+    pub(crate) actor_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) day_id: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ConfirmedDayActionRecord {
+    pub(crate) event_id: String,
+    pub(crate) day_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) record: DayActionRecord,
 }
 
 #[derive(Debug, Serialize)]
@@ -465,6 +500,8 @@ pub(crate) enum GameEventKind {
     },
     #[serde(rename = "slayerAbilityUsed")]
     SlayerAbilityUsed { payload: SlayerAbilityUsedPayload },
+    #[serde(rename = "dayActionRecorded")]
+    DayActionRecorded { payload: DayActionRecordedPayload },
     #[serde(rename = "demonSuccessionConfirmed")]
     DemonSuccessionConfirmed {
         payload: DemonSuccessionConfirmedPayload,
@@ -572,6 +609,43 @@ pub(crate) struct SlayerAbilityUsedPayload {
     pub(crate) impairment_context: SlayerImpairmentContext,
     pub(crate) registration_context: SlayerRegistrationContext,
     pub(crate) outcome: SlayerOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct DayActionRecordedPayload {
+    pub(crate) day_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) record: DayActionRecord,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum DayActionRecord {
+    Artist {
+        question: String,
+        answer: ArtistAnswer,
+    },
+    Savant {
+        reference_sentences: Vec<String>,
+    },
+    Juggler {
+        correct_count: u8,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ArtistAnswer {
+    Yes,
+    No,
+    Unknown,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

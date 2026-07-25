@@ -79,6 +79,7 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
         Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
+        Command::RecordDayAction { .. } => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
         Command::UpdatePlayerAnnotations { payload } => {
             propose_player_annotations(&game_file, payload)

@@ -4,6 +4,8 @@ import type { CoreAdapter } from "./core/coreAdapter";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
 import type {
   Command,
+  AvailableDayAction,
+  DayActionRecordInput,
   GameEvent,
   GameFile,
   InformationResult,
@@ -58,6 +60,8 @@ import {
   removeLatestSectsAndVioletsPhaseCheckpoint,
   withSectsAndVioletsSession,
 } from "./sectsAndVioletsSession";
+import { DayActionDock } from "./features/day-actions/DayActionDock";
+import { savantReferenceCategoriesForState } from "./features/day-actions/dayActionReferences";
 import {
   sectsAndVioletsCharacters as characters,
   type SectsAndVioletsCharacter as CatalogCharacter,
@@ -274,6 +278,10 @@ export function SectsAndVioletsFoundation({
       characterKind: character?.kind ?? "townsfolk",
     };
   }), [replayState?.players]);
+  const savantReferenceCategories = useMemo(
+    () => replayState ? savantReferenceCategoriesForState(replayState) : [],
+    [replayState],
+  );
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
   const canonicalInformationStep = replayState?.currentStep?.informationPrompt && isAutomatedInformationCharacter(replayState.currentStep.character)
@@ -1309,6 +1317,25 @@ export function SectsAndVioletsFoundation({
     return applyCanonicalEvent(result.value.event, "phase", baseGameFile);
   };
 
+  const recordDayAction = async (
+    action: AvailableDayAction,
+    record: DayActionRecordInput,
+  ) => {
+    if (operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    await proposeAndApplyLiveCommand({
+      type: "recordDayAction",
+      payload: {
+        dayId: action.dayId,
+        expectedEventCount: gameFile.game.events.length,
+        actorPlayerId: action.actorPlayerId,
+        record,
+      },
+    });
+    setOperationBusy(false);
+  };
+
   const startLiveHandoff = (kind: LiveHandoff["kind"]) => {
     setLiveHandoff({
       kind,
@@ -1690,6 +1717,7 @@ export function SectsAndVioletsFoundation({
           ) : undefined}
           operationBusy={operationBusy}
           tokensByPlayerId={canonicalTokensByPlayerId}
+          dayActionRecords={replayState.dayActionRecords ?? []}
           onSeatClick={chooseLiveSeat}
           onConfirm={() => void confirmLiveHandoff()}
           onReturn={returnFromLiveHandoff}
@@ -2041,6 +2069,20 @@ export function SectsAndVioletsFoundation({
           </div>
         </aside>
       ) : null}
+      {production
+        && replayState?.phase === "day"
+        && (activeTab === "seating" || activeTab === "play")
+        && !liveHandoff
+        && !nextIdentityReveal ? (
+          <DayActionDock
+            players={replayState.players}
+            availableActions={replayState.availableDayActions ?? []}
+            phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+            savantCategories={savantReferenceCategories}
+            busy={operationBusy}
+            onConfirm={(action, record) => void recordDayAction(action, record)}
+          />
+        ) : null}
       {informationStep ? (
         <SectsAndVioletsReveal
           dialogLabel={`${informationStep.name} 공개`}

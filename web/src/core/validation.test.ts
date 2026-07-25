@@ -311,6 +311,55 @@ test("validates the strict Slayer audit event used by import and export", () => 
   throws(() => parseGameEvent(invalid), /이벤트 형식/);
 });
 
+test("validates the strict daytime free-action audit event used by import and export", () => {
+  const event = {
+    id: "event-day-action",
+    type: "dayActionRecorded",
+    phase: "day",
+    payload: {
+      dayId: "day",
+      actorPlayerId: "player-2",
+      characterId: "artist",
+      record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no" },
+    },
+    summary: "화가: 2번 Ada · 질문과 답변 기록",
+    createdAt: "2026-07-25T00:00:00.000Z",
+  };
+
+  equal(parseGameEvent(event).type, "dayActionRecorded");
+  const invalid = structuredClone(event);
+  invalid.payload.record.answer = "maybe";
+  throws(() => parseGameEvent(invalid), /이벤트 형식/);
+});
+
+test("validates daytime free-action replay projections at the WASM boundary", () => {
+  const state = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 6,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    warnings: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    gameEnd: null,
+    availableDayActions: [{ actorPlayerId: "player-1", characterId: "juggler", dayId: "day" }],
+    dayActionRecords: [{
+      eventId: "day-action-6",
+      actorPlayerId: "player-1",
+      characterId: "juggler",
+      dayId: "day",
+      record: { kind: "juggler", correctCount: 3 },
+    }],
+  };
+
+  equal(parseReplayState(state).dayActionRecords?.[0].record.kind, "juggler");
+  const invalid = structuredClone(state);
+  invalid.availableDayActions[0].characterId = "clockmaker";
+  throws(() => parseReplayState(invalid), /코어 응답/);
+});
+
 function schemaV2Fixture(): {
   schemaVersion: number;
   game: { events: Array<{ type: string; payload: Record<string, unknown> }> };
