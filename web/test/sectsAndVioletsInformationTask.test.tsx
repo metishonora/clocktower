@@ -106,7 +106,7 @@ test("Dreamer exposes the selected target truth and the full legal opposite-alig
   expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나");
   expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("재봉사");
   expect(screen.getByRole("group", { name: "전달할 캐릭터" }).classList.contains("snvDreamerEditor")).toBe(true);
-  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvDreamerActions")).toBe(true);
+  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
   const fixedGoodCharacter = screen.getByRole("combobox", { name: "선한 캐릭터" }) as HTMLSelectElement;
   expect(fixedGoodCharacter.disabled).toBe(true);
   expect(fixedGoodCharacter.classList.contains("snvDreamerLockedSelect")).toBe(true);
@@ -143,6 +143,74 @@ test("Dreamer pending-target card keeps the established manual-step presentation
   const identity = within(task).getByRole("button", { name: "꿈꾸는 자 캐릭터 상세 열기" });
   expect(identity.textContent).toBe("꿈꾸는 자민서");
   expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
+});
+
+test("Seamstress uses the spacious target context and compact tablet actions", () => {
+  const seamstressStep: PhaseStep = {
+    ...step,
+    id: "firstNight:seamstress",
+    character: "seamstress",
+    requiredInput: { kind: "playerIds", target: "player", minSelections: 2, maxSelections: 2, allowedPlayerIds: ["player-2", "player-3"], optional: false },
+    canSkip: true,
+    informationPrompt: {
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
+      registrationCandidatePlayerIds: [], numberChoices: [], setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: ["player-2", "player-3"],
+        computedResult: { kind: "boolean", value: true },
+        choices: [true, false].map((value) => ({ result: { kind: "boolean" as const, value }, isComputed: value, registrationJudgments: [] })),
+      }],
+    },
+  };
+  const seamstress = { ...actor, actualCharacter: "seamstress", shownCharacter: "seamstress" };
+  const players = [
+    seamstress,
+    { ...actor, id: "player-2", seat: 2, name: "유나", actualCharacter: "dreamer", shownCharacter: "dreamer" },
+    { ...actor, id: "player-3", seat: 3, name: "도윤", actualCharacter: "sage", shownCharacter: "sage" },
+  ];
+  const { rerender } = render(<SectsAndVioletsInformationTask step={seamstressStep} actor={seamstress} players={players} revealed={false} busy={false} onReveal={() => undefined} />);
+  const pending = screen.getByRole("article", { name: "재봉사 정보" });
+  expect(within(pending).getByText("현재 할 일")).toBeTruthy();
+  expect(pending.classList.contains("snvInformationTaskPending")).toBe(true);
+
+  rerender(<SectsAndVioletsInformationTask step={seamstressStep} actor={seamstress} players={players} selectedPlayerIds={["player-2", "player-3"]} revealed={false} busy={false} onReveal={() => undefined} />);
+  const context = screen.getByRole("group", { name: "대상과 진실" });
+  expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나 · 3번 도윤");
+  expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("같은 진영");
+  expect(screen.getByRole("group", { name: "전달할 정보" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
+});
+
+test("Sage uses the spacious killer and candidate layout with compact tablet actions", () => {
+  const sageStep: PhaseStep = {
+    ...step,
+    id: "night:sage",
+    phase: "night",
+    character: "sage",
+    requiredInput: { kind: "none", optional: false },
+    informationPrompt: {
+      computedResult: { kind: "player", playerId: "player-3" },
+      deliveryMode: "selectable",
+      activeReasons: [], registrationCandidatePlayerIds: [], numberChoices: [], setupInfoRegistrationOptions: [],
+      targetChecks: [{
+        targetPlayerIds: [],
+        computedResult: { kind: "player", playerId: "player-3" },
+        choices: [
+          { result: { kind: "playerPair" as const, playerIds: ["player-2", "player-3"] as [string, string] }, isComputed: true, registrationJudgments: [] },
+          { result: { kind: "playerPair" as const, playerIds: ["player-3", "player-2"] as [string, string] }, isComputed: true, registrationJudgments: [] },
+        ],
+      }],
+    },
+  };
+  const sage = { ...actor, actualCharacter: "sage", shownCharacter: "sage" };
+  const players = [sage, { ...actor, id: "player-2", seat: 2, name: "유나" }, { ...actor, id: "player-3", seat: 3, name: "도윤" }];
+  render(<SectsAndVioletsInformationTask step={sageStep} actor={sage} players={players} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  expect(screen.getByRole("group", { name: "살해자 정보" }).textContent).toContain("3번 도윤");
+  expect(screen.getByRole("group", { name: "전달할 두 후보" }).classList.contains("snvSageEditor")).toBe(true);
+  expect(screen.getByRole("button", { name: "후보 순서 바꾸기" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
 });
 
 test("renders Flowergirl and Town Crier Reveal as status statements", () => {

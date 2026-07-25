@@ -38,7 +38,7 @@ export function SectsAndVioletsInformationTask({
   const selectedResult = deliveredResult ?? (choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
   const targeted = characterId === "dreamer" || characterId === "seamstress";
   const needsTargets = targeted && !targetCheck;
-  const usesManualStepLayout = needsTargets && characterId === "dreamer";
+  const usesManualStepLayout = needsTargets;
 
   return (
     <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
@@ -63,15 +63,15 @@ export function SectsAndVioletsInformationTask({
         </div>
       ) : (
         <>
-          {characterId === "dreamer" && targetCheck ? (
-            <dl className="snvInformationValues snvDreamerContext" role="group" aria-label="대상과 진실">
+          {targeted && targetCheck ? (
+            <dl className="snvInformationValues snvTargetedInformationContext" role="group" aria-label="대상과 진실">
               <div><dt>대상</dt><dd>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</dd></div>
               <div><dt>진실</dt><dd>{informationValueLabel(characterId, targetCheck.computedResult)}</dd></div>
             </dl>
           ) : (
             <>
               {targetCheck?.targetPlayerIds.length ? <p className="snvInformationTargetSummary"><span>대상 ·</span> <strong>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</strong></p> : null}
-              <dl className="snvInformationValues">
+              <dl className={`snvInformationValues${characterId === "sage" ? " snvSageContext" : ""}`} role={characterId === "sage" ? "group" : undefined} aria-label={characterId === "sage" ? "살해자 정보" : undefined}>
                 <div>
                   <dt>{characterId === "sage" ? "살해자" : "진실"}</dt>
                   <dd>{characterId === "sage" && step.informationPrompt?.computedResult?.kind === "player" ? playerLabel(players, step.informationPrompt.computedResult.playerId) : informationValueLabel(characterId, targetCheck?.computedResult ?? step.informationPrompt?.computedResult)}</dd>
@@ -88,7 +88,7 @@ export function SectsAndVioletsInformationTask({
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
-          <div className={`snvStepActions snvInformationActions${characterId === "dreamer" ? " snvDreamerActions" : ""}`}>
+          <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}`}>
             <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
           </div>
         </>
@@ -155,6 +155,7 @@ function informationChoices(step: PhaseStep): InformationResult[] {
 }
 
 function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
+function matchesTargetedInformationCharacter(characterId: string) { return characterId === "dreamer" || characterId === "seamstress" || characterId === "sage"; }
 function informationResultKey(result: InformationResult) { return JSON.stringify(result); }
 function characterName(id: string) { return sectsAndVioletsCharacters.find((character) => character.id === id)?.name ?? id; }
 function playerLabel(players: Player[], id: string) { const player = players.find((candidate) => candidate.id === id); return player ? `${player.seat}번 ${player.name}` : id; }
