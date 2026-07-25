@@ -4,11 +4,14 @@ use crate::{
     contracts::{
         ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction, Command,
         ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload,
-        DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent, GameEventKind, GameFile,
-        ImpairmentExpiry, ImpairmentKind, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
-        NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
-        NightDeathsAnnouncedPayload, PendingIdentityReveal, PhaseStepEventPayload, Proposal,
-        RecordDayActionCommandPayload, ReplayState, RevealPayload, RuleState,
+        DemonAttackNoEffectReason, DemonAttackOutcome, ExecuteMadnessCommandPayload, GameEvent,
+        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, MadnessAssignedPayload,
+        MadnessAssignmentState, MadnessCheckRecordedPayload, MadnessCheckResult,
+        MadnessExecutionConfirmedPayload, MadnessStatus, ManualPhaseStepOutcome,
+        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
+        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingIdentityReveal,
+        PendingMadnessExecution, PhaseStepEventPayload, Proposal, RecordDayActionCommandPayload,
+        RecordMadnessCheckCommandPayload, ReplayState, RevealPayload, RuleState,
         SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
     },
     day::{
@@ -193,6 +196,182 @@ fn confirmed_day_action_records(events: &[GameEvent]) -> Vec<ConfirmedDayActionR
         .collect()
 }
 
+fn madness_execution_death_step_id(event_id: &str, interrupted_step_id: &str) -> String {
+    let prefix = interrupted_step_id.split(':').next().unwrap_or("night");
+    format!("{prefix}:madnessExecution:{event_id}:executionDeath")
+}
+
+fn pending_madness_execution_event<'a>(
+    events: &'a [GameEvent],
+) -> Option<(&'a GameEvent, &'a MadnessExecutionConfirmedPayload)> {
+    let mut pending = None;
+    for event in events {
+        match &event.kind {
+            GameEventKind::MadnessExecutionConfirmed { payload } => {
+                pending = Some((event, payload));
+            }
+            GameEventKind::DeathConfirmed { payload } => {
+                if pending.is_some_and(|(execution, madness)| {
+                    payload.step_id.as_deref()
+                        == Some(
+                            madness_execution_death_step_id(
+                                &execution.id,
+                                &madness.interrupted_step_id,
+                            )
+                            .as_str(),
+                        )
+                }) {
+                    pending = None;
+                }
+            }
+            _ => {}
+        }
+    }
+    pending
+}
+
+fn day_execution_occurred(day_id: &str, events: &[GameEvent]) -> bool {
+    events.iter().any(|event| match &event.kind {
+        GameEventKind::ExecutionConfirmed { payload } => {
+            payload.step_id.starts_with(&format!("{day_id}:"))
+        }
+        GameEventKind::MadnessExecutionConfirmed { payload } => payload
+            .interrupted_step_id
+            .starts_with(&format!("{day_id}:")),
+        _ => false,
+    })
+}
+
+fn madness_assignments(
+    phase: Phase,
+    current_step: Option<&PhaseStep>,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<MadnessAssignmentState> {
+    let pending_execution = pending_madness_execution_event(events).is_some();
+    let current_day_id = current_step
+        .filter(|_| phase == Phase::Day)
+        .and_then(|step| step.id.split(':').next());
+    let execution_already_occurred =
+        current_day_id.is_some_and(|day_id| day_execution_occurred(day_id, events));
+    let impaired_players = active_snake_charmer_impairments(events)
+        .into_iter()
+        .map(|impairment| impairment.player_id)
+        .collect::<std::collections::HashSet<_>>();
+
+    let mut raw = events
+        .iter()
+        .find_map(|event| match &event.kind {
+            GameEventKind::SetupConfirmed { payload } => Some((event, payload)),
+            _ => None,
+        })
+        .into_iter()
+        .flat_map(|(event, payload)| {
+            payload
+                .players
+                .iter()
+                .filter(|input| input.actual_character == "mutant")
+                .filter_map(move |input| {
+                    let player = input
+                        .id
+                        .as_deref()
+                        .and_then(|id| players.iter().find(|player| player.id == id))
+                        .or_else(|| players.iter().find(|player| player.seat == input.seat))?;
+                    Some((
+                        format!("mutant:{}:{}", player.id, event.id),
+                        player.id.clone(),
+                        "mutant".to_string(),
+                        player.id.clone(),
+                        None,
+                    ))
+                })
+        })
+        .collect::<Vec<_>>();
+
+    let mut latest_cerenovus = HashMap::<String, (&GameEvent, &MadnessAssignedPayload)>::new();
+    for event in events {
+        if let GameEventKind::MadnessAssigned { payload } = &event.kind {
+            latest_cerenovus.insert(payload.source_player_id.clone(), (event, payload));
+        }
+    }
+    let mut cerenovus = latest_cerenovus
+        .into_values()
+        .map(|(event, payload)| {
+            (
+                event.id.clone(),
+                payload.source_player_id.clone(),
+                "cerenovus".to_string(),
+                payload.target_player_id.clone(),
+                Some(payload.required_character_id.clone()),
+            )
+        })
+        .collect::<Vec<_>>();
+    cerenovus.sort_by_key(|(_, source_player_id, _, _, _)| {
+        players
+            .iter()
+            .find(|player| &player.id == source_player_id)
+            .map_or(u8::MAX, |player| player.seat)
+    });
+    raw.extend(cerenovus);
+
+    raw.into_iter()
+        .filter_map(
+            |(
+                assignment_id,
+                source_player_id,
+                source_character_id,
+                target_player_id,
+                required_character_id,
+            )| {
+                let source = players
+                    .iter()
+                    .find(|player| player.id == source_player_id)?;
+                let target = players
+                    .iter()
+                    .find(|player| player.id == target_player_id)?;
+                let source_effective = source.alive
+                    && source.actual_character == source_character_id
+                    && !impaired_players.contains(&source.id);
+                let latest_check = events.iter().rev().find_map(|event| match &event.kind {
+                    GameEventKind::MadnessCheckRecorded { payload }
+                        if payload.assignment_id == assignment_id =>
+                    {
+                        Some((event, payload))
+                    }
+                    _ => None,
+                });
+                let status = match latest_check.map(|(_, payload)| payload.result) {
+                    Some(MadnessCheckResult::Clear) => MadnessStatus::Clear,
+                    Some(MadnessCheckResult::Violation) => MadnessStatus::Violated,
+                    None => MadnessStatus::Unchecked,
+                };
+                let violation_check_event_id = latest_check.and_then(|(event, payload)| {
+                    (payload.result == MadnessCheckResult::Violation).then(|| event.id.clone())
+                });
+                Some(MadnessAssignmentState {
+                    assignment_id,
+                    source_player_id,
+                    source_character_id,
+                    target_player_id,
+                    required_character_id,
+                    status,
+                    source_effective,
+                    can_check: phase == Phase::Day
+                        && target.alive
+                        && status != MadnessStatus::Violated
+                        && !pending_execution,
+                    can_execute: status == MadnessStatus::Violated
+                        && source_effective
+                        && target.alive
+                        && !pending_execution
+                        && !(phase == Phase::Day && execution_already_occurred),
+                    violation_check_event_id,
+                })
+            },
+        )
+        .collect()
+}
+
 fn juggler_correct_count_for_night(
     night_prefix: &str,
     actor_player_id: &str,
@@ -252,7 +431,38 @@ fn character_step(
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: if snake_charmer || targeted_information {
+        required_input: if character == "cerenovus" {
+            RequiredInput {
+                kind: RequiredInputKind::MadnessAssignment,
+                target: Some(InputTarget::Player),
+                min_selections: Some(1),
+                max_selections: Some(1),
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: Some(
+                    TOWNSFOLK
+                        .iter()
+                        .chain(OUTSIDERS.iter())
+                        .map(|id| (*id).to_string())
+                        .collect(),
+                ),
+                allowed_player_ids: Some(
+                    players
+                        .iter()
+                        .map(|candidate| candidate.id.clone())
+                        .collect(),
+                ),
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            }
+        } else if snake_charmer || targeted_information {
             let selections = if character == "seamstress" { 2 } else { 1 };
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
@@ -292,7 +502,7 @@ fn character_step(
             required_none()
         },
         can_skip: character == "seamstress",
-        support: if snake_charmer || information {
+        support: if snake_charmer || information || character == "cerenovus" {
             PhaseStepSupport::Automated
         } else {
             PhaseStepSupport::Manual
@@ -1578,8 +1788,129 @@ fn phase_state(
     events: &[GameEvent],
 ) -> Result<(Phase, Option<PhaseStep>, Vec<PhaseOverviewItem>), CoreError> {
     let mut statuses = HashMap::new();
+    let mut pending_madness_overview: Option<(PendingMadnessExecution, Phase, Vec<PhaseStep>)> =
+        None;
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
+        if let GameEventKind::MadnessCheckRecorded { payload } = &event.kind {
+            if pending_madness_overview.is_some() {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            let players_at_event = replay_players(&events[..event_index])?;
+            let Some((phase, _, Some(current))) = current_phase_steps(
+                &players_at_event,
+                &events[..event_index],
+                events.len() + 2,
+                &statuses,
+            ) else {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            };
+            let assignments = madness_assignments(
+                phase,
+                Some(&current),
+                &players_at_event,
+                &events[..event_index],
+            );
+            let assignment = assignments
+                .iter()
+                .find(|assignment| assignment.assignment_id == payload.assignment_id)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            if event.phase != Phase::Day
+                || !assignment.can_check
+                || assignment.source_player_id != payload.source_player_id
+                || assignment.source_character_id != payload.source_character_id
+                || assignment.target_player_id != payload.target_player_id
+                || assignment.status == MadnessStatus::Violated
+                || (assignment.status == MadnessStatus::Clear
+                    && payload.result == MadnessCheckResult::Clear)
+            {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            continue;
+        }
+        if let GameEventKind::MadnessExecutionConfirmed { payload } = &event.kind {
+            if pending_madness_overview.is_some() {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            let players_at_event = replay_players(&events[..event_index])?;
+            let Some((phase, steps, Some(current))) = current_phase_steps(
+                &players_at_event,
+                &events[..event_index],
+                events.len() + 2,
+                &statuses,
+            ) else {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            };
+            let assignments = madness_assignments(
+                phase,
+                Some(&current),
+                &players_at_event,
+                &events[..event_index],
+            );
+            let assignment = assignments
+                .iter()
+                .find(|assignment| assignment.assignment_id == payload.assignment_id)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            if event.phase != phase
+                || !assignment.can_execute
+                || assignment.source_player_id != payload.source_player_id
+                || assignment.source_character_id != payload.source_character_id
+                || assignment.target_player_id != payload.target_player_id
+                || assignment.violation_check_event_id.as_deref()
+                    != Some(payload.check_event_id.as_str())
+                || payload.interrupted_step_id != current.id
+            {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            if phase == Phase::Day {
+                for step in &steps {
+                    if crate::phase::step_status(&step.id, &statuses).is_done() {
+                        continue;
+                    }
+                    statuses.insert(
+                        step.id.clone(),
+                        if step.id.ends_with(":toNight") {
+                            PhaseStepStatus::ManualComplete
+                        } else {
+                            PhaseStepStatus::Skipped
+                        },
+                    );
+                }
+            }
+            pending_madness_overview = Some((
+                PendingMadnessExecution {
+                    event_id: event.id.clone(),
+                    assignment_id: payload.assignment_id.clone(),
+                    source_character_id: payload.source_character_id.clone(),
+                    target_player_id: payload.target_player_id.clone(),
+                    interrupted_step_id: payload.interrupted_step_id.clone(),
+                },
+                phase,
+                steps,
+            ));
+            continue;
+        }
+        if let Some((pending, phase, _)) = pending_madness_overview.as_ref() {
+            if let GameEventKind::DeathConfirmed { payload } = &event.kind {
+                let expected_step_id = madness_execution_death_step_id(
+                    &pending.event_id,
+                    &pending.interrupted_step_id,
+                );
+                let players_at_event = replay_players(&events[..event_index])?;
+                if event.phase != *phase
+                    || payload.step_id.as_deref() != Some(expected_step_id.as_str())
+                    || payload.player_id != pending.target_player_id
+                    || !players_at_event
+                        .iter()
+                        .any(|player| player.id == pending.target_player_id && player.alive)
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                pending_madness_overview = None;
+                continue;
+            }
+            return Err(ErrorKind::ReplayFailed.into_error());
+        }
         if let GameEventKind::DayActionRecorded { payload } = &event.kind {
             let players_at_event = replay_players(&events[..event_index])?;
             let Some((_, _, Some(current))) = current_phase_steps(
@@ -1653,6 +1984,9 @@ fn phase_state(
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
             GameEventKind::SnakeCharmerActionResolved { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::MadnessAssigned { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
             GameEventKind::NominationStarted { payload } => {
@@ -1787,6 +2121,21 @@ fn phase_state(
                 )
                 .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
             }
+            (GameEventKind::MadnessAssigned { payload }, PhaseStepSupport::Automated)
+                if current.character.as_deref() == Some("cerenovus")
+                    && current.player_id.as_deref() == Some(payload.source_player_id.as_str()) =>
+            {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(vec![payload.target_player_id.clone()]),
+                        character_id: Some(payload.required_character_id.clone()),
+                        ..Default::default()
+                    }),
+                    &players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
             (GameEventKind::NightDeathsAnnounced { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Announcement => {}
             (GameEventKind::NominationStarted { payload }, PhaseStepSupport::Automated)
@@ -1860,6 +2209,69 @@ fn phase_state(
         }
     }
 
+    if let Some((pending, phase, steps)) = pending_madness_overview {
+        let death_step = PhaseStep {
+            id: madness_execution_death_step_id(&pending.event_id, &pending.interrupted_step_id),
+            phase,
+            step_type: StepType::ExecutionDeath,
+            character: None,
+            player_id: Some(pending.target_player_id.clone()),
+            required_input: RequiredInput {
+                kind: RequiredInputKind::ExecutionDeathDecision,
+                target: Some(InputTarget::Execution),
+                player_id: Some(pending.target_player_id.clone()),
+                execution_survival_allowed: false,
+                ..required_none()
+            },
+            can_skip: false,
+            support: PhaseStepSupport::Automated,
+            information_prompt: None,
+            pre_action_reveal: None,
+        };
+        let mut overview = steps
+            .into_iter()
+            .map(|step| PhaseOverviewItem {
+                status: if phase == Phase::Night && step.id == pending.interrupted_step_id {
+                    PhaseStepStatus::Interrupted
+                } else {
+                    statuses
+                        .get(&step.id)
+                        .copied()
+                        .unwrap_or(PhaseStepStatus::Waiting)
+                },
+                id: step.id,
+                phase: step.phase,
+                step_type: step.step_type,
+                character: step.character,
+                player_id: step.player_id,
+                required_input: step.required_input,
+                can_skip: step.can_skip,
+                support: step.support,
+                information_prompt: None,
+            })
+            .collect::<Vec<_>>();
+        let insert_at = overview
+            .iter()
+            .position(|step| step.id == pending.interrupted_step_id)
+            .map_or(overview.len(), |index| index + 1);
+        overview.insert(
+            insert_at,
+            PhaseOverviewItem {
+                id: death_step.id.clone(),
+                phase,
+                step_type: StepType::ExecutionDeath,
+                character: None,
+                player_id: death_step.player_id.clone(),
+                required_input: death_step.required_input.clone(),
+                can_skip: false,
+                support: PhaseStepSupport::Automated,
+                information_prompt: None,
+                status: PhaseStepStatus::Current,
+            },
+        );
+        return Ok((phase, Some(death_step), overview));
+    }
+
     let Some((phase, steps, mut current)) =
         current_phase_steps(players, events, events.len() + 2, &statuses)
     else {
@@ -1921,6 +2333,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             pending_identity_reveals: vec![],
             available_day_actions: vec![],
             day_action_records: vec![],
+            madness_assignments: vec![],
+            pending_madness_execution: None,
         });
     }
     let players = replay_players(&game_file.game.events)?;
@@ -1976,6 +2390,22 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         &game_file.game.events,
     );
     let day_action_records = confirmed_day_action_records(&game_file.game.events);
+    let madness_assignments = madness_assignments(
+        phase,
+        current_step.as_ref(),
+        &players,
+        &game_file.game.events,
+    );
+    let pending_madness_execution =
+        pending_madness_execution_event(&game_file.game.events).map(|(event, payload)| {
+            PendingMadnessExecution {
+                event_id: event.id.clone(),
+                assignment_id: payload.assignment_id.clone(),
+                source_character_id: payload.source_character_id.clone(),
+                target_player_id: payload.target_player_id.clone(),
+                interrupted_step_id: payload.interrupted_step_id.clone(),
+            }
+        });
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -1991,6 +2421,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_identity_reveals,
         available_day_actions,
         day_action_records,
+        madness_assignments,
+        pending_madness_execution,
     })
 }
 
@@ -2097,6 +2529,14 @@ pub(crate) fn propose_phase_command(
                     payload.input,
                 );
             }
+            if current_step.character.as_deref() == Some("cerenovus") {
+                return propose_cerenovus_assignment(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
             if current_step
                 .character
                 .as_deref()
@@ -2162,8 +2602,65 @@ pub(crate) fn propose_phase_command(
         Command::RecordDayAction { payload } => {
             propose_day_action(game_file, &current_step, &players, payload)
         }
+        Command::RecordMadnessCheck { payload } => {
+            propose_madness_check(game_file, &current_step, &players, payload)
+        }
+        Command::ExecuteMadness { payload } => {
+            propose_madness_execution(game_file, &current_step, &players, payload)
+        }
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn propose_cerenovus_assignment(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let source_player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let fields = input.ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let target_player_id = fields
+        .player_ids
+        .and_then(|ids| ids.into_iter().next())
+        .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let required_character_id = fields
+        .character_id
+        .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("madness-assignment-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::MadnessAssigned {
+                payload: MadnessAssignedPayload {
+                    step_id: step.id.clone(),
+                    source_player_id,
+                    target_player_id,
+                    required_character_id: required_character_id.clone(),
+                },
+            },
+            phase: step.phase,
+            summary: format!(
+                "세레노버스 집착 지정: {}번 {} · {}",
+                target.seat, target.name, required_character_id
+            ),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": "세레노버스 집착 지정을 확정합니다." }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_day_action(
@@ -2217,6 +2714,131 @@ fn propose_day_action(
         warnings: vec![],
         follow_up_steps: vec![],
         preview: json!({ "messageKo": format!("{character_label} 자유 행동 기록 완료") }),
+        reveal_payload: None,
+    })
+}
+
+fn propose_madness_check(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    payload: RecordMadnessCheckCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    if current_step.phase != Phase::Day {
+        return Err(ErrorKind::MadnessCheckWrongPhase.into_error());
+    }
+    let assignments = madness_assignments(
+        current_step.phase,
+        Some(current_step),
+        players,
+        &game_file.game.events,
+    );
+    let assignment = assignments
+        .iter()
+        .find(|assignment| assignment.assignment_id == payload.assignment_id)
+        .ok_or_else(|| ErrorKind::MadnessAssignmentUnavailable.into_error())?;
+    if assignment.status == MadnessStatus::Violated {
+        return Err(ErrorKind::MadnessViolationLatched.into_error());
+    }
+    if !assignment.can_check {
+        return Err(ErrorKind::MadnessAssignmentUnavailable.into_error());
+    }
+    if assignment.status == MadnessStatus::Clear && payload.result == MadnessCheckResult::Clear {
+        return Err(ErrorKind::MadnessCheckUnchanged.into_error());
+    }
+    let target = players
+        .iter()
+        .find(|player| player.id == assignment.target_player_id)
+        .ok_or_else(|| ErrorKind::MadnessAssignmentUnavailable.into_error())?;
+    let result_label = match payload.result {
+        MadnessCheckResult::Clear => "위반 없음",
+        MadnessCheckResult::Violation => "위반 확인",
+    };
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("madness-check-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::MadnessCheckRecorded {
+                payload: MadnessCheckRecordedPayload {
+                    assignment_id: assignment.assignment_id.clone(),
+                    source_player_id: assignment.source_player_id.clone(),
+                    source_character_id: assignment.source_character_id.clone(),
+                    target_player_id: assignment.target_player_id.clone(),
+                    result: payload.result,
+                },
+            },
+            phase: Phase::Day,
+            summary: format!(
+                "광기 확인: {}번 {} · {result_label}",
+                target.seat, target.name
+            ),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": format!("광기 {result_label}") }),
+        reveal_payload: None,
+    })
+}
+
+fn propose_madness_execution(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    players: &[Player],
+    payload: ExecuteMadnessCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    let assignments = madness_assignments(
+        current_step.phase,
+        Some(current_step),
+        players,
+        &game_file.game.events,
+    );
+    let assignment = assignments
+        .iter()
+        .find(|assignment| assignment.assignment_id == payload.assignment_id)
+        .filter(|assignment| assignment.can_execute)
+        .ok_or_else(|| ErrorKind::MadnessExecutionUnavailable.into_error())?;
+    let check_event_id = assignment
+        .violation_check_event_id
+        .clone()
+        .ok_or_else(|| ErrorKind::MadnessExecutionUnavailable.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == assignment.target_player_id && player.alive)
+        .ok_or_else(|| ErrorKind::MadnessExecutionUnavailable.into_error())?;
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("madness-execution-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::MadnessExecutionConfirmed {
+                payload: MadnessExecutionConfirmedPayload {
+                    assignment_id: assignment.assignment_id.clone(),
+                    check_event_id,
+                    source_player_id: assignment.source_player_id.clone(),
+                    source_character_id: assignment.source_character_id.clone(),
+                    target_player_id: assignment.target_player_id.clone(),
+                    interrupted_step_id: current_step.id.clone(),
+                },
+            },
+            phase: current_step.phase,
+            summary: format!("광기 위반 처형: {}번 {}", target.seat, target.name),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": "광기 위반 처형을 확정합니다." }),
         reveal_payload: None,
     })
 }

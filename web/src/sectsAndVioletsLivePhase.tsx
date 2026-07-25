@@ -15,7 +15,7 @@ import "./issue116PhaseHandoffPrototype.css";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
 
-export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "dreamer" | "seamstress";
+export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "cerenovus" | "dreamer" | "seamstress";
 export type LiveHandoff = {
   kind: LiveHandoffKind;
   complete: boolean;
@@ -41,6 +41,7 @@ export function SectsAndVioletsLiveProgress({
   onConfirmExecution,
   onStartDemonAttack,
   onStartSnakeCharmer,
+  onStartCerenovus,
   onAdvance,
   onResolveManual,
 }: {
@@ -57,12 +58,17 @@ export function SectsAndVioletsLiveProgress({
   onConfirmExecution: () => void;
   onStartDemonAttack: () => void;
   onStartSnakeCharmer: () => void;
+  onStartCerenovus: () => void;
   onAdvance: () => void;
   onResolveManual: (outcome: "handled" | "notApplicable") => void;
 }) {
   const step = replayState.currentStep;
   const dayState = replayState.dayState;
-  const candidate = playerById(replayState.players, dayState?.executionCandidate?.nomineeId);
+  const pendingMadnessExecution = replayState.pendingMadnessExecution;
+  const candidate = playerById(
+    replayState.players,
+    pendingMadnessExecution?.targetPlayerId ?? dayState?.executionCandidate?.nomineeId,
+  );
   const actor = playerById(replayState.players, step?.playerId);
   const isDay = replayState.phase === "day";
 
@@ -94,12 +100,25 @@ export function SectsAndVioletsLiveProgress({
             </div>
           </article>
         ) : step?.stepType === "execution" || step?.stepType === "executionDeath" ? (
-          <article className="snvCurrentStep issue116CurrentStep issue116ExecutionStep" role="group" aria-label="처형 결정">
+          <article className="snvCurrentStep issue116CurrentStep issue116ExecutionStep" role="group" aria-label={pendingMadnessExecution ? "집착 위반 처형 사망 확인" : "처형 결정"}>
             <div className="issue116ExecutionTarget">
-              <span>처형 대상</span>
-              <strong>{candidate?.name ?? "없음"}</strong>
+              <span>{pendingMadnessExecution ? "집착 위반 처형" : "처형 대상"}</span>
+              <strong>{candidate ? pendingMadnessExecution ? `${candidate.seat}번 ${candidate.name}` : candidate.name : "없음"}</strong>
             </div>
-            <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>확정</button>
+            <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>{pendingMadnessExecution ? "사망 확인" : "확정"}</button>
+          </article>
+        ) : step?.character === "cerenovus" && step.requiredInput.kind === "madnessAssignment" && actor ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="세레노버스 집착 지정">
+            <CharacterDetailButton
+              details={sectsAndVioletsCharacterDetail("cerenovus")}
+              className="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            >
+              {sectsAndVioletsCharacterAsset("cerenovus") ? <img src={sectsAndVioletsCharacterAsset("cerenovus")!.src} alt="세레노버스 공식 캐릭터 아이콘" /> : null}
+              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>세레노버스</span><strong>{actor.name}</strong></div>
+            </CharacterDetailButton>
+            <p className="snvInformationAbility">{actorSummary}</p>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartCerenovus}>집착 지정</button></div>
           </article>
         ) : step?.character === "snakeCharmer" && step.requiredInput.kind === "playerIds" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="뱀 조련사 대상 선택">
@@ -175,6 +194,8 @@ export function SectsAndVioletsLiveGrimoire({
   targetId,
   targetIds = [],
   centerPrompt,
+  handoffSupplement,
+  handoffSupplementReady = true,
   operationBusy,
   tokensByPlayerId = {},
   dayActionRecords = [],
@@ -198,6 +219,8 @@ export function SectsAndVioletsLiveGrimoire({
   targetId?: string;
   targetIds?: string[];
   centerPrompt?: ReactNode;
+  handoffSupplement?: ReactNode;
+  handoffSupplementReady?: boolean;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
   dayActionRecords?: ConfirmedDayActionRecord[];
@@ -223,7 +246,7 @@ export function SectsAndVioletsLiveGrimoire({
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "cerenovus" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -234,7 +257,7 @@ export function SectsAndVioletsLiveGrimoire({
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
   const informationTargetCount = handoff?.kind === "dreamer" ? 1 : handoff?.kind === "seamstress" ? 2 : 0;
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
-    : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId)
+    : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "cerenovus" ? Boolean(targetId) && handoffSupplementReady
       : informationTargetCount > 0 ? targetIds.length === informationTargetCount : true;
 
   const closePlayerDetails = useCallback(() => {
@@ -276,7 +299,7 @@ export function SectsAndVioletsLiveGrimoire({
               ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
               : handoff?.kind === "vote" && selected ? "투표"
                 : handoff?.kind === "demon" && selected ? "공격 대상"
-                  : (handoff?.kind === "snakeCharmer" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
+                  : (handoff?.kind === "snakeCharmer" || handoff?.kind === "cerenovus" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
             const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
@@ -286,7 +309,7 @@ export function SectsAndVioletsLiveGrimoire({
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
               : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id)
-                : handoff?.kind === "snakeCharmer" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
+                : handoff?.kind === "snakeCharmer" || handoff?.kind === "cerenovus" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
                   : false;
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
@@ -371,7 +394,7 @@ export function SectsAndVioletsLiveGrimoire({
             <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
               {centerPrompt}
             </div>
-          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" || informationTargetCount > 0 ? (
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" || handoff.kind === "cerenovus" || informationTargetCount > 0 ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
@@ -398,8 +421,9 @@ export function SectsAndVioletsLiveGrimoire({
             ) : informationTargetCount > 0 ? (
               <dl>{targetIds.map((id, index) => <div key={id}><dt>{index + 1}번째</dt><dd>{playerLabel(playerById(players, id))}</dd></div>)}</dl>
             ) : (
-              <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
+              <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "demon" ? "공격 대상" : "선택 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
             )}
+            {handoffSupplement}
             {handoff.complete ? (
               <button type="button" className={`issue116PrimaryAction${handoff.kind === "vote" ? " issue116VoteCompleteAction" : " issue116NextAction"}`} onClick={onReturn}>{handoff.kind === "vote" ? "투표 완료 →" : "다음 →"}</button>
             ) : (
@@ -434,8 +458,8 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
   return (
     <ol className="snvPhaseOverview" aria-label={replayState.phase === "day" ? "낮 순서" : "이후 밤 순서"}>
       {replayState.phaseOverview.map((step) => (
-        <li key={step.id} className={step.status === "current" ? "current" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
-          <span>{step.status === "current" ? "현재" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
+        <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
+          <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
           <strong>{stepLabel(step)}</strong>
         </li>
       ))}
@@ -446,6 +470,7 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
 function stepLabel(step: PhaseStep) {
   const suffix = step.id.split(":").at(-1);
   if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
+  if (step.id.includes(":madnessExecution:")) return "집착 위반 처형 · 사망 확인";
   if (step.stepType === "execution" || step.stepType === "executionDeath") return "처형";
   if (suffix === "announceDeaths") return "아침 사망 발표";
   if (suffix === "whisper") return "밀담";
@@ -478,6 +503,7 @@ function handoffPanelTitle(kind: LiveHandoffKind, complete: boolean) {
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"
       : kind === "snakeCharmer" ? "뱀 조련사"
+        : kind === "cerenovus" ? "세레노버스 집착 지정"
         : kind === "dreamer" ? "꿈꾸는 자"
           : kind === "seamstress" ? "재봉사" : "악마 공격";
   return complete ? `${task} 결과` : task;
@@ -499,6 +525,7 @@ function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Playe
   if (kind === "vote") return `${votes}표로 투표 확정`;
   if (kind === "dreamer" || kind === "seamstress") return "선택 확정";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
+  if (kind === "cerenovus") return target ? `${playerLabel(target)} 집착 지정` : "집착 대상을 선택하세요";
   return target ? `${playerLabel(target)} 공격 확정` : "공격 대상을 선택하세요";
 }
 

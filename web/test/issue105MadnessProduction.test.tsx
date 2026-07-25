@@ -1,0 +1,156 @@
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expect, test } from "vitest";
+import type { Command, GameEvent, GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
+import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+
+test("the production UI records and settles a Mutant violation with separate execution and death confirmations", async () => {
+  const game = await firstDayMadnessGame();
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await user.click(await screen.findByRole("button", { name: /변종 집착 확인 열기, \[1번 민지\]/ }));
+  expect(screen.getByRole("heading", { name: "[1번 민지] 외지인 집착 확인" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "외지인임을 집착함" }));
+
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessCheckRecorded"));
+  await user.click(screen.getByRole("button", { name: "[1번 민지] 처형" }));
+  const dialog = screen.getByRole("alertdialog", { name: "[1번 민지] 처형 확인" });
+  await user.click(within(dialog).getByRole("button", { name: "처형 확정" }));
+
+  expect(await screen.findByRole("group", { name: "집착 위반 처형 사망 확인" })).toBeTruthy();
+  expect(screen.getByText("1번 민지")).toBeTruthy();
+  expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessExecutionConfirmed");
+
+  await user.click(screen.getByRole("button", { name: "사망 확인" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "deathConfirmed",
+    payload: { playerId: "player-1" },
+  }));
+  expect(await screen.findByRole("heading", { name: /2일차 밤/ })).toBeTruthy();
+});
+
+test("the production first-night UI assigns a clearly selected Cerenovus target and good character", async () => {
+  const game = await cerenovusNightGame();
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+  await user.click(await screen.findByRole("button", { name: "집착 지정" }));
+  await user.click(screen.getByRole("button", { name: /2번 좌석, 현우, 화가/ }));
+  await user.selectOptions(screen.getByRole("combobox", { name: "집착할 캐릭터" }), "artist");
+  await user.click(screen.getByRole("button", { name: "2번 현우 집착 지정" }));
+
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "madnessAssigned",
+    payload: { sourcePlayerId: "player-6", targetPlayerId: "player-2", requiredCharacterId: "artist" },
+  }));
+});
+
+async function firstDayMadnessGame(): Promise<GameFile> {
+  const game = baseMadnessGame();
+  for (let attempts = 0; attempts < 48; attempts += 1) {
+    const state = await replayOrThrow(game);
+    if (state.phase === "day") return game;
+    if (!state.currentStep) throw new Error("expected a first-night step");
+    await appendStep(game, state);
+  }
+  throw new Error("did not reach the first day");
+}
+
+async function cerenovusNightGame(): Promise<GameFile> {
+  const game = baseMadnessGame();
+  for (let attempts = 0; attempts < 48; attempts += 1) {
+    const state = await replayOrThrow(game);
+    if (state.currentStep?.requiredInput.kind === "madnessAssignment") return game;
+    if (!state.currentStep) throw new Error("expected a first-night step");
+    await appendStep(game, state);
+  }
+  throw new Error("did not reach Cerenovus");
+}
+
+async function appendStep(game: GameFile, state: ReplayState) {
+  if (!state.currentStep) throw new Error("expected a current step");
+  const command = commandFor(state.currentStep);
+  try {
+    await proposeAndAppend(game, command);
+  } catch (error) {
+    throw new Error(`${state.currentStep.id} ${JSON.stringify(command)}: ${String(error)}`);
+  }
+}
+
+function baseMadnessGame(): GameFile {
+  const players: SetupPlayerInput[] = [
+    player("player-1", 1, "민지", "mutant"),
+    player("player-2", 2, "현우", "artist"),
+    player("player-3", 3, "서준", "dreamer"),
+    player("player-4", 4, "도윤", "seamstress"),
+    player("player-5", 5, "유나", "savant"),
+    player("player-6", 6, "하린", "cerenovus"),
+    player("player-7", 7, "준호", "vortox"),
+  ];
+  const events: GameEvent[] = [{
+    id: "setup-1",
+    type: "setupConfirmed",
+    phase: "setup",
+    payload: { players },
+    summary: "초기 설정 확정: 7명",
+    createdAt: "2026-07-26T00:00:00.000Z",
+  }];
+  const selectedIds = players.map((entry) => entry.actualCharacter);
+  return {
+    schemaVersion: 3,
+    game: {
+      id: "issue-105-production-ui",
+      name: "Issue 105 production UI",
+      scriptId: "sectsAndViolets",
+      createdAt: "2026-07-26T00:00:00.000Z",
+      updatedAt: "2026-07-26T00:04:00.000Z",
+      events,
+    },
+    ui: {
+      sectsAndVioletsSession: {
+        version: 1,
+        activeTab: "play",
+        savedAt: "2026-07-26T00:04:00.000Z",
+        setup: {
+          playerCount: 7,
+          demon: "vortox",
+          selectedIds,
+          seatAssignments: Object.fromEntries(selectedIds.map((id, index) => [index + 1, id])),
+          seatAlignments: Object.fromEntries(selectedIds.map((_id, index) => [index + 1, index >= 5 ? "evil" : "good"])),
+          seatNames: Object.fromEntries(players.map((entry) => [entry.seat, entry.name])),
+          rosterConfirmed: true,
+          seatingConfirmed: true,
+        },
+        phaseCheckpoints: [],
+      },
+    },
+  };
+}
+
+function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
+  if (step.support === "manual") {
+    return { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };
+  }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-2"], characterId: "artist" } } };
+  }
+  if (step.informationPrompt?.targetChecks?.length) {
+    const check = step.informationPrompt?.targetChecks?.[0];
+    if (!check) throw new Error("expected a target check");
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: check.targetPlayerIds }, deliveredResult: check.choices[0].result } };
+  }
+  if (step.informationPrompt?.computedResult) {
+    return { type: "confirmStep", payload: { stepId: step.id, input: null, deliveredResult: step.informationPrompt.computedResult } };
+  }
+  return { type: "confirmStep", payload: { stepId: step.id, input: null } };
+}
+
+function player(id: string, seat: number, name: string, character: string): SetupPlayerInput {
+  return { id, seat, name, actualCharacter: character, shownCharacter: character };
+}

@@ -90,6 +90,7 @@ pub(crate) fn day_steps(
             }
             PhaseStepStatus::Waiting
             | PhaseStepStatus::Current
+            | PhaseStepStatus::Interrupted
             | PhaseStepStatus::NeedsFollowUp => {
                 steps.push(nomination_step_for_players(
                     &prefix,

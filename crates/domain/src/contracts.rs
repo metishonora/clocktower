@@ -71,6 +71,14 @@ pub(crate) enum Command {
     RecordDayAction {
         payload: RecordDayActionCommandPayload,
     },
+    #[serde(rename = "recordMadnessCheck")]
+    RecordMadnessCheck {
+        payload: RecordMadnessCheckCommandPayload,
+    },
+    #[serde(rename = "executeMadness")]
+    ExecuteMadness {
+        payload: ExecuteMadnessCommandPayload,
+    },
     #[serde(rename = "endGame")]
     EndGame { payload: EndGameCommandPayload },
     #[serde(rename = "updatePlayerAnnotations")]
@@ -127,6 +135,21 @@ pub(crate) struct RecordDayActionCommandPayload {
     pub(crate) expected_event_count: usize,
     pub(crate) actor_player_id: String,
     pub(crate) record: DayActionRecord,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct RecordMadnessCheckCommandPayload {
+    pub(crate) assignment_id: String,
+    pub(crate) expected_event_count: usize,
+    pub(crate) result: MadnessCheckResult,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ExecuteMadnessCommandPayload {
+    pub(crate) assignment_id: String,
+    pub(crate) expected_event_count: usize,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -226,6 +249,10 @@ pub(crate) struct ReplayState {
     pub(crate) available_day_actions: Vec<AvailableDayAction>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) day_action_records: Vec<ConfirmedDayActionRecord>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) madness_assignments: Vec<MadnessAssignmentState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) pending_madness_execution: Option<PendingMadnessExecution>,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -244,6 +271,48 @@ pub(crate) struct ConfirmedDayActionRecord {
     pub(crate) actor_player_id: String,
     pub(crate) character_id: String,
     pub(crate) record: DayActionRecord,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MadnessAssignmentState {
+    pub(crate) assignment_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) target_player_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) required_character_id: Option<String>,
+    pub(crate) status: MadnessStatus,
+    pub(crate) source_effective: bool,
+    pub(crate) can_check: bool,
+    pub(crate) can_execute: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) violation_check_event_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PendingMadnessExecution {
+    pub(crate) event_id: String,
+    pub(crate) assignment_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) interrupted_step_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum MadnessStatus {
+    Unchecked,
+    Clear,
+    Violated,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum MadnessCheckResult {
+    Clear,
+    Violation,
 }
 
 #[derive(Debug, Serialize)]
@@ -502,6 +571,16 @@ pub(crate) enum GameEventKind {
     SlayerAbilityUsed { payload: SlayerAbilityUsedPayload },
     #[serde(rename = "dayActionRecorded")]
     DayActionRecorded { payload: DayActionRecordedPayload },
+    #[serde(rename = "madnessAssigned")]
+    MadnessAssigned { payload: MadnessAssignedPayload },
+    #[serde(rename = "madnessCheckRecorded")]
+    MadnessCheckRecorded {
+        payload: MadnessCheckRecordedPayload,
+    },
+    #[serde(rename = "madnessExecutionConfirmed")]
+    MadnessExecutionConfirmed {
+        payload: MadnessExecutionConfirmedPayload,
+    },
     #[serde(rename = "demonSuccessionConfirmed")]
     DemonSuccessionConfirmed {
         payload: DemonSuccessionConfirmedPayload,
@@ -618,6 +697,36 @@ pub(crate) struct DayActionRecordedPayload {
     pub(crate) actor_player_id: String,
     pub(crate) character_id: String,
     pub(crate) record: DayActionRecord,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MadnessAssignedPayload {
+    pub(crate) step_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) required_character_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MadnessCheckRecordedPayload {
+    pub(crate) assignment_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) result: MadnessCheckResult,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MadnessExecutionConfirmedPayload {
+    pub(crate) assignment_id: String,
+    pub(crate) check_event_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) interrupted_step_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

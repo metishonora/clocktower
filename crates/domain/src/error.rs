@@ -54,6 +54,11 @@ pub(crate) enum ErrorKind {
     InvalidDayActionActor,
     DayActionUnavailable,
     InvalidDayActionRecord,
+    MadnessCheckWrongPhase,
+    MadnessAssignmentUnavailable,
+    MadnessCheckUnchanged,
+    MadnessViolationLatched,
+    MadnessExecutionUnavailable,
     MissingMayorDecision,
     InvalidMayorDecision,
     InvalidPlayerAnnotations,
@@ -192,6 +197,26 @@ impl ErrorKind {
             Self::InvalidDayActionRecord => (
                 "INVALID_DAY_ACTION_RECORD",
                 "낮 능력 기록의 형식이나 값이 올바르지 않습니다.",
+            ),
+            Self::MadnessCheckWrongPhase => (
+                "MADNESS_CHECK_WRONG_PHASE",
+                "광기 준수 여부는 낮에만 기록할 수 있습니다.",
+            ),
+            Self::MadnessAssignmentUnavailable => (
+                "MADNESS_ASSIGNMENT_UNAVAILABLE",
+                "현재 확인할 수 있는 광기 지시가 아닙니다.",
+            ),
+            Self::MadnessCheckUnchanged => (
+                "MADNESS_CHECK_UNCHANGED",
+                "같은 광기 판정은 다시 기록하지 않습니다.",
+            ),
+            Self::MadnessViolationLatched => (
+                "MADNESS_VIOLATION_LATCHED",
+                "확인된 광기 위반은 되돌리기 전까지 유지됩니다.",
+            ),
+            Self::MadnessExecutionUnavailable => (
+                "MADNESS_EXECUTION_UNAVAILABLE",
+                "현재 이 광기 위반으로 처형할 수 없습니다.",
             ),
             Self::MissingMayorDecision => (
                 "MISSING_MAYOR_DECISION",

@@ -205,6 +205,8 @@ export type Command =
     }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
   | { type: "recordDayAction"; payload: RecordDayActionPayload }
+  | { type: "recordMadnessCheck"; payload: RecordMadnessCheckPayload }
+  | { type: "executeMadness"; payload: ExecuteMadnessPayload }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
       type: "updatePlayerAnnotations";
@@ -237,6 +239,19 @@ export type RecordDayActionPayload = {
   expectedEventCount: number;
   actorPlayerId: string;
   record: DayActionRecordInput;
+};
+
+export type MadnessCheckResult = "clear" | "violation";
+
+export type RecordMadnessCheckPayload = {
+  assignmentId: string;
+  expectedEventCount: number;
+  result: MadnessCheckResult;
+};
+
+export type ExecuteMadnessPayload = {
+  assignmentId: string;
+  expectedEventCount: number;
 };
 
 export type AvailableDayAction = {
@@ -272,6 +287,29 @@ export type ReplayState = {
   pendingIdentityReveals?: PendingIdentityReveal[];
   availableDayActions?: AvailableDayAction[];
   dayActionRecords?: ConfirmedDayActionRecord[];
+  madnessAssignments?: MadnessAssignmentState[];
+  pendingMadnessExecution?: PendingMadnessExecution;
+};
+
+export type MadnessAssignmentState = {
+  assignmentId: string;
+  sourcePlayerId: string;
+  sourceCharacterId: "mutant" | "cerenovus";
+  targetPlayerId: string;
+  requiredCharacterId?: string;
+  status: "unchecked" | "clear" | "violated";
+  sourceEffective: boolean;
+  canCheck: boolean;
+  canExecute: boolean;
+  violationCheckEventId?: string;
+};
+
+export type PendingMadnessExecution = {
+  eventId: string;
+  assignmentId: string;
+  sourceCharacterId: "mutant" | "cerenovus";
+  targetPlayerId: string;
+  interruptedStepId: string;
 };
 
 export type PendingIdentityReveal = {
@@ -554,6 +592,36 @@ export type GameEvent = EventCommon &
         };
       }
     | {
+        type: "madnessAssigned";
+        payload: {
+          stepId: string;
+          sourcePlayerId: string;
+          targetPlayerId: string;
+          requiredCharacterId: string;
+        };
+      }
+    | {
+        type: "madnessCheckRecorded";
+        payload: {
+          assignmentId: string;
+          sourcePlayerId: string;
+          sourceCharacterId: "mutant" | "cerenovus";
+          targetPlayerId: string;
+          result: MadnessCheckResult;
+        };
+      }
+    | {
+        type: "madnessExecutionConfirmed";
+        payload: {
+          assignmentId: string;
+          checkEventId: string;
+          sourcePlayerId: string;
+          sourceCharacterId: "mutant" | "cerenovus";
+          targetPlayerId: string;
+          interruptedStepId: string;
+        };
+      }
+    | {
         type: "demonSuccessionConfirmed";
         payload: {
           triggerImpDeathEventId: string;
@@ -738,6 +806,7 @@ export type PhaseOverviewItem = PhaseStep & {
     | "complete"
     | "skipped"
     | "needsFollowUp"
+    | "interrupted"
     | "manualComplete"
     | "notApplicable";
 };
@@ -783,6 +852,7 @@ export type RequiredInputKind =
   | "executionDeathDecision"
   | "slayerDeathDecision"
   | "demonSuccession"
+  | "madnessAssignment"
   | "day"
   | "night";
 
