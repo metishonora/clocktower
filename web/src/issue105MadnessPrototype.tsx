@@ -365,11 +365,14 @@ function MadnessActionDock({
   return (
     <>
       {activeCheck ? (
-        <section className={`snvDayActionPanel issue105MadnessPanel${checks[activeCheck] === "violated" ? " violated" : ""}`} role="dialog" aria-label={checkLabel(activeCheck)}>
+        <section className={`snvDayActionPanel issue105MadnessPanel${checks[activeCheck] === "violated" ? " violated" : ""}`} role="dialog" aria-label={checkPanelTitle(activeCheck)}>
           <header className="snvDayActionHeader">
             <button type="button" className="issue105ActionIdentity" onClick={onClose} aria-label="광기 확인 창 닫기">
               <img src={sectsAndVioletsCharacterAsset(activeCheck)?.src} alt="" />
-              <div><span>4번 도윤 · {activeCheck === "mutant" ? "변종" : "세레노버스에게 선택됨"}</span><h2>{checkLabel(activeCheck)}</h2></div>
+              <div>
+                <span>{activeCheck === "mutant" ? "변종" : "세레노버스 · 시계공"}</span>
+                <h2><em>[4번 도윤]</em> {activeCheck === "mutant" ? "외지인 집착 확인" : "집착 확인"}</h2>
+              </div>
               <b aria-hidden="true">×</b>
             </button>
             <p>{checkPrompt(activeCheck)}</p>
@@ -385,8 +388,7 @@ function MadnessActionDock({
             ) : (
               <>
                 {checks[activeCheck] === "clear" ? <div className="issue105ClearResult" role="status">현재 판정 · 위반 없음</div> : null}
-                <fieldset>
-                  <legend>이야기꾼 판정</legend>
+                <fieldset aria-label="[4번 도윤] 판정 결과">
                   <div>
                     {activeCheck === "mutant" ? (
                       <>
@@ -524,10 +526,14 @@ function checkLabel(checkId: CheckId) {
   return checkId === "mutant" ? "변종의 외지인 집착 확인" : "세레노버스 대상의 집착 확인";
 }
 
+function checkPanelTitle(checkId: CheckId) {
+  return `[4번 도윤] ${checkLabel(checkId)}`;
+}
+
 function checkPrompt(checkId: CheckId) {
   return checkId === "mutant"
-    ? "변종이 자신이 외지인이라는 사실을 다른 플레이어에게 설득하려 했습니까?"
-    : "선택한 대상이 자신이 시계공이라고 그룹을 설득하기 위해 충분히 노력했습니까?";
+    ? "[4번 도윤]이 자신이 외지인이라는 사실을 다른 플레이어에게 설득하려 했습니까?"
+    : "[4번 도윤]이 자신이 시계공이라고 그룹을 설득하기 위해 충분히 노력했습니까?";
 }
 
 function player(

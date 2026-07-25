@@ -8,7 +8,9 @@ test("ends the remaining day after a madness execution", async () => {
   render(<Issue105MadnessPrototype />);
 
   await user.click(screen.getByRole("button", { name: /변종의 외지인 집착 확인 열기/ }));
-  const check = screen.getByRole("dialog", { name: "변종의 외지인 집착 확인" });
+  const check = screen.getByRole("dialog", { name: "[4번 도윤] 변종의 외지인 집착 확인" });
+  expect(within(check).queryByText("이야기꾼 판정")).toBeNull();
+  expect(within(check).getByRole("heading", { name: "[4번 도윤] 외지인 집착 확인" })).toBeTruthy();
   await user.click(within(check).getByRole("button", { name: "외지인임을 집착함" }));
   await user.click(within(check).getByRole("button", { name: "처형" }));
   await user.click(within(screen.getByRole("alertdialog", { name: "광기 처형 확인" })).getByRole("button", { name: "처형 확정" }));
@@ -25,7 +27,9 @@ test("returns to the interrupted night action after a madness execution", async 
   render(<Issue105MadnessPrototype />);
 
   await user.click(screen.getByRole("button", { name: "밤 · 처형 후 복귀" }));
-  const check = screen.getByRole("dialog", { name: "세레노버스 대상의 집착 확인" });
+  const check = screen.getByRole("dialog", { name: "[4번 도윤] 세레노버스 대상의 집착 확인" });
+  expect(within(check).queryByText("이야기꾼 판정")).toBeNull();
+  expect(within(check).getByRole("heading", { name: "[4번 도윤] 집착 확인" })).toBeTruthy();
   await user.click(within(check).getByRole("button", { name: "처형" }));
   await user.click(within(screen.getByRole("alertdialog", { name: "광기 처형 확인" })).getByRole("button", { name: "처형 확정" }));
 

@@ -57,8 +57,9 @@
 .issue105ActionIdentity img { width: 58px; height: 58px; object-fit: contain; }
 .issue105ActionIdentity span { color: #775f7d; font-size: .65rem; font-weight: 850; }
 .issue105ActionIdentity h2 { margin: 3px 0 0; color: #38283d; font: 1.55rem Georgia, serif; }
+.issue105ActionIdentity h2 em { color: #9c3048; font-style: normal; white-space: nowrap; }
 .issue105ActionIdentity b { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; color: #725b78; background: rgba(130, 80, 154, .08); font-size: 1.2rem; }
-.issue105MadnessForm fieldset > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.issue105MadnessForm fieldset > div { margin-top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .issue105MadnessForm fieldset button { min-height: 52px; padding: 8px; line-height: 1.35; }
 .issue105MadnessForm fieldset button.dangerChoice { border-color: rgba(174, 57, 81, .27); color: #9a2f47; background: rgba(174, 57, 81, .07); }
 .issue105ClearResult { padding: 10px 12px; border: 1px solid rgba(54, 124, 94, .18); border-radius: 11px; color: #306c54; background: rgba(54, 124, 94, .08); font-size: .72rem; font-weight: 900; }
