@@ -53,7 +53,7 @@ export function DayActionDock({
       <div className={`snvDayActionScrollClearance${activeAction ? " open" : ""}`} aria-hidden="true" />
       {activeAction && activePlayer ? (
         <section
-          className="snvDayActionPanel"
+          className={`snvDayActionPanel snvDayActionPanel--${activeAction.characterId}`}
           role="dialog"
           aria-label={`${characterLabel(activeAction.characterId)} 능력 사용`}
         >

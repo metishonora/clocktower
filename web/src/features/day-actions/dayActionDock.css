@@ -39,7 +39,8 @@
   width: min(480px, calc(100vw - 28px));
   max-height: min(64dvh, 620px);
   padding: 18px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid rgba(91, 57, 101, .18);
   border-radius: 24px;
   color: #3d3041;
@@ -55,11 +56,12 @@
 .snvDayActionIdentity span { color: #775f7d; font-size: .65rem; font-weight: 850; }
 .snvDayActionIdentity h2 { margin: 3px 0 0; color: #38283d; font: 1.7rem Georgia, serif; }
 .snvDayActionHeader > p { margin: 0; padding: 11px 12px; border: 1px solid rgba(91, 57, 101, .1); border-radius: 11px; color: #5f4d64; background: rgba(130, 80, 154, .045); font-size: .75rem; line-height: 1.55; }
+.snvDayActionPanel--artist { max-height: min(72dvh, 680px); }
 
 .snvDayActionForm { display: grid; margin-top: 16px; gap: 14px; }
 .snvDayActionForm label, .snvDayActionForm legend { color: #6e5474; font-size: .68rem; font-weight: 900; }
 .snvArtistForm label { display: grid; gap: 7px; }
-.snvArtistForm textarea { width: 100%; min-height: 82px; resize: vertical; padding: 11px; border: 1px solid rgba(91, 57, 101, .16); border-radius: 12px; color: #3d3041; background: rgba(255, 255, 255, .74); font: inherit; line-height: 1.5; }
+.snvArtistForm textarea { box-sizing: border-box; width: 100%; max-width: 100%; min-height: 82px; resize: vertical; padding: 11px; border: 1px solid rgba(91, 57, 101, .16); border-radius: 12px; color: #3d3041; background: rgba(255, 255, 255, .74); font: inherit; line-height: 1.5; }
 .snvDayActionForm fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .snvDayActionForm fieldset > div { display: grid; margin-top: 7px; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .snvDayActionForm button { border: 1px solid rgba(91, 57, 101, .15); border-radius: 11px; color: #544259; background: rgba(255, 255, 255, .68); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
@@ -106,6 +108,7 @@
   .snvDayActionDock > button { width: 50px; height: 50px; }
   .snvDayActionDock > button img { width: 40px; height: 40px; }
   .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvDayActionPanel--artist { max-height: min(72dvh, 620px); }
   .snvDayActionScrollClearance.open { height: min(570px, 68dvh); }
 }
 

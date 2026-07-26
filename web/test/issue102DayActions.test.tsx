@@ -80,6 +80,7 @@ test("Artist and Juggler submit only their approved compact records", async () =
 
   await user.click(screen.getByRole("button", { name: "화가 행동 열기, 2번 현우" }));
   const artist = screen.getByRole("dialog", { name: "화가 능력 사용" });
+  expect(artist.classList.contains("snvDayActionPanel--artist")).toBe(true);
   await user.clear(within(artist).getByRole("textbox", { name: "질문" }));
   await user.type(within(artist).getByRole("textbox", { name: "질문" }), "악마가 홀수 번호 좌석에 있나요?");
   await user.click(within(artist).getByRole("button", { name: "아니오" }));
