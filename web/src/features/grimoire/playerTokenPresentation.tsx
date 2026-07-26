@@ -96,17 +96,22 @@ export function PlayerTokenDetailDialog({
   tokens,
   theme,
   details,
+  jugglerCorrectCount,
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
   details?: ReactNode;
+  jugglerCorrectCount?: number;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [characterDetailOpen, setCharacterDetailOpen] = useState(false);
+  const correctBadgeCount = jugglerCorrectCount === undefined
+    ? undefined
+    : Math.max(0, Math.min(5, jugglerCorrectCount));
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -151,12 +156,33 @@ export function PlayerTokenDetailDialog({
         <header>
           <CharacterDetailButton
             details={sectsAndVioletsCharacterDetail(player.characterId)}
-            className="playerTokenCharacterIdentityButton"
+            className={`playerTokenCharacterIdentityButton${correctBadgeCount === undefined ? "" : " jugglerResult"}`}
             theme={theme === "day" ? "snv-day" : "snv-night"}
             onOpenChange={setCharacterDetailOpen}
           >
-            {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
-            <strong>{player.characterLabel}</strong>
+            {correctBadgeCount === undefined ? (
+              <>
+                {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
+                <strong>{player.characterLabel}</strong>
+              </>
+            ) : (
+              <>
+                <strong>{player.characterLabel}</strong>
+                <span className="playerJugglerIconStack">
+                  {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
+                  <span className="playerJugglerCorrectBadges" aria-label={`곡예사 정답 배지 ${correctBadgeCount}개`}>
+                    {Array.from({ length: correctBadgeCount }, (_, index) => (
+                      <i
+                        key={index}
+                        aria-hidden="true"
+                        style={{ "--juggler-badge-index": index } as CSSProperties}
+                      >✓</i>
+                    ))}
+                  </span>
+                </span>
+                <small className="playerJugglerCorrectCount">정답 • {correctBadgeCount}개</small>
+              </>
+            )}
           </CharacterDetailButton>
           <div>
             <span>좌석 {player.seat} · {player.characterKindLabel}</span>

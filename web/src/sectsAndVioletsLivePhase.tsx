@@ -255,6 +255,16 @@ export function SectsAndVioletsLiveGrimoire({
     (character) => character.id === detailsPlayer?.actualCharacter,
   );
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
+  const detailsDayActionRecords = detailsPlayer
+    ? dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)
+    : [];
+  const detailsJugglerRecord = [...detailsDayActionRecords]
+    .reverse()
+    .find((record) => record.record.kind === "juggler");
+  const detailsJugglerCorrectCount = detailsPlayer?.actualCharacter === "juggler"
+    && detailsJugglerRecord?.record.kind === "juggler"
+    ? detailsJugglerRecord.record.correctCount
+    : undefined;
   const informationTargetCount = handoff?.kind === "dreamer" ? 1 : handoff?.kind === "seamstress" ? 2 : 0;
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
     : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "cerenovus" ? Boolean(targetId) && handoffSupplementReady
@@ -445,7 +455,8 @@ export function SectsAndVioletsLiveGrimoire({
             alignment: detailsPlayer.alignment,
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
-          details={<DayActionRecordHistory records={dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)} />}
+          details={<DayActionRecordHistory records={detailsDayActionRecords} />}
+          jugglerCorrectCount={detailsJugglerCorrectCount}
           theme={currentStep?.phase === "day" ? "day" : "night"}
           onClose={closePlayerDetails}
         />

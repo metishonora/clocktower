@@ -81,10 +81,6 @@
 .snvSavantReferenceList button { min-height: 45px; padding: 9px 11px; text-align: left; line-height: 1.45; }
 .snvSavantReferenceList button.selected { box-shadow: inset 3px 0 #82509a; }
 
-.snvJugglerCountSummary { display: grid; padding: 14px; grid-template-columns: 1fr auto; align-items: center; gap: 3px 12px; border: 1px solid rgba(88, 55, 97, .12); border-radius: 13px; background: rgba(255, 255, 255, .45); }
-.snvJugglerCountSummary span { color: #694d70; font-size: .68rem; font-weight: 900; }
-.snvJugglerCountSummary strong { grid-row: 1 / span 2; grid-column: 2; color: #724581; font: 2rem Georgia, serif; }
-.snvJugglerCountSummary small { color: #77647c; font-size: .64rem; }
 .snvJugglerCountChoices { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .snvJugglerCountChoices button { min-height: 44px; }
 

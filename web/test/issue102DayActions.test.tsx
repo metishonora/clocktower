@@ -93,6 +93,8 @@ test("Artist and Juggler submit only their approved compact records", async () =
 
   await user.click(screen.getByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
   const juggler = screen.getByRole("dialog", { name: "곡예사 능력 사용" });
+  expect(within(juggler).queryByText("정답 수")).toBeNull();
+  expect(within(juggler).queryByText("공개 추측은 별도로 기록하지 않습니다.")).toBeNull();
   await user.click(within(juggler).getByRole("button", { name: "3" }));
   await user.click(within(juggler).getByRole("button", { name: "첫 낮 추측 완료" }));
   expect(onConfirm).toHaveBeenLastCalledWith(availableActions[2], {

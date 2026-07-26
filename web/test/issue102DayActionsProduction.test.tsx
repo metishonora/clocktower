@@ -48,6 +48,37 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
   expect(within(playerDetails).getByText("답변 · 아니오")).toBeTruthy();
 });
 
+test("a recorded Juggler result decorates the character identity instead of adding day-action history", async () => {
+  const game = await firstDayGame();
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await user.click(await screen.findByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
+  const actionPanel = screen.getByRole("dialog", { name: "곡예사 능력 사용" });
+  await user.click(within(actionPanel).getByRole("button", { name: "3" }));
+  await user.click(within(actionPanel).getByRole("button", { name: "첫 낮 추측 완료" }));
+
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "dayActionRecorded",
+    payload: {
+      actorPlayerId: "player-3",
+      characterId: "juggler",
+      record: { kind: "juggler", correctCount: 3 },
+    },
+  }));
+
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  await user.click(screen.getByRole("button", { name: /3번 좌석, 서준, 곡예사/ }));
+  const playerDetails = screen.getByRole("dialog", { name: "3번 서준 플레이어 상세" });
+  const identity = within(playerDetails).getByRole("button", { name: "곡예사 캐릭터 상세 열기" });
+  expect(within(identity).getByText("곡예사")).toBeTruthy();
+  expect(within(identity).getByText("정답 • 3개")).toBeTruthy();
+  expect(within(identity).getByLabelText("곡예사 정답 배지 3개").children).toHaveLength(3);
+  expect(within(playerDetails).queryByRole("region", { name: "낮 자유 행동 기록" })).toBeNull();
+});
+
 async function firstDayGame(): Promise<GameFile> {
   const players: SetupPlayerInput[] = [
     player("player-1", 1, "민지", "savant"),

@@ -200,7 +200,6 @@ function JugglerForm({ busy, onComplete }: {
   const [correctCount, setCorrectCount] = useState(0);
   return (
     <div className="snvDayActionForm snvJugglerForm">
-      <div className="snvJugglerCountSummary"><span>정답 수</span><strong>{correctCount}</strong><small>공개 추측은 별도로 기록하지 않습니다.</small></div>
       <div className="snvJugglerCountChoices" aria-label="곡예사 정답 수">
         {[0, 1, 2, 3, 4, 5].map((count) => <button key={count} type="button" className={correctCount === count ? "selected" : ""} aria-pressed={correctCount === count} onClick={() => setCorrectCount(count)}>{count}</button>)}
       </div>
@@ -210,16 +209,16 @@ function JugglerForm({ busy, onComplete }: {
 }
 
 export function DayActionRecordHistory({ records }: { records: ConfirmedDayActionRecord[] }) {
-  if (records.length === 0) return null;
+  const historyRecords = records.filter((entry) => entry.record.kind !== "juggler");
+  if (historyRecords.length === 0) return null;
   return (
     <section className="snvDayActionHistory" aria-label="낮 자유 행동 기록">
       <h3>낮 자유 행동 기록</h3>
-      <ol>{records.map((entry) => (
+      <ol>{historyRecords.map((entry) => (
         <li key={entry.eventId}>
           <span>{dayActionDayLabel(entry.dayId)}</span>
           {entry.record.kind === "artist" ? <><strong>화가</strong><p>{entry.record.question}</p><em>답변 · {artistAnswerLabel(entry.record.answer)}</em></> : null}
           {entry.record.kind === "savant" ? <><strong>백치천재</strong><small>참고한 문장 · {entry.record.referenceSentences.length}개</small>{entry.record.referenceSentences.length ? <ul>{entry.record.referenceSentences.map((sentence) => <li key={sentence}>{sentence}</li>)}</ul> : <p>참고 문장 없이 정보 전달 완료</p>}</> : null}
-          {entry.record.kind === "juggler" ? <><strong>곡예사</strong><p>첫 낮 추측 완료 · 정답 {entry.record.correctCount}개</p></> : null}
         </li>
       ))}</ol>
     </section>
