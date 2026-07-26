@@ -72,10 +72,6 @@ export function MadnessActionDock({
           busy={busy}
           onRecord={onRecord}
           onExecute={() => setConfirmingId(active.assignmentId)}
-          onClose={() => {
-            setActiveId(undefined);
-            onGroupDeactivate();
-          }}
         />
       ) : null}
       <div className={`snvMadnessDock ${theme}`} style={dockStyle} aria-label="집착 확인 자유 행동">
@@ -133,7 +129,6 @@ function MadnessPanel({
   busy,
   onRecord,
   onExecute,
-  onClose,
 }: {
   assignment: MadnessAssignmentState;
   players: Player[];
@@ -142,7 +137,6 @@ function MadnessPanel({
   busy: boolean;
   onRecord: (assignmentId: string, result: MadnessCheckResult) => void | Promise<void>;
   onExecute: () => void;
-  onClose: () => void;
 }) {
   const recordingRef = useRef(false);
   const [recording, setRecording] = useState(false);
@@ -188,7 +182,6 @@ function MadnessPanel({
           </CharacterDetailButton>
           {sourceCharacter?.ability ? <p className="snvMadnessAbility">{sourceCharacter.ability}</p> : null}
         </div>
-        <button type="button" aria-label="집착 확인 닫기" onClick={onClose}>×</button>
       </header>
       <p className="snvMadnessQuestion">
         {mutant

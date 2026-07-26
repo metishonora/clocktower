@@ -24,6 +24,8 @@ describe("#105 madness free actions", () => {
     expect(screen.getByText("당신이 \"외지인\"이라는 사실에 집착한다면, 당신은 처형당할 수도 있습니다.")).toBeTruthy();
     expect(screen.getByText("[7번 도윤]이 외지인임을 주장하며 집착하였나요?")).toBeTruthy();
     expect(screen.queryByText(/이야기꾼 판정/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "집착 확인 닫기" })).toBeNull();
+    expect(screen.getByRole("button", { name: /변종 집착 확인 닫기/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "외지인임을 집착함" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "위반 없음" })).toBeTruthy();
 
