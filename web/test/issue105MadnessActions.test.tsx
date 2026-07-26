@@ -23,6 +23,9 @@ describe("#105 madness free actions", () => {
     expect(screen.queryByText(/이야기꾼 판정/)).toBeNull();
     expect(screen.getByRole("button", { name: "외지인임을 집착함" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "위반 없음" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "변종 캐릭터 상세 열기" }));
+    expect(screen.getByRole("dialog", { name: "변종 캐릭터 상세" })).toBeTruthy();
   });
 
   it("records Cerenovus clear and violation with direct result buttons", async () => {

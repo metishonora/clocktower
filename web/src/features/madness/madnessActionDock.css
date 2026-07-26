@@ -36,7 +36,8 @@
 .snvMadnessPanel.day { border: 1px solid rgba(91, 57, 101, .18); color: #3d3041; background: rgba(255, 252, 250, .98); }
 .snvMadnessPanel.night { border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 24px 70px rgba(4, 1, 7, .58); }
 .snvMadnessPanel header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
-.snvMadnessIdentity { display: flex; min-width: 0; align-items: center; gap: 12px; }
+.snvMadnessIdentity { display: flex; min-width: 0; padding: 0; align-items: center; gap: 12px; border-radius: 12px; text-align: left; }
+.snvMadnessIdentity:hover { background: rgba(98, 60, 108, .06); }
 .snvMadnessIdentity > img { width: 54px; height: 54px; flex: 0 0 auto; object-fit: contain; }
 .snvMadnessIdentity > div { min-width: 0; }
 .snvMadnessPanel header span { color: #765783; font-size: .8rem; font-weight: 700; }

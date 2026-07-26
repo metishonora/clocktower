@@ -1,5 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { MadnessAssignmentState, MadnessCheckResult, Player } from "../../core/types";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
+import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
 import "./madnessActionDock.css";
@@ -155,13 +157,17 @@ function MadnessPanel({
   return (
     <section className={`snvMadnessPanel ${theme}`} aria-label={`${targetLabel} 집착 확인`}>
       <header>
-        <div className="snvMadnessIdentity">
+        <CharacterDetailButton
+          details={sectsAndVioletsCharacterDetail(assignment.sourceCharacterId)}
+          className="snvMadnessIdentity"
+          theme={theme === "day" ? "snv-day" : "snv-night"}
+        >
           {sourceAsset ? <img src={sourceAsset.src} alt={`${sourceLabel} 공식 캐릭터 아이콘`} /> : null}
           <div>
             <span>{phaseLabel} · {sourceLabel}</span>
             <h2>{mutant ? `${targetLabel} 외지인 집착 확인` : `${targetLabel} 집착 확인`}</h2>
           </div>
-        </div>
+        </CharacterDetailButton>
         <button type="button" aria-label="집착 확인 닫기" onClick={onClose}>×</button>
       </header>
       <p className="snvMadnessQuestion">
