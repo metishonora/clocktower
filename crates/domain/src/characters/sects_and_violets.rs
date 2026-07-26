@@ -7,9 +7,11 @@ use crate::{
         DemonAttackNoEffectReason, DemonAttackOutcome, GameEvent, GameEventKind, GameFile,
         ImpairmentExpiry, ImpairmentKind, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
         NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
-        NightDeathsAnnouncedPayload, PendingIdentityReveal, PhaseStepEventPayload, Proposal,
-        RecordDayActionCommandPayload, ReplayState, RevealPayload, RuleState,
-        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
+        NightDeathsAnnouncedPayload, PendingIdentityReveal, PhaseStepEventPayload,
+        PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason, PitHagTransformationOutcome,
+        PitHagTransformationResolvedPayload, Proposal, RecordDayActionCommandPayload, ReplayState,
+        RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
+        SnakeCharmerNoSwapReason,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -50,6 +52,16 @@ const TOWNSFOLK: [&str; 13] = [
 const OUTSIDERS: [&str; 4] = ["mutant", "sweetheart", "barber", "klutz"];
 const MINIONS: [&str; 4] = ["evilTwin", "witch", "cerenovus", "pitHag"];
 const DEMONS: [&str; 4] = ["fangGu", "vigormortis", "noDashii", "vortox"];
+
+fn script_character_ids() -> Vec<String> {
+    TOWNSFOLK
+        .iter()
+        .chain(OUTSIDERS.iter())
+        .chain(MINIONS.iter())
+        .chain(DEMONS.iter())
+        .map(|character| (*character).to_string())
+        .collect()
+}
 
 fn day_action_character(record: &DayActionRecord) -> &'static str {
     match record {
@@ -237,13 +249,14 @@ fn character_step(
     players: &[Player],
 ) -> PhaseStep {
     let snake_charmer = character == "snakeCharmer";
+    let pit_hag = character == "pitHag";
     let numeric_information = matches!(character, "clockmaker" | "oracle" | "juggler");
     let targeted_information = matches!(character, "dreamer" | "seamstress");
     let information = numeric_information
         || targeted_information
         || matches!(character, "flowergirl" | "townCrier" | "sage");
     PhaseStep {
-        id: if snake_charmer {
+        id: if snake_charmer || pit_hag {
             format!("{prefix}:{character}:{}", player.id)
         } else {
             format!("{prefix}:{character}")
@@ -252,7 +265,32 @@ fn character_step(
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: if snake_charmer || targeted_information {
+        required_input: if pit_hag {
+            RequiredInput {
+                kind: RequiredInputKind::CharacterTransformation,
+                target: None,
+                min_selections: Some(1),
+                max_selections: Some(1),
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: Some(script_character_ids()),
+                allowed_player_ids: Some(
+                    players
+                        .iter()
+                        .map(|candidate| candidate.id.clone())
+                        .collect(),
+                ),
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            }
+        } else if snake_charmer || targeted_information {
             let selections = if character == "seamstress" { 2 } else { 1 };
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
@@ -292,7 +330,7 @@ fn character_step(
             required_none()
         },
         can_skip: character == "seamstress",
-        support: if snake_charmer || information {
+        support: if snake_charmer || pit_hag || information {
             PhaseStepSupport::Automated
         } else {
             PhaseStepSupport::Manual
@@ -302,51 +340,92 @@ fn character_step(
     }
 }
 
-fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<PhaseStep> {
-    let resolved_actor = events.iter().find_map(|event| match &event.kind {
-        GameEventKind::NightActionResolved { payload }
-            if payload.step_id == format!("{prefix}:demon")
-                || payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+fn demon_steps(players: &[Player], prefix: &str) -> Vec<PhaseStep> {
+    let mut demons = players
+        .iter()
+        .filter(|player| player.alive && DEMONS.contains(&player.actual_character.as_str()))
+        .collect::<Vec<_>>();
+    demons.sort_by_key(|player| player.seat);
+    demons
+        .into_iter()
+        .map(|actor| PhaseStep {
+            id: format!("{prefix}:demon:{}", actor.id),
+            phase: Phase::Night,
+            step_type: StepType::Character,
+            character: Some(actor.actual_character.clone()),
+            player_id: Some(actor.id.clone()),
+            required_input: RequiredInput {
+                kind: RequiredInputKind::PlayerIds,
+                target: Some(InputTarget::Player),
+                min_selections: Some(1),
+                max_selections: Some(1),
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: None,
+                allowed_player_ids: Some(players.iter().map(|player| player.id.clone()).collect()),
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            },
+            can_skip: false,
+            support: PhaseStepSupport::Automated,
+            information_prompt: None,
+            pre_action_reveal: None,
+        })
+        .collect()
+}
+
+fn pit_hag_demon_creation<'a>(events: &'a [GameEvent], prefix: &str) -> Option<&'a GameEvent> {
+    events.iter().find(|event| match &event.kind {
+        GameEventKind::PitHagTransformationResolved { payload }
+            if payload.step_id.starts_with(&format!("{prefix}:pitHag:")) =>
         {
-            payload
-                .actor_character_id
-                .as_ref()
-                .map(|character| (payload.actor_player_id.as_str(), character.as_str()))
+            matches!(
+                payload.outcome,
+                PitHagTransformationOutcome::Changed {
+                    created_demon: true,
+                    ..
+                }
+            )
         }
-        GameEventKind::ManualPhaseStepResolved { payload }
-            if payload.step_id.starts_with(&format!("{prefix}:"))
-                && DEMONS.iter().any(|demon| payload.step_id.ends_with(demon)) =>
-        {
-            players
-                .iter()
-                .find(|player| payload.step_id.ends_with(&player.actual_character))
-                .map(|player| (player.id.as_str(), player.actual_character.as_str()))
-        }
-        _ => None,
-    });
-    let (actor, character) = resolved_actor.or_else(|| {
-        players
-            .iter()
-            .find(|player| player.alive && DEMONS.contains(&player.actual_character.as_str()))
-            .map(|player| (player.id.as_str(), player.actual_character.as_str()))
-    })?;
+        _ => false,
+    })
+}
+
+fn pit_hag_arbitrary_deaths_step(
+    players: &[Player],
+    events: &[GameEvent],
+    prefix: &str,
+) -> Option<PhaseStep> {
+    pit_hag_demon_creation(events, prefix)?;
+    let living_ids = players
+        .iter()
+        .filter(|player| player.alive)
+        .map(|player| player.id.clone())
+        .collect::<Vec<_>>();
     Some(PhaseStep {
-        id: format!("{prefix}:demon:{}", actor),
+        id: format!("{prefix}:pitHagArbitraryDeaths"),
         phase: Phase::Night,
-        step_type: StepType::Character,
-        character: Some(character.to_string()),
-        player_id: Some(actor.to_string()),
+        step_type: StepType::PitHagArbitraryDeaths,
+        character: None,
+        player_id: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::PlayerIds,
-            target: Some(InputTarget::Player),
-            min_selections: Some(1),
-            max_selections: Some(1),
+            target: Some(InputTarget::Players),
+            min_selections: Some(0),
+            max_selections: Some(living_ids.len().min(u8::MAX as usize) as u8),
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
-            allowed_player_ids: Some(players.iter().map(|player| player.id.clone()).collect()),
+            allowed_player_ids: Some(living_ids),
             player_registration_options: None,
-            zero_allowed: false,
+            zero_allowed: true,
             supports_random_suggestion: false,
             player_id: None,
             survival_allowed: None,
@@ -376,6 +455,9 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .iter()
             .filter(|player| {
                 player.actual_character == character
+                    && !became_character_from_pit_hag_in_phase(
+                        &player.id, character, &prefix, events,
+                    )
                     && (character != "snakeCharmer"
                         || (player.alive
                             && !became_snake_charmer_from_swap_in_phase(
@@ -394,7 +476,8 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             ));
         }
     }
-    if let Some(step) = demon_step(players, events, &prefix) {
+    steps.extend(demon_steps(players, &prefix));
+    if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
         steps.push(step);
     }
     for character in [
@@ -594,6 +677,24 @@ fn became_snake_charmer_from_swap_in_phase(
                     .starts_with(&format!("{prefix}:snakeCharmer:")) =>
         {
             matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. })
+        }
+        _ => false,
+    })
+}
+
+fn became_character_from_pit_hag_in_phase(
+    player_id: &str,
+    character_id: &str,
+    prefix: &str,
+    events: &[GameEvent],
+) -> bool {
+    events.iter().any(|event| match &event.kind {
+        GameEventKind::PitHagTransformationResolved { payload }
+            if payload.target_player_id == player_id
+                && payload.character_id == character_id
+                && payload.step_id.starts_with(&format!("{prefix}:pitHag:")) =>
+        {
+            matches!(payload.outcome, PitHagTransformationOutcome::Changed { .. })
         }
         _ => false,
     })
@@ -1326,7 +1427,10 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
                                 actor_player_id,
                                 actor_character_id: cause_character_id,
                                 target_player_id: cause_target_id,
-                            } = &death.cause;
+                            } = &death.cause
+                            else {
+                                return Err(ErrorKind::ReplayFailed.into_error());
+                            };
                             if actor_player_id != &payload.actor_player_id
                                 || cause_character_id != actor_character_id
                                 || cause_target_id != target_player_id
@@ -1357,6 +1461,61 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
                             DemonAttackNoEffectReason::ActorImpaired
                             | DemonAttackNoEffectReason::NotActualCharacter,
                     } => {}
+                    DemonAttackOutcome::NoEffect {
+                        reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
+                    } => {
+                        let prefix = payload
+                            .step_id
+                            .split(":demon:")
+                            .next()
+                            .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                        if pit_hag_demon_creation(&events[..event_index], prefix).is_none() {
+                            return Err(ErrorKind::ReplayFailed.into_error());
+                        }
+                    }
+                }
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                let source = events[..event_index]
+                    .iter()
+                    .find(|event| event.id == payload.source_transformation_event_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                let GameEventKind::PitHagTransformationResolved {
+                    payload: transformation,
+                } = &source.kind
+                else {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                };
+                if !matches!(
+                    transformation.outcome,
+                    PitHagTransformationOutcome::Changed {
+                        created_demon: true,
+                        ..
+                    }
+                ) {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                for death in &payload.deaths {
+                    let NightDeathCause::PitHagArbitraryDeath {
+                        actor_player_id,
+                        source_transformation_event_id,
+                    } = &death.cause
+                    else {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    };
+                    if actor_player_id != &transformation.actor_player_id
+                        || source_transformation_event_id != &source.id
+                    {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    let player = players
+                        .iter_mut()
+                        .find(|player| player.id == death.player_id)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    if !player.alive {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    player.alive = false;
                 }
             }
             GameEventKind::NightDeathsAnnounced { payload } => {
@@ -1484,6 +1643,79 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
                 }
                 active_impairments.push(impairment);
             }
+            GameEventKind::PitHagTransformationResolved { payload } => {
+                let actor = players
+                    .iter()
+                    .find(|player| player.id == payload.actor_player_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                if !payload.step_id.ends_with(&format!(":pitHag:{}", actor.id)) {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                let target = players
+                    .iter()
+                    .find(|player| player.id == payload.target_player_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                let target_before = identity_state(target);
+                if character_kind(&payload.character_id).is_none() {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                let character_already_in_play = players
+                    .iter()
+                    .any(|player| player.actual_character == payload.character_id);
+                let actor_impaired = active_impairments.iter().any(|impairment| {
+                    impairment.player_id == payload.actor_player_id
+                        && impairment.kind == ImpairmentKind::Poisoned
+                });
+                let expected = if character_already_in_play {
+                    PitHagTransformationOutcome::NoChange {
+                        reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
+                    }
+                } else if actor.actual_character != "pitHag" {
+                    PitHagTransformationOutcome::NoChange {
+                        reason: PitHagNoChangeReason::NotActualCharacter,
+                    }
+                } else if actor_impaired {
+                    PitHagTransformationOutcome::NoChange {
+                        reason: PitHagNoChangeReason::ActorImpaired,
+                    }
+                } else {
+                    PitHagTransformationOutcome::Changed {
+                        identity_transition: PlayerIdentityTransition {
+                            player_id: target.id.clone(),
+                            before: target_before.clone(),
+                            after: IdentityState {
+                                actual_character: payload.character_id.clone(),
+                                shown_character: payload.character_id.clone(),
+                                alignment: target.alignment,
+                            },
+                        },
+                        created_demon: character_kind(&target.actual_character)
+                            != Some(CharacterKind::Demon)
+                            && character_kind(&payload.character_id) == Some(CharacterKind::Demon),
+                    }
+                };
+                if payload.outcome != expected {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                if let PitHagTransformationOutcome::Changed {
+                    identity_transition,
+                    ..
+                } = &payload.outcome
+                {
+                    let target = players
+                        .iter_mut()
+                        .find(|player| player.id == identity_transition.player_id)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    target.actual_character = identity_transition.after.actual_character.clone();
+                    target.shown_character = identity_transition.after.shown_character.clone();
+                    target.identity_history.push(IdentityHistoryEntry {
+                        source_event_id: event.id.clone(),
+                        phase: event.phase,
+                        before: identity_transition.before.clone(),
+                        after: identity_transition.after.clone(),
+                    });
+                }
+            }
             _ => {}
         }
     }
@@ -1508,6 +1740,13 @@ fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
                         if !deaths.contains(&death.player_id) {
                             deaths.push(death.player_id.clone());
                         }
+                    }
+                }
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                for death in &payload.deaths {
+                    if !deaths.contains(&death.player_id) {
+                        deaths.push(death.player_id.clone());
                     }
                 }
             }
@@ -1544,30 +1783,43 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
     let Some(event) = events.last() else {
         return vec![];
     };
-    let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind else {
-        return vec![];
-    };
-    let SnakeCharmerActionOutcome::Swap {
-        identity_transitions,
-        ..
-    } = &payload.outcome
-    else {
-        return vec![];
+    let identity_transitions = match &event.kind {
+        GameEventKind::SnakeCharmerActionResolved { payload } => {
+            let SnakeCharmerActionOutcome::Swap {
+                identity_transitions,
+                ..
+            } = &payload.outcome
+            else {
+                return vec![];
+            };
+            identity_transitions.clone()
+        }
+        GameEventKind::PitHagTransformationResolved { payload } => {
+            let PitHagTransformationOutcome::Changed {
+                identity_transition,
+                ..
+            } = &payload.outcome
+            else {
+                return vec![];
+            };
+            vec![identity_transition.clone()]
+        }
+        _ => return vec![],
     };
     identity_transitions
-        .iter()
+        .into_iter()
         .enumerate()
         .map(|(index, transition)| PendingIdentityReveal {
             source_event_id: event.id.clone(),
             sequence: (index + 1) as u8,
             payload: RevealPayload::CharacterChange {
                 kind: "characterChange",
-                player_id: transition.player_id.clone(),
+                player_id: transition.player_id,
                 alignment: match transition.after.alignment {
                     Alignment::Good => "good".into(),
                     Alignment::Evil => "evil".into(),
                 },
-                character_id: transition.after.shown_character.clone(),
+                character_id: transition.after.shown_character,
             },
         })
         .collect()
@@ -1655,6 +1907,12 @@ fn phase_state(
             GameEventKind::SnakeCharmerActionResolved { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
+            GameEventKind::PitHagTransformationResolved { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
             GameEventKind::NominationStarted { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
@@ -1721,6 +1979,10 @@ fn phase_state(
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current.character.as_deref() == Some("snakeCharmer")
                 && legacy_player_scoped_step;
+        let legacy_manual_pit_hag =
+            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
+                && current.character.as_deref() == Some("pitHag")
+                && legacy_player_scoped_step;
         let legacy_manual_information =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && is_information_character(current.character.as_deref());
@@ -1758,6 +2020,7 @@ fn phase_state(
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Automated)
                 if legacy_manual_demon
                     || legacy_manual_snake_charmer
+                    || legacy_manual_pit_hag
                     || legacy_manual_information => {}
             (GameEventKind::NightActionResolved { payload }, PhaseStepSupport::Automated)
                 if current
@@ -1786,6 +2049,51 @@ fn phase_state(
                     &players_at_event,
                 )
                 .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
+            (
+                GameEventKind::PitHagTransformationResolved { payload },
+                PhaseStepSupport::Automated,
+            ) if current.character.as_deref() == Some("pitHag")
+                && current.player_id.as_deref() == Some(payload.actor_player_id.as_str()) =>
+            {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(vec![payload.target_player_id.clone()]),
+                        character_ids: Some(vec![payload.character_id.clone()]),
+                        ..Default::default()
+                    }),
+                    &players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+            }
+            (
+                GameEventKind::PitHagArbitraryDeathsConfirmed { payload },
+                PhaseStepSupport::Automated,
+            ) if current.step_type == StepType::PitHagArbitraryDeaths => {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(
+                            payload
+                                .deaths
+                                .iter()
+                                .map(|death| death.player_id.clone())
+                                .collect(),
+                        ),
+                        ..Default::default()
+                    }),
+                    &players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                let source = pit_hag_demon_creation(
+                    &events[..event_index],
+                    current.id.split(':').next().unwrap_or_default(),
+                )
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                if payload.source_transformation_event_id != source.id {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
             }
             (GameEventKind::NightDeathsAnnounced { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Announcement => {}
@@ -1852,6 +2160,28 @@ fn phase_state(
                     format!("firstNight:snakeCharmer:{}", payload.target_player_id),
                     PhaseStepStatus::NotApplicable,
                 );
+            }
+        }
+        if let GameEventKind::PitHagTransformationResolved { payload } = &event.kind {
+            if matches!(payload.outcome, PitHagTransformationOutcome::Changed { .. })
+                && matches!(
+                    payload.character_id.as_str(),
+                    "snakeCharmer"
+                        | "evilTwin"
+                        | "witch"
+                        | "cerenovus"
+                        | "clockmaker"
+                        | "dreamer"
+                        | "seamstress"
+                        | "mathematician"
+                )
+            {
+                let first_night_id = if payload.character_id == "snakeCharmer" {
+                    format!("firstNight:snakeCharmer:{}", payload.target_player_id)
+                } else {
+                    format!("firstNight:{}", payload.character_id)
+                };
+                statuses.insert(first_night_id, PhaseStepStatus::NotApplicable);
             }
         }
         if let GameEventKind::NoExecutionConfirmed { payload } = &event.kind {
@@ -2089,8 +2419,24 @@ pub(crate) fn propose_phase_command(
                     payload.input,
                 );
             }
+            if current_step.step_type == StepType::PitHagArbitraryDeaths {
+                return propose_pit_hag_arbitrary_deaths(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
             if current_step.character.as_deref() == Some("snakeCharmer") {
                 return propose_snake_charmer_action(
+                    game_file,
+                    &current_step,
+                    &players,
+                    payload.input,
+                );
+            }
+            if current_step.character.as_deref() == Some("pitHag") {
+                return propose_pit_hag_transformation(
                     game_file,
                     &current_step,
                     &players,
@@ -2349,6 +2695,103 @@ fn phase_proposal(
     }
 }
 
+fn propose_pit_hag_transformation(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let actor_player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let actor = players
+        .iter()
+        .find(|player| player.id == actor_player_id)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let fields = input
+        .as_ref()
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target_player_id = fields
+        .player_ids
+        .as_ref()
+        .and_then(|ids| ids.first())
+        .cloned()
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let character_id = fields
+        .character_ids
+        .as_ref()
+        .and_then(|ids| ids.first())
+        .cloned()
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let character_already_in_play = players
+        .iter()
+        .any(|player| player.actual_character == character_id);
+    let actor_impaired = active_snake_charmer_impairments(&game_file.game.events)
+        .iter()
+        .any(|impairment| impairment.player_id == actor.id);
+    let outcome = if character_already_in_play {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
+        }
+    } else if actor.actual_character != "pitHag" {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::NotActualCharacter,
+        }
+    } else if actor_impaired {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::ActorImpaired,
+        }
+    } else {
+        PitHagTransformationOutcome::Changed {
+            identity_transition: PlayerIdentityTransition {
+                player_id: target.id.clone(),
+                before: identity_state(target),
+                after: IdentityState {
+                    actual_character: character_id.clone(),
+                    shown_character: character_id.clone(),
+                    alignment: target.alignment,
+                },
+            },
+            created_demon: character_kind(&target.actual_character) != Some(CharacterKind::Demon)
+                && character_kind(&character_id) == Some(CharacterKind::Demon),
+        }
+    };
+    let summary = match outcome {
+        PitHagTransformationOutcome::Changed { .. } => "마귀할멈 직업 변경 확정",
+        PitHagTransformationOutcome::NoChange { .. } => "마귀할멈 선택 확정 · 변경 없음",
+    };
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("pit-hag-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::PitHagTransformationResolved {
+                payload: PitHagTransformationResolvedPayload {
+                    step_id: step.id.clone(),
+                    actor_player_id,
+                    target_player_id,
+                    character_id,
+                    outcome,
+                },
+            },
+            phase: step.phase,
+            summary: summary.into(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    })
+}
+
 fn propose_demon_attack(
     game_file: &GameFile,
     step: &PhaseStep,
@@ -2381,7 +2824,21 @@ fn propose_demon_attack(
         .iter()
         .find(|player| player.id == target_player_id)
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let (outcome, outcome_label, warnings) = if target.alive {
+    let prefix = step
+        .id
+        .split(":demon:")
+        .next()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
+    let (outcome, outcome_label, warnings) = if pit_hag_created_demon {
+        (
+            DemonAttackOutcome::NoEffect {
+                reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
+            },
+            "사망 대상 후보 기록",
+            vec![],
+        )
+    } else if target.alive {
         (
             DemonAttackOutcome::Deaths {
                 deaths: vec![NightDeath {
@@ -2430,6 +2887,65 @@ fn propose_demon_attack(
         },
         summary,
         warnings,
+    ))
+}
+
+fn propose_pit_hag_arbitrary_deaths(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let player_ids = input
+        .as_ref()
+        .and_then(|fields| fields.player_ids.clone())
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let prefix = step
+        .id
+        .split(':')
+        .next()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let source = pit_hag_demon_creation(&game_file.game.events, prefix)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let GameEventKind::PitHagTransformationResolved {
+        payload: transformation,
+    } = &source.kind
+    else {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    };
+    let deaths = player_ids
+        .iter()
+        .map(|player_id| {
+            let player = players
+                .iter()
+                .find(|player| player.id == *player_id && player.alive)
+                .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+            Ok(NightDeath {
+                player_id: player.id.clone(),
+                cause: NightDeathCause::PitHagArbitraryDeath {
+                    actor_player_id: transformation.actor_player_id.clone(),
+                    source_transformation_event_id: source.id.clone(),
+                },
+            })
+        })
+        .collect::<Result<Vec<_>, CoreError>>()?;
+    let summary = if deaths.is_empty() {
+        "마귀할멈 임의 사망 확정 · 사망자 없음".to_string()
+    } else {
+        format!("마귀할멈 임의 사망 확정 · {}명", deaths.len())
+    };
+    Ok(phase_proposal(
+        game_file,
+        step,
+        GameEventKind::PitHagArbitraryDeathsConfirmed {
+            payload: PitHagArbitraryDeathsConfirmedPayload {
+                step_id: step.id.clone(),
+                source_transformation_event_id: source.id.clone(),
+                deaths,
+            },
+        },
+        summary,
+        vec![],
     ))
 }
 

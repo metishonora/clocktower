@@ -85,6 +85,8 @@ fn advance_until(events: &mut Vec<Value>, target_step_id: &str) -> Value {
             Some("fangGu" | "vigormortis" | "noDashii" | "vortox")
         ) {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-5"] } } })
+        } else if step["requiredInput"]["kind"] == "characterTransformation" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } } })
         } else if step["character"] == "dreamer" {
             let check = &step["informationPrompt"]["targetChecks"][0];
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })

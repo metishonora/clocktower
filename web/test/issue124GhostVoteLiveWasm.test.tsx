@@ -100,7 +100,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(await within(app).findByRole("button", { name: "진행 →" }));
 
   await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await completePitHagNoChange(user, app, 9);
   await user.click(await within(app).findByRole("button", { name: "← 공격" }));
   await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
   await user.click(within(app).getByRole("button", { name: "3번 플레이어 3 공격 확정" }));
@@ -209,6 +209,18 @@ async function revealCurrentInformation(user: ReturnType<typeof userEvent.setup>
   await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
 }
 
+async function completePitHagNoChange(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+  actorSeat: number,
+) {
+  await user.click(await within(app).findByRole("button", { name: "대상 · 캐릭터 선택" }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${actorSeat}번 좌석`) }));
+  const panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
+  await user.selectOptions(within(panel).getByRole("combobox", { name: "바꿀 캐릭터" }), "pitHag");
+  await user.click(within(panel).getByRole("button", { name: "변화 없음 확정" }));
+}
+
 function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   if (step.id === "day:nomination:1") {
     return {
@@ -227,6 +239,9 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   }
   if (step.requiredInput.kind === "executionDecision") {
     return { type: "confirmStep", payload: { stepId: step.id, input: { execute: false } } };
+  }
+  if (step.requiredInput.kind === "characterTransformation") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: [step.playerId!], characterIds: ["pitHag"] } } };
   }
   if (step.support === "manual") {
     return { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };

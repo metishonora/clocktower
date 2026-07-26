@@ -33,11 +33,13 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "slayerDeath",
   "demonSuccession",
   "redHerringAssignment",
+  "pitHagArbitraryDeaths",
 ]);
 const inputKinds = new Set([
   "none",
   "playerIds",
   "characterIds",
+  "characterTransformation",
   "setupInfo",
   "number",
   "nominationVote",
@@ -227,6 +229,12 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "snakeCharmerActionResolved":
       if (!isSnakeCharmerActionPayload(payload)) throw invalidEvent();
+      break;
+    case "pitHagTransformationResolved":
+      if (!isPitHagTransformationPayload(payload)) throw invalidEvent();
+      break;
+    case "pitHagArbitraryDeathsConfirmed":
+      if (!isPitHagArbitraryDeathsPayload(payload)) throw invalidEvent();
       break;
     case "playerAnnotationsUpdated":
       if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
@@ -846,7 +854,7 @@ function isNightActionResolution(value: unknown): boolean {
     const outcome = value.outcome;
     if (outcome.kind === "noEffect") {
       return hasExactKeys(outcome, ["kind", "reason"]) &&
-        ["targetAlreadyDead", "actorImpaired", "notActualCharacter"].includes(String(outcome.reason));
+        ["targetAlreadyDead", "actorImpaired", "notActualCharacter", "pitHagCreatedDemon"].includes(String(outcome.reason));
     }
     return outcome.kind === "deaths" && hasExactKeys(outcome, ["kind", "deaths"]) &&
       Array.isArray(outcome.deaths) && outcome.deaths.length > 0 && outcome.deaths.every((death) => (
@@ -1130,6 +1138,47 @@ function isSnakeCharmerActionPayload(value: unknown): boolean {
     value.outcome.identityTransitions.length === 2 &&
     value.outcome.identityTransitions.every(isPlayerIdentityTransition) &&
     isActiveImpairment(value.outcome.impairment);
+}
+
+function isPitHagTransformationPayload(value: unknown): boolean {
+  if (!isRecord(value) ||
+    !hasExactKeys(value, ["stepId", "actorPlayerId", "targetPlayerId", "characterId", "outcome"]) ||
+    typeof value.stepId !== "string" ||
+    typeof value.actorPlayerId !== "string" ||
+    typeof value.targetPlayerId !== "string" ||
+    !isKnownCharacter(value.characterId) ||
+    !isRecord(value.outcome)) return false;
+  if (value.outcome.kind === "noChange") {
+    return hasExactKeys(value.outcome, ["kind", "reason"]) &&
+      ["characterAlreadyInPlay", "actorImpaired", "notActualCharacter"].includes(String(value.outcome.reason));
+  }
+  return value.outcome.kind === "changed" &&
+    hasExactKeys(value.outcome, ["kind", "identityTransition", "createdDemon"]) &&
+    isPlayerIdentityTransition(value.outcome.identityTransition) &&
+    typeof value.outcome.createdDemon === "boolean";
+}
+
+function isPitHagArbitraryDeathsPayload(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["stepId", "sourceTransformationEventId", "deaths"]) &&
+    typeof value.stepId === "string" &&
+    typeof value.sourceTransformationEventId === "string" &&
+    Array.isArray(value.deaths) && value.deaths.every(isNightDeath);
+}
+
+function isNightDeath(value: unknown): boolean {
+  if (!isRecord(value) || !hasExactKeys(value, ["playerId", "cause"]) ||
+    typeof value.playerId !== "string" || !isRecord(value.cause)) return false;
+  if (value.cause.kind === "demonAttack") {
+    return hasExactKeys(value.cause, ["kind", "actorPlayerId", "actorCharacterId", "targetPlayerId"]) &&
+      typeof value.cause.actorPlayerId === "string" &&
+      typeof value.cause.actorCharacterId === "string" &&
+      typeof value.cause.targetPlayerId === "string";
+  }
+  return value.cause.kind === "pitHagArbitraryDeath" &&
+    hasExactKeys(value.cause, ["kind", "actorPlayerId", "sourceTransformationEventId"]) &&
+    typeof value.cause.actorPlayerId === "string" &&
+    typeof value.cause.sourceTransformationEventId === "string";
 }
 
 function isPlayerAnnotationsPayload(value: unknown): boolean {

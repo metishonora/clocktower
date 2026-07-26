@@ -72,6 +72,8 @@ fn advance_to_snake_charmer(events: &mut Vec<Value>, later_night_only: bool) -> 
             json!({ "type": "skipStep", "payload": { "stepId": step_id } })
         } else if step["requiredInput"]["kind"] == "executionDecision" {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
+        } else if step["requiredInput"]["kind"] == "characterTransformation" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } } })
         } else if step["support"] == "manual" {
             json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
         } else if step["id"].as_str().is_some_and(|id| id.contains(":demon:")) {
@@ -265,10 +267,12 @@ fn ongoing_night_swap_moves_the_later_demon_action_and_poison_blocks_the_next_sw
             step["playerId"], "player-7",
             "new Snake Charmer acted again in the same slot"
         );
-        append(
-            &mut events,
-            json!({ "type": "resolveManualStep", "payload": { "stepId": step["id"], "outcome": "handled" } }),
-        );
+        let command = if step["requiredInput"]["kind"] == "characterTransformation" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } } })
+        } else {
+            json!({ "type": "resolveManualStep", "payload": { "stepId": step["id"], "outcome": "handled" } })
+        };
+        append(&mut events, command);
     }
     let demon = replay(&events);
     assert_eq!(demon["value"]["currentStep"]["id"], "night:demon:player-1");

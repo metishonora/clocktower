@@ -510,6 +510,14 @@ pub(crate) enum GameEventKind {
     SnakeCharmerActionResolved {
         payload: SnakeCharmerActionResolvedPayload,
     },
+    #[serde(rename = "pitHagTransformationResolved")]
+    PitHagTransformationResolved {
+        payload: PitHagTransformationResolvedPayload,
+    },
+    #[serde(rename = "pitHagArbitraryDeathsConfirmed")]
+    PitHagArbitraryDeathsConfirmed {
+        payload: PitHagArbitraryDeathsConfirmedPayload,
+    },
     #[serde(rename = "gameEnded")]
     GameEnded { payload: GameEndedPayload },
     #[serde(rename = "playerAnnotationsUpdated")]
@@ -549,6 +557,49 @@ pub(crate) enum SnakeCharmerActionOutcome {
 pub(crate) enum SnakeCharmerNoSwapReason {
     TargetNotDemon,
     ActorImpaired,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PitHagTransformationResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) outcome: PitHagTransformationOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum PitHagTransformationOutcome {
+    NoChange {
+        reason: PitHagNoChangeReason,
+    },
+    Changed {
+        identity_transition: PlayerIdentityTransition,
+        created_demon: bool,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PitHagNoChangeReason {
+    CharacterAlreadyInPlay,
+    ActorImpaired,
+    NotActualCharacter,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PitHagArbitraryDeathsConfirmedPayload {
+    pub(crate) step_id: String,
+    pub(crate) source_transformation_event_id: String,
+    pub(crate) deaths: Vec<NightDeath>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -782,6 +833,10 @@ pub(crate) enum NightDeathCause {
         actor_character_id: String,
         target_player_id: String,
     },
+    PitHagArbitraryDeath {
+        actor_player_id: String,
+        source_transformation_event_id: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
@@ -790,6 +845,7 @@ pub(crate) enum DemonAttackNoEffectReason {
     TargetAlreadyDead,
     ActorImpaired,
     NotActualCharacter,
+    PitHagCreatedDemon,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]

@@ -60,6 +60,8 @@ impl ScriptRules {
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }
                             | GameEventKind::SnakeCharmerActionResolved { .. }
+                            | GameEventKind::PitHagTransformationResolved { .. }
+                            | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
                             | GameEventKind::DayActionRecorded { .. }
                     )
                 }) =>

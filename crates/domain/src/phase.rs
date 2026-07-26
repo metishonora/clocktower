@@ -139,6 +139,31 @@ pub(crate) fn validate_required_input(
     typed_value: &StepInput,
     players: &[Player],
 ) -> Result<(), CoreError> {
+    if input.kind == RequiredInputKind::CharacterTransformation {
+        let mut player_input = input.clone();
+        player_input.kind = RequiredInputKind::PlayerIds;
+        player_input.target = Some(InputTarget::Player);
+        validate_required_input(&player_input, typed_value, players)?;
+        let character_ids = typed_value
+            .as_ref()
+            .and_then(|value| value.character_ids.as_ref())
+            .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+        if character_ids.len() != 1 {
+            return Err(if character_ids.is_empty() {
+                ErrorKind::MissingStepInput.into_error()
+            } else {
+                ErrorKind::TooMuchStepInput.into_error()
+            });
+        }
+        if input
+            .allowed_character_ids
+            .as_ref()
+            .is_some_and(|allowed| !allowed.contains(&character_ids[0]))
+        {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        return Ok(());
+    }
     if input.kind == RequiredInputKind::SetupInfo {
         return validate_setup_info_input(
             input

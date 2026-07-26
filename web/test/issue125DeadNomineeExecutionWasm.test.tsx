@@ -86,6 +86,9 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   if (step.requiredInput.kind === "executionDecision") {
     return { type: "confirmStep", payload: { stepId: step.id, input: { execute: false } } };
   }
+  if (step.requiredInput.kind === "characterTransformation") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: [step.playerId!], characterIds: ["pitHag"] } } };
+  }
   if (step.support === "manual") {
     return { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };
   }
