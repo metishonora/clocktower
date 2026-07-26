@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { Command, GameEvent, GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
+import { PlayerTokenList } from "../src/features/grimoire/playerTokenPresentation";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
@@ -81,6 +82,15 @@ test("a recorded Juggler result adds stacked reminder tokens instead of changing
   expect(within(resultTokens).getByText("곡예사")).toBeTruthy();
   expect(within(resultTokens).getByText("정답 • 3개")).toBeTruthy();
   expect(within(playerDetails).queryByRole("region", { name: "낮 자유 행동 기록" })).toBeNull();
+});
+
+test("a zero-correct Juggler result uses one muted result token", () => {
+  render(<PlayerTokenList tokens={[]} theme="day" jugglerResult={{ correctCount: 0 }} />);
+
+  const resultTokens = screen.getByLabelText("곡예사 정답 토큰 0개");
+  expect(resultTokens.children).toHaveLength(1);
+  expect(resultTokens.firstElementChild?.classList.contains("zeroCorrect")).toBe(true);
+  expect(within(resultTokens).getByText("정답 • 0개")).toBeTruthy();
 });
 
 async function firstDayGame(): Promise<GameFile> {

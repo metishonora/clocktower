@@ -101,7 +101,7 @@ export function PlayerTokenList({
               const isTopToken = index === visibleJugglerTokenCount - 1;
               return (
                 <div
-                  className="playerPinnedToken usage playerJugglerResultToken"
+                  className={`playerPinnedToken usage playerJugglerResultToken${jugglerTokenCount === 0 ? " zeroCorrect" : ""}`}
                   aria-hidden={isTopToken ? undefined : true}
                   key={index}
                   style={{
