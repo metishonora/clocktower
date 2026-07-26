@@ -11,6 +11,9 @@ export function MadnessActionDock({
   theme,
   precedingActionCount,
   busy,
+  groupActive = true,
+  onGroupActivate = noop,
+  onGroupDeactivate = noop,
   onRecord,
   onExecute,
 }: {
@@ -20,22 +23,33 @@ export function MadnessActionDock({
   theme: "day" | "night";
   precedingActionCount: number;
   busy: boolean;
+  groupActive?: boolean;
+  onGroupActivate?: () => void;
+  onGroupDeactivate?: () => void;
   onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: (assignmentId: string) => void;
 }) {
   const [activeId, setActiveId] = useState<string>();
   const [confirmingId, setConfirmingId] = useState<string>();
-  const active = assignments.find((assignment) => assignment.assignmentId === activeId);
-  const confirming = assignments.find((assignment) => assignment.assignmentId === confirmingId);
+  const selectedAssignment = assignments.find((assignment) => assignment.assignmentId === activeId);
+  const active = groupActive ? selectedAssignment : undefined;
+  const confirming = groupActive
+    ? assignments.find((assignment) => assignment.assignmentId === confirmingId)
+    : undefined;
 
   useEffect(() => {
+    if (!groupActive) {
+      setActiveId(undefined);
+      setConfirmingId(undefined);
+      return;
+    }
     if (activeId && !assignments.some((assignment) => assignment.assignmentId === activeId)) {
       setActiveId(undefined);
     }
     if (confirmingId && !assignments.some((assignment) => assignment.assignmentId === confirmingId)) {
       setConfirmingId(undefined);
     }
-  }, [activeId, assignments, confirmingId]);
+  }, [activeId, assignments, confirmingId, groupActive]);
 
   if (assignments.length === 0) return null;
 
@@ -56,7 +70,10 @@ export function MadnessActionDock({
           busy={busy}
           onRecord={onRecord}
           onExecute={() => setConfirmingId(active.assignmentId)}
-          onClose={() => setActiveId(undefined)}
+          onClose={() => {
+            setActiveId(undefined);
+            onGroupDeactivate();
+          }}
         />
       ) : null}
       <div className={`snvMadnessDock ${theme}`} style={dockStyle} aria-label="집착 확인 자유 행동">
@@ -64,7 +81,7 @@ export function MadnessActionDock({
           const target = playerById(players, assignment.targetPlayerId);
           const sourceLabel = assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스";
           const asset = sectsAndVioletsCharacterAsset(assignment.sourceCharacterId);
-          const selected = assignment.assignmentId === activeId;
+          const selected = groupActive && assignment.assignmentId === activeId;
           return (
             <button
               key={assignment.assignmentId}
@@ -73,7 +90,15 @@ export function MadnessActionDock({
               aria-label={`${sourceLabel} 집착 확인 ${selected ? "닫기" : "열기"}, ${playerLabel(target)}`}
               aria-expanded={selected}
               disabled={busy}
-              onClick={() => setActiveId(selected ? undefined : assignment.assignmentId)}
+              onClick={() => {
+                if (selected) {
+                  setActiveId(undefined);
+                  onGroupDeactivate();
+                } else {
+                  onGroupActivate();
+                  setActiveId(assignment.assignmentId);
+                }
+              }}
             >
               {selected ? <span aria-hidden="true">×</span> : asset ? <img src={asset.src} alt="" /> : sourceLabel.slice(0, 1)}
               {assignment.status === "violated" ? <i aria-label="위반">!</i> : null}
@@ -120,6 +145,8 @@ function MadnessPanel({
   const target = playerById(players, assignment.targetPlayerId);
   const targetLabel = playerLabel(target);
   const mutant = assignment.sourceCharacterId === "mutant";
+  const sourceLabel = mutant ? "변종" : "세레노버스";
+  const sourceAsset = sectsAndVioletsCharacterAsset(assignment.sourceCharacterId);
   const requiredCharacter = characterLabel(assignment.requiredCharacterId);
   const statusLabel = assignment.status === "violated" ? "위반 발견"
     : assignment.status === "clear" ? "위반 없음"
@@ -128,9 +155,12 @@ function MadnessPanel({
   return (
     <section className={`snvMadnessPanel ${theme}`} aria-label={`${targetLabel} 집착 확인`}>
       <header>
-        <div>
-          <span>{phaseLabel} · {mutant ? "변종" : "세레노버스"}</span>
-          <h2>{mutant ? `${targetLabel} 외지인 집착 확인` : `${targetLabel} 집착 확인`}</h2>
+        <div className="snvMadnessIdentity">
+          {sourceAsset ? <img src={sourceAsset.src} alt={`${sourceLabel} 공식 캐릭터 아이콘`} /> : null}
+          <div>
+            <span>{phaseLabel} · {sourceLabel}</span>
+            <h2>{mutant ? `${targetLabel} 외지인 집착 확인` : `${targetLabel} 집착 확인`}</h2>
+          </div>
         </div>
         <button type="button" aria-label="집착 확인 닫기" onClick={onClose}>×</button>
       </header>
@@ -198,3 +228,5 @@ function playerLabel(player?: Player): string {
 function characterLabel(characterId?: string): string {
   return sectsAndVioletsCharacters.find((character) => character.id === characterId)?.name ?? characterId ?? "선택한 캐릭터";
 }
+
+function noop() {}

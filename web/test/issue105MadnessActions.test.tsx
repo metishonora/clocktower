@@ -17,6 +17,7 @@ describe("#105 madness free actions", () => {
 
     await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
 
+    expect(screen.getByRole("img", { name: "변종 공식 캐릭터 아이콘" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "[7번 도윤] 외지인 집착 확인" })).toBeTruthy();
     expect(screen.getByText("[7번 도윤]이 외지인임을 주장하며 집착하였나요?")).toBeTruthy();
     expect(screen.queryByText(/이야기꾼 판정/)).toBeNull();

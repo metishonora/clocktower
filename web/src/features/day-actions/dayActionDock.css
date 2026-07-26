@@ -35,6 +35,7 @@
   z-index: 140;
   right: max(14px, env(safe-area-inset-right));
   bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+  box-sizing: border-box;
   width: min(480px, calc(100vw - 28px));
   max-height: min(64dvh, 620px);
   padding: 18px;
@@ -104,7 +105,7 @@
   .snvDayActionDock { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
   .snvDayActionDock > button { width: 50px; height: 50px; }
   .snvDayActionDock > button img { width: 40px; height: 40px; }
-  .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); width: calc(100vw - 20px); max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
   .snvDayActionScrollClearance.open { height: min(570px, 68dvh); }
 }
 

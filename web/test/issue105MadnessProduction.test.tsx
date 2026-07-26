@@ -17,6 +17,24 @@ test("an initial Mutant assignment does not pin outsider-madness before a violat
   expect(screen.queryByRole("listitem", { name: "외지인 집착 · 출처 변종" })).toBeNull();
 });
 
+test("opening a reminder panel closes the previously open day or madness panel", async () => {
+  const storage = new MemoryGameStorageDriver(await firstDayMadnessGame());
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await user.click(await screen.findByRole("button", { name: /백치천재 행동 열기/ }));
+  expect(screen.getByRole("dialog", { name: "백치천재 능력 사용" })).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
+  expect(screen.queryByRole("dialog", { name: "백치천재 능력 사용" })).toBeNull();
+  expect(screen.getByRole("region", { name: /집착 확인/ })).toBeTruthy();
+
+  await user.click(screen.getByRole("button", { name: /백치천재 행동 열기/ }));
+  expect(screen.queryByRole("region", { name: /집착 확인/ })).toBeNull();
+  expect(screen.getByRole("dialog", { name: "백치천재 능력 사용" })).toBeTruthy();
+});
+
 test("the production UI records and settles a Mutant violation with separate execution and death confirmations", async () => {
   const game = await firstDayMadnessGame();
   const storage = new MemoryGameStorageDriver(game);

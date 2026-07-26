@@ -187,6 +187,7 @@ export function SectsAndVioletsFoundation({
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
   const [liveMadnessCharacterId, setLiveMadnessCharacterId] = useState("");
+  const [activeFreeActionGroup, setActiveFreeActionGroup] = useState<"day" | "madness">();
   const [selectedInformationTargetIds, setSelectedInformationTargetIds] = useState<string[]>([]);
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
@@ -2150,6 +2151,9 @@ export function SectsAndVioletsFoundation({
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
             savantCategories={savantReferenceCategories}
             busy={operationBusy}
+            groupActive={activeFreeActionGroup === "day"}
+            onGroupActivate={() => setActiveFreeActionGroup("day")}
+            onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "day" ? undefined : current)}
             onConfirm={(action, record) => void recordDayAction(action, record)}
           />
         ) : null}
@@ -2167,6 +2171,9 @@ export function SectsAndVioletsFoundation({
             theme={replayState.phase === "day" ? "day" : "night"}
             precedingActionCount={replayState.phase === "day" ? replayState.availableDayActions?.length ?? 0 : 0}
             busy={operationBusy}
+            groupActive={activeFreeActionGroup === "madness"}
+            onGroupActivate={() => setActiveFreeActionGroup("madness")}
+            onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "madness" ? undefined : current)}
             onRecord={(assignmentId, result) => void recordMadnessCheck(assignmentId, result)}
             onExecute={(assignmentId) => void executeMadness(assignmentId)}
           />

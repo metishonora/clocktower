@@ -19,6 +19,9 @@ export function DayActionDock({
   phaseLabel,
   savantCategories,
   busy,
+  groupActive = true,
+  onGroupActivate = noop,
+  onGroupDeactivate = noop,
   onConfirm,
 }: {
   players: Player[];
@@ -26,14 +29,18 @@ export function DayActionDock({
   phaseLabel: string;
   savantCategories: SavantReferenceCategory[];
   busy: boolean;
+  groupActive?: boolean;
+  onGroupActivate?: () => void;
+  onGroupDeactivate?: () => void;
   onConfirm: (action: AvailableDayAction, record: DayActionRecordInput) => void;
 }) {
   const [activeKey, setActiveKey] = useState<string>();
-  const activeAction = availableActions.find((action) => actionKey(action) === activeKey);
+  const selectedAction = availableActions.find((action) => actionKey(action) === activeKey);
+  const activeAction = groupActive ? selectedAction : undefined;
 
   useEffect(() => {
-    if (activeKey && !activeAction) setActiveKey(undefined);
-  }, [activeAction, activeKey]);
+    if (activeKey && (!selectedAction || !groupActive)) setActiveKey(undefined);
+  }, [activeKey, groupActive, selectedAction]);
 
   if (availableActions.length === 0) return null;
 
@@ -64,7 +71,7 @@ export function DayActionDock({
         {availableActions.map((action) => {
           const player = players.find((candidate) => candidate.id === action.actorPlayerId);
           if (!player) return null;
-          const selected = actionKey(action) === activeKey;
+          const selected = groupActive && actionKey(action) === activeKey;
           const asset = sectsAndVioletsCharacterAsset(action.characterId);
           const label = characterLabel(action.characterId);
           return (
@@ -75,7 +82,15 @@ export function DayActionDock({
               aria-label={selected ? `${label} 행동 창 닫기` : `${label} 행동 열기, ${player.seat}번 ${player.name}`}
               aria-expanded={selected}
               disabled={busy}
-              onClick={() => setActiveKey(selected ? undefined : actionKey(action))}
+              onClick={() => {
+                if (selected) {
+                  setActiveKey(undefined);
+                  onGroupDeactivate();
+                } else {
+                  onGroupActivate();
+                  setActiveKey(actionKey(action));
+                }
+              }}
             >
               {selected ? <span aria-hidden="true">×</span> : asset ? <img src={asset.src} alt={`${label} 공식 캐릭터 아이콘`} /> : <span aria-hidden="true">{label.slice(0, 1)}</span>}
             </button>
@@ -85,6 +100,8 @@ export function DayActionDock({
     </>
   );
 }
+
+function noop() {}
 
 function DayActionHeader({ action, player, phaseLabel }: {
   action: AvailableDayAction;
