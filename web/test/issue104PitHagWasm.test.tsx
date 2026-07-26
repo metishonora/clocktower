@@ -39,7 +39,7 @@ test("the real WASM carries Pit-Hag transformation through both Demon intents an
     });
   }
 
-  const followUp = await replayOrThrow(game);
+  const followUp = await advanceUntil(game, (state) => state.currentStep?.stepType === "pitHagArbitraryDeaths");
   expect(followUp.currentStep).toMatchObject({
     id: "night:pitHagArbitraryDeaths",
     stepType: "pitHagArbitraryDeaths",

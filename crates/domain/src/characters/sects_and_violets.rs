@@ -477,9 +477,6 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
         }
     }
     steps.extend(demon_steps(players, &prefix));
-    if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
-        steps.push(step);
-    }
     for character in [
         "barber",
         "sweetheart",
@@ -521,6 +518,9 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
                 players,
             ));
         }
+    }
+    if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
+        steps.push(step);
     }
     steps.push(phase_transition_step(
         Phase::Night,

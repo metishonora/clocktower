@@ -231,7 +231,41 @@ fn creating_a_demon_records_both_intents_then_requires_arbitrary_deaths() {
         );
     }
 
-    let follow_up = replay(&events);
+    let after_demon_intents = replay(&events);
+    let overview_ids = after_demon_intents["value"]["phaseOverview"]
+        .as_array()
+        .expect("phase overview")
+        .iter()
+        .map(|step| step["id"].as_str().expect("overview step id"))
+        .collect::<Vec<_>>();
+    let arbitrary_deaths_index = overview_ids
+        .iter()
+        .position(|id| *id == "night:pitHagArbitraryDeaths")
+        .expect("arbitrary deaths step");
+    let to_day_index = overview_ids
+        .iter()
+        .position(|id| *id == "night:toDay")
+        .expect("to-day step");
+    assert_eq!(
+        arbitrary_deaths_index + 1,
+        to_day_index,
+        "unpredictable deaths must be the final actionable night step"
+    );
+
+    let follow_up = loop {
+        let state = replay(&events);
+        if state["value"]["currentStep"]["id"] == "night:pitHagArbitraryDeaths" {
+            break state;
+        }
+        let step = &state["value"]["currentStep"];
+        assert_ne!(step["id"], "night:toDay", "skipped unpredictable deaths");
+        let command = if step["support"] == "manual" {
+            json!({ "type": "resolveManualStep", "payload": { "stepId": step["id"], "outcome": "handled" } })
+        } else {
+            json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null } })
+        };
+        append(&mut events, command);
+    };
     assert_eq!(
         follow_up["value"]["currentStep"]["id"],
         "night:pitHagArbitraryDeaths"

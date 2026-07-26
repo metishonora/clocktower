@@ -3,8 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { CoreAdapter } from "../src/core/coreAdapter";
 import type { GameEvent, GameFile, Player, ReplayState } from "../src/core/types";
-import { PitHagSelectionPanel } from "../src/features/pitHag/PitHagSelectionPanel";
+import {
+  PitHagArbitraryDeathsPanel,
+  PitHagSelectionPanel,
+} from "../src/features/pitHag/PitHagSelectionPanel";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import { SectsAndVioletsLiveProgress } from "../src/sectsAndVioletsLivePhase";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 
 const players: Player[] = [
@@ -116,6 +120,61 @@ test("cancels a Pit-Hag selection and clears both draft choices", async () => {
   expect(within(steps).getByText("대상").nextElementSibling?.textContent).toBe("-");
   expect(within(steps).getByText("새 캐릭터").nextElementSibling?.textContent).toBe("-");
   expect((within(panel).getByRole("button", { name: "변신 확정" }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test("names the final Pit-Hag death step 예측불허의 죽음 throughout the workflow", () => {
+  const replayState = pitHagReplay(false);
+  const deathStep = {
+    id: "night:pitHagArbitraryDeaths",
+    phase: "night" as const,
+    stepType: "pitHagArbitraryDeaths" as const,
+    requiredInput: {
+      kind: "playerIds" as const,
+      target: "players" as const,
+      minSelections: 0,
+      maxSelections: 2,
+      allowedPlayerIds: replayState.players.map((player) => player.id),
+      zeroAllowed: true,
+      optional: false,
+    },
+    canSkip: false,
+    support: "automated" as const,
+  };
+  replayState.currentStep = deathStep;
+  replayState.phaseOverview = [{ ...deathStep, status: "current" }];
+
+  const progress = render(
+    <SectsAndVioletsLiveProgress
+      replayState={replayState}
+      phaseLabel="2일차 밤"
+      phaseRuntime="01:23"
+      operationBusy={false}
+      onGoToGrimoire={vi.fn()}
+      onStartNomination={vi.fn()}
+      onEndNominations={vi.fn()}
+      onConfirmExecution={vi.fn()}
+      onStartDemonAttack={vi.fn()}
+      onStartSnakeCharmer={vi.fn()}
+      onStartPitHagDeaths={vi.fn()}
+      onAdvance={vi.fn()}
+      onResolveManual={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("group", { name: "예측불허의 죽음" })).toBeTruthy();
+  expect(screen.getAllByText("예측불허의 죽음")).toHaveLength(2);
+  expect(screen.queryByText("그 밤의 사망 결과")).toBeNull();
+  progress.unmount();
+
+  render(
+    <PitHagArbitraryDeathsPanel
+      players={players}
+      selectedPlayerIds={[]}
+      demonIntents={[]}
+      onConfirm={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("complementary", { name: "예측불허의 죽음" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "예측불허의 죽음" })).toBeTruthy();
 });
 
 function pitHagCore(): CoreAdapter {

@@ -11,17 +11,17 @@
 .pitHagTaskSteps strong { margin-top: 2px; font-size: .78rem; }
 .pitHagCharacterPicker { display: grid; gap: 6px; color: #cbbbd0; font-size: .7rem; font-weight: 850; }
 .pitHagCharacterPicker select { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid rgba(232, 210, 239, .2); border-radius: 11px; color: #f7eef9; background: #2b1b33; font: inherit; font-size: .8rem; }
-.pitHagCharacterResult { display: grid; min-height: 78px; padding: 10px; align-items: center; grid-template-columns: 58px 1fr 42px; gap: 11px; border: 1px solid rgba(230, 209, 237, .13); border-radius: 14px; background: rgba(255, 255, 255, .035); }
+.pitHagCharacterResult { display: grid; min-height: 64px; padding: 8px; align-items: center; grid-template-columns: 46px 1fr 36px; gap: 9px; border: 1px solid rgba(230, 209, 237, .13); border-radius: 14px; background: rgba(255, 255, 255, .035); }
 .pitHagCharacterResult.demon { border-color: rgba(229, 91, 117, .42); background: rgba(133, 38, 59, .18); }
 .pitHagCharacterResult.blocked { border-color: rgba(217, 175, 77, .38); background: rgba(148, 109, 35, .14); }
-.pitHagCharacterResult img { width: 56px; height: 56px; object-fit: contain; }
+.pitHagCharacterResult img { width: 44px; height: 44px; object-fit: contain; }
 .pitHagCharacterResult > strong { font-size: .9rem; }
-.pitHagAlignmentIcon { display: grid; width: 40px; aspect-ratio: 1; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: .85rem; font-weight: 950; }
+.pitHagAlignmentIcon { display: grid; width: 34px; aspect-ratio: 1; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: .78rem; font-weight: 950; }
 .pitHagAlignmentIcon.good { color: #78cbed; background: rgba(68, 149, 187, .14); }
 .pitHagAlignmentIcon.evil { color: #ef7589; background: rgba(176, 52, 76, .14); }
 .pitHagAlignmentIcon.unknown { color: #9c8da2; background: rgba(255, 255, 255, .035); }
-.pitHagCharacterPlaceholder { display: grid; min-height: 78px; padding: 10px 14px; align-items: center; grid-template-columns: 42px 1fr; gap: 12px; border: 1px dashed rgba(230, 209, 237, .18); border-radius: 14px; color: #94869a; background: rgba(255, 255, 255, .018); }
-.pitHagCharacterPlaceholder > span { display: grid; width: 40px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 209, 237, .18); border-radius: 50%; font-weight: 900; }
+.pitHagCharacterPlaceholder { display: grid; min-height: 64px; padding: 8px 12px; align-items: center; grid-template-columns: 36px 1fr; gap: 10px; border: 1px dashed rgba(230, 209, 237, .18); border-radius: 14px; color: #94869a; background: rgba(255, 255, 255, .018); }
+.pitHagCharacterPlaceholder > span { display: grid; width: 34px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 209, 237, .18); border-radius: 50%; font-weight: 900; }
 .pitHagCharacterPlaceholder > strong { font-size: .75rem; }
 @media (max-width: 1040px) { .pitHagTaskPanel { min-height: 390px; order: -1; } }
 .pitHagDemonIntents { display: grid; padding: 11px; gap: 7px; border: 1px solid rgba(230, 209, 237, .11); border-radius: 13px; background: rgba(255, 255, 255, .03); }

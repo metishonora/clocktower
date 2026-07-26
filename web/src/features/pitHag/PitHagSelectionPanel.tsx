@@ -125,8 +125,8 @@ export function PitHagArbitraryDeathsPanel({
     .map((id) => players.find((player) => player.id === id))
     .filter((player): player is Player => Boolean(player));
   return (
-    <aside className="issue116SelectionPanel pitHagTaskPanel pitHagDeathPanel" aria-label="임의 사망 결과">
-      <header className="issue116SelectionHeader"><h2>그 밤의 사망 결과</h2></header>
+    <aside className="issue116SelectionPanel pitHagTaskPanel pitHagDeathPanel" aria-label="예측불허의 죽음">
+      <header className="issue116SelectionHeader"><h2>예측불허의 죽음</h2></header>
       {demonIntents.length > 0 ? (
         <section className="pitHagDemonIntents" aria-label="악마가 선택한 대상">
           <span>악마 선택 기록</span>

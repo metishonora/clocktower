@@ -124,8 +124,8 @@ export function SectsAndVioletsLiveProgress({
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHag}>← 선택</button></div>
           </article>
         ) : step?.stepType === "pitHagArbitraryDeaths" ? (
-          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="마귀할멈 임의 사망">
-            <h3>그 밤의 사망 결과</h3>
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="예측불허의 죽음">
+            <h3>예측불허의 죽음</h3>
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHagDeaths}>사망자 선택</button></div>
           </article>
         ) : step?.character === "snakeCharmer" && step.requiredInput.kind === "playerIds" && actor ? (
@@ -503,7 +503,7 @@ function stepLabel(step: PhaseStep) {
   const suffix = step.id.split(":").at(-1);
   if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
   if (step.stepType === "execution" || step.stepType === "executionDeath") return "처형";
-  if (step.stepType === "pitHagArbitraryDeaths") return "마귀할멈 임의 사망";
+  if (step.stepType === "pitHagArbitraryDeaths") return "예측불허의 죽음";
   if (suffix === "announceDeaths") return "아침 사망 발표";
   if (suffix === "whisper") return "밀담";
   if (suffix === "discussion") return "낮 진행";
