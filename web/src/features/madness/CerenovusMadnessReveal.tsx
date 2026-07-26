@@ -13,7 +13,7 @@ export function CerenovusMadnessReveal({
   if (reveal.payload.kind !== "madnessAssignment") return null;
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const characterName = asset?.label ?? reveal.payload.characterId;
-  const instruction = `내일 ${characterName}${quotationParticle(characterName)} 집착하세요`;
+  const instruction = `내일 ${characterName}${quotationParticle(characterName)} 집착해야 합니다.`;
   return (
     <SectsAndVioletsReveal
       dialogLabel="세레노버스 집착 공개"
@@ -22,10 +22,9 @@ export function CerenovusMadnessReveal({
       onClose={onConfirm}
     >
       <div className="cerenovusMadnessRevealIdentity">
-        <span>세레노버스</span>
+        <p className="cerenovusMadnessRevealLead">세레노버스가 당신을 선택했습니다.</p>
         <h1>{instruction}</h1>
         {asset ? <img src={asset.src} alt={characterName} /> : null}
-        <h2>{characterName}</h2>
       </div>
     </SectsAndVioletsReveal>
   );
