@@ -200,9 +200,12 @@ function JugglerForm({ busy, onComplete }: {
   const [correctCount, setCorrectCount] = useState(0);
   return (
     <div className="snvDayActionForm snvJugglerForm">
-      <div className="snvJugglerCountChoices" aria-label="곡예사 정답 수">
-        {[0, 1, 2, 3, 4, 5].map((count) => <button key={count} type="button" className={correctCount === count ? "selected" : ""} aria-pressed={correctCount === count} onClick={() => setCorrectCount(count)}>{count}</button>)}
-      </div>
+      <fieldset className="snvJugglerCountFieldset">
+        <legend>정답 개수</legend>
+        <div className="snvJugglerCountChoices">
+          {[0, 1, 2, 3, 4, 5].map((count) => <button key={count} type="button" className={correctCount === count ? "selected" : ""} aria-pressed={correctCount === count} onClick={() => setCorrectCount(count)}>{count}</button>)}
+        </div>
+      </fieldset>
       <button type="button" className="snvDayActionConfirm" disabled={busy} onClick={() => onComplete({ kind: "juggler", correctCount })}>첫 낮 추측 완료</button>
     </div>
   );

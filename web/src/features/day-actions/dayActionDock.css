@@ -81,7 +81,7 @@
 .snvSavantReferenceList button { min-height: 45px; padding: 9px 11px; text-align: left; line-height: 1.45; }
 .snvSavantReferenceList button.selected { box-shadow: inset 3px 0 #82509a; }
 
-.snvJugglerCountChoices { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.snvJugglerCountFieldset .snvJugglerCountChoices { grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .snvJugglerCountChoices button { min-height: 44px; }
 
 .snvDayActionHistory { display: grid; gap: 10px; }
