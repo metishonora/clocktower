@@ -43,6 +43,29 @@
   filter: drop-shadow(0 5px 7px rgba(16, 17, 20, .28));
 }
 
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) {
+  --kind-accent: #272c33;
+  border-color: #454c56;
+  color: #fff;
+  background: linear-gradient(145deg, #555b64, #343940);
+  box-shadow: 0 0 0 3px rgba(54, 60, 69, .2), 0 12px 30px rgba(39, 43, 49, .34), inset 0 -3px rgba(218, 221, 225, .22);
+  filter: none;
+  opacity: 1;
+}
+
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvSeatNumber,
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvSeatPlayerName { color: #fff; }
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) small { color: #e3e5e8; }
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvGhostVoteIcon {
+  fill: #f2f3f5;
+  filter: drop-shadow(0 5px 8px rgba(8, 10, 13, .52));
+}
+
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.snvGhostVoteAvailable.snvSeatStateStrong.issue116VoterSeat .snvGhostVoteIcon {
+  fill: #56360b;
+  filter: drop-shadow(0 3px 5px rgba(86, 54, 11, .22));
+}
+
 .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.snvGhostVoteSpent {
   --kind-accent: #858991;
   border-color: #979ba2;
