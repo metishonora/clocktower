@@ -124,13 +124,23 @@ test("the production first-night UI assigns a clearly selected Cerenovus target 
   render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
   await user.click(await screen.findByRole("button", { name: "집착 지정" }));
   await user.click(screen.getByRole("button", { name: /2번 좌석, 현우, 화가/ }));
-  await user.selectOptions(screen.getByRole("combobox", { name: "집착할 캐릭터" }), "artist");
+  await user.selectOptions(screen.getByRole("combobox", { name: "집착할 캐릭터" }), "clockmaker");
   await user.click(screen.getByRole("button", { name: "2번 현우 집착 지정" }));
 
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
     type: "madnessAssigned",
-    payload: { sourcePlayerId: "player-6", targetPlayerId: "player-2", requiredCharacterId: "artist" },
+    payload: { sourcePlayerId: "player-6", targetPlayerId: "player-2", requiredCharacterId: "clockmaker" },
   }));
+
+  const prompt = await screen.findByRole("dialog", { name: "집착 안내" });
+  expect(within(prompt).getByText("2번 현우")).toBeTruthy();
+  await user.click(within(prompt).getByRole("button", { name: "공개" }));
+
+  const reveal = screen.getByRole("dialog", { name: "세레노버스 집착 공개" });
+  expect(within(reveal).getByRole("heading", { name: "내일 시계공이라고 집착하세요" })).toBeTruthy();
+  expect(within(reveal).getByRole("img", { name: "시계공" })).toBeTruthy();
+  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  expect(screen.queryByRole("dialog", { name: "세레노버스 집착 공개" })).toBeNull();
 });
 
 async function firstDayMadnessGame(): Promise<GameFile> {

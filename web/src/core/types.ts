@@ -316,7 +316,7 @@ export type PendingMadnessExecution = {
 export type PendingIdentityReveal = {
   sourceEventId: string;
   sequence: number;
-  payload: CharacterChangeRevealPayload;
+  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload;
 };
 
 export type GameEndState = {
@@ -471,6 +471,12 @@ export type CharacterChangeRevealPayload = {
   kind: "characterChange";
   playerId: string;
   alignment: "good" | "evil";
+  characterId: string;
+};
+
+export type MadnessAssignmentRevealPayload = {
+  kind: "madnessAssignment";
+  playerId: string;
   characterId: string;
 };
 

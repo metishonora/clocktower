@@ -1,0 +1,12 @@
+.snvInformationRevealBackdrop:has(.cerenovusMadnessReveal) { padding: 16px; }
+.snvInformationReveal.cerenovusMadnessReveal { box-sizing: border-box; width: min(560px, 100%); height: min(690px, calc(100dvh - 32px)); min-height: 0; padding: clamp(24px, 6vw, 58px); grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; border-color: rgba(232, 218, 239, .17); border-radius: 34px; background: radial-gradient(circle at 50% 35%, rgba(117, 42, 58, .5), #1c0e17 68%); box-shadow: 0 30px 100px rgba(0, 0, 0, .72); }
+.cerenovusMadnessRevealIdentity { display: grid; align-self: center; justify-items: center; text-align: center; }
+.cerenovusMadnessRevealIdentity > span { margin-bottom: 14px; color: #efb2ba; font-size: .78rem; font-weight: 900; letter-spacing: .12em; }
+.cerenovusMadnessRevealIdentity img { width: clamp(130px, min(30vw, 24dvh), 220px); height: clamp(130px, min(30vw, 24dvh), 220px); object-fit: contain; filter: drop-shadow(0 20px 36px rgba(0, 0, 0, .55)); }
+.cerenovusMadnessRevealIdentity h1 { margin: 0 0 18px; color: #f4e5e8; font: 750 clamp(1.35rem, 3.2vw, 2rem)/1.25 Georgia, serif; }
+.cerenovusMadnessRevealIdentity h2 { margin: 10px 0 0; font: 700 clamp(2rem, 6vw, 3.4rem)/1.05 Georgia, serif; }
+.snvInformationReveal.cerenovusMadnessReveal > button { min-width: 260px; margin-top: 0; padding: 13px 24px; border-color: rgba(238, 217, 153, .45); color: #201524; background: #ecd47e; }
+.cerenovusMadnessRevealPrompt { display: grid; width: 100%; gap: 12px; color: #f7f1fb; text-align: center; }
+.cerenovusMadnessRevealPrompt > strong { color: #f7e9bd; font: 700 1.05rem/1.25 Georgia, serif; }
+.cerenovusMadnessRevealPrompt > p { margin: 0; color: #ddcce3; font-size: .82rem; font-weight: 850; }
+.cerenovusMadnessRevealPrompt > button { min-width: 110px; margin-top: 2px; padding: 9px 16px; justify-self: center; border: 1px solid rgba(238, 217, 153, .45); border-radius: 999px; color: #201524; background: #ecd47e; font: inherit; font-size: .75rem; font-weight: 850; cursor: pointer; }

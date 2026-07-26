@@ -143,7 +143,7 @@ fn assignment<'a>(state: &'a Value, assignment_id: &str) -> &'a Value {
 
 #[test]
 fn cerenovus_night_action_confirms_an_explicit_good_character_assignment() {
-    let events = first_night_before_cerenovus();
+    let mut events = first_night_before_cerenovus();
     let before = replay(&events);
     assert_eq!(before["value"]["currentStep"]["id"], "firstNight:cerenovus");
     assert_eq!(
@@ -172,9 +172,23 @@ fn cerenovus_night_action_confirms_an_explicit_good_character_assignment() {
             "requiredCharacterId": "clockmaker"
         })
     );
+    events.push(assigned["value"]["event"].clone());
+    let after = replay(&events);
+    assert_eq!(
+        after["value"]["pendingIdentityReveals"],
+        json!([{
+            "sourceEventId": assigned["value"]["event"]["id"],
+            "sequence": 1,
+            "payload": {
+                "kind": "madnessAssignment",
+                "playerId": "player-4",
+                "characterId": "clockmaker"
+            }
+        }])
+    );
 
     let evil_character = propose(
-        &events,
+        &first_night_before_cerenovus(),
         json!({
             "type": "confirmStep",
             "payload": {

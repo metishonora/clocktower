@@ -1752,33 +1752,44 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
     let Some(event) = events.last() else {
         return vec![];
     };
-    let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind else {
-        return vec![];
-    };
-    let SnakeCharmerActionOutcome::Swap {
-        identity_transitions,
-        ..
-    } = &payload.outcome
-    else {
-        return vec![];
-    };
-    identity_transitions
-        .iter()
-        .enumerate()
-        .map(|(index, transition)| PendingIdentityReveal {
+    match &event.kind {
+        GameEventKind::MadnessAssigned { payload } => vec![PendingIdentityReveal {
             source_event_id: event.id.clone(),
-            sequence: (index + 1) as u8,
-            payload: RevealPayload::CharacterChange {
-                kind: "characterChange",
-                player_id: transition.player_id.clone(),
-                alignment: match transition.after.alignment {
-                    Alignment::Good => "good".into(),
-                    Alignment::Evil => "evil".into(),
-                },
-                character_id: transition.after.shown_character.clone(),
+            sequence: 1,
+            payload: RevealPayload::MadnessAssignment {
+                kind: "madnessAssignment",
+                player_id: payload.target_player_id.clone(),
+                character_id: payload.required_character_id.clone(),
             },
-        })
-        .collect()
+        }],
+        GameEventKind::SnakeCharmerActionResolved { payload } => {
+            let SnakeCharmerActionOutcome::Swap {
+                identity_transitions,
+                ..
+            } = &payload.outcome
+            else {
+                return vec![];
+            };
+            identity_transitions
+                .iter()
+                .enumerate()
+                .map(|(index, transition)| PendingIdentityReveal {
+                    source_event_id: event.id.clone(),
+                    sequence: (index + 1) as u8,
+                    payload: RevealPayload::CharacterChange {
+                        kind: "characterChange",
+                        player_id: transition.player_id.clone(),
+                        alignment: match transition.after.alignment {
+                            Alignment::Good => "good".into(),
+                            Alignment::Evil => "evil".into(),
+                        },
+                        character_id: transition.after.shown_character.clone(),
+                    },
+                })
+                .collect()
+        }
+        _ => vec![],
+    }
 }
 
 fn phase_state(

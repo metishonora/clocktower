@@ -44,6 +44,10 @@ import {
   SnakeCharmerIdentityReveal,
   SnakeCharmerIdentityRevealPrompt,
 } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
+import {
+  CerenovusMadnessReveal,
+  CerenovusMadnessRevealPrompt,
+} from "./features/madness/CerenovusMadnessReveal";
 import type { PlayerTokenPresentation, PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   browserRuntimeClock,
@@ -1783,12 +1787,19 @@ export function SectsAndVioletsFoundation({
           targetId={liveTargetId}
           targetIds={liveTargetIds}
           centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
-            <SnakeCharmerIdentityRevealPrompt
-              player={identityRevealPlayer}
-              sequence={nextIdentityReveal.sequence}
-              total={pendingIdentityReveals.length}
-              onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
-            />
+            nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+              <CerenovusMadnessRevealPrompt
+                player={identityRevealPlayer}
+                onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+              />
+            ) : (
+              <SnakeCharmerIdentityRevealPrompt
+                player={identityRevealPlayer}
+                sequence={nextIdentityReveal.sequence}
+                total={pendingIdentityReveals.length}
+                onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+              />
+            )
           ) : undefined}
           handoffSupplement={liveHandoff?.kind === "cerenovus" ? (
             <label className="snvMadnessCharacterChoice">
@@ -2289,11 +2300,18 @@ export function SectsAndVioletsFoundation({
         </aside>
       ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
-        <SnakeCharmerIdentityReveal
-          reveal={nextIdentityReveal}
-          total={pendingIdentityReveals.length}
-          onConfirm={acknowledgeIdentityReveal}
-        />
+        nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+          <CerenovusMadnessReveal
+            reveal={nextIdentityReveal}
+            onConfirm={acknowledgeIdentityReveal}
+          />
+        ) : (
+          <SnakeCharmerIdentityReveal
+            reveal={nextIdentityReveal}
+            total={pendingIdentityReveals.length}
+            onConfirm={acknowledgeIdentityReveal}
+          />
+        )
       ) : null}
     </main>
   );

@@ -492,6 +492,13 @@ pub(crate) enum RevealPayload {
         #[serde(rename = "characterId")]
         character_id: String,
     },
+    MadnessAssignment {
+        kind: &'static str,
+        #[serde(rename = "playerId")]
+        player_id: String,
+        #[serde(rename = "characterId")]
+        character_id: String,
+    },
 }
 
 #[derive(Debug, Serialize, Clone)]

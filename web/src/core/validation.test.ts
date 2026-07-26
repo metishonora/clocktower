@@ -129,6 +129,15 @@ test("accepts the Snake Charmer swap event, identity history, impairment, and pe
     ],
   };
   deepEqual<unknown>(parseReplayState(replay), replay);
+  const madnessReveal: unknown = {
+    ...structuredClone(replay),
+    pendingIdentityReveals: [{
+      sourceEventId: "cerenovus-1",
+      sequence: 1,
+      payload: { kind: "madnessAssignment", playerId: "player-1", characterId: "artist" },
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(madnessReveal), madnessReveal);
   const outOfOrder = structuredClone(replay);
   outOfOrder.pendingIdentityReveals[0].sequence = 2;
   throws(() => parseReplayState(outOfOrder), /코어 응답 형식/);

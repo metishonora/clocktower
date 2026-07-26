@@ -12,6 +12,7 @@ export function SnakeCharmerIdentityReveal({
   total: number;
   onConfirm: () => void;
 }) {
+  if (reveal.payload.kind !== "characterChange") return null;
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const evil = reveal.payload.alignment === "evil";
   return (

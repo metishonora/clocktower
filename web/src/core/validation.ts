@@ -14,7 +14,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
-import { isCharacterChangeRevealPayload, isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
@@ -1180,7 +1180,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) > 0 &&
-    isCharacterChangeRevealPayload(value.payload);
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload));
 }
 
 function isPendingIdentityRevealList(value: unknown): boolean {
