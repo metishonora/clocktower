@@ -214,7 +214,7 @@ async function completePitHagNoChange(
   app: HTMLElement,
   actorSeat: number,
 ) {
-  await user.click(await within(app).findByRole("button", { name: "대상 · 캐릭터 선택" }));
+  await user.click(await within(app).findByRole("button", { name: "← 선택" }));
   await user.click(within(app).getByRole("button", { name: new RegExp(`${actorSeat}번 좌석`) }));
   const panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
   await user.selectOptions(within(panel).getByRole("combobox", { name: "바꿀 캐릭터" }), "pitHag");

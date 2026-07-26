@@ -68,7 +68,8 @@ test("sends the combined choice and uses the existing centered identity reveal f
   render(<SectsAndVioletsApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(pitHagGame())} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
-  await user.click(within(app).getByRole("button", { name: "대상 · 캐릭터 선택" }));
+  expect(within(app).queryByRole("button", { name: "대상 · 캐릭터 선택" })).toBeNull();
+  await user.click(within(app).getByRole("button", { name: "← 선택" }));
   const panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
   expect((within(panel).getByRole("button", { name: "변신 확정" }) as HTMLButtonElement).disabled).toBe(true);
   const deadTarget = within(app).getByRole("button", { name: /2번 좌석, 나래.*사망/ });
@@ -92,6 +93,29 @@ test("sends the combined choice and uses the existing centered identity reveal f
   expect(reveal.classList.contains("snvInformationReveal")).toBe(true);
   expect(within(reveal).getByText("노 다시")).toBeTruthy();
   expect(within(reveal).getByLabelText("현재 진영 · 선")).toBeTruthy();
+});
+
+test("cancels a Pit-Hag selection and clears both draft choices", async () => {
+  const core = pitHagCore();
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(pitHagGame())} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(within(app).getByRole("button", { name: "← 선택" }));
+  let panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
+  await user.click(within(app).getByRole("button", { name: /2번 좌석, 나래.*사망/ }));
+  await user.selectOptions(within(panel).getByRole("combobox", { name: "바꿀 캐릭터" }), "noDashii");
+  await user.click(within(app).getByRole("button", { name: "선택 취소 →" }));
+
+  expect(within(app).getByRole("region", { name: "이후 밤 진행" })).toBeTruthy();
+  expect(core.propose).not.toHaveBeenCalled();
+
+  await user.click(within(app).getByRole("button", { name: "← 선택" }));
+  panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
+  const steps = within(panel).getByRole("list");
+  expect(within(steps).getByText("대상").nextElementSibling?.textContent).toBe("-");
+  expect(within(steps).getByText("새 캐릭터").nextElementSibling?.textContent).toBe("-");
+  expect((within(panel).getByRole("button", { name: "변신 확정" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 function pitHagCore(): CoreAdapter {

@@ -121,7 +121,7 @@ export function SectsAndVioletsLiveProgress({
               <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>마귀할멈</span><strong>{actor.name}</strong></div>
             </CharacterDetailButton>
             <p className="snvInformationAbility">{actorSummary}</p>
-            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHag}>대상 · 캐릭터 선택</button></div>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHag}>← 선택</button></div>
           </article>
         ) : step?.stepType === "pitHagArbitraryDeaths" ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="마귀할멈 임의 사망">
@@ -290,6 +290,8 @@ export function SectsAndVioletsLiveGrimoire({
           {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
           {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
             <button type="button" disabled={operationBusy} onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
+          ) : !handoff.complete && handoff.kind === "pitHag" ? (
+            <button type="button" disabled={operationBusy} onClick={onReturn}>선택 취소 →</button>
           ) : null}
         </div>
       ) : (
