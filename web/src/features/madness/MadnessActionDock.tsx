@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { MadnessAssignmentState, MadnessCheckResult, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
@@ -28,7 +28,7 @@ export function MadnessActionDock({
   groupActive?: boolean;
   onGroupActivate?: () => void;
   onGroupDeactivate?: () => void;
-  onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
+  onRecord: (assignmentId: string, result: MadnessCheckResult) => void | Promise<void>;
   onExecute: (assignmentId: string) => void;
 }) {
   const [activeId, setActiveId] = useState<string>();
@@ -140,34 +140,54 @@ function MadnessPanel({
   phaseLabel: string;
   theme: "day" | "night";
   busy: boolean;
-  onRecord: (assignmentId: string, result: MadnessCheckResult) => void;
+  onRecord: (assignmentId: string, result: MadnessCheckResult) => void | Promise<void>;
   onExecute: () => void;
   onClose: () => void;
 }) {
+  const recordingRef = useRef(false);
+  const [recording, setRecording] = useState(false);
   const target = playerById(players, assignment.targetPlayerId);
+  const source = playerById(players, assignment.sourcePlayerId);
   const targetLabel = playerLabel(target);
   const mutant = assignment.sourceCharacterId === "mutant";
-  const sourceLabel = mutant ? "변종" : "세레노버스";
+  const sourceCharacter = sectsAndVioletsCharacters.find((character) => character.id === assignment.sourceCharacterId);
+  const sourceLabel = sourceCharacter?.name ?? (mutant ? "변종" : "세레노버스");
+  const sourcePlayerLabel = source ? `${source.seat}번 ${source.name}` : "원인 플레이어 없음";
   const sourceAsset = sectsAndVioletsCharacterAsset(assignment.sourceCharacterId);
   const requiredCharacter = characterLabel(assignment.requiredCharacterId);
   const statusLabel = assignment.status === "violated" ? "위반 발견"
     : assignment.status === "clear" ? "위반 없음"
       : "확인 전";
 
+  async function recordCheck(result: MadnessCheckResult) {
+    if (recordingRef.current) return;
+    recordingRef.current = true;
+    setRecording(true);
+    try {
+      await onRecord(assignment.assignmentId, result);
+    } finally {
+      recordingRef.current = false;
+      setRecording(false);
+    }
+  }
+
   return (
     <section className={`snvMadnessPanel ${theme}`} aria-label={`${targetLabel} 집착 확인`}>
       <header>
-        <CharacterDetailButton
-          details={sectsAndVioletsCharacterDetail(assignment.sourceCharacterId)}
-          className="snvMadnessIdentity"
-          theme={theme === "day" ? "snv-day" : "snv-night"}
-        >
-          {sourceAsset ? <img src={sourceAsset.src} alt={`${sourceLabel} 공식 캐릭터 아이콘`} /> : null}
-          <div>
-            <span>{phaseLabel} · {sourceLabel}</span>
-            <h2>{mutant ? `${targetLabel} 외지인 집착 확인` : `${targetLabel} 집착 확인`}</h2>
-          </div>
-        </CharacterDetailButton>
+        <div className="snvMadnessHeaderContent">
+          <CharacterDetailButton
+            details={sectsAndVioletsCharacterDetail(assignment.sourceCharacterId)}
+            className="snvMadnessIdentity"
+            theme={theme === "day" ? "snv-day" : "snv-night"}
+          >
+            {sourceAsset ? <img src={sourceAsset.src} alt={`${sourceLabel} 공식 캐릭터 아이콘`} /> : null}
+            <div>
+              <span>{phaseLabel} · {sourcePlayerLabel}</span>
+              <h2>{sourceLabel}</h2>
+            </div>
+          </CharacterDetailButton>
+          {sourceCharacter?.ability ? <p className="snvMadnessAbility">{sourceCharacter.ability}</p> : null}
+        </div>
         <button type="button" aria-label="집착 확인 닫기" onClick={onClose}>×</button>
       </header>
       <p className="snvMadnessQuestion">
@@ -181,13 +201,13 @@ function MadnessPanel({
       <div className="snvMadnessResults">
         {mutant ? (
           <>
-            <button type="button" className="violation" disabled={busy || !assignment.canCheck} onClick={() => onRecord(assignment.assignmentId, "violation")}>외지인임을 집착함</button>
-            <button type="button" disabled={busy || !assignment.canCheck} onClick={() => onRecord(assignment.assignmentId, "clear")}>위반 없음</button>
+            <button type="button" className="violation" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("violation")}>외지인임을 집착함</button>
+            <button type="button" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("clear")}>위반 없음</button>
           </>
         ) : (
           <>
-            <button type="button" disabled={busy || !assignment.canCheck} onClick={() => onRecord(assignment.assignmentId, "clear")}>충분히 집착함</button>
-            <button type="button" className="violation" disabled={busy || !assignment.canCheck} onClick={() => onRecord(assignment.assignmentId, "violation")}>충분히 집착하지 않음</button>
+            <button type="button" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("clear")}>충분히 집착함</button>
+            <button type="button" className="violation" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("violation")}>충분히 집착하지 않음</button>
           </>
         )}
       </div>

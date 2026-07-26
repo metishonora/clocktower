@@ -43,7 +43,8 @@ test("the production UI records and settles a Mutant violation with separate exe
   render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
   await user.click(await screen.findByRole("button", { name: /변종 집착 확인 열기, \[1번 민지\]/ }));
-  expect(screen.getByRole("heading", { name: "[1번 민지] 외지인 집착 확인" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "변종" })).toBeTruthy();
+  expect(screen.getByText("[1번 민지]이 외지인임을 주장하며 집착하였나요?")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "외지인임을 집착함" }));
 
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessCheckRecorded"));

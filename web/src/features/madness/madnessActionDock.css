@@ -36,13 +36,16 @@
 .snvMadnessPanel.day { border: 1px solid rgba(91, 57, 101, .18); color: #3d3041; background: rgba(255, 252, 250, .98); }
 .snvMadnessPanel.night { border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 24px 70px rgba(4, 1, 7, .58); }
 .snvMadnessPanel header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
-.snvMadnessIdentity { display: flex; min-width: 0; padding: 0; align-items: center; gap: 12px; border-radius: 12px; text-align: left; }
+.snvMadnessHeaderContent { display: grid; min-width: 0; flex: 1; gap: 12px; }
+.snvMadnessIdentity { display: flex; width: 100%; min-width: 0; padding: 0; align-items: center; gap: 12px; border-radius: 12px; text-align: left; }
 .snvMadnessIdentity:hover { background: rgba(98, 60, 108, .06); }
 .snvMadnessIdentity > img { width: 54px; height: 54px; flex: 0 0 auto; object-fit: contain; }
 .snvMadnessIdentity > div { min-width: 0; }
-.snvMadnessPanel header span { color: #765783; font-size: .8rem; font-weight: 700; }
+.snvMadnessPanel header span { color: #765783; font-size: .65rem; font-weight: 850; }
 .snvMadnessPanel.night header span { color: #c8b2ce; }
-.snvMadnessPanel h2 { margin: 4px 0 0; font: 700 1.25rem/1.25 system-ui, sans-serif; }
+.snvMadnessPanel h2 { margin: 3px 0 0; font: 1.7rem Georgia, serif; }
+.snvMadnessAbility { margin: 0; padding: 11px 12px; border: 1px solid rgba(91, 57, 101, .1); border-radius: 11px; color: #5f4d64; background: rgba(130, 80, 154, .045); font-size: .75rem; line-height: 1.55; }
+.snvMadnessPanel.night .snvMadnessAbility { border-color: rgba(231, 208, 239, .14); color: #d5c7d9; background: rgba(255, 255, 255, .05); }
 .snvMadnessPanel header > button { border: 0; color: #654a70; background: transparent; font-size: 1.8rem; cursor: pointer; }
 .snvMadnessPanel.night header > button { color: #f1e6f4; }
 .snvMadnessQuestion { margin: 20px 0 14px; font-weight: 650; line-height: 1.5; }

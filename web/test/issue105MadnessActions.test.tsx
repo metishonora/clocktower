@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { MadnessAssignmentState, Player } from "../src/core/types";
@@ -18,7 +18,10 @@ describe("#105 madness free actions", () => {
     await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
 
     expect(screen.getByRole("img", { name: "변종 공식 캐릭터 아이콘" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "[7번 도윤] 외지인 집착 확인" })).toBeTruthy();
+    const identity = screen.getByRole("button", { name: "변종 캐릭터 상세 열기" });
+    expect(within(identity).getByText("2일차 낮 · 2번 민준")).toBeTruthy();
+    expect(within(identity).getByRole("heading", { name: "변종" })).toBeTruthy();
+    expect(screen.getByText("당신이 \"외지인\"이라는 사실에 집착한다면, 당신은 처형당할 수도 있습니다.")).toBeTruthy();
     expect(screen.getByText("[7번 도윤]이 외지인임을 주장하며 집착하였나요?")).toBeTruthy();
     expect(screen.queryByText(/이야기꾼 판정/)).toBeNull();
     expect(screen.getByRole("button", { name: "외지인임을 집착함" })).toBeTruthy();
@@ -41,13 +44,35 @@ describe("#105 madness free actions", () => {
     ], onRecord);
 
     await user.click(screen.getByRole("button", { name: /세레노버스 집착 확인 열기/ }));
-    expect(screen.getByRole("heading", { name: "[7번 도윤] 집착 확인" })).toBeTruthy();
+    const identity = screen.getByRole("button", { name: "세레노버스 캐릭터 상세 열기" });
+    expect(within(identity).getByText("2일차 낮 · 5번 서연")).toBeTruthy();
+    expect(within(identity).getByRole("heading", { name: "세레노버스" })).toBeTruthy();
     expect(screen.getByText("[7번 도윤]이 화가에 충분히 집착하였나요?")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "충분히 집착함" }));
     expect(onRecord).toHaveBeenCalledWith("ceren-assignment", "clear");
 
     await user.click(screen.getByRole("button", { name: "충분히 집착하지 않음" }));
     expect(onRecord).toHaveBeenLastCalledWith("ceren-assignment", "violation");
+  });
+
+  it("locks result buttons immediately until the current check finishes", async () => {
+    const user = userEvent.setup();
+    let finishRecord: (() => void) | undefined;
+    const onRecord = vi.fn(() => new Promise<void>((resolve) => {
+      finishRecord = resolve;
+    }));
+    renderDock([assignment()], onRecord);
+
+    await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
+    const clearButton = screen.getByRole<HTMLButtonElement>("button", { name: "위반 없음" });
+    await user.click(clearButton);
+
+    expect(clearButton.disabled).toBe(true);
+    await user.click(clearButton);
+    expect(onRecord).toHaveBeenCalledTimes(1);
+
+    finishRecord?.();
+    await waitFor(() => expect(clearButton.disabled).toBe(false));
   });
 
   it("requires a separate confirmation before executing a violated target", async () => {

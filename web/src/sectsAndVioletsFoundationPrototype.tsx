@@ -2174,7 +2174,7 @@ export function SectsAndVioletsFoundation({
             groupActive={activeFreeActionGroup === "madness"}
             onGroupActivate={() => setActiveFreeActionGroup("madness")}
             onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "madness" ? undefined : current)}
-            onRecord={(assignmentId, result) => void recordMadnessCheck(assignmentId, result)}
+            onRecord={(assignmentId, result) => recordMadnessCheck(assignmentId, result)}
             onExecute={(assignmentId) => void executeMadness(assignmentId)}
           />
         ) : null}
