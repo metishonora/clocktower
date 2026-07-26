@@ -104,6 +104,7 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
 
   const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
   expect(deadVoter.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadVoter.classList.contains("snvGhostVoteAvailable")).toBe(true);
   expect(deadVoter.classList.contains("snvSeatStateSelected")).toBe(true);
   expect(deadVoter.classList.contains("snvSeatStateStrong")).toBe(true);
   expect(deadVoter.querySelector("img")).toBeNull();
@@ -112,8 +113,21 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
 
   const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
   expect(spentGhost.hasAttribute("disabled")).toBe(true);
+  expect(spentGhost.classList.contains("snvGhostVoteAvailable")).toBe(false);
   expect(spentGhost.querySelector(".snvFuneralIcon")).toBeTruthy();
   expect(spentGhost.querySelector(".snvGhostVoteIcon")).toBeNull();
+});
+
+test("marks an available ghost-vote seat for high-contrast day presentation", () => {
+  const fixturePlayers = players(7, [2]);
+  renderGrimoire({
+    players: fixturePlayers,
+    handoff: { kind: "vote", complete: false },
+  });
+
+  const availableGhost = screen.getByRole("button", { name: /2번 좌석.*사망.*투표 가능/ });
+  expect(availableGhost.classList.contains("snvGhostVoteAvailable")).toBe(true);
+  expect(availableGhost.querySelector(".snvGhostVoteIcon")).toBeTruthy();
 });
 
 test("visibly dims a dead player whose ghost vote was already spent", () => {
@@ -207,25 +221,27 @@ function renderGrimoire({
   targetId?: string;
 }) {
   return render(
-    <SectsAndVioletsLiveGrimoire
-      players={fixturePlayers}
-      phaseLabel={phaseLabel}
-      currentStep={currentStep}
-      dayState={dayState}
-      handoff={handoff}
-      nominatorId={nominatorId}
-      nomineeId={nomineeId}
-      voterIds={voterIds}
-      targetId={targetId}
-      operationBusy={false}
-      onSeatClick={vi.fn()}
-      onConfirm={vi.fn()}
-      onReturn={vi.fn()}
-      onCancelDayHandoff={vi.fn()}
-      onResetDaySelection={vi.fn()}
-      onGoToProgress={vi.fn()}
-      onReturnToSetup={vi.fn()}
-    />,
+    <div className={currentStep.phase === "day" ? "snvDayMode" : "snvNightMode"}>
+      <SectsAndVioletsLiveGrimoire
+        players={fixturePlayers}
+        phaseLabel={phaseLabel}
+        currentStep={currentStep}
+        dayState={dayState}
+        handoff={handoff}
+        nominatorId={nominatorId}
+        nomineeId={nomineeId}
+        voterIds={voterIds}
+        targetId={targetId}
+        operationBusy={false}
+        onSeatClick={vi.fn()}
+        onConfirm={vi.fn()}
+        onReturn={vi.fn()}
+        onCancelDayHandoff={vi.fn()}
+        onResetDaySelection={vi.fn()}
+        onGoToProgress={vi.fn()}
+        onReturnToSetup={vi.fn()}
+      />
+    </div>,
   );
 }
 

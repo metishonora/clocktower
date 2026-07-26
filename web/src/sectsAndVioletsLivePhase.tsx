@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { ConfirmedDayActionRecord, DayState, PhaseStep, Player, ReplayState } from "./core/types";
+import type { ConfirmedDayActionRecord, DayState, PhaseOverviewItem, PhaseStep, Player, ReplayState } from "./core/types";
 import {
   PlayerTokenCountBadge,
   PlayerTokenDetailDialog,
@@ -373,7 +373,7 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
                   aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
@@ -484,9 +484,10 @@ export function SectsAndVioletsLiveGrimoire({
 }
 
 function PhaseOverview({ replayState }: { replayState: ReplayState }) {
+  const overview = collapseNominationVotingSteps(replayState.phaseOverview);
   return (
     <ol className="snvPhaseOverview" aria-label={replayState.phase === "day" ? "낮 순서" : "이후 밤 순서"}>
-      {replayState.phaseOverview.map((step) => (
+      {overview.map((step) => (
         <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
           <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
           <strong>{stepLabel(step)}</strong>
@@ -494,6 +495,24 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
       ))}
     </ol>
   );
+}
+
+function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const nominationVotingSteps = steps.filter(isNominationVotingStep);
+  if (nominationVotingSteps.length < 2) return steps;
+  const current = nominationVotingSteps.find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? nominationVotingSteps.at(-1)!.status;
+  let inserted = false;
+  return steps.flatMap((step) => {
+    if (!isNominationVotingStep(step)) return [step];
+    if (inserted) return [];
+    inserted = true;
+    return [{ ...step, status: combinedStatus }];
+  });
+}
+
+function isNominationVotingStep(step: PhaseStep) {
+  return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
 }
 
 function stepLabel(step: PhaseStep) {
