@@ -108,7 +108,9 @@ test("the production UI records and settles a Mutant violation with separate exe
   expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessExecutionConfirmed");
   expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 1);
 
-  await user.click(screen.getByRole("button", { name: "사망 확인" }));
+  const executeAndContinueToNight = screen.getByRole("button", { name: "처형 후 밤으로" });
+  expect(executeAndContinueToNight.classList.contains("issue116NightTransitionAction")).toBe(true);
+  await user.click(executeAndContinueToNight);
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
     type: "deathConfirmed",
     payload: { playerId: "player-1" },

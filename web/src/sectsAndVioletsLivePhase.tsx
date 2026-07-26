@@ -105,7 +105,12 @@ export function SectsAndVioletsLiveProgress({
               <span>{pendingMadnessExecution ? "집착 위반 처형" : "처형 대상"}</span>
               <strong>{candidate ? pendingMadnessExecution ? `${candidate.seat}번 ${candidate.name}` : candidate.name : "없음"}</strong>
             </div>
-            <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>{pendingMadnessExecution ? "사망 확인" : "확정"}</button>
+            <button
+              type="button"
+              className={`issue116ExecutionConfirm${pendingMadnessExecution ? " issue116NightTransitionAction" : ""}`}
+              disabled={operationBusy}
+              onClick={onConfirmExecution}
+            >{pendingMadnessExecution ? "처형 후 밤으로" : "확정"}</button>
           </article>
         ) : step?.character === "cerenovus" && step.requiredInput.kind === "madnessAssignment" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="세레노버스 집착 지정">

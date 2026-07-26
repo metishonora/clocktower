@@ -21,6 +21,7 @@
 .issue116ExecutionTarget span { color: #6a4673; font-size: .78rem; font-weight: 900; letter-spacing: .08em; }
 .issue116ExecutionTarget strong { font: 2.3rem Georgia, serif; }
 .issue116ExecutionConfirm { min-height: 58px; border: 1px solid #724581; border-radius: 16px; color: #fff; background: #724581; font: inherit; font-weight: 900; cursor: pointer; }
+.issue116ExecutionConfirm.issue116NightTransitionAction { border-color: #4d3658; background: linear-gradient(135deg, #34213d, #17101d); box-shadow: 0 12px 30px rgba(20, 10, 25, .36); }
 .issue116DemonStep { justify-content: center; }
 .issue116DemonStep .issue116ActorIdentity { margin: 0 0 22px; align-items: flex-start; flex-direction: column; gap: 4px; }
 .issue116ActorRoleButton { display: flex; padding: 5px 8px 5px 0; align-items: center; gap: 18px; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
