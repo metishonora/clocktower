@@ -57,7 +57,7 @@ export function MadnessActionDock({
 
   const dockActionCount = Math.max(0, precedingActionCount);
   const dockStyle = {
-    "--snv-madness-dock-offset": `${dockActionCount * 62}px`,
+    "--snv-madness-dock-offset": `${dockActionCount * 70}px`,
     "--snv-madness-mobile-dock-offset": `${dockActionCount * 58}px`,
   } as CSSProperties;
 

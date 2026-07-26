@@ -130,7 +130,7 @@ describe("#105 madness free actions", () => {
     const { container } = renderDock([assignment()], vi.fn(), vi.fn(), "day", 3);
     const dock = container.querySelector<HTMLElement>(".snvMadnessDock");
 
-    expect(dock?.style.getPropertyValue("--snv-madness-dock-offset")).toBe("186px");
+    expect(dock?.style.getPropertyValue("--snv-madness-dock-offset")).toBe("210px");
     expect(dock?.style.getPropertyValue("--snv-madness-mobile-dock-offset")).toBe("174px");
   });
 });

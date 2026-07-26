@@ -72,6 +72,12 @@
 .snvMadnessCharacterChoice { display: grid; margin: 12px 0; gap: 6px; color: #4a3554; font-size: .85rem; font-weight: 750; }
 .snvMadnessCharacterChoice select { min-height: 44px; padding: 0 12px; border: 1px solid #8d7198; border-radius: 10px; color: #382440; background: #fff; font: inherit; }
 
+@media (min-width: 781px) {
+  .snvMadnessDock > button { width: 62px; height: 62px; padding: 7px; }
+  .snvMadnessDock img { width: 48px; height: 48px; }
+  .snvMadnessPanel { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 84px); }
+}
+
 @media (max-width: 780px) {
   .snvMadnessDock { right: calc(max(14px, env(safe-area-inset-right)) + var(--snv-madness-mobile-dock-offset)); bottom: max(14px, env(safe-area-inset-bottom)); }
   .snvMadnessDock > button { width: 50px; height: 50px; }
