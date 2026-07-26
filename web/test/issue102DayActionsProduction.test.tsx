@@ -48,7 +48,7 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
   expect(within(playerDetails).getByText("답변 · 아니오")).toBeTruthy();
 });
 
-test("a recorded Juggler result decorates the character identity instead of adding day-action history", async () => {
+test("a recorded Juggler result adds stacked reminder tokens instead of changing the character identity", async () => {
   const game = await firstDayGame();
   const storage = new MemoryGameStorageDriver(game);
   const user = userEvent.setup();
@@ -70,12 +70,16 @@ test("a recorded Juggler result decorates the character identity instead of addi
   }));
 
   await user.click(screen.getByRole("button", { name: "마도서" }));
-  await user.click(screen.getByRole("button", { name: /3번 좌석, 서준, 곡예사/ }));
+  await user.click(screen.getByRole("button", { name: /3번 좌석, 서준, 곡예사, 토큰 3개/ }));
   const playerDetails = screen.getByRole("dialog", { name: "3번 서준 플레이어 상세" });
   const identity = within(playerDetails).getByRole("button", { name: "곡예사 캐릭터 상세 열기" });
   expect(within(identity).getByText("곡예사")).toBeTruthy();
-  expect(within(identity).getByText("정답 • 3개")).toBeTruthy();
-  expect(within(identity).getByLabelText("곡예사 정답 배지 3개").children).toHaveLength(3);
+  expect(within(identity).queryByText("정답 • 3개")).toBeNull();
+  const tokenArea = within(playerDetails).getByRole("region", { name: "부착된 토큰" });
+  const resultTokens = within(tokenArea).getByLabelText("곡예사 정답 토큰 3개");
+  expect(resultTokens.children).toHaveLength(3);
+  expect(within(resultTokens).getByText("곡예사")).toBeTruthy();
+  expect(within(resultTokens).getByText("정답 • 3개")).toBeTruthy();
   expect(within(playerDetails).queryByRole("region", { name: "낮 자유 행동 기록" })).toBeNull();
 });
 

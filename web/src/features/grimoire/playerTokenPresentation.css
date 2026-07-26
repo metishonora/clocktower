@@ -59,12 +59,6 @@
 .playerTokenCharacterIdentityButton:hover { background: rgba(255, 255, 255, .07); }
 .playerTokenCharacterIdentityButton > img { width: 68px; height: 68px; object-fit: contain; }
 .playerTokenCharacterIdentityButton > strong { color: #caa5d3; font-size: .72rem; }
-.playerTokenCharacterIdentityButton.jugglerResult { gap: 3px; }
-.playerJugglerIconStack { position: relative; display: grid; width: 68px; height: 68px; place-items: center; }
-.playerJugglerIconStack > img { width: 68px; height: 68px; object-fit: contain; }
-.playerJugglerCorrectBadges { position: absolute; right: -3px; bottom: 1px; width: 42px; height: 22px; pointer-events: none; }
-.playerJugglerCorrectBadges > i { position: absolute; right: calc(var(--juggler-badge-index) * 5px); bottom: 0; z-index: calc(var(--juggler-badge-index) + 1); display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid #d7b85c; border-radius: 50%; color: #fff1ad; background: #3c2944; box-shadow: 0 2px 6px rgba(0, 0, 0, .4); font-size: .62rem; font-style: normal; font-weight: 1000; }
-.playerJugglerCorrectCount { color: #ead28f; font-size: .62rem; font-weight: 900; white-space: nowrap; }
 .playerTokenDetailDialog > header span { color: #b8a5bd; font-size: .66rem; font-weight: 850; }
 .playerTokenDetailDialog > header h2 { margin: 3px 0; font: 1.75rem Georgia, serif; }
 .playerTokenDetailDialog > header .playerTokenDetailAlignment { justify-self: end; font-size: .9rem; }
@@ -88,6 +82,7 @@
 .playerPinnedTokenArea li:first-child { transform: rotate(-4deg); }
 .playerPinnedTokenArea li:nth-child(2n) { transform: translateY(7px) rotate(4deg); }
 .playerPinnedTokenArea li:nth-child(3n) { transform: translateY(-4px) rotate(-2deg); }
+.playerPinnedTokenArea li.playerJugglerResultTokenItem { position: relative; width: 164px; height: 126px; flex-basis: 164px; transform: none; }
 
 .playerPinnedToken {
   position: relative;
@@ -110,6 +105,7 @@
 .playerPinnedToken.impairment { border-color: #69c4de; background: radial-gradient(circle at 38% 28%, #204c65, #101e2b 70%, #05090d); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(105, 196, 222, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
 .playerPinnedToken.relationship { border-color: #d59ac7; background: radial-gradient(circle at 38% 28%, #543050, #261626 70%, #0b060a); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(213, 154, 199, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
 .playerPinnedToken.usage { border-color: #dc907f; background: radial-gradient(circle at 38% 28%, #5d322e, #291817 70%, #0c0707); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(220, 144, 127, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.playerJugglerResultToken { position: absolute; top: 0; left: calc(var(--juggler-token-index) * 8px); z-index: calc(var(--juggler-token-index) + 1); transform: rotate(var(--juggler-token-angle)); }
 .playerPinnedToken img, .playerPinnedTokenFallback { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .65)); }
 .playerPinnedTokenFallback { display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgba(255, 255, 255, .12); font: 900 1.4rem Georgia, serif; }
 .playerPinnedToken span, .playerPinnedToken strong { max-width: 102px; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
@@ -155,8 +151,6 @@
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenDetailAlignment.alignment-good { color: #2f739e; background: rgba(56, 126, 170, .1); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenDetailAlignment.alignment-evil { color: #a43f4b; background: rgba(174, 62, 76, .1); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header strong { color: #765386; }
-.playerTokenDetailBackdrop.day .playerJugglerCorrectBadges > i { border-color: #8c6c26; color: #5d4211; background: #fff3b7; box-shadow: 0 2px 6px rgba(74, 48, 82, .22); }
-.playerTokenDetailBackdrop.day .playerJugglerCorrectCount { color: #8b631e; }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog > header .playerTokenDetailClose { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
 .playerTokenDetailBackdrop.day .playerTokenCharacterIdentityButton:hover { background: rgba(96, 60, 105, .08); }
 .playerTokenDetailBackdrop.day .playerTokenCharacterSummary > span { color: #715f76; }
@@ -174,13 +168,11 @@
   .playerTokenDetailDialog { width: 100%; height: auto; max-height: min(78dvh, 660px); border-top: 1px solid rgba(227, 198, 234, .22); border-left: 0; border-radius: 26px 26px 0 0; animation-name: playerTokenSheetIn; }
   .playerTokenDetailDialog > header { padding: 17px; grid-template-columns: 54px minmax(0, 1fr) 30px 44px; }
   .playerTokenCharacterIdentityButton > img { width: 54px; height: 54px; }
-  .playerJugglerIconStack { width: 54px; height: 54px; }
-  .playerJugglerIconStack > img { width: 54px; height: 54px; }
-  .playerJugglerCorrectBadges { right: -6px; bottom: -1px; transform: scale(.88); transform-origin: right bottom; }
   .playerTokenDetailBody { padding: 19px 17px max(22px, env(safe-area-inset-bottom)); gap: 22px; }
   .playerPinnedTokenArea { min-height: 150px; padding: 10px 8px; }
   .playerPinnedTokenArea ul { min-height: 130px; padding: 8px 4px; row-gap: 10px; }
   .playerPinnedTokenArea li { flex-basis: 84px; }
+  .playerPinnedTokenArea li.playerJugglerResultTokenItem { width: 148px; height: 112px; flex-basis: 148px; }
   .playerPinnedToken { width: 112px; height: 112px; padding: 11px 7px 9px; grid-template-rows: 16px 1fr 18px; }
   .playerPinnedToken img, .playerPinnedTokenFallback { width: 47px; height: 47px; }
 }

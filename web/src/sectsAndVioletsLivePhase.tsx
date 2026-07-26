@@ -258,6 +258,15 @@ export function SectsAndVioletsLiveGrimoire({
   const detailsDayActionRecords = detailsPlayer
     ? dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)
     : [];
+  const jugglerCorrectCountsByPlayerId = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const record of dayActionRecords) {
+      if (record.record.kind === "juggler") {
+        counts[record.actorPlayerId] = Math.max(0, Math.min(5, record.record.correctCount));
+      }
+    }
+    return counts;
+  }, [dayActionRecords]);
   const detailsJugglerRecord = [...detailsDayActionRecords]
     .reverse()
     .find((record) => record.record.kind === "juggler");
@@ -299,6 +308,10 @@ export function SectsAndVioletsLiveGrimoire({
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
           {players.map((player, index) => {
             const playerTokens = tokensByPlayerId[player.id] ?? [];
+            const jugglerTokenCount = player.actualCharacter === "juggler"
+              ? jugglerCorrectCountsByPlayerId[player.id] ?? 0
+              : 0;
+            const playerTokenCount = playerTokens.length + jugglerTokenCount;
             const selected = handoff?.kind === "nomination"
               ? player.id === nominatorId || player.id === nomineeId
               : handoff?.kind === "vote" ? voterIds.includes(player.id)
@@ -331,7 +344,7 @@ export function SectsAndVioletsLiveGrimoire({
                   : ineligible ? "피지명 불가" : "피지명 가능"
               : undefined;
             const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
-            const tokenCountLabel = playerTokens.length > 0 ? `토큰 ${playerTokens.length}개` : "토큰 없음";
+            const tokenCountLabel = playerTokenCount > 0 ? `토큰 ${playerTokenCount}개` : "토큰 없음";
             const actor = actorId === player.id;
             const targetSeat = selectionRole === "공격 대상" || selectionRole === "선택 대상";
             const settledOther = Boolean(handoff?.complete && !actor && !targetSeat);
@@ -382,7 +395,7 @@ export function SectsAndVioletsLiveGrimoire({
                 </button>
                 {!centerPrompt && (!handoff || handoff.complete) ? (
                   <PlayerTokenCountBadge
-                    count={playerTokens.length}
+                    count={playerTokenCount}
                     position={desktopPositions[index]}
                     mobilePosition={mobilePositions[index]}
                     theme={currentStep?.phase === "day" ? "day" : "night"}

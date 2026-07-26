@@ -63,14 +63,20 @@ export function PlayerTokenCountBadge({
 export function PlayerTokenList({
   tokens,
   theme,
+  jugglerResult,
 }: {
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
+  jugglerResult?: Readonly<{ correctCount: number; iconSrc?: string }>;
 }) {
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0 && !jugglerResult) return null;
+  const jugglerTokenCount = jugglerResult
+    ? Math.max(0, Math.min(5, jugglerResult.correctCount))
+    : undefined;
+  const visibleJugglerTokenCount = jugglerTokenCount === undefined ? 0 : Math.max(1, jugglerTokenCount);
   return (
     <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
-      <ul aria-label={`부착된 토큰 ${tokens.length}개`}>
+      <ul aria-label={`부착된 토큰 ${tokens.length + visibleJugglerTokenCount}개`}>
         {tokens.map((token) => (
           <li aria-label={`${token.label} · 출처 ${token.sourceLabel}`} key={token.instanceId}>
             <div className={`playerPinnedToken ${token.visualKind}`} title={token.description}>
@@ -86,6 +92,35 @@ export function PlayerTokenList({
             </div>
           </li>
         ))}
+        {jugglerResult && jugglerTokenCount !== undefined ? (
+          <li
+            className="playerJugglerResultTokenItem"
+            aria-label={`곡예사 정답 토큰 ${jugglerTokenCount}개`}
+          >
+            {Array.from({ length: visibleJugglerTokenCount }, (_, index) => {
+              const isTopToken = index === visibleJugglerTokenCount - 1;
+              return (
+                <div
+                  className="playerPinnedToken usage playerJugglerResultToken"
+                  aria-hidden={isTopToken ? undefined : true}
+                  key={index}
+                  style={{
+                    "--juggler-token-index": index,
+                    "--juggler-token-angle": `${(index - (visibleJugglerTokenCount - 1) / 2) * 2}deg`,
+                  } as CSSProperties}
+                >
+                  {isTopToken ? (
+                    <>
+                      <span className="playerPinnedTokenSource">곡예사</span>
+                      {jugglerResult.iconSrc ? <img src={jugglerResult.iconSrc} alt="곡예사 공식 캐릭터 아이콘" /> : null}
+                      <strong>정답 • {jugglerTokenCount}개</strong>
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </li>
+        ) : null}
       </ul>
     </section>
   );
@@ -109,9 +144,6 @@ export function PlayerTokenDetailDialog({
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [characterDetailOpen, setCharacterDetailOpen] = useState(false);
-  const correctBadgeCount = jugglerCorrectCount === undefined
-    ? undefined
-    : Math.max(0, Math.min(5, jugglerCorrectCount));
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -156,33 +188,12 @@ export function PlayerTokenDetailDialog({
         <header>
           <CharacterDetailButton
             details={sectsAndVioletsCharacterDetail(player.characterId)}
-            className={`playerTokenCharacterIdentityButton${correctBadgeCount === undefined ? "" : " jugglerResult"}`}
+            className="playerTokenCharacterIdentityButton"
             theme={theme === "day" ? "snv-day" : "snv-night"}
             onOpenChange={setCharacterDetailOpen}
           >
-            {correctBadgeCount === undefined ? (
-              <>
-                {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
-                <strong>{player.characterLabel}</strong>
-              </>
-            ) : (
-              <>
-                <strong>{player.characterLabel}</strong>
-                <span className="playerJugglerIconStack">
-                  {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
-                  <span className="playerJugglerCorrectBadges" aria-label={`곡예사 정답 배지 ${correctBadgeCount}개`}>
-                    {Array.from({ length: correctBadgeCount }, (_, index) => (
-                      <i
-                        key={index}
-                        aria-hidden="true"
-                        style={{ "--juggler-badge-index": index } as CSSProperties}
-                      >✓</i>
-                    ))}
-                  </span>
-                </span>
-                <small className="playerJugglerCorrectCount">정답 • {correctBadgeCount}개</small>
-              </>
-            )}
+            {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
+            <strong>{player.characterLabel}</strong>
           </CharacterDetailButton>
           <div>
             <span>좌석 {player.seat} · {player.characterKindLabel}</span>
@@ -200,7 +211,14 @@ export function PlayerTokenDetailDialog({
             <span>캐릭터 능력</span>
             <p>{player.characterAbility}</p>
           </section>
-          <PlayerTokenList tokens={tokens} theme={theme} />
+          <PlayerTokenList
+            tokens={tokens}
+            theme={theme}
+            jugglerResult={jugglerCorrectCount === undefined ? undefined : {
+              correctCount: jugglerCorrectCount,
+              iconSrc: player.characterIconSrc,
+            }}
+          />
           {details}
         </div>
       </section>
