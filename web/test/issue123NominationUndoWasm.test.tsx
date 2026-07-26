@@ -140,6 +140,11 @@ async function gameAtFirstNomination(): Promise<GameFile> {
         type: "confirmStep",
         payload: { stepId: step.id, input: { playerIds: ["player-1"] } },
       };
+    } else if (step.requiredInput.kind === "madnessAssignment") {
+      command = {
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { playerIds: ["player-1"], characterId: "clockmaker" } },
+      };
     } else {
       command = { type: "confirmStep", payload: { stepId: step.id, input: null } };
     }

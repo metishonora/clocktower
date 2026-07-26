@@ -80,6 +80,7 @@ test("Artist and Juggler submit only their approved compact records", async () =
 
   await user.click(screen.getByRole("button", { name: "화가 행동 열기, 2번 현우" }));
   const artist = screen.getByRole("dialog", { name: "화가 능력 사용" });
+  expect(artist.classList.contains("snvDayActionPanel--artist")).toBe(true);
   await user.clear(within(artist).getByRole("textbox", { name: "질문" }));
   await user.type(within(artist).getByRole("textbox", { name: "질문" }), "악마가 홀수 번호 좌석에 있나요?");
   await user.click(within(artist).getByRole("button", { name: "아니오" }));
@@ -92,6 +93,8 @@ test("Artist and Juggler submit only their approved compact records", async () =
 
   await user.click(screen.getByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
   const juggler = screen.getByRole("dialog", { name: "곡예사 능력 사용" });
+  expect(within(juggler).getByText("정답 개수")).toBeTruthy();
+  expect(within(juggler).queryByText("공개 추측은 별도로 기록하지 않습니다.")).toBeNull();
   await user.click(within(juggler).getByRole("button", { name: "3" }));
   await user.click(within(juggler).getByRole("button", { name: "첫 낮 추측 완료" }));
   expect(onConfirm).toHaveBeenLastCalledWith(availableActions[2], {

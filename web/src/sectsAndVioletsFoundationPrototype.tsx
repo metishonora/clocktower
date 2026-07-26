@@ -9,6 +9,7 @@ import type {
   GameEvent,
   GameFile,
   InformationResult,
+  MadnessCheckResult,
   PhaseStep,
   Player,
   ReplayState,
@@ -43,6 +44,10 @@ import {
   SnakeCharmerIdentityReveal,
   SnakeCharmerIdentityRevealPrompt,
 } from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
+import {
+  CerenovusMadnessReveal,
+  CerenovusMadnessRevealPrompt,
+} from "./features/madness/CerenovusMadnessReveal";
 import type { PlayerTokenPresentation, PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   browserRuntimeClock,
@@ -61,6 +66,7 @@ import {
   withSectsAndVioletsSession,
 } from "./sectsAndVioletsSession";
 import { DayActionDock } from "./features/day-actions/DayActionDock";
+import { MadnessActionDock } from "./features/madness/MadnessActionDock";
 import { savantReferenceCategoriesForState } from "./features/day-actions/dayActionReferences";
 import {
   sectsAndVioletsCharacters as characters,
@@ -169,6 +175,7 @@ export function SectsAndVioletsFoundation({
   const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
   const [replayState, setReplayState] = useState<ReplayState>();
   const [phaseCheckpoints, setPhaseCheckpoints] = useState<SectsAndVioletsPhaseCheckpoint[]>([]);
+  const [madnessJudgments, setMadnessJudgments] = useState<Record<string, MadnessCheckResult>>({});
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationError, setOperationError] = useState<string>();
@@ -184,6 +191,8 @@ export function SectsAndVioletsFoundation({
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
+  const [liveMadnessCharacterId, setLiveMadnessCharacterId] = useState("");
+  const [activeFreeActionGroup, setActiveFreeActionGroup] = useState<"day" | "madness">();
   const [selectedInformationTargetIds, setSelectedInformationTargetIds] = useState<string[]>([]);
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
@@ -306,6 +315,21 @@ export function SectsAndVioletsFoundation({
   const identityRevealPlayer = replayState?.players.find(
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
+  const effectiveMadnessAssignments = useMemo(() => (
+    replayState?.madnessAssignments ?? []
+  ).map((assignment) => {
+    const legacyJudgment: MadnessCheckResult | undefined = assignment.status === "clear"
+      ? "clear"
+      : assignment.status === "violated" ? "violation" : undefined;
+    const judgment = madnessJudgments[assignment.assignmentId] ?? legacyJudgment;
+    return {
+      ...assignment,
+      status: judgment === "clear" ? "clear" as const
+        : judgment === "violation" ? "violated" as const
+          : "unchecked" as const,
+      canExecute: assignment.canExecute && judgment === "violation",
+    };
+  }), [madnessJudgments, replayState?.madnessAssignments]);
   const canonicalTokensByPlayerId = useMemo<PlayerTokensByPlayerId>(() => {
     const result: Record<string, PlayerTokenPresentation[]> = {};
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
@@ -330,8 +354,21 @@ export function SectsAndVioletsFoundation({
         description: reminder.description,
       });
     }
+    for (const assignment of effectiveMadnessAssignments) {
+      if (assignment.sourceCharacterId === "mutant" && assignment.status !== "violated") continue;
+      const requiredCharacter = characters.find((character) => character.id === assignment.requiredCharacterId);
+      const status = assignment.status === "violated" ? "위반 발견" : assignment.status === "clear" ? "위반 없음" : "확인 전";
+      (result[assignment.targetPlayerId] ??= []).push({
+        instanceId: `madness-${assignment.assignmentId}`,
+        label: assignment.sourceCharacterId === "mutant" ? "외지인 집착" : `집착 · ${requiredCharacter?.name ?? assignment.requiredCharacterId}`,
+        sourceLabel: assignment.sourceCharacterId === "mutant" ? "변종" : "세레노버스",
+        sourceIconSrc: sectsAndVioletsCharacterAsset(assignment.sourceCharacterId)?.src,
+        visualKind: assignment.status === "violated" ? "impairment" : "usage",
+        description: `${status}${assignment.sourceEffective ? "" : " · 능력 효력 없음"}`,
+      });
+    }
     return result;
-  }, [replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders]);
+  }, [effectiveMadnessAssignments, replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders]);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -547,6 +584,7 @@ export function SectsAndVioletsFoundation({
     autosaveRevision,
     demon,
     gameFile,
+    madnessJudgments,
     phaseCheckpoints,
     playerCount,
     rosterConfirmed,
@@ -648,6 +686,7 @@ export function SectsAndVioletsFoundation({
         seatingConfirmed,
       },
       phaseCheckpoints: structuredClone(phaseCheckpoints),
+      madnessJudgments: structuredClone(madnessJudgments),
     };
   }
 
@@ -739,6 +778,14 @@ export function SectsAndVioletsFoundation({
     setPhaseCheckpoints(
       storedSession?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
     );
+    const legacyJudgments = Object.fromEntries(
+      (replayed.madnessAssignments ?? []).flatMap((assignment): [string, MadnessCheckResult][] => {
+        if (assignment.status === "clear") return [[assignment.assignmentId, "clear"]];
+        if (assignment.status === "violated") return [[assignment.assignmentId, "violation"]];
+        return [];
+      }),
+    );
+    setMadnessJudgments(structuredClone(storedSession?.madnessJudgments ?? legacyJudgments));
     setActiveTab(restoredTab);
     setPlayPhase(
       replayed.phase === "firstNight" ? "firstNight" : replayed.phase === "day" ? "day" : "laterNight",
@@ -771,6 +818,7 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
+    setMadnessJudgments({});
     setAutosaveRecoveryBlocked(false);
     navigateToTab("seating");
     markAutosaveNeeded();
@@ -812,6 +860,7 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
+    setMadnessJudgments({});
     setCanonicalDistribution(undefined);
     setOperationError(undefined);
     setAutosaveRecoveryBlocked(false);
@@ -1336,11 +1385,30 @@ export function SectsAndVioletsFoundation({
     setOperationBusy(false);
   };
 
+  const updateMadnessJudgment = (assignmentId: string, result: MadnessCheckResult) => {
+    if (operationBusy || madnessJudgments[assignmentId] === result) return;
+    setOperationError(undefined);
+    setMadnessJudgments((current) => ({ ...current, [assignmentId]: result }));
+    markAutosaveNeeded();
+  };
+
+  const executeMadness = async (assignmentId: string) => {
+    if (operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const applied = await proposeAndApplyLiveCommand({
+      type: "executeMadness",
+      payload: { assignmentId, expectedEventCount: gameFile.game.events.length },
+    });
+    if (applied) navigateToTab("play");
+    setOperationBusy(false);
+  };
+
   const startLiveHandoff = (kind: LiveHandoff["kind"]) => {
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "dreamer" || kind === "seamstress"
+      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
     });
@@ -1350,7 +1418,8 @@ export function SectsAndVioletsFoundation({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon" || kind === "snakeCharmer") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer" || kind === "cerenovus") setLiveTargetId(undefined);
+    if (kind === "cerenovus") setLiveMadnessCharacterId("");
     if (kind === "dreamer" || kind === "seamstress") setLiveTargetIds(selectedInformationTargetIds);
     navigateToTab("seating");
   };
@@ -1387,6 +1456,9 @@ export function SectsAndVioletsFoundation({
         ? current.filter((candidate) => candidate !== playerId)
         : current.length >= max ? (max === 1 ? [playerId] : current) : [...current, playerId]);
       return;
+    }
+    if (liveHandoff.kind === "snakeCharmer" || liveHandoff.kind === "cerenovus") {
+      if (!replayState?.currentStep?.requiredInput.allowedPlayerIds?.includes(playerId)) return;
     }
     setLiveTargetId((current) => current === playerId ? undefined : playerId);
   };
@@ -1426,6 +1498,12 @@ export function SectsAndVioletsFoundation({
         setLiveHandoff(undefined);
         navigateToTab("play");
       }
+    } else if (liveHandoff.kind === "cerenovus" && liveTargetId && liveMadnessCharacterId) {
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { playerIds: [liveTargetId], characterId: liveMadnessCharacterId } },
+      });
+      if (applied) setLiveHandoff({ ...liveHandoff, complete: true });
     } else if (liveTargetId) {
       const applied = await proposeAndApplyLiveCommand({
         type: "confirmStep",
@@ -1443,6 +1521,7 @@ export function SectsAndVioletsFoundation({
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
     setLiveTargetIds([]);
+    setLiveMadnessCharacterId("");
     setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
   };
@@ -1708,13 +1787,37 @@ export function SectsAndVioletsFoundation({
           targetId={liveTargetId}
           targetIds={liveTargetIds}
           centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
-            <SnakeCharmerIdentityRevealPrompt
-              player={identityRevealPlayer}
-              sequence={nextIdentityReveal.sequence}
-              total={pendingIdentityReveals.length}
-              onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
-            />
+            nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+              <CerenovusMadnessRevealPrompt
+                player={identityRevealPlayer}
+                onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+              />
+            ) : (
+              <SnakeCharmerIdentityRevealPrompt
+                player={identityRevealPlayer}
+                sequence={nextIdentityReveal.sequence}
+                total={pendingIdentityReveals.length}
+                onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+              />
+            )
           ) : undefined}
+          handoffSupplement={liveHandoff?.kind === "cerenovus" ? (
+            <label className="snvMadnessCharacterChoice">
+              집착할 캐릭터
+              <select
+                aria-label="집착할 캐릭터"
+                value={liveMadnessCharacterId}
+                disabled={operationBusy || liveHandoff.complete}
+                onChange={(event) => setLiveMadnessCharacterId(event.target.value)}
+              >
+                <option value="">선택</option>
+                {characters
+                  .filter((character) => replayState.currentStep?.requiredInput.allowedCharacterIds?.includes(character.id))
+                  .map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}
+              </select>
+            </label>
+          ) : undefined}
+          handoffSupplementReady={liveHandoff?.kind !== "cerenovus" || Boolean(liveMadnessCharacterId)}
           operationBusy={operationBusy}
           tokensByPlayerId={canonicalTokensByPlayerId}
           dayActionRecords={replayState.dayActionRecords ?? []}
@@ -1893,6 +1996,7 @@ export function SectsAndVioletsFoundation({
           onConfirmExecution={() => void confirmLiveExecution()}
           onStartDemonAttack={() => startLiveHandoff("demon")}
           onStartSnakeCharmer={() => startLiveHandoff("snakeCharmer")}
+          onStartCerenovus={() => startLiveHandoff("cerenovus")}
           onAdvance={() => void advanceFirstNight()}
           onResolveManual={(outcome) => void advanceFirstNight(outcome)}
         />
@@ -1947,7 +2051,7 @@ export function SectsAndVioletsFoundation({
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
-                  {replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds" ? null : currentFirstNightStep.support === "automated" ? (
+                  {(replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds") || replayState?.currentStep?.requiredInput.kind === "madnessAssignment" ? null : currentFirstNightStep.support === "automated" ? (
                     <button
                       type="button"
                       className={`informationReveal ${revealedStepIds.includes(currentFirstNightStep.id) ? "" : "prominent"}`}
@@ -1956,6 +2060,8 @@ export function SectsAndVioletsFoundation({
                   ) : null}
                   {replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds" ? (
                     <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("snakeCharmer")}>대상 선택</button>
+                  ) : replayState?.currentStep?.requiredInput.kind === "madnessAssignment" ? (
+                    <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("cerenovus")}>집착 지정</button>
                   ) : (
                     <button type="button" disabled={operationBusy} onClick={() => void advanceFirstNight()}>{currentFirstNightStep.support === "manual" ? "처리 완료" : "다음 단계"}</button>
                   )}
@@ -2080,7 +2186,31 @@ export function SectsAndVioletsFoundation({
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
             savantCategories={savantReferenceCategories}
             busy={operationBusy}
+            groupActive={activeFreeActionGroup === "day"}
+            onGroupActivate={() => setActiveFreeActionGroup("day")}
+            onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "day" ? undefined : current)}
             onConfirm={(action, record) => void recordDayAction(action, record)}
+          />
+        ) : null}
+      {production
+        && replayState
+        && (replayState.phase === "day" || replayState.phase === "night")
+        && (activeTab === "seating" || activeTab === "play")
+        && !liveHandoff
+        && !nextIdentityReveal
+        && !replayState.pendingMadnessExecution ? (
+          <MadnessActionDock
+            players={replayState.players}
+            assignments={effectiveMadnessAssignments}
+            phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+            theme={replayState.phase === "day" ? "day" : "night"}
+            precedingActionCount={replayState.phase === "day" ? replayState.availableDayActions?.length ?? 0 : 0}
+            busy={operationBusy}
+            groupActive={activeFreeActionGroup === "madness"}
+            onGroupActivate={() => setActiveFreeActionGroup("madness")}
+            onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "madness" ? undefined : current)}
+            onJudge={updateMadnessJudgment}
+            onExecute={(assignmentId) => void executeMadness(assignmentId)}
           />
         ) : null}
       {informationStep ? (
@@ -2170,11 +2300,18 @@ export function SectsAndVioletsFoundation({
         </aside>
       ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
-        <SnakeCharmerIdentityReveal
-          reveal={nextIdentityReveal}
-          total={pendingIdentityReveals.length}
-          onConfirm={acknowledgeIdentityReveal}
-        />
+        nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+          <CerenovusMadnessReveal
+            reveal={nextIdentityReveal}
+            onConfirm={acknowledgeIdentityReveal}
+          />
+        ) : (
+          <SnakeCharmerIdentityReveal
+            reveal={nextIdentityReveal}
+            total={pendingIdentityReveals.length}
+            onConfirm={acknowledgeIdentityReveal}
+          />
+        )
       ) : null}
     </main>
   );

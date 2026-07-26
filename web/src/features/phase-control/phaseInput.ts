@@ -108,6 +108,7 @@ export function inputKindLabel(inputKind: string): string {
   if (inputKind === "executionDeathDecision") return "처형 결과";
   if (inputKind === "slayerDeathDecision") return "사망 결정";
   if (inputKind === "demonSuccession") return "새 임프";
+  if (inputKind === "madnessAssignment") return "집착 대상과 캐릭터";
   if (inputKind === "day") return "낮";
   if (inputKind === "night") return "밤";
   return inputKind;
@@ -122,6 +123,9 @@ export function currentActionPrompt(step: PhaseStep): string | undefined {
     return step.requiredInput.demonSuccession?.kind === "selectable"
       ? "새 임프가 될 플레이어를 선택하세요."
       : undefined;
+  }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return "집착할 플레이어와 선한 캐릭터를 선택하세요.";
   }
 
   const characterPrompt = step.character ? characterActionPrompt(step.character) : undefined;
@@ -247,6 +251,9 @@ export function stepInputReady(
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "fixed" || selectedCount === 1;
   }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return selectedCount === 1 && selectedCharacterId.length > 0;
+  }
   if (mayorDecisionApplies(step, selectedPlayerIds)) {
     return Boolean(mayorDecision);
   }
@@ -299,6 +306,9 @@ export function stepInputPayload(
       ? step.requiredInput.demonSuccession.successorPlayerId
       : undefined;
     return { successorPlayerId: fixedSuccessor ?? selectedPlayerIds[0] ?? "" };
+  }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return { playerIds: selectedPlayerIds, characterId: selectedCharacterId };
   }
   if (step.requiredInput.kind === "executionDecision") return { execute: true };
   if (step.requiredInput.kind === "setupInfo") {

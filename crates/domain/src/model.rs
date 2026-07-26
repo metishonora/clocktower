@@ -55,6 +55,8 @@ pub(crate) enum RequiredInputKind {
     PlayerIds,
     #[serde(rename = "characterIds")]
     CharacterIds,
+    #[serde(rename = "madnessAssignment")]
+    MadnessAssignment,
     #[serde(rename = "setupInfo")]
     SetupInfo,
     #[serde(rename = "number")]
@@ -658,6 +660,7 @@ impl CharacterKind {
 pub(crate) enum PhaseStepStatus {
     Waiting,
     Current,
+    Interrupted,
     Complete,
     Skipped,
     NeedsFollowUp,

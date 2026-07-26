@@ -7,14 +7,14 @@
   right: max(22px, env(safe-area-inset-right));
   bottom: max(20px, env(safe-area-inset-bottom));
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .snvDayActionDock > button {
   display: grid;
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   padding: 6px;
   place-items: center;
   border: 1px solid rgba(91, 57, 101, .22);
@@ -25,7 +25,7 @@
   cursor: pointer;
 }
 
-.snvDayActionDock > button img { width: 48px; height: 48px; object-fit: contain; }
+.snvDayActionDock > button img { width: 42px; height: 42px; object-fit: contain; }
 .snvDayActionDock > button span { font: 300 2.2rem/1 Georgia, serif; }
 .snvDayActionDock > button.selected { border-color: #8a58a0; background: #82509a; box-shadow: 0 0 0 4px rgba(130, 80, 154, .18), 0 12px 30px rgba(77, 42, 89, .3); }
 .snvDayActionDock > button:disabled { cursor: wait; opacity: .55; }
@@ -35,10 +35,12 @@
   z-index: 140;
   right: max(14px, env(safe-area-inset-right));
   bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+  box-sizing: border-box;
   width: min(480px, calc(100vw - 28px));
   max-height: min(64dvh, 620px);
   padding: 18px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid rgba(91, 57, 101, .18);
   border-radius: 24px;
   color: #3d3041;
@@ -54,11 +56,12 @@
 .snvDayActionIdentity span { color: #775f7d; font-size: .65rem; font-weight: 850; }
 .snvDayActionIdentity h2 { margin: 3px 0 0; color: #38283d; font: 1.7rem Georgia, serif; }
 .snvDayActionHeader > p { margin: 0; padding: 11px 12px; border: 1px solid rgba(91, 57, 101, .1); border-radius: 11px; color: #5f4d64; background: rgba(130, 80, 154, .045); font-size: .75rem; line-height: 1.55; }
+.snvDayActionPanel--artist { max-height: min(72dvh, 680px); }
 
 .snvDayActionForm { display: grid; margin-top: 16px; gap: 14px; }
 .snvDayActionForm label, .snvDayActionForm legend { color: #6e5474; font-size: .68rem; font-weight: 900; }
 .snvArtistForm label { display: grid; gap: 7px; }
-.snvArtistForm textarea { width: 100%; min-height: 82px; resize: vertical; padding: 11px; border: 1px solid rgba(91, 57, 101, .16); border-radius: 12px; color: #3d3041; background: rgba(255, 255, 255, .74); font: inherit; line-height: 1.5; }
+.snvArtistForm textarea { box-sizing: border-box; width: 100%; max-width: 100%; min-height: 82px; resize: vertical; padding: 11px; border: 1px solid rgba(91, 57, 101, .16); border-radius: 12px; color: #3d3041; background: rgba(255, 255, 255, .74); font: inherit; line-height: 1.5; }
 .snvDayActionForm fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .snvDayActionForm fieldset > div { display: grid; margin-top: 7px; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .snvDayActionForm button { border: 1px solid rgba(91, 57, 101, .15); border-radius: 11px; color: #544259; background: rgba(255, 255, 255, .68); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
@@ -78,11 +81,7 @@
 .snvSavantReferenceList button { min-height: 45px; padding: 9px 11px; text-align: left; line-height: 1.45; }
 .snvSavantReferenceList button.selected { box-shadow: inset 3px 0 #82509a; }
 
-.snvJugglerCountSummary { display: grid; padding: 14px; grid-template-columns: 1fr auto; align-items: center; gap: 3px 12px; border: 1px solid rgba(88, 55, 97, .12); border-radius: 13px; background: rgba(255, 255, 255, .45); }
-.snvJugglerCountSummary span { color: #694d70; font-size: .68rem; font-weight: 900; }
-.snvJugglerCountSummary strong { grid-row: 1 / span 2; grid-column: 2; color: #724581; font: 2rem Georgia, serif; }
-.snvJugglerCountSummary small { color: #77647c; font-size: .64rem; }
-.snvJugglerCountChoices { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.snvJugglerCountFieldset .snvJugglerCountChoices { grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .snvJugglerCountChoices button { min-height: 44px; }
 
 .snvDayActionHistory { display: grid; gap: 10px; }
@@ -100,11 +99,19 @@
 .playerTokenDetailBackdrop.day .snvDayActionHistory p, .playerTokenDetailBackdrop.day .snvDayActionHistory ul { color: #4d3d52; }
 .playerTokenDetailBackdrop.day .snvDayActionHistory em { color: #8b631e; }
 
+@media (min-width: 781px) {
+  .snvDayActionScrollClearance { height: 120px; }
+  .snvDayActionDock > button { width: 62px; height: 62px; padding: 7px; }
+  .snvDayActionDock > button img { width: 48px; height: 48px; }
+  .snvDayActionPanel { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 84px); }
+}
+
 @media (max-width: 780px) {
   .snvDayActionDock { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
-  .snvDayActionDock > button { width: 58px; height: 58px; }
-  .snvDayActionDock > button img { width: 45px; height: 45px; }
-  .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); width: calc(100vw - 20px); max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvDayActionDock > button { width: 50px; height: 50px; }
+  .snvDayActionDock > button img { width: 40px; height: 40px; }
+  .snvDayActionPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvDayActionPanel--artist { max-height: min(72dvh, 620px); }
   .snvDayActionScrollClearance.open { height: min(570px, 68dvh); }
 }
 

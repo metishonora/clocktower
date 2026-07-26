@@ -14,7 +14,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
-import { isCharacterChangeRevealPayload, isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
@@ -46,6 +46,7 @@ const inputKinds = new Set([
   "executionDeathDecision",
   "slayerDeathDecision",
   "demonSuccession",
+  "madnessAssignment",
   "day",
   "night",
 ]);
@@ -222,6 +223,39 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "dayActionRecorded":
       if (!isDayActionRecordedPayload(payload)) throw invalidEvent();
       break;
+    case "madnessAssigned":
+      if (
+        !hasExactKeys(payload, ["stepId", "sourcePlayerId", "targetPlayerId", "requiredCharacterId"]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.sourcePlayerId !== "string" ||
+        typeof payload.targetPlayerId !== "string" ||
+        !isKnownCharacter(payload.requiredCharacterId)
+      ) throw invalidEvent();
+      break;
+    case "madnessCheckRecorded":
+      if (
+        !hasExactKeys(payload, ["assignmentId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "result"]) ||
+        typeof payload.assignmentId !== "string" ||
+        typeof payload.sourcePlayerId !== "string" ||
+        !isMadnessSource(payload.sourceCharacterId) ||
+        typeof payload.targetPlayerId !== "string" ||
+        (payload.result !== "clear" && payload.result !== "violation")
+      ) throw invalidEvent();
+      break;
+    case "madnessExecutionConfirmed":
+      if (
+        !(
+          hasExactKeys(payload, ["assignmentId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"]) ||
+          hasExactKeys(payload, ["assignmentId", "checkEventId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"])
+        ) ||
+        typeof payload.assignmentId !== "string" ||
+        (payload.checkEventId !== undefined && typeof payload.checkEventId !== "string") ||
+        typeof payload.sourcePlayerId !== "string" ||
+        !isMadnessSource(payload.sourceCharacterId) ||
+        typeof payload.targetPlayerId !== "string" ||
+        typeof payload.interruptedStepId !== "string"
+      ) throw invalidEvent();
+      break;
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
       break;
@@ -295,6 +329,46 @@ function isConfirmedDayActionRecord(value: unknown): boolean {
     && value.characterId === value.record.kind;
 }
 
+function isMadnessSource(value: unknown): value is "mutant" | "cerenovus" {
+  return value === "mutant" || value === "cerenovus";
+}
+
+function isMadnessAssignment(value: unknown): boolean {
+  return isRecord(value)
+    && hasOnlyKeys(value, [
+      "assignmentId",
+      "sourcePlayerId",
+      "sourceCharacterId",
+      "targetPlayerId",
+      "requiredCharacterId",
+      "status",
+      "sourceEffective",
+      "canCheck",
+      "canExecute",
+      "violationCheckEventId",
+    ])
+    && typeof value.assignmentId === "string"
+    && typeof value.sourcePlayerId === "string"
+    && isMadnessSource(value.sourceCharacterId)
+    && typeof value.targetPlayerId === "string"
+    && (value.requiredCharacterId === undefined || isKnownCharacter(value.requiredCharacterId))
+    && ["unchecked", "clear", "violated"].includes(String(value.status))
+    && typeof value.sourceEffective === "boolean"
+    && typeof value.canCheck === "boolean"
+    && typeof value.canExecute === "boolean"
+    && isOptionalString(value.violationCheckEventId);
+}
+
+function isPendingMadnessExecution(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["eventId", "assignmentId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"])
+    && typeof value.eventId === "string"
+    && typeof value.assignmentId === "string"
+    && isMadnessSource(value.sourceCharacterId)
+    && typeof value.targetPlayerId === "string"
+    && typeof value.interruptedStepId === "string";
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
@@ -317,6 +391,9 @@ export function parseReplayState(value: unknown): ReplayState {
       (!Array.isArray(value.availableDayActions) || !value.availableDayActions.every(isAvailableDayAction))) ||
     (value.dayActionRecords !== undefined &&
       (!Array.isArray(value.dayActionRecords) || !value.dayActionRecords.every(isConfirmedDayActionRecord))) ||
+    (value.madnessAssignments !== undefined &&
+      (!Array.isArray(value.madnessAssignments) || !value.madnessAssignments.every(isMadnessAssignment))) ||
+    (value.pendingMadnessExecution !== undefined && !isPendingMadnessExecution(value.pendingMadnessExecution)) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -675,7 +752,7 @@ function isPhaseOverviewItem(value: unknown): boolean {
   return (
     isPhaseStep(value) &&
     isRecord(value) &&
-    ["waiting", "current", "complete", "skipped", "needsFollowUp", "manualComplete", "notApplicable"].includes(
+    ["waiting", "current", "complete", "skipped", "needsFollowUp", "interrupted", "manualComplete", "notApplicable"].includes(
       String((value as unknown as Record<string, unknown>).status),
     )
   );
@@ -1103,7 +1180,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) > 0 &&
-    isCharacterChangeRevealPayload(value.payload);
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload));
 }
 
 function isPendingIdentityRevealList(value: unknown): boolean {

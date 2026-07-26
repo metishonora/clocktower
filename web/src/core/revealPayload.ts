@@ -1,4 +1,4 @@
-import type { CharacterChangeRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
+import type { CharacterChangeRevealPayload, MadnessAssignmentRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 
@@ -39,6 +39,15 @@ export function isCharacterChangeRevealPayload(value: unknown): value is Charact
     && nonEmptyString(payload.playerId)
     && (payload.alignment === "good" || payload.alignment === "evil")
     && hasExactKeys(payload, ["alignment", "characterId", "kind", "playerId"]);
+}
+
+export function isMadnessAssignmentRevealPayload(value: unknown): value is MadnessAssignmentRevealPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Record<string, unknown>;
+  return payload.kind === "madnessAssignment"
+    && nonEmptyString(payload.characterId) && characterIds.has(payload.characterId)
+    && nonEmptyString(payload.playerId)
+    && hasExactKeys(payload, ["characterId", "kind", "playerId"]);
 }
 
 export function isRoleInformationRevealPayload(value: unknown): value is RoleInformationRevealPayload {

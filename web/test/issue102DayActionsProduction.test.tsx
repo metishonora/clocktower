@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { Command, GameEvent, GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
+import { PlayerTokenList } from "../src/features/grimoire/playerTokenPresentation";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
@@ -46,6 +47,50 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
   const playerDetails = screen.getByRole("dialog", { name: "2번 현우 플레이어 상세" });
   expect(within(playerDetails).getByText("악마가 홀수 좌석에 있나요?")).toBeTruthy();
   expect(within(playerDetails).getByText("답변 · 아니오")).toBeTruthy();
+});
+
+test("a recorded Juggler result adds stacked reminder tokens instead of changing the character identity", async () => {
+  const game = await firstDayGame();
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await user.click(await screen.findByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
+  const actionPanel = screen.getByRole("dialog", { name: "곡예사 능력 사용" });
+  await user.click(within(actionPanel).getByRole("button", { name: "3" }));
+  await user.click(within(actionPanel).getByRole("button", { name: "첫 낮 추측 완료" }));
+
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "dayActionRecorded",
+    payload: {
+      actorPlayerId: "player-3",
+      characterId: "juggler",
+      record: { kind: "juggler", correctCount: 3 },
+    },
+  }));
+
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  await user.click(screen.getByRole("button", { name: /3번 좌석, 서준, 곡예사, 토큰 3개/ }));
+  const playerDetails = screen.getByRole("dialog", { name: "3번 서준 플레이어 상세" });
+  const identity = within(playerDetails).getByRole("button", { name: "곡예사 캐릭터 상세 열기" });
+  expect(within(identity).getByText("곡예사")).toBeTruthy();
+  expect(within(identity).queryByText("정답 • 3개")).toBeNull();
+  const tokenArea = within(playerDetails).getByRole("region", { name: "부착된 토큰" });
+  const resultTokens = within(tokenArea).getByLabelText("곡예사 정답 토큰 3개");
+  expect(resultTokens.children).toHaveLength(3);
+  expect(within(resultTokens).getByText("곡예사")).toBeTruthy();
+  expect(within(resultTokens).getByText("정답 • 3개")).toBeTruthy();
+  expect(within(playerDetails).queryByRole("region", { name: "낮 자유 행동 기록" })).toBeNull();
+});
+
+test("a zero-correct Juggler result uses one muted result token", () => {
+  render(<PlayerTokenList tokens={[]} theme="day" jugglerResult={{ correctCount: 0 }} />);
+
+  const resultTokens = screen.getByLabelText("곡예사 정답 토큰 0개");
+  expect(resultTokens.children).toHaveLength(1);
+  expect(resultTokens.firstElementChild?.classList.contains("zeroCorrect")).toBe(true);
+  expect(within(resultTokens).getByText("정답 • 0개")).toBeTruthy();
 });
 
 async function firstDayGame(): Promise<GameFile> {

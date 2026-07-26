@@ -1,4 +1,4 @@
-import { deepEqual, equal } from "node:assert/strict";
+import { deepEqual, equal, throws } from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory } from "fake-indexeddb";
 import {
@@ -120,6 +120,10 @@ test("S&V session metadata survives storage JSON validation without crossing scr
           seatingConfirmed: false,
         },
         phaseCheckpoints: [],
+        madnessJudgments: {
+          "mutant:player-1:setup-1": "violation",
+          "cerenovus:assignment-1": "clear",
+        },
       },
     },
     game: {
@@ -139,6 +143,44 @@ test("S&V session metadata survives storage JSON validation without crossing scr
   } catch (error) {
     equal(error instanceof Error ? error.message : "", "현재 페이지와 다른 스크립트의 게임 파일입니다.");
   }
+});
+
+test("S&V session validation rejects unknown madness judgment values", () => {
+  const malformed = {
+    schemaVersion: 3,
+    ui: {
+      sectsAndVioletsSession: {
+        version: 1,
+        activeTab: "roles",
+        savedAt: "2026-07-22T00:00:00.000Z",
+        setup: {
+          playerCount: 7,
+          demon: "fangGu",
+          selectedIds: ["fangGu"],
+          seatAssignments: {},
+          seatAlignments: {},
+          seatNames: {},
+          rosterConfirmed: false,
+          seatingConfirmed: false,
+        },
+        phaseCheckpoints: [],
+        madnessJudgments: { "mutant:player-1:setup-1": "pending" },
+      },
+    },
+    game: {
+      scriptId: SECTS_AND_VIOLETS,
+      id: "sv-session",
+      name: "Sects & Violets",
+      createdAt: "2026-07-22T00:00:00.000Z",
+      updatedAt: "2026-07-22T00:00:00.000Z",
+      events: [],
+    },
+  };
+
+  throws(
+    () => importGameFileJson(JSON.stringify(malformed), SECTS_AND_VIOLETS),
+    /Sects & Violets 저장 상태가 올바르지 않습니다\./,
+  );
 });
 
 test("S&V session validation rejects checkpoint counts beyond canonical history", () => {
