@@ -250,6 +250,27 @@ fn overlapping_assignments_replay_independently_and_violation_latches_until_undo
 }
 
 #[test]
+fn madness_execution_can_be_confirmed_without_a_check_event() {
+    let mut events = first_day_events();
+    let execution = append_execution(&mut events, "evt-ceren-assignment");
+
+    assert_eq!(
+        execution["value"]["event"]["type"],
+        "madnessExecutionConfirmed"
+    );
+    assert!(execution["value"]["event"]["payload"]
+        .get("checkEventId")
+        .is_none());
+
+    let pending = replay(&events);
+    assert_eq!(pending["ok"], true, "{pending}");
+    assert_eq!(
+        pending["value"]["pendingMadnessExecution"]["assignmentId"],
+        "evt-ceren-assignment"
+    );
+}
+
+#[test]
 fn daytime_madness_execution_ends_the_day_and_requires_death_confirmation() {
     let mut events = first_day_events();
     append_check(&mut events, "evt-ceren-assignment", "violation");

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { MadnessAssignmentState, Player } from "../src/core/types";
@@ -33,17 +33,17 @@ describe("#105 madness free actions", () => {
     expect(screen.getByRole("dialog", { name: "변종 캐릭터 상세" })).toBeTruthy();
   });
 
-  it("records Cerenovus clear and violation with direct result buttons", async () => {
+  it("changes the Cerenovus judgment with direct result buttons", async () => {
     const user = userEvent.setup();
-    const onRecord = vi.fn();
+    const onJudge = vi.fn();
     renderDock([
       assignment({
         assignmentId: "ceren-assignment",
-        sourceCharacterId: "cerenovus",
+        sourceCharacterId: "cerenovus" as const,
         sourcePlayerId: "ceren-player",
         requiredCharacterId: "artist",
       }),
-    ], onRecord);
+    ], onJudge);
 
     await user.click(screen.getByRole("button", { name: /세레노버스 집착 확인 열기/ }));
     const identity = screen.getByRole("button", { name: "세레노버스 캐릭터 상세 열기" });
@@ -51,30 +51,55 @@ describe("#105 madness free actions", () => {
     expect(within(identity).getByRole("heading", { name: "세레노버스" })).toBeTruthy();
     expect(screen.getByText("[7번 도윤]이 화가에 충분히 집착하였나요?")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "충분히 집착함" }));
-    expect(onRecord).toHaveBeenCalledWith("ceren-assignment", "clear");
+    expect(onJudge).toHaveBeenCalledWith("ceren-assignment", "clear");
 
     await user.click(screen.getByRole("button", { name: "충분히 집착하지 않음" }));
-    expect(onRecord).toHaveBeenLastCalledWith("ceren-assignment", "violation");
+    expect(onJudge).toHaveBeenLastCalledWith("ceren-assignment", "violation");
   });
 
-  it("locks result buttons immediately until the current check finishes", async () => {
+  it.each([
+    {
+      description: "Mutant clear",
+      overrides: { status: "clear" as const },
+      openButton: /변종 집착 확인 열기/,
+      selectedButton: "위반 없음",
+      oppositeButton: "외지인임을 집착함",
+      oppositeResult: "violation" as const,
+    },
+    {
+      description: "Cerenovus clear",
+      overrides: {
+        assignmentId: "ceren-assignment",
+        sourceCharacterId: "cerenovus" as const,
+        sourcePlayerId: "ceren-player",
+        requiredCharacterId: "artist",
+        status: "clear" as const,
+      },
+      openButton: /세레노버스 집착 확인 열기/,
+      selectedButton: "충분히 집착함",
+      oppositeButton: "충분히 집착하지 않음",
+      oppositeResult: "violation" as const,
+    },
+  ])("disables the already-recorded $description result without blocking a changed result", async ({
+    overrides,
+    openButton,
+    selectedButton,
+    oppositeButton,
+    oppositeResult,
+  }) => {
     const user = userEvent.setup();
-    let finishRecord: (() => void) | undefined;
-    const onRecord = vi.fn(() => new Promise<void>((resolve) => {
-      finishRecord = resolve;
-    }));
-    renderDock([assignment()], onRecord);
+    const onJudge = vi.fn();
+    const currentAssignment = assignment(overrides);
+    renderDock([currentAssignment], onJudge);
 
-    await user.click(screen.getByRole("button", { name: /변종 집착 확인 열기/ }));
-    const clearButton = screen.getByRole<HTMLButtonElement>("button", { name: "위반 없음" });
-    await user.click(clearButton);
+    await user.click(screen.getByRole("button", { name: openButton }));
+    const selected = screen.getByRole<HTMLButtonElement>("button", { name: selectedButton });
+    expect(selected.disabled).toBe(true);
+    await user.click(selected);
+    expect(onJudge).not.toHaveBeenCalled();
 
-    expect(clearButton.disabled).toBe(true);
-    await user.click(clearButton);
-    expect(onRecord).toHaveBeenCalledTimes(1);
-
-    finishRecord?.();
-    await waitFor(() => expect(clearButton.disabled).toBe(false));
+    await user.click(screen.getByRole("button", { name: oppositeButton }));
+    expect(onJudge).toHaveBeenCalledWith(currentAssignment.assignmentId, oppositeResult);
   });
 
   it("requires a separate confirmation before executing a violated target", async () => {
@@ -112,7 +137,7 @@ describe("#105 madness free actions", () => {
 
 function renderDock(
   assignments: MadnessAssignmentState[],
-  onRecord = vi.fn(),
+  onJudge = vi.fn(),
   onExecute = vi.fn(),
   theme: "day" | "night" = "day",
   dayActionCount = 0,
@@ -125,7 +150,7 @@ function renderDock(
       theme={theme}
       precedingActionCount={dayActionCount}
       busy={false}
-      onRecord={onRecord}
+      onJudge={onJudge}
       onExecute={onExecute}
     />,
   );

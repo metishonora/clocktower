@@ -722,7 +722,8 @@ pub(crate) struct MadnessCheckRecordedPayload {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct MadnessExecutionConfirmedPayload {
     pub(crate) assignment_id: String,
-    pub(crate) check_event_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) check_event_id: Option<String>,
     pub(crate) source_player_id: String,
     pub(crate) source_character_id: String,
     pub(crate) target_player_id: String,

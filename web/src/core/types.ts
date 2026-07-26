@@ -43,6 +43,7 @@ export type SectsAndVioletsSessionState = {
   savedAt: string;
   setup: SectsAndVioletsSetupSession;
   phaseCheckpoints: SectsAndVioletsPhaseCheckpoint[];
+  madnessJudgments?: Record<string, MadnessCheckResult>;
 };
 
 export type SeatPosition = {
@@ -614,7 +615,7 @@ export type GameEvent = EventCommon &
         type: "madnessExecutionConfirmed";
         payload: {
           assignmentId: string;
-          checkEventId: string;
+          checkEventId?: string;
           sourcePlayerId: string;
           sourceCharacterId: "mutant" | "cerenovus";
           targetPlayerId: string;

@@ -171,6 +171,7 @@ export function SectsAndVioletsFoundation({
   const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
   const [replayState, setReplayState] = useState<ReplayState>();
   const [phaseCheckpoints, setPhaseCheckpoints] = useState<SectsAndVioletsPhaseCheckpoint[]>([]);
+  const [madnessJudgments, setMadnessJudgments] = useState<Record<string, MadnessCheckResult>>({});
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationError, setOperationError] = useState<string>();
@@ -310,6 +311,21 @@ export function SectsAndVioletsFoundation({
   const identityRevealPlayer = replayState?.players.find(
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
+  const effectiveMadnessAssignments = useMemo(() => (
+    replayState?.madnessAssignments ?? []
+  ).map((assignment) => {
+    const legacyJudgment: MadnessCheckResult | undefined = assignment.status === "clear"
+      ? "clear"
+      : assignment.status === "violated" ? "violation" : undefined;
+    const judgment = madnessJudgments[assignment.assignmentId] ?? legacyJudgment;
+    return {
+      ...assignment,
+      status: judgment === "clear" ? "clear" as const
+        : judgment === "violation" ? "violated" as const
+          : "unchecked" as const,
+      canExecute: assignment.canExecute && judgment === "violation",
+    };
+  }), [madnessJudgments, replayState?.madnessAssignments]);
   const canonicalTokensByPlayerId = useMemo<PlayerTokensByPlayerId>(() => {
     const result: Record<string, PlayerTokenPresentation[]> = {};
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
@@ -334,7 +350,7 @@ export function SectsAndVioletsFoundation({
         description: reminder.description,
       });
     }
-    for (const assignment of replayState?.madnessAssignments ?? []) {
+    for (const assignment of effectiveMadnessAssignments) {
       if (assignment.sourceCharacterId === "mutant" && assignment.status !== "violated") continue;
       const requiredCharacter = characters.find((character) => character.id === assignment.requiredCharacterId);
       const status = assignment.status === "violated" ? "위반 발견" : assignment.status === "clear" ? "위반 없음" : "확인 전";
@@ -348,7 +364,7 @@ export function SectsAndVioletsFoundation({
       });
     }
     return result;
-  }, [replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders, replayState?.madnessAssignments]);
+  }, [effectiveMadnessAssignments, replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders]);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -564,6 +580,7 @@ export function SectsAndVioletsFoundation({
     autosaveRevision,
     demon,
     gameFile,
+    madnessJudgments,
     phaseCheckpoints,
     playerCount,
     rosterConfirmed,
@@ -665,6 +682,7 @@ export function SectsAndVioletsFoundation({
         seatingConfirmed,
       },
       phaseCheckpoints: structuredClone(phaseCheckpoints),
+      madnessJudgments: structuredClone(madnessJudgments),
     };
   }
 
@@ -756,6 +774,14 @@ export function SectsAndVioletsFoundation({
     setPhaseCheckpoints(
       storedSession?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
     );
+    const legacyJudgments = Object.fromEntries(
+      (replayed.madnessAssignments ?? []).flatMap((assignment): [string, MadnessCheckResult][] => {
+        if (assignment.status === "clear") return [[assignment.assignmentId, "clear"]];
+        if (assignment.status === "violated") return [[assignment.assignmentId, "violation"]];
+        return [];
+      }),
+    );
+    setMadnessJudgments(structuredClone(storedSession?.madnessJudgments ?? legacyJudgments));
     setActiveTab(restoredTab);
     setPlayPhase(
       replayed.phase === "firstNight" ? "firstNight" : replayed.phase === "day" ? "day" : "laterNight",
@@ -788,6 +814,7 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
+    setMadnessJudgments({});
     setAutosaveRecoveryBlocked(false);
     navigateToTab("seating");
     markAutosaveNeeded();
@@ -829,6 +856,7 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
+    setMadnessJudgments({});
     setCanonicalDistribution(undefined);
     setOperationError(undefined);
     setAutosaveRecoveryBlocked(false);
@@ -1353,15 +1381,11 @@ export function SectsAndVioletsFoundation({
     setOperationBusy(false);
   };
 
-  const recordMadnessCheck = async (assignmentId: string, result: MadnessCheckResult) => {
-    if (operationBusy) return;
-    setOperationBusy(true);
+  const updateMadnessJudgment = (assignmentId: string, result: MadnessCheckResult) => {
+    if (operationBusy || madnessJudgments[assignmentId] === result) return;
     setOperationError(undefined);
-    await proposeAndApplyLiveCommand({
-      type: "recordMadnessCheck",
-      payload: { assignmentId, result, expectedEventCount: gameFile.game.events.length },
-    });
-    setOperationBusy(false);
+    setMadnessJudgments((current) => ({ ...current, [assignmentId]: result }));
+    markAutosaveNeeded();
   };
 
   const executeMadness = async (assignmentId: string) => {
@@ -2166,7 +2190,7 @@ export function SectsAndVioletsFoundation({
         && !replayState.pendingMadnessExecution ? (
           <MadnessActionDock
             players={replayState.players}
-            assignments={replayState.madnessAssignments ?? []}
+            assignments={effectiveMadnessAssignments}
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
             theme={replayState.phase === "day" ? "day" : "night"}
             precedingActionCount={replayState.phase === "day" ? replayState.availableDayActions?.length ?? 0 : 0}
@@ -2174,7 +2198,7 @@ export function SectsAndVioletsFoundation({
             groupActive={activeFreeActionGroup === "madness"}
             onGroupActivate={() => setActiveFreeActionGroup("madness")}
             onGroupDeactivate={() => setActiveFreeActionGroup((current) => current === "madness" ? undefined : current)}
-            onRecord={(assignmentId, result) => recordMadnessCheck(assignmentId, result)}
+            onJudge={updateMadnessJudgment}
             onExecute={(assignmentId) => void executeMadness(assignmentId)}
           />
         ) : null}

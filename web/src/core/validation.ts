@@ -244,9 +244,12 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "madnessExecutionConfirmed":
       if (
-        !hasExactKeys(payload, ["assignmentId", "checkEventId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"]) ||
+        !(
+          hasExactKeys(payload, ["assignmentId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"]) ||
+          hasExactKeys(payload, ["assignmentId", "checkEventId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"])
+        ) ||
         typeof payload.assignmentId !== "string" ||
-        typeof payload.checkEventId !== "string" ||
+        (payload.checkEventId !== undefined && typeof payload.checkEventId !== "string") ||
         typeof payload.sourcePlayerId !== "string" ||
         !isMadnessSource(payload.sourceCharacterId) ||
         typeof payload.targetPlayerId !== "string" ||

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { MadnessAssignmentState, MadnessCheckResult, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
@@ -16,7 +16,7 @@ export function MadnessActionDock({
   groupActive = true,
   onGroupActivate = noop,
   onGroupDeactivate = noop,
-  onRecord,
+  onJudge,
   onExecute,
 }: {
   players: Player[];
@@ -28,7 +28,7 @@ export function MadnessActionDock({
   groupActive?: boolean;
   onGroupActivate?: () => void;
   onGroupDeactivate?: () => void;
-  onRecord: (assignmentId: string, result: MadnessCheckResult) => void | Promise<void>;
+  onJudge: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: (assignmentId: string) => void;
 }) {
   const [activeId, setActiveId] = useState<string>();
@@ -70,7 +70,7 @@ export function MadnessActionDock({
           phaseLabel={phaseLabel}
           theme={theme}
           busy={busy}
-          onRecord={onRecord}
+          onJudge={onJudge}
           onExecute={() => setConfirmingId(active.assignmentId)}
         />
       ) : null}
@@ -127,7 +127,7 @@ function MadnessPanel({
   phaseLabel,
   theme,
   busy,
-  onRecord,
+  onJudge,
   onExecute,
 }: {
   assignment: MadnessAssignmentState;
@@ -135,11 +135,9 @@ function MadnessPanel({
   phaseLabel: string;
   theme: "day" | "night";
   busy: boolean;
-  onRecord: (assignmentId: string, result: MadnessCheckResult) => void | Promise<void>;
+  onJudge: (assignmentId: string, result: MadnessCheckResult) => void;
   onExecute: () => void;
 }) {
-  const recordingRef = useRef(false);
-  const [recording, setRecording] = useState(false);
   const target = playerById(players, assignment.targetPlayerId);
   const source = playerById(players, assignment.sourcePlayerId);
   const targetLabel = playerLabel(target);
@@ -152,17 +150,14 @@ function MadnessPanel({
   const statusLabel = assignment.status === "violated" ? "위반 발견"
     : assignment.status === "clear" ? "위반 없음"
       : "확인 전";
+  const recordedResult: MadnessCheckResult | undefined = assignment.status === "violated"
+    ? "violation"
+    : assignment.status === "clear" ? "clear" : undefined;
+  const checkDisabled = busy || !assignment.canCheck;
 
-  async function recordCheck(result: MadnessCheckResult) {
-    if (recordingRef.current) return;
-    recordingRef.current = true;
-    setRecording(true);
-    try {
-      await onRecord(assignment.assignmentId, result);
-    } finally {
-      recordingRef.current = false;
-      setRecording(false);
-    }
+  function judge(result: MadnessCheckResult) {
+    if (recordedResult === result) return;
+    onJudge(assignment.assignmentId, result);
   }
 
   return (
@@ -194,13 +189,13 @@ function MadnessPanel({
       <div className="snvMadnessResults">
         {mutant ? (
           <>
-            <button type="button" className="violation" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("violation")}>외지인임을 집착함</button>
-            <button type="button" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("clear")}>위반 없음</button>
+            <button type="button" className="violation" disabled={checkDisabled || recordedResult === "violation"} onClick={() => judge("violation")}>외지인임을 집착함</button>
+            <button type="button" disabled={checkDisabled || recordedResult === "clear"} onClick={() => judge("clear")}>위반 없음</button>
           </>
         ) : (
           <>
-            <button type="button" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("clear")}>충분히 집착함</button>
-            <button type="button" className="violation" disabled={busy || recording || !assignment.canCheck} onClick={() => void recordCheck("violation")}>충분히 집착하지 않음</button>
+            <button type="button" disabled={checkDisabled || recordedResult === "clear"} onClick={() => judge("clear")}>충분히 집착함</button>
+            <button type="button" className="violation" disabled={checkDisabled || recordedResult === "violation"} onClick={() => judge("violation")}>충분히 집착하지 않음</button>
           </>
         )}
       </div>

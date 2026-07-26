@@ -358,10 +358,8 @@ fn madness_assignments(
                     source_effective,
                     can_check: phase == Phase::Day
                         && target.alive
-                        && status != MadnessStatus::Violated
                         && !pending_execution,
-                    can_execute: status == MadnessStatus::Violated
-                        && source_effective
+                    can_execute: source_effective
                         && target.alive
                         && !pending_execution
                         && !(phase == Phase::Day && execution_already_occurred),
@@ -1856,8 +1854,9 @@ fn phase_state(
                 || assignment.source_player_id != payload.source_player_id
                 || assignment.source_character_id != payload.source_character_id
                 || assignment.target_player_id != payload.target_player_id
-                || assignment.violation_check_event_id.as_deref()
-                    != Some(payload.check_event_id.as_str())
+                || payload.check_event_id.as_deref().is_some_and(|check_event_id| {
+                    assignment.violation_check_event_id.as_deref() != Some(check_event_id)
+                })
                 || payload.interrupted_step_id != current.id
             {
                 return Err(ErrorKind::ReplayFailed.into_error());
@@ -2807,10 +2806,6 @@ fn propose_madness_execution(
         .find(|assignment| assignment.assignment_id == payload.assignment_id)
         .filter(|assignment| assignment.can_execute)
         .ok_or_else(|| ErrorKind::MadnessExecutionUnavailable.into_error())?;
-    let check_event_id = assignment
-        .violation_check_event_id
-        .clone()
-        .ok_or_else(|| ErrorKind::MadnessExecutionUnavailable.into_error())?;
     let target = players
         .iter()
         .find(|player| player.id == assignment.target_player_id && player.alive)
@@ -2821,7 +2816,7 @@ fn propose_madness_execution(
             kind: GameEventKind::MadnessExecutionConfirmed {
                 payload: MadnessExecutionConfirmedPayload {
                     assignment_id: assignment.assignment_id.clone(),
-                    check_event_id,
+                    check_event_id: assignment.violation_check_event_id.clone(),
                     source_player_id: assignment.source_player_id.clone(),
                     source_character_id: assignment.source_character_id.clone(),
                     target_player_id: assignment.target_player_id.clone(),
