@@ -38,7 +38,10 @@ fn append(events: &mut Vec<Value>, command: Value) -> Value {
         &command.to_string(),
     ))
     .unwrap();
-    assert_eq!(result["ok"], true, "proposal failed: {result}");
+    assert_eq!(
+        result["ok"], true,
+        "proposal failed for {command}: {result}"
+    );
     events.push(result["value"]["event"].clone());
     result
 }

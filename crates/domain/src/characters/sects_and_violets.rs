@@ -42,32 +42,441 @@ use crate::{
 };
 use serde_json::json;
 
-const TOWNSFOLK: [&str; 13] = [
-    "clockmaker",
-    "dreamer",
-    "snakeCharmer",
-    "mathematician",
-    "flowergirl",
-    "townCrier",
-    "oracle",
-    "savant",
-    "seamstress",
-    "philosopher",
-    "artist",
-    "juggler",
-    "sage",
-];
-const OUTSIDERS: [&str; 4] = ["mutant", "sweetheart", "barber", "klutz"];
-const MINIONS: [&str; 4] = ["evilTwin", "witch", "cerenovus", "pitHag"];
-const DEMONS: [&str; 4] = ["fangGu", "vigormortis", "noDashii", "vortox"];
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+enum SnvCharacterId {
+    Clockmaker,
+    Dreamer,
+    SnakeCharmer,
+    Mathematician,
+    Flowergirl,
+    TownCrier,
+    Oracle,
+    Savant,
+    Seamstress,
+    Philosopher,
+    Artist,
+    Juggler,
+    Sage,
+    Mutant,
+    Sweetheart,
+    Barber,
+    Klutz,
+    EvilTwin,
+    Witch,
+    Cerenovus,
+    PitHag,
+    FangGu,
+    Vigormortis,
+    NoDashii,
+    Vortox,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum CharacterInputPolicy {
+    NoInput,
+    Number,
+    OnePlayer,
+    TwoPlayers,
+    MadnessAssignment,
+    CharacterTransformation,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum AbilityActivityPolicy {
+    WhileActive,
+    OnDeath,
+    KilledByDemon,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum SameNightAcquisitionPolicy {
+    StartKnowingImmediately,
+    WakeIfOrderPending,
+    TriggerIfEligible,
+    NextPhase,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct SnvCharacterMetadata {
+    kind: CharacterKind,
+    first_night_rank: Option<u8>,
+    later_night_rank: Option<u8>,
+    input: CharacterInputPolicy,
+    support: PhaseStepSupport,
+    activity: AbilityActivityPolicy,
+    once_per_ability_instance: bool,
+    same_night_acquisition: SameNightAcquisitionPolicy,
+}
+
+impl SnvCharacterId {
+    const ALL: [Self; 25] = [
+        Self::Clockmaker,
+        Self::Dreamer,
+        Self::SnakeCharmer,
+        Self::Mathematician,
+        Self::Flowergirl,
+        Self::TownCrier,
+        Self::Oracle,
+        Self::Savant,
+        Self::Seamstress,
+        Self::Philosopher,
+        Self::Artist,
+        Self::Juggler,
+        Self::Sage,
+        Self::Mutant,
+        Self::Sweetheart,
+        Self::Barber,
+        Self::Klutz,
+        Self::EvilTwin,
+        Self::Witch,
+        Self::Cerenovus,
+        Self::PitHag,
+        Self::FangGu,
+        Self::Vigormortis,
+        Self::NoDashii,
+        Self::Vortox,
+    ];
+
+    fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "clockmaker" => Self::Clockmaker,
+            "dreamer" => Self::Dreamer,
+            "snakeCharmer" => Self::SnakeCharmer,
+            "mathematician" => Self::Mathematician,
+            "flowergirl" => Self::Flowergirl,
+            "townCrier" => Self::TownCrier,
+            "oracle" => Self::Oracle,
+            "savant" => Self::Savant,
+            "seamstress" => Self::Seamstress,
+            "philosopher" => Self::Philosopher,
+            "artist" => Self::Artist,
+            "juggler" => Self::Juggler,
+            "sage" => Self::Sage,
+            "mutant" => Self::Mutant,
+            "sweetheart" => Self::Sweetheart,
+            "barber" => Self::Barber,
+            "klutz" => Self::Klutz,
+            "evilTwin" => Self::EvilTwin,
+            "witch" => Self::Witch,
+            "cerenovus" => Self::Cerenovus,
+            "pitHag" => Self::PitHag,
+            "fangGu" => Self::FangGu,
+            "vigormortis" => Self::Vigormortis,
+            "noDashii" => Self::NoDashii,
+            "vortox" => Self::Vortox,
+            _ => return None,
+        })
+    }
+
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Clockmaker => "clockmaker",
+            Self::Dreamer => "dreamer",
+            Self::SnakeCharmer => "snakeCharmer",
+            Self::Mathematician => "mathematician",
+            Self::Flowergirl => "flowergirl",
+            Self::TownCrier => "townCrier",
+            Self::Oracle => "oracle",
+            Self::Savant => "savant",
+            Self::Seamstress => "seamstress",
+            Self::Philosopher => "philosopher",
+            Self::Artist => "artist",
+            Self::Juggler => "juggler",
+            Self::Sage => "sage",
+            Self::Mutant => "mutant",
+            Self::Sweetheart => "sweetheart",
+            Self::Barber => "barber",
+            Self::Klutz => "klutz",
+            Self::EvilTwin => "evilTwin",
+            Self::Witch => "witch",
+            Self::Cerenovus => "cerenovus",
+            Self::PitHag => "pitHag",
+            Self::FangGu => "fangGu",
+            Self::Vigormortis => "vigormortis",
+            Self::NoDashii => "noDashii",
+            Self::Vortox => "vortox",
+        }
+    }
+
+    const fn metadata(self) -> SnvCharacterMetadata {
+        use AbilityActivityPolicy::{KilledByDemon, OnDeath, WhileActive};
+        use CharacterInputPolicy::{
+            CharacterTransformation, MadnessAssignment, NoInput, Number, OnePlayer, TwoPlayers,
+        };
+        use SameNightAcquisitionPolicy::{
+            NextPhase, StartKnowingImmediately, TriggerIfEligible, WakeIfOrderPending,
+        };
+        let automated = PhaseStepSupport::Automated;
+        let manual = PhaseStepSupport::Manual;
+        match self {
+            Self::Clockmaker => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(7),
+                later_night_rank: None,
+                input: Number,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: StartKnowingImmediately,
+            },
+            Self::Dreamer => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(8),
+                later_night_rank: Some(9),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::SnakeCharmer => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(3),
+                later_night_rank: Some(1),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Mathematician => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(10),
+                later_night_rank: Some(15),
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Flowergirl => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: Some(10),
+                input: NoInput,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::TownCrier => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: Some(11),
+                input: NoInput,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Oracle => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: Some(12),
+                input: Number,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Savant => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: None,
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: NextPhase,
+            },
+            Self::Seamstress => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(9),
+                later_night_rank: Some(13),
+                input: TwoPlayers,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: true,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Philosopher => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: Some(0),
+                later_night_rank: Some(0),
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Artist => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: None,
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: true,
+                same_night_acquisition: NextPhase,
+            },
+            Self::Juggler => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: Some(14),
+                input: Number,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: true,
+                same_night_acquisition: TriggerIfEligible,
+            },
+            Self::Sage => SnvCharacterMetadata {
+                kind: CharacterKind::Townsfolk,
+                first_night_rank: None,
+                later_night_rank: Some(8),
+                input: NoInput,
+                support: automated,
+                activity: KilledByDemon,
+                once_per_ability_instance: false,
+                same_night_acquisition: TriggerIfEligible,
+            },
+            Self::Mutant => SnvCharacterMetadata {
+                kind: CharacterKind::Outsider,
+                first_night_rank: None,
+                later_night_rank: None,
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: NextPhase,
+            },
+            Self::Sweetheart => SnvCharacterMetadata {
+                kind: CharacterKind::Outsider,
+                first_night_rank: None,
+                later_night_rank: Some(7),
+                input: NoInput,
+                support: manual,
+                activity: OnDeath,
+                once_per_ability_instance: false,
+                same_night_acquisition: TriggerIfEligible,
+            },
+            Self::Barber => SnvCharacterMetadata {
+                kind: CharacterKind::Outsider,
+                first_night_rank: None,
+                later_night_rank: Some(6),
+                input: NoInput,
+                support: manual,
+                activity: OnDeath,
+                once_per_ability_instance: false,
+                same_night_acquisition: TriggerIfEligible,
+            },
+            Self::Klutz => SnvCharacterMetadata {
+                kind: CharacterKind::Outsider,
+                first_night_rank: None,
+                later_night_rank: None,
+                input: NoInput,
+                support: manual,
+                activity: OnDeath,
+                once_per_ability_instance: false,
+                same_night_acquisition: NextPhase,
+            },
+            Self::EvilTwin => SnvCharacterMetadata {
+                kind: CharacterKind::Minion,
+                first_night_rank: Some(4),
+                later_night_rank: None,
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: StartKnowingImmediately,
+            },
+            Self::Witch => SnvCharacterMetadata {
+                kind: CharacterKind::Minion,
+                first_night_rank: Some(5),
+                later_night_rank: Some(2),
+                input: NoInput,
+                support: manual,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Cerenovus => SnvCharacterMetadata {
+                kind: CharacterKind::Minion,
+                first_night_rank: Some(6),
+                later_night_rank: Some(3),
+                input: MadnessAssignment,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::PitHag => SnvCharacterMetadata {
+                kind: CharacterKind::Minion,
+                first_night_rank: None,
+                later_night_rank: Some(4),
+                input: CharacterTransformation,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::FangGu => SnvCharacterMetadata {
+                kind: CharacterKind::Demon,
+                first_night_rank: None,
+                later_night_rank: Some(5),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Vigormortis => SnvCharacterMetadata {
+                kind: CharacterKind::Demon,
+                first_night_rank: None,
+                later_night_rank: Some(5),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::NoDashii => SnvCharacterMetadata {
+                kind: CharacterKind::Demon,
+                first_night_rank: None,
+                later_night_rank: Some(5),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+            Self::Vortox => SnvCharacterMetadata {
+                kind: CharacterKind::Demon,
+                first_night_rank: None,
+                later_night_rank: Some(5),
+                input: OnePlayer,
+                support: automated,
+                activity: WhileActive,
+                once_per_ability_instance: false,
+                same_night_acquisition: WakeIfOrderPending,
+            },
+        }
+    }
+}
+
+fn characters_of_kind(kind: CharacterKind) -> impl Iterator<Item = SnvCharacterId> {
+    SnvCharacterId::ALL
+        .into_iter()
+        .filter(move |character| character.metadata().kind == kind)
+}
+
+fn is_demon(character: &str) -> bool {
+    SnvCharacterId::parse(character).is_some_and(|id| id.metadata().kind == CharacterKind::Demon)
+}
 
 fn script_character_ids() -> Vec<String> {
-    TOWNSFOLK
+    SnvCharacterId::ALL
         .iter()
-        .chain(OUTSIDERS.iter())
-        .chain(MINIONS.iter())
-        .chain(DEMONS.iter())
-        .map(|character| (*character).to_string())
+        .map(|character| character.as_str().to_string())
         .collect()
 }
 
@@ -467,17 +876,7 @@ fn juggler_correct_count_for_night(
 }
 
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
-    if TOWNSFOLK.contains(&character) {
-        Some(CharacterKind::Townsfolk)
-    } else if OUTSIDERS.contains(&character) {
-        Some(CharacterKind::Outsider)
-    } else if MINIONS.contains(&character) {
-        Some(CharacterKind::Minion)
-    } else if DEMONS.contains(&character) {
-        Some(CharacterKind::Demon)
-    } else {
-        None
-    }
+    SnvCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
 fn character_step(
@@ -487,13 +886,14 @@ fn character_step(
     player: &Player,
     players: &[Player],
 ) -> PhaseStep {
-    let snake_charmer = character == "snakeCharmer";
-    let pit_hag = character == "pitHag";
-    let numeric_information = matches!(character, "clockmaker" | "oracle" | "juggler");
-    let targeted_information = matches!(character, "dreamer" | "seamstress");
-    let information = numeric_information
-        || targeted_information
-        || matches!(character, "flowergirl" | "townCrier" | "sage");
+    let character_id = SnvCharacterId::parse(character).expect("validated S&V character");
+    let metadata = character_id.metadata();
+    let snake_charmer = character_id == SnvCharacterId::SnakeCharmer;
+    let pit_hag = character_id == SnvCharacterId::PitHag;
+    let targeted_information = matches!(
+        character_id,
+        SnvCharacterId::Dreamer | SnvCharacterId::Seamstress
+    );
     PhaseStep {
         id: if snake_charmer || pit_hag {
             format!("{prefix}:{character}:{}", player.id)
@@ -509,7 +909,7 @@ fn character_step(
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: if pit_hag {
+        required_input: if metadata.input == CharacterInputPolicy::CharacterTransformation {
             RequiredInput {
                 kind: RequiredInputKind::CharacterTransformation,
                 target: None,
@@ -534,7 +934,7 @@ fn character_step(
                 demon_succession: None,
                 optional: false,
             }
-        } else if character == "cerenovus" {
+        } else if metadata.input == CharacterInputPolicy::MadnessAssignment {
             RequiredInput {
                 kind: RequiredInputKind::MadnessAssignment,
                 target: Some(InputTarget::Player),
@@ -543,10 +943,9 @@ fn character_step(
                 setup_info: None,
                 character_kind: None,
                 allowed_character_ids: Some(
-                    TOWNSFOLK
-                        .iter()
-                        .chain(OUTSIDERS.iter())
-                        .map(|id| (*id).to_string())
+                    characters_of_kind(CharacterKind::Townsfolk)
+                        .chain(characters_of_kind(CharacterKind::Outsider))
+                        .map(|id| id.as_str().to_string())
                         .collect(),
                 ),
                 allowed_player_ids: Some(
@@ -565,8 +964,15 @@ fn character_step(
                 demon_succession: None,
                 optional: false,
             }
-        } else if snake_charmer || targeted_information {
-            let selections = if character == "seamstress" { 2 } else { 1 };
+        } else if matches!(
+            metadata.input,
+            CharacterInputPolicy::OnePlayer | CharacterInputPolicy::TwoPlayers
+        ) {
+            let selections = if metadata.input == CharacterInputPolicy::TwoPlayers {
+                2
+            } else {
+                1
+            };
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
@@ -581,6 +987,7 @@ fn character_step(
                         .filter(|candidate| {
                             snake_charmer && candidate.alive
                                 || targeted_information && candidate.id != player.id
+                                || metadata.kind == CharacterKind::Demon
                         })
                         .map(|candidate| candidate.id.clone())
                         .collect(),
@@ -595,7 +1002,7 @@ fn character_step(
                 demon_succession: None,
                 optional: false,
             }
-        } else if numeric_information {
+        } else if metadata.input == CharacterInputPolicy::Number {
             RequiredInput {
                 kind: RequiredInputKind::Number,
                 target: Some(InputTarget::Number),
@@ -604,12 +1011,8 @@ fn character_step(
         } else {
             required_none()
         },
-        can_skip: character == "seamstress",
-        support: if snake_charmer || pit_hag || information || character == "cerenovus" {
-            PhaseStepSupport::Automated
-        } else {
-            PhaseStepSupport::Manual
-        },
+        can_skip: character_id == SnvCharacterId::Seamstress,
+        support: metadata.support,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -690,28 +1093,10 @@ fn ability_is_base_for_phase(player: &Player, prefix: &str, events: &[GameEvent]
 }
 
 fn later_night_wake_rank(character: &str) -> Option<usize> {
-    [
-        "philosopher",
-        "snakeCharmer",
-        "witch",
-        "cerenovus",
-        "pitHag",
-        "demon",
-        "barber",
-        "sweetheart",
-        "sage",
-        "dreamer",
-        "flowergirl",
-        "townCrier",
-        "oracle",
-        "seamstress",
-        "juggler",
-        "mathematician",
-    ]
-    .iter()
-    .position(|candidate| {
-        *candidate == character || (*candidate == "demon" && DEMONS.contains(&character))
-    })
+    SnvCharacterId::parse(character)?
+        .metadata()
+        .later_night_rank
+        .map(usize::from)
 }
 
 fn vigormortis_keeps_minion_ability(
@@ -801,14 +1186,17 @@ fn acquired_ability_is_available(
     players: &[Player],
     events: &[GameEvent],
 ) -> bool {
-    match character {
-        "barber" | "sweetheart" => death_triggered_in_night_window(player, prefix, events),
-        "sage" => sage_killer(prefix, player, events).is_some(),
-        "juggler" => {
+    let Some(metadata) = SnvCharacterId::parse(character).map(SnvCharacterId::metadata) else {
+        return false;
+    };
+    match metadata.activity {
+        AbilityActivityPolicy::OnDeath => death_triggered_in_night_window(player, prefix, events),
+        AbilityActivityPolicy::KilledByDemon => sage_killer(prefix, player, events).is_some(),
+        AbilityActivityPolicy::WhileActive if character == SnvCharacterId::Juggler.as_str() => {
             player_has_active_ability(player, players, events)
                 && juggler_correct_count_for_night(prefix, player, events).is_some()
         }
-        _ => player_has_active_ability(player, players, events),
+        AbilityActivityPolicy::WhileActive => player_has_active_ability(player, players, events),
     }
 }
 
@@ -835,26 +1223,37 @@ fn insert_acquired_ability_steps(
         if !acquired_ability_is_available(player, character, prefix, players, events) {
             continue;
         }
-        let start_knowing = matches!(character, "clockmaker" | "evilTwin");
-        let should_run = if start_knowing {
-            true
-        } else if phase == Phase::Night {
-            match (
-                later_night_wake_rank(source_character),
-                later_night_wake_rank(character),
-            ) {
-                (Some(source), Some(target)) => target > source,
-                _ => false,
+        let metadata = SnvCharacterId::parse(character)
+            .expect("validated S&V character")
+            .metadata();
+        let start_knowing = matches!(
+            metadata.same_night_acquisition,
+            SameNightAcquisitionPolicy::StartKnowingImmediately
+        );
+        let should_run = match metadata.same_night_acquisition {
+            SameNightAcquisitionPolicy::StartKnowingImmediately => true,
+            SameNightAcquisitionPolicy::WakeIfOrderPending
+            | SameNightAcquisitionPolicy::TriggerIfEligible
+                if phase == Phase::Night =>
+            {
+                match (
+                    later_night_wake_rank(source_character),
+                    later_night_wake_rank(character),
+                ) {
+                    (Some(source), Some(target)) => target > source,
+                    _ => false,
+                }
             }
-        } else {
-            false
+            SameNightAcquisitionPolicy::WakeIfOrderPending
+            | SameNightAcquisitionPolicy::TriggerIfEligible
+            | SameNightAcquisitionPolicy::NextPhase => false,
         };
         if !should_run {
             continue;
         }
 
         let mut step = character_step(phase, prefix, character, player, players);
-        if DEMONS.contains(&character) {
+        if is_demon(character) {
             step.required_input = RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
@@ -870,7 +1269,7 @@ fn insert_acquired_ability_steps(
             };
             step.support = PhaseStepSupport::Automated;
         }
-        step.id = if DEMONS.contains(&character) {
+        step.id = if is_demon(character) {
             format!("{prefix}:demon:{}", player.id)
         } else {
             format!("{prefix}:ability:{}:{}:{character}", event.id, player.id)
@@ -909,7 +1308,8 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
         }
         GameEventKind::ManualPhaseStepResolved { payload }
             if payload.step_id.starts_with(&format!("{prefix}:"))
-                && DEMONS.iter().any(|demon| payload.step_id.ends_with(demon)) =>
+                && characters_of_kind(CharacterKind::Demon)
+                    .any(|demon| payload.step_id.ends_with(demon.as_str())) =>
         {
             players
                 .iter()
@@ -923,7 +1323,7 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
             .iter()
             .find(|player| {
                 player.alive
-                    && DEMONS.contains(&player.actual_character.as_str())
+                    && is_demon(&player.actual_character)
                     && ability_is_base_for_phase(player, prefix, events)
             })
             .map(|player| (player.id.as_str(), player.actual_character.as_str()))
@@ -1025,13 +1425,18 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let prefix = crate::phase::phase_prefix("night", cycle);
     let mut steps = Vec::new();
-    for character in [
-        "philosopher",
-        "snakeCharmer",
-        "witch",
-        "cerenovus",
-        "pitHag",
-    ] {
+    let mut scheduled_characters = SnvCharacterId::ALL
+        .iter()
+        .copied()
+        .filter(|character| character.metadata().later_night_rank.is_some())
+        .collect::<Vec<_>>();
+    scheduled_characters.sort_by_key(|character| character.metadata().later_night_rank);
+    for character_id in scheduled_characters
+        .iter()
+        .copied()
+        .filter(|character| character.metadata().later_night_rank < Some(5))
+    {
+        let character = character_id.as_str();
         let mut matching = players
             .iter()
             .filter(|player| {
@@ -1056,33 +1461,33 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     if let Some(step) = demon_step(players, events, &prefix) {
         steps.push(step);
     }
-    for character in [
-        "barber",
-        "sweetheart",
-        "sage",
-        "dreamer",
-        "flowergirl",
-        "townCrier",
-        "oracle",
-        "seamstress",
-        "juggler",
-        "mathematician",
-    ] {
+    for character_id in scheduled_characters
+        .iter()
+        .copied()
+        .filter(|character| character.metadata().later_night_rank > Some(5))
+    {
+        let character = character_id.as_str();
+        let metadata = character_id.metadata();
         let mut matching = players
             .iter()
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
-                    && match character {
-                        "barber" | "sweetheart" => {
+                    && match metadata.activity {
+                        AbilityActivityPolicy::OnDeath => {
                             death_triggered_in_night_window(player, &prefix, events)
                         }
-                        "sage" => sage_killer(&prefix, player, events).is_some(),
-                        _ => player_has_active_ability(player, players, events),
+                        AbilityActivityPolicy::KilledByDemon => {
+                            sage_killer(&prefix, player, events).is_some()
+                        }
+                        AbilityActivityPolicy::WhileActive => {
+                            player_has_active_ability(player, players, events)
+                        }
                     }
-                    && (character != "juggler"
+                    && (character_id != SnvCharacterId::Juggler
                         || juggler_correct_count_for_night(&prefix, player, events).is_some())
-                    && (character != "seamstress" || !seamstress_already_used(player, events))
+                    && (!metadata.once_per_ability_instance
+                        || !ability_instance_already_used(character_id, player, events))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -1163,14 +1568,15 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
     #[cfg(test)]
     PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let mut steps = Vec::new();
-    let players_for = |character: &str| {
+    let players_for = |character_id: SnvCharacterId| {
+        let character = character_id.as_str();
         let mut matching = players
             .iter()
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, "firstNight", events)
-                    && ((!matches!(character, "clockmaker") || player.alive)
-                        && (character != "snakeCharmer"
+                    && ((character_id != SnvCharacterId::Clockmaker || player.alive)
+                        && (character_id != SnvCharacterId::SnakeCharmer
                             || (player.alive
                                 && !became_snake_charmer_from_swap_in_phase(
                                     &player.id,
@@ -1183,11 +1589,11 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
         matching
     };
 
-    for player in players_for("philosopher") {
+    for player in players_for(SnvCharacterId::Philosopher) {
         steps.push(character_step(
             Phase::FirstNight,
             "firstNight",
-            "philosopher",
+            SnvCharacterId::Philosopher.as_str(),
             player,
             players,
         ));
@@ -1218,21 +1624,23 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
             false,
         ));
     }
-    for character in [
-        "snakeCharmer",
-        "evilTwin",
-        "witch",
-        "cerenovus",
-        "clockmaker",
-        "dreamer",
-        "seamstress",
-        "mathematician",
-    ] {
-        for player in players_for(character) {
+    let mut scheduled_characters = SnvCharacterId::ALL
+        .iter()
+        .copied()
+        .filter(|character| {
+            character
+                .metadata()
+                .first_night_rank
+                .is_some_and(|rank| rank >= 3)
+        })
+        .collect::<Vec<_>>();
+    scheduled_characters.sort_by_key(|character| character.metadata().first_night_rank);
+    for character_id in scheduled_characters {
+        for player in players_for(character_id) {
             steps.push(character_step(
                 Phase::FirstNight,
                 "firstNight",
-                character,
+                character_id.as_str(),
                 player,
                 players,
             ));
@@ -1739,6 +2147,26 @@ fn targeted_information_checks(
         .filter(|player| player.id != actor_id)
         .collect::<Vec<_>>();
     if step.character.as_deref() == Some("dreamer") {
+        let good_characters = SnvCharacterId::ALL
+            .iter()
+            .copied()
+            .filter(|id| {
+                matches!(
+                    id.metadata().kind,
+                    CharacterKind::Townsfolk | CharacterKind::Outsider
+                )
+            })
+            .collect::<Vec<_>>();
+        let evil_characters = SnvCharacterId::ALL
+            .iter()
+            .copied()
+            .filter(|id| {
+                matches!(
+                    id.metadata().kind,
+                    CharacterKind::Minion | CharacterKind::Demon
+                )
+            })
+            .collect::<Vec<_>>();
         return Ok(candidates
             .into_iter()
             .map(|target| {
@@ -1746,21 +2174,19 @@ fn targeted_information_checks(
                     character_kind(&target.actual_character),
                     Some(CharacterKind::Townsfolk | CharacterKind::Outsider)
                 );
-                let choices = TOWNSFOLK
+                let choices = good_characters
                     .iter()
-                    .chain(OUTSIDERS.iter())
                     .flat_map(|good| {
-                        MINIONS
+                        evil_characters
                             .iter()
-                            .chain(DEMONS.iter())
                             .filter(move |evil| {
                                 impaired
-                                    || actual_good && *good == target.actual_character
-                                    || !actual_good && **evil == target.actual_character
+                                    || actual_good && good.as_str() == target.actual_character
+                                    || !actual_good && evil.as_str() == target.actual_character
                             })
                             .map(move |evil| TargetInformationChoice {
                                 result: InformationResult::CharacterPair {
-                                    character_ids: vec![(*good).into(), (*evil).into()],
+                                    character_ids: vec![good.as_str().into(), evil.as_str().into()],
                                 },
                                 is_computed: !impaired,
                                 registration_judgments: vec![],
@@ -1899,13 +2325,17 @@ fn confirmed_targeted_information(
     }))
 }
 
-fn seamstress_already_used(player: &Player, events: &[GameEvent]) -> bool {
+fn ability_instance_already_used(
+    character: SnvCharacterId,
+    player: &Player,
+    events: &[GameEvent],
+) -> bool {
     let acquisition_index = events
         .iter()
         .position(|event| event.id == player.ability_instance.source_event_id);
     events.iter().skip(acquisition_index.map_or(0, |index| index + 1)).any(|event| matches!(&event.kind,
         GameEventKind::PhaseStepConfirmed { payload }
-            if payload.information.as_ref().and_then(|info| info.actor.as_ref()).is_some_and(|actor| actor.player_id == player.id && actor.character_id == "seamstress")
+            if payload.information.as_ref().and_then(|info| info.actor.as_ref()).is_some_and(|actor| actor.player_id == player.id && actor.character_id == character.as_str())
     ))
 }
 
@@ -2036,8 +2466,7 @@ fn apply_player_event(
             else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
-            if actor.actual_character != actor_character_id || !DEMONS.contains(&actor_character_id)
-            {
+            if actor.actual_character != actor_character_id || !is_demon(actor_character_id) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
             let NightActionResolution::DemonAttack {
@@ -3019,10 +3448,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         }
         let legacy_manual_demon =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
-                && current
-                    .character
-                    .as_deref()
-                    .is_some_and(|character| DEMONS.contains(&character))
+                && current.character.as_deref().is_some_and(is_demon)
                 && current.character.as_ref().is_some_and(|character| {
                     let prefix = current.id.split(":demon:").next().unwrap_or_default();
                     event_step_id == &format!("{prefix}:{character}")
@@ -3082,10 +3508,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     || legacy_manual_pit_hag
                     || legacy_manual_information => {}
             (GameEventKind::NightActionResolved { payload }, PhaseStepSupport::Automated)
-                if current
-                    .character
-                    .as_deref()
-                    .is_some_and(|character| DEMONS.contains(&character))
+                if current.character.as_deref().is_some_and(is_demon)
                     && payload.actor_player_id
                         == current.player_id.as_deref().unwrap_or_default()
                     && payload.actor_character_id.as_deref() == current.character.as_deref()
@@ -3699,11 +4122,7 @@ pub(crate) fn propose_phase_command(
                     payload.input,
                 );
             }
-            if current_step
-                .character
-                .as_deref()
-                .is_some_and(|character| DEMONS.contains(&character))
-            {
+            if current_step.character.as_deref().is_some_and(is_demon) {
                 return propose_demon_attack(game_file, &current_step, &players, payload.input);
             }
             if current_step.step_type == StepType::Announcement {
@@ -4468,4 +4887,112 @@ fn propose_night_deaths_announcement(
         summary,
         vec![],
     ))
+}
+
+#[cfg(test)]
+mod catalog_tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn all_twenty_five_character_ids_have_exhaustive_typed_metadata() {
+        let mut ids = HashSet::new();
+        let mut kind_counts = [0; 4];
+        for character in SnvCharacterId::ALL {
+            assert_eq!(SnvCharacterId::parse(character.as_str()), Some(character));
+            assert!(ids.insert(character.as_str()));
+            let kind_index = match character.metadata().kind {
+                CharacterKind::Townsfolk => 0,
+                CharacterKind::Outsider => 1,
+                CharacterKind::Minion => 2,
+                CharacterKind::Demon => 3,
+            };
+            kind_counts[kind_index] += 1;
+
+            let metadata = character.metadata();
+            let _complete_policy = (
+                metadata.input,
+                metadata.support,
+                metadata.activity,
+                metadata.once_per_ability_instance,
+                metadata.same_night_acquisition,
+            );
+        }
+
+        assert_eq!(ids.len(), 25);
+        assert_eq!(kind_counts, [13, 4, 4, 4]);
+        assert_eq!(SnvCharacterId::parse("notACharacter"), None);
+    }
+
+    #[test]
+    fn catalog_preserves_the_complete_first_and_later_night_scheduling_policy() {
+        let mut first = SnvCharacterId::ALL
+            .iter()
+            .copied()
+            .filter_map(|character| {
+                character
+                    .metadata()
+                    .first_night_rank
+                    .map(|rank| (rank, character.as_str()))
+            })
+            .collect::<Vec<_>>();
+        first.sort_unstable();
+        assert_eq!(
+            first,
+            [
+                (0, "philosopher"),
+                (3, "snakeCharmer"),
+                (4, "evilTwin"),
+                (5, "witch"),
+                (6, "cerenovus"),
+                (7, "clockmaker"),
+                (8, "dreamer"),
+                (9, "seamstress"),
+                (10, "mathematician"),
+            ]
+        );
+
+        let mut later = SnvCharacterId::ALL
+            .iter()
+            .copied()
+            .filter_map(|character| {
+                character
+                    .metadata()
+                    .later_night_rank
+                    .map(|rank| (rank, character.as_str()))
+            })
+            .collect::<Vec<_>>();
+        later.sort_unstable();
+        assert_eq!(
+            later.iter().map(|(_, id)| *id).collect::<HashSet<_>>(),
+            [
+                "philosopher",
+                "snakeCharmer",
+                "witch",
+                "cerenovus",
+                "pitHag",
+                "fangGu",
+                "vigormortis",
+                "noDashii",
+                "vortox",
+                "barber",
+                "sweetheart",
+                "sage",
+                "dreamer",
+                "flowergirl",
+                "townCrier",
+                "oracle",
+                "seamstress",
+                "juggler",
+                "mathematician",
+            ]
+            .into_iter()
+            .collect(),
+        );
+        assert!(later
+            .iter()
+            .filter(|(rank, _)| *rank == 5)
+            .all(|(_, id)| is_demon(id)));
+    }
 }
