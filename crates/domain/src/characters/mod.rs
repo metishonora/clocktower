@@ -68,6 +68,7 @@ impl ScriptRules {
                             | GameEventKind::MadnessAssigned { .. }
                             | GameEventKind::MadnessCheckRecorded { .. }
                             | GameEventKind::MadnessExecutionConfirmed { .. }
+                            | GameEventKind::GameEnded { .. }
                     )
                 }) =>
             {
@@ -87,7 +88,8 @@ impl ScriptRules {
                 | Command::ResolveManualStep { .. }
                 | Command::RecordDayAction { .. }
                 | Command::RecordMadnessCheck { .. }
-                | Command::ExecuteMadness { .. },
+                | Command::ExecuteMadness { .. }
+                | Command::EndGame { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
             _ => Ok(()),

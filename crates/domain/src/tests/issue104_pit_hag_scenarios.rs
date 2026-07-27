@@ -757,6 +757,103 @@ fn creating_clockmaker_reveals_the_change_then_runs_start_knowing_immediately() 
 }
 
 #[test]
+fn two_living_players_surface_the_evil_win_confirmation() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["noDashii"] }
+            }
+        }),
+    );
+    let arbitrary_deaths = advance_to(&mut events, |state| {
+        state["value"]["currentStep"]["id"] == "night:pitHagArbitraryDeaths"
+    });
+    assert_eq!(
+        arbitrary_deaths["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|player| player["alive"] == true)
+            .count(),
+        7
+    );
+
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:pitHagArbitraryDeaths",
+                "input": { "playerIds": ["player-1", "player-3", "player-4", "player-5", "player-6"] }
+            }
+        }),
+    );
+
+    let two_living = replay(&events);
+    assert_eq!(
+        two_living["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|player| player["alive"] == true)
+            .count(),
+        2
+    );
+    assert!(two_living["value"]["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|warning| warning
+            == &json!({
+                "code": "TWO_LIVING_PLAYERS_EVIL_WIN",
+                "severity": "warning",
+                "messageKo": "생존자 2명: 악 승리 확인 필요",
+                "winningTeam": "evil"
+            })));
+
+    let expected_event_count = events.len();
+    let ended = append(
+        &mut events,
+        json!({
+            "type": "endGame",
+            "payload": { "winningTeam": "evil", "expectedEventCount": expected_event_count }
+        }),
+    );
+    assert_eq!(ended["value"]["event"]["type"], "gameEnded");
+    let ended_state = replay(&events);
+    assert_eq!(
+        ended_state["value"]["gameEnd"],
+        json!({
+            "eventId": ended["value"]["event"]["id"],
+            "winningTeam": "evil"
+        })
+    );
+    assert!(ended_state["value"]["currentStep"].is_null());
+    assert_eq!(ended_state["value"]["phaseOverview"], json!([]));
+
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &game(events.clone()).to_string(),
+        &json!({
+            "type": "endGame",
+            "payload": { "winningTeam": "evil", "expectedEventCount": events.len() }
+        })
+        .to_string(),
+    ))
+    .unwrap();
+    assert_eq!(rejected["error"]["code"], "GAME_ALREADY_ENDED");
+
+    events.pop();
+    let undone = replay(&events);
+    assert!(undone["value"]["gameEnd"].is_null());
+    assert!(!undone["value"]["currentStep"].is_null());
+}
+
+#[test]
 fn creating_a_demon_records_both_intents_then_requires_arbitrary_deaths() {
     let mut events = vec![setup_event()];
     let state = advance_to_pit_hag(&mut events);

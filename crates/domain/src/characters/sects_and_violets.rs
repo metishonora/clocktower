@@ -4,15 +4,16 @@ use crate::{
     contracts::{
         ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction, Command,
         ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload,
-        DemonAttackNoEffectReason, DemonAttackOutcome, ExecuteMadnessCommandPayload, GameEvent,
-        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, MadnessAssignedPayload,
-        MadnessAssignmentState, MadnessCheckRecordedPayload, MadnessCheckResult,
-        MadnessExecutionConfirmedPayload, MadnessStatus, ManualPhaseStepOutcome,
-        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
-        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingIdentityReveal,
-        PendingMadnessExecution, PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload,
-        PitHagNoChangeReason, PitHagTransformationOutcome, PitHagTransformationResolvedPayload,
-        Proposal, RecordDayActionCommandPayload, RecordMadnessCheckCommandPayload, ReplayState,
+        DemonAttackNoEffectReason, DemonAttackOutcome, EndGameCommandPayload,
+        ExecuteMadnessCommandPayload, GameEndState, GameEndedPayload, GameEvent, GameEventKind,
+        GameFile, ImpairmentExpiry, ImpairmentKind, MadnessAssignedPayload, MadnessAssignmentState,
+        MadnessCheckRecordedPayload, MadnessCheckResult, MadnessExecutionConfirmedPayload,
+        MadnessStatus, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
+        NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
+        NightDeathsAnnouncedPayload, PendingIdentityReveal, PendingMadnessExecution,
+        PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason,
+        PitHagTransformationOutcome, PitHagTransformationResolvedPayload, Proposal,
+        RecordDayActionCommandPayload, RecordMadnessCheckCommandPayload, ReplayState,
         RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
         SnakeCharmerNoSwapReason,
     },
@@ -3268,23 +3269,40 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             pending_madness_execution: None,
         });
     }
-    let initial_players = setup_players(&game_file.game.events)?;
-    let players = replay_players(&game_file.game.events)?;
+    let events = &game_file.game.events;
+    let ended_positions = events
+        .iter()
+        .enumerate()
+        .filter_map(|(index, event)| {
+            matches!(event.kind, GameEventKind::GameEnded { .. }).then_some(index)
+        })
+        .collect::<Vec<_>>();
+    if ended_positions.len() > 1
+        || ended_positions
+            .first()
+            .is_some_and(|index| *index != events.len().saturating_sub(1))
+    {
+        return Err(ErrorKind::ReplayFailed.into_error());
+    }
+    let active_events = ended_positions
+        .first()
+        .map_or(events.as_slice(), |index| &events[..*index]);
+    let initial_players = setup_players(active_events)?;
+    let players = replay_players(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
-    let (phase, current_step, phase_overview) = phase_state(&players, &game_file.game.events)?;
+    let (phase, current_step, phase_overview) = phase_state(&players, active_events)?;
     let day_state = if phase == Phase::Day {
         current_step
             .as_ref()
             .and_then(|step| step_prefix(&step.id).ok())
-            .map(|prefix| replay_day_state(&game_file.game.events, &players, &prefix))
+            .map(|prefix| replay_day_state(active_events, &players, &prefix))
             .transpose()?
     } else {
         None
     };
-    let unannounced_night_death_player_ids =
-        unannounced_night_death_player_ids(&game_file.game.events);
+    let unannounced_night_death_player_ids = unannounced_night_death_player_ids(active_events);
     let unannounced_night_resurrection_player_ids =
-        unannounced_night_resurrection_player_ids(&game_file.game.events);
+        unannounced_night_resurrection_player_ids(active_events);
     if !unannounced_night_death_player_ids.is_empty() {
         warnings.push(CoreWarning {
             code: "NIGHT_DEATH_UNANNOUNCED".into(),
@@ -3305,34 +3323,34 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             winning_team: Some(Alignment::Good),
         });
     }
+    if !players.is_empty() && players.iter().filter(|player| player.alive).count() <= 2 {
+        warnings.push(CoreWarning {
+            code: "TWO_LIVING_PLAYERS_EVIL_WIN".into(),
+            severity: "warning",
+            message_ko: "생존자 2명: 악 승리 확인 필요".into(),
+            winning_team: Some(Alignment::Evil),
+        });
+    }
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
-        active_impairments: Some(active_snake_charmer_impairments(&game_file.game.events)),
+        active_impairments: Some(active_snake_charmer_impairments(active_events)),
         automatic_reminders: automatic_information_reminders(
             phase,
             current_step.as_ref(),
             &players,
-            &game_file.game.events,
+            active_events,
         )?,
         ..RuleState::default()
     };
-    let pending_identity_reveals = pending_identity_reveals(&game_file.game.events);
-    let available_day_actions = available_day_actions(
-        phase,
-        current_step.as_ref(),
-        &players,
-        &game_file.game.events,
-    );
-    let day_action_records = confirmed_day_action_records(&game_file.game.events);
-    let madness_assignments = madness_assignments(
-        phase,
-        current_step.as_ref(),
-        &players,
-        &game_file.game.events,
-    );
+    let pending_identity_reveals = pending_identity_reveals(active_events);
+    let available_day_actions =
+        available_day_actions(phase, current_step.as_ref(), &players, active_events);
+    let day_action_records = confirmed_day_action_records(active_events);
+    let madness_assignments =
+        madness_assignments(phase, current_step.as_ref(), &players, active_events);
     let pending_madness_execution =
-        pending_madness_execution_event(&game_file.game.events).map(|(event, payload)| {
+        pending_madness_execution_event(active_events).map(|(event, payload)| {
             PendingMadnessExecution {
                 event_id: event.id.clone(),
                 assignment_id: payload.assignment_id.clone(),
@@ -3341,6 +3359,27 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
                 interrupted_step_id: payload.interrupted_step_id.clone(),
             }
         });
+    let game_end = ended_positions
+        .first()
+        .map(|index| {
+            let event = &events[*index];
+            let GameEventKind::GameEnded { payload } = &event.kind else {
+                unreachable!()
+            };
+            if event.phase != phase {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            Ok(GameEndState {
+                event_id: event.id.clone(),
+                winning_team: payload.winning_team,
+            })
+        })
+        .transpose()?;
+    let (current_step, phase_overview) = if game_end.is_some() {
+        (None, vec![])
+    } else {
+        (current_step, phase_overview)
+    };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -3352,7 +3391,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         day_state,
         warnings,
         rule_state,
-        game_end: None,
+        game_end,
         pending_identity_reveals,
         available_day_actions,
         day_action_records,
@@ -3365,6 +3404,14 @@ pub(crate) fn propose_phase_command(
     game_file: &GameFile,
     command: Command,
 ) -> Result<Proposal, CoreError> {
+    if game_file
+        .game
+        .events
+        .iter()
+        .any(|event| matches!(event.kind, GameEventKind::GameEnded { .. }))
+    {
+        return Err(ErrorKind::GameAlreadyEnded.into_error());
+    }
     let players = replay_players(&game_file.game.events)?;
     let (_, current_step, _) = phase_state(&players, &game_file.game.events)?;
     let current_step = current_step.ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
@@ -3559,8 +3606,45 @@ pub(crate) fn propose_phase_command(
         Command::ExecuteMadness { payload } => {
             propose_madness_execution(game_file, &current_step, &players, payload)
         }
+        Command::EndGame { payload } => propose_end_game(game_file, &current_step, payload),
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn propose_end_game(
+    game_file: &GameFile,
+    current_step: &PhaseStep,
+    payload: EndGameCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.expected_event_count != game_file.game.events.len() {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    let team_label = match payload.winning_team {
+        Alignment::Good => "선한 팀",
+        Alignment::Evil => "악한 팀",
+    };
+    let summary = format!("게임 종료 · {team_label} 승리");
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("game-ended-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::GameEnded {
+                payload: GameEndedPayload {
+                    winning_team: payload.winning_team,
+                },
+            },
+            phase: current_step.phase,
+            summary: summary.clone(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_cerenovus_assignment(
