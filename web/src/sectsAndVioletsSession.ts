@@ -60,7 +60,8 @@ export function exportLatestSectsAndVioletsCheckpoint(gameFile: GameFile): GameF
 export function latestUndoableSectsAndVioletsCheckpoint(
   gameFile: GameFile,
 ): SectsAndVioletsPhaseCheckpoint | undefined {
-  const checkpoints = gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? [];
+  const checkpoints = gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints
+    ?? inferSectsAndVioletsCheckpoints(gameFile, "play");
   for (let index = checkpoints.length - 1; index >= 0; index -= 1) {
     if (checkpoints[index].kind === "phase") return checkpoints[index];
   }
@@ -71,34 +72,34 @@ export function removeLatestSectsAndVioletsPhaseCheckpoint(
   gameFile: GameFile,
 ): { gameFile: GameFile; removed: SectsAndVioletsPhaseCheckpoint } | undefined {
   const session = gameFile.ui?.sectsAndVioletsSession;
-  if (!session) return undefined;
+  const checkpoints = session?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(gameFile, "play");
   let removeIndex = -1;
-  for (let index = session.phaseCheckpoints.length - 1; index >= 0; index -= 1) {
-    if (session.phaseCheckpoints[index].kind === "phase") {
+  for (let index = checkpoints.length - 1; index >= 0; index -= 1) {
+    if (checkpoints[index].kind === "phase") {
       removeIndex = index;
       break;
     }
   }
   if (removeIndex < 0) return undefined;
-  const removed = session.phaseCheckpoints[removeIndex];
-  const previousEventCount = session.phaseCheckpoints[removeIndex - 1]?.eventCount ?? 0;
-  const phaseCheckpoints = session.phaseCheckpoints.slice(0, removeIndex);
+  const removed = checkpoints[removeIndex];
+  const previousEventCount = checkpoints[removeIndex - 1]?.eventCount ?? 0;
+  const phaseCheckpoints = checkpoints.slice(0, removeIndex);
   const removedEventIds = removed.eventIds ? new Set(removed.eventIds) : undefined;
+  const nextGameFile: GameFile = {
+    ...gameFile,
+    game: {
+      ...gameFile.game,
+      updatedAt: new Date().toISOString(),
+      events: removedEventIds
+        ? gameFile.game.events.filter((event) => !removedEventIds.has(event.id))
+        : gameFile.game.events.slice(0, previousEventCount),
+    },
+  };
   return {
     removed,
-    gameFile: withSectsAndVioletsSession(
-      {
-        ...gameFile,
-        game: {
-          ...gameFile.game,
-          updatedAt: new Date().toISOString(),
-          events: removedEventIds
-            ? gameFile.game.events.filter((event) => !removedEventIds.has(event.id))
-            : gameFile.game.events.slice(0, previousEventCount),
-        },
-      },
-      { ...session, phaseCheckpoints },
-    ),
+    gameFile: session
+      ? withSectsAndVioletsSession(nextGameFile, { ...session, phaseCheckpoints })
+      : nextGameFile,
   };
 }
 

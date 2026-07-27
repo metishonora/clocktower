@@ -100,8 +100,13 @@ const core = vi.hoisted(() => ({
 
 vi.mock("../src/core/wasmClient", () => ({ wasmCoreAdapter: core }));
 
+const defaultReplayImplementation = core.replay.getMockImplementation()!;
+const defaultProposeImplementation = core.propose.getMockImplementation()!;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  core.replay.mockReset().mockImplementation(defaultReplayImplementation);
+  core.propose.mockReset().mockImplementation(defaultProposeImplementation);
 });
 
 test("uses the approved setup, Grimoire, and progression shell on the production S&V route", async () => {
@@ -344,7 +349,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   const replayState = {
     schemaVersion: 3,
     scriptId: "sectsAndViolets",
-    eventCount: 8,
+    eventCount: 2,
     phase: "day",
     players,
     currentStep,
@@ -371,7 +376,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   core.replay
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
-    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: { ...replayState, eventCount: 3 } } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(players.map(({ seat, name, actualCharacter, shownCharacter }) => ({
     seat,
@@ -766,7 +771,9 @@ test("shows actionable replay warnings but not the expected pending night-death 
     ],
     gameEnd: null,
   } satisfies ReplayState;
-  core.replay.mockResolvedValue({ ok: true, value: warningState } as never);
+  core.replay
+    .mockResolvedValueOnce({ ok: true, value: warningState } as never)
+    .mockResolvedValueOnce({ ok: true, value: warningState } as never);
   const user = userEvent.setup();
   render(<SectsAndVioletsApp storageDriver={storage} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
@@ -834,7 +841,9 @@ test("places game warnings in layout before Grimoire reminder tokens", async () 
     }],
     gameEnd: null,
   } satisfies ReplayState;
-  core.replay.mockResolvedValue({ ok: true, value: replayState } as never);
+  core.replay
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(setupPlayers));
 
   const user = userEvent.setup();

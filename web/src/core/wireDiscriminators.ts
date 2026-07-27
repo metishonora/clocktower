@@ -1,0 +1,46 @@
+// Generated contract mirror. Rust's parity test fails if this file drifts from contracts.rs.
+export const commandDiscriminators = [
+  "smoke",
+  "createGame",
+  "confirmStep",
+  "skipStep",
+  "resolveManualStep",
+  "useSlayerAbility",
+  "recordDayAction",
+  "recordMadnessCheck",
+  "executeMadness",
+  "endGame",
+  "updatePlayerAnnotations",
+] as const;
+
+export const eventDiscriminators = [
+  "smokeConfirmed",
+  "setupConfirmed",
+  "phaseStepConfirmed",
+  "phaseStepSkipped",
+  "phaseStepNeedsFollowUp",
+  "manualPhaseStepResolved",
+  "nominationVoteConfirmed",
+  "nominationStarted",
+  "executionConfirmed",
+  "noExecutionConfirmed",
+  "deathConfirmed",
+  "executionSurvivalConfirmed",
+  "redHerringAssigned",
+  "nightActionResolved",
+  "nightDeathsAnnounced",
+  "slayerAbilityUsed",
+  "dayActionRecorded",
+  "madnessAssigned",
+  "madnessCheckRecorded",
+  "madnessExecutionConfirmed",
+  "demonSuccessionConfirmed",
+  "snakeCharmerActionResolved",
+  "pitHagTransformationResolved",
+  "pitHagArbitraryDeathsConfirmed",
+  "playerTransitioned",
+  "gameEnded",
+  "playerAnnotationsUpdated",
+] as const;
+
+export const eventDiscriminatorSet: ReadonlySet<string> = new Set(eventDiscriminators);

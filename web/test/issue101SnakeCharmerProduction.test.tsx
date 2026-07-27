@@ -130,7 +130,10 @@ function snakeCharmerCore(): CoreAdapter {
   return {
     replay: vi.fn(async (gameFile) => ({
       ok: true as const,
-      value: replayState(gameFile.game.events.at(-1)?.type === "snakeCharmerActionResolved"),
+      value: replayState(
+        gameFile.game.events.at(-1)?.type === "snakeCharmerActionResolved",
+        gameFile.game.events.length,
+      ),
     })),
     propose: vi.fn(async () => ({
       ok: true as const,
@@ -215,7 +218,7 @@ function savedGame(swapped = false): GameFile {
   };
 }
 
-function replayState(swapped: boolean): ReplayState {
+function replayState(swapped: boolean, eventCount: number): ReplayState {
   const roster = players(swapped);
   const currentStep = {
     id: swapped ? "night:demon:player-1" : "night:snakeCharmer:player-1",
@@ -237,7 +240,7 @@ function replayState(swapped: boolean): ReplayState {
   return {
     schemaVersion: 3,
     scriptId: "sectsAndViolets",
-    eventCount: 2,
+    eventCount,
     phase: "night",
     players: roster,
     currentStep,
