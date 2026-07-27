@@ -44,9 +44,23 @@ fn append(events: &mut Vec<Value>, command: Value) -> Value {
 }
 
 fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value {
+    advance_to_with_demon_target(events, wanted, "player-6")
+}
+
+fn advance_to_with_demon_target(
+    events: &mut Vec<Value>,
+    wanted: impl Fn(&Value) -> bool,
+    demon_target_id: &str,
+) -> Value {
     for _ in 0..96 {
         let state = replay(events);
-        assert_eq!(state["ok"], true, "replay failed: {state}");
+        assert_eq!(
+            state["ok"],
+            true,
+            "replay failed after {} events; last event: {}; result: {state}",
+            events.len(),
+            events.last().unwrap()
+        );
         if wanted(&state) {
             return state;
         }
@@ -58,7 +72,7 @@ fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value
                 json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
             }
             "playerIds" if step["id"].as_str().is_some_and(|id| id.contains(":demon:")) => {
-                json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"] } } })
+                json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": [demon_target_id] } } })
             }
             "playerIds" if step["character"] == "dreamer" => {
                 let check = &step["informationPrompt"]["targetChecks"][0];
@@ -249,11 +263,15 @@ fn resurrection_restores_life_and_ghost_vote_without_an_identity_reveal_and_is_a
         json!(["player-6"])
     );
 
-    let dawn = advance_to(&mut events, |state| {
-        state["value"]["currentStep"]["id"]
-            .as_str()
-            .is_some_and(|id| id == "day3:announceDeaths")
-    });
+    let dawn = advance_to_with_demon_target(
+        &mut events,
+        |state| {
+            state["value"]["currentStep"]["id"]
+                .as_str()
+                .is_some_and(|id| id == "day3:announceDeaths")
+        },
+        "player-5",
+    );
     let announced = append(
         &mut events,
         json!({
@@ -273,6 +291,34 @@ fn resurrection_restores_life_and_ghost_vote_without_an_identity_reveal_and_is_a
     assert!(after_announcement["value"]["ruleState"]
         .get("unannouncedNightResurrectionPlayerIds")
         .is_none());
+
+    let later_pit_hag = advance_to(&mut events, |state| {
+        state["value"]["currentStep"]["id"]
+            .as_str()
+            .is_some_and(|id| id.starts_with("night4:pitHag"))
+    });
+    let dead_again = later_pit_hag["value"]["players"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|player| player["id"] == "player-6")
+        .unwrap();
+    assert_eq!(dead_again["alive"], false);
+    events.push(transition_event(
+        "transition-revive-again",
+        &later_pit_hag["value"]["currentStep"],
+        "resurrection",
+        "player-6",
+        "mutant",
+        "mutant",
+        false,
+        true,
+    ));
+    assert_eq!(
+        replay(&events)["value"]["ruleState"]["unannouncedNightResurrectionPlayerIds"],
+        json!(["player-6"]),
+        "the same player must be announced after every resurrection"
+    );
 }
 
 #[test]
@@ -418,4 +464,86 @@ fn once_per_game_usage_is_scoped_to_the_latest_ability_acquisition() {
         .unwrap()
         .iter()
         .any(|action| action["actorPlayerId"] == "player-2" && action["characterId"] == "artist"));
+}
+
+#[test]
+fn multiple_character_changes_have_stable_ordered_reveals() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to(&mut events, |state| {
+        state["value"]["phase"] == "night" && state["value"]["currentStep"]["character"] == "pitHag"
+    });
+    events.push(json!({
+        "id": "transition-swap", "type": "playerTransitioned", "phase": "night",
+        "payload": {
+            "stepId": pit_hag["value"]["currentStep"]["id"],
+            "sourcePlayerId": pit_hag["value"]["currentStep"]["playerId"],
+            "sourceCharacterId": "pitHag",
+            "transitions": [
+                {
+                    "kind": "characterChange", "playerId": "player-2",
+                    "before": { "actualCharacter": "clockmaker", "shownCharacter": "clockmaker", "alignment": "good", "alive": true },
+                    "after": { "actualCharacter": "dreamer", "shownCharacter": "dreamer", "alignment": "good", "alive": true }
+                },
+                {
+                    "kind": "characterChange", "playerId": "player-3",
+                    "before": { "actualCharacter": "dreamer", "shownCharacter": "dreamer", "alignment": "good", "alive": true },
+                    "after": { "actualCharacter": "clockmaker", "shownCharacter": "clockmaker", "alignment": "good", "alive": true }
+                }
+            ]
+        },
+        "summary": "two character changes", "createdAt": "2026-07-27T00:00:00.000Z"
+    }));
+
+    let replayed = replay(&events);
+    assert_eq!(replayed["ok"], true, "replay failed: {replayed}");
+    assert_eq!(
+        replayed["value"]["pendingIdentityReveals"],
+        json!([
+            {
+                "sourceEventId": "transition-swap", "sequence": 1,
+                "payload": { "kind": "characterChange", "playerId": "player-2", "alignment": "good", "characterId": "dreamer" }
+            },
+            {
+                "sourceEventId": "transition-swap", "sequence": 2,
+                "payload": { "kind": "characterChange", "playerId": "player-3", "alignment": "good", "characterId": "clockmaker" }
+            }
+        ])
+    );
+}
+
+#[test]
+fn removing_a_transition_event_restores_identity_instance_reveal_and_step() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to(&mut events, |state| {
+        state["value"]["phase"] == "night" && state["value"]["currentStep"]["character"] == "pitHag"
+    });
+    let before_event_count = events.len();
+    events.push(transition_event(
+        "transition-undo",
+        &pit_hag["value"]["currentStep"],
+        "characterChange",
+        "player-6",
+        "mutant",
+        "clockmaker",
+        true,
+        true,
+    ));
+    assert_eq!(
+        replay(&events)["value"]["players"][5]["actualCharacter"],
+        "clockmaker"
+    );
+
+    events.truncate(before_event_count);
+    let undone = replay(&events);
+    assert_eq!(undone["ok"], true, "replay failed: {undone}");
+    assert_eq!(undone["value"]["players"][5]["actualCharacter"], "mutant");
+    assert_eq!(
+        undone["value"]["players"][5]["abilityInstance"]["id"],
+        "setup:player-6"
+    );
+    assert!(undone["value"].get("pendingIdentityReveals").is_none());
+    assert_eq!(
+        undone["value"]["currentStep"]["id"],
+        pit_hag["value"]["currentStep"]["id"]
+    );
 }

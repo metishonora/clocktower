@@ -1988,7 +1988,6 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
 
 fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
     let mut deaths = Vec::new();
-    let mut announced = Vec::new();
     for event in events {
         match &event.kind {
             GameEventKind::NightActionResolved { payload } => {
@@ -2008,24 +2007,16 @@ fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
                 }
             }
             GameEventKind::NightDeathsAnnounced { payload } => {
-                for player_id in &payload.player_ids {
-                    if !announced.contains(player_id) {
-                        announced.push(player_id.clone());
-                    }
-                }
+                deaths.retain(|player_id| !payload.player_ids.contains(player_id));
             }
             _ => {}
         }
     }
     deaths
-        .into_iter()
-        .filter(|player_id| !announced.contains(player_id))
-        .collect()
 }
 
 fn unannounced_night_resurrection_player_ids(events: &[GameEvent]) -> Vec<String> {
     let mut resurrections = Vec::new();
-    let mut announced = Vec::new();
     for event in events {
         match &event.kind {
             GameEventKind::PlayerTransitioned { payload } => {
@@ -2038,15 +2029,12 @@ fn unannounced_night_resurrection_player_ids(events: &[GameEvent]) -> Vec<String
                 }
             }
             GameEventKind::NightDeathsAnnounced { payload } => {
-                announced.extend(payload.resurrected_player_ids.iter().cloned());
+                resurrections.retain(|id| !payload.resurrected_player_ids.contains(id));
             }
             _ => {}
         }
     }
     resurrections
-        .into_iter()
-        .filter(|id| !announced.contains(id))
-        .collect()
 }
 
 fn active_snake_charmer_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
