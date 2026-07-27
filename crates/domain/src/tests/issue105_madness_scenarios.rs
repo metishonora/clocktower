@@ -329,6 +329,10 @@ fn daytime_madness_execution_ends_the_day_and_requires_death_confirmation() {
     assert_eq!(resumed["value"]["currentStep"]["id"], "night:witch");
     assert_eq!(resumed["value"]["players"][3]["alive"], false);
     assert!(resumed["value"].get("pendingMadnessExecution").is_none());
+    assert!(
+        resumed["value"].get("madnessAssignments").is_none(),
+        "the executed Cerenovus reminder and the dead target's Mutant action must be cleared"
+    );
 }
 
 #[test]
@@ -383,4 +387,8 @@ fn nighttime_madness_execution_returns_to_the_interrupted_night_step() {
     assert_eq!(resumed["value"]["phase"], "night");
     assert_eq!(resumed["value"]["currentStep"]["id"], "night:witch");
     assert_eq!(resumed["value"]["phaseOverview"][0]["status"], "current");
+    assert!(
+        resumed["value"].get("madnessAssignments").is_none(),
+        "the executed Mutant reminder must be cleared once its target is dead"
+    );
 }

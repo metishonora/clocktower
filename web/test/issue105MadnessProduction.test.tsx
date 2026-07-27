@@ -116,6 +116,12 @@ test("the production UI records and settles a Mutant violation with separate exe
     payload: { playerId: "player-1" },
   }));
   expect(await screen.findByRole("heading", { name: /2일차 밤/ })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /변종 집착 확인 열기/ })).toBeNull();
+  expect(screen.queryByText("능력 효력이 없어 처형할 수 없습니다.")).toBeNull();
+
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  await user.click(screen.getByRole("button", { name: /1번 좌석, 민지, 변종/ }));
+  expect(screen.queryByRole("listitem", { name: "외지인 집착 · 출처 변종" })).toBeNull();
 });
 
 test("the production first-night UI assigns a clearly selected Cerenovus target and good character", async () => {
