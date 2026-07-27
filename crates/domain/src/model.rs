@@ -562,7 +562,7 @@ pub(crate) struct ConfirmedExecution {
     pub(crate) player_id: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Player {
     pub(crate) id: String,

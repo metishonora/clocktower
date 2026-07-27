@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+#[cfg(test)]
+use std::cell::Cell;
+
 use crate::{
     contracts::{
         ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction, Command,
@@ -1018,6 +1021,8 @@ fn pit_hag_arbitrary_deaths_step(
 }
 
 fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> Vec<PhaseStep> {
+    #[cfg(test)]
+    PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let prefix = crate::phase::phase_prefix("night", cycle);
     let mut steps = Vec::new();
     for character in [
@@ -1108,13 +1113,29 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     steps
 }
 
-fn phase_sequences(
+fn current_phase_steps(
     players: &[Player],
     events: &[GameEvent],
     max_cycles: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
-) -> Vec<(Phase, Vec<PhaseStep>)> {
-    let mut sequences = vec![(Phase::FirstNight, first_night_steps(players, events))];
+) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
+    let current_in = |phase, steps: Vec<PhaseStep>| {
+        if steps
+            .iter()
+            .all(|step| crate::phase::step_status(&step.id, statuses).is_done())
+        {
+            return None;
+        }
+        let current = steps
+            .iter()
+            .find(|step| !crate::phase::step_status(&step.id, statuses).is_done())
+            .cloned();
+        Some((phase, steps, current))
+    };
+
+    if let Some(current) = current_in(Phase::FirstNight, first_night_steps(players, events)) {
+        return Some(current);
+    }
     for cycle in 1..=max_cycles.max(1) {
         let prefix = crate::phase::phase_prefix("day", cycle);
         let executed_player_id = events.iter().find_map(|event| match &event.kind {
@@ -1125,38 +1146,22 @@ fn phase_sequences(
             }
             _ => None,
         });
-        sequences.push((
+        if let Some(current) = current_in(
             Phase::Day,
             day_steps(cycle, statuses, executed_player_id, events, players),
-        ));
-        sequences.push((Phase::Night, later_night_steps(players, events, cycle)));
-    }
-    sequences
-}
-
-fn current_phase_steps(
-    players: &[Player],
-    events: &[GameEvent],
-    max_cycles: usize,
-    statuses: &HashMap<String, PhaseStepStatus>,
-) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
-    for (phase, steps) in phase_sequences(players, events, max_cycles, statuses) {
-        if steps
-            .iter()
-            .all(|step| crate::phase::step_status(&step.id, statuses).is_done())
-        {
-            continue;
+        ) {
+            return Some(current);
         }
-        let current = steps
-            .iter()
-            .find(|step| !crate::phase::step_status(&step.id, statuses).is_done())
-            .cloned();
-        return Some((phase, steps, current));
+        if let Some(current) = current_in(Phase::Night, later_night_steps(players, events, cycle)) {
+            return Some(current);
+        }
     }
     None
 }
 
 fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
+    #[cfg(test)]
+    PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let mut steps = Vec::new();
     let players_for = |character: &str| {
         let mut matching = players
@@ -1956,10 +1961,22 @@ fn player_state(player: &Player) -> PlayerStateSnapshot {
     }
 }
 
-fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
+struct PlayerTimeline {
+    current: Vec<Player>,
+    before_event: Vec<Vec<Player>>,
+}
+
+fn replay_player_timeline(events: &[GameEvent]) -> Result<PlayerTimeline, CoreError> {
+    #[cfg(test)]
+    PLAYER_REPLAY_PASS_COUNT.with(|count| count.set(count.get() + 1));
     let mut players = setup_players(events)?;
     let mut active_impairments = Vec::<ActiveImpairment>::new();
+    let mut before_event = Vec::with_capacity(events.len());
+    if !events.is_empty() {
+        before_event.push(players.clone());
+    }
     for (event_index, event) in events.iter().enumerate().skip(1) {
+        before_event.push(players.clone());
         match &event.kind {
             GameEventKind::DeathConfirmed { payload } => {
                 let Some(player) = players
@@ -2399,7 +2416,40 @@ fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
             _ => {}
         }
     }
-    Ok(players)
+    Ok(PlayerTimeline {
+        current: players,
+        before_event,
+    })
+}
+
+fn replay_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
+    Ok(replay_player_timeline(events)?.current)
+}
+
+#[cfg(test)]
+thread_local! {
+    static PLAYER_REPLAY_PASS_COUNT: Cell<usize> = const { Cell::new(0) };
+    static PHASE_STEP_BUILD_COUNT: Cell<usize> = const { Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn reset_replay_player_pass_count() {
+    PLAYER_REPLAY_PASS_COUNT.with(|count| count.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn replay_player_pass_count() -> usize {
+    PLAYER_REPLAY_PASS_COUNT.with(Cell::get)
+}
+
+#[cfg(test)]
+pub(crate) fn reset_phase_step_build_count() {
+    PHASE_STEP_BUILD_COUNT.with(|count| count.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn phase_step_build_count() -> usize {
+    PHASE_STEP_BUILD_COUNT.with(Cell::get)
 }
 
 fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
@@ -2569,6 +2619,7 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
 fn phase_state(
     players: &[Player],
     events: &[GameEvent],
+    players_before_event: &[Vec<Player>],
 ) -> Result<(Phase, Option<PhaseStep>, Vec<PhaseOverviewItem>), CoreError> {
     let mut statuses = HashMap::new();
     let mut pending_madness_overview: Option<(PendingMadnessExecution, Phase, Vec<PhaseStep>)> =
@@ -2589,9 +2640,11 @@ fn phase_state(
             if pending_madness_overview.is_some() {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            let players_at_event = replay_players(&events[..event_index])?;
+            let players_at_event = players_before_event
+                .get(event_index)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
             let Some((phase, _, Some(current))) = current_phase_steps(
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
@@ -2601,7 +2654,7 @@ fn phase_state(
             let assignments = madness_assignments(
                 phase,
                 Some(&current),
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
             );
             let assignment = assignments
@@ -2625,9 +2678,11 @@ fn phase_state(
             if pending_madness_overview.is_some() {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            let players_at_event = replay_players(&events[..event_index])?;
+            let players_at_event = players_before_event
+                .get(event_index)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
             let Some((phase, steps, Some(current))) = current_phase_steps(
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
@@ -2637,7 +2692,7 @@ fn phase_state(
             let assignments = madness_assignments(
                 phase,
                 Some(&current),
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
             );
             let assignment = assignments
@@ -2693,7 +2748,9 @@ fn phase_state(
                     &pending.event_id,
                     &pending.interrupted_step_id,
                 );
-                let players_at_event = replay_players(&events[..event_index])?;
+                let players_at_event = players_before_event
+                    .get(event_index)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                 if event.phase != *phase
                     || payload.step_id.as_deref() != Some(expected_step_id.as_str())
                     || payload.player_id != pending.target_player_id
@@ -2709,9 +2766,11 @@ fn phase_state(
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         if let GameEventKind::DayActionRecorded { payload } = &event.kind {
-            let players_at_event = replay_players(&events[..event_index])?;
+            let players_at_event = players_before_event
+                .get(event_index)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
             let Some((_, _, Some(current))) = current_phase_steps(
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
@@ -2722,7 +2781,7 @@ fn phase_state(
                 payload,
                 event.phase,
                 &current,
-                &players_at_event,
+                players_at_event,
                 &events[..event_index],
             )
             .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
@@ -2730,9 +2789,11 @@ fn phase_state(
         }
         if let GameEventKind::ManualPhaseStepResolved { payload } = &event.kind {
             if let Some(prefix) = payload.step_id.strip_suffix(":manual") {
-                let players_at_event = replay_players(&events[..event_index])?;
+                let players_at_event = players_before_event
+                    .get(event_index)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                 let Some((phase, _, current)) = current_phase_steps(
-                    &players_at_event,
+                    players_at_event,
                     &events[..event_index],
                     events.len() + 2,
                     &statuses,
@@ -2817,9 +2878,11 @@ fn phase_state(
             ),
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         };
-        let players_at_event = replay_players(&events[..event_index])?;
+        let players_at_event = players_before_event
+            .get(event_index)
+            .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
         let Some((_, _, Some(current))) = current_phase_steps(
-            &players_at_event,
+            players_at_event,
             &events[..event_index],
             events.len() + 2,
             &statuses,
@@ -3288,9 +3351,13 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         .first()
         .map_or(events.as_slice(), |index| &events[..*index]);
     let initial_players = setup_players(active_events)?;
-    let players = replay_players(active_events)?;
+    let PlayerTimeline {
+        current: players,
+        before_event: players_before_event,
+    } = replay_player_timeline(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
-    let (phase, current_step, phase_overview) = phase_state(&players, active_events)?;
+    let (phase, current_step, phase_overview) =
+        phase_state(&players, active_events, &players_before_event)?;
     let day_state = if phase == Phase::Day {
         current_step
             .as_ref()
@@ -3412,8 +3479,12 @@ pub(crate) fn propose_phase_command(
     {
         return Err(ErrorKind::GameAlreadyEnded.into_error());
     }
-    let players = replay_players(&game_file.game.events)?;
-    let (_, current_step, _) = phase_state(&players, &game_file.game.events)?;
+    let PlayerTimeline {
+        current: players,
+        before_event: players_before_event,
+    } = replay_player_timeline(&game_file.game.events)?;
+    let (_, current_step, _) =
+        phase_state(&players, &game_file.game.events, &players_before_event)?;
     let current_step = current_step.ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
 
     match command {

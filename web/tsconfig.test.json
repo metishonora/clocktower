@@ -27,6 +27,7 @@
     "src/gameStorage.ts",
     "src/gameStorage.test.ts",
     "src/core/validation.test.ts",
+    "src/core/latestJsonRequestCache.test.ts",
     "src/core/revealPayload.ts",
     "src/core/revealPayload.test.ts",
     "src/core/revealPayload.regression.test.ts",

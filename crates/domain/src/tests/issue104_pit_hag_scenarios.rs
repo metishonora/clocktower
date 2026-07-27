@@ -1,4 +1,7 @@
-use crate::{propose_json, replay_json};
+use crate::{
+    characters::{reset_snv_replay_player_pass_count, snv_replay_player_pass_count},
+    propose_json, replay_json,
+};
 use serde_json::{json, Value};
 
 fn setup_event() -> Value {
@@ -851,6 +854,39 @@ fn two_living_players_surface_the_evil_win_confirmation() {
     let undone = replay(&events);
     assert!(undone["value"]["gameEnd"].is_null());
     assert!(!undone["value"]["currentStep"].is_null());
+}
+
+#[test]
+fn replay_reuses_the_player_timeline_instead_of_rebuilding_every_event_prefix() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["clockmaker"] }
+            }
+        }),
+    );
+
+    reset_snv_replay_player_pass_count();
+    crate::characters::reset_snv_phase_step_build_count();
+    let state = replay(&events);
+
+    assert_eq!(state["ok"], true, "replay failed: {state}");
+    assert!(
+        snv_replay_player_pass_count() <= 3,
+        "one replay rebuilt the player timeline {} times",
+        snv_replay_player_pass_count(),
+    );
+    assert!(
+        crate::characters::snv_phase_step_build_count() <= events.len() * 3,
+        "one replay eagerly rebuilt {} phase sequences for {} events",
+        crate::characters::snv_phase_step_build_count(),
+        events.len(),
+    );
 }
 
 #[test]

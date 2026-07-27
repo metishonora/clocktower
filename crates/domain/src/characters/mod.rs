@@ -1,6 +1,13 @@
 mod sects_and_violets;
 mod trouble_brewing;
 
+#[cfg(test)]
+pub(crate) use sects_and_violets::{
+    phase_step_build_count as snv_phase_step_build_count,
+    replay_player_pass_count as snv_replay_player_pass_count,
+    reset_phase_step_build_count as reset_snv_phase_step_build_count,
+    reset_replay_player_pass_count as reset_snv_replay_player_pass_count,
+};
 pub(crate) use sects_and_violets::{
     propose_phase_command as propose_snv_phase_command, replay as replay_snv,
 };

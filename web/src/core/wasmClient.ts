@@ -10,6 +10,7 @@ import type {
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
+import { memoizeLatestJsonRequest } from "./latestJsonRequestCache.js";
 import {
   parseCoreResult,
   parseProposal,
@@ -34,9 +35,13 @@ async function ensureWasm(): Promise<void> {
   return initPromise;
 }
 
-export async function replay(gameFile: GameFile): Promise<CoreResult<ReplayState>> {
+const replayLatest = memoizeLatestJsonRequest<GameFile, CoreResult<ReplayState>>(async (gameFileJson) => {
   await ensureWasm();
-  return parseCoreResult(JSON.parse(wasmReplay(JSON.stringify(gameFile))), parseReplayState);
+  return parseCoreResult(JSON.parse(wasmReplay(gameFileJson)), parseReplayState);
+});
+
+export function replay(gameFile: GameFile): Promise<CoreResult<ReplayState>> {
+  return replayLatest(gameFile);
 }
 
 export async function propose(
