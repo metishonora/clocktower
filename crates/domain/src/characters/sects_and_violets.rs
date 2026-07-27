@@ -116,7 +116,9 @@ fn day_action_is_available(
     day_id: &str,
     events: &[GameEvent],
 ) -> bool {
-    if character_id == "juggler" && day_id != "day" {
+    if character_id == "juggler"
+        && first_day_for_ability_instance(actor, events).as_deref() != Some(day_id)
+    {
         return false;
     }
     let acquisition_index = events
@@ -133,6 +135,27 @@ fn day_action_is_available(
             }
             _ => false,
         })
+}
+
+fn first_day_for_ability_instance(actor: &Player, events: &[GameEvent]) -> Option<String> {
+    if actor.ability_instance.source_event_id == "setup" {
+        return Some("day".into());
+    }
+    let (_, step_id, _) = transition_source(actor, events)?;
+    let prefix = step_id.split(':').next()?;
+    if prefix == "firstNight" {
+        return Some("day".into());
+    }
+    if prefix.starts_with("day") {
+        return Some(prefix.into());
+    }
+    let suffix = prefix.strip_prefix("night")?;
+    let cycle = if suffix.is_empty() {
+        1
+    } else {
+        suffix.parse::<usize>().ok()?
+    };
+    Some(format!("day{}", cycle + 1))
 }
 
 fn validate_day_action_payload(
@@ -306,6 +329,27 @@ fn madness_assignments(
         })
         .collect::<Vec<_>>();
 
+    raw.extend(
+        players
+            .iter()
+            .filter(|player| {
+                player.actual_character == "mutant"
+                    && player.ability_instance.source_event_id != "setup"
+            })
+            .map(|player| {
+                (
+                    format!(
+                        "mutant:{}:{}",
+                        player.id, player.ability_instance.source_event_id
+                    ),
+                    player.id.clone(),
+                    "mutant".to_string(),
+                    player.id.clone(),
+                    None,
+                )
+            }),
+    );
+
     let mut latest_cerenovus = HashMap::<String, (&GameEvent, &MadnessAssignedPayload)>::new();
     for event in events {
         if let GameEventKind::MadnessAssigned { payload } = &event.kind {
@@ -388,24 +432,31 @@ fn madness_assignments(
 
 fn juggler_correct_count_for_night(
     night_prefix: &str,
-    actor_player_id: &str,
+    actor: &Player,
     events: &[GameEvent],
 ) -> Option<u8> {
     let suffix = night_prefix.strip_prefix("night")?;
     let day_id = format!("day{suffix}");
-    events.iter().rev().find_map(|event| match &event.kind {
-        GameEventKind::DayActionRecorded { payload }
-            if payload.day_id == day_id
-                && payload.actor_player_id == actor_player_id
-                && payload.character_id == "juggler" =>
-        {
-            match payload.record {
-                DayActionRecord::Juggler { correct_count } => Some(correct_count),
-                _ => None,
+    let acquisition_index = events
+        .iter()
+        .position(|event| event.id == actor.ability_instance.source_event_id);
+    events
+        .iter()
+        .skip(acquisition_index.map_or(0, |index| index + 1))
+        .rev()
+        .find_map(|event| match &event.kind {
+            GameEventKind::DayActionRecorded { payload }
+                if payload.day_id == day_id
+                    && payload.actor_player_id == actor.id
+                    && payload.character_id == "juggler" =>
+            {
+                match payload.record {
+                    DayActionRecord::Juggler { correct_count } => Some(correct_count),
+                    _ => None,
+                }
             }
-        }
-        _ => None,
-    })
+            _ => None,
+        })
 }
 
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
@@ -656,16 +707,101 @@ fn later_night_wake_rank(character: &str) -> Option<usize> {
     })
 }
 
+fn vigormortis_keeps_minion_ability(
+    player: &Player,
+    players: &[Player],
+    events: &[GameEvent],
+) -> bool {
+    let acquisition_index = events
+        .iter()
+        .position(|event| event.id == player.ability_instance.source_event_id);
+    character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+        && events
+            .iter()
+            .skip(acquisition_index.map_or(0, |index| index + 1))
+            .any(|event| match &event.kind {
+                GameEventKind::NightActionResolved { payload }
+                    if payload.actor_character_id.as_deref() == Some("vigormortis")
+                        && players.iter().any(|candidate| {
+                            candidate.id == payload.actor_player_id
+                                && candidate.alive
+                                && candidate.actual_character == "vigormortis"
+                        }) =>
+                {
+                    matches!(
+                        &payload.resolution,
+                        NightActionResolution::DemonAttack {
+                            outcome: DemonAttackOutcome::Deaths { deaths },
+                            ..
+                        } if deaths.iter().any(|death| death.player_id == player.id)
+                    )
+                }
+                _ => false,
+            })
+}
+
+fn player_has_active_ability(player: &Player, players: &[Player], events: &[GameEvent]) -> bool {
+    player.alive || vigormortis_keeps_minion_ability(player, players, events)
+}
+
+fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[GameEvent]) -> bool {
+    let suffix = prefix.strip_prefix("night").unwrap_or_default();
+    let day_prefix = format!("day{suffix}");
+    let acquisition_index = events
+        .iter()
+        .position(|event| event.id == player.ability_instance.source_event_id);
+    events
+        .iter()
+        .skip(acquisition_index.map_or(0, |index| index + 1))
+        .any(|event| match &event.kind {
+            GameEventKind::DeathConfirmed { payload } => {
+                payload.player_id == player.id
+                    && payload
+                        .step_id
+                        .as_deref()
+                        .and_then(|step_id| step_id.split(':').next())
+                        .is_some_and(|event_prefix| {
+                            event_prefix == prefix || event_prefix == day_prefix
+                        })
+            }
+            GameEventKind::NightActionResolved { payload }
+                if payload.step_id.split(':').next() == Some(prefix) =>
+            {
+                matches!(
+                    &payload.resolution,
+                    NightActionResolution::DemonAttack {
+                        outcome: DemonAttackOutcome::Deaths { deaths },
+                        ..
+                    } if deaths.iter().any(|death| death.player_id == player.id)
+                )
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload }
+                if payload.step_id.split(':').next() == Some(prefix) =>
+            {
+                payload
+                    .deaths
+                    .iter()
+                    .any(|death| death.player_id == player.id)
+            }
+            _ => false,
+        })
+}
+
 fn acquired_ability_is_available(
     player: &Player,
     character: &str,
     prefix: &str,
+    players: &[Player],
     events: &[GameEvent],
 ) -> bool {
     match character {
-        "barber" | "sweetheart" => true,
-        "sage" => sage_killer(prefix, &player.id, events).is_some(),
-        _ => player.alive,
+        "barber" | "sweetheart" => death_triggered_in_night_window(player, prefix, events),
+        "sage" => sage_killer(prefix, player, events).is_some(),
+        "juggler" => {
+            player_has_active_ability(player, players, events)
+                && juggler_correct_count_for_night(prefix, player, events).is_some()
+        }
+        _ => player_has_active_ability(player, players, events),
     }
 }
 
@@ -689,7 +825,7 @@ fn insert_acquired_ability_steps(
 
     for (player, event, source_step_id, source_character) in acquisitions {
         let character = player.actual_character.as_str();
-        if !acquired_ability_is_available(player, character, prefix, events) {
+        if !acquired_ability_is_available(player, character, prefix, players, events) {
             continue;
         }
         let start_knowing = matches!(character, "clockmaker" | "evilTwin");
@@ -892,11 +1028,9 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
+                    && player_has_active_ability(player, players, events)
                     && (character != "snakeCharmer"
-                        || (player.alive
-                            && !became_snake_charmer_from_swap_in_phase(
-                                &player.id, &prefix, events,
-                            )))
+                        || !became_snake_charmer_from_swap_in_phase(&player.id, &prefix, events))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -930,18 +1064,16 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
-                    && ((!matches!(
-                        character,
-                        "dreamer" | "flowergirl" | "townCrier" | "oracle" | "seamstress"
-                    ) || player.alive)
-                        && (character != "snakeCharmer" || player.alive)
-                        && (character != "juggler"
-                            || (player.alive
-                                && juggler_correct_count_for_night(&prefix, &player.id, events)
-                                    .is_some()))
-                        && (character != "seamstress" || !seamstress_already_used(player, events))
-                        && (character != "sage"
-                            || sage_killer(&prefix, &player.id, events).is_some()))
+                    && match character {
+                        "barber" | "sweetheart" => {
+                            death_triggered_in_night_window(player, &prefix, events)
+                        }
+                        "sage" => sage_killer(&prefix, player, events).is_some(),
+                        _ => player_has_active_ability(player, players, events),
+                    }
+                    && (character != "juggler"
+                        || juggler_correct_count_for_night(&prefix, player, events).is_some())
+                    && (character != "seamstress" || !seamstress_already_used(player, events))
             })
             .collect::<Vec<_>>();
         matching.sort_by_key(|player| player.seat);
@@ -1306,20 +1438,32 @@ fn snv_information_result(
                 .filter(|player| !player.alive && player.alignment == Alignment::Evil)
                 .count(),
         }),
-        Some("juggler") => juggler_correct_count_for_night(
-            step.id.split(":juggler").next().unwrap_or_default(),
-            step.player_id.as_deref().unwrap_or_default(),
-            events,
-        )
-        .map(|value| InformationResult::Number {
-            value: usize::from(value),
-        }),
-        Some("sage") => sage_killer(
-            step.id.split(":sage").next().unwrap_or_default(),
-            step.player_id.as_deref().unwrap_or_default(),
-            events,
-        )
-        .map(|player_id| InformationResult::Player { player_id }),
+        Some("juggler") => step
+            .player_id
+            .as_deref()
+            .and_then(|player_id| players.iter().find(|player| player.id == player_id))
+            .and_then(|player| {
+                juggler_correct_count_for_night(
+                    step.id.split(':').next().unwrap_or_default(),
+                    player,
+                    events,
+                )
+            })
+            .map(|value| InformationResult::Number {
+                value: usize::from(value),
+            }),
+        Some("sage") => step
+            .player_id
+            .as_deref()
+            .and_then(|player_id| players.iter().find(|player| player.id == player_id))
+            .and_then(|player| {
+                sage_killer(
+                    step.id.split(':').next().unwrap_or_default(),
+                    player,
+                    events,
+                )
+            })
+            .map(|player_id| InformationResult::Player { player_id }),
         _ => None,
     })
 }
@@ -1730,29 +1874,35 @@ fn seamstress_already_used(player: &Player, events: &[GameEvent]) -> bool {
     ))
 }
 
-fn sage_killer(prefix: &str, sage_id: &str, events: &[GameEvent]) -> Option<String> {
-    events.iter().find_map(|event| match &event.kind {
-        GameEventKind::NightActionResolved { payload }
-            if payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
-        {
-            let NightActionResolution::DemonAttack {
-                outcome: DemonAttackOutcome::Deaths { deaths },
-                ..
-            } = &payload.resolution
-            else {
-                return None;
-            };
-            deaths.iter().find_map(|death| match &death.cause {
-                NightDeathCause::DemonAttack {
-                    actor_player_id,
-                    target_player_id,
+fn sage_killer(prefix: &str, sage: &Player, events: &[GameEvent]) -> Option<String> {
+    let acquisition_index = events
+        .iter()
+        .position(|event| event.id == sage.ability_instance.source_event_id);
+    events
+        .iter()
+        .skip(acquisition_index.map_or(0, |index| index + 1))
+        .find_map(|event| match &event.kind {
+            GameEventKind::NightActionResolved { payload }
+                if payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+            {
+                let NightActionResolution::DemonAttack {
+                    outcome: DemonAttackOutcome::Deaths { deaths },
                     ..
-                } if target_player_id == sage_id => Some(actor_player_id.clone()),
-                _ => None,
-            })
-        }
-        _ => None,
-    })
+                } = &payload.resolution
+                else {
+                    return None;
+                };
+                deaths.iter().find_map(|death| match &death.cause {
+                    NightDeathCause::DemonAttack {
+                        actor_player_id,
+                        target_player_id,
+                        ..
+                    } if target_player_id == &sage.id => Some(actor_player_id.clone()),
+                    _ => None,
+                })
+            }
+            _ => None,
+        })
 }
 
 fn setup_players(events: &[GameEvent]) -> Result<Vec<Player>, CoreError> {
@@ -2672,18 +2822,68 @@ fn phase_state(
         ) else {
             return Err(ErrorKind::ReplayFailed.into_error());
         };
-        let legacy_dead_targeted_information =
-            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
-                && current.id != *event_step_id
-                && current.phase == event.phase
-                && current.id.split(':').next() == event_step_id.split(':').next()
-                && ["dreamer", "seamstress"].iter().any(|character| {
-                    event_step_id.ends_with(&format!(":{character}"))
-                        && players_at_event
-                            .iter()
-                            .any(|player| !player.alive && player.actual_character == *character)
-                });
-        if legacy_dead_targeted_information {
+        let legacy_dead_player = match &event.kind {
+            GameEventKind::PhaseStepConfirmed { payload } => payload
+                .information
+                .as_ref()
+                .and_then(|information| information.actor.as_ref())
+                .and_then(|actor| {
+                    players_at_event.iter().find(|player| {
+                        player.id == actor.player_id
+                            && !player.alive
+                            && player.actual_character == actor.character_id
+                    })
+                }),
+            GameEventKind::ManualPhaseStepResolved { .. } => {
+                players_at_event.iter().find(|player| {
+                    !player.alive
+                        && event_step_id.ends_with(&format!(":{}", player.actual_character))
+                })
+            }
+            _ => None,
+        };
+        let legacy_dead_character_step = current.id != *event_step_id
+            && current.phase == event.phase
+            && current.id.split(':').next() == event_step_id.split(':').next()
+            && legacy_dead_player.is_some_and(|player| {
+                event_step_id.ends_with(&format!(":{}", player.actual_character))
+            });
+        if legacy_dead_character_step {
+            if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
+                let player =
+                    legacy_dead_player.ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                let prefix = event_step_id.split(':').next().unwrap_or_default();
+                let legacy_step = character_step(
+                    event.phase,
+                    prefix,
+                    &player.actual_character,
+                    player,
+                    &players_at_event,
+                );
+                validate_required_input(
+                    &legacy_step.required_input,
+                    &payload.input,
+                    &players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                if is_information_character(legacy_step.character.as_deref()) {
+                    let expected = snv_confirmed_information(
+                        &legacy_step,
+                        &players_at_event,
+                        &events[..event_index],
+                        &payload.input,
+                        payload
+                            .information
+                            .as_ref()
+                            .map(|information| information.delivered_result.clone()),
+                        &[],
+                    )
+                    .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                    if payload.information != expected {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                }
+            }
             statuses.insert(event_step_id.clone(), status);
             continue;
         }

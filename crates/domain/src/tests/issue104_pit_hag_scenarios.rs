@@ -20,6 +20,22 @@ fn setup_event() -> Value {
     })
 }
 
+fn setup_event_for_creation(character: &str) -> Value {
+    let mut setup = setup_event();
+    for index in 1..7 {
+        if setup["payload"]["players"][index]["actualCharacter"] == character {
+            let replacement = if character == "fangGu" {
+                "vortox"
+            } else {
+                "savant"
+            };
+            setup["payload"]["players"][index]["actualCharacter"] = json!(replacement);
+            setup["payload"]["players"][index]["shownCharacter"] = json!(replacement);
+        }
+    }
+    setup
+}
+
 fn game(events: Vec<Value>) -> Value {
     json!({
         "schemaVersion": 3,
@@ -72,6 +88,48 @@ fn advance_to_pit_hag(events: &mut Vec<Value>) -> Value {
     panic!("did not reach Pit-Hag step");
 }
 
+fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value {
+    for _ in 0..96 {
+        let state = replay(events);
+        assert_eq!(state["ok"], true, "replay failed: {state}");
+        if wanted(&state) {
+            return state;
+        }
+        let step = &state["value"]["currentStep"];
+        let step_id = step["id"].as_str().expect("current step id");
+        let command = match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
+            "nomination" => json!({ "type": "skipStep", "payload": { "stepId": step_id } }),
+            "executionDecision" => {
+                json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
+            }
+            "playerIds" if step_id.contains(":demon:") => {
+                json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"] } } })
+            }
+            "characterTransformation" => json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": step_id,
+                    "input": { "playerIds": [step["playerId"]], "characterIds": ["pitHag"] }
+                }
+            }),
+            "number" => json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": step_id,
+                    "input": null,
+                    "deliveredResult": step["informationPrompt"]["numberChoices"][0]["result"]
+                }
+            }),
+            _ if step["support"] == "manual" => {
+                json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
+            }
+            _ => json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } }),
+        };
+        append(events, command);
+    }
+    panic!("wanted phase step was not reached");
+}
+
 #[test]
 fn pit_hag_requires_one_player_and_one_script_character() {
     let mut events = vec![setup_event()];
@@ -91,6 +149,185 @@ fn pit_hag_requires_one_player_and_one_script_character() {
         .expect("character allowlist");
     assert!(characters.iter().any(|id| id == "mutant"));
     assert!(characters.iter().any(|id| id == "noDashii"));
+}
+
+#[test]
+fn every_script_character_has_the_expected_same_night_schedule_when_created() {
+    let all_characters = [
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "philosopher",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+        "evilTwin",
+        "witch",
+        "cerenovus",
+        "pitHag",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox",
+    ];
+    let acts_this_night = [
+        "clockmaker",
+        "dreamer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "seamstress",
+        "evilTwin",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox",
+    ];
+
+    for character in all_characters {
+        let mut events = vec![setup_event_for_creation(character)];
+        let pit_hag = advance_to_pit_hag(&mut events);
+        let changed = append(
+            &mut events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": pit_hag["value"]["currentStep"]["id"],
+                    "input": { "playerIds": ["player-7"], "characterIds": [character] }
+                }
+            }),
+        );
+
+        if character == "pitHag" {
+            assert_eq!(
+                changed["value"]["event"]["payload"]["outcome"]["kind"],
+                "noChange"
+            );
+            continue;
+        }
+
+        let after = replay(&events);
+        let has_step = after["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step["character"] == character && step["playerId"] == "player-7");
+        assert_eq!(
+            has_step,
+            acts_this_night.contains(&character),
+            "unexpected same-night schedule for {character}: {after}"
+        );
+    }
+}
+
+#[test]
+fn a_new_mutant_gets_a_fresh_madness_assignment() {
+    let mut events = vec![setup_event_for_creation("mutant")];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    let changed = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["mutant"] }
+            }
+        }),
+    );
+
+    let after = replay(&events);
+    assert_eq!(after["ok"], true, "replay failed: {after}");
+    assert_eq!(
+        after["value"]["madnessAssignments"],
+        json!([{
+            "assignmentId": format!(
+                "mutant:player-7:{}",
+                changed["value"]["event"]["id"].as_str().unwrap()
+            ),
+            "sourcePlayerId": "player-7",
+            "sourceCharacterId": "mutant",
+            "targetPlayerId": "player-7",
+            "status": "unchecked",
+            "sourceEffective": true,
+            "canCheck": false,
+            "canExecute": true
+        }])
+    );
+}
+
+#[test]
+fn newly_created_day_action_characters_are_available_on_the_following_day() {
+    for character in ["artist", "savant"] {
+        let mut events = vec![setup_event_for_creation(character)];
+        let pit_hag = advance_to_pit_hag(&mut events);
+        append(
+            &mut events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": pit_hag["value"]["currentStep"]["id"],
+                    "input": { "playerIds": ["player-7"], "characterIds": [character] }
+                }
+            }),
+        );
+
+        let next_day = advance_to(&mut events, |state| {
+            state["value"]["phase"] == "day"
+                && state["value"]["currentStep"]["id"]
+                    .as_str()
+                    .is_some_and(|id| id.starts_with("day2:"))
+        });
+        assert!(next_day["value"]["availableDayActions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|action| {
+                action["actorPlayerId"] == "player-7"
+                    && action["characterId"] == character
+                    && action["dayId"] == "day2"
+            }));
+    }
+}
+
+#[test]
+fn newly_created_earlier_waking_characters_wait_until_the_next_night() {
+    for character in ["philosopher", "snakeCharmer", "witch", "cerenovus"] {
+        let mut events = vec![setup_event_for_creation(character)];
+        let pit_hag = advance_to_pit_hag(&mut events);
+        append(
+            &mut events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": pit_hag["value"]["currentStep"]["id"],
+                    "input": { "playerIds": ["player-7"], "characterIds": [character] }
+                }
+            }),
+        );
+
+        let next_night = advance_to(&mut events, |state| {
+            state["value"]["phase"] == "night"
+                && state["value"]["currentStep"]["id"]
+                    .as_str()
+                    .is_some_and(|id| id.starts_with("night2:"))
+        });
+        assert!(next_night["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step["character"] == character && step["playerId"] == "player-7"));
+    }
 }
 
 #[test]
@@ -245,6 +482,190 @@ fn a_transformed_player_killed_before_their_wake_order_loses_the_new_ability_ste
             .iter()
             .all(|step| !(step["character"] == "dreamer" && step["playerId"] == "player-7")),
         "dead transformed players must not retain ordinary ability steps: {after_attack}"
+    );
+}
+
+#[test]
+fn newly_created_death_trigger_characters_act_only_after_they_die() {
+    for character in ["sweetheart", "barber", "sage"] {
+        let mut events = vec![setup_event_for_creation(character)];
+        let pit_hag = advance_to_pit_hag(&mut events);
+        append(
+            &mut events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": pit_hag["value"]["currentStep"]["id"],
+                    "input": { "playerIds": ["player-7"], "characterIds": [character] }
+                }
+            }),
+        );
+        let before_death = replay(&events);
+        assert!(before_death["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|step| !(step["character"] == character && step["playerId"] == "player-7")));
+
+        append(
+            &mut events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": before_death["value"]["currentStep"]["id"],
+                    "input": { "playerIds": ["player-7"] }
+                }
+            }),
+        );
+        let after_death = replay(&events);
+        assert_eq!(after_death["value"]["currentStep"]["character"], character);
+        assert_eq!(after_death["value"]["currentStep"]["playerId"], "player-7");
+        if character == "sage" {
+            assert!(after_death["value"]["currentStep"]["informationPrompt"].is_object());
+        }
+    }
+}
+
+#[test]
+fn a_dead_transformed_earlier_waking_character_does_not_return_next_night() {
+    let mut events = vec![setup_event_for_creation("witch")];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["witch"] }
+            }
+        }),
+    );
+    let demon = replay(&events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": demon["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"] }
+            }
+        }),
+    );
+
+    let next_night = advance_to(&mut events, |state| {
+        state["value"]["phase"] == "night"
+            && state["value"]["currentStep"]["id"]
+                .as_str()
+                .is_some_and(|id| id.starts_with("night2:"))
+    });
+    assert!(next_night["value"]["phaseOverview"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|step| !(step["character"] == "witch" && step["playerId"] == "player-7")));
+}
+
+#[test]
+fn a_transformed_minion_killed_by_vigormortis_keeps_their_ability() {
+    let mut setup = setup_event_for_creation("witch");
+    setup["payload"]["players"][1]["actualCharacter"] = json!("vigormortis");
+    setup["payload"]["players"][1]["shownCharacter"] = json!("vigormortis");
+    let mut events = vec![setup];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["witch"] }
+            }
+        }),
+    );
+    let demon = replay(&events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": demon["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"] }
+            }
+        }),
+    );
+
+    let next_night = advance_to(&mut events, |state| {
+        state["value"]["phase"] == "night"
+            && state["value"]["currentStep"]["id"]
+                .as_str()
+                .is_some_and(|id| id.starts_with("night2:"))
+    });
+    assert!(next_night["value"]["phaseOverview"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|step| step["character"] == "witch" && step["playerId"] == "player-7"));
+}
+
+#[test]
+fn a_new_juggler_acts_on_their_first_day_then_learns_the_result_that_night() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["juggler"] }
+            }
+        }),
+    );
+
+    let changed = replay(&events);
+    assert!(changed["value"]["phaseOverview"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|step| !(step["character"] == "juggler" && step["playerId"] == "player-7")));
+
+    let first_day = advance_to(&mut events, |state| {
+        state["value"]["phase"] == "day"
+            && state["value"]["currentStep"]["id"]
+                .as_str()
+                .is_some_and(|id| id.starts_with("day2:"))
+    });
+    assert!(first_day["value"]["availableDayActions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|action| {
+            action["actorPlayerId"] == "player-7"
+                && action["characterId"] == "juggler"
+                && action["dayId"] == "day2"
+        }));
+
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "recordDayAction",
+            "payload": {
+                "dayId": "day2",
+                "expectedEventCount": expected_event_count,
+                "actorPlayerId": "player-7",
+                "record": { "kind": "juggler", "correctCount": 3 }
+            }
+        }),
+    );
+
+    let information = advance_to(&mut events, |state| {
+        state["value"]["currentStep"]["character"] == "juggler"
+            && state["value"]["currentStep"]["playerId"] == "player-7"
+    });
+    assert_eq!(
+        information["value"]["currentStep"]["informationPrompt"]["computedResult"],
+        json!({ "kind": "number", "value": 3 })
     );
 }
 

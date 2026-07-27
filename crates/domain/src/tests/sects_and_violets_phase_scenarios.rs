@@ -278,7 +278,6 @@ fn first_night_enters_the_canonical_day_flow_then_the_official_later_night_order
             "night:witch",
             "night:demon:player-7",
             "night:seamstress",
-            "night:mathematician",
             "night:toDay",
         ]
     );
