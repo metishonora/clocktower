@@ -35,7 +35,7 @@ test("opening a reminder panel closes the previously open day or madness panel",
   expect(screen.getByRole("dialog", { name: "백치천재 능력 사용" })).toBeTruthy();
 });
 
-test("the production UI keeps changeable Mutant and Cerenovus judgments outside event history", async () => {
+test("the production UI stores changeable Mutant and Cerenovus judgments in canonical history", async () => {
   const game = await firstDayMadnessGame();
   const storage = new MemoryGameStorageDriver(game);
   const user = userEvent.setup();
@@ -47,26 +47,31 @@ test("the production UI keeps changeable Mutant and Cerenovus judgments outside 
   await user.click(screen.getByRole("button", { name: "위반 없음" }));
   const mutantClear = await screen.findByRole<HTMLButtonElement>("button", { name: "위반 없음" });
   await waitFor(() => expect(mutantClear.disabled).toBe(true));
-  await waitFor(() => expect(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.madnessJudgments)
-    .toMatchObject({ "mutant:player-1:setup-1": "clear" }));
-  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount);
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "madnessCheckRecorded",
+    payload: { assignmentId: "mutant:player-1:setup-1", result: "clear" },
+  }));
+  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 1);
 
   await user.click(screen.getByRole("button", { name: "외지인임을 집착함" }));
-  await waitFor(() => expect(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.madnessJudgments)
-    .toMatchObject({ "mutant:player-1:setup-1": "violation" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "madnessCheckRecorded",
+    payload: { assignmentId: "mutant:player-1:setup-1", result: "violation" },
+  }));
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "외지인임을 집착함" }).disabled).toBe(true);
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "위반 없음" }).disabled).toBe(false);
-  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount);
+  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 2);
 
   await user.click(screen.getByRole("button", { name: /변종 집착 확인 닫기/ }));
   await user.click(screen.getByRole("button", { name: /세레노버스 집착 확인 열기/ }));
   await user.click(screen.getByRole("button", { name: "충분히 집착함" }));
   const cerenovusClear = await screen.findByRole<HTMLButtonElement>("button", { name: "충분히 집착함" });
   await waitFor(() => expect(cerenovusClear.disabled).toBe(true));
-  await waitFor(() => expect(Object.values(
-    storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.madnessJudgments ?? {},
-  )).toContain("clear"));
-  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount);
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "madnessCheckRecorded",
+    payload: { result: "clear" },
+  }));
+  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 3);
 
   const saved = storage.savedGames.at(-1);
   expect(saved).toBeTruthy();
@@ -91,9 +96,11 @@ test("the production UI records and settles a Mutant violation with separate exe
   expect(screen.getByText("[1번 민지]이 외지인임을 주장하며 집착하였나요?")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "외지인임을 집착함" }));
 
-  await waitFor(() => expect(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.madnessJudgments)
-    .toMatchObject({ "mutant:player-1:setup-1": "violation" }));
-  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount);
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)).toMatchObject({
+    type: "madnessCheckRecorded",
+    payload: { assignmentId: "mutant:player-1:setup-1", result: "violation" },
+  }));
+  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 1);
   await user.click(screen.getByRole("button", { name: "마도서" }));
   await user.click(screen.getByRole("button", { name: /1번 좌석, 민지, 변종/ }));
   expect(screen.getByRole("listitem", { name: "외지인 집착 · 출처 변종" })).toBeTruthy();
@@ -106,7 +113,7 @@ test("the production UI records and settles a Mutant violation with separate exe
   expect(await screen.findByRole("group", { name: "집착 위반 처형 사망 확인" })).toBeTruthy();
   expect(screen.getByText("1번 민지")).toBeTruthy();
   expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("madnessExecutionConfirmed");
-  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 1);
+  expect(storage.savedGames.at(-1)?.game.events.length).toBe(initialEventCount + 2);
 
   const executeAndContinueToNight = screen.getByRole("button", { name: "처형 후 밤으로" });
   expect(executeAndContinueToNight.classList.contains("issue116NightTransitionAction")).toBe(true);

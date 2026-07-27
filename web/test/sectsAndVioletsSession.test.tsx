@@ -25,7 +25,7 @@ test("undo removes every event in the latest completed S&V phase group", () => {
     [
       checkpoint("setup", "setup", 1),
       checkpoint("a", "phase", 3),
-      checkpoint("b", "phase", 5),
+      { ...checkpoint("b", "phase", 4), eventIds: ["b-1", "b-2"] },
     ],
   );
 

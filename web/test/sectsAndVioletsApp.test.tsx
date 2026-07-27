@@ -52,9 +52,10 @@ const core = vi.hoisted(() => ({
       },
     };
   }),
-  propose: vi.fn(async (_gameFile, command) => {
+  propose: vi.fn(async (gameFile, command) => {
     const setup = command.type === "createGame";
     const manual = command.type === "resolveManualStep";
+    const nextEventId = `event-${gameFile.game.events.length + 1}`;
     return {
       ok: true as const,
       value: {
@@ -66,14 +67,14 @@ const core = vi.hoisted(() => ({
           summary: "초기 설정 확정: 7명",
           createdAt: "2026-07-22T00:00:00.000Z",
         } : manual ? {
-          id: "manual-2",
+          id: nextEventId,
           type: "manualPhaseStepResolved" as const,
           phase: command.payload.stepId.startsWith("day:") ? "day" as const : command.payload.stepId.startsWith("night:") ? "night" as const : "firstNight" as const,
           payload: command.payload,
           summary: `수동 단계 처리: ${command.payload.stepId}`,
           createdAt: "2026-07-22T00:01:00.000Z",
         } : {
-          id: "phase-2",
+          id: nextEventId,
           type: "phaseStepConfirmed" as const,
           phase: "firstNight" as const,
           payload: { stepId: command.payload.stepId, input: null },

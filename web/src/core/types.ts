@@ -20,6 +20,7 @@ export type SectsAndVioletsTab = "roles" | "seating" | "play" | "storage";
 
 export type SectsAndVioletsPhaseCheckpoint = {
   id: string;
+  eventIds?: string[];
   kind: "setup" | "phase";
   eventCount: number;
   summary: string;

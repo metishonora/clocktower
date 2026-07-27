@@ -175,7 +175,6 @@ export function SectsAndVioletsFoundation({
   const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
   const [replayState, setReplayState] = useState<ReplayState>();
   const [phaseCheckpoints, setPhaseCheckpoints] = useState<SectsAndVioletsPhaseCheckpoint[]>([]);
-  const [madnessJudgments, setMadnessJudgments] = useState<Record<string, MadnessCheckResult>>({});
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
   const [operationError, setOperationError] = useState<string>();
@@ -334,21 +333,7 @@ export function SectsAndVioletsFoundation({
   const identityRevealPlayer = replayState?.players.find(
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
-  const effectiveMadnessAssignments = useMemo(() => (
-    replayState?.madnessAssignments ?? []
-  ).map((assignment) => {
-    const legacyJudgment: MadnessCheckResult | undefined = assignment.status === "clear"
-      ? "clear"
-      : assignment.status === "violated" ? "violation" : undefined;
-    const judgment = madnessJudgments[assignment.assignmentId] ?? legacyJudgment;
-    return {
-      ...assignment,
-      status: judgment === "clear" ? "clear" as const
-        : judgment === "violation" ? "violated" as const
-          : "unchecked" as const,
-      canExecute: assignment.canExecute && judgment === "violation",
-    };
-  }), [madnessJudgments, replayState?.madnessAssignments]);
+  const effectiveMadnessAssignments = replayState?.madnessAssignments ?? [];
   const canonicalTokensByPlayerId = useMemo<PlayerTokensByPlayerId>(() => {
     const result: Record<string, PlayerTokenPresentation[]> = {};
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
@@ -407,9 +392,11 @@ export function SectsAndVioletsFoundation({
     const checkpointIndex = phaseCheckpoints.findIndex((checkpoint) => checkpoint.id === undoCheckpoint.id);
     if (checkpointIndex < 0) return [];
     const previousEventCount = phaseCheckpoints[checkpointIndex - 1]?.eventCount ?? 0;
+    const eventIds = undoCheckpoint.eventIds ? new Set(undoCheckpoint.eventIds) : undefined;
     return gameFile.game.events
-      .slice(previousEventCount, undoCheckpoint.eventCount)
-      .map((event, index) => ({ event, number: previousEventCount + index + 1 }))
+      .map((event, index) => ({ event, number: index + 1 }))
+      .filter(({ event, number }) => eventIds?.has(event.id)
+        ?? (number > previousEventCount && number <= undoCheckpoint.eventCount))
       .reverse();
   }, [gameFile.game.events, phaseCheckpoints, undoCheckpoint]);
   const visibleWarnings = (replayState?.warnings ?? []).filter(
@@ -603,7 +590,6 @@ export function SectsAndVioletsFoundation({
     autosaveRevision,
     demon,
     gameFile,
-    madnessJudgments,
     phaseCheckpoints,
     playerCount,
     rosterConfirmed,
@@ -705,7 +691,6 @@ export function SectsAndVioletsFoundation({
         seatingConfirmed,
       },
       phaseCheckpoints: structuredClone(phaseCheckpoints),
-      madnessJudgments: structuredClone(madnessJudgments),
     };
   }
 
@@ -797,14 +782,6 @@ export function SectsAndVioletsFoundation({
     setPhaseCheckpoints(
       storedSession?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
     );
-    const legacyJudgments = Object.fromEntries(
-      (replayed.madnessAssignments ?? []).flatMap((assignment): [string, MadnessCheckResult][] => {
-        if (assignment.status === "clear") return [[assignment.assignmentId, "clear"]];
-        if (assignment.status === "violated") return [[assignment.assignmentId, "violation"]];
-        return [];
-      }),
-    );
-    setMadnessJudgments(structuredClone(storedSession?.madnessJudgments ?? legacyJudgments));
     setActiveTab(restoredTab);
     setPlayPhase(
       replayed.phase === "firstNight" ? "firstNight" : replayed.phase === "day" ? "day" : "laterNight",
@@ -837,7 +814,6 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
-    setMadnessJudgments({});
     setAutosaveRecoveryBlocked(false);
     navigateToTab("seating");
     markAutosaveNeeded();
@@ -879,7 +855,6 @@ export function SectsAndVioletsFoundation({
     setGameFile(createSectsAndVioletsGameFile());
     setReplayState(undefined);
     setPhaseCheckpoints([]);
-    setMadnessJudgments({});
     setCanonicalDistribution(undefined);
     setOperationError(undefined);
     setAutosaveRecoveryBlocked(false);
@@ -1350,6 +1325,7 @@ export function SectsAndVioletsFoundation({
     setGameFile(nextGameFile);
     const checkpoint: SectsAndVioletsPhaseCheckpoint = {
       id: event.id,
+      eventIds: [event.id],
       kind: checkpointKind,
       eventCount: nextGameFile.game.events.length,
       summary: event.summary,
@@ -1359,7 +1335,10 @@ export function SectsAndVioletsFoundation({
       ? event.payload.nominationEventId
       : undefined;
     setPhaseCheckpoints((current) => linkedNominationId && current.at(-1)?.id === linkedNominationId
-      ? [...current.slice(0, -1), checkpoint]
+      ? [...current.slice(0, -1), {
+          ...checkpoint,
+          eventIds: [...(current.at(-1)?.eventIds ?? [linkedNominationId]), event.id],
+        }]
       : [...current, checkpoint]);
     setInformationStepId(undefined);
     setDayComplete(false);
@@ -1405,11 +1384,25 @@ export function SectsAndVioletsFoundation({
     setOperationBusy(false);
   };
 
-  const updateMadnessJudgment = (assignmentId: string, result: MadnessCheckResult) => {
-    if (operationBusy || madnessJudgments[assignmentId] === result) return;
+  const updateMadnessJudgment = async (assignmentId: string, result: MadnessCheckResult) => {
+    const assignment = replayState?.madnessAssignments?.find(
+      (candidate) => candidate.assignmentId === assignmentId,
+    );
+    const currentResult = assignment?.status === "clear"
+      ? "clear"
+      : assignment?.status === "violated" ? "violation" : undefined;
+    if (operationBusy || currentResult === result) return;
+    setOperationBusy(true);
     setOperationError(undefined);
-    setMadnessJudgments((current) => ({ ...current, [assignmentId]: result }));
-    markAutosaveNeeded();
+    await proposeAndApplyLiveCommand({
+      type: "recordMadnessCheck",
+      payload: {
+        assignmentId,
+        result,
+        expectedEventCount: gameFile.game.events.length,
+      },
+    });
+    setOperationBusy(false);
   };
 
   const executeMadness = async (assignmentId: string) => {
