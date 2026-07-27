@@ -140,6 +140,13 @@ fn transformation_is_atomic_retains_alignment_and_existing_character_is_no_chang
     );
     assert_eq!(target["identityHistory"].as_array().map(Vec::len), Some(1));
     assert_eq!(
+        target["abilityInstance"]["id"],
+        format!(
+            "{}:player-7",
+            changed["value"]["event"]["id"].as_str().unwrap()
+        )
+    );
+    assert_eq!(
         after["value"]["pendingIdentityReveals"],
         json!([{
             "sourceEventId": changed["value"]["event"]["id"],
@@ -157,7 +164,11 @@ fn transformation_is_atomic_retains_alignment_and_existing_character_is_no_chang
             .as_array()
             .unwrap()
             .iter()
-            .any(|step| step["id"] == "night:dreamer"),
+            .any(|step| {
+                step["id"]
+                    .as_str()
+                    .is_some_and(|id| id.contains(":ability:pit-hag-11:player-7:dreamer"))
+            }),
         "a newly created later-waking character acts this night: {after}"
     );
 
@@ -183,6 +194,40 @@ fn transformation_is_atomic_retains_alignment_and_existing_character_is_no_chang
         "mutant"
     );
     assert!(after_no_change["value"]["pendingIdentityReveals"].is_null());
+}
+
+#[test]
+fn creating_clockmaker_reveals_the_change_then_runs_start_knowing_immediately() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    let changed = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["clockmaker"] }
+            }
+        }),
+    );
+
+    let after = replay(&events);
+    assert_eq!(after["ok"], true, "replay failed: {after}");
+    assert_eq!(after["value"]["currentStep"]["character"], "clockmaker");
+    assert_eq!(after["value"]["currentStep"]["playerId"], "player-7");
+    assert!(after["value"]["currentStep"]["id"]
+        .as_str()
+        .unwrap()
+        .contains(changed["value"]["event"]["id"].as_str().unwrap()));
+    assert_eq!(
+        after["value"]["pendingIdentityReveals"][0]["payload"],
+        json!({
+            "kind": "characterChange",
+            "playerId": "player-7",
+            "alignment": "good",
+            "characterId": "clockmaker"
+        })
+    );
 }
 
 #[test]

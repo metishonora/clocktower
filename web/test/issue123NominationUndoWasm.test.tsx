@@ -47,6 +47,47 @@ test("undo treats a completed nomination and its vote as one action", async () =
   expect(screen.queryByRole("dialog", { name: "작업 실패" })).toBeNull();
 });
 
+test("repeated nominations stay in one nomination and voting phase on the progress screen", async () => {
+  const game = await gameAtFirstNomination();
+  const user = userEvent.setup();
+  render(
+    <SectsAndVioletsApp
+      coreAdapter={realWasmCore()}
+      storageDriver={new MemoryGameStorageDriver(game)}
+    />,
+  );
+
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const nominationPhaseCount = () => within(
+    within(app).getByRole("list", { name: "낮 순서" }),
+  ).getAllByText("지명 및 투표").length;
+  expect(nominationPhaseCount()).toBe(1);
+
+  await completeNominationAndReturn(user, app, 9, 8, [3]);
+  expect(nominationPhaseCount()).toBe(1);
+
+  await completeNominationAndReturn(user, app, 6, 1, [3]);
+  expect(nominationPhaseCount()).toBe(1);
+});
+
+async function completeNominationAndReturn(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+  nominator: number,
+  nominee: number,
+  voters: number[],
+) {
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${nominator}번 좌석`) }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${nominee}번 좌석`) }));
+  await user.click(within(app).getByRole("button", { name: `${nominator}번 → ${nominee}번 지명 확정` }));
+  for (const voter of voters) {
+    await user.click(within(app).getByRole("button", { name: new RegExp(`${voter}번 좌석`) }));
+  }
+  await user.click(within(app).getByRole("button", { name: `${voters.length}표로 투표 확정` }));
+  await user.click(await within(app).findByRole("button", { name: "투표 완료 →" }));
+}
+
 async function gameAtFirstNomination(): Promise<GameFile> {
   const players: SetupPlayerInput[] = [
     "mathematician",
@@ -98,6 +139,11 @@ async function gameAtFirstNomination(): Promise<GameFile> {
       command = {
         type: "confirmStep",
         payload: { stepId: step.id, input: { playerIds: ["player-1"] } },
+      };
+    } else if (step.requiredInput.kind === "madnessAssignment") {
+      command = {
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { playerIds: ["player-1"], characterId: "clockmaker" } },
       };
     } else {
       command = { type: "confirmStep", payload: { stepId: step.id, input: null } };

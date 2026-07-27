@@ -14,7 +14,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
-import { isCharacterChangeRevealPayload, isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
@@ -48,6 +48,7 @@ const inputKinds = new Set([
   "executionDeathDecision",
   "slayerDeathDecision",
   "demonSuccession",
+  "madnessAssignment",
   "day",
   "night",
 ]);
@@ -212,10 +213,12 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "nightDeathsAnnounced":
       if (
-        !hasExactKeys(payload, ["stepId", "playerIds"]) ||
+        !hasOnlyKeys(payload, ["stepId", "playerIds", "resurrectedPlayerIds"]) ||
         typeof payload.stepId !== "string" ||
         !Array.isArray(payload.playerIds) ||
-        !payload.playerIds.every(isString)
+        !payload.playerIds.every(isString) ||
+        (payload.resurrectedPlayerIds !== undefined &&
+          (!Array.isArray(payload.resurrectedPlayerIds) || !payload.resurrectedPlayerIds.every(isString)))
       ) throw invalidEvent();
       break;
     case "slayerAbilityUsed":
@@ -223,6 +226,39 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "dayActionRecorded":
       if (!isDayActionRecordedPayload(payload)) throw invalidEvent();
+      break;
+    case "madnessAssigned":
+      if (
+        !hasExactKeys(payload, ["stepId", "sourcePlayerId", "targetPlayerId", "requiredCharacterId"]) ||
+        typeof payload.stepId !== "string" ||
+        typeof payload.sourcePlayerId !== "string" ||
+        typeof payload.targetPlayerId !== "string" ||
+        !isKnownCharacter(payload.requiredCharacterId)
+      ) throw invalidEvent();
+      break;
+    case "madnessCheckRecorded":
+      if (
+        !hasExactKeys(payload, ["assignmentId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "result"]) ||
+        typeof payload.assignmentId !== "string" ||
+        typeof payload.sourcePlayerId !== "string" ||
+        !isMadnessSource(payload.sourceCharacterId) ||
+        typeof payload.targetPlayerId !== "string" ||
+        (payload.result !== "clear" && payload.result !== "violation")
+      ) throw invalidEvent();
+      break;
+    case "madnessExecutionConfirmed":
+      if (
+        !(
+          hasExactKeys(payload, ["assignmentId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"]) ||
+          hasExactKeys(payload, ["assignmentId", "checkEventId", "sourcePlayerId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"])
+        ) ||
+        typeof payload.assignmentId !== "string" ||
+        (payload.checkEventId !== undefined && typeof payload.checkEventId !== "string") ||
+        typeof payload.sourcePlayerId !== "string" ||
+        !isMadnessSource(payload.sourceCharacterId) ||
+        typeof payload.targetPlayerId !== "string" ||
+        typeof payload.interruptedStepId !== "string"
+      ) throw invalidEvent();
       break;
     case "demonSuccessionConfirmed":
       if (!isDemonSuccessionPayload(payload)) throw invalidEvent();
@@ -235,6 +271,9 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "pitHagArbitraryDeathsConfirmed":
       if (!isPitHagArbitraryDeathsPayload(payload)) throw invalidEvent();
+      break;
+    case "playerTransitioned":
+      if (!isPlayerTransitionedPayload(payload)) throw invalidEvent();
       break;
     case "playerAnnotationsUpdated":
       if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
@@ -303,6 +342,46 @@ function isConfirmedDayActionRecord(value: unknown): boolean {
     && value.characterId === value.record.kind;
 }
 
+function isMadnessSource(value: unknown): value is "mutant" | "cerenovus" {
+  return value === "mutant" || value === "cerenovus";
+}
+
+function isMadnessAssignment(value: unknown): boolean {
+  return isRecord(value)
+    && hasOnlyKeys(value, [
+      "assignmentId",
+      "sourcePlayerId",
+      "sourceCharacterId",
+      "targetPlayerId",
+      "requiredCharacterId",
+      "status",
+      "sourceEffective",
+      "canCheck",
+      "canExecute",
+      "violationCheckEventId",
+    ])
+    && typeof value.assignmentId === "string"
+    && typeof value.sourcePlayerId === "string"
+    && isMadnessSource(value.sourceCharacterId)
+    && typeof value.targetPlayerId === "string"
+    && (value.requiredCharacterId === undefined || isKnownCharacter(value.requiredCharacterId))
+    && ["unchecked", "clear", "violated"].includes(String(value.status))
+    && typeof value.sourceEffective === "boolean"
+    && typeof value.canCheck === "boolean"
+    && typeof value.canExecute === "boolean"
+    && isOptionalString(value.violationCheckEventId);
+}
+
+function isPendingMadnessExecution(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["eventId", "assignmentId", "sourceCharacterId", "targetPlayerId", "interruptedStepId"])
+    && typeof value.eventId === "string"
+    && typeof value.assignmentId === "string"
+    && isMadnessSource(value.sourceCharacterId)
+    && typeof value.targetPlayerId === "string"
+    && typeof value.interruptedStepId === "string";
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
@@ -325,6 +404,9 @@ export function parseReplayState(value: unknown): ReplayState {
       (!Array.isArray(value.availableDayActions) || !value.availableDayActions.every(isAvailableDayAction))) ||
     (value.dayActionRecords !== undefined &&
       (!Array.isArray(value.dayActionRecords) || !value.dayActionRecords.every(isConfirmedDayActionRecord))) ||
+    (value.madnessAssignments !== undefined &&
+      (!Array.isArray(value.madnessAssignments) || !value.madnessAssignments.every(isMadnessAssignment))) ||
+    (value.pendingMadnessExecution !== undefined && !isPendingMadnessExecution(value.pendingMadnessExecution)) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -683,7 +765,7 @@ function isPhaseOverviewItem(value: unknown): boolean {
   return (
     isPhaseStep(value) &&
     isRecord(value) &&
-    ["waiting", "current", "complete", "skipped", "needsFollowUp", "manualComplete", "notApplicable"].includes(
+    ["waiting", "current", "complete", "skipped", "needsFollowUp", "interrupted", "manualComplete", "notApplicable"].includes(
       String((value as unknown as Record<string, unknown>).status),
     )
   );
@@ -747,6 +829,7 @@ function isRuleState(value: unknown): boolean {
       "activePoison",
       "activeProtection",
       "unannouncedNightDeathPlayerIds",
+      "unannouncedNightResurrectionPlayerIds",
       "slayerAbility",
       "virginAbility",
       "butlerVote",
@@ -758,6 +841,8 @@ function isRuleState(value: unknown): boolean {
     (value.activeProtection === undefined || isActiveRuleEffect(value.activeProtection)) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) &&
     value.unannouncedNightDeathPlayerIds.every(isString) &&
+    (value.unannouncedNightResurrectionPlayerIds === undefined ||
+      (Array.isArray(value.unannouncedNightResurrectionPlayerIds) && value.unannouncedNightResurrectionPlayerIds.every(isString))) &&
     (value.slayerAbility === undefined ||
       (isRecord(value.slayerAbility) &&
         hasExactKeys(value.slayerAbility, ["actorPlayerId", "spent", "canUseNow"]) &&
@@ -1065,6 +1150,12 @@ function isPlayer(value: unknown): boolean {
     isSystemTokenList(value.systemTokenIds) &&
     isScriptTokenList(value.scriptTokens) &&
     typeof value.notes === "string" &&
+    (value.abilityInstance === undefined ||
+      (isRecord(value.abilityInstance) &&
+        hasExactKeys(value.abilityInstance, ["id", "characterId", "sourceEventId"]) &&
+        typeof value.abilityInstance.id === "string" &&
+        typeof value.abilityInstance.characterId === "string" &&
+        typeof value.abilityInstance.sourceEventId === "string")) &&
     (value.identityHistory === undefined ||
       (Array.isArray(value.identityHistory) && value.identityHistory.every(isIdentityHistoryEntry)))
   );
@@ -1095,6 +1186,29 @@ function isPlayerIdentityTransition(value: unknown): boolean {
     isIdentityState(value.after);
 }
 
+function isPlayerTransitionedPayload(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["stepId", "sourcePlayerId", "sourceCharacterId", "transitions"]) &&
+    typeof value.stepId === "string" &&
+    typeof value.sourcePlayerId === "string" &&
+    typeof value.sourceCharacterId === "string" &&
+    Array.isArray(value.transitions) && value.transitions.length > 0 &&
+    value.transitions.every((transition) =>
+      isRecord(transition) &&
+      hasExactKeys(transition, ["kind", "playerId", "before", "after"]) &&
+      (transition.kind === "characterChange" || transition.kind === "resurrection") &&
+      typeof transition.playerId === "string" &&
+      isPlayerStateSnapshot(transition.before) && isPlayerStateSnapshot(transition.after)
+    );
+}
+
+function isPlayerStateSnapshot(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["actualCharacter", "shownCharacter", "alignment", "alive"]) &&
+    typeof value.actualCharacter === "string" && typeof value.shownCharacter === "string" &&
+    (value.alignment === "good" || value.alignment === "evil") && typeof value.alive === "boolean";
+}
+
 function isActiveImpairment(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["kind", "playerId", "sourceEventId", "sourceCharacterId", "expires"]) &&
@@ -1111,7 +1225,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) > 0 &&
-    isCharacterChangeRevealPayload(value.payload);
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload));
 }
 
 function isPendingIdentityRevealList(value: unknown): boolean {

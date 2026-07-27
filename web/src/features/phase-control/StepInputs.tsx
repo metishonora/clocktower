@@ -539,6 +539,23 @@ function StepSpecificInput({
     );
   }
 
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return (
+      <div className="stepSpecificInput">
+        <label>
+          집착할 캐릭터
+          <CharacterSelect
+            value={selectedCharacterId}
+            options={characterInputOptions(step.requiredInput.allowedCharacterIds)}
+            includeEmpty
+            disabled={busy}
+            onChange={onCharacterChange}
+          />
+        </label>
+      </div>
+    );
+  }
+
   if (step.requiredInput.target === "characters") {
     return (
       <CharacterStepInput

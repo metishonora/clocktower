@@ -1,9 +1,9 @@
 import type { PendingIdentityReveal, Player } from "../../core/types";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { SectsAndVioletsReveal } from "../reveal/SectsAndVioletsReveal";
-import "./snakeCharmerIdentityReveal.css";
+import "./characterChangeReveal.css";
 
-export function SnakeCharmerIdentityReveal({
+export function CharacterChangeReveal({
   reveal,
   total,
   onConfirm,
@@ -12,6 +12,7 @@ export function SnakeCharmerIdentityReveal({
   total: number;
   onConfirm: () => void;
 }) {
+  if (reveal.payload.kind !== "characterChange") return null;
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const evil = reveal.payload.alignment === "evil";
   return (
@@ -33,7 +34,7 @@ export function SnakeCharmerIdentityReveal({
   );
 }
 
-export function SnakeCharmerIdentityRevealPrompt({
+export function CharacterChangeRevealPrompt({
   player,
   sequence,
   total,

@@ -127,6 +127,20 @@ export function parseSectsAndVioletsSessionState(
   const setup = parseSetup(value.setup);
   if (!Array.isArray(value.phaseCheckpoints)) throw invalidSession();
   const phaseCheckpoints = value.phaseCheckpoints.map(parseCheckpoint);
+  let madnessJudgments: Record<string, "clear" | "violation"> | undefined;
+  if (value.madnessJudgments !== undefined) {
+    if (
+      !isRecord(value.madnessJudgments) ||
+      !Object.values(value.madnessJudgments).every(
+        (judgment) => judgment === "clear" || judgment === "violation",
+      )
+    ) {
+      throw invalidSession();
+    }
+    madnessJudgments = Object.fromEntries(
+      Object.entries(value.madnessJudgments) as [string, "clear" | "violation"][],
+    );
+  }
   let previousEventCount = 0;
   for (const checkpoint of phaseCheckpoints) {
     if (checkpoint.eventCount <= previousEventCount || checkpoint.eventCount > eventCount) {
@@ -149,6 +163,7 @@ export function parseSectsAndVioletsSessionState(
     savedAt: value.savedAt,
     setup,
     phaseCheckpoints,
+    ...(madnessJudgments ? { madnessJudgments } : {}),
   };
 }
 

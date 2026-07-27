@@ -19,6 +19,9 @@ export function DayActionDock({
   phaseLabel,
   savantCategories,
   busy,
+  groupActive = true,
+  onGroupActivate = noop,
+  onGroupDeactivate = noop,
   onConfirm,
 }: {
   players: Player[];
@@ -26,14 +29,18 @@ export function DayActionDock({
   phaseLabel: string;
   savantCategories: SavantReferenceCategory[];
   busy: boolean;
+  groupActive?: boolean;
+  onGroupActivate?: () => void;
+  onGroupDeactivate?: () => void;
   onConfirm: (action: AvailableDayAction, record: DayActionRecordInput) => void;
 }) {
   const [activeKey, setActiveKey] = useState<string>();
-  const activeAction = availableActions.find((action) => actionKey(action) === activeKey);
+  const selectedAction = availableActions.find((action) => actionKey(action) === activeKey);
+  const activeAction = groupActive ? selectedAction : undefined;
 
   useEffect(() => {
-    if (activeKey && !activeAction) setActiveKey(undefined);
-  }, [activeAction, activeKey]);
+    if (activeKey && (!selectedAction || !groupActive)) setActiveKey(undefined);
+  }, [activeKey, groupActive, selectedAction]);
 
   if (availableActions.length === 0) return null;
 
@@ -46,7 +53,7 @@ export function DayActionDock({
       <div className={`snvDayActionScrollClearance${activeAction ? " open" : ""}`} aria-hidden="true" />
       {activeAction && activePlayer ? (
         <section
-          className="snvDayActionPanel"
+          className={`snvDayActionPanel snvDayActionPanel--${activeAction.characterId}`}
           role="dialog"
           aria-label={`${characterLabel(activeAction.characterId)} 능력 사용`}
         >
@@ -64,7 +71,7 @@ export function DayActionDock({
         {availableActions.map((action) => {
           const player = players.find((candidate) => candidate.id === action.actorPlayerId);
           if (!player) return null;
-          const selected = actionKey(action) === activeKey;
+          const selected = groupActive && actionKey(action) === activeKey;
           const asset = sectsAndVioletsCharacterAsset(action.characterId);
           const label = characterLabel(action.characterId);
           return (
@@ -75,7 +82,15 @@ export function DayActionDock({
               aria-label={selected ? `${label} 행동 창 닫기` : `${label} 행동 열기, ${player.seat}번 ${player.name}`}
               aria-expanded={selected}
               disabled={busy}
-              onClick={() => setActiveKey(selected ? undefined : actionKey(action))}
+              onClick={() => {
+                if (selected) {
+                  setActiveKey(undefined);
+                  onGroupDeactivate();
+                } else {
+                  onGroupActivate();
+                  setActiveKey(actionKey(action));
+                }
+              }}
             >
               {selected ? <span aria-hidden="true">×</span> : asset ? <img src={asset.src} alt={`${label} 공식 캐릭터 아이콘`} /> : <span aria-hidden="true">{label.slice(0, 1)}</span>}
             </button>
@@ -85,6 +100,8 @@ export function DayActionDock({
     </>
   );
 }
+
+function noop() {}
 
 function DayActionHeader({ action, player, phaseLabel }: {
   action: AvailableDayAction;
@@ -183,26 +200,28 @@ function JugglerForm({ busy, onComplete }: {
   const [correctCount, setCorrectCount] = useState(0);
   return (
     <div className="snvDayActionForm snvJugglerForm">
-      <div className="snvJugglerCountSummary"><span>정답 수</span><strong>{correctCount}</strong><small>공개 추측은 별도로 기록하지 않습니다.</small></div>
-      <div className="snvJugglerCountChoices" aria-label="곡예사 정답 수">
-        {[0, 1, 2, 3, 4, 5].map((count) => <button key={count} type="button" className={correctCount === count ? "selected" : ""} aria-pressed={correctCount === count} onClick={() => setCorrectCount(count)}>{count}</button>)}
-      </div>
+      <fieldset className="snvJugglerCountFieldset">
+        <legend>정답 개수</legend>
+        <div className="snvJugglerCountChoices">
+          {[0, 1, 2, 3, 4, 5].map((count) => <button key={count} type="button" className={correctCount === count ? "selected" : ""} aria-pressed={correctCount === count} onClick={() => setCorrectCount(count)}>{count}</button>)}
+        </div>
+      </fieldset>
       <button type="button" className="snvDayActionConfirm" disabled={busy} onClick={() => onComplete({ kind: "juggler", correctCount })}>첫 낮 추측 완료</button>
     </div>
   );
 }
 
 export function DayActionRecordHistory({ records }: { records: ConfirmedDayActionRecord[] }) {
-  if (records.length === 0) return null;
+  const historyRecords = records.filter((entry) => entry.record.kind !== "juggler");
+  if (historyRecords.length === 0) return null;
   return (
     <section className="snvDayActionHistory" aria-label="낮 자유 행동 기록">
       <h3>낮 자유 행동 기록</h3>
-      <ol>{records.map((entry) => (
+      <ol>{historyRecords.map((entry) => (
         <li key={entry.eventId}>
           <span>{dayActionDayLabel(entry.dayId)}</span>
           {entry.record.kind === "artist" ? <><strong>화가</strong><p>{entry.record.question}</p><em>답변 · {artistAnswerLabel(entry.record.answer)}</em></> : null}
           {entry.record.kind === "savant" ? <><strong>백치천재</strong><small>참고한 문장 · {entry.record.referenceSentences.length}개</small>{entry.record.referenceSentences.length ? <ul>{entry.record.referenceSentences.map((sentence) => <li key={sentence}>{sentence}</li>)}</ul> : <p>참고 문장 없이 정보 전달 완료</p>}</> : null}
-          {entry.record.kind === "juggler" ? <><strong>곡예사</strong><p>첫 낮 추측 완료 · 정답 {entry.record.correctCount}개</p></> : null}
         </li>
       ))}</ol>
     </section>

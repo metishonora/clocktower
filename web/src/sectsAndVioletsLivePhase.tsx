@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { ConfirmedDayActionRecord, DayState, PhaseStep, Player, ReplayState } from "./core/types";
+import type { ConfirmedDayActionRecord, DayState, PhaseOverviewItem, PhaseStep, Player, ReplayState } from "./core/types";
 import {
   PlayerTokenCountBadge,
   PlayerTokenDetailDialog,
@@ -19,8 +19,9 @@ import {
   PitHagSelectionPanel,
   type PitHagDemonIntent,
 } from "./features/pitHag/PitHagSelectionPanel";
+import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 
-export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "dreamer" | "seamstress";
+export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "dreamer" | "seamstress";
 export type LiveHandoff = {
   kind: LiveHandoffKind;
   complete: boolean;
@@ -48,6 +49,7 @@ export function SectsAndVioletsLiveProgress({
   onStartSnakeCharmer,
   onStartPitHag = () => undefined,
   onStartPitHagDeaths = () => undefined,
+  onStartCerenovus,
   onAdvance,
   onResolveManual,
 }: {
@@ -66,12 +68,17 @@ export function SectsAndVioletsLiveProgress({
   onStartSnakeCharmer: () => void;
   onStartPitHag?: () => void;
   onStartPitHagDeaths?: () => void;
+  onStartCerenovus: () => void;
   onAdvance: () => void;
   onResolveManual: (outcome: "handled" | "notApplicable") => void;
 }) {
   const step = replayState.currentStep;
   const dayState = replayState.dayState;
-  const candidate = playerById(replayState.players, dayState?.executionCandidate?.nomineeId);
+  const pendingMadnessExecution = replayState.pendingMadnessExecution;
+  const candidate = playerById(
+    replayState.players,
+    pendingMadnessExecution?.targetPlayerId ?? dayState?.executionCandidate?.nomineeId,
+  );
   const actor = playerById(replayState.players, step?.playerId);
   const isDay = replayState.phase === "day";
 
@@ -103,12 +110,30 @@ export function SectsAndVioletsLiveProgress({
             </div>
           </article>
         ) : step?.stepType === "execution" || step?.stepType === "executionDeath" ? (
-          <article className="snvCurrentStep issue116CurrentStep issue116ExecutionStep" role="group" aria-label="처형 결정">
+          <article className="snvCurrentStep issue116CurrentStep issue116ExecutionStep" role="group" aria-label={pendingMadnessExecution ? "집착 위반 처형 사망 확인" : "처형 결정"}>
             <div className="issue116ExecutionTarget">
-              <span>처형 대상</span>
-              <strong>{candidate?.name ?? "없음"}</strong>
+              <span>{pendingMadnessExecution ? "집착 위반 처형" : "처형 대상"}</span>
+              <strong>{candidate ? pendingMadnessExecution ? `${candidate.seat}번 ${candidate.name}` : candidate.name : "없음"}</strong>
             </div>
-            <button type="button" className="issue116ExecutionConfirm" disabled={operationBusy} onClick={onConfirmExecution}>확정</button>
+            <button
+              type="button"
+              className={`issue116ExecutionConfirm${pendingMadnessExecution ? " issue116NightTransitionAction" : ""}`}
+              disabled={operationBusy}
+              onClick={onConfirmExecution}
+            >{pendingMadnessExecution ? "처형 후 밤으로" : "확정"}</button>
+          </article>
+        ) : step?.character === "cerenovus" && step.requiredInput.kind === "madnessAssignment" && actor ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="세레노버스 집착 지정">
+            <CharacterDetailButton
+              details={sectsAndVioletsCharacterDetail("cerenovus")}
+              className="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            >
+              {sectsAndVioletsCharacterAsset("cerenovus") ? <img src={sectsAndVioletsCharacterAsset("cerenovus")!.src} alt="세레노버스 공식 캐릭터 아이콘" /> : null}
+              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>세레노버스</span><strong>{actor.name}</strong></div>
+            </CharacterDetailButton>
+            <p className="snvInformationAbility">{actorSummary}</p>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartCerenovus}>집착 지정</button></div>
           </article>
         ) : step?.character === "pitHag" && step.requiredInput.kind === "characterTransformation" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="마귀할멈 직업 변경">
@@ -160,6 +185,16 @@ export function SectsAndVioletsLiveProgress({
             <p className="issue116AbilitySummary">{actorSummary}</p>
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartDemonAttack}>← 공격</button></div>
           </article>
+        ) : step?.stepType === "announcement" && step.id.endsWith(":announceDeaths") ? (
+          <article className="snvCurrentStep issue116CurrentStep snvDayStep" role="group" aria-label="밤 결과 확인">
+            <h3>밤 결과 확인</h3>
+            <NightResultsAnnouncement
+              players={replayState.players}
+              deathPlayerIds={replayState.ruleState.unannouncedNightDeathPlayerIds}
+              resurrectionPlayerIds={replayState.ruleState.unannouncedNightResurrectionPlayerIds ?? []}
+            />
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onAdvance}>발표 완료</button></div>
+          </article>
         ) : step ? (
           <article className={`snvCurrentStep issue116CurrentStep${isDay ? " snvDayStep" : ""}`}>
             {actor && step.character ? (
@@ -204,6 +239,8 @@ export function SectsAndVioletsLiveGrimoire({
   characterId,
   pitHagDemonIntents = [],
   centerPrompt,
+  handoffSupplement,
+  handoffSupplementReady = true,
   operationBusy,
   tokensByPlayerId = {},
   dayActionRecords = [],
@@ -230,6 +267,8 @@ export function SectsAndVioletsLiveGrimoire({
   characterId?: string;
   pitHagDemonIntents?: PitHagDemonIntent[];
   centerPrompt?: ReactNode;
+  handoffSupplement?: ReactNode;
+  handoffSupplementReady?: boolean;
   operationBusy: boolean;
   tokensByPlayerId?: PlayerTokensByPlayerId;
   dayActionRecords?: ConfirmedDayActionRecord[];
@@ -256,7 +295,7 @@ export function SectsAndVioletsLiveGrimoire({
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -265,12 +304,32 @@ export function SectsAndVioletsLiveGrimoire({
     (character) => character.id === detailsPlayer?.actualCharacter,
   );
   const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
+  const detailsDayActionRecords = detailsPlayer
+    ? dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)
+    : [];
+  const jugglerCorrectCountsByPlayerId = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const record of dayActionRecords) {
+      if (record.record.kind === "juggler") {
+        counts[record.actorPlayerId] = Math.max(0, Math.min(5, record.record.correctCount));
+      }
+    }
+    return counts;
+  }, [dayActionRecords]);
+  const detailsJugglerRecord = [...detailsDayActionRecords]
+    .reverse()
+    .find((record) => record.record.kind === "juggler");
+  const detailsJugglerCorrectCount = detailsPlayer?.actualCharacter === "juggler"
+    && detailsJugglerRecord?.record.kind === "juggler"
+    ? detailsJugglerRecord.record.correctCount
+    : undefined;
   const informationTargetCount = handoff?.kind === "dreamer" ? 1 : handoff?.kind === "seamstress" ? 2 : 0;
   const ready = handoff?.kind === "nomination" ? Boolean(nominatorId && nomineeId)
     : handoff?.kind === "demon" || handoff?.kind === "snakeCharmer" ? Boolean(targetId)
       : handoff?.kind === "pitHag" ? Boolean(targetId && characterId)
         : handoff?.kind === "pitHagDeaths" ? true
-      : informationTargetCount > 0 ? targetIds.length === informationTargetCount : true;
+          : handoff?.kind === "cerenovus" ? Boolean(targetId) && handoffSupplementReady
+            : informationTargetCount > 0 ? targetIds.length === informationTargetCount : true;
 
   const closePlayerDetails = useCallback(() => {
     const returningPlayerId = detailsPlayerId;
@@ -303,6 +362,10 @@ export function SectsAndVioletsLiveGrimoire({
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
           {players.map((player, index) => {
             const playerTokens = tokensByPlayerId[player.id] ?? [];
+            const jugglerTokenCount = player.actualCharacter === "juggler"
+              ? jugglerCorrectCountsByPlayerId[player.id] ?? 0
+              : 0;
+            const playerTokenCount = playerTokens.length + jugglerTokenCount;
             const selected = handoff?.kind === "nomination"
               ? player.id === nominatorId || player.id === nomineeId
               : handoff?.kind === "vote" ? voterIds.includes(player.id)
@@ -314,7 +377,7 @@ export function SectsAndVioletsLiveGrimoire({
               : handoff?.kind === "vote" && selected ? "투표"
                 : handoff?.kind === "demon" && selected ? "공격 대상"
                   : handoff?.kind === "pitHagDeaths" && selected ? "임의 사망"
-                    : (handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
+                    : (handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "cerenovus" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
             const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
@@ -324,7 +387,7 @@ export function SectsAndVioletsLiveGrimoire({
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
               : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id)
-                : handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
+                : handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
                   : false;
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const showDeadVoteState = handoff?.kind === "nomination" || handoff?.kind === "vote";
@@ -336,7 +399,7 @@ export function SectsAndVioletsLiveGrimoire({
                   : ineligible ? "피지명 불가" : "피지명 가능"
               : undefined;
             const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
-            const tokenCountLabel = playerTokens.length > 0 ? `토큰 ${playerTokens.length}개` : "토큰 없음";
+            const tokenCountLabel = playerTokenCount > 0 ? `토큰 ${playerTokenCount}개` : "토큰 없음";
             const actor = actorId === player.id;
             const targetSeat = selectionRole === "공격 대상" || selectionRole === "선택 대상" || selectionRole === "임의 사망";
             const settledOther = Boolean(handoff?.complete && !actor && !targetSeat);
@@ -360,7 +423,7 @@ export function SectsAndVioletsLiveGrimoire({
                     else seatRefs.current.delete(player.id);
                   }}
                   type="button"
-                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
+                  className={`fixedSize assigned alignment-${player.alignment} kind-${player.characterKind}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " issue116SelectedSeat snvSeatStateSelected" : ""}${strongSelection ? " snvSeatStateStrong" : ""}${selectionClass}${ineligible ? " issue116IneligibleSeat" : ""}${settledOther ? " snvSettledOtherSeat" : ""}`}
                   aria-label={`${player.seat}번 좌석, ${player.name}, ${player.characterName}, ${seatStateLabels}`}
                   aria-pressed={handoff ? selected : undefined}
                   disabled={Boolean(handoff && (handoff.complete || ineligible || spentGhostCannotVote || operationBusy))}
@@ -387,7 +450,7 @@ export function SectsAndVioletsLiveGrimoire({
                 </button>
                 {!centerPrompt && (!handoff || handoff.complete) ? (
                   <PlayerTokenCountBadge
-                    count={playerTokens.length}
+                    count={playerTokenCount}
                     position={desktopPositions[index]}
                     mobilePosition={mobilePositions[index]}
                     theme={currentStep?.phase === "day" ? "day" : "night"}
@@ -409,7 +472,7 @@ export function SectsAndVioletsLiveGrimoire({
             <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
               {centerPrompt}
             </div>
-          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || informationTargetCount > 0 ? (
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || handoff.kind === "cerenovus" || informationTargetCount > 0 ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
@@ -454,8 +517,9 @@ export function SectsAndVioletsLiveGrimoire({
             ) : informationTargetCount > 0 ? (
               <dl>{targetIds.map((id, index) => <div key={id}><dt>{index + 1}번째</dt><dd>{playerLabel(playerById(players, id))}</dd></div>)}</dl>
             ) : (
-              <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "snakeCharmer" ? "선택 대상" : "공격 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
+              <dl><div><dt>행동자</dt><dd>{playerStateLabel(playerById(players, actorId))}</dd></div><div><dt>{handoff.kind === "demon" ? "공격 대상" : "선택 대상"}</dt><dd>{playerStateLabel(target)}</dd></div></dl>
             )}
+            {handoffSupplement}
             {handoff.complete ? (
               <button type="button" className={`issue116PrimaryAction${handoff.kind === "vote" ? " issue116VoteCompleteAction" : " issue116NextAction"}`} onClick={onReturn}>{handoff.kind === "vote" ? "투표 완료 →" : "다음 →"}</button>
             ) : (
@@ -477,7 +541,8 @@ export function SectsAndVioletsLiveGrimoire({
             alignment: detailsPlayer.alignment,
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
-          details={<DayActionRecordHistory records={dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)} />}
+          details={<DayActionRecordHistory records={detailsDayActionRecords} />}
+          jugglerCorrectCount={detailsJugglerCorrectCount}
           theme={currentStep?.phase === "day" ? "day" : "night"}
           onClose={closePlayerDetails}
         />
@@ -487,11 +552,12 @@ export function SectsAndVioletsLiveGrimoire({
 }
 
 function PhaseOverview({ replayState }: { replayState: ReplayState }) {
+  const overview = collapseNominationVotingSteps(replayState.phaseOverview);
   return (
     <ol className="snvPhaseOverview" aria-label={replayState.phase === "day" ? "낮 순서" : "이후 밤 순서"}>
-      {replayState.phaseOverview.map((step) => (
-        <li key={step.id} className={step.status === "current" ? "current" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
-          <span>{step.status === "current" ? "현재" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
+      {overview.map((step) => (
+        <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
+          <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
           <strong>{stepLabel(step)}</strong>
         </li>
       ))}
@@ -499,9 +565,28 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
   );
 }
 
+function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const nominationVotingSteps = steps.filter(isNominationVotingStep);
+  if (nominationVotingSteps.length < 2) return steps;
+  const current = nominationVotingSteps.find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? nominationVotingSteps.at(-1)!.status;
+  let inserted = false;
+  return steps.flatMap((step) => {
+    if (!isNominationVotingStep(step)) return [step];
+    if (inserted) return [];
+    inserted = true;
+    return [{ ...step, status: combinedStatus }];
+  });
+}
+
+function isNominationVotingStep(step: PhaseStep) {
+  return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
+}
+
 function stepLabel(step: PhaseStep) {
   const suffix = step.id.split(":").at(-1);
   if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
+  if (step.id.includes(":madnessExecution:")) return "집착 위반 처형 · 사망 확인";
   if (step.stepType === "execution" || step.stepType === "executionDeath") return "처형";
   if (step.stepType === "pitHagArbitraryDeaths") return "예측불허의 죽음";
   if (suffix === "announceDeaths") return "아침 사망 발표";
@@ -535,6 +620,7 @@ function handoffPanelTitle(kind: LiveHandoffKind, complete: boolean) {
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"
       : kind === "snakeCharmer" ? "뱀 조련사"
+        : kind === "cerenovus" ? "세레노버스 집착 지정"
         : kind === "dreamer" ? "꿈꾸는 자"
           : kind === "seamstress" ? "재봉사" : "악마 공격";
   return complete ? `${task} 결과` : task;
@@ -556,6 +642,7 @@ function confirmLabel(kind: LiveHandoffKind, nominator?: Player, nominee?: Playe
   if (kind === "vote") return `${votes}표로 투표 확정`;
   if (kind === "dreamer" || kind === "seamstress") return "선택 확정";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
+  if (kind === "cerenovus") return target ? `${playerLabel(target)} 집착 지정` : "집착 대상을 선택하세요";
   return target ? `${playerLabel(target)} 공격 확정` : "공격 대상을 선택하세요";
 }
 

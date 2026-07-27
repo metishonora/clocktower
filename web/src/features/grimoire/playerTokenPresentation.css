@@ -82,6 +82,7 @@
 .playerPinnedTokenArea li:first-child { transform: rotate(-4deg); }
 .playerPinnedTokenArea li:nth-child(2n) { transform: translateY(7px) rotate(4deg); }
 .playerPinnedTokenArea li:nth-child(3n) { transform: translateY(-4px) rotate(-2deg); }
+.playerPinnedTokenArea li.playerJugglerResultTokenItem { position: relative; width: 164px; height: 126px; flex-basis: 164px; transform: none; }
 
 .playerPinnedToken {
   position: relative;
@@ -104,6 +105,8 @@
 .playerPinnedToken.impairment { border-color: #69c4de; background: radial-gradient(circle at 38% 28%, #204c65, #101e2b 70%, #05090d); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(105, 196, 222, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
 .playerPinnedToken.relationship { border-color: #d59ac7; background: radial-gradient(circle at 38% 28%, #543050, #261626 70%, #0b060a); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(213, 154, 199, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
 .playerPinnedToken.usage { border-color: #dc907f; background: radial-gradient(circle at 38% 28%, #5d322e, #291817 70%, #0c0707); box-shadow: 0 10px 21px rgba(0, 0, 0, .48), inset 0 0 0 4px rgba(220, 144, 127, .17), inset 0 0 24px rgba(0, 0, 0, .72); }
+.playerPinnedToken.playerJugglerResultToken.zeroCorrect { border-color: #8b858f; background: radial-gradient(circle at 38% 28%, #514c55, #29262c 70%, #0e0d10); box-shadow: 0 10px 21px rgba(0, 0, 0, .45), inset 0 0 0 4px rgba(190, 184, 194, .15), inset 0 0 24px rgba(0, 0, 0, .64); }
+.playerJugglerResultToken { position: absolute; top: 0; left: calc(var(--juggler-token-index) * 8px); z-index: calc(var(--juggler-token-index) + 1); transform: rotate(var(--juggler-token-angle)); }
 .playerPinnedToken img, .playerPinnedTokenFallback { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .65)); }
 .playerPinnedTokenFallback { display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgba(255, 255, 255, .12); font: 900 1.4rem Georgia, serif; }
 .playerPinnedToken span, .playerPinnedToken strong { max-width: 102px; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
@@ -134,6 +137,11 @@
   border-color: #b96f62;
   background: radial-gradient(circle at 38% 28%, #fff3ef, #e9c2b9 72%, #ca8c7e);
   box-shadow: 0 10px 21px rgba(117, 66, 58, .2), inset 0 0 0 4px rgba(255, 255, 255, .34), inset 0 0 22px rgba(112, 51, 42, .12);
+}
+.playerPinnedTokenArea.day .playerJugglerResultToken.zeroCorrect {
+  border-color: #969098;
+  background: radial-gradient(circle at 38% 28%, #faf8fa, #d9d4da 72%, #aaa4ac);
+  box-shadow: 0 10px 21px rgba(71, 65, 74, .18), inset 0 0 0 4px rgba(255, 255, 255, .38), inset 0 0 22px rgba(67, 62, 69, .12);
 }
 .playerPinnedTokenArea.day .playerPinnedToken::before,
 .playerPinnedTokenArea.day .playerPinnedToken::after { background: rgba(77, 52, 84, .38); }
@@ -170,6 +178,7 @@
   .playerPinnedTokenArea { min-height: 150px; padding: 10px 8px; }
   .playerPinnedTokenArea ul { min-height: 130px; padding: 8px 4px; row-gap: 10px; }
   .playerPinnedTokenArea li { flex-basis: 84px; }
+  .playerPinnedTokenArea li.playerJugglerResultTokenItem { width: 148px; height: 112px; flex-basis: 148px; }
   .playerPinnedToken { width: 112px; height: 112px; padding: 11px 7px 9px; grid-template-rows: 16px 1fr 18px; }
   .playerPinnedToken img, .playerPinnedTokenFallback { width: 47px; height: 47px; }
 }

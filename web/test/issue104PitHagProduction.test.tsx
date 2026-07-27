@@ -155,6 +155,7 @@ test("names the final Pit-Hag death step 예측불허의 죽음 throughout the w
       onConfirmExecution={vi.fn()}
       onStartDemonAttack={vi.fn()}
       onStartSnakeCharmer={vi.fn()}
+      onStartCerenovus={vi.fn()}
       onStartPitHagDeaths={vi.fn()}
       onAdvance={vi.fn()}
       onResolveManual={vi.fn()}

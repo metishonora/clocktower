@@ -178,6 +178,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_identity_reveals: vec![],
         available_day_actions: vec![],
         day_action_records: vec![],
+        madness_assignments: vec![],
+        pending_madness_execution: None,
     })
 }
 
@@ -615,7 +617,9 @@ pub(crate) fn replay_phase_state(
                     PhaseStepStatus::Waiting if Some(step.id.as_str()) == current_step_id => {
                         PhaseStepStatus::Current
                     }
-                    PhaseStepStatus::Waiting | PhaseStepStatus::Current => PhaseStepStatus::Waiting,
+                    PhaseStepStatus::Waiting
+                    | PhaseStepStatus::Current
+                    | PhaseStepStatus::Interrupted => PhaseStepStatus::Waiting,
                 };
 
                 PhaseOverviewItem {
@@ -1331,6 +1335,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         active_poison,
         active_protection,
         unannounced_night_death_player_ids,
+        unannounced_night_resurrection_player_ids: vec![],
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,

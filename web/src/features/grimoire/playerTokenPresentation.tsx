@@ -63,14 +63,20 @@ export function PlayerTokenCountBadge({
 export function PlayerTokenList({
   tokens,
   theme,
+  jugglerResult,
 }: {
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
+  jugglerResult?: Readonly<{ correctCount: number; iconSrc?: string }>;
 }) {
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0 && !jugglerResult) return null;
+  const jugglerTokenCount = jugglerResult
+    ? Math.max(0, Math.min(5, jugglerResult.correctCount))
+    : undefined;
+  const visibleJugglerTokenCount = jugglerTokenCount === undefined ? 0 : Math.max(1, jugglerTokenCount);
   return (
     <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
-      <ul aria-label={`부착된 토큰 ${tokens.length}개`}>
+      <ul aria-label={`부착된 토큰 ${tokens.length + visibleJugglerTokenCount}개`}>
         {tokens.map((token) => (
           <li aria-label={`${token.label} · 출처 ${token.sourceLabel}`} key={token.instanceId}>
             <div className={`playerPinnedToken ${token.visualKind}`} title={token.description}>
@@ -86,6 +92,35 @@ export function PlayerTokenList({
             </div>
           </li>
         ))}
+        {jugglerResult && jugglerTokenCount !== undefined ? (
+          <li
+            className="playerJugglerResultTokenItem"
+            aria-label={`곡예사 정답 토큰 ${jugglerTokenCount}개`}
+          >
+            {Array.from({ length: visibleJugglerTokenCount }, (_, index) => {
+              const isTopToken = index === visibleJugglerTokenCount - 1;
+              return (
+                <div
+                  className={`playerPinnedToken usage playerJugglerResultToken${jugglerTokenCount === 0 ? " zeroCorrect" : ""}`}
+                  aria-hidden={isTopToken ? undefined : true}
+                  key={index}
+                  style={{
+                    "--juggler-token-index": index,
+                    "--juggler-token-angle": `${(index - (visibleJugglerTokenCount - 1) / 2) * 2}deg`,
+                  } as CSSProperties}
+                >
+                  {isTopToken ? (
+                    <>
+                      <span className="playerPinnedTokenSource">곡예사</span>
+                      {jugglerResult.iconSrc ? <img src={jugglerResult.iconSrc} alt="곡예사 공식 캐릭터 아이콘" /> : null}
+                      <strong>정답 • {jugglerTokenCount}개</strong>
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </li>
+        ) : null}
       </ul>
     </section>
   );
@@ -96,12 +131,14 @@ export function PlayerTokenDetailDialog({
   tokens,
   theme,
   details,
+  jugglerCorrectCount,
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
   details?: ReactNode;
+  jugglerCorrectCount?: number;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -174,7 +211,14 @@ export function PlayerTokenDetailDialog({
             <span>캐릭터 능력</span>
             <p>{player.characterAbility}</p>
           </section>
-          <PlayerTokenList tokens={tokens} theme={theme} />
+          <PlayerTokenList
+            tokens={tokens}
+            theme={theme}
+            jugglerResult={jugglerCorrectCount === undefined ? undefined : {
+              correctCount: jugglerCorrectCount,
+              iconSrc: player.characterIconSrc,
+            }}
+          />
           {details}
         </div>
       </section>

@@ -166,6 +166,10 @@ fn official_no_swap_and_vigormortis_swap_are_atomic_replayable_events() {
             "actualCharacter": "vigormortis", "shownCharacter": "vigormortis", "alignment": "evil",
             "alive": true, "ghostVoteUsed": false, "deathAnnounced": false,
             "systemTokenIds": [], "scriptTokens": [], "notes": "",
+            "abilityInstance": {
+                "id": format!("{}:player-1", swap["value"]["event"]["id"].as_str().unwrap()),
+                "characterId": "vigormortis", "sourceEventId": swap["value"]["event"]["id"]
+            },
             "identityHistory": [{
                 "sourceEventId": swap["value"]["event"]["id"], "phase": "firstNight",
                 "before": { "actualCharacter": "snakeCharmer", "shownCharacter": "snakeCharmer", "alignment": "good" },
@@ -291,6 +295,7 @@ fn ongoing_night_swap_moves_the_later_demon_action_and_poison_blocks_the_next_sw
         json!({ "kind": "noSwap", "reason": "actorImpaired" })
     );
     let replayed = replay(&events);
+    assert_eq!(replayed["ok"], true, "replay failed: {replayed}");
     assert_eq!(
         replayed["value"]["players"][0]["actualCharacter"],
         "vigormortis"

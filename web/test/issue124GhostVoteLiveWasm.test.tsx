@@ -79,7 +79,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(within(app).getByRole("button", { name: /1번 좌석/ }));
   await user.click(within(app).getByRole("button", { name: "1번 플레이어 1 선택 확정" }));
   await user.click(await within(app).findByRole("button", { name: "다음 →" }));
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await assignCerenovus(user, app);
   await revealCurrentInformation(user, app);
   await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
   await user.click(await within(app).findByRole("button", { name: "낮으로" }));
@@ -99,7 +99,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await acknowledgeSnakeCharmerSwap(user);
   await user.click(await within(app).findByRole("button", { name: "진행 →" }));
 
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await assignCerenovus(user, app);
   await completePitHagNoChange(user, app, 9);
   await user.click(await within(app).findByRole("button", { name: "← 공격" }));
   await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
@@ -246,6 +246,9 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   if (step.support === "manual") {
     return { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };
   }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-1"], characterId: "clockmaker" } } };
+  }
   if (step.character === "snakeCharmer") {
     const targetId = step.id.startsWith("firstNight") ? "player-1" : "player-3";
     return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: [targetId] } } };
@@ -254,6 +257,18 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
     return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-3"] } } };
   }
   return { type: "confirmStep", payload: { stepId: step.id, input: null } };
+}
+
+async function assignCerenovus(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  await user.click(await within(app).findByRole("button", { name: "집착 지정" }));
+  await user.click(within(app).getByRole("button", { name: /1번 좌석/ }));
+  await user.selectOptions(within(app).getByRole("combobox", { name: "집착할 캐릭터" }), "clockmaker");
+  await user.click(within(app).getByRole("button", { name: "1번 플레이어 1 집착 지정" }));
+  const prompt = await within(app).findByRole("dialog", { name: "집착 안내" });
+  await user.click(within(prompt).getByRole("button", { name: "공개" }));
+  const reveal = within(app).getByRole("dialog", { name: "세레노버스 집착 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(await within(app).findByRole("button", { name: "진행 →" }));
 }
 
 function setupPlayers(): SetupPlayerInput[] {

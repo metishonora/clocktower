@@ -59,6 +59,8 @@ pub(crate) enum RequiredInputKind {
     CharacterIds,
     #[serde(rename = "characterTransformation")]
     CharacterTransformation,
+    #[serde(rename = "madnessAssignment")]
+    MadnessAssignment,
     #[serde(rename = "setupInfo")]
     SetupInfo,
     #[serde(rename = "number")]
@@ -575,8 +577,17 @@ pub(crate) struct Player {
     pub(crate) system_token_ids: Vec<SystemTokenId>,
     pub(crate) script_tokens: Vec<ScriptTokenRef>,
     pub(crate) notes: String,
+    pub(crate) ability_instance: AbilityInstance,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) identity_history: Vec<IdentityHistoryEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityInstance {
+    pub(crate) id: String,
+    pub(crate) character_id: String,
+    pub(crate) source_event_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -602,6 +613,55 @@ pub(crate) struct PlayerIdentityTransition {
     pub(crate) player_id: String,
     pub(crate) before: IdentityState,
     pub(crate) after: IdentityState,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerStateSnapshot {
+    pub(crate) actual_character: String,
+    pub(crate) shown_character: String,
+    pub(crate) alignment: Alignment,
+    pub(crate) alive: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum PlayerTransition {
+    CharacterChange {
+        player_id: String,
+        before: PlayerStateSnapshot,
+        after: PlayerStateSnapshot,
+    },
+    Resurrection {
+        player_id: String,
+        before: PlayerStateSnapshot,
+        after: PlayerStateSnapshot,
+    },
+}
+
+impl PlayerTransition {
+    pub(crate) fn player_id(&self) -> &str {
+        match self {
+            Self::CharacterChange { player_id, .. } | Self::Resurrection { player_id, .. } => {
+                player_id
+            }
+        }
+    }
+    pub(crate) fn before(&self) -> &PlayerStateSnapshot {
+        match self {
+            Self::CharacterChange { before, .. } | Self::Resurrection { before, .. } => before,
+        }
+    }
+    pub(crate) fn after(&self) -> &PlayerStateSnapshot {
+        match self {
+            Self::CharacterChange { after, .. } | Self::Resurrection { after, .. } => after,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -662,6 +722,7 @@ impl CharacterKind {
 pub(crate) enum PhaseStepStatus {
     Waiting,
     Current,
+    Interrupted,
     Complete,
     Skipped,
     NeedsFollowUp,

@@ -62,7 +62,12 @@ impl ScriptRules {
                             | GameEventKind::SnakeCharmerActionResolved { .. }
                             | GameEventKind::PitHagTransformationResolved { .. }
                             | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
+                            | GameEventKind::PlayerTransitioned { .. }
+                            | GameEventKind::PlayerAnnotationsUpdated { .. }
                             | GameEventKind::DayActionRecorded { .. }
+                            | GameEventKind::MadnessAssigned { .. }
+                            | GameEventKind::MadnessCheckRecorded { .. }
+                            | GameEventKind::MadnessExecutionConfirmed { .. }
                     )
                 }) =>
             {
@@ -80,7 +85,9 @@ impl ScriptRules {
                 | Command::ConfirmStep { .. }
                 | Command::SkipStep { .. }
                 | Command::ResolveManualStep { .. }
-                | Command::RecordDayAction { .. },
+                | Command::RecordDayAction { .. }
+                | Command::RecordMadnessCheck { .. }
+                | Command::ExecuteMadness { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
             _ => Ok(()),

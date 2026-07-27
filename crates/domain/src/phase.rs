@@ -164,6 +164,23 @@ pub(crate) fn validate_required_input(
         }
         return Ok(());
     }
+    if input.kind == RequiredInputKind::MadnessAssignment {
+        let mut player_input = input.clone();
+        player_input.kind = RequiredInputKind::PlayerIds;
+        validate_required_input(&player_input, typed_value, players)?;
+        let character_id = typed_value
+            .as_ref()
+            .and_then(|value| value.character_id.as_ref())
+            .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+        if input
+            .allowed_character_ids
+            .as_ref()
+            .is_some_and(|allowed| !allowed.iter().any(|id| id == character_id))
+        {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        return Ok(());
+    }
     if input.kind == RequiredInputKind::SetupInfo {
         return validate_setup_info_input(
             input

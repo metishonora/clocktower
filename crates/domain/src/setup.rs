@@ -152,8 +152,10 @@ fn player_from_normalized_setup_input(
         .map(|kind| kind.alignment())
         .ok_or_else(|| ErrorKind::UnknownCharacter.into_error())?;
 
+    let player_id = normalized.id.expect("normalized player should have an id");
+    let ability_character = normalized.actual_character.clone();
     Ok(Player {
-        id: normalized.id.expect("normalized player should have an id"),
+        id: player_id.clone(),
         seat: normalized.seat,
         name: normalized.name,
         actual_character: normalized.actual_character,
@@ -167,6 +169,11 @@ fn player_from_normalized_setup_input(
         system_token_ids: vec![],
         script_tokens: vec![],
         notes: String::new(),
+        ability_instance: crate::model::AbilityInstance {
+            id: format!("setup:{player_id}"),
+            character_id: ability_character,
+            source_event_id: "setup".into(),
+        },
         identity_history: vec![],
     })
 }
