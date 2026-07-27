@@ -329,6 +329,7 @@ export type RuleState = {
   activePoison?: ActiveRuleEffect;
   activeProtection?: ActiveRuleEffect;
   unannouncedNightDeathPlayerIds: string[];
+  unannouncedNightResurrectionPlayerIds?: string[];
   slayerAbility?: { actorPlayerId: string; spent: boolean; canUseNow: boolean };
   virginAbility?: {
     actorPlayerId: string;
@@ -576,7 +577,7 @@ export type GameEvent = EventCommon &
       }
     | {
         type: "nightDeathsAnnounced";
-        payload: { stepId: string; playerIds: string[] };
+        payload: { stepId: string; playerIds: string[]; resurrectedPlayerIds?: string[] };
       }
     | {
         type: "slayerAbilityUsed";
@@ -653,6 +654,15 @@ export type GameEvent = EventCommon &
                 identityTransitions: PlayerIdentityTransition[];
                 impairment: ActiveImpairment;
               };
+        };
+      }
+    | {
+        type: "playerTransitioned";
+        payload: {
+          stepId: string;
+          sourcePlayerId: string;
+          sourceCharacterId: string;
+          transitions: PlayerTransition[];
         };
       }
     | {
@@ -760,7 +770,23 @@ export type Player = {
   systemTokenIds: SystemTokenId[];
   scriptTokens: ScriptTokenRef[];
   notes: string;
+  abilityInstance?: AbilityInstance;
   identityHistory?: IdentityHistoryEntry[];
+};
+
+export type AbilityInstance = {
+  id: string;
+  characterId: string;
+  sourceEventId: string;
+};
+
+export type PlayerStateSnapshot = IdentityState & { alive: boolean };
+
+export type PlayerTransition = {
+  kind: "characterChange" | "resurrection";
+  playerId: string;
+  before: PlayerStateSnapshot;
+  after: PlayerStateSnapshot;
 };
 
 export type IdentityState = {

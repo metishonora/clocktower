@@ -14,6 +14,7 @@ import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue116PhaseHandoffPrototype.css";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
+import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "snakeCharmer" | "cerenovus" | "dreamer" | "seamstress";
 export type LiveHandoff = {
@@ -156,6 +157,16 @@ export function SectsAndVioletsLiveProgress({
             </div>
             <p className="issue116AbilitySummary">{actorSummary}</p>
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartDemonAttack}>← 공격</button></div>
+          </article>
+        ) : step?.stepType === "announcement" && step.id.endsWith(":announceDeaths") ? (
+          <article className="snvCurrentStep issue116CurrentStep snvDayStep" role="group" aria-label="밤 결과 확인">
+            <h3>밤 결과 확인</h3>
+            <NightResultsAnnouncement
+              players={replayState.players}
+              deathPlayerIds={replayState.ruleState.unannouncedNightDeathPlayerIds}
+              resurrectionPlayerIds={replayState.ruleState.unannouncedNightResurrectionPlayerIds ?? []}
+            />
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onAdvance}>발표 완료</button></div>
           </article>
         ) : step ? (
           <article className={`snvCurrentStep issue116CurrentStep${isDay ? " snvDayStep" : ""}`}>

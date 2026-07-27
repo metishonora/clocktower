@@ -1,0 +1,9 @@
+.nightResultsAnnouncement { display: grid; margin-bottom: .8rem; }
+.nightResultsAnnouncement dl { display: grid; margin: 0; }
+.nightResultsAnnouncement dl > div { display: grid; min-height: 72px; align-items: center; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; border-top: 1px solid var(--line, rgba(229, 208, 237, .16)); }
+.nightResultsAnnouncement dl > div:last-child { border-bottom: 1px solid var(--line, rgba(229, 208, 237, .16)); }
+.nightResultsAnnouncement dt, .nightResultsAnnouncement dd { margin: 0; }
+.nightResultsAnnouncement dt { color: var(--muted, #ad9fb2); font-size: .78rem; font-weight: 850; }
+.nightResultsAnnouncement dd { overflow-wrap: anywhere; color: var(--ink, #f7eef9); font: 700 1.25rem/1.35 Georgia, serif; }
+.nightResultsAnnouncement .deaths dd { color: #dba1ad; }
+.nightResultsAnnouncement .resurrections dd { color: #9ad5b4; }

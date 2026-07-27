@@ -41,9 +41,9 @@ import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { SectsAndVioletsReveal } from "./features/reveal/SectsAndVioletsReveal";
 import {
-  SnakeCharmerIdentityReveal,
-  SnakeCharmerIdentityRevealPrompt,
-} from "./features/snakeCharmer/SnakeCharmerIdentityReveal";
+  CharacterChangeReveal,
+  CharacterChangeRevealPrompt,
+} from "./features/identity-change/CharacterChangeReveal";
 import {
   CerenovusMadnessReveal,
   CerenovusMadnessRevealPrompt,
@@ -1793,7 +1793,7 @@ export function SectsAndVioletsFoundation({
                 onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
               />
             ) : (
-              <SnakeCharmerIdentityRevealPrompt
+              <CharacterChangeRevealPrompt
                 player={identityRevealPlayer}
                 sequence={nextIdentityReveal.sequence}
                 total={pendingIdentityReveals.length}
@@ -2306,7 +2306,7 @@ export function SectsAndVioletsFoundation({
             onConfirm={acknowledgeIdentityReveal}
           />
         ) : (
-          <SnakeCharmerIdentityReveal
+          <CharacterChangeReveal
             reveal={nextIdentityReveal}
             total={pendingIdentityReveals.length}
             onConfirm={acknowledgeIdentityReveal}

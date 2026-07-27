@@ -1335,6 +1335,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         active_poison,
         active_protection,
         unannounced_night_death_player_ids,
+        unannounced_night_resurrection_player_ids: vec![],
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,

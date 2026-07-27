@@ -6,6 +6,7 @@ mod issue105_madness_scenarios;
 mod issue11_imp_attack_scenarios;
 mod issue11_succession_saint_scenarios;
 mod issue11_virgin_scenarios;
+mod issue129_ability_instance_scenarios;
 mod issue86_fortune_teller_former_imp_scenarios;
 mod issue88_butler_vote_scenarios;
 mod issue89_execution_succession_scenarios;

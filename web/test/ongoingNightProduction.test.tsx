@@ -282,14 +282,15 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    const announcement = await screen.findByLabelText("밤 사망 발표");
-    expect(within(announcement).getByText("사망자 없음")).toBeTruthy();
-    expect(within(announcement).queryByRole("img", { name: "사망" })).toBeNull();
+    const announcement = await screen.findByLabelText("밤 결과 확인");
+    expect(within(announcement).getByText("사망자:")).toBeTruthy();
+    expect(within(announcement).getAllByText("없음")).toHaveLength(2);
+    expect(within(announcement).getByText("부활:")).toBeTruthy();
     const playerStatusesBefore = within(screen.getByLabelText("라이브 마도서 좌석 맵"))
       .getAllByRole("button")
       .map((button) => button.getAttribute("aria-label"));
 
-    await user.click(screen.getByRole("button", { name: "사망자 없음 발표 확정" }));
+    await user.click(screen.getByRole("button", { name: "확인하고 낮 시작" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -317,7 +318,7 @@ describe("ongoing-night production UI", () => {
     });
     const initialReplay = replayWithRuleState(
       replayState({ currentStep, playerRoster }),
-      { unannouncedNightDeathPlayerIds: ["player-5"] },
+      { unannouncedNightDeathPlayerIds: ["player-5"], unannouncedNightResurrectionPlayerIds: ["player-4"] },
     );
     const core = createCoreHarness({
       initialReplay,
@@ -328,13 +329,13 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const announcement = await screen.findByLabelText("밤 사망 발표");
-    expect(within(announcement).getByRole("img", { name: "사망" })).toBeTruthy();
-    expect(within(announcement).getByText("5번")).toBeTruthy();
-    expect(within(announcement).getByText("하린")).toBeTruthy();
-    expect(within(announcement).queryByText("사망자 없음")).toBeNull();
+    const announcement = await screen.findByLabelText("밤 결과 확인");
+    expect(within(announcement).getByText("사망자:")).toBeTruthy();
+    expect(within(announcement).getByText("5번 하린")).toBeTruthy();
+    expect(within(announcement).getByText("부활:")).toBeTruthy();
+    expect(within(announcement).getByText("4번 도윤")).toBeTruthy();
     expect(within(announcement).queryByText(/살아있는 플레이어|생존자|6명/)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "사망 발표 확정" }));
+    await user.click(screen.getByRole("button", { name: "확인하고 낮 시작" }));
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
       payload: { stepId: "day2:announceDeaths", input: null },
@@ -528,6 +529,7 @@ function replayWithRuleState(
     activePoison?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
     activeProtection?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
     unannouncedNightDeathPlayerIds: string[];
+    unannouncedNightResurrectionPlayerIds?: string[];
   },
 ): ReplayState {
   return { ...state, ruleState } as unknown as ReplayState;
