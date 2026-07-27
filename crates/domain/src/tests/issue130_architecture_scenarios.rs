@@ -20,9 +20,9 @@ fn setup_event() -> Value {
             { "id": "player-2", "seat": 2, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
             { "id": "player-3", "seat": 3, "name": "Philosopher", "actualCharacter": "philosopher", "shownCharacter": "philosopher" },
             { "id": "player-4", "seat": 4, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
-            { "id": "player-5", "seat": 5, "name": "Juggler", "actualCharacter": "juggler", "shownCharacter": "juggler" },
+            { "id": "player-5", "seat": 5, "name": "Mutant", "actualCharacter": "mutant", "shownCharacter": "mutant" },
             { "id": "player-6", "seat": 6, "name": "Sage", "actualCharacter": "sage", "shownCharacter": "sage" },
-            { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "Fang Gu", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
         ] },
         "summary": "long session setup",
         "createdAt": "2026-07-27T00:00:00.000Z"
@@ -71,10 +71,51 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
         });
     }
 
+    if let Some(check) = step["informationPrompt"]["targetChecks"]
+        .as_array()
+        .and_then(|checks| checks.first())
+    {
+        return json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step_id,
+                "expectedEventCount": event_count,
+                "input": { "playerIds": check["targetPlayerIds"].clone() },
+                "deliveredResult": check["choices"][0]["result"].clone(),
+                "registrationJudgments": check["choices"][0]["registrationJudgments"].clone()
+            }
+        });
+    }
+
     match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
+        "nomination"
+            if state["value"]["dayState"]["nominations"]
+                .as_array()
+                .is_some_and(Vec::is_empty) =>
+        {
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": step_id,
+                    "expectedEventCount": event_count,
+                    "input": {
+                        "nominatorId": state["value"]["dayState"]["eligibleNominatorIds"][0].clone(),
+                        "nomineeId": state["value"]["dayState"]["eligibleNomineeIds"][0].clone()
+                    }
+                }
+            })
+        }
         "nomination" => json!({
             "type": "skipStep",
             "payload": { "stepId": step_id, "expectedEventCount": event_count }
+        }),
+        "nominationVote" => json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step_id,
+                "expectedEventCount": event_count,
+                "input": { "voterIds": [] }
+            }
         }),
         "executionDecision" => json!({
             "type": "confirmStep",
@@ -90,8 +131,8 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
                 "stepId": step_id,
                 "expectedEventCount": event_count,
                 "input": {
-                    "playerIds": [step["playerId"].clone()],
-                    "characterIds": ["pitHag"]
+                    "playerIds": ["player-2"],
+                    "characterIds": ["dreamer"]
                 }
             }
         }),
@@ -100,7 +141,15 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
             "payload": {
                 "stepId": step_id,
                 "expectedEventCount": event_count,
-                "input": { "playerIds": ["player-1"] }
+                "input": { "playerIds": ["player-6"] }
+            }
+        }),
+        "playerIds" if step["stepType"] == "pitHagArbitraryDeaths" => json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step_id,
+                "expectedEventCount": event_count,
+                "input": { "playerIds": [] }
             }
         }),
         _ => json!({
@@ -108,7 +157,8 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
             "payload": {
                 "stepId": step_id,
                 "expectedEventCount": event_count,
-                "input": null
+                "input": null,
+                "deliveredResult": step["informationPrompt"]["computedResult"].clone()
             }
         }),
     }
@@ -127,6 +177,30 @@ fn advance_to_day(target_cycle: usize) -> (Vec<Value>, Value) {
         assert_eq!(state["ok"], true, "replay failed: {state}");
         if state["value"]["currentStep"]["id"] == wanted_step_id {
             return (events, state_before_last);
+        }
+        if let Some(assignment) =
+            state["value"]["madnessAssignments"]
+                .as_array()
+                .and_then(|assignments| {
+                    assignments.iter().find(|assignment| {
+                        assignment["status"] == "unchecked" && assignment["canCheck"] == true
+                    })
+                })
+        {
+            state_before_last = state.clone();
+            let event_count = events.len();
+            append(
+                &mut events,
+                json!({
+                    "type": "recordMadnessCheck",
+                    "payload": {
+                        "assignmentId": assignment["assignmentId"].clone(),
+                        "expectedEventCount": event_count,
+                        "result": "clear"
+                    }
+                }),
+            );
+            continue;
         }
         state_before_last = state.clone();
         let event_count = events.len();
@@ -152,6 +226,34 @@ fn a_six_cycle_snv_session_has_replayable_unique_prefixes_and_exact_undo() {
             event["id"]
         );
     }
+    let event_types = events
+        .iter()
+        .filter_map(|event| event["type"].as_str())
+        .collect::<HashSet<_>>();
+    for required in [
+        "nominationStarted",
+        "nominationVoteConfirmed",
+        "nightActionResolved",
+        "madnessCheckRecorded",
+        "pitHagTransformationResolved",
+    ] {
+        assert!(
+            event_types.contains(required),
+            "long fixture is missing {required}"
+        );
+    }
+    let replayed = replay(&events);
+    assert!(
+        replayed["value"]["players"]
+            .as_array()
+            .is_some_and(|players| players.iter().any(|player| {
+                player["abilityInstance"]["sourceEventId"] != "setup"
+                    && player["identityHistory"]
+                        .as_array()
+                        .is_some_and(|history| !history.is_empty())
+            })),
+        "long fixture is missing a changed identity and acquired ability instance"
+    );
 
     for event_count in 1..=events.len() {
         let prefix_state = replay(&events[..event_count]);
@@ -235,6 +337,44 @@ fn import_rejects_a_missing_source_event_reference() {
         },
         "summary": "orphan",
         "createdAt": "2026-07-27T00:00:01.000Z"
+    }));
+
+    let result = replay(&events);
+
+    assert_eq!(
+        result["error"]["code"], "INVALID_EVENT_REFERENCE",
+        "{result}"
+    );
+}
+
+#[test]
+fn import_rejects_a_source_reference_that_points_forward_in_history() {
+    let mut events = vec![setup_event()];
+    events.push(json!({
+        "id": "deaths-before-transformation",
+        "type": "pitHagArbitraryDeathsConfirmed",
+        "phase": "night",
+        "payload": {
+            "stepId": "night:pitHagArbitraryDeaths",
+            "sourceTransformationEventId": "later-transformation",
+            "deaths": []
+        },
+        "summary": "forward reference",
+        "createdAt": "2026-07-27T00:00:01.000Z"
+    }));
+    events.push(json!({
+        "id": "later-transformation",
+        "type": "pitHagTransformationResolved",
+        "phase": "night",
+        "payload": {
+            "stepId": "night:pitHag:player-1",
+            "actorPlayerId": "player-1",
+            "targetPlayerId": "player-2",
+            "characterId": "dreamer",
+            "outcome": { "kind": "noChange", "reason": "characterAlreadyInPlay" }
+        },
+        "summary": "later transformation",
+        "createdAt": "2026-07-27T00:00:02.000Z"
     }));
 
     let result = replay(&events);

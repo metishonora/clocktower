@@ -199,6 +199,20 @@ pub(crate) struct PhaseStepCommandPayload {
 }
 
 impl Command {
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &[
+        "smoke",
+        "createGame",
+        "confirmStep",
+        "skipStep",
+        "resolveManualStep",
+        "useSlayerAbility",
+        "recordDayAction",
+        "recordMadnessCheck",
+        "executeMadness",
+        "endGame",
+        "updatePlayerAnnotations",
+    ];
+
     pub(crate) fn expected_event_count(&self) -> Option<usize> {
         match self {
             Self::Smoke | Self::CreateGame { .. } => None,
@@ -636,6 +650,38 @@ pub(crate) enum GameEventKind {
     PlayerAnnotationsUpdated {
         payload: PlayerAnnotationsUpdatedPayload,
     },
+}
+
+impl GameEventKind {
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &[
+        "smokeConfirmed",
+        "setupConfirmed",
+        "phaseStepConfirmed",
+        "phaseStepSkipped",
+        "phaseStepNeedsFollowUp",
+        "manualPhaseStepResolved",
+        "nominationVoteConfirmed",
+        "nominationStarted",
+        "executionConfirmed",
+        "noExecutionConfirmed",
+        "deathConfirmed",
+        "executionSurvivalConfirmed",
+        "redHerringAssigned",
+        "nightActionResolved",
+        "nightDeathsAnnounced",
+        "slayerAbilityUsed",
+        "dayActionRecorded",
+        "madnessAssigned",
+        "madnessCheckRecorded",
+        "madnessExecutionConfirmed",
+        "demonSuccessionConfirmed",
+        "snakeCharmerActionResolved",
+        "pitHagTransformationResolved",
+        "pitHagArbitraryDeathsConfirmed",
+        "playerTransitioned",
+        "gameEnded",
+        "playerAnnotationsUpdated",
+    ];
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

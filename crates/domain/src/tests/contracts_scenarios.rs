@@ -2,6 +2,38 @@ use super::support::*;
 use crate::*;
 use serde_json::{json, Value};
 
+use crate::contracts::{Command, GameEventKind};
+
+#[test]
+fn rust_and_typescript_wire_discriminators_stay_in_lockstep() {
+    let typescript = include_str!("../../../../web/src/core/wireDiscriminators.ts");
+    assert_eq!(
+        typescript_discriminators(typescript, "commandDiscriminators"),
+        Command::DISCRIMINATORS,
+    );
+    assert_eq!(
+        typescript_discriminators(typescript, "eventDiscriminators"),
+        GameEventKind::DISCRIMINATORS,
+    );
+}
+
+fn typescript_discriminators<'a>(source: &'a str, name: &str) -> Vec<&'a str> {
+    let declaration = format!("export const {name} = [");
+    let block = source
+        .split_once(&declaration)
+        .expect("TypeScript discriminator declaration")
+        .1
+        .split_once("] as const;")
+        .expect("TypeScript discriminator terminator")
+        .0;
+    block
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix('"'))
+        .filter_map(|line| line.strip_suffix(","))
+        .filter_map(|line| line.strip_suffix('"'))
+        .collect()
+}
+
 #[test]
 fn replay_empty_game_file_returns_core_result() {
     let actual: Value = serde_json::from_str(&replay_json(EMPTY_GAME)).unwrap();

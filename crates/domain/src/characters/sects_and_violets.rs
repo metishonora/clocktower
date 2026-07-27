@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+mod step_key;
+use step_key::{PhaseKey as SnvPhaseKey, SemanticStep as SnvSemanticStep, StepKey as SnvStepKey};
+
 #[cfg(test)]
 use std::cell::Cell;
 
@@ -26,13 +29,13 @@ use crate::{
     },
     error::{CoreError, ErrorKind},
     model::{
-        AbilityInstance, Alignment, BooleanInformationChoice, CharacterKind, ConfirmedInformation,
-        CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry, IdentityState,
-        InformationActor, InformationDeliveryMode, InformationPrompt, InformationResult,
-        InputTarget, NumberInformationChoice, Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus,
-        PhaseStepSupport, Player, PlayerIdentityTransition, PlayerStateSnapshot, PlayerTransition,
-        RequiredInput, RequiredInputKind, StepInput, StepType, TargetInformationCheck,
-        TargetInformationChoice,
+        AbilityInstance, AbilityInstanceId, Alignment, BooleanInformationChoice, CharacterKind,
+        ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry,
+        IdentityState, InformationActor, InformationDeliveryMode, InformationPrompt,
+        InformationResult, InputTarget, NumberInformationChoice, Phase, PhaseOverviewItem,
+        PhaseStep, PhaseStepStatus, PhaseStepSupport, Player, PlayerIdentityTransition,
+        PlayerStateSnapshot, PlayerTransition, RequiredInput, RequiredInputKind, StepInput,
+        StepType, TargetInformationCheck, TargetInformationChoice,
     },
     phase::{phase_transition_step, required_none, simple_step, validate_required_input},
     setup::{
@@ -555,20 +558,12 @@ fn first_day_for_ability_instance(actor: &Player, events: &[GameEvent]) -> Optio
         return Some("day".into());
     }
     let (_, step_id, _) = transition_source(actor, events)?;
-    let prefix = step_id.split(':').next()?;
-    if prefix == "firstNight" {
-        return Some("day".into());
+    let step = SnvStepKey::parse(step_id)?;
+    match step.phase() {
+        SnvPhaseKey::FirstNight | SnvPhaseKey::Day(1) => Some("day".into()),
+        SnvPhaseKey::Day(cycle) => Some(format!("day{cycle}")),
+        SnvPhaseKey::Night(cycle) => Some(format!("day{}", cycle + 1)),
     }
-    if prefix.starts_with("day") {
-        return Some(prefix.into());
-    }
-    let suffix = prefix.strip_prefix("night")?;
-    let cycle = if suffix.is_empty() {
-        1
-    } else {
-        suffix.parse::<usize>().ok()?
-    };
-    Some(format!("day{}", cycle + 1))
 }
 
 fn validate_day_action_payload(
@@ -651,7 +646,7 @@ fn confirmed_day_action_records(events: &[GameEvent]) -> Vec<ConfirmedDayActionR
 }
 
 fn madness_execution_death_step_id(event_id: &str, interrupted_step_id: &str) -> String {
-    let prefix = interrupted_step_id.split(':').next().unwrap_or("night");
+    let prefix = SnvStepKey::parse(interrupted_step_id).map_or("night", |step| step.phase_token());
     format!("{prefix}:madnessExecution:{event_id}:executionDeath")
 }
 
@@ -687,11 +682,12 @@ fn pending_madness_execution_event(
 fn day_execution_occurred(day_id: &str, events: &[GameEvent]) -> bool {
     events.iter().any(|event| match &event.kind {
         GameEventKind::ExecutionConfirmed { payload } => {
-            payload.step_id.starts_with(&format!("{day_id}:"))
+            SnvStepKey::parse(&payload.step_id).is_some_and(|step| step.is_in_phase(day_id))
         }
-        GameEventKind::MadnessExecutionConfirmed { payload } => payload
-            .interrupted_step_id
-            .starts_with(&format!("{day_id}:")),
+        GameEventKind::MadnessExecutionConfirmed { payload } => {
+            SnvStepKey::parse(&payload.interrupted_step_id)
+                .is_some_and(|step| step.is_in_phase(day_id))
+        }
         _ => false,
     })
 }
@@ -705,7 +701,8 @@ fn madness_assignments(
     let pending_execution = pending_madness_execution_event(events).is_some();
     let current_day_id = current_step
         .filter(|_| phase == Phase::Day)
-        .and_then(|step| step.id.split(':').next());
+        .and_then(|step| SnvStepKey::parse(&step.id))
+        .map(|step| step.phase_token());
     let execution_already_occurred =
         current_day_id.is_some_and(|day_id| day_execution_occurred(day_id, events));
     let impaired_players = active_snake_charmer_impairments(events)
@@ -1085,10 +1082,10 @@ fn ability_is_base_for_phase(player: &Player, prefix: &str, events: &[GameEvent]
     let Some((_, step_id, _)) = transition_source(player, events) else {
         return true;
     };
-    let Some(source_prefix) = step_id.split(':').next() else {
+    let Some(source_step) = SnvStepKey::parse(step_id) else {
         return false;
     };
-    phase_prefix_order(source_prefix)
+    phase_prefix_order(source_step.phase_token())
         .is_some_and(|source| phase_prefix_order(prefix).is_some_and(|target| source < target))
 }
 
@@ -1151,13 +1148,15 @@ fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[Game
                     && payload
                         .step_id
                         .as_deref()
-                        .and_then(|step_id| step_id.split(':').next())
+                        .and_then(SnvStepKey::parse)
+                        .map(|step| step.phase_token())
                         .is_some_and(|event_prefix| {
                             event_prefix == prefix || event_prefix == day_prefix
                         })
             }
             GameEventKind::NightActionResolved { payload }
-                if payload.step_id.split(':').next() == Some(prefix) =>
+                if SnvStepKey::parse(&payload.step_id)
+                    .is_some_and(|step| step.is_in_phase(prefix)) =>
             {
                 matches!(
                     &payload.resolution,
@@ -1168,7 +1167,8 @@ fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[Game
                 )
             }
             GameEventKind::PitHagArbitraryDeathsConfirmed { payload }
-                if payload.step_id.split(':').next() == Some(prefix) =>
+                if SnvStepKey::parse(&payload.step_id)
+                    .is_some_and(|step| step.is_in_phase(prefix)) =>
             {
                 payload
                     .deaths
@@ -1211,7 +1211,7 @@ fn insert_acquired_ability_steps(
         .iter()
         .filter_map(|player| {
             let (event, step_id, source_character) = transition_source(player, events)?;
-            if step_id.split(':').next()? != prefix {
+            if !SnvStepKey::parse(step_id)?.is_in_phase(prefix) {
                 return None;
             }
             Some((player, event, step_id, source_character))
@@ -1282,7 +1282,8 @@ fn insert_acquired_ability_steps(
         } else {
             let target_rank = later_night_wake_rank(character).unwrap_or(usize::MAX);
             steps.iter().position(|step| {
-                step.id.ends_with(":toDay")
+                SnvStepKey::parse(&step.id)
+                    .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
                     || step
                         .character
                         .as_deref()
@@ -1298,8 +1299,10 @@ fn insert_acquired_ability_steps(
 fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<PhaseStep> {
     let resolved_actor = events.iter().find_map(|event| match &event.kind {
         GameEventKind::NightActionResolved { payload }
-            if payload.step_id == format!("{prefix}:demon")
-                || payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+            if SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                step.is_in_phase(prefix)
+                    && matches!(step.semantic_step(), SnvSemanticStep::Demon { .. })
+            }) =>
         {
             payload
                 .actor_character_id
@@ -1307,13 +1310,18 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
                 .map(|character| (payload.actor_player_id.as_str(), character.as_str()))
         }
         GameEventKind::ManualPhaseStepResolved { payload }
-            if payload.step_id.starts_with(&format!("{prefix}:"))
-                && characters_of_kind(CharacterKind::Demon)
-                    .any(|demon| payload.step_id.ends_with(demon.as_str())) =>
+            if SnvStepKey::parse(&payload.step_id).is_some_and(|step| step.is_in_phase(prefix))
+                && characters_of_kind(CharacterKind::Demon).any(|demon| {
+                    SnvStepKey::parse(&payload.step_id)
+                        .is_some_and(|step| step.tail() == demon.as_str())
+                }) =>
         {
             players
                 .iter()
-                .find(|player| payload.step_id.ends_with(&player.actual_character))
+                .find(|player| {
+                    SnvStepKey::parse(&payload.step_id)
+                        .is_some_and(|step| step.tail() == player.actual_character)
+                })
                 .map(|player| (player.id.as_str(), player.actual_character.as_str()))
         }
         _ => None,
@@ -1363,7 +1371,10 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
 fn pit_hag_demon_creation<'a>(events: &'a [GameEvent], prefix: &str) -> Option<&'a GameEvent> {
     events.iter().find(|event| match &event.kind {
         GameEventKind::PitHagTransformationResolved { payload }
-            if payload.step_id.starts_with(&format!("{prefix}:pitHag:")) =>
+            if SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                step.is_in_phase(prefix)
+                    && matches!(step.semantic_step(), SnvSemanticStep::PitHag { .. })
+            }) =>
         {
             matches!(
                 payload.outcome,
@@ -1511,7 +1522,10 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
         let insert_at = steps
             .iter()
-            .position(|candidate| candidate.id.ends_with(":toDay"))
+            .position(|candidate| {
+                SnvStepKey::parse(&candidate.id)
+                    .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
+            })
             .unwrap_or(steps.len());
         steps.insert(insert_at, step);
     }
@@ -1664,9 +1678,10 @@ fn became_snake_charmer_from_swap_in_phase(
     events.iter().any(|event| match &event.kind {
         GameEventKind::SnakeCharmerActionResolved { payload }
             if payload.target_player_id == player_id
-                && payload
-                    .step_id
-                    .starts_with(&format!("{prefix}:snakeCharmer:")) =>
+                && SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                    step.is_in_phase(prefix)
+                        && matches!(step.semantic_step(), SnvSemanticStep::SnakeCharmer { .. })
+                }) =>
         {
             matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. })
         }
@@ -1690,12 +1705,8 @@ fn is_information_character(character: Option<&str>) -> bool {
 }
 
 fn preceding_day_prefix(step_id: &str) -> Option<String> {
-    let night_prefix = step_id.split(':').next()?;
-    let suffix = night_prefix.strip_prefix("night")?;
-    let cycle = if suffix.is_empty() {
-        1
-    } else {
-        suffix.parse().ok()?
+    let SnvPhaseKey::Night(cycle) = SnvStepKey::parse(step_id)?.phase() else {
+        return None;
     };
     Some(crate::phase::phase_prefix("day", cycle))
 }
@@ -1795,7 +1806,7 @@ fn automatic_information_reminders(
         return Ok(vec![]);
     };
     let day_prefix = match phase {
-        Phase::Day => step.id.split(':').next().map(str::to_string),
+        Phase::Day => SnvStepKey::parse(&step.id).map(|key| key.phase_token().to_string()),
         Phase::Night => preceding_day_prefix(&step.id),
         _ => None,
     };
@@ -1878,7 +1889,7 @@ fn snv_information_result(
             .and_then(|player_id| players.iter().find(|player| player.id == player_id))
             .and_then(|player| {
                 juggler_correct_count_for_night(
-                    step.id.split(':').next().unwrap_or_default(),
+                    SnvStepKey::parse(&step.id).map_or("", |key| key.phase_token()),
                     player,
                     events,
                 )
@@ -1892,7 +1903,7 @@ fn snv_information_result(
             .and_then(|player_id| players.iter().find(|player| player.id == player_id))
             .and_then(|player| {
                 sage_killer(
-                    step.id.split(':').next().unwrap_or_default(),
+                    SnvStepKey::parse(&step.id).map_or("", |key| key.phase_token()),
                     player,
                     events,
                 )
@@ -2348,7 +2359,10 @@ fn sage_killer(prefix: &str, sage: &Player, events: &[GameEvent]) -> Option<Stri
         .skip(acquisition_index.map_or(0, |index| index + 1))
         .find_map(|event| match &event.kind {
             GameEventKind::NightActionResolved { payload }
-                if payload.step_id.starts_with(&format!("{prefix}:demon:")) =>
+                if SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                    step.is_in_phase(prefix)
+                        && matches!(step.semantic_step(), SnvSemanticStep::Demon { .. })
+                }) =>
             {
                 let NightActionResolution::DemonAttack {
                     outcome: DemonAttackOutcome::Deaths { deaths },
@@ -2526,10 +2540,8 @@ fn apply_player_event(
                 DemonAttackOutcome::NoEffect {
                     reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
                 } => {
-                    let prefix = payload
-                        .step_id
-                        .split(":demon:")
-                        .next()
+                    let prefix = SnvStepKey::parse(&payload.step_id)
+                        .map(|step| step.phase_token())
                         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                     if pit_hag_demon_creation(&events[..event_index], prefix).is_none() {
                         return Err(ErrorKind::ReplayFailed.into_error());
@@ -2612,13 +2624,13 @@ fn apply_player_event(
             }) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
-            if !payload
-                .step_id
-                .ends_with(&format!(":snakeCharmer:{}", actor.id))
-                && !payload
-                    .step_id
-                    .ends_with(&format!(":{}:snakeCharmer", actor.id))
-            {
+            if !SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                matches!(
+                    step.semantic_step(),
+                    SnvSemanticStep::SnakeCharmer { actor_id: Some(actor_id) }
+                        if actor_id == actor.id
+                )
+            }) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
             let actor_before = identity_state(actor);
@@ -2708,7 +2720,7 @@ fn apply_player_event(
                 player.shown_character = transition.after.shown_character.clone();
                 player.alignment = transition.after.alignment;
                 player.ability_instance = AbilityInstance {
-                    id: format!("{}:{}", event.id, player.id),
+                    id: AbilityInstanceId::new(&event.id, &player.id),
                     character_id: player.actual_character.clone(),
                     source_event_id: event.id.clone(),
                 };
@@ -2726,7 +2738,13 @@ fn apply_player_event(
                 .iter()
                 .find(|player| player.id == payload.actor_player_id)
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
-            if !payload.step_id.ends_with(&format!(":pitHag:{}", actor.id)) {
+            if !SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
+                matches!(
+                    step.semantic_step(),
+                    SnvSemanticStep::PitHag { actor_id: Some(actor_id) }
+                        if actor_id == actor.id
+                )
+            }) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
             let target = players
@@ -2787,7 +2805,7 @@ fn apply_player_event(
                 target.actual_character = identity_transition.after.actual_character.clone();
                 target.shown_character = identity_transition.after.shown_character.clone();
                 target.ability_instance = AbilityInstance {
-                    id: format!("{}:{}", event.id, target.id),
+                    id: AbilityInstanceId::new(&event.id, &target.id),
                     character_id: target.actual_character.clone(),
                     source_event_id: event.id.clone(),
                 };
@@ -2842,7 +2860,7 @@ fn apply_player_event(
                 player.alignment = transition.after().alignment;
                 player.alive = transition.after().alive;
                 player.ability_instance = AbilityInstance {
-                    id: format!("{}:{}", event.id, player.id),
+                    id: AbilityInstanceId::new(&event.id, &player.id),
                     character_id: player.actual_character.clone(),
                     source_event_id: event.id.clone(),
                 };
@@ -3189,7 +3207,9 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     }
                     statuses.insert(
                         step.id.clone(),
-                        if step.id.ends_with(":toNight") {
+                        if SnvStepKey::parse(&step.id)
+                            .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToNight)
+                        {
                             PhaseStepStatus::ManualComplete
                         } else {
                             PhaseStepStatus::Skipped
@@ -3282,7 +3302,9 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 };
                 if phase != Phase::Day
                     || event.phase != Phase::Day
-                    || !current.is_some_and(|step| step.id.starts_with(&format!("{prefix}:")))
+                    || !current.is_some_and(|step| {
+                        SnvStepKey::parse(&step.id).is_some_and(|step| step.is_in_phase(prefix))
+                    })
                 {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
@@ -3388,22 +3410,26 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             GameEventKind::ManualPhaseStepResolved { .. } => {
                 players_at_event.iter().find(|player| {
                     !player.alive
-                        && event_step_id.ends_with(&format!(":{}", player.actual_character))
+                        && SnvStepKey::parse(event_step_id)
+                            .is_some_and(|step| step.tail() == player.actual_character)
                 })
             }
             _ => None,
         };
         let legacy_dead_character_step = current.id != *event_step_id
             && current.phase == event.phase
-            && current.id.split(':').next() == event_step_id.split(':').next()
+            && SnvStepKey::parse(&current.id)
+                .zip(SnvStepKey::parse(event_step_id))
+                .is_some_and(|(current, event)| current.phase() == event.phase())
             && legacy_dead_player.is_some_and(|player| {
-                event_step_id.ends_with(&format!(":{}", player.actual_character))
+                SnvStepKey::parse(event_step_id)
+                    .is_some_and(|step| step.tail() == player.actual_character)
             });
         if legacy_dead_character_step {
             if let GameEventKind::PhaseStepConfirmed { payload } = &event.kind {
                 let player =
                     legacy_dead_player.ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
-                let prefix = event_step_id.split(':').next().unwrap_or_default();
+                let prefix = SnvStepKey::parse(event_step_id).map_or("", |step| step.phase_token());
                 let legacy_step = character_step(
                     event.phase,
                     prefix,
@@ -3450,7 +3476,8 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current.character.as_deref().is_some_and(is_demon)
                 && current.character.as_ref().is_some_and(|character| {
-                    let prefix = current.id.split(":demon:").next().unwrap_or_default();
+                    let prefix =
+                        SnvStepKey::parse(&current.id).map_or("", |step| step.phase_token());
                     event_step_id == &format!("{prefix}:{character}")
                 });
         let legacy_player_scoped_step = current.player_id.as_ref().is_some_and(|player_id| {
@@ -3570,7 +3597,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
                 let source = pit_hag_demon_creation(
                     &events[..event_index],
-                    current.id.split(':').next().unwrap_or_default(),
+                    SnvStepKey::parse(&current.id).map_or("", |step| step.phase_token()),
                 )
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                 if payload.source_transformation_event_id != source.id {
@@ -3647,10 +3674,8 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         statuses.insert(current.id.clone(), status);
         if let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind {
             if matches!(payload.outcome, SnakeCharmerActionOutcome::Swap { .. }) {
-                let prefix = current
-                    .id
-                    .split(":snakeCharmer:")
-                    .next()
+                let prefix = SnvStepKey::parse(&current.id)
+                    .map(|step| step.phase_token())
                     .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                 statuses.insert(
                     format!("{prefix}:snakeCharmer:{}", payload.target_player_id),
@@ -4715,10 +4740,8 @@ fn propose_demon_attack(
         .iter()
         .find(|player| player.id == target_player_id)
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let prefix = step
-        .id
-        .split(":demon:")
-        .next()
+    let prefix = SnvStepKey::parse(&step.id)
+        .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
     let (outcome, outcome_label, warnings) = if pit_hag_created_demon {
@@ -4791,10 +4814,8 @@ fn propose_pit_hag_arbitrary_deaths(
         .as_ref()
         .and_then(|fields| fields.player_ids.clone())
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let prefix = step
-        .id
-        .split(':')
-        .next()
+    let prefix = SnvStepKey::parse(&step.id)
+        .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let source = pit_hag_demon_creation(&game_file.game.events, prefix)
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;

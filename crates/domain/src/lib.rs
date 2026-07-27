@@ -4,6 +4,7 @@ mod characters;
 mod contracts;
 mod day;
 mod error;
+mod identity;
 mod information;
 mod messages;
 mod model;
