@@ -170,7 +170,7 @@ fn player_from_normalized_setup_input(
         script_tokens: vec![],
         notes: String::new(),
         ability_instance: crate::model::AbilityInstance {
-            id: format!("setup:{player_id}"),
+            id: crate::model::AbilityInstanceId::new("setup", &player_id),
             character_id: ability_character,
             source_event_id: "setup".into(),
         },

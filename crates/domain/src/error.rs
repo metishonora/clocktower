@@ -17,6 +17,8 @@ pub(crate) enum ErrorKind {
     UnsupportedEvent,
     CommandNotSupportedByScript,
     EventNotSupportedByScript,
+    DuplicateEventId,
+    InvalidEventReference,
     MalformedRequest,
     InvalidPlayerCount,
     InvalidPlayer,
@@ -86,6 +88,14 @@ impl ErrorKind {
             Self::EventNotSupportedByScript => (
                 "EVENT_NOT_SUPPORTED_BY_SCRIPT",
                 "현재 스크립트에서 지원하지 않는 이벤트입니다.",
+            ),
+            Self::DuplicateEventId => (
+                "DUPLICATE_EVENT_ID",
+                "이벤트 ID가 중복되어 게임 파일을 불러올 수 없습니다.",
+            ),
+            Self::InvalidEventReference => (
+                "INVALID_EVENT_REFERENCE",
+                "이벤트가 존재하지 않거나 올바르지 않은 원본 이벤트를 참조합니다.",
             ),
             Self::MalformedRequest => ("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."),
             Self::InvalidPlayerCount => (

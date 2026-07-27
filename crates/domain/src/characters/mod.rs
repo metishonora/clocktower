@@ -3,8 +3,10 @@ mod trouble_brewing;
 
 #[cfg(test)]
 pub(crate) use sects_and_violets::{
+    event_application_count as snv_event_application_count,
     phase_step_build_count as snv_phase_step_build_count,
     replay_player_pass_count as snv_replay_player_pass_count,
+    reset_event_application_count as reset_snv_event_application_count,
     reset_phase_step_build_count as reset_snv_phase_step_build_count,
     reset_replay_player_pass_count as reset_snv_replay_player_pass_count,
 };

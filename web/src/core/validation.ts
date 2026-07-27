@@ -18,6 +18,7 @@ import { isCharacterChangeRevealPayload, isMadnessAssignmentRevealPayload, isRev
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
+import { eventDiscriminatorSet } from "./wireDiscriminators.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -116,6 +117,9 @@ export function parseGameEvent(value: unknown): GameEvent {
   }
 
   const payload = value.payload;
+  if (!eventDiscriminatorSet.has(value.type)) {
+    throw new Error("지원하지 않는 이벤트입니다.");
+  }
   switch (value.type) {
     case "smokeConfirmed":
       if (typeof payload.source !== "string") throw invalidEvent();

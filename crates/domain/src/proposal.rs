@@ -40,6 +40,12 @@ use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
     crate::characters::rules(game_file.script_id).validate_command(&command)?;
+    if command
+        .expected_event_count()
+        .is_some_and(|expected| expected != game_file.game.events.len())
+    {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
     if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
         return match command {
             Command::CreateGame { payload } => propose_create_game(&game_file, payload),

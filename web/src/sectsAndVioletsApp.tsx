@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SectsAndVioletsFoundation } from "./sectsAndVioletsFoundationPrototype";
+import { SectsAndVioletsGameSurface } from "./sectsAndVioletsGame";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { wasmCoreAdapter } from "./core/wasmClient";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
@@ -16,7 +16,7 @@ export function SectsAndVioletsApp({
     () => storageDriver ?? new IndexedDbGameStorageDriver(SECTS_AND_VIOLETS),
   );
   return (
-    <SectsAndVioletsFoundation
+    <SectsAndVioletsGameSurface
       coreAdapter={coreAdapter}
       storageDriver={storage}
       production

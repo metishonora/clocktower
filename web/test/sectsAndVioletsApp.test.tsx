@@ -52,9 +52,10 @@ const core = vi.hoisted(() => ({
       },
     };
   }),
-  propose: vi.fn(async (_gameFile, command) => {
+  propose: vi.fn(async (gameFile, command) => {
     const setup = command.type === "createGame";
     const manual = command.type === "resolveManualStep";
+    const nextEventId = `event-${gameFile.game.events.length + 1}`;
     return {
       ok: true as const,
       value: {
@@ -66,14 +67,14 @@ const core = vi.hoisted(() => ({
           summary: "초기 설정 확정: 7명",
           createdAt: "2026-07-22T00:00:00.000Z",
         } : manual ? {
-          id: "manual-2",
+          id: nextEventId,
           type: "manualPhaseStepResolved" as const,
           phase: command.payload.stepId.startsWith("day:") ? "day" as const : command.payload.stepId.startsWith("night:") ? "night" as const : "firstNight" as const,
           payload: command.payload,
           summary: `수동 단계 처리: ${command.payload.stepId}`,
           createdAt: "2026-07-22T00:01:00.000Z",
         } : {
-          id: "phase-2",
+          id: nextEventId,
           type: "phaseStepConfirmed" as const,
           phase: "firstNight" as const,
           payload: { stepId: command.payload.stepId, input: null },
@@ -99,8 +100,13 @@ const core = vi.hoisted(() => ({
 
 vi.mock("../src/core/wasmClient", () => ({ wasmCoreAdapter: core }));
 
+const defaultReplayImplementation = core.replay.getMockImplementation()!;
+const defaultProposeImplementation = core.propose.getMockImplementation()!;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  core.replay.mockReset().mockImplementation(defaultReplayImplementation);
+  core.propose.mockReset().mockImplementation(defaultProposeImplementation);
 });
 
 test("uses the approved setup, Grimoire, and progression shell on the production S&V route", async () => {
@@ -343,7 +349,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   const replayState = {
     schemaVersion: 3,
     scriptId: "sectsAndViolets",
-    eventCount: 8,
+    eventCount: 2,
     phase: "day",
     players,
     currentStep,
@@ -370,7 +376,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   core.replay
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
-    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: { ...replayState, eventCount: 3 } } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(players.map(({ seat, name, actualCharacter, shownCharacter }) => ({
     seat,
@@ -765,7 +771,9 @@ test("shows actionable replay warnings but not the expected pending night-death 
     ],
     gameEnd: null,
   } satisfies ReplayState;
-  core.replay.mockResolvedValue({ ok: true, value: warningState } as never);
+  core.replay
+    .mockResolvedValueOnce({ ok: true, value: warningState } as never)
+    .mockResolvedValueOnce({ ok: true, value: warningState } as never);
   const user = userEvent.setup();
   render(<SectsAndVioletsApp storageDriver={storage} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
@@ -833,7 +841,9 @@ test("places game warnings in layout before Grimoire reminder tokens", async () 
     }],
     gameEnd: null,
   } satisfies ReplayState;
-  core.replay.mockResolvedValue({ ok: true, value: replayState } as never);
+  core.replay
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
+    .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(setupPlayers));
 
   const user = userEvent.setup();

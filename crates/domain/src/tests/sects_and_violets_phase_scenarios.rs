@@ -132,6 +132,26 @@ fn manual_and_automated_steps_reject_the_wrong_resolution_path() {
     assert_eq!(rejected["error"]["code"], "STALE_STEP");
 }
 
+#[test]
+fn phase_mutations_reject_a_stale_event_count() {
+    let before = game(vec![setup_event()]);
+    let stale: Value = serde_json::from_str(&propose_json(
+        &before.to_string(),
+        &json!({
+            "type": "resolveManualStep",
+            "payload": {
+                "stepId": "firstNight:philosopher",
+                "outcome": "handled",
+                "expectedEventCount": 0
+            }
+        })
+        .to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(stale["error"]["code"], "STALE_COMMAND", "{stale}");
+}
+
 fn append_current_resolution(events: &mut Vec<Value>) -> Value {
     let before = game(events.clone());
     let state: Value = serde_json::from_str(&replay_json(&before.to_string())).unwrap();

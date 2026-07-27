@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, Discriminator, Game, GameEvent, GameFile, PhaseInputSuggestionRequest,
-        RawGameFile, SetupDistributionRequest,
+        Command, Discriminator, Game, GameEvent, GameEventKind, GameFile,
+        PhaseInputSuggestionRequest, RawGameFile, SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
+    identity::EventId,
 };
 
 pub(crate) fn replay_json(game_file_json: &str) -> String {
@@ -66,6 +69,7 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .into_iter()
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
+    validate_event_references(&events)?;
     crate::characters::rules(script_id).validate_replay_events(&events)?;
 
     Ok(GameFile {
@@ -78,25 +82,85 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     })
 }
 
+fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
+    let mut prior_by_id: HashMap<EventId, &GameEventKind> = HashMap::with_capacity(events.len());
+    for event in events {
+        let current_id = EventId::parse(&event.id)?;
+        if prior_by_id.contains_key(&current_id) {
+            return Err(ErrorKind::DuplicateEventId.into_error());
+        }
+        let require_prior = |event_id: &str, expected: fn(&GameEventKind) -> bool| {
+            EventId::parse(event_id)
+                .ok()
+                .and_then(|event_id| prior_by_id.get(&event_id))
+                .filter(|kind| expected(kind))
+                .ok_or_else(|| ErrorKind::InvalidEventReference.into_error())
+                .map(|_| ())
+        };
+        match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                if let Some(event_id) = payload.nomination_event_id.as_deref() {
+                    require_prior(event_id, |kind| {
+                        matches!(kind, GameEventKind::NominationStarted { .. })
+                    })?;
+                }
+            }
+            GameEventKind::DemonSuccessionConfirmed { payload } => {
+                require_prior(&payload.trigger_imp_death_event_id, |kind| {
+                    matches!(
+                        kind,
+                        GameEventKind::DeathConfirmed { .. }
+                            | GameEventKind::NightActionResolved { .. }
+                    )
+                })?
+            }
+            GameEventKind::MadnessExecutionConfirmed { payload } => {
+                if let Some(event_id) = payload.check_event_id.as_deref() {
+                    require_prior(event_id, |kind| {
+                        matches!(kind, GameEventKind::MadnessCheckRecorded { .. })
+                    })?;
+                }
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                require_prior(&payload.source_transformation_event_id, |kind| {
+                    matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                })?;
+                for death in &payload.deaths {
+                    if let crate::contracts::NightDeathCause::PitHagArbitraryDeath {
+                        source_transformation_event_id,
+                        ..
+                    } = &death.cause
+                    {
+                        require_prior(source_transformation_event_id, |kind| {
+                            matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                        })?;
+                    }
+                }
+            }
+            GameEventKind::SnakeCharmerActionResolved { payload } => {
+                if let crate::contracts::SnakeCharmerActionOutcome::Swap { impairment, .. } =
+                    &payload.outcome
+                {
+                    if impairment.source_event_id != event.id {
+                        require_prior(&impairment.source_event_id, |kind| {
+                            matches!(kind, GameEventKind::SnakeCharmerActionResolved { .. })
+                        })?;
+                    }
+                }
+            }
+            _ => {}
+        }
+        prior_by_id.insert(current_id, &event.kind);
+    }
+    Ok(())
+}
+
 pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
     let value: Value =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedCommand.into_error())?;
     let discriminator: Discriminator = serde_json::from_value(value.clone())
         .map_err(|_| ErrorKind::MalformedCommand.into_error())?;
-    if !matches!(
-        discriminator.kind.as_str(),
-        "smoke"
-            | "createGame"
-            | "confirmStep"
-            | "skipStep"
-            | "resolveManualStep"
-            | "useSlayerAbility"
-            | "recordDayAction"
-            | "recordMadnessCheck"
-            | "executeMadness"
-            | "endGame"
-            | "updatePlayerAnnotations"
-    ) {
+    if !Command::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedCommand.into_error());
     }
     serde_json::from_value(value).map_err(|_| ErrorKind::MalformedCommand.into_error())
@@ -105,36 +169,7 @@ pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
 pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     let discriminator: Discriminator = serde_json::from_value(value.clone())
         .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
-    if !matches!(
-        discriminator.kind.as_str(),
-        "smokeConfirmed"
-            | "setupConfirmed"
-            | "phaseStepConfirmed"
-            | "phaseStepSkipped"
-            | "phaseStepNeedsFollowUp"
-            | "manualPhaseStepResolved"
-            | "nominationVoteConfirmed"
-            | "nominationStarted"
-            | "executionConfirmed"
-            | "noExecutionConfirmed"
-            | "deathConfirmed"
-            | "executionSurvivalConfirmed"
-            | "redHerringAssigned"
-            | "nightActionResolved"
-            | "nightDeathsAnnounced"
-            | "slayerAbilityUsed"
-            | "dayActionRecorded"
-            | "madnessAssigned"
-            | "madnessCheckRecorded"
-            | "madnessExecutionConfirmed"
-            | "demonSuccessionConfirmed"
-            | "snakeCharmerActionResolved"
-            | "pitHagTransformationResolved"
-            | "pitHagArbitraryDeathsConfirmed"
-            | "playerTransitioned"
-            | "gameEnded"
-            | "playerAnnotationsUpdated"
-    ) {
+    if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
     serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())

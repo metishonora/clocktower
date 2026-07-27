@@ -60,7 +60,8 @@ export function exportLatestSectsAndVioletsCheckpoint(gameFile: GameFile): GameF
 export function latestUndoableSectsAndVioletsCheckpoint(
   gameFile: GameFile,
 ): SectsAndVioletsPhaseCheckpoint | undefined {
-  const checkpoints = gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? [];
+  const checkpoints = gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints
+    ?? inferSectsAndVioletsCheckpoints(gameFile, "play");
   for (let index = checkpoints.length - 1; index >= 0; index -= 1) {
     if (checkpoints[index].kind === "phase") return checkpoints[index];
   }
@@ -71,31 +72,34 @@ export function removeLatestSectsAndVioletsPhaseCheckpoint(
   gameFile: GameFile,
 ): { gameFile: GameFile; removed: SectsAndVioletsPhaseCheckpoint } | undefined {
   const session = gameFile.ui?.sectsAndVioletsSession;
-  if (!session) return undefined;
+  const checkpoints = session?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(gameFile, "play");
   let removeIndex = -1;
-  for (let index = session.phaseCheckpoints.length - 1; index >= 0; index -= 1) {
-    if (session.phaseCheckpoints[index].kind === "phase") {
+  for (let index = checkpoints.length - 1; index >= 0; index -= 1) {
+    if (checkpoints[index].kind === "phase") {
       removeIndex = index;
       break;
     }
   }
   if (removeIndex < 0) return undefined;
-  const removed = session.phaseCheckpoints[removeIndex];
-  const previousEventCount = session.phaseCheckpoints[removeIndex - 1]?.eventCount ?? 0;
-  const phaseCheckpoints = session.phaseCheckpoints.slice(0, removeIndex);
+  const removed = checkpoints[removeIndex];
+  const previousEventCount = checkpoints[removeIndex - 1]?.eventCount ?? 0;
+  const phaseCheckpoints = checkpoints.slice(0, removeIndex);
+  const removedEventIds = removed.eventIds ? new Set(removed.eventIds) : undefined;
+  const nextGameFile: GameFile = {
+    ...gameFile,
+    game: {
+      ...gameFile.game,
+      updatedAt: new Date().toISOString(),
+      events: removedEventIds
+        ? gameFile.game.events.filter((event) => !removedEventIds.has(event.id))
+        : gameFile.game.events.slice(0, previousEventCount),
+    },
+  };
   return {
     removed,
-    gameFile: withSectsAndVioletsSession(
-      {
-        ...gameFile,
-        game: {
-          ...gameFile.game,
-          updatedAt: new Date().toISOString(),
-          events: gameFile.game.events.slice(0, previousEventCount),
-        },
-      },
-      { ...session, phaseCheckpoints },
-    ),
+    gameFile: session
+      ? withSectsAndVioletsSession(nextGameFile, { ...session, phaseCheckpoints })
+      : nextGameFile,
   };
 }
 
@@ -103,13 +107,25 @@ export function inferSectsAndVioletsCheckpoints(
   gameFile: GameFile,
   activeTab: SectsAndVioletsTab,
 ): SectsAndVioletsPhaseCheckpoint[] {
-  return gameFile.game.events.map((event, index) => ({
-    id: event.id,
-    kind: event.type === "setupConfirmed" && index === 0 ? "setup" : "phase",
-    eventCount: index + 1,
-    summary: event.summary,
-    activeTab: event.type === "setupConfirmed" && index === 0 ? "seating" : activeTab,
-  }));
+  return gameFile.game.events.reduce<SectsAndVioletsPhaseCheckpoint[]>((checkpoints, event, index) => {
+    const checkpoint: SectsAndVioletsPhaseCheckpoint = {
+      id: event.id,
+      eventIds: [event.id],
+      kind: event.type === "setupConfirmed" && index === 0 ? "setup" : "phase",
+      eventCount: index + 1,
+      summary: event.summary,
+      activeTab: event.type === "setupConfirmed" && index === 0 ? "seating" : activeTab,
+    };
+    const nominationEventId = event.type === "nominationVoteConfirmed"
+      ? event.payload.nominationEventId
+      : undefined;
+    if (nominationEventId && checkpoints.at(-1)?.id === nominationEventId) {
+      const nomination = checkpoints.pop()!;
+      checkpoint.eventIds = [...(nomination.eventIds ?? [nomination.id]), event.id];
+    }
+    checkpoints.push(checkpoint);
+    return checkpoints;
+  }, []);
 }
 
 export function parseSectsAndVioletsSessionState(
@@ -222,12 +238,19 @@ function parseCheckpoint(value: unknown): SectsAndVioletsPhaseCheckpoint {
     !Number.isInteger(value.eventCount) ||
     Number(value.eventCount) < 1 ||
     typeof value.summary !== "string" ||
-    !isTab(value.activeTab)
+    !isTab(value.activeTab) ||
+    (value.eventIds !== undefined && (
+      !Array.isArray(value.eventIds) ||
+      value.eventIds.length === 0 ||
+      !value.eventIds.every((eventId) => typeof eventId === "string") ||
+      new Set(value.eventIds).size !== value.eventIds.length
+    ))
   ) {
     throw invalidSession();
   }
   return {
     id: value.id,
+    ...(value.eventIds ? { eventIds: [...value.eventIds] as string[] } : {}),
     kind: value.kind,
     eventCount: Number(value.eventCount),
     summary: value.summary,

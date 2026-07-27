@@ -25,7 +25,7 @@ test("undo removes every event in the latest completed S&V phase group", () => {
     [
       checkpoint("setup", "setup", 1),
       checkpoint("a", "phase", 3),
-      checkpoint("b", "phase", 5),
+      { ...checkpoint("b", "phase", 4), eventIds: ["b-1", "b-2"] },
     ],
   );
 
@@ -35,6 +35,20 @@ test("undo removes every event in the latest completed S&V phase group", () => {
   expect(undone?.gameFile.game.events.map((candidate) => candidate.id)).toEqual(["setup", "a-1", "a-2"]);
   expect(undone?.gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints.map((candidate) => candidate.id))
     .toEqual(["setup", "a"]);
+});
+
+test("canonical undo scope is unchanged when S&V UI session metadata is absent", () => {
+  const game = sessionGame(
+    [event("setup", "setupConfirmed"), nomination("nomination"), vote("vote", "nomination")],
+    [],
+  );
+  delete game.ui;
+
+  const undone = removeLatestSectsAndVioletsPhaseCheckpoint(game);
+
+  expect(undone?.removed.eventIds).toEqual(["nomination", "vote"]);
+  expect(undone?.gameFile.game.events.map((candidate) => candidate.id)).toEqual(["setup"]);
+  expect(undone?.gameFile.ui).toBeUndefined();
 });
 
 function sessionGame(events: GameEvent[], phaseCheckpoints: SectsAndVioletsSessionState["phaseCheckpoints"]): GameFile {
@@ -89,4 +103,37 @@ function event(id: string, type: "setupConfirmed" | "phaseStepConfirmed" = "phas
         summary: id,
         createdAt: "2026-07-22T00:00:00.000Z",
       };
+}
+
+function nomination(id: string): GameEvent {
+  return {
+    id,
+    type: "nominationStarted",
+    phase: "day",
+    payload: {
+      stepId: "day:nomination:1",
+      nominatorId: "player-1",
+      nomineeId: "player-2",
+      registrationJudgments: [],
+      virginResolution: { kind: "notApplicable" },
+    },
+    summary: id,
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+}
+
+function vote(id: string, nominationEventId: string): GameEvent {
+  return {
+    id,
+    type: "nominationVoteConfirmed",
+    phase: "day",
+    payload: {
+      stepId: "day:nomination:1",
+      nominationEventId,
+      voterIds: [],
+      ghostVoteSpentPlayerIds: [],
+    },
+    summary: id,
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
 }

@@ -1,6 +1,7 @@
 import { equal, notEqual } from "node:assert/strict";
 import test from "node:test";
-import { memoizeLatestJsonRequest } from "./latestJsonRequestCache.js";
+import type { GameFile } from "./types.js";
+import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
 
 test("consecutive structurally identical requests reuse the latest replay result", async () => {
   let requestCount = 0;
@@ -36,4 +37,37 @@ test("a rejected request is not retained as the latest replay result", async () 
 
   equal(await request(input), 2);
   equal(requestCount, 2);
+});
+
+test("a replay cache can ignore UI-only and timestamp changes", async () => {
+  let requestCount = 0;
+  const request = memoizeLatestJsonRequest(
+    async (serializedInput: string) => {
+      requestCount += 1;
+      return { serializedInput, requestCount };
+    },
+    serializeReplayRequest,
+  );
+  const firstInput = {
+    schemaVersion: 3,
+    ui: { sectsAndVioletsSession: undefined },
+    game: {
+      scriptId: "sectsAndViolets",
+      id: "game-1",
+      name: "first name",
+      createdAt: "created",
+      updatedAt: "one",
+      events: [],
+    },
+  } satisfies GameFile;
+  const first = request(firstInput);
+  const uiOnlyChange = request({
+    ...firstInput,
+    ui: undefined,
+    game: { ...firstInput.game, name: "renamed", updatedAt: "two" },
+  });
+
+  equal(first, uiOnlyChange);
+  equal((await uiOnlyChange).requestCount, 1);
+  equal(requestCount, 1);
 });

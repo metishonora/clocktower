@@ -585,9 +585,19 @@ pub(crate) struct Player {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct AbilityInstance {
-    pub(crate) id: String,
+    pub(crate) id: AbilityInstanceId,
     pub(crate) character_id: String,
     pub(crate) source_event_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(transparent)]
+pub(crate) struct AbilityInstanceId(String);
+
+impl AbilityInstanceId {
+    pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
+        Self(format!("{source_event_id}:{player_id}"))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

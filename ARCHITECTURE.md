@@ -128,6 +128,8 @@ characters/
   mod.rs
   trouble_brewing.rs
   sects_and_violets.rs
+  sects_and_violets/
+    step_key.rs
 ```
 
 - `lib.rs` owns only the public JSON entrypoints and intentional module declarations.
@@ -145,6 +147,9 @@ characters/
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
+- `identity.rs` owns validated event identities used while crossing the import/replay boundary.
+- `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
+  Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
 
 `GameFile.game.scriptId` is the canonical rules selector. `replay`, `propose`, and
 `suggestPhaseInput` obtain it from the file; `setupDistribution` receives it in its standalone
@@ -162,6 +167,12 @@ Group character catalogs and character-specific rules by Blood on the Clocktower
 - Add a new script by adding a new `characters/<script_name>.rs` file and connecting it through the narrow interface in `characters/mod.rs`; do not add script conditionals throughout the common engine.
 - Keep a rule in its script file when it has only one real caller. Extract shared behavior only after another script needs the same domain concept.
 - Keep generic setup, phase, day, night, replay, proposal, and message behavior outside script files.
+
+S&V is the current reference implementation for typed step identities and script lifecycle rules.
+Do not reshape Trouble Brewing merely to make both implementations look alike while S&V is still
+evolving. After S&V behavior is complete, reassess Trouble Brewing against the proven S&V seams and
+extract only concepts that are genuinely shared. Until then, keep the script-selection interface
+narrow and do not introduce a generic rules DSL or cross-script reducer abstraction.
 
 Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
 
@@ -182,6 +193,11 @@ screens/components
 - The game store owns loaded event logs, draft UI state, current replay result, autosave status, undo, import, and export.
 - The wasm client owns calls to `propose` and `replay`.
 - Screens and components own rendering, input collection, selection state, and reveal mode presentation.
+
+For S&V, `canonicalSessionController.ts` is the application boundary for propose, append, replay,
+and undo. It rejects stale proposals, duplicate event identities, and replay results that do not
+cover the exact canonical stream. React screens may own draft state, but they must not maintain an
+independent confirmed-event history or bypass this controller when mutating a session.
 
 Screens should not create canonical events directly. They should send Storyteller commands through the game store to the Rust core.
 
@@ -481,6 +497,12 @@ UI draft
 `Proposal` should contain the canonical event when the command can be confirmed, plus warnings, computed preview information, and follow-up step hints when relevant.
 
 TypeScript must not append an event that did not come from a proposal returned by Rust.
+
+Event identities and ability-instance identities are opaque typed values in the Rust domain. Import
+validates event IDs in stream order: IDs are non-blank and unique, and an event may reference only a
+previously confirmed event except for an explicitly documented self-reference contract. The
+checked-in TypeScript discriminator mirror is tested against Rust's command and event discriminator
+constants so boundary validation cannot silently drift from the canonical contracts.
 
 ### Delivered Information Contract
 

@@ -10,7 +10,8 @@ import type {
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
-import { memoizeLatestJsonRequest } from "./latestJsonRequestCache.js";
+import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
+import { withExpectedEventCount } from "./streamVersion.js";
 import {
   parseCoreResult,
   parseProposal,
@@ -35,10 +36,13 @@ async function ensureWasm(): Promise<void> {
   return initPromise;
 }
 
-const replayLatest = memoizeLatestJsonRequest<GameFile, CoreResult<ReplayState>>(async (gameFileJson) => {
-  await ensureWasm();
-  return parseCoreResult(JSON.parse(wasmReplay(gameFileJson)), parseReplayState);
-});
+const replayLatest = memoizeLatestJsonRequest<GameFile, CoreResult<ReplayState>>(
+  async (gameFileJson) => {
+    await ensureWasm();
+    return parseCoreResult(JSON.parse(wasmReplay(gameFileJson)), parseReplayState);
+  },
+  serializeReplayRequest,
+);
 
 export function replay(gameFile: GameFile): Promise<CoreResult<ReplayState>> {
   return replayLatest(gameFile);
@@ -49,8 +53,9 @@ export async function propose(
   command: Command,
 ): Promise<CoreResult<Proposal>> {
   await ensureWasm();
+  const versionedCommand = withExpectedEventCount(gameFile, command);
   return parseCoreResult(
-    JSON.parse(wasmPropose(JSON.stringify(gameFile), JSON.stringify(command))),
+    JSON.parse(wasmPropose(JSON.stringify(gameFile), JSON.stringify(versionedCommand))),
     parseProposal,
   );
 }
