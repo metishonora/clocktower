@@ -777,6 +777,76 @@ test("shows actionable replay warnings but not the expected pending night-death 
   expect(within(app).queryByRole("status", { name: "게임 경고" })).toBeNull();
 });
 
+test("places game warnings in layout before Grimoire reminder tokens", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const setupPlayers: SetupPlayerInput[] = [
+    "clockmaker", "dreamer", "snakeCharmer", "mathematician", "mutant", "evilTwin", "fangGu",
+  ].map((actualCharacter, index) => ({
+    id: `player-${index + 1}`,
+    seat: index + 1,
+    name: `플레이어 ${index + 1}`,
+    actualCharacter,
+    shownCharacter: actualCharacter,
+  }));
+  const players = setupPlayers.map((player, index) => ({
+    ...player,
+    id: player.id!,
+    shownCharacter: player.shownCharacter!,
+    alignment: index >= 5 ? "evil" as const : "good" as const,
+    alive: true,
+    ghostVoteUsed: false,
+    deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
+    notes: "",
+  }));
+  const currentStep = {
+    id: "day:discussion",
+    phase: "day" as const,
+    stepType: "discussion" as const,
+    requiredInput: { kind: "none" as const, optional: false },
+    canSkip: false,
+    support: "manual" as const,
+  };
+  const replayState = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "day",
+    players,
+    currentStep,
+    phaseOverview: [{ ...currentStep, status: "current" as const }],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-7",
+        characterId: "flowergirl",
+        tokenId: "demon-voted",
+        label: "악마 투표함",
+        description: "오늘 악마가 투표했습니다.",
+      }],
+    },
+    warnings: [{
+      code: "VORTOX_INFO",
+      severity: "warning",
+      messageKo: "보르톡스가 살아 있습니다. 정보가 거짓이어야 하는지 확인하세요.",
+    }],
+    gameEnd: null,
+  } satisfies ReplayState;
+  core.replay.mockResolvedValue({ ok: true, value: replayState } as never);
+  storage.savedGames.push(savedDayGame(setupPlayers));
+
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "마도서" }));
+
+  const warning = within(app).getByRole("status", { name: "게임 경고" });
+  const grimoire = within(app).getByRole("region", { name: "낮 마도서" });
+  expect(within(grimoire).getByText("+1")).toBeTruthy();
+  expect(warning.compareDocumentPosition(grimoire) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+});
+
 test("downloads the latest completed S&V checkpoint as JSON", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const user = userEvent.setup();

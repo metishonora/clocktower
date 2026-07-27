@@ -1712,6 +1712,16 @@ export function SectsAndVioletsFoundation({
           onClick={() => navigateToTab("play")}
         >{liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행"}</button>
       </nav>
+      {warningVisible ? (
+        <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
+          <span aria-hidden="true">!</span>
+          <div>
+            <strong>{visibleWarnings.length > 1 ? `게임 경고 · ${visibleWarnings.length}건` : "게임 경고"}</strong>
+            {visibleWarnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}
+          </div>
+          <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
+        </aside>
+      ) : null}
       {activeTab === "roles" ? (
         <section className="snvSetupSurface snvTabPanel" aria-label="S&V 설정 검토">
           <div className="snvSetupControls">
@@ -2288,16 +2298,6 @@ export function SectsAndVioletsFoundation({
             <footer><button ref={errorConfirmRef} type="button" onClick={() => setOperationError(undefined)}>확인</button></footer>
           </section>
         </div>
-      ) : null}
-      {warningVisible ? (
-        <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
-          <span aria-hidden="true">!</span>
-          <div>
-            <strong>{visibleWarnings.length > 1 ? `게임 경고 · ${visibleWarnings.length}건` : "게임 경고"}</strong>
-            {visibleWarnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}
-          </div>
-          <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
-        </aside>
       ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
         nextIdentityReveal.payload.kind === "madnessAssignment" ? (

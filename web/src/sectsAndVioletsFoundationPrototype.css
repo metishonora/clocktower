@@ -210,7 +210,7 @@
 .snvFailureDialog { border-color: rgba(255, 103, 126, .42); }
 .snvFailureDialog h2 { color: #ffb0bd; font-size: clamp(2.2rem, 7vw, 3rem); line-height: 1.05; }
 .snvFailureDialog footer button { border-color: #c55a70; color: #fff; background: #9e324b; }
-.snvWarningNotification { position: fixed; z-index: 140; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; box-sizing: border-box; width: min(520px, calc(100vw - 36px)); min-height: 82px; padding: 14px 14px 14px 16px; grid-template-columns: 34px minmax(0, 1fr) 36px; align-items: start; gap: 10px; border: 1px solid #d3a73d; border-radius: 17px; color: #33240b; background: #fff6d6; box-shadow: 0 18px 54px rgba(38, 25, 5, .32); }
+.snvWarningNotification { position: relative; z-index: 20; display: grid; box-sizing: border-box; width: min(520px, 100%); min-height: 82px; margin: 0 0 18px auto; padding: 14px 14px 14px 16px; grid-template-columns: 34px minmax(0, 1fr) 36px; align-items: start; gap: 10px; border: 1px solid #d3a73d; border-radius: 17px; color: #33240b; background: #fff6d6; box-shadow: 0 14px 38px rgba(38, 25, 5, .22); }
 .snvWarningNotification > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff8dd; background: #9c6e11; font-weight: 950; }
 .snvWarningNotification strong { font-size: .76rem; }
 .snvWarningNotification p { margin: 4px 0 0; font-size: .78rem; line-height: 1.45; }
@@ -409,7 +409,7 @@
   .snvStorageSurface .snvEventLog h2 { font-size: 1.5rem; }
   .snvScrollableEventList { max-height: 40dvh; }
   .snvScrollableEventList li { min-height: 60px; padding: 12px 16px; grid-template-columns: 27px minmax(0, 1fr); gap: 9px; }
-  .snvWarningNotification { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
+  .snvWarningNotification { width: 100%; margin-bottom: 12px; }
 }
 @keyframes snvMobilePanelSwapIn { from { transform: translateY(-12px); } to { transform: translateY(0); } }
 @keyframes snvSeatPanelIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
