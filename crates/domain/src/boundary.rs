@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, Discriminator, Game, GameEvent, GameFile, PhaseInputSuggestionRequest,
-        RawGameFile, SetupDistributionRequest,
+        Command, Discriminator, Game, GameEvent, GameEventKind, GameFile,
+        PhaseInputSuggestionRequest, RawGameFile, SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
 };
@@ -66,6 +68,7 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .into_iter()
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
+    validate_event_references(&events)?;
     crate::characters::rules(script_id).validate_replay_events(&events)?;
 
     Ok(GameFile {
@@ -76,6 +79,77 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
             events,
         },
     })
+}
+
+fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
+    let mut by_id = HashMap::with_capacity(events.len());
+    for event in events {
+        if by_id.insert(event.id.as_str(), &event.kind).is_some() {
+            return Err(ErrorKind::DuplicateEventId.into_error());
+        }
+    }
+
+    let require = |event_id: &str, expected: fn(&GameEventKind) -> bool| {
+        by_id
+            .get(event_id)
+            .filter(|kind| expected(kind))
+            .ok_or_else(|| ErrorKind::InvalidEventReference.into_error())
+            .map(|_| ())
+    };
+    for event in events {
+        match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                if let Some(event_id) = payload.nomination_event_id.as_deref() {
+                    require(event_id, |kind| {
+                        matches!(kind, GameEventKind::NominationStarted { .. })
+                    })?;
+                }
+            }
+            GameEventKind::DemonSuccessionConfirmed { payload } => {
+                require(&payload.trigger_imp_death_event_id, |kind| {
+                    matches!(
+                        kind,
+                        GameEventKind::DeathConfirmed { .. }
+                            | GameEventKind::NightActionResolved { .. }
+                    )
+                })?
+            }
+            GameEventKind::MadnessExecutionConfirmed { payload } => {
+                if let Some(event_id) = payload.check_event_id.as_deref() {
+                    require(event_id, |kind| {
+                        matches!(kind, GameEventKind::MadnessCheckRecorded { .. })
+                    })?;
+                }
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                require(&payload.source_transformation_event_id, |kind| {
+                    matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                })?;
+                for death in &payload.deaths {
+                    if let crate::contracts::NightDeathCause::PitHagArbitraryDeath {
+                        source_transformation_event_id,
+                        ..
+                    } = &death.cause
+                    {
+                        require(source_transformation_event_id, |kind| {
+                            matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                        })?;
+                    }
+                }
+            }
+            GameEventKind::SnakeCharmerActionResolved { payload } => {
+                if let crate::contracts::SnakeCharmerActionOutcome::Swap { impairment, .. } =
+                    &payload.outcome
+                {
+                    require(&impairment.source_event_id, |kind| {
+                        matches!(kind, GameEventKind::SnakeCharmerActionResolved { .. })
+                    })?;
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {

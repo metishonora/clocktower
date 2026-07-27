@@ -198,3 +198,49 @@ fn long_session_replay_keeps_current_operation_budgets_at_one_three_and_six_cycl
         );
     }
 }
+
+#[test]
+fn import_rejects_duplicate_event_ids_before_replay() {
+    let mut events = vec![setup_event()];
+    events.push(json!({
+        "id": "setup-long-session",
+        "type": "playerAnnotationsUpdated",
+        "phase": "setup",
+        "payload": {
+            "playerId": "player-1",
+            "systemTokenIds": [],
+            "scriptTokens": [],
+            "notes": "duplicate id"
+        },
+        "summary": "duplicate",
+        "createdAt": "2026-07-27T00:00:01.000Z"
+    }));
+
+    let result = replay(&events);
+
+    assert_eq!(result["error"]["code"], "DUPLICATE_EVENT_ID", "{result}");
+}
+
+#[test]
+fn import_rejects_a_missing_source_event_reference() {
+    let mut events = vec![setup_event()];
+    events.push(json!({
+        "id": "orphan-deaths",
+        "type": "pitHagArbitraryDeathsConfirmed",
+        "phase": "night",
+        "payload": {
+            "stepId": "night:pitHagArbitraryDeaths",
+            "sourceTransformationEventId": "missing-transformation",
+            "deaths": []
+        },
+        "summary": "orphan",
+        "createdAt": "2026-07-27T00:00:01.000Z"
+    }));
+
+    let result = replay(&events);
+
+    assert_eq!(
+        result["error"]["code"], "INVALID_EVENT_REFERENCE",
+        "{result}"
+    );
+}
