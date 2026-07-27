@@ -285,6 +285,67 @@ fn madness_execution_can_be_confirmed_without_a_check_event() {
 }
 
 #[test]
+fn cerenovus_assignment_clears_when_its_source_dies() {
+    let mut events = first_day_events();
+    for step_id in ["day:announceDeaths", "day:whisper", "day:discussion"] {
+        events.push(phase_event("phaseStepConfirmed", step_id));
+    }
+    append_proposal(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "day:nomination:1",
+                "input": { "nominatorId": "player-1", "nomineeId": "player-6" }
+            }
+        }),
+    );
+    append_proposal(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "day:nomination:1:vote",
+                "input": { "voterIds": ["player-1", "player-2", "player-3", "player-4"] }
+            }
+        }),
+    );
+    append_proposal(
+        &mut events,
+        json!({ "type": "skipStep", "payload": { "stepId": "day:nomination:2" } }),
+    );
+    append_proposal(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": "day:execution", "input": { "execute": true } }
+        }),
+    );
+
+    let pending = replay(&events);
+    let death_step_id = pending["value"]["currentStep"]["id"].as_str().unwrap();
+    append_proposal(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": death_step_id, "input": { "died": true } }
+        }),
+    );
+
+    let after_death = replay(&events);
+    assert_eq!(after_death["value"]["players"][5]["alive"], false);
+    let assignments = after_death["value"]["madnessAssignments"]
+        .as_array()
+        .expect("the living Mutant assignment remains available");
+    assert!(assignments
+        .iter()
+        .any(|assignment| assignment["sourceCharacterId"] == "mutant"));
+    assert!(!assignments
+        .iter()
+        .any(|assignment| assignment["sourceCharacterId"] == "cerenovus"));
+}
+
+#[test]
 fn daytime_madness_execution_ends_the_day_and_requires_death_confirmation() {
     let mut events = first_day_events();
     append_check(&mut events, "evt-ceren-assignment", "violation");

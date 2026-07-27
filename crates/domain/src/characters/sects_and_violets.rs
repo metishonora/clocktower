@@ -391,7 +391,7 @@ fn madness_assignments(
                 let target = players
                     .iter()
                     .find(|player| player.id == target_player_id)?;
-                if !target.alive {
+                if !source.alive || !target.alive {
                     return None;
                 }
                 let source_effective = source.alive
