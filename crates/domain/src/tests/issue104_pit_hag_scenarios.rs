@@ -20,6 +20,25 @@ fn setup_event() -> Value {
     })
 }
 
+fn valid_setup_event() -> Value {
+    json!({
+        "id": "setup-valid",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": { "players": [
+            { "id": "player-1", "seat": 1, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
+            { "id": "player-2", "seat": 2, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
+            { "id": "player-3", "seat": 3, "name": "Philosopher", "actualCharacter": "philosopher", "shownCharacter": "philosopher" },
+            { "id": "player-4", "seat": 4, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
+            { "id": "player-5", "seat": 5, "name": "Juggler", "actualCharacter": "juggler", "shownCharacter": "juggler" },
+            { "id": "player-6", "seat": 6, "name": "Sage", "actualCharacter": "sage", "shownCharacter": "sage" },
+            { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+        ] },
+        "summary": "valid initial setup",
+        "createdAt": "2026-07-27T00:00:00.000Z"
+    })
+}
+
 fn setup_event_for_creation(character: &str) -> Value {
     let mut setup = setup_event();
     for index in 1..7 {
@@ -149,6 +168,40 @@ fn pit_hag_requires_one_player_and_one_script_character() {
         .expect("character allowlist");
     assert!(characters.iter().any(|id| id == "mutant"));
     assert!(characters.iter().any(|id| id == "noDashii"));
+}
+
+#[test]
+fn pit_hag_character_kind_changes_do_not_create_setup_distribution_warnings() {
+    let mut events = vec![valid_setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    assert!(!pit_hag["value"]["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|warning| warning["code"] == "SETUP_DISTRIBUTION_MISMATCH"));
+
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-2"], "characterIds": ["noDashii"] }
+            }
+        }),
+    );
+
+    let changed = replay(&events);
+    assert_eq!(changed["ok"], true, "replay failed: {changed}");
+    assert_eq!(
+        changed["value"]["players"][1]["actualCharacter"],
+        "noDashii"
+    );
+    assert!(!changed["value"]["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|warning| warning["code"] == "SETUP_DISTRIBUTION_MISMATCH"));
 }
 
 #[test]

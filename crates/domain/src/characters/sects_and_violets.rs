@@ -3268,8 +3268,9 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             pending_madness_execution: None,
         });
     }
+    let initial_players = setup_players(&game_file.game.events)?;
     let players = replay_players(&game_file.game.events)?;
-    let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &players);
+    let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
     let (phase, current_step, phase_overview) = phase_state(&players, &game_file.game.events)?;
     let day_state = if phase == Phase::Day {
         current_step
