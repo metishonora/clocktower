@@ -3,8 +3,8 @@ use serde_json::Value;
 
 use crate::model::{
     Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase,
-    PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, RegistrationJudgment,
-    ScriptTokenRef, StepInput, SystemTokenId,
+    PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, PlayerTransition,
+    RegistrationJudgment, ScriptTokenRef, StepInput, SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -332,6 +332,8 @@ pub(crate) struct RuleState {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) active_protection: Option<ActiveRuleEffect>,
     pub(crate) unannounced_night_death_player_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) unannounced_night_resurrection_player_ids: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) slayer_ability: Option<crate::model::SlayerAbilityState>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -596,12 +598,23 @@ pub(crate) enum GameEventKind {
     SnakeCharmerActionResolved {
         payload: SnakeCharmerActionResolvedPayload,
     },
+    #[serde(rename = "playerTransitioned")]
+    PlayerTransitioned { payload: PlayerTransitionedPayload },
     #[serde(rename = "gameEnded")]
     GameEnded { payload: GameEndedPayload },
     #[serde(rename = "playerAnnotationsUpdated")]
     PlayerAnnotationsUpdated {
         payload: PlayerAnnotationsUpdatedPayload,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerTransitionedPayload {
+    pub(crate) step_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_character_id: String,
+    pub(crate) transitions: Vec<PlayerTransition>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -976,6 +989,8 @@ pub(crate) enum ImpNoDeathReason {
 pub(crate) struct NightDeathsAnnouncedPayload {
     pub(crate) step_id: String,
     pub(crate) player_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) resurrected_player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

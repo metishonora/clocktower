@@ -5618,26 +5618,52 @@ select {
   padding: 0.8rem 0.9rem;
 }
 
-.nightDeathAnnouncement {
+.nightResultsAnnouncement {
   display: grid;
-  gap: 0.5rem;
   margin-bottom: 0.8rem;
 }
 
-.nightDeathAnnouncement > div {
+.nightResultsAnnouncement dl {
   display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 0.55rem;
-  align-items: center;
-  border-radius: 0.75rem;
-  background: rgba(143, 29, 38, 0.2);
-  padding: 0.75rem 0.9rem;
+  margin: 0;
 }
 
-.nightDeathAnnouncement > .empty {
-  grid-template-columns: 1fr;
-  background: rgba(255, 255, 255, 0.06);
+.nightResultsAnnouncement dl > div {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+
+.nightResultsAnnouncement dl > div:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.nightResultsAnnouncement dt,
+.nightResultsAnnouncement dd {
+  margin: 0;
+}
+
+.nightResultsAnnouncement dt {
   color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.nightResultsAnnouncement dd {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font: 700 1.25rem/1.35 Georgia, serif;
+}
+
+.nightResultsAnnouncement .deaths dd {
+  color: #dba1ad;
+}
+
+.nightResultsAnnouncement .resurrections dd {
+  color: #9ad5b4;
 }
 
 .targetInformationChoices {

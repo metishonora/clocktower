@@ -453,6 +453,7 @@ pub(crate) fn propose_phase_step(
                 payload: NightDeathsAnnouncedPayload {
                     step_id: current_step.id.clone(),
                     player_ids,
+                    resurrected_player_ids: vec![],
                 },
             },
             summary,

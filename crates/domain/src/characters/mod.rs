@@ -60,6 +60,8 @@ impl ScriptRules {
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }
                             | GameEventKind::SnakeCharmerActionResolved { .. }
+                            | GameEventKind::PlayerTransitioned { .. }
+                            | GameEventKind::PlayerAnnotationsUpdated { .. }
                             | GameEventKind::DayActionRecorded { .. }
                             | GameEventKind::MadnessAssigned { .. }
                             | GameEventKind::MadnessCheckRecorded { .. }

@@ -211,10 +211,12 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "nightDeathsAnnounced":
       if (
-        !hasExactKeys(payload, ["stepId", "playerIds"]) ||
+        !hasOnlyKeys(payload, ["stepId", "playerIds", "resurrectedPlayerIds"]) ||
         typeof payload.stepId !== "string" ||
         !Array.isArray(payload.playerIds) ||
-        !payload.playerIds.every(isString)
+        !payload.playerIds.every(isString) ||
+        (payload.resurrectedPlayerIds !== undefined &&
+          (!Array.isArray(payload.resurrectedPlayerIds) || !payload.resurrectedPlayerIds.every(isString)))
       ) throw invalidEvent();
       break;
     case "slayerAbilityUsed":
@@ -261,6 +263,9 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "snakeCharmerActionResolved":
       if (!isSnakeCharmerActionPayload(payload)) throw invalidEvent();
+      break;
+    case "playerTransitioned":
+      if (!isPlayerTransitionedPayload(payload)) throw invalidEvent();
       break;
     case "playerAnnotationsUpdated":
       if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
@@ -816,6 +821,7 @@ function isRuleState(value: unknown): boolean {
       "activePoison",
       "activeProtection",
       "unannouncedNightDeathPlayerIds",
+      "unannouncedNightResurrectionPlayerIds",
       "slayerAbility",
       "virginAbility",
       "butlerVote",
@@ -827,6 +833,8 @@ function isRuleState(value: unknown): boolean {
     (value.activeProtection === undefined || isActiveRuleEffect(value.activeProtection)) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) &&
     value.unannouncedNightDeathPlayerIds.every(isString) &&
+    (value.unannouncedNightResurrectionPlayerIds === undefined ||
+      (Array.isArray(value.unannouncedNightResurrectionPlayerIds) && value.unannouncedNightResurrectionPlayerIds.every(isString))) &&
     (value.slayerAbility === undefined ||
       (isRecord(value.slayerAbility) &&
         hasExactKeys(value.slayerAbility, ["actorPlayerId", "spent", "canUseNow"]) &&
@@ -1134,6 +1142,12 @@ function isPlayer(value: unknown): boolean {
     isSystemTokenList(value.systemTokenIds) &&
     isScriptTokenList(value.scriptTokens) &&
     typeof value.notes === "string" &&
+    (value.abilityInstance === undefined ||
+      (isRecord(value.abilityInstance) &&
+        hasExactKeys(value.abilityInstance, ["id", "characterId", "sourceEventId"]) &&
+        typeof value.abilityInstance.id === "string" &&
+        typeof value.abilityInstance.characterId === "string" &&
+        typeof value.abilityInstance.sourceEventId === "string")) &&
     (value.identityHistory === undefined ||
       (Array.isArray(value.identityHistory) && value.identityHistory.every(isIdentityHistoryEntry)))
   );
@@ -1162,6 +1176,29 @@ function isPlayerIdentityTransition(value: unknown): boolean {
     typeof value.playerId === "string" &&
     isIdentityState(value.before) &&
     isIdentityState(value.after);
+}
+
+function isPlayerTransitionedPayload(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["stepId", "sourcePlayerId", "sourceCharacterId", "transitions"]) &&
+    typeof value.stepId === "string" &&
+    typeof value.sourcePlayerId === "string" &&
+    typeof value.sourceCharacterId === "string" &&
+    Array.isArray(value.transitions) && value.transitions.length > 0 &&
+    value.transitions.every((transition) =>
+      isRecord(transition) &&
+      hasExactKeys(transition, ["kind", "playerId", "before", "after"]) &&
+      (transition.kind === "characterChange" || transition.kind === "resurrection") &&
+      typeof transition.playerId === "string" &&
+      isPlayerStateSnapshot(transition.before) && isPlayerStateSnapshot(transition.after)
+    );
+}
+
+function isPlayerStateSnapshot(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["actualCharacter", "shownCharacter", "alignment", "alive"]) &&
+    typeof value.actualCharacter === "string" && typeof value.shownCharacter === "string" &&
+    (value.alignment === "good" || value.alignment === "evil") && typeof value.alive === "boolean";
 }
 
 function isActiveImpairment(value: unknown): boolean {
