@@ -197,6 +197,58 @@ fn transformation_is_atomic_retains_alignment_and_existing_character_is_no_chang
 }
 
 #[test]
+fn a_transformed_player_killed_before_their_wake_order_loses_the_new_ability_step() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["dreamer"] }
+            }
+        }),
+    );
+
+    let before_attack = replay(&events);
+    assert_eq!(before_attack["value"]["currentStep"]["character"], "fangGu");
+    assert!(before_attack["value"]["phaseOverview"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|step| step["character"] == "dreamer" && step["playerId"] == "player-7"));
+
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": before_attack["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"] }
+            }
+        }),
+    );
+
+    let after_attack = replay(&events);
+    let target = after_attack["value"]["players"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|player| player["id"] == "player-7")
+        .unwrap();
+    assert_eq!(target["alive"], false);
+    assert!(
+        after_attack["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|step| !(step["character"] == "dreamer" && step["playerId"] == "player-7")),
+        "dead transformed players must not retain ordinary ability steps: {after_attack}"
+    );
+}
+
+#[test]
 fn creating_clockmaker_reveals_the_change_then_runs_start_knowing_immediately() {
     let mut events = vec![setup_event()];
     let pit_hag = advance_to_pit_hag(&mut events);

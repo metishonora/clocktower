@@ -656,6 +656,19 @@ fn later_night_wake_rank(character: &str) -> Option<usize> {
     })
 }
 
+fn acquired_ability_is_available(
+    player: &Player,
+    character: &str,
+    prefix: &str,
+    events: &[GameEvent],
+) -> bool {
+    match character {
+        "barber" | "sweetheart" => true,
+        "sage" => sage_killer(prefix, &player.id, events).is_some(),
+        _ => player.alive,
+    }
+}
+
 fn insert_acquired_ability_steps(
     steps: &mut Vec<PhaseStep>,
     phase: Phase,
@@ -676,6 +689,9 @@ fn insert_acquired_ability_steps(
 
     for (player, event, source_step_id, source_character) in acquisitions {
         let character = player.actual_character.as_str();
+        if !acquired_ability_is_available(player, character, prefix, events) {
+            continue;
+        }
         let start_knowing = matches!(character, "clockmaker" | "evilTwin");
         let should_run = if start_knowing {
             true
