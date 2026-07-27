@@ -129,6 +129,8 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
             | "madnessExecutionConfirmed"
             | "demonSuccessionConfirmed"
             | "snakeCharmerActionResolved"
+            | "pitHagTransformationResolved"
+            | "pitHagArbitraryDeathsConfirmed"
             | "playerTransitioned"
             | "gameEnded"
             | "playerAnnotationsUpdated"

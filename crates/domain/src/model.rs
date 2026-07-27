@@ -38,6 +38,8 @@ pub(crate) enum StepType {
     DemonSuccession,
     #[serde(rename = "redHerringAssignment")]
     RedHerringAssignment,
+    #[serde(rename = "pitHagArbitraryDeaths")]
+    PitHagArbitraryDeaths,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -55,6 +57,8 @@ pub(crate) enum RequiredInputKind {
     PlayerIds,
     #[serde(rename = "characterIds")]
     CharacterIds,
+    #[serde(rename = "characterTransformation")]
+    CharacterTransformation,
     #[serde(rename = "madnessAssignment")]
     MadnessAssignment,
     #[serde(rename = "setupInfo")]

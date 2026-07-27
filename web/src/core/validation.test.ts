@@ -143,6 +143,51 @@ test("accepts the Snake Charmer swap event, identity history, impairment, and pe
   throws(() => parseReplayState(outOfOrder), /코어 응답 형식/);
 });
 
+test("accepts Pit-Hag transformation and arbitrary death audit events", () => {
+  const before = { actualCharacter: "mutant", shownCharacter: "mutant", alignment: "good" };
+  const after = { actualCharacter: "noDashii", shownCharacter: "noDashii", alignment: "good" };
+  const transformation = {
+    id: "pit-hag-1",
+    type: "pitHagTransformationResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:pitHag:player-1",
+      actorPlayerId: "player-1",
+      targetPlayerId: "player-2",
+      characterId: "noDashii",
+      outcome: {
+        kind: "changed",
+        identityTransition: { playerId: "player-2", before, after },
+        createdDemon: true,
+      },
+    },
+    summary: "마귀할멈 직업 변경 확정",
+    createdAt: "2026-07-26T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(transformation), transformation);
+
+  const deaths = {
+    id: "phase-2",
+    type: "pitHagArbitraryDeathsConfirmed",
+    phase: "night",
+    payload: {
+      stepId: "night:pitHagArbitraryDeaths",
+      sourceTransformationEventId: "pit-hag-1",
+      deaths: [{
+        playerId: "player-3",
+        cause: {
+          kind: "pitHagArbitraryDeath",
+          actorPlayerId: "player-1",
+          sourceTransformationEventId: "pit-hag-1",
+        },
+      }],
+    },
+    summary: "마귀할멈 임의 사망 확정 · 1명",
+    createdAt: "2026-07-26T00:01:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(deaths), deaths);
+});
+
 test("accepts the generic S&V Demon attack while preserving the Imp payload contract", () => {
   const demonAttack = {
     id: "phase-7",

@@ -73,6 +73,7 @@ export type PhaseStepInput =
   | { playerIds: string[]; characterId?: string; zeroOutsiders?: boolean }
   | { zeroOutsiders: true; playerIds?: string[] }
   | { characterIds: string[] }
+  | { playerIds: string[]; characterIds: string[] }
   | { value: number; reason?: NumericReason | null }
   | { trueValue: number; displayedValue: number; reason?: NumericReason | null }
   | { nominatorId: string; nomineeId: string }
@@ -657,6 +658,26 @@ export type GameEvent = EventCommon &
         };
       }
     | {
+        type: "pitHagTransformationResolved";
+        payload: {
+          stepId: string;
+          actorPlayerId: string;
+          targetPlayerId: string;
+          characterId: string;
+          outcome:
+            | { kind: "noChange"; reason: "characterAlreadyInPlay" | "actorImpaired" | "notActualCharacter" }
+            | { kind: "changed"; identityTransition: PlayerIdentityTransition; createdDemon: boolean };
+        };
+      }
+    | {
+        type: "pitHagArbitraryDeathsConfirmed";
+        payload: {
+          stepId: string;
+          sourceTransformationEventId: string;
+          deaths: NightDeath[];
+        };
+      }
+    | {
         type: "playerTransitioned";
         payload: {
           stepId: string;
@@ -707,18 +728,26 @@ export type NightActionResolution =
       outcome:
         | {
             kind: "deaths";
-            deaths: Array<{
-              playerId: string;
-              cause: {
-                kind: "demonAttack";
-                actorPlayerId: string;
-                actorCharacterId: string;
-                targetPlayerId: string;
-              };
-            }>;
+            deaths: NightDeath[];
           }
-        | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" };
+        | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" | "pitHagCreatedDemon" };
     };
+
+export type NightDeath = {
+  playerId: string;
+  cause:
+    | {
+        kind: "demonAttack";
+        actorPlayerId: string;
+        actorCharacterId: string;
+        targetPlayerId: string;
+      }
+    | {
+        kind: "pitHagArbitraryDeath";
+        actorPlayerId: string;
+        sourceTransformationEventId: string;
+      };
+};
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
 
@@ -734,7 +763,8 @@ export type StepType =
   | "executionDeath"
   | "slayerDeath"
   | "demonSuccession"
-  | "redHerringAssignment";
+  | "redHerringAssignment"
+  | "pitHagArbitraryDeaths";
 
 export type NumericReason = "drunk" | "poisoned" | "registration";
 
@@ -877,6 +907,7 @@ export type RequiredInputKind =
   | "none"
   | "playerIds"
   | "characterIds"
+  | "characterTransformation"
   | "setupInfo"
   | "number"
   | "nominationVote"

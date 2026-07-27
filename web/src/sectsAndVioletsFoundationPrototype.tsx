@@ -191,6 +191,7 @@ export function SectsAndVioletsFoundation({
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
+  const [liveCharacterId, setLiveCharacterId] = useState<string>();
   const [liveMadnessCharacterId, setLiveMadnessCharacterId] = useState("");
   const [activeFreeActionGroup, setActiveFreeActionGroup] = useState<"day" | "madness">();
   const [selectedInformationTargetIds, setSelectedInformationTargetIds] = useState<string[]>([]);
@@ -293,6 +294,24 @@ export function SectsAndVioletsFoundation({
   );
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
+  const pitHagDemonIntents = useMemo(() => {
+    const prefix = replayState?.currentStep?.id.split(":")[0];
+    if (!prefix) return [];
+    return gameFile.game.events.flatMap((event) => {
+      if (event.type !== "nightActionResolved"
+        || !event.payload.stepId.startsWith(`${prefix}:demon:`)
+        || event.payload.resolution.kind !== "demonAttack"
+        || event.payload.resolution.outcome.kind !== "noEffect"
+        || event.payload.resolution.outcome.reason !== "pitHagCreatedDemon") return [];
+      const actor = replayState?.players.find((player) => player.id === event.payload.actorPlayerId);
+      const target = replayState?.players.find((player) => player.id === event.payload.resolution.targetPlayerId);
+      const role = characters.find((character) => character.id === event.payload.actorCharacterId)?.name ?? event.payload.actorCharacterId;
+      return [{
+        actorLabel: actor ? `${actor.seat}번 ${actor.name} · ${role}` : role ?? "악마",
+        targetLabel: target ? `${target.seat}번 ${target.name}` : event.payload.resolution.targetPlayerId,
+      }];
+    });
+  }, [gameFile.game.events, replayState?.currentStep?.id, replayState?.players]);
   const canonicalInformationStep = replayState?.currentStep?.informationPrompt && isAutomatedInformationCharacter(replayState.currentStep.character)
     ? replayState.currentStep
     : undefined;
@@ -972,6 +991,7 @@ export function SectsAndVioletsFoundation({
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
     setLiveTargetIds([]);
+    setLiveCharacterId(undefined);
     setLiveNominationCheckpointId(undefined);
   }
 
@@ -1408,7 +1428,7 @@ export function SectsAndVioletsFoundation({
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
+      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
     });
@@ -1418,7 +1438,9 @@ export function SectsAndVioletsFoundation({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon" || kind === "snakeCharmer" || kind === "cerenovus") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus") setLiveTargetId(undefined);
+    if (kind === "pitHag") setLiveCharacterId(undefined);
+    if (kind === "pitHagDeaths") setLiveTargetIds([]);
     if (kind === "cerenovus") setLiveMadnessCharacterId("");
     if (kind === "dreamer" || kind === "seamstress") setLiveTargetIds(selectedInformationTargetIds);
     navigateToTab("seating");
@@ -1455,6 +1477,13 @@ export function SectsAndVioletsFoundation({
       setLiveTargetIds((current) => current.includes(playerId)
         ? current.filter((candidate) => candidate !== playerId)
         : current.length >= max ? (max === 1 ? [playerId] : current) : [...current, playerId]);
+      return;
+    }
+    if (liveHandoff.kind === "pitHagDeaths") {
+      if (!replayState?.currentStep?.requiredInput.allowedPlayerIds?.includes(playerId)) return;
+      setLiveTargetIds((current) => current.includes(playerId)
+        ? current.filter((candidate) => candidate !== playerId)
+        : [...current, playerId]);
       return;
     }
     if (liveHandoff.kind === "snakeCharmer" || liveHandoff.kind === "cerenovus") {
@@ -1498,6 +1527,33 @@ export function SectsAndVioletsFoundation({
         setLiveHandoff(undefined);
         navigateToTab("play");
       }
+    } else if (liveHandoff.kind === "pitHag" && liveTargetId && liveCharacterId) {
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: {
+          stepId: step.id,
+          input: { playerIds: [liveTargetId], characterIds: [liveCharacterId] },
+        },
+      });
+      if (applied) {
+        const event = applied.gameFile.game.events.at(-1);
+        if (event?.type === "pitHagTransformationResolved" && event.payload.outcome.kind === "noChange") {
+          setLiveHandoff(undefined);
+          navigateToTab("play");
+        } else {
+          setLiveHandoff({ ...liveHandoff, complete: true });
+        }
+      }
+    } else if (liveHandoff.kind === "pitHagDeaths") {
+      const applied = await proposeAndApplyLiveCommand({
+        type: "confirmStep",
+        payload: { stepId: step.id, input: { playerIds: liveTargetIds } },
+      });
+      if (applied) {
+        setLiveHandoff(undefined);
+        setLiveTargetIds([]);
+        navigateToTab("play");
+      }
     } else if (liveHandoff.kind === "cerenovus" && liveTargetId && liveMadnessCharacterId) {
       const applied = await proposeAndApplyLiveCommand({
         type: "confirmStep",
@@ -1521,6 +1577,7 @@ export function SectsAndVioletsFoundation({
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
     setLiveTargetIds([]);
+    setLiveCharacterId(undefined);
     setLiveMadnessCharacterId("");
     setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
@@ -1539,6 +1596,7 @@ export function SectsAndVioletsFoundation({
     if (isLast) {
       setLiveHandoff(undefined);
       setLiveTargetId(undefined);
+      setLiveCharacterId(undefined);
       navigateToTab("seating");
     }
   };
@@ -1796,6 +1854,8 @@ export function SectsAndVioletsFoundation({
           voterIds={liveVoterIds}
           targetId={liveTargetId}
           targetIds={liveTargetIds}
+          characterId={liveCharacterId}
+          pitHagDemonIntents={pitHagDemonIntents}
           centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
             nextIdentityReveal.payload.kind === "madnessAssignment" ? (
               <CerenovusMadnessRevealPrompt
@@ -1832,6 +1892,7 @@ export function SectsAndVioletsFoundation({
           tokensByPlayerId={canonicalTokensByPlayerId}
           dayActionRecords={replayState.dayActionRecords ?? []}
           onSeatClick={chooseLiveSeat}
+          onCharacterChange={setLiveCharacterId}
           onConfirm={() => void confirmLiveHandoff()}
           onReturn={returnFromLiveHandoff}
           onCancelDayHandoff={() => void cancelLiveDayHandoff()}
@@ -2006,6 +2067,8 @@ export function SectsAndVioletsFoundation({
           onConfirmExecution={() => void confirmLiveExecution()}
           onStartDemonAttack={() => startLiveHandoff("demon")}
           onStartSnakeCharmer={() => startLiveHandoff("snakeCharmer")}
+          onStartPitHag={() => startLiveHandoff("pitHag")}
+          onStartPitHagDeaths={() => startLiveHandoff("pitHagDeaths")}
           onStartCerenovus={() => startLiveHandoff("cerenovus")}
           onAdvance={() => void advanceFirstNight()}
           onResolveManual={(outcome) => void advanceFirstNight(outcome)}

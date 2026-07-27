@@ -62,6 +62,14 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
             "type": "confirmStep",
             "payload": { "stepId": step["id"], "input": { "execute": false } }
         })
+    } else if step["requiredInput"]["kind"] == "characterTransformation" {
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step["id"],
+                "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] }
+            }
+        })
     } else if step["support"] == "manual" {
         json!({
             "type": "resolveManualStep",
@@ -365,7 +373,7 @@ fn historical_manual_demon_steps_remain_replayable_after_automation() {
     }));
     let day = replay(demon, &events);
     assert_eq!(day["ok"], true, "legacy day replay failed: {day}");
-    assert_eq!(day["value"]["currentStep"]["id"], "night2:pitHag");
+    assert_eq!(day["value"]["currentStep"]["id"], "night2:pitHag:player-6");
 }
 
 #[test]

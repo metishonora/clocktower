@@ -1,0 +1,38 @@
+.pitHagTaskPanel { height: 100%; min-height: 0; padding: 19px; gap: 12px; overflow-y: auto; }
+.pitHagTaskPanel > .issue116PrimaryAction { position: sticky; z-index: 2; bottom: 0; flex: 0 0 auto; }
+.pitHagTaskPanel h2 { font-size: 1.55rem; }
+.pitHagTaskSteps { display: grid; margin: 0; padding: 0; gap: 7px; list-style: none; }
+.pitHagTaskSteps li { display: grid; min-height: 48px; padding: 8px 10px; align-items: center; grid-template-columns: 28px 1fr; gap: 9px; border: 1px solid rgba(229, 208, 237, .1); border-radius: 12px; background: rgba(255, 255, 255, .035); }
+.pitHagTaskSteps li > span { display: grid; width: 26px; aspect-ratio: 1; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: #ae9ab6; font-size: .68rem; font-weight: 900; }
+.pitHagTaskSteps li.complete > span { color: #bda668; background: rgba(225, 193, 105, .09); }
+.pitHagTaskSteps li.current { border-color: rgba(232, 199, 111, .27); }
+.pitHagTaskSteps small, .pitHagTaskSteps strong { display: block; }
+.pitHagTaskSteps small { color: #a997b1; font-size: .65rem; }
+.pitHagTaskSteps strong { margin-top: 2px; font-size: .78rem; }
+.pitHagCharacterPicker { display: grid; gap: 6px; color: #cbbbd0; font-size: .7rem; font-weight: 850; }
+.pitHagCharacterPicker select { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid rgba(232, 210, 239, .2); border-radius: 11px; color: #f7eef9; background: #2b1b33; font: inherit; font-size: .8rem; }
+.pitHagCharacterResult { display: grid; min-height: 64px; padding: 8px; align-items: center; grid-template-columns: 46px 1fr 36px; gap: 9px; border: 1px solid rgba(230, 209, 237, .13); border-radius: 14px; background: rgba(255, 255, 255, .035); }
+.pitHagCharacterResult.demon { border-color: rgba(229, 91, 117, .42); background: rgba(133, 38, 59, .18); }
+.pitHagCharacterResult.blocked { border-color: rgba(217, 175, 77, .38); background: rgba(148, 109, 35, .14); }
+.pitHagCharacterResult img { width: 44px; height: 44px; object-fit: contain; }
+.pitHagCharacterResult > strong { font-size: .9rem; }
+.pitHagAlignmentIcon { display: grid; width: 34px; aspect-ratio: 1; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-size: .78rem; font-weight: 950; }
+.pitHagAlignmentIcon.good { color: #78cbed; background: rgba(68, 149, 187, .14); }
+.pitHagAlignmentIcon.evil { color: #ef7589; background: rgba(176, 52, 76, .14); }
+.pitHagAlignmentIcon.unknown { color: #9c8da2; background: rgba(255, 255, 255, .035); }
+.pitHagCharacterPlaceholder { display: grid; min-height: 64px; padding: 8px 12px; align-items: center; grid-template-columns: 36px 1fr; gap: 10px; border: 1px dashed rgba(230, 209, 237, .18); border-radius: 14px; color: #94869a; background: rgba(255, 255, 255, .018); }
+.pitHagCharacterPlaceholder > span { display: grid; width: 34px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 209, 237, .18); border-radius: 50%; font-weight: 900; }
+.pitHagCharacterPlaceholder > strong { font-size: .75rem; }
+@media (max-width: 1040px) { .pitHagTaskPanel { min-height: 390px; order: -1; } }
+.pitHagDemonIntents { display: grid; padding: 11px; gap: 7px; border: 1px solid rgba(230, 209, 237, .11); border-radius: 13px; background: rgba(255, 255, 255, .03); }
+.pitHagDemonIntents > span { color: #a997b1; font-size: .63rem; font-weight: 900; letter-spacing: .06em; }
+.pitHagDemonIntents p { display: grid; margin: 0; align-items: center; grid-template-columns: 1fr auto auto; gap: 6px; color: #cdbfd1; font-size: .65rem; }
+.pitHagDemonIntents p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pitHagDemonIntents p i { color: #dbb866; font-style: normal; }
+.pitHagDeathCount { display: flex; min-height: 48px; padding: 0 11px; align-items: center; justify-content: space-between; border-radius: 12px; background: rgba(178, 48, 77, .15); }
+.pitHagDeathCount span { color: #d9c5d0; font-size: .68rem; font-weight: 850; }
+.pitHagDeathCount strong { color: #ff92a4; font-size: 1.2rem; }
+.pitHagDeathList { display: flex; min-height: 34px; margin: 0; padding: 0; flex-wrap: wrap; align-content: start; gap: 6px; list-style: none; }
+.pitHagDeathList li { padding: 6px 8px; border: 1px solid rgba(237, 93, 120, .32); border-radius: 999px; color: #f2d9df; background: rgba(159, 40, 65, .2); font-size: .65rem; font-weight: 850; }
+.pitHagDeathList li.empty { border-color: rgba(230, 209, 237, .12); color: #aa9aaf; background: rgba(255, 255,255,.03); }
+.pitHagCauseNote { margin: 0 !important; color: #ae9fb3 !important; font-size: .66rem; line-height: 1.45 !important; }

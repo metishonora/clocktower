@@ -81,6 +81,13 @@ fn advance_to_with_demon_target(
             "playerIds" if step["character"] == "seamstress" => {
                 json!({ "type": "skipStep", "payload": { "stepId": step_id } })
             }
+            "characterTransformation" => json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": step_id,
+                    "input": { "playerIds": [step["playerId"]], "characterIds": ["pitHag"] }
+                }
+            }),
             "number" => json!({
                 "type": "confirmStep",
                 "payload": {
@@ -192,8 +199,14 @@ fn resurrection_restores_life_and_ghost_vote_without_an_identity_reveal_and_is_a
     append(
         &mut events,
         json!({
-            "type": "resolveManualStep",
-            "payload": { "stepId": first_pit_hag["value"]["currentStep"]["id"], "outcome": "handled" }
+            "type": "confirmStep",
+            "payload": {
+                "stepId": first_pit_hag["value"]["currentStep"]["id"],
+                "input": {
+                    "playerIds": [first_pit_hag["value"]["currentStep"]["playerId"]],
+                    "characterIds": ["pitHag"]
+                }
+            }
         }),
     );
     let nomination = advance_to(&mut events, |state| {
