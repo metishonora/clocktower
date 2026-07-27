@@ -445,15 +445,14 @@ pub(crate) fn validate_confirmed_information(
     if expected
         .as_ref()
         .is_ok_and(|expected| expected.as_ref() == Some(information))
-    {
-        Ok(())
-    } else if legacy_numeric_registration_information_is_valid(
-        step,
-        players,
-        prior_events,
-        input,
-        information,
-    ) || legacy_spy_information_is_valid(step, players, input, information)
+        || legacy_numeric_registration_information_is_valid(
+            step,
+            players,
+            prior_events,
+            input,
+            information,
+        )
+        || legacy_spy_information_is_valid(step, players, input, information)
     {
         Ok(())
     } else {

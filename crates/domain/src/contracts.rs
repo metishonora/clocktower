@@ -92,6 +92,8 @@ pub(crate) enum Command {
 pub(crate) struct ResolveManualStepCommandPayload {
     pub(crate) step_id: String,
     pub(crate) outcome: ManualPhaseStepOutcome,
+    #[serde(default)]
+    pub(crate) expected_event_count: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -187,11 +189,31 @@ pub(crate) struct CreateGamePayload {
 pub(crate) struct PhaseStepCommandPayload {
     pub(crate) step_id: String,
     #[serde(default)]
+    pub(crate) expected_event_count: Option<usize>,
+    #[serde(default)]
     pub(crate) input: StepInput,
     #[serde(default)]
     pub(crate) delivered_result: Option<InformationResult>,
     #[serde(default)]
     pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
+impl Command {
+    pub(crate) fn expected_event_count(&self) -> Option<usize> {
+        match self {
+            Self::Smoke | Self::CreateGame { .. } => None,
+            Self::ConfirmStep { payload } | Self::SkipStep { payload } => {
+                payload.expected_event_count
+            }
+            Self::ResolveManualStep { payload } => payload.expected_event_count,
+            Self::UseSlayerAbility { payload } => Some(payload.expected_event_count),
+            Self::RecordDayAction { payload } => Some(payload.expected_event_count),
+            Self::RecordMadnessCheck { payload } => Some(payload.expected_event_count),
+            Self::ExecuteMadness { payload } => Some(payload.expected_event_count),
+            Self::EndGame { payload } => Some(payload.expected_event_count),
+            Self::UpdatePlayerAnnotations { payload } => Some(payload.expected_event_count),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

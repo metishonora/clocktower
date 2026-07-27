@@ -183,7 +183,10 @@ export type PhaseStepConfirmation = {
   registrationJudgments?: RegistrationJudgment[];
 };
 
-export type PhaseStepCommandPayload = PhaseStepConfirmation & { stepId: string };
+export type PhaseStepCommandPayload = PhaseStepConfirmation & {
+  stepId: string;
+  expectedEventCount?: number;
+};
 
 export type PhaseInputSuggestionRequest = {
   stepId: string;
@@ -200,10 +203,17 @@ export type Command =
   | { type: "smoke" }
   | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
-  | { type: "skipStep"; payload: { stepId: string; input?: null } }
+  | {
+      type: "skipStep";
+      payload: { stepId: string; expectedEventCount?: number; input?: null };
+    }
   | {
       type: "resolveManualStep";
-      payload: { stepId: string; outcome: "handled" | "notApplicable" };
+      payload: {
+        stepId: string;
+        expectedEventCount?: number;
+        outcome: "handled" | "notApplicable";
+      };
     }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
   | { type: "recordDayAction"; payload: RecordDayActionPayload }

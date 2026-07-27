@@ -112,8 +112,7 @@ fn transition_event(
     player_id: &str,
     before_character: &str,
     after_character: &str,
-    before_alive: bool,
-    after_alive: bool,
+    alive: (bool, bool),
 ) -> Value {
     json!({
         "id": event_id, "type": "playerTransitioned", "phase": step["phase"],
@@ -123,8 +122,8 @@ fn transition_event(
             "sourceCharacterId": step["character"],
             "transitions": [{
                 "kind": kind, "playerId": player_id,
-                "before": { "actualCharacter": before_character, "shownCharacter": before_character, "alignment": "good", "alive": before_alive },
-                "after": { "actualCharacter": after_character, "shownCharacter": after_character, "alignment": "good", "alive": after_alive }
+                "before": { "actualCharacter": before_character, "shownCharacter": before_character, "alignment": "good", "alive": alive.0 },
+                "after": { "actualCharacter": after_character, "shownCharacter": after_character, "alignment": "good", "alive": alive.1 }
             }]
         },
         "summary": "player transition", "createdAt": "2026-07-27T00:00:00.000Z"
@@ -153,8 +152,7 @@ fn character_change_creates_a_fresh_instance_reveals_identity_then_runs_start_kn
         "player-6",
         "mutant",
         "clockmaker",
-        true,
-        true,
+        (true, true),
     ));
 
     let changed = replay(&events);
@@ -252,8 +250,7 @@ fn resurrection_restores_life_and_ghost_vote_without_an_identity_reveal_and_is_a
         "player-6",
         "mutant",
         "mutant",
-        false,
-        true,
+        (false, true),
     ));
 
     let revived = replay(&events);
@@ -324,8 +321,7 @@ fn resurrection_restores_life_and_ghost_vote_without_an_identity_reveal_and_is_a
         "player-6",
         "mutant",
         "mutant",
-        false,
-        true,
+        (false, true),
     ));
     assert_eq!(
         replay(&events)["value"]["ruleState"]["unannouncedNightResurrectionPlayerIds"],
@@ -347,8 +343,7 @@ fn a_new_dreamer_waits_for_its_remaining_normal_order_and_runs_exactly_once() {
         "player-2",
         "clockmaker",
         "dreamer",
-        true,
-        true,
+        (true, true),
     ));
     let changed = replay(&events);
     assert_eq!(changed["ok"], true, "replay failed: {changed}");
@@ -388,8 +383,7 @@ fn an_ordinary_ability_whose_order_passed_waits_until_the_next_night() {
         "player-5",
         "mathematician",
         "dreamer",
-        true,
-        true,
+        (true, true),
     ));
     let after = replay(&events);
     assert_eq!(after["ok"], true, "replay failed: {after}");
@@ -448,8 +442,7 @@ fn once_per_game_usage_is_scoped_to_the_latest_ability_acquisition() {
         "player-2",
         "artist",
         "mutant",
-        true,
-        true,
+        (true, true),
     ));
     let next_pit_hag = advance_to(&mut events, |state| {
         state["value"]["currentStep"]["id"]
@@ -463,8 +456,7 @@ fn once_per_game_usage_is_scoped_to_the_latest_ability_acquisition() {
         "player-2",
         "mutant",
         "artist",
-        true,
-        true,
+        (true, true),
     ));
     let next_day = advance_to(&mut events, |state| {
         state["value"]["phase"] == "day"
@@ -538,8 +530,7 @@ fn removing_a_transition_event_restores_identity_instance_reveal_and_step() {
         "player-6",
         "mutant",
         "clockmaker",
-        true,
-        true,
+        (true, true),
     ));
     assert_eq!(
         replay(&events)["value"]["players"][5]["actualCharacter"],
