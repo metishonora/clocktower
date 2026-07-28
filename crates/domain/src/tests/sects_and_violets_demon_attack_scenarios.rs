@@ -517,6 +517,18 @@ fn vigormortis_records_one_neighbor_choice_and_keeps_it_while_the_townsfolk_is_v
         .iter()
         .any(|impairment| impairment["playerId"] == "player-5"
             && impairment["sourceEventId"] == source_event_id));
+    assert!(active["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|reminder| reminder
+            == &json!({
+                "playerId": "player-6",
+                "characterId": "vigormortis",
+                "tokenId": "hasAbility",
+                "label": "능력 있음",
+                "description": "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다."
+            })));
 
     advance_to_step("vigormortis", &mut events, "night2:demon:player-7");
     confirm_attack("vigormortis", &mut events, "player-5");
@@ -640,6 +652,11 @@ fn vigormortis_effect_ends_when_the_killed_minion_resurrects_or_stops_being_a_mi
         .unwrap()
         .iter()
         .any(|impairment| impairment["sourceEventId"] == source_event_id));
+    assert!(resurrected["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|reminder| reminder["tokenId"] != "hasAbility"));
 
     let mut changed_events = vec![setup_event("vigormortis")];
     let attack = confirm_vigormortis_minion_attack(&mut changed_events, "player-6", "player-5");
@@ -665,5 +682,10 @@ fn vigormortis_effect_ends_when_the_killed_minion_resurrects_or_stops_being_a_mi
         .unwrap()
         .iter()
         .any(|impairment| impairment["sourceEventId"] == source_event_id));
+    assert!(changed["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|reminder| reminder["tokenId"] != "hasAbility"));
     assert!(changed["value"]["pendingVigormortisPoisonChoices"].is_null());
 }

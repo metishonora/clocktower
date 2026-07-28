@@ -914,7 +914,7 @@ function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
     typeof value.playerId === "string" &&
-    (value.characterId === "flowergirl" || value.characterId === "townCrier") &&
+    (value.characterId === "flowergirl" || value.characterId === "townCrier" || value.characterId === "vigormortis") &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string";

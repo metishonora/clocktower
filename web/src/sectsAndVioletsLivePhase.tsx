@@ -647,7 +647,7 @@ function playerStateLabel(player?: Player) {
 
 function handoffPanelTitle(handoff: LiveHandoff, complete: boolean) {
   const { kind } = handoff;
-  if (!complete && kind === "vigormortisPoison") return "유효한 주민 이웃 선택";
+  if (!complete && kind === "vigormortisPoison") return "비고르모르티스가 부여한 중독 이동";
   if (!complete && kind === "demon" && handoff.selectionStage === "poison") return "중독 대상";
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"

@@ -1935,6 +1935,23 @@ fn automatic_information_reminders(
     Ok(reminders)
 }
 
+fn automatic_vigormortis_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    players
+        .iter()
+        .filter(|player| !player.alive && vigormortis_keeps_minion_ability(player, players, events))
+        .map(|player| AutomaticReminder {
+            player_id: player.id.clone(),
+            character_id: "vigormortis".into(),
+            token_id: "hasAbility".into(),
+            label: "능력 있음".into(),
+            description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.".into(),
+        })
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -4226,16 +4243,14 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let active_impairments = active_snv_impairments(&players, active_events);
     let pending_vigormortis_poison_choices = vigormortis_poison_state(&players, active_events).1;
+    let mut automatic_reminders =
+        automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
+    automatic_reminders.extend(automatic_vigormortis_reminders(&players, active_events));
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
         active_impairments: Some(active_impairments),
-        automatic_reminders: automatic_information_reminders(
-            phase,
-            current_step.as_ref(),
-            &players,
-            &day_role_actions,
-        )?,
+        automatic_reminders,
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(active_events);

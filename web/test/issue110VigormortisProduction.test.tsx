@@ -81,11 +81,39 @@ test("offers only canonical replacement neighbors and keeps dead Townsfolk selec
   });
 
   const panel = screen.getByLabelText("현재 마도서 작업");
-  expect(within(panel).getByRole("heading", { name: "유효한 주민 이웃 선택" })).toBeTruthy();
+  expect(within(panel).getByRole("heading", { name: "비고르모르티스가 부여한 중독 이동" })).toBeTruthy();
   expect(within(panel).getByText("5번 마루 · 생존")).toBeTruthy();
   expect(within(panel).getByText("4번 라온 · 사망")).toBeTruthy();
   expect(screen.getByRole("button", { name: /4번 좌석.*사망.*중독 대상/ }).hasAttribute("disabled")).toBe(false);
   expect(screen.getByRole("button", { name: /3번 좌석/ }).hasAttribute("disabled")).toBe(true);
+});
+
+test("shows an automatic ability-retained token on the Minion killed by Vigormortis", async () => {
+  const state = vigormortisReplay(2);
+  state.players = state.players.map((player) => player.id === "player-6"
+    ? { ...player, alive: false }
+    : player);
+  state.ruleState.automaticReminders = [{
+    playerId: "player-6",
+    characterId: "vigormortis",
+    tokenId: "hasAbility",
+    label: "능력 있음",
+    description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.",
+  }];
+  const core = {
+    ...vigormortisCore(),
+    replay: vi.fn(async () => ({ ok: true as const, value: state })),
+  };
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(vigormortisGame())} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  await user.click(within(app).getByRole("button", { name: "마도서" }));
+  const grimoire = within(app).getByLabelText("밤 마도서");
+  await user.click(within(grimoire).getByRole("button", { name: /6번 좌석.*토큰 1개.*사망/ }));
+
+  const detail = screen.getByRole("dialog", { name: "6번 보라 플레이어 상세" });
+  expect(within(detail).getByLabelText("능력 있음 · 출처 비고르모르티스")).toBeTruthy();
 });
 
 test("submits the attack and one-time poison target together from the production flow", async () => {

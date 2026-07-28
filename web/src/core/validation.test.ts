@@ -311,7 +311,16 @@ test("accepts the Vigormortis source effect, replacement event, and pending choi
     players: [],
     currentStep,
     phaseOverview: [{ ...currentStep, status: "current" }],
-    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-6",
+        characterId: "vigormortis",
+        tokenId: "hasAbility",
+        label: "능력 있음",
+        description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.",
+      }],
+    },
     warnings: [],
     gameEnd: null,
     pendingVigormortisPoisonChoices: [{
