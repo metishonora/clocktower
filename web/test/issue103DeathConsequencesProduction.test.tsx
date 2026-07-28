@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { PendingDeathConsequence, Player, ReplayState } from "../src/core/types";
 import { DeathConsequencePanel } from "../src/features/death-consequences/DeathConsequencePanel";
-import { SectsAndVioletsLiveProgress } from "../src/sectsAndVioletsLivePhase";
+import { SectsAndVioletsLiveGrimoire, SectsAndVioletsLiveProgress } from "../src/sectsAndVioletsLivePhase";
 
 const players: Player[] = [
   player("player-1", 1, "가람", "klutz", "good", false),
@@ -72,22 +72,63 @@ test("hides the private phase overview while the Klutz choice is public", () => 
   expect(screen.queryByText("vortox")).toBeNull();
 });
 
-test("offers every player to the Storyteller for Sweetheart, including dead and self", async () => {
-  const onResolve = vi.fn();
+test("sends a healthy Sweetheart choice to the grimoire", async () => {
+  const onChooseTarget = vi.fn();
   render(
     <DeathConsequencePanel
       pending={pending("sweetheart")}
       players={players}
       operationBusy={false}
-      onResolve={onResolve}
+      onResolve={vi.fn()}
+      onChooseSweetheartTarget={onChooseTarget}
     />,
   );
 
-  const target = screen.getByRole("combobox", { name: "취하게 할 플레이어" });
-  expect(within(target).getByRole("option", { name: "1번 가람 · 사망" })).toBeTruthy();
-  await userEvent.setup().selectOptions(target, "player-1");
-  await userEvent.setup().click(screen.getByRole("button", { name: "취함 적용" }));
-  expect(onResolve).toHaveBeenCalledWith({ targetPlayerId: "player-1" });
+  expect(screen.queryByRole("combobox", { name: "취하게 할 플레이어" })).toBeNull();
+  await userEvent.setup().click(screen.getByRole("button", { name: "마도서에서 취함 대상 선택" }));
+  expect(onChooseTarget).toHaveBeenCalledTimes(1);
+});
+
+test("lets the Storyteller select every Sweetheart target in the grimoire, including dead and self", async () => {
+  const onSeatClick = vi.fn();
+  const onConfirm = vi.fn();
+  render(
+    <SectsAndVioletsLiveGrimoire
+      players={players.map((candidate) => ({
+        ...candidate,
+        characterName: candidate.actualCharacter,
+        characterKind: candidate.actualCharacter === "vortox" ? "demon" : candidate.actualCharacter === "klutz" ? "outsider" : "townsfolk",
+      }))}
+      phaseLabel="1일차 낮"
+      currentStep={{
+        id: "day:executionDeath",
+        phase: "day",
+        stepType: "executionDeath",
+        requiredInput: { kind: "executionDeathDecision", optional: false },
+        canSkip: false,
+      }}
+      handoff={{ kind: "sweetheart", complete: false, actorPlayerId: "player-1" }}
+      voterIds={[]}
+      targetId="player-1"
+      selectablePlayerIds={players.map((candidate) => candidate.id)}
+      operationBusy={false}
+      onSeatClick={onSeatClick}
+      onConfirm={onConfirm}
+      onReturn={vi.fn()}
+      onCancelDayHandoff={vi.fn()}
+      onResetDaySelection={vi.fn()}
+      onGoToProgress={vi.fn()}
+      onReturnToSetup={vi.fn()}
+    />,
+  );
+
+  expect(screen.getByRole("region", { name: "낮 마도서" })).toBeTruthy();
+  const deadSweetheart = screen.getByRole("button", { name: /1번 좌석, 가람/ });
+  expect((deadSweetheart as HTMLButtonElement).disabled).toBe(false);
+  await userEvent.setup().click(deadSweetheart);
+  expect(onSeatClick).toHaveBeenCalledWith("player-1");
+  await userEvent.setup().click(screen.getByRole("button", { name: "1번 가람 · 사망 취함 적용" }));
+  expect(onConfirm).toHaveBeenCalledTimes(1);
 });
 
 test("lets the Storyteller designate the living Demon and either decline or swap two distinct players", async () => {

@@ -355,6 +355,8 @@ export function SectsAndVioletsGameSurface({
     : undefined;
   const liveSelectablePlayerIds = liveHandoff?.kind === "vigormortisPoison"
     ? pendingVigormortisPoison?.allowedPlayerIds
+    : liveHandoff?.kind === "sweetheart"
+      ? pendingDeathConsequence?.allowedPlayerIds
     : liveHandoff?.kind === "demon" && liveHandoff.selectionStage === "poison"
       ? vigormortisDependentSelection?.allowedPlayerIds
       : undefined;
@@ -1393,8 +1395,9 @@ export function SectsAndVioletsGameSurface({
               targetPlayerId: "targetPlayerId" in resolution ? resolution.targetPlayerId ?? "" : "",
             },
           };
-    await proposeAndApplyLiveCommand(command);
+    const applied = await proposeAndApplyLiveCommand(command);
     setOperationBusy(false);
+    return Boolean(applied);
   };
 
   const confirmForcedGameEnd = async () => {
@@ -1513,7 +1516,9 @@ export function SectsAndVioletsGameSurface({
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
+      actorPlayerId: kind === "sweetheart"
+        ? pendingDeathConsequence?.actorPlayerId
+        : kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
       selectionStage: kind === "demon" ? "attack" : undefined,
@@ -1524,7 +1529,7 @@ export function SectsAndVioletsGameSurface({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "sweetheart") setLiveTargetId(undefined);
     if (kind === "demon") setLivePoisonTargetId(undefined);
     if (kind === "pitHag") setLiveCharacterId(undefined);
     if (kind === "pitHagDeaths") setLiveTargetIds([]);
@@ -1556,6 +1561,11 @@ export function SectsAndVioletsGameSurface({
       setLiveVoterIds((current) => current.includes(playerId)
         ? current.filter((candidate) => candidate !== playerId)
         : [...current, playerId]);
+      return;
+    }
+    if (liveHandoff.kind === "sweetheart") {
+      if (!pendingDeathConsequence?.allowedPlayerIds.includes(playerId)) return;
+      setLiveTargetId((current) => current === playerId ? undefined : playerId);
       return;
     }
     if (liveHandoff.kind === "dreamer" || liveHandoff.kind === "seamstress") {
@@ -1621,6 +1631,17 @@ export function SectsAndVioletsGameSurface({
           expectedEventCount: gameFile.game.events.length,
         },
       });
+      if (applied) {
+        setLiveHandoff(undefined);
+        setLiveTargetId(undefined);
+        navigateToTab("play");
+      }
+    } else if (liveHandoff.kind === "sweetheart") {
+      if (!liveTargetId) {
+        setOperationBusy(false);
+        return;
+      }
+      const applied = await resolveDeathConsequence({ targetPlayerId: liveTargetId });
       if (applied) {
         setLiveHandoff(undefined);
         setLiveTargetId(undefined);
@@ -2216,6 +2237,7 @@ export function SectsAndVioletsGameSurface({
               activeImpairments={replayState.ruleState.activeImpairments}
               operationBusy={operationBusy}
               onResolve={(resolution) => void resolveDeathConsequence(resolution)}
+              onChooseSweetheartTarget={() => startLiveHandoff("sweetheart")}
             />
           ) : undefined}
           priorityPanelPlayerSafe={pendingDeathConsequence?.kind === "klutz"}

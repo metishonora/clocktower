@@ -14,12 +14,14 @@ export function DeathConsequencePanel({
   activeImpairments = [],
   operationBusy,
   onResolve,
+  onChooseSweetheartTarget = () => undefined,
 }: {
   pending: PendingDeathConsequence;
   players: Player[];
   activeImpairments?: ActiveImpairment[];
   operationBusy: boolean;
   onResolve: (resolution: DeathConsequenceResolution) => void;
+  onChooseSweetheartTarget?: () => void;
 }) {
   const [targetPlayerId, setTargetPlayerId] = useState("");
   const [secondTargetPlayerId, setSecondTargetPlayerId] = useState("");
@@ -79,21 +81,12 @@ export function DeathConsequencePanel({
     return (
       <article className="snvCurrentStep issue116CurrentStep" role="group" aria-label="사랑꾼 취함 지정">
         <h3>사랑꾼</h3>
-        {pending.actorImpairedAtTrigger ? null : (
-          <PlayerSelect
-            label="취하게 할 플레이어"
-            value={targetPlayerId}
-            players={allowed}
-            disabled={operationBusy}
-            onChange={setTargetPlayerId}
-          />
-        )}
         <div className="snvStepActions">
-          <button
-            type="button"
-            disabled={operationBusy || (!pending.actorImpairedAtTrigger && !targetPlayerId)}
-            onClick={() => onResolve({ targetPlayerId: targetPlayerId || undefined })}
-          >{pending.actorImpairedAtTrigger ? "효과 없음 확정" : "취함 적용"}</button>
+          {pending.actorImpairedAtTrigger ? (
+            <button type="button" disabled={operationBusy} onClick={() => onResolve({})}>효과 없음 확정</button>
+          ) : (
+            <button type="button" disabled={operationBusy} onClick={onChooseSweetheartTarget}>마도서에서 취함 대상 선택</button>
+          )}
         </div>
       </article>
     );

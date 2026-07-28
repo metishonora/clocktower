@@ -2154,6 +2154,9 @@ fn active_information_reasons(
         .into_iter()
         .filter(|impairment| impairment.player_id == actor_id)
         .filter_map(|impairment| {
+            if impairment.kind == ImpairmentKind::Drunk {
+                return Some(DeliveryReason::Drunk);
+            }
             let poisoner_player_id = match impairment.source_character_id.as_str() {
                 "snakeCharmer" => events.iter().find_map(|event| match &event.kind {
                     GameEventKind::SnakeCharmerActionResolved { payload }

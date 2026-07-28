@@ -69,6 +69,17 @@ fn default_command(state: &Value, demon_target: &str) -> Value {
             "type": "confirmStep",
             "payload": { "stepId": step_id, "input": { "playerIds": [demon_target] } }
         }),
+        "playerIds" if step["character"] == "dreamer" => {
+            let check = &step["informationPrompt"]["targetChecks"][0];
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": step_id,
+                    "input": { "playerIds": check["targetPlayerIds"] },
+                    "deliveredResult": check["choices"][0]["result"]
+                }
+            })
+        }
         "number" => json!({
             "type": "confirmStep",
             "payload": {
@@ -241,6 +252,54 @@ fn sweetheart_drunk_prevents_the_demons_next_attack_from_killing() {
         }]
     });
     assert_eq!(replay(&forged_events)["ok"], false);
+}
+
+#[test]
+fn sweetheart_drunk_makes_the_dreamers_information_discretionary() {
+    let mut setup = setup_event();
+    setup["payload"]["players"][4]["actualCharacter"] = json!("dreamer");
+    setup["payload"]["players"][4]["shownCharacter"] = json!("dreamer");
+    setup["payload"]["players"][6]["actualCharacter"] = json!("fangGu");
+    setup["payload"]["players"][6]["shownCharacter"] = json!("fangGu");
+    let mut events = vec![setup];
+    attack(&mut events, "player-1");
+    let pending = replay(&events);
+    let step_id = pending["value"]["pendingDeathConsequences"][0]["stepId"]
+        .as_str()
+        .unwrap();
+
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "resolveSweetheartConsequence",
+            "payload": {
+                "stepId": step_id,
+                "targetPlayerId": "player-5",
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    let state = advance_until(&mut events, "player-4", |state| {
+        state["value"]["currentStep"]["id"]
+            .as_str()
+            .is_some_and(|id| id.contains(":dreamer"))
+    });
+    let prompt = &state["value"]["currentStep"]["informationPrompt"];
+    assert_eq!(prompt["activeReasons"], json!([{ "type": "drunk" }]));
+    let check = prompt["targetChecks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|check| check["targetPlayerIds"] == json!(["player-2"]))
+        .unwrap();
+    assert!(check["choices"].as_array().unwrap().iter().any(|choice| {
+        !choice["result"]["characterIds"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("barber"))
+    }));
 }
 
 #[test]
