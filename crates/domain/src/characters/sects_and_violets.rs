@@ -1317,18 +1317,20 @@ fn insert_acquired_ability_steps(
 
         let mut step = character_step(phase, prefix, character, player, players);
         if is_demon(character) {
+            let uses_vigormortis_poison_target =
+                character == "vigormortis" && pit_hag_demon_creation(events, prefix).is_none();
             step.required_input = RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
                 min_selections: Some(1),
-                max_selections: Some(if character == "vigormortis" { 2 } else { 1 }),
+                max_selections: Some(if uses_vigormortis_poison_target { 2 } else { 1 }),
                 allowed_player_ids: Some(
                     players
                         .iter()
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
-                dependent_player_selections: if character == "vigormortis" {
+                dependent_player_selections: if uses_vigormortis_poison_target {
                     vigormortis_dependent_player_selections(players)
                 } else {
                     vec![]
@@ -1404,6 +1406,8 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
             })
             .map(|player| (player.id.as_str(), player.actual_character.as_str()))
     })?;
+    let uses_vigormortis_poison_target =
+        character == "vigormortis" && pit_hag_demon_creation(events, prefix).is_none();
     Some(PhaseStep {
         id: format!("{prefix}:demon:{actor}"),
         phase: Phase::Night,
@@ -1414,12 +1418,12 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
             kind: RequiredInputKind::PlayerIds,
             target: Some(InputTarget::Player),
             min_selections: Some(1),
-            max_selections: Some(if character == "vigormortis" { 2 } else { 1 }),
+            max_selections: Some(if uses_vigormortis_poison_target { 2 } else { 1 }),
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: Some(players.iter().map(|player| player.id.clone()).collect()),
-            dependent_player_selections: if character == "vigormortis" {
+            dependent_player_selections: if uses_vigormortis_poison_target {
                 vigormortis_dependent_player_selections(players)
             } else {
                 vec![]

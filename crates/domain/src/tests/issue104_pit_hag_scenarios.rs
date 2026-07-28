@@ -1047,6 +1047,111 @@ fn creating_a_demon_records_both_intents_then_requires_arbitrary_deaths() {
 }
 
 #[test]
+fn a_pit_hag_created_vigormortis_requests_only_an_attack_intent() {
+    let mut events = vec![setup_event()];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["vigormortis"] }
+            }
+        }),
+    );
+
+    let original_demon = replay(&events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": original_demon["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"] }
+            }
+        }),
+    );
+
+    let vigormortis = replay(&events);
+    assert_eq!(vigormortis["ok"], true, "{vigormortis}");
+    assert_eq!(
+        vigormortis["value"]["currentStep"]["id"],
+        "night:demon:player-7"
+    );
+    assert_eq!(
+        vigormortis["value"]["currentStep"]["requiredInput"]["maxSelections"],
+        1
+    );
+    assert!(
+        vigormortis["value"]["currentStep"]["requiredInput"]["dependentPlayerSelections"].is_null(),
+        "arbitrary deaths cannot trigger Vigormortis poison"
+    );
+
+    let intent = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:demon:player-7",
+                "input": { "playerIds": ["player-1"] }
+            }
+        }),
+    );
+    assert_eq!(
+        intent["value"]["event"]["payload"]["resolution"]["outcome"],
+        json!({ "kind": "noEffect", "reason": "pitHagCreatedDemon" })
+    );
+}
+
+#[test]
+fn pit_hag_demon_creation_also_removes_poison_input_from_an_existing_vigormortis() {
+    let mut setup = setup_event();
+    setup["payload"]["players"][1]["actualCharacter"] = json!("vigormortis");
+    setup["payload"]["players"][1]["shownCharacter"] = json!("vigormortis");
+    let mut events = vec![setup];
+    let pit_hag = advance_to_pit_hag(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["noDashii"] }
+            }
+        }),
+    );
+
+    let vigormortis = replay(&events);
+    assert_eq!(
+        vigormortis["value"]["currentStep"]["id"],
+        "night:demon:player-2"
+    );
+    assert_eq!(
+        vigormortis["value"]["currentStep"]["requiredInput"]["maxSelections"],
+        1
+    );
+    assert!(
+        vigormortis["value"]["currentStep"]["requiredInput"]["dependentPlayerSelections"].is_null()
+    );
+
+    let intent = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:demon:player-2",
+                "input": { "playerIds": ["player-1"] }
+            }
+        }),
+    );
+    assert_eq!(
+        intent["value"]["event"]["payload"]["resolution"]["outcome"],
+        json!({ "kind": "noEffect", "reason": "pitHagCreatedDemon" })
+    );
+}
+
+#[test]
 fn historical_manual_pit_hag_events_remain_replayable() {
     let mut events = vec![setup_event()];
     advance_to_pit_hag(&mut events);
