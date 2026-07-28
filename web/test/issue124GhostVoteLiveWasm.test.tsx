@@ -107,7 +107,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(await within(app).findByRole("button", { name: "다음 →" }));
 
   for (let informationIndex = 0; informationIndex < 3; informationIndex += 1) {
-    await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
+    await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
     const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
     await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
     await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
@@ -203,7 +203,7 @@ async function acknowledgeSnakeCharmerSwap(user: ReturnType<typeof userEvent.set
 }
 
 async function revealCurrentInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
-  await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
+  await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
   const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
   await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
   await user.click(await within(app).findByRole("button", { name: "다음 단계" }));

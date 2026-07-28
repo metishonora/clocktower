@@ -827,6 +827,19 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
   };
 
   deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const vortoxWithTruthfulTargetChoice = structuredClone(replay);
+  (vortoxWithTruthfulTargetChoice.currentStep.informationPrompt as { activeReasons: unknown[] }).activeReasons = [
+    { type: "vortox", demonPlayerId: "player-7" },
+  ];
+  throws(() => parseReplayState(vortoxWithTruthfulTargetChoice), /코어 응답 형식/);
+
+  vortoxWithTruthfulTargetChoice.currentStep.informationPrompt.targetChecks[0].choices[0].isComputed = false;
+  deepEqual<unknown>(
+    parseReplayState(vortoxWithTruthfulTargetChoice),
+    vortoxWithTruthfulTargetChoice,
+  );
+
   const missingRuleState = structuredClone(replay);
   delete (missingRuleState as { ruleState?: unknown }).ruleState;
   throws(() => parseReplayState(missingRuleState), /코어 응답 형식/);

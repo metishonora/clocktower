@@ -2012,8 +2012,11 @@ fn snv_information_prompt(
 ) -> Result<Option<InformationPrompt>, CoreError> {
     let active_reasons = active_information_reasons(step, players, events);
     let impaired = !active_reasons.is_empty();
+    let vortox_active = active_reasons
+        .iter()
+        .any(|reason| matches!(reason, DeliveryReason::Vortox { .. }));
     if matches!(step.character.as_deref(), Some("dreamer" | "seamstress")) {
-        let target_checks = targeted_information_checks(step, players, impaired)?;
+        let target_checks = targeted_information_checks(step, players, impaired, vortox_active)?;
         return Ok(Some(InformationPrompt {
             computed_result: None,
             delivery_mode: if impaired || step.character.as_deref() == Some("dreamer") {
@@ -2037,7 +2040,7 @@ fn snv_information_prompt(
         let InformationResult::Player { player_id } = &computed_result else {
             return Err(ErrorKind::ReplayFailed.into_error());
         };
-        let choices = sage_choices(players, player_id, impaired);
+        let choices = sage_choices(players, player_id, impaired, vortox_active);
         return Ok(Some(InformationPrompt {
             computed_result: Some(computed_result.clone()),
             delivery_mode: InformationDeliveryMode::Selectable,
@@ -2060,10 +2063,13 @@ fn snv_information_prompt(
                     1..=players.len() / 2
                 } else if step.character.as_deref() == Some("juggler") {
                     0..=5
+                } else if vortox_active {
+                    0..=players.len()
                 } else {
                     0..=players.iter().filter(|player| !player.alive).count()
                 };
                 range
+                    .filter(|candidate| !vortox_active || *candidate != value)
                     .map(|candidate| NumberInformationChoice {
                         value: candidate,
                         is_computed: candidate == value,
@@ -2084,6 +2090,7 @@ fn snv_information_prompt(
             if impaired {
                 [false, true]
                     .into_iter()
+                    .filter(|candidate| !vortox_active || *candidate != value)
                     .map(|candidate| BooleanInformationChoice {
                         value: candidate,
                         is_computed: candidate == value,
@@ -2260,6 +2267,7 @@ fn targeted_information_checks(
     step: &PhaseStep,
     players: &[Player],
     impaired: bool,
+    vortox_active: bool,
 ) -> Result<Vec<TargetInformationCheck>, CoreError> {
     let actor_id = step
         .player_id
@@ -2303,16 +2311,25 @@ fn targeted_information_checks(
                         evil_characters
                             .iter()
                             .filter(move |evil| {
-                                impaired
-                                    || actual_good && good.as_str() == target.actual_character
-                                    || !actual_good && evil.as_str() == target.actual_character
+                                let truthful = actual_good
+                                    && good.as_str() == target.actual_character
+                                    || !actual_good && evil.as_str() == target.actual_character;
+                                (impaired || truthful) && (!vortox_active || !truthful)
                             })
-                            .map(move |evil| TargetInformationChoice {
-                                result: InformationResult::CharacterPair {
-                                    character_ids: vec![good.as_str().into(), evil.as_str().into()],
-                                },
-                                is_computed: !impaired,
-                                registration_judgments: vec![],
+                            .map(move |evil| {
+                                let truthful = actual_good
+                                    && good.as_str() == target.actual_character
+                                    || !actual_good && evil.as_str() == target.actual_character;
+                                TargetInformationChoice {
+                                    result: InformationResult::CharacterPair {
+                                        character_ids: vec![
+                                            good.as_str().into(),
+                                            evil.as_str().into(),
+                                        ],
+                                    },
+                                    is_computed: truthful,
+                                    registration_judgments: vec![],
+                                }
                             })
                     })
                     .collect();
@@ -2337,6 +2354,7 @@ fn targeted_information_checks(
                     choices: if impaired {
                         [false, true]
                             .into_iter()
+                            .filter(|value| !vortox_active || *value != same)
                             .map(|value| TargetInformationChoice {
                                 result: InformationResult::Boolean { value },
                                 is_computed: value == same,
@@ -2362,20 +2380,20 @@ fn sage_choices(
     players: &[Player],
     killer_id: &str,
     impaired: bool,
+    vortox_active: bool,
 ) -> Vec<TargetInformationChoice> {
     let mut choices = vec![];
     for first in players {
         for second in players {
-            if first.id == second.id
-                || (!impaired && first.id != killer_id && second.id != killer_id)
-            {
+            let truthful = first.id == killer_id || second.id == killer_id;
+            if first.id == second.id || (!impaired && !truthful) || (vortox_active && truthful) {
                 continue;
             }
             choices.push(TargetInformationChoice {
                 result: InformationResult::PlayerPair {
                     player_ids: vec![first.id.clone(), second.id.clone()],
                 },
-                is_computed: !impaired,
+                is_computed: truthful,
                 registration_judgments: vec![],
             });
         }

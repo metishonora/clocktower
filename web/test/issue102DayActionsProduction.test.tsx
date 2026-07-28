@@ -170,6 +170,30 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
       },
     };
   }
+  if (step.informationPrompt?.deliveryMode === "selectable") {
+    const numberChoice = step.informationPrompt.numberChoices[0];
+    if (numberChoice) {
+      return {
+        type: "confirmStep",
+        payload: {
+          stepId: step.id,
+          input: null,
+          deliveredResult: { kind: "number", value: numberChoice.value },
+        },
+      };
+    }
+    const booleanChoice = step.informationPrompt.booleanChoices?.[0];
+    if (booleanChoice) {
+      return {
+        type: "confirmStep",
+        payload: {
+          stepId: step.id,
+          input: null,
+          deliveredResult: { kind: "boolean", value: booleanChoice.value },
+        },
+      };
+    }
+  }
   if (step.informationPrompt?.computedResult) {
     return {
       type: "confirmStep",

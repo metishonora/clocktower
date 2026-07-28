@@ -72,18 +72,20 @@ fn advance_until(events: &mut Vec<Value>, target: &str) -> Value {
         ) {
             json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "playerIds": ["player-3"] } } })
         } else if step["character"] == "dreamer" {
+            let check = &step["informationPrompt"]["targetChecks"][0];
             json!({ "type": "confirmStep", "payload": {
                 "stepId": id,
-                "input": { "playerIds": ["player-2"] },
-                "deliveredResult": { "kind": "characterPair", "characterIds": ["seamstress", "evilTwin"] }
+                "input": { "playerIds": check["targetPlayerIds"] },
+                "deliveredResult": check["choices"][0]["result"]
             }})
         } else if step["character"] == "seamstress" {
             json!({ "type": "skipStep", "payload": { "stepId": id } })
         } else if step["character"] == "sage" {
+            let check = &step["informationPrompt"]["targetChecks"][0];
             json!({ "type": "confirmStep", "payload": {
                 "stepId": id,
                 "input": null,
-                "deliveredResult": { "kind": "playerPair", "playerIds": ["player-7", "player-1"] }
+                "deliveredResult": check["choices"][0]["result"]
             }})
         } else if step["informationPrompt"]["deliveryMode"] == "selectable"
             && step["informationPrompt"]["computedResult"]["kind"] == "number"
@@ -148,7 +150,7 @@ fn dreamer_uses_the_target_truth_and_all_opposite_alignment_characters() {
 }
 
 #[test]
-fn vortox_dreamer_can_choose_any_good_and_evil_character_pair() {
+fn vortox_dreamer_can_choose_only_pairs_that_exclude_the_target_truth() {
     let mut setup = setup_event();
     setup["payload"]["players"][6]["actualCharacter"] = json!("vortox");
     setup["payload"]["players"][6]["shownCharacter"] = json!("vortox");
@@ -160,7 +162,54 @@ fn vortox_dreamer_can_choose_any_good_and_evil_character_pair() {
         .iter()
         .find(|check| check["targetPlayerIds"] == json!(["player-2"]))
         .unwrap();
-    assert_eq!(check["choices"].as_array().unwrap().len(), 136);
+    let choices = check["choices"].as_array().unwrap();
+    assert_eq!(choices.len(), 128);
+    assert!(choices.iter().all(|choice| choice["result"]["characterIds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|character| character != "seamstress")));
+
+    let truthful = propose(
+        &events,
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": "firstNight:dreamer",
+            "input": { "playerIds": ["player-2"] },
+            "deliveredResult": { "kind": "characterPair", "characterIds": ["seamstress", "evilTwin"] }
+        }}),
+    );
+    assert_eq!(truthful["ok"], false, "{truthful}");
+}
+
+#[test]
+fn vortox_oracle_excludes_and_rejects_the_truthful_number() {
+    let mut setup = setup_event();
+    setup["payload"]["players"][6]["actualCharacter"] = json!("vortox");
+    setup["payload"]["players"][6]["shownCharacter"] = json!("vortox");
+    let mut events = vec![setup];
+    let state = advance_until(&mut events, "night:oracle");
+    let prompt = &state["value"]["currentStep"]["informationPrompt"];
+    let truth = prompt["computedResult"]["value"].as_u64().unwrap();
+    assert!(prompt["activeReasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|reason| reason["type"] == "vortox"));
+    assert!(prompt["numberChoices"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|choice| choice["value"] != truth));
+
+    let truthful = propose(
+        &events,
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": "night:oracle",
+            "input": null,
+            "deliveredResult": { "kind": "number", "value": truth }
+        }}),
+    );
+    assert_eq!(truthful["ok"], false, "{truthful}");
 }
 
 #[test]

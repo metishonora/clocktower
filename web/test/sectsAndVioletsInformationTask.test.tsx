@@ -99,7 +99,64 @@ test("Clockmaker keeps its selectable information editor spacious when impaired"
   const task = screen.getByRole("article", { name: "시계공 정보" });
   expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
   expect(task.querySelector(".snvSpaciousInformationEditor")).toBeTruthy();
-  expect(within(task).getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
+  expect(within(task).getByRole("button", { name: "중독 정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
+});
+
+test("shows only the highest-priority information influence and blocks Vortox truth", () => {
+  const influencedStep: PhaseStep = {
+    ...step,
+    informationPrompt: {
+      ...step.informationPrompt!,
+      deliveryMode: "selectable",
+      activeReasons: [
+        { type: "drunk" },
+        { type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" },
+        { type: "vortox", demonPlayerId: "player-7" },
+      ],
+      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "시계공 정보" });
+  expect(within(task).getByText("보르톡스").classList.contains("vortox")).toBe(true);
+  expect(within(task).queryByText("중독")).toBeNull();
+  expect(within(task).queryByText("취함")).toBeNull();
+  const reveal = within(task).getByRole("button", { name: "거짓 정보 공개" });
+  expect(reveal.classList.contains("vortox")).toBe(true);
+  expect(within(task).getByRole("combobox", { name: "전달할 정보" }).querySelectorAll("option")).toHaveLength(2);
+  expect(within(task).queryByRole("option", { name: "1칸" })).toBeNull();
+});
+
+test.each([
+  {
+    reason: { type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" } as const,
+    badge: "중독",
+    action: "중독 정보 공개",
+    className: "poisoned",
+  },
+  {
+    reason: { type: "drunk" } as const,
+    badge: "취함",
+    action: "취한 정보 공개",
+    className: "drunk",
+  },
+])("presents $badge as a purple discretionary information state", ({ reason, badge, action, className }) => {
+  const influencedStep: PhaseStep = {
+    ...step,
+    informationPrompt: {
+      ...step.informationPrompt!,
+      deliveryMode: "selectable",
+      activeReasons: [reason],
+      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "시계공 정보" });
+  expect(within(task).getByText(badge).classList.contains(className)).toBe(true);
+  expect(within(task).getByRole("button", { name: action }).classList.contains(className)).toBe(true);
+  expect(within(task).getByRole("combobox", { name: "전달할 정보" }).querySelectorAll("option")).toHaveLength(3);
 });
 
 test("Dreamer exposes the selected target truth and the full legal opposite-alignment catalog", () => {
@@ -204,7 +261,7 @@ test("Seamstress uses the spacious target context and compact tablet actions", (
   expect(within(context).getByText("대상").nextElementSibling?.textContent).toContain("2번 유나 · 3번 도윤");
   expect(within(context).getByText("진실").nextElementSibling?.textContent).toContain("같은 진영");
   expect(screen.getByRole("group", { name: "전달할 정보" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
+  expect(screen.getByRole("button", { name: "중독 정보 공개" }).parentElement?.classList.contains("snvTargetedInformationActions")).toBe(true);
 });
 
 test("Sage uses the spacious killer and candidate layout with compact tablet actions", () => {
@@ -263,7 +320,7 @@ test("Flowergirl, Town Crier, and Oracle share the spacious tablet information l
     const task = screen.getByRole("article", { name: `${characterId === "flowergirl" ? "꽃팔이 소녀" : characterId === "townCrier" ? "포고꾼" : "예언자"} 정보` });
     expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
     expect(task.querySelector(".snvSpaciousInformationEditor")).toBeTruthy();
-    expect(within(task).getByRole("button", { name: "정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
+    expect(within(task).getByRole("button", { name: "중독 정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
     unmount();
   }
 });

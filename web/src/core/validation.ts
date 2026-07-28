@@ -586,19 +586,31 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     return false;
   }
 
+  const vortoxActive = value.activeReasons.some(
+    (reason) => isRecord(reason) && reason.type === "vortox",
+  );
   if (value.targetChecks && value.targetChecks.length > 0) {
     return (value.computedResult === undefined || isInformationResult(value.computedResult))
-      && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
+      && value.numberChoices.length === 0
+      && (value.booleanChoices?.length ?? 0) === 0
+      && (!vortoxActive || value.targetChecks.every((check) =>
+        isRecord(check)
+        && Array.isArray(check.choices)
+        && check.choices.every((choice: unknown) => isRecord(choice) && choice.isComputed === false)
+      ));
   }
   if (value.computedResult === undefined) {
     return inputKind === "setupInfo" && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (!isInformationResult(value.computedResult)) return false;
   if (value.computedResult.kind === "boolean") {
+    const computedValue = value.computedResult.value;
     const choices = value.booleanChoices ?? [];
     const computedChoices = choices.filter((choice) => choice.isComputed);
-    return value.numberChoices.length === 0 && computedChoices.length === 1 &&
-      computedChoices[0]?.value === value.computedResult.value &&
+    const computedChoiceIsValid = vortoxActive
+      ? computedChoices.length === 0 && choices.every((choice) => choice.value !== computedValue)
+      : computedChoices.length === 1 && computedChoices[0]?.value === computedValue;
+    return value.numberChoices.length === 0 && computedChoiceIsValid &&
       new Set(choices.map((choice) => choice.value)).size === choices.length;
   }
   if (value.computedResult.kind !== "number") {
@@ -607,9 +619,11 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
 
   const computedChoices = value.numberChoices.filter((choice) => choice.isComputed);
   const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
+  const computedValue = value.computedResult.value;
   return (
-    computedChoices.length === 1 &&
-    computedChoices[0]?.value === value.computedResult.value &&
+    (vortoxActive
+      ? computedChoices.length === 0 && value.numberChoices.every((choice) => choice.value !== computedValue)
+      : computedChoices.length === 1 && computedChoices[0]?.value === computedValue) &&
     uniqueValues.size === value.numberChoices.length &&
     (value.booleanChoices?.length ?? 0) === 0
   );
