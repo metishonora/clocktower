@@ -224,6 +224,23 @@ export type Command =
       type: "resolveVigormortisPoison";
       payload: { sourceEventId: string; targetPlayerId: string; expectedEventCount: number };
     }
+  | {
+      type: "resolveSweetheartConsequence";
+      payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
+    }
+  | {
+      type: "resolveBarberConsequence";
+      payload: {
+        stepId: string;
+        chooserDemonPlayerId?: string;
+        decision: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+        expectedEventCount: number;
+      };
+    }
+  | {
+      type: "resolveKlutzConsequence";
+      payload: { stepId: string; targetPlayerId: string; expectedEventCount: number };
+    }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
       type: "updatePlayerAnnotations";
@@ -307,6 +324,25 @@ export type ReplayState = {
   madnessAssignments?: MadnessAssignmentState[];
   pendingMadnessExecution?: PendingMadnessExecution;
   pendingVigormortisPoisonChoices?: PendingVigormortisPoisonChoice[];
+  pendingDeathConsequences?: PendingDeathConsequence[];
+  pendingForcedGameEnd?: PendingForcedGameEnd;
+};
+
+export type PendingDeathConsequence = {
+  stepId: string;
+  kind: "sweetheart" | "barber" | "klutz";
+  sourceEventId: string;
+  deathSequence: number;
+  actorPlayerId: string;
+  sourceAbilityInstanceId: string;
+  actorImpairedAtTrigger: boolean;
+  allowedPlayerIds: string[];
+  eligibleChooserPlayerIds: string[];
+};
+
+export type PendingForcedGameEnd = {
+  sourceEventId: string;
+  winningTeam: "good" | "evil";
 };
 
 export type PendingVigormortisPoisonChoice = {
@@ -374,7 +410,7 @@ export type RuleState = {
 };
 
 export type ActiveImpairment = {
-  kind: "poisoned";
+  kind: "poisoned" | "drunk";
   playerId: string;
   sourceEventId: string;
   sourceCharacterId: string;
@@ -728,8 +764,66 @@ export type GameEvent = EventCommon &
           targetPlayerId: string;
         };
       }
-    | { type: "gameEnded"; payload: { winningTeam: "good" | "evil" } }
+    | {
+        type: "sweetheartConsequenceResolved";
+        payload: {
+          stepId: string;
+          trigger: DeathTriggerRef;
+          targetPlayerId?: string;
+          outcome:
+            | { kind: "drunkApplied"; impairment: ActiveImpairment }
+            | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
+        };
+      }
+    | {
+        type: "barberConsequenceResolved";
+        payload: {
+          stepId: string;
+          trigger: DeathTriggerRef;
+          chooserDemonPlayerId?: string;
+          decision: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+          outcome:
+            | { kind: "declined" }
+            | { kind: "swapped"; identityTransitions: PlayerIdentityTransition[] }
+            | { kind: "noChangeSameCharacter" }
+            | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
+        };
+      }
+    | {
+        type: "klutzChoiceResolved";
+        payload: {
+          stepId: string;
+          trigger: DeathTriggerRef;
+          targetPlayerId: string;
+          actorAlignment: "good" | "evil";
+          targetAlignment: "good" | "evil";
+          outcome:
+            | { kind: "safe" }
+            | { kind: "actorImpaired" }
+            | { kind: "teamLost"; losingTeam: "good" | "evil"; winningTeam: "good" | "evil" };
+        };
+      }
+    | {
+        type: "gameEnded";
+        payload: {
+          winningTeam: "good" | "evil";
+          source?: { kind: "klutzChoice"; sourceEventId: string };
+        };
+      }
   );
+
+export type DeathTriggerRef = {
+  sourceEventId: string;
+  deathSequence: number;
+  playerId: string;
+  sourceAbilityInstanceId: string;
+};
+
+export type DeathConsequenceNoEffectReason =
+  | "actorImpairedAtDeath"
+  | "actorImpairedAtResolution"
+  | "sourceAbilityLost"
+  | "noLivingDemon";
 
 export type VirginImpairmentContext =
   | { kind: "healthy" }

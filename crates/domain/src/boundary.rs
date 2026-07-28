@@ -153,11 +153,38 @@ fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
                     matches!(kind, GameEventKind::NightActionResolved { .. })
                 })?;
             }
+            GameEventKind::SweetheartConsequenceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::BarberConsequenceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::KlutzChoiceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::GameEnded { payload } => {
+                if let Some(crate::contracts::GameEndSource::KlutzChoice { source_event_id }) =
+                    &payload.source
+                {
+                    require_prior(source_event_id, |kind| {
+                        matches!(kind, GameEventKind::KlutzChoiceResolved { .. })
+                    })?;
+                }
+            }
             _ => {}
         }
         prior_by_id.insert(current_id, &event.kind);
     }
     Ok(())
+}
+
+fn is_death_source_event(kind: &GameEventKind) -> bool {
+    matches!(
+        kind,
+        GameEventKind::DeathConfirmed { .. }
+            | GameEventKind::NightActionResolved { .. }
+            | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
+    )
 }
 
 pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {

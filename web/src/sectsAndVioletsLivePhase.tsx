@@ -43,6 +43,8 @@ export function SectsAndVioletsLiveProgress({
   actorRoleName,
   actorCharacterId,
   actorSummary,
+  priorityPanel,
+  priorityPanelPlayerSafe = false,
   onGoToGrimoire,
   onStartNomination,
   onEndNominations,
@@ -62,6 +64,8 @@ export function SectsAndVioletsLiveProgress({
   actorRoleName?: string;
   actorCharacterId?: string;
   actorSummary?: string;
+  priorityPanel?: ReactNode;
+  priorityPanelPlayerSafe?: boolean;
   onGoToGrimoire: () => void;
   onStartNomination: () => void;
   onEndNominations: () => void;
@@ -99,7 +103,7 @@ export function SectsAndVioletsLiveProgress({
         </div>
       </header>
       <div className="snvFirstNightPrimary">
-        {step?.requiredInput.kind === "nomination" ? (
+        {priorityPanel ?? (step?.requiredInput.kind === "nomination" ? (
           <article className="snvCurrentStep issue116CurrentStep">
             <h3>지명 및 투표</h3>
             <div className="issue116CandidateSummary" aria-label="현재 최고 득표">
@@ -219,9 +223,9 @@ export function SectsAndVioletsLiveProgress({
               ) : <button type="button" disabled={operationBusy} onClick={onAdvance}>{advanceLabel(step)}</button>}
             </div>
           </article>
-        ) : null}
+        ) : null)}
       </div>
-      <PhaseOverview replayState={replayState} />
+      {priorityPanelPlayerSafe ? null : <PhaseOverview replayState={replayState} />}
     </section>
   );
 }

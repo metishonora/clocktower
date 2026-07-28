@@ -114,6 +114,54 @@ fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value
     for _ in 0..96 {
         let state = replay(events);
         assert_eq!(state["ok"], true, "replay failed: {state}");
+        if let Some(pending) = state["value"]["pendingDeathConsequences"]
+            .as_array()
+            .and_then(|pending| pending.first())
+        {
+            let step_id = pending["stepId"].as_str().expect("death consequence step");
+            let expected_event_count = events.len();
+            let command = match pending["kind"].as_str() {
+                Some("sweetheart") => json!({
+                    "type": "resolveSweetheartConsequence",
+                    "payload": {
+                        "stepId": step_id,
+                        "targetPlayerId": state["value"]["players"][0]["id"],
+                        "expectedEventCount": expected_event_count
+                    }
+                }),
+                Some("barber") => json!({
+                    "type": "resolveBarberConsequence",
+                    "payload": {
+                        "stepId": step_id,
+                        "chooserDemonPlayerId": pending["eligibleChooserPlayerIds"][0],
+                        "decision": { "kind": "decline" },
+                        "expectedEventCount": expected_event_count
+                    }
+                }),
+                Some("klutz") => {
+                    let target = state["value"]["players"]
+                        .as_array()
+                        .and_then(|players| {
+                            players.iter().find(|player| {
+                                player["alive"] == true && player["alignment"] == "good"
+                            })
+                        })
+                        .and_then(|player| player["id"].as_str())
+                        .expect("living good Klutz target");
+                    json!({
+                        "type": "resolveKlutzConsequence",
+                        "payload": {
+                            "stepId": step_id,
+                            "targetPlayerId": target,
+                            "expectedEventCount": expected_event_count
+                        }
+                    })
+                }
+                kind => panic!("unexpected death consequence: {kind:?}"),
+            };
+            append(events, command);
+            continue;
+        }
         if wanted(&state) {
             return state;
         }
@@ -797,7 +845,18 @@ fn two_living_players_surface_the_evil_win_confirmation() {
         }),
     );
 
-    let two_living = replay(&events);
+    let two_living = advance_to(&mut events, |state| {
+        state["value"]["pendingDeathConsequences"]
+            .as_array()
+            .is_none_or(Vec::is_empty)
+            && state["value"]["players"].as_array().is_some_and(|players| {
+                players
+                    .iter()
+                    .filter(|player| player["alive"] == true)
+                    .count()
+                    == 2
+            })
+    });
     assert_eq!(
         two_living["value"]["players"]
             .as_array()

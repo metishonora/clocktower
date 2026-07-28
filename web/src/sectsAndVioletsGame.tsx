@@ -42,6 +42,11 @@ import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { SectsAndVioletsReveal } from "./features/reveal/SectsAndVioletsReveal";
 import {
+  DeathConsequencePanel,
+  ForcedGameEndPanel,
+  type DeathConsequenceResolution,
+} from "./features/death-consequences/DeathConsequencePanel";
+import {
   CharacterChangeReveal,
   CharacterChangeRevealPrompt,
 } from "./features/identity-change/CharacterChangeReveal";
@@ -342,6 +347,7 @@ export function SectsAndVioletsGameSurface({
   );
   const effectiveMadnessAssignments = replayState?.madnessAssignments ?? [];
   const pendingVigormortisPoison = replayState?.pendingVigormortisPoisonChoices?.[0];
+  const pendingDeathConsequence = replayState?.pendingDeathConsequences?.[0];
   const vigormortisDependentSelection = liveTargetId
     ? replayState?.currentStep?.requiredInput.dependentPlayerSelections?.find(
       (selection) => selection.triggerPlayerId === liveTargetId && selection.selectionIndex === 1,
@@ -356,14 +362,16 @@ export function SectsAndVioletsGameSurface({
     const result: Record<string, PlayerTokenPresentation[]> = {};
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
       const source = characters.find((character) => character.id === impairment.sourceCharacterId);
-      const description = impairment.sourceCharacterId === "vigormortis"
+      const description = impairment.kind === "drunk"
+        ? "사랑꾼의 능력으로 영구히 취한 상태입니다."
+        : impairment.sourceCharacterId === "vigormortis"
         ? "비고르모르티스가 죽인 하수인의 주민 이웃으로 중독된 상태입니다."
         : impairment.sourceCharacterId === "noDashii"
           ? "노 다시의 가장 가까운 주민 이웃으로 중독된 상태입니다."
           : "뱀 조련사 교환으로 영구 중독된 상태입니다.";
       const token = {
         instanceId: `canonical-${impairment.sourceEventId}-${impairment.playerId}`,
-        label: "중독",
+        label: impairment.kind === "drunk" ? "취함" : "중독",
         sourceLabel: source?.name ?? impairment.sourceCharacterId,
         sourceIconSrc: sectsAndVioletsCharacterAsset(impairment.sourceCharacterId)?.src,
         visualKind: "impairment" as const,
@@ -1354,6 +1362,56 @@ export function SectsAndVioletsGameSurface({
     return applyCanonicalEvent(result.value.event, "phase", baseGameFile, true, baseReplayState);
   };
 
+  const resolveDeathConsequence = async (resolution: DeathConsequenceResolution) => {
+    if (!pendingDeathConsequence || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const common = {
+      stepId: pendingDeathConsequence.stepId,
+      expectedEventCount: gameFile.game.events.length,
+    };
+    const command: Command = pendingDeathConsequence.kind === "sweetheart"
+      ? {
+          type: "resolveSweetheartConsequence",
+          payload: { ...common, targetPlayerId: "targetPlayerId" in resolution ? resolution.targetPlayerId : undefined },
+        }
+      : pendingDeathConsequence.kind === "barber"
+        ? {
+            type: "resolveBarberConsequence",
+            payload: {
+              ...common,
+              chooserDemonPlayerId: "chooserDemonPlayerId" in resolution
+                ? resolution.chooserDemonPlayerId
+                : undefined,
+              decision: "decision" in resolution ? resolution.decision : { kind: "decline" },
+            },
+          }
+        : {
+            type: "resolveKlutzConsequence",
+            payload: {
+              ...common,
+              targetPlayerId: "targetPlayerId" in resolution ? resolution.targetPlayerId ?? "" : "",
+            },
+          };
+    await proposeAndApplyLiveCommand(command);
+    setOperationBusy(false);
+  };
+
+  const confirmForcedGameEnd = async () => {
+    const pending = replayState?.pendingForcedGameEnd;
+    if (!pending || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    await proposeAndApplyLiveCommand({
+      type: "endGame",
+      payload: {
+        winningTeam: pending.winningTeam,
+        expectedEventCount: gameFile.game.events.length,
+      },
+    });
+    setOperationBusy(false);
+  };
+
   useEffect(() => {
     if (!pendingVigormortisPoison) {
       autoResolvedVigormortisPoisonRef.current = undefined;
@@ -2145,6 +2203,22 @@ export function SectsAndVioletsGameSurface({
           actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
           actorCharacterId={liveActor?.actualCharacter ?? replayState.currentStep.character}
           actorSummary={liveActorCharacter?.ability}
+          priorityPanel={replayState.pendingForcedGameEnd ? (
+            <ForcedGameEndPanel
+              pending={replayState.pendingForcedGameEnd}
+              operationBusy={operationBusy}
+              onConfirm={() => void confirmForcedGameEnd()}
+            />
+          ) : pendingDeathConsequence ? (
+            <DeathConsequencePanel
+              pending={pendingDeathConsequence}
+              players={replayState.players}
+              activeImpairments={replayState.ruleState.activeImpairments}
+              operationBusy={operationBusy}
+              onResolve={(resolution) => void resolveDeathConsequence(resolution)}
+            />
+          ) : undefined}
+          priorityPanelPlayerSafe={pendingDeathConsequence?.kind === "klutz"}
           onGoToGrimoire={() => navigateToTab("seating")}
           onStartNomination={() => startLiveHandoff("nomination")}
           onEndNominations={() => void endLiveNominations()}
@@ -2336,6 +2410,8 @@ export function SectsAndVioletsGameSurface({
         && replayState?.phase === "day"
         && (activeTab === "seating" || activeTab === "play")
         && !liveHandoff
+        && !pendingDeathConsequence
+        && !replayState.pendingForcedGameEnd
         && !nextIdentityReveal ? (
           <DayActionDock
             players={replayState.players}
@@ -2354,6 +2430,8 @@ export function SectsAndVioletsGameSurface({
         && (replayState.phase === "day" || replayState.phase === "night")
         && (activeTab === "seating" || activeTab === "play")
         && !liveHandoff
+        && !pendingDeathConsequence
+        && !replayState.pendingForcedGameEnd
         && !nextIdentityReveal
         && !replayState.pendingMadnessExecution ? (
           <MadnessActionDock
