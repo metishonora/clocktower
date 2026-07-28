@@ -265,4 +265,34 @@ fn juggler_count_is_limited_to_five_and_drives_that_nights_information() {
         juggler["value"]["currentStep"]["informationPrompt"]["computedResult"],
         json!({ "kind": "number", "value": 3 })
     );
+
+    let revealed = propose(
+        &events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:juggler",
+                "input": null,
+                "deliveredResult": { "kind": "number", "value": 2 }
+            }
+        }),
+    );
+    assert_eq!(revealed["ok"], true, "{revealed}");
+    assert_eq!(
+        revealed["value"]["event"]["payload"]["information"]["computedResult"],
+        json!({ "kind": "number", "value": 3 })
+    );
+    assert_eq!(
+        revealed["value"]["event"]["payload"]["information"]["deliveredResult"],
+        json!({ "kind": "number", "value": 2 })
+    );
+    assert_eq!(
+        revealed["value"]["revealPayload"],
+        json!({ "kind": "numericInformation", "characterId": "juggler", "value": 2 })
+    );
+
+    let mut legacy_events = events;
+    legacy_events.push(phase_event("phaseStepConfirmed", "night:juggler"));
+    let legacy = replay(&legacy_events);
+    assert_eq!(legacy["ok"], true, "{legacy}");
 }

@@ -2463,7 +2463,7 @@ function identityRevealKey(gameId: string, sourceEventId: string, sequence: numb
 }
 
 function isAutomatedInformationCharacter(characterId: string | undefined): boolean {
-  return ["clockmaker", "dreamer", "flowergirl", "townCrier", "oracle", "seamstress", "sage"].includes(characterId ?? "");
+  return ["clockmaker", "dreamer", "flowergirl", "townCrier", "oracle", "juggler", "seamstress", "sage"].includes(characterId ?? "");
 }
 
 function automatedInformationRevealPayload(
@@ -2514,6 +2514,7 @@ function informationRevealLabel(characterId: string | undefined): string {
   if (characterId === "clockmaker") return "악마와 하수인의 거리";
   if (characterId === "flowergirl") return "오늘 악마가…";
   if (characterId === "townCrier") return "오늘 하수인이…";
+  if (characterId === "juggler") return "맞힌 추측";
   return "죽은 악한 플레이어";
 }
 

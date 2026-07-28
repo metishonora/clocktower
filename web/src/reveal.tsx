@@ -69,10 +69,12 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
       ? "악마와 하수인의 거리"
       : payload.characterId === "oracle"
         ? "죽은 악한 플레이어"
+        : payload.characterId === "juggler"
+          ? "맞힌 추측"
         : payload.characterId === "chef"
           ? "서로 이웃한 악한 팀"
           : "살아있는 양옆 이웃 중 악한 팀";
-    content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{label}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : payload.characterId === "clockmaker" ? "칸" : "명"}</strong></>;
+    content = <><h1>{displayCharacterLabel(payload.characterId)} 정보</h1><p>{label}</p><strong className="roleInformationValue">{payload.value}{payload.characterId === "chef" ? "쌍" : payload.characterId === "clockmaker" ? "칸" : payload.characterId === "juggler" ? "개" : "명"}</strong></>;
   } else if (payload.kind === "booleanInformation") {
     content = <><h1>{characterLabel(payload.characterId)} 정보</h1><p>{payload.characterId === "flowergirl" ? "오늘 악마가…" : "오늘 하수인이…"}</p><strong className="roleInformationValue boolean">{payload.characterId === "flowergirl" ? (payload.value ? "투표함" : "투표하지 않음") : (payload.value ? "지목함" : "지목하지 않음")}</strong></>;
   } else if (payload.kind === "fortuneTellerInformation") {
@@ -171,7 +173,7 @@ function roleInformationTitle(payload: RoleInformationRevealPayload) {
   if (payload.kind === "dreamerInformation") return "꿈꾸는 자 정보";
   if (payload.kind === "seamstressInformation") return "재봉사 정보";
   if (payload.kind === "sageInformation") return "현자 정보";
-  return `${characterLabel(payload.characterId)} 정보`;
+  return `${displayCharacterLabel(payload.characterId)} 정보`;
 }
 
 function TextReveal({ payload, onClose }: { payload: TextRevealPayload; onClose: () => void }) {

@@ -140,7 +140,7 @@ function GenericEditor({ step, choices, value, busy, onChange }: { step: PhaseSt
 
 export function informationValueLabel(characterId: string, result?: InformationResult): string {
   if (!result) return "-";
-  if (result.kind === "number") return `${result.value}${characterId === "clockmaker" ? "칸" : "명"}`;
+  if (result.kind === "number") return `${result.value}${characterId === "clockmaker" ? "칸" : characterId === "juggler" ? "개" : "명"}`;
   if (result.kind === "boolean") {
     if (characterId === "seamstress") return result.value ? "같은 진영" : "다른 진영";
     if (characterId === "flowergirl") return result.value ? "투표함" : "투표하지 않음";

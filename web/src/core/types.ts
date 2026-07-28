@@ -455,7 +455,7 @@ export type SetupInformationRevealPayload =
 
 export type NumericInformationRevealPayload = {
   kind: "numericInformation";
-  characterId: "chef" | "empath" | "clockmaker" | "oracle";
+  characterId: "chef" | "empath" | "clockmaker" | "oracle" | "juggler";
   value: number;
 };
 

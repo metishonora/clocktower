@@ -1772,6 +1772,7 @@ fn is_information_character(character: Option<&str>) -> bool {
                 | "flowergirl"
                 | "townCrier"
                 | "oracle"
+                | "juggler"
                 | "seamstress"
                 | "sage"
         )
@@ -3810,7 +3811,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             (GameEventKind::PhaseStepConfirmed { payload }, PhaseStepSupport::Automated) => {
                 validate_required_input(&current.required_input, &payload.input, players_at_event)
                     .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
-                if is_information_character(current.character.as_deref()) {
+                let legacy_juggler_without_information = current.character.as_deref()
+                    == Some("juggler")
+                    && payload.information.is_none();
+                if is_information_character(current.character.as_deref())
+                    && !legacy_juggler_without_information
+                {
                     let expected = snv_confirmed_information(
                         &current,
                         players_at_event,
