@@ -138,6 +138,47 @@ fn confirm_attack(demon: &str, events: &mut Vec<Value>, target_player_id: &str) 
     proposal
 }
 
+fn advance_to_step(demon: &str, events: &mut Vec<Value>, expected_step_id: &str) -> Value {
+    for _ in 0..96 {
+        let state = replay(demon, events);
+        assert_eq!(state["ok"], true, "replay failed: {state}");
+        if state["value"]["currentStep"]["id"] == expected_step_id {
+            return state;
+        }
+        append_current_resolution(demon, events);
+    }
+    panic!("did not reach {expected_step_id}");
+}
+
+fn confirm_vigormortis_minion_attack(
+    events: &mut Vec<Value>,
+    minion_player_id: &str,
+    poison_target_player_id: &str,
+) -> Value {
+    let before = advance_to_demon("vigormortis", events);
+    let step_id = before["value"]["currentStep"]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let proposal = propose(
+        "vigormortis",
+        events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step_id,
+                "input": { "playerIds": [minion_player_id, poison_target_player_id] }
+            }
+        }),
+    );
+    assert_eq!(
+        proposal["ok"], true,
+        "Vigormortis Minion attack failed from {before}: {proposal}"
+    );
+    events.push(proposal["value"]["event"].clone());
+    proposal
+}
+
 #[test]
 fn all_four_snv_demons_share_one_canonical_baseline_attack_contract() {
     for demon in DEMONS {
@@ -386,4 +427,243 @@ fn replay_rejects_a_tampered_demon_death_audit() {
 
     let replayed = replay(demon, &events);
     assert_eq!(replayed["error"]["code"], "REPLAY_FAILED");
+}
+
+#[test]
+fn no_dashii_continuously_poisons_the_nearest_townsfolk_even_when_dead() {
+    let mut events = vec![setup_event("noDashii")];
+    let initial = replay("noDashii", &events);
+    assert_eq!(
+        initial["value"]["ruleState"]["activeImpairments"],
+        json!([
+            {
+                "kind": "poisoned",
+                "playerId": "player-1",
+                "sourceEventId": "setup-1",
+                "sourceCharacterId": "noDashii",
+                "expires": "never"
+            },
+            {
+                "kind": "poisoned",
+                "playerId": "player-5",
+                "sourceEventId": "setup-1",
+                "sourceCharacterId": "noDashii",
+                "expires": "never"
+            }
+        ])
+    );
+
+    confirm_attack("noDashii", &mut events, "player-5");
+    let after_death = replay("noDashii", &events);
+    assert_eq!(after_death["value"]["players"][4]["alive"], false);
+    assert!(after_death["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["playerId"] == "player-5"));
+
+    let mut transformed_events = vec![setup_event("noDashii")];
+    advance_to_step("noDashii", &mut transformed_events, "night:pitHag:player-6");
+    let transformation = propose(
+        "noDashii",
+        &transformed_events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:pitHag:player-6",
+                "input": { "playerIds": ["player-5"], "characterIds": ["klutz"] }
+            }
+        }),
+    );
+    assert_eq!(transformation["ok"], true, "{transformation}");
+    transformed_events.push(transformation["value"]["event"].clone());
+    let recalculated = replay("noDashii", &transformed_events);
+    let poisoned_ids = recalculated["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|impairment| impairment["playerId"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(poisoned_ids, vec!["player-1", "player-4"]);
+}
+
+#[test]
+fn vigormortis_records_one_neighbor_choice_and_keeps_it_while_the_townsfolk_is_valid() {
+    let mut events = vec![setup_event("vigormortis")];
+    let before = advance_to_demon("vigormortis", &mut events);
+    assert_eq!(
+        before["value"]["currentStep"]["requiredInput"]["dependentPlayerSelections"],
+        json!([{
+            "triggerPlayerId": "player-6",
+            "selectionIndex": 1,
+            "allowedPlayerIds": ["player-1", "player-5"]
+        }])
+    );
+
+    let attack = confirm_vigormortis_minion_attack(&mut events, "player-6", "player-5");
+    let source_event_id = attack["value"]["event"]["id"].as_str().unwrap();
+    assert_eq!(
+        attack["value"]["event"]["payload"]["resolution"]["outcome"]["vigormortisEffect"],
+        json!({
+            "minionPlayerId": "player-6",
+            "sourceAbilityInstanceId": "setup:player-7",
+            "poisonTargetPlayerId": "player-5"
+        })
+    );
+    let active = replay("vigormortis", &events);
+    assert!(active["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["playerId"] == "player-5"
+            && impairment["sourceEventId"] == source_event_id));
+
+    advance_to_step("vigormortis", &mut events, "night2:demon:player-7");
+    confirm_attack("vigormortis", &mut events, "player-5");
+    let dead_target = replay("vigormortis", &events);
+    assert_eq!(dead_target["value"]["players"][4]["alive"], false);
+    assert!(dead_target["value"]["pendingVigormortisPoisonChoices"].is_null());
+    assert!(dead_target["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["playerId"] == "player-5"
+            && impairment["sourceCharacterId"] == "vigormortis"));
+}
+
+#[test]
+fn vigormortis_exposes_a_canonical_replacement_only_after_the_target_becomes_invalid() {
+    let mut events = vec![setup_event("vigormortis")];
+    let attack = confirm_vigormortis_minion_attack(&mut events, "player-6", "player-5");
+    let source_event_id = attack["value"]["event"]["id"].as_str().unwrap().to_string();
+
+    advance_to_step("vigormortis", &mut events, "night2:pitHag:player-6");
+    let transformation = propose(
+        "vigormortis",
+        &events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night2:pitHag:player-6",
+                "input": { "playerIds": ["player-5"], "characterIds": ["klutz"] }
+            }
+        }),
+    );
+    assert_eq!(transformation["ok"], true, "{transformation}");
+    events.push(transformation["value"]["event"].clone());
+
+    let pending = replay("vigormortis", &events);
+    assert_eq!(
+        pending["value"]["pendingVigormortisPoisonChoices"],
+        json!([{
+            "sourceEventId": source_event_id,
+            "vigormortisPlayerId": "player-7",
+            "minionPlayerId": "player-6",
+            "previousTargetPlayerId": "player-5",
+            "allowedPlayerIds": ["player-1", "player-4"],
+            "reason": "targetNotTownsfolk"
+        }])
+    );
+    assert!(!pending["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["sourceEventId"] == source_event_id));
+
+    let replacement = propose(
+        "vigormortis",
+        &events,
+        json!({
+            "type": "resolveVigormortisPoison",
+            "payload": {
+                "sourceEventId": source_event_id,
+                "targetPlayerId": "player-4",
+                "expectedEventCount": events.len()
+            }
+        }),
+    );
+    assert_eq!(replacement["ok"], true, "{replacement}");
+    assert_eq!(
+        replacement["value"]["event"]["type"],
+        "vigormortisPoisonTargetChanged"
+    );
+    events.push(replacement["value"]["event"].clone());
+
+    let resolved = replay("vigormortis", &events);
+    assert!(resolved["value"]["pendingVigormortisPoisonChoices"].is_null());
+    assert!(resolved["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["playerId"] == "player-4"
+            && impairment["sourceEventId"] == source_event_id));
+}
+
+#[test]
+fn vigormortis_effect_ends_when_the_killed_minion_resurrects_or_stops_being_a_minion() {
+    let mut resurrected_events = vec![setup_event("vigormortis")];
+    let attack = confirm_vigormortis_minion_attack(&mut resurrected_events, "player-6", "player-5");
+    let source_event_id = attack["value"]["event"]["id"].as_str().unwrap();
+    let pit_hag_step = advance_to_step(
+        "vigormortis",
+        &mut resurrected_events,
+        "night2:pitHag:player-6",
+    );
+    resurrected_events.push(json!({
+        "id": "resurrect-minion",
+        "type": "playerTransitioned",
+        "phase": "night",
+        "payload": {
+            "stepId": pit_hag_step["value"]["currentStep"]["id"],
+            "sourcePlayerId": "player-6",
+            "sourceCharacterId": "pitHag",
+            "transitions": [{
+                "kind": "resurrection",
+                "playerId": "player-6",
+                "before": {
+                    "actualCharacter": "pitHag", "shownCharacter": "pitHag",
+                    "alignment": "evil", "alive": false
+                },
+                "after": {
+                    "actualCharacter": "pitHag", "shownCharacter": "pitHag",
+                    "alignment": "evil", "alive": true
+                }
+            }]
+        },
+        "summary": "하수인 부활",
+        "createdAt": "2026-07-28T00:00:00.000Z"
+    }));
+    let resurrected = replay("vigormortis", &resurrected_events);
+    assert_eq!(resurrected["ok"], true, "{resurrected}");
+    assert!(!resurrected["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["sourceEventId"] == source_event_id));
+
+    let mut changed_events = vec![setup_event("vigormortis")];
+    let attack = confirm_vigormortis_minion_attack(&mut changed_events, "player-6", "player-5");
+    let source_event_id = attack["value"]["event"]["id"].as_str().unwrap();
+    advance_to_step("vigormortis", &mut changed_events, "night2:pitHag:player-6");
+    let change = propose(
+        "vigormortis",
+        &changed_events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night2:pitHag:player-6",
+                "input": { "playerIds": ["player-6"], "characterIds": ["klutz"] }
+            }
+        }),
+    );
+    assert_eq!(change["ok"], true, "{change}");
+    changed_events.push(change["value"]["event"].clone());
+    let changed = replay("vigormortis", &changed_events);
+    assert_eq!(changed["ok"], true, "{changed}");
+    assert!(!changed["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|impairment| impairment["sourceEventId"] == source_event_id));
+    assert!(changed["value"]["pendingVigormortisPoisonChoices"].is_null());
 }

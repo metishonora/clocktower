@@ -645,7 +645,7 @@ fn a_transformed_minion_killed_by_vigormortis_keeps_their_ability() {
             "type": "confirmStep",
             "payload": {
                 "stepId": demon["value"]["currentStep"]["id"],
-                "input": { "playerIds": ["player-7"] }
+                "input": { "playerIds": ["player-7", "player-5"] }
             }
         }),
     );

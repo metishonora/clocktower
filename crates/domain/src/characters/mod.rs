@@ -77,6 +77,7 @@ impl ScriptRules {
                             | GameEventKind::MadnessAssigned { .. }
                             | GameEventKind::MadnessCheckRecorded { .. }
                             | GameEventKind::MadnessExecutionConfirmed { .. }
+                            | GameEventKind::VigormortisPoisonTargetChanged { .. }
                             | GameEventKind::GameEnded { .. }
                     )
                 }) =>
@@ -98,6 +99,7 @@ impl ScriptRules {
                 | Command::RecordDayAction { .. }
                 | Command::RecordMadnessCheck { .. }
                 | Command::ExecuteMadness { .. }
+                | Command::ResolveVigormortisPoison { .. }
                 | Command::EndGame { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),

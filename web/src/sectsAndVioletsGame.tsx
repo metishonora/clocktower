@@ -194,6 +194,7 @@ export function SectsAndVioletsGameSurface({
   const [liveNomineeId, setLiveNomineeId] = useState<string>();
   const [liveVoterIds, setLiveVoterIds] = useState<string[]>([]);
   const [liveTargetId, setLiveTargetId] = useState<string>();
+  const [livePoisonTargetId, setLivePoisonTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
   const [liveCharacterId, setLiveCharacterId] = useState<string>();
   const [liveMadnessCharacterId, setLiveMadnessCharacterId] = useState("");
@@ -205,6 +206,7 @@ export function SectsAndVioletsGameSurface({
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
+  const autoResolvedVigormortisPoisonRef = useRef<string | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
   const textAutosaveTimerRef = useRef<number | undefined>(undefined);
   const textAutosaveDirtyRef = useRef(false);
@@ -339,16 +341,33 @@ export function SectsAndVioletsGameSurface({
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
   const effectiveMadnessAssignments = replayState?.madnessAssignments ?? [];
+  const pendingVigormortisPoison = replayState?.pendingVigormortisPoisonChoices?.[0];
+  const vigormortisDependentSelection = liveTargetId
+    ? replayState?.currentStep?.requiredInput.dependentPlayerSelections?.find(
+      (selection) => selection.triggerPlayerId === liveTargetId && selection.selectionIndex === 1,
+    )
+    : undefined;
+  const liveSelectablePlayerIds = liveHandoff?.kind === "vigormortisPoison"
+    ? pendingVigormortisPoison?.allowedPlayerIds
+    : liveHandoff?.kind === "demon" && liveHandoff.selectionStage === "poison"
+      ? vigormortisDependentSelection?.allowedPlayerIds
+      : undefined;
   const canonicalTokensByPlayerId = useMemo<PlayerTokensByPlayerId>(() => {
     const result: Record<string, PlayerTokenPresentation[]> = {};
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
+      const source = characters.find((character) => character.id === impairment.sourceCharacterId);
+      const description = impairment.sourceCharacterId === "vigormortis"
+        ? "비고르모르티스가 죽인 하수인의 주민 이웃으로 중독된 상태입니다."
+        : impairment.sourceCharacterId === "noDashii"
+          ? "노 다시의 가장 가까운 주민 이웃으로 중독된 상태입니다."
+          : "뱀 조련사 교환으로 영구 중독된 상태입니다.";
       const token = {
         instanceId: `canonical-${impairment.sourceEventId}-${impairment.playerId}`,
         label: "중독",
-        sourceLabel: "뱀 조련사",
+        sourceLabel: source?.name ?? impairment.sourceCharacterId,
         sourceIconSrc: sectsAndVioletsCharacterAsset(impairment.sourceCharacterId)?.src,
         visualKind: "impairment" as const,
-        description: "뱀 조련사 교환으로 영구 중독된 상태입니다.",
+        description,
       };
       (result[impairment.playerId] ??= []).push(token);
     }
@@ -1329,6 +1348,51 @@ export function SectsAndVioletsGameSurface({
     return applyCanonicalEvent(result.value.event, "phase", baseGameFile, true, baseReplayState);
   };
 
+  useEffect(() => {
+    if (!pendingVigormortisPoison) {
+      autoResolvedVigormortisPoisonRef.current = undefined;
+      return;
+    }
+    if (nextIdentityRevealKey) return;
+    if (pendingVigormortisPoison.allowedPlayerIds.length === 1) {
+      const resolutionKey = `${pendingVigormortisPoison.sourceEventId}:${gameFile.game.events.length}`;
+      if (operationBusy || autoResolvedVigormortisPoisonRef.current === resolutionKey) return;
+      autoResolvedVigormortisPoisonRef.current = resolutionKey;
+      setOperationBusy(true);
+      setOperationError(undefined);
+      void proposeAndApplyLiveCommand({
+        type: "resolveVigormortisPoison",
+        payload: {
+          sourceEventId: pendingVigormortisPoison.sourceEventId,
+          targetPlayerId: pendingVigormortisPoison.allowedPlayerIds[0],
+          expectedEventCount: gameFile.game.events.length,
+        },
+      }).finally(() => setOperationBusy(false));
+      return;
+    }
+    if (pendingVigormortisPoison.allowedPlayerIds.length === 2
+      && (liveHandoff?.kind !== "vigormortisPoison"
+        || liveHandoff.sourceEventId !== pendingVigormortisPoison.sourceEventId)) {
+      setLiveTargetId(undefined);
+      setLiveHandoff({
+        kind: "vigormortisPoison",
+        complete: false,
+        actorPlayerId: pendingVigormortisPoison.vigormortisPlayerId,
+        sourceEventId: pendingVigormortisPoison.sourceEventId,
+      });
+      navigateToTab("seating");
+    }
+  }, [
+    gameFile.game.events.length,
+    liveHandoff?.kind,
+    liveHandoff?.sourceEventId,
+    operationBusy,
+    nextIdentityRevealKey,
+    pendingVigormortisPoison?.sourceEventId,
+    pendingVigormortisPoison?.vigormortisPlayerId,
+    pendingVigormortisPoison?.allowedPlayerIds,
+  ]);
+
   const recordDayAction = async (
     action: AvailableDayAction,
     record: DayActionRecordInput,
@@ -1388,6 +1452,7 @@ export function SectsAndVioletsGameSurface({
       actorPlayerId: kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
+      selectionStage: kind === "demon" ? "attack" : undefined,
     });
     if (kind === "nomination") {
       setLiveNominatorId(undefined);
@@ -1396,6 +1461,7 @@ export function SectsAndVioletsGameSurface({
       setLiveNominationCheckpointId(undefined);
     }
     if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus") setLiveTargetId(undefined);
+    if (kind === "demon") setLivePoisonTargetId(undefined);
     if (kind === "pitHag") setLiveCharacterId(undefined);
     if (kind === "pitHagDeaths") setLiveTargetIds([]);
     if (kind === "cerenovus") setLiveMadnessCharacterId("");
@@ -1443,6 +1509,30 @@ export function SectsAndVioletsGameSurface({
         : [...current, playerId]);
       return;
     }
+    if (liveHandoff.kind === "vigormortisPoison") {
+      if (!pendingVigormortisPoison?.allowedPlayerIds.includes(playerId)) return;
+      setLiveTargetId((current) => current === playerId ? undefined : playerId);
+      return;
+    }
+    if (liveHandoff.kind === "demon") {
+      if (liveHandoff.selectionStage === "poison") {
+        if (!vigormortisDependentSelection?.allowedPlayerIds.includes(playerId)) return;
+        setLivePoisonTargetId((current) => current === playerId ? undefined : playerId);
+        return;
+      }
+      setLiveTargetId(playerId);
+      setLivePoisonTargetId(undefined);
+      const dependent = replayState?.currentStep?.requiredInput.dependentPlayerSelections?.find(
+        (selection) => selection.triggerPlayerId === playerId && selection.selectionIndex === 1,
+      );
+      if (dependent?.allowedPlayerIds.length === 1) {
+        setLivePoisonTargetId(dependent.allowedPlayerIds[0]);
+      }
+      setLiveHandoff(dependent?.allowedPlayerIds.length
+        ? { ...liveHandoff, selectionStage: "poison" }
+        : { ...liveHandoff, selectionStage: "attack" });
+      return;
+    }
     if (liveHandoff.kind === "snakeCharmer" || liveHandoff.kind === "cerenovus") {
       if (!replayState?.currentStep?.requiredInput.allowedPlayerIds?.includes(playerId)) return;
     }
@@ -1451,10 +1541,31 @@ export function SectsAndVioletsGameSurface({
 
   const confirmLiveHandoff = async () => {
     const step = replayState?.currentStep;
-    if (!step || !liveHandoff || operationBusy) return;
+    if (!liveHandoff || operationBusy) return;
     setOperationBusy(true);
     setOperationError(undefined);
-    if (liveHandoff.kind === "nomination") {
+    if (liveHandoff.kind === "vigormortisPoison") {
+      if (!pendingVigormortisPoison || !liveTargetId) {
+        setOperationBusy(false);
+        return;
+      }
+      const applied = await proposeAndApplyLiveCommand({
+        type: "resolveVigormortisPoison",
+        payload: {
+          sourceEventId: pendingVigormortisPoison.sourceEventId,
+          targetPlayerId: liveTargetId,
+          expectedEventCount: gameFile.game.events.length,
+        },
+      });
+      if (applied) {
+        setLiveHandoff(undefined);
+        setLiveTargetId(undefined);
+        navigateToTab("play");
+      }
+    } else if (!step) {
+      setOperationBusy(false);
+      return;
+    } else if (liveHandoff.kind === "nomination") {
       if (!liveNominatorId || !liveNomineeId) {
         setOperationBusy(false);
         return;
@@ -1520,7 +1631,10 @@ export function SectsAndVioletsGameSurface({
     } else if (liveTargetId) {
       const applied = await proposeAndApplyLiveCommand({
         type: "confirmStep",
-        payload: { stepId: step.id, input: { playerIds: [liveTargetId] } },
+        payload: {
+          stepId: step.id,
+          input: { playerIds: livePoisonTargetId ? [liveTargetId, livePoisonTargetId] : [liveTargetId] },
+        },
       });
       if (applied) setLiveHandoff({ ...liveHandoff, complete: true });
     }
@@ -1533,11 +1647,20 @@ export function SectsAndVioletsGameSurface({
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
     setLiveTargetId(undefined);
+    setLivePoisonTargetId(undefined);
     setLiveTargetIds([]);
     setLiveCharacterId(undefined);
     setLiveMadnessCharacterId("");
     setLiveNominationCheckpointId(undefined);
     navigateToTab("play");
+  };
+
+  const resetVigormortisAttackSelection = () => {
+    setLiveTargetId(undefined);
+    setLivePoisonTargetId(undefined);
+    setLiveHandoff((current) => current?.kind === "demon"
+      ? { ...current, selectionStage: "attack" }
+      : current);
   };
 
   const acknowledgeIdentityReveal = () => {
@@ -1804,6 +1927,9 @@ export function SectsAndVioletsGameSurface({
           nomineeId={liveNomineeId}
           voterIds={liveVoterIds}
           targetId={liveTargetId}
+          secondaryTargetId={livePoisonTargetId}
+          referenceTargetId={pendingVigormortisPoison?.previousTargetPlayerId}
+          selectablePlayerIds={liveSelectablePlayerIds}
           targetIds={liveTargetIds}
           characterId={liveCharacterId}
           pitHagDemonIntents={pitHagDemonIntents}
@@ -1848,6 +1974,7 @@ export function SectsAndVioletsGameSurface({
           onReturn={returnFromLiveHandoff}
           onCancelDayHandoff={() => void cancelLiveDayHandoff()}
           onResetDaySelection={resetLiveDaySelection}
+          onResetAttackSelection={resetVigormortisAttackSelection}
           onGoToProgress={() => navigateToTab("play")}
           onReturnToSetup={() => setReturnConfirmOpen(true)}
         />

@@ -148,6 +148,11 @@ fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
                     }
                 }
             }
+            GameEventKind::VigormortisPoisonTargetChanged { payload } => {
+                require_prior(&payload.source_event_id, |kind| {
+                    matches!(kind, GameEventKind::NightActionResolved { .. })
+                })?;
+            }
             _ => {}
         }
         prior_by_id.insert(current_id, &event.kind);

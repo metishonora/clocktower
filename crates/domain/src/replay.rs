@@ -180,6 +180,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         day_action_records: vec![],
         madness_assignments: vec![],
         pending_madness_execution: None,
+        pending_vigormortis_poison_choices: vec![],
     })
 }
 
@@ -494,6 +495,7 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
             execution_survival_allowed: false,
             mayor_decision: None,
             demon_succession: Some(pending.prompt.clone()),
+            dependent_player_selections: vec![],
             optional: false,
         },
         can_skip: false,
@@ -1127,6 +1129,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,

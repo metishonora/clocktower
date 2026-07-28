@@ -91,6 +91,36 @@ fn advance_to_snake_charmer(events: &mut Vec<Value>, later_night_only: bool) -> 
     panic!("did not reach Snake Charmer step");
 }
 
+fn advance_to_character(events: &mut Vec<Value>, character: &str) -> Value {
+    for _ in 0..48 {
+        let state = replay(events);
+        assert_eq!(state["ok"], true, "replay failed: {state}");
+        let step = &state["value"]["currentStep"];
+        if step["character"] == character {
+            return state;
+        }
+        let step_id = step["id"].as_str().expect("step id");
+        let command = if step["requiredInput"]["kind"] == "nomination" {
+            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
+        } else if step["requiredInput"]["kind"] == "executionDecision" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
+        } else if step["requiredInput"]["kind"] == "characterTransformation" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": [step["playerId"]], "characterIds": ["pitHag"] } } })
+        } else if step["character"] == "dreamer" {
+            let check = &step["informationPrompt"]["targetChecks"][0];
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })
+        } else if step["character"] == "seamstress" {
+            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
+        } else if step["support"] == "manual" {
+            json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
+        } else {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": null } })
+        };
+        append(events, command);
+    }
+    panic!("did not reach {character}");
+}
+
 fn snake_step_id(state: &Value) -> &str {
     state["value"]["currentStep"]["id"]
         .as_str()
@@ -226,6 +256,83 @@ fn official_no_swap_and_vigormortis_swap_are_atomic_replayable_events() {
         "snakeCharmer"
     );
     assert_eq!(undone["value"]["ruleState"]["activeImpairments"], json!([]));
+}
+
+#[test]
+fn a_poisoned_character_changed_to_minion_still_counts_for_vigormortis() {
+    let mut events = vec![standard_setup()];
+    let first_snake = advance_to_snake_charmer(&mut events, false);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": snake_step_id(&first_snake),
+                "input": { "playerIds": ["player-6"] }
+            }
+        }),
+    );
+    let snake = advance_to_snake_charmer(&mut events, true);
+    let swap = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": snake_step_id(&snake),
+                "input": { "playerIds": ["player-7"] }
+            }
+        }),
+    );
+    assert_eq!(
+        swap["value"]["event"]["payload"]["outcome"]["kind"], "swap",
+        "{swap}"
+    );
+
+    let pit_hag = advance_to_character(&mut events, "pitHag");
+    let change = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["witch"] }
+            }
+        }),
+    );
+    assert_eq!(
+        change["value"]["event"]["payload"]["outcome"]["kind"], "changed",
+        "{change}"
+    );
+
+    let demon = advance_to_character(&mut events, "vigormortis");
+    assert_eq!(demon["value"]["currentStep"]["character"], "vigormortis");
+    assert_eq!(demon["value"]["currentStep"]["playerId"], "player-1");
+    let attack = append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": demon["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7", "player-2"] }
+            }
+        }),
+    );
+    assert_eq!(
+        attack["value"]["event"]["payload"]["resolution"]["outcome"]["vigormortisEffect"]
+            ["minionPlayerId"],
+        "player-7"
+    );
+
+    let after = replay(&events);
+    let impairments = after["value"]["ruleState"]["activeImpairments"]
+        .as_array()
+        .unwrap();
+    assert!(impairments.iter().any(|impairment| {
+        impairment["playerId"] == "player-7" && impairment["sourceCharacterId"] == "snakeCharmer"
+    }));
+    assert!(impairments.iter().any(|impairment| {
+        impairment["playerId"] == "player-2" && impairment["sourceCharacterId"] == "vigormortis"
+    }));
 }
 
 #[test]

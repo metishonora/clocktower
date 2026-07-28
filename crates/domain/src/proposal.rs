@@ -89,6 +89,9 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::RecordMadnessCheck { .. } | Command::ExecuteMadness { .. } => {
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
+        Command::ResolveVigormortisPoison { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
         Command::UpdatePlayerAnnotations { payload } => {
             propose_player_annotations(&game_file, payload)

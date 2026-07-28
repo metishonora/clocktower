@@ -282,6 +282,14 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "playerAnnotationsUpdated":
       if (!isPlayerAnnotationsPayload(payload)) throw invalidEvent();
       break;
+    case "vigormortisPoisonTargetChanged":
+      if (
+        !hasOnlyKeys(payload, ["sourceEventId", "previousTargetPlayerId", "targetPlayerId"]) ||
+        typeof payload.sourceEventId !== "string" ||
+        (payload.previousTargetPlayerId !== undefined && typeof payload.previousTargetPlayerId !== "string") ||
+        typeof payload.targetPlayerId !== "string"
+      ) throw invalidEvent();
+      break;
     case "gameEnded":
       if (
         !hasExactKeys(payload, ["winningTeam"]) ||
@@ -386,6 +394,25 @@ function isPendingMadnessExecution(value: unknown): boolean {
     && typeof value.interruptedStepId === "string";
 }
 
+function isPendingVigormortisPoisonChoice(value: unknown): boolean {
+  return isRecord(value)
+    && hasOnlyKeys(value, [
+      "sourceEventId",
+      "vigormortisPlayerId",
+      "minionPlayerId",
+      "previousTargetPlayerId",
+      "allowedPlayerIds",
+      "reason",
+    ])
+    && typeof value.sourceEventId === "string"
+    && typeof value.vigormortisPlayerId === "string"
+    && typeof value.minionPlayerId === "string"
+    && isOptionalString(value.previousTargetPlayerId)
+    && Array.isArray(value.allowedPlayerIds)
+    && value.allowedPlayerIds.every(isString)
+    && ["noCurrentTarget", "targetNotTownsfolk", "targetNotNearestTownsfolk"].includes(String(value.reason));
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
@@ -411,6 +438,9 @@ export function parseReplayState(value: unknown): ReplayState {
     (value.madnessAssignments !== undefined &&
       (!Array.isArray(value.madnessAssignments) || !value.madnessAssignments.every(isMadnessAssignment))) ||
     (value.pendingMadnessExecution !== undefined && !isPendingMadnessExecution(value.pendingMadnessExecution)) ||
+    (value.pendingVigormortisPoisonChoices !== undefined &&
+      (!Array.isArray(value.pendingVigormortisPoisonChoices) ||
+        !value.pendingVigormortisPoisonChoices.every(isPendingVigormortisPoisonChoice))) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -801,6 +831,14 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
     (value.survivalAllowed === undefined || typeof value.survivalAllowed === "boolean") &&
     (value.mayorDecision === undefined || isMayorDecisionPrompt(value.mayorDecision)) &&
     (value.demonSuccession === undefined || isDemonSuccessionPrompt(value.demonSuccession)) &&
+    (value.dependentPlayerSelections === undefined ||
+      (Array.isArray(value.dependentPlayerSelections) && value.dependentPlayerSelections.every((selection) =>
+        isRecord(selection) &&
+        hasExactKeys(selection, ["triggerPlayerId", "selectionIndex", "allowedPlayerIds"]) &&
+        typeof selection.triggerPlayerId === "string" &&
+        typeof selection.selectionIndex === "number" &&
+        Array.isArray(selection.allowedPlayerIds) && selection.allowedPlayerIds.every(isString)
+      ))) &&
     typeof value.optional === "boolean"
   );
 }
@@ -945,13 +983,19 @@ function isNightActionResolution(value: unknown): boolean {
       return hasExactKeys(outcome, ["kind", "reason"]) &&
         ["targetAlreadyDead", "actorImpaired", "notActualCharacter", "pitHagCreatedDemon"].includes(String(outcome.reason));
     }
-    return outcome.kind === "deaths" && hasExactKeys(outcome, ["kind", "deaths"]) &&
+    return outcome.kind === "deaths" && hasOnlyKeys(outcome, ["kind", "deaths", "vigormortisEffect"]) &&
       Array.isArray(outcome.deaths) && outcome.deaths.length > 0 && outcome.deaths.every((death) => (
         isRecord(death) && hasExactKeys(death, ["playerId", "cause"]) &&
         typeof death.playerId === "string" && isRecord(death.cause) &&
         hasExactKeys(death.cause, ["kind", "actorPlayerId", "actorCharacterId", "targetPlayerId"]) &&
         death.cause.kind === "demonAttack" && typeof death.cause.actorPlayerId === "string" &&
         typeof death.cause.actorCharacterId === "string" && typeof death.cause.targetPlayerId === "string"
+      )) && (outcome.vigormortisEffect === undefined || (
+        isRecord(outcome.vigormortisEffect) &&
+        hasOnlyKeys(outcome.vigormortisEffect, ["minionPlayerId", "sourceAbilityInstanceId", "poisonTargetPlayerId"]) &&
+        typeof outcome.vigormortisEffect.minionPlayerId === "string" &&
+        typeof outcome.vigormortisEffect.sourceAbilityInstanceId === "string" &&
+        (outcome.vigormortisEffect.poisonTargetPlayerId === undefined || typeof outcome.vigormortisEffect.poisonTargetPlayerId === "string")
       ));
   }
   if (value.kind !== "impAttack" || !hasOnlyKeys(value, ["kind", "targetPlayerId", "mayorContext", "outcome"]) ||
