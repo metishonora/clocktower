@@ -188,6 +188,62 @@ fn sweetheart_death_is_immediately_pending_and_resolves_to_replayable_permanent_
 }
 
 #[test]
+fn sweetheart_drunk_prevents_the_demons_next_attack_from_killing() {
+    let mut events = vec![setup_event()];
+    attack(&mut events, "player-1");
+    let pending = replay(&events);
+    let step_id = pending["value"]["pendingDeathConsequences"][0]["stepId"]
+        .as_str()
+        .unwrap();
+
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "resolveSweetheartConsequence",
+            "payload": {
+                "stepId": step_id,
+                "targetPlayerId": "player-7",
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    let attack = attack(&mut events, "player-4");
+    assert_eq!(
+        attack["value"]["event"]["payload"]["resolution"]["outcome"],
+        json!({ "kind": "noEffect", "reason": "actorImpaired" })
+    );
+
+    let after = replay(&events);
+    assert_eq!(after["ok"], true, "replay failed: {after}");
+    assert_eq!(
+        after["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-4")
+            .unwrap()["alive"],
+        true
+    );
+
+    let mut forged_events = events.clone();
+    forged_events.last_mut().unwrap()["payload"]["resolution"]["outcome"] = json!({
+        "kind": "deaths",
+        "deaths": [{
+            "playerId": "player-4",
+            "cause": {
+                "kind": "demonAttack",
+                "actorPlayerId": "player-7",
+                "actorCharacterId": "vortox",
+                "targetPlayerId": "player-4"
+            }
+        }]
+    });
+    assert_eq!(replay(&forged_events)["ok"], false);
+}
+
+#[test]
 fn barber_death_lets_the_storyteller_choose_a_living_demon_and_atomically_swap_two_players() {
     let mut events = vec![setup_event()];
     attack(&mut events, "player-2");

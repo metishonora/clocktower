@@ -2642,12 +2642,15 @@ fn apply_player_event(
             let Some(target) = players.iter().find(|player| player.id == *target_player_id) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
+            let actor_impaired = active_snv_impairments(players, &events[..event_index])
+                .iter()
+                .any(|impairment| impairment.player_id == actor.id);
             match outcome {
                 DemonAttackOutcome::Deaths {
                     deaths,
                     vigormortis_effect,
                 } => {
-                    if deaths.is_empty() {
+                    if actor_impaired || deaths.is_empty() {
                         return Err(ErrorKind::ReplayFailed.into_error());
                     }
                     let expected_vigormortis_effect = actor_character_id == "vigormortis"
@@ -2707,9 +2710,14 @@ fn apply_player_event(
                     }
                 }
                 DemonAttackOutcome::NoEffect {
-                    reason:
-                        DemonAttackNoEffectReason::ActorImpaired
-                        | DemonAttackNoEffectReason::NotActualCharacter,
+                    reason: DemonAttackNoEffectReason::ActorImpaired,
+                } => {
+                    if !actor_impaired {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                }
+                DemonAttackOutcome::NoEffect {
+                    reason: DemonAttackNoEffectReason::NotActualCharacter,
                 } => {}
                 DemonAttackOutcome::NoEffect {
                     reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
@@ -6092,6 +6100,9 @@ fn propose_demon_attack(
         .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
+    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
+        .iter()
+        .any(|impairment| impairment.player_id == actor.id);
     let vigormortis_effect = if actor_character_id == "vigormortis"
         && target.alive
         && character_kind(&target.actual_character) == Some(CharacterKind::Minion)
@@ -6126,6 +6137,14 @@ fn propose_demon_attack(
                 reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
             },
             "사망 대상 후보 기록",
+            vec![],
+        )
+    } else if actor_impaired {
+        (
+            DemonAttackOutcome::NoEffect {
+                reason: DemonAttackNoEffectReason::ActorImpaired,
+            },
+            "취함/중독 · 사망 없음",
             vec![],
         )
     } else if target.alive {
