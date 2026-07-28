@@ -201,6 +201,7 @@ export function SectsAndVioletsGameSurface({
   const [liveTargetId, setLiveTargetId] = useState<string>();
   const [livePoisonTargetId, setLivePoisonTargetId] = useState<string>();
   const [liveTargetIds, setLiveTargetIds] = useState<string[]>([]);
+  const [liveChooserId, setLiveChooserId] = useState<string>();
   const [liveCharacterId, setLiveCharacterId] = useState<string>();
   const [liveMadnessCharacterId, setLiveMadnessCharacterId] = useState("");
   const [activeFreeActionGroup, setActiveFreeActionGroup] = useState<"day" | "madness">();
@@ -355,7 +356,15 @@ export function SectsAndVioletsGameSurface({
     : undefined;
   const liveSelectablePlayerIds = liveHandoff?.kind === "vigormortisPoison"
     ? pendingVigormortisPoison?.allowedPlayerIds
-    : liveHandoff?.kind === "sweetheart"
+    : liveHandoff?.kind === "barber" && liveHandoff.selectionStage === "chooser"
+      ? pendingDeathConsequence?.eligibleChooserPlayerIds
+    : liveHandoff?.kind === "barber"
+      ? pendingDeathConsequence?.allowedPlayerIds.filter((playerId) => {
+          const player = replayState?.players.find((candidate) => candidate.id === playerId);
+          return characters.find((character) => character.id === player?.actualCharacter)?.kind !== "demon"
+            || playerId === liveChooserId;
+        })
+    : liveHandoff?.kind === "sweetheart" || liveHandoff?.kind === "klutz"
       ? pendingDeathConsequence?.allowedPlayerIds
     : liveHandoff?.kind === "demon" && liveHandoff.selectionStage === "poison"
       ? vigormortisDependentSelection?.allowedPlayerIds
@@ -1513,15 +1522,18 @@ export function SectsAndVioletsGameSurface({
   };
 
   const startLiveHandoff = (kind: LiveHandoff["kind"]) => {
+    const soleBarberChooser = kind === "barber" && pendingDeathConsequence?.eligibleChooserPlayerIds.length === 1
+      ? pendingDeathConsequence.eligibleChooserPlayerIds[0]
+      : undefined;
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "sweetheart"
+      actorPlayerId: kind === "sweetheart" || kind === "barber" || kind === "klutz"
         ? pendingDeathConsequence?.actorPlayerId
         : kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
-      selectionStage: kind === "demon" ? "attack" : undefined,
+      selectionStage: kind === "demon" ? "attack" : kind === "barber" ? soleBarberChooser ? "swap" : "chooser" : undefined,
     });
     if (kind === "nomination") {
       setLiveNominatorId(undefined);
@@ -1529,7 +1541,11 @@ export function SectsAndVioletsGameSurface({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "sweetheart") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "sweetheart" || kind === "klutz") setLiveTargetId(undefined);
+    if (kind === "barber") {
+      setLiveChooserId(soleBarberChooser);
+      setLiveTargetIds([]);
+    }
     if (kind === "demon") setLivePoisonTargetId(undefined);
     if (kind === "pitHag") setLiveCharacterId(undefined);
     if (kind === "pitHagDeaths") setLiveTargetIds([]);
@@ -1563,9 +1579,26 @@ export function SectsAndVioletsGameSurface({
         : [...current, playerId]);
       return;
     }
-    if (liveHandoff.kind === "sweetheart") {
+    if (liveHandoff.kind === "sweetheart" || liveHandoff.kind === "klutz") {
       if (!pendingDeathConsequence?.allowedPlayerIds.includes(playerId)) return;
       setLiveTargetId((current) => current === playerId ? undefined : playerId);
+      return;
+    }
+    if (liveHandoff.kind === "barber") {
+      if (liveHandoff.selectionStage === "chooser") {
+        if (!pendingDeathConsequence?.eligibleChooserPlayerIds.includes(playerId)) return;
+        setLiveChooserId(playerId);
+        setLiveTargetIds([]);
+        setLiveHandoff({ ...liveHandoff, selectionStage: "swap" });
+        return;
+      }
+      if (!pendingDeathConsequence?.allowedPlayerIds.includes(playerId)) return;
+      const candidate = replayState?.players.find((player) => player.id === playerId);
+      if (characters.find((character) => character.id === candidate?.actualCharacter)?.kind === "demon"
+        && playerId !== liveChooserId) return;
+      setLiveTargetIds((current) => current.includes(playerId)
+        ? current.filter((candidateId) => candidateId !== playerId)
+        : current.length >= 2 ? current : [...current, playerId]);
       return;
     }
     if (liveHandoff.kind === "dreamer" || liveHandoff.kind === "seamstress") {
@@ -1636,7 +1669,7 @@ export function SectsAndVioletsGameSurface({
         setLiveTargetId(undefined);
         navigateToTab("play");
       }
-    } else if (liveHandoff.kind === "sweetheart") {
+    } else if (liveHandoff.kind === "sweetheart" || liveHandoff.kind === "klutz") {
       if (!liveTargetId) {
         setOperationBusy(false);
         return;
@@ -1645,6 +1678,21 @@ export function SectsAndVioletsGameSurface({
       if (applied) {
         setLiveHandoff(undefined);
         setLiveTargetId(undefined);
+        navigateToTab("play");
+      }
+    } else if (liveHandoff.kind === "barber") {
+      if (!liveChooserId || liveTargetIds.length !== 2) {
+        setOperationBusy(false);
+        return;
+      }
+      const applied = await resolveDeathConsequence({
+        chooserDemonPlayerId: liveChooserId,
+        decision: { kind: "swap", playerIds: [liveTargetIds[0], liveTargetIds[1]] },
+      });
+      if (applied) {
+        setLiveHandoff(undefined);
+        setLiveChooserId(undefined);
+        setLiveTargetIds([]);
         navigateToTab("play");
       }
     } else if (!step) {
@@ -1726,6 +1774,23 @@ export function SectsAndVioletsGameSurface({
     setOperationBusy(false);
   };
 
+  const declineLiveBarberSwap = async () => {
+    if (operationBusy || liveHandoff?.kind !== "barber" || !liveChooserId) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const applied = await resolveDeathConsequence({
+      chooserDemonPlayerId: liveChooserId,
+      decision: { kind: "decline" },
+    });
+    if (applied) {
+      setLiveHandoff(undefined);
+      setLiveChooserId(undefined);
+      setLiveTargetIds([]);
+      navigateToTab("play");
+    }
+    setOperationBusy(false);
+  };
+
   const returnFromLiveHandoff = () => {
     setLiveHandoff(undefined);
     setLiveNominatorId(undefined);
@@ -1734,6 +1799,7 @@ export function SectsAndVioletsGameSurface({
     setLiveTargetId(undefined);
     setLivePoisonTargetId(undefined);
     setLiveTargetIds([]);
+    setLiveChooserId(undefined);
     setLiveCharacterId(undefined);
     setLiveMadnessCharacterId("");
     setLiveNominationCheckpointId(undefined);
@@ -1772,7 +1838,7 @@ export function SectsAndVioletsGameSurface({
       setLiveNomineeId(undefined);
     } else if (liveHandoff?.kind === "vote") {
       setLiveVoterIds([]);
-    } else if (liveHandoff?.kind === "dreamer" || liveHandoff?.kind === "seamstress") {
+    } else if (liveHandoff?.kind === "dreamer" || liveHandoff?.kind === "seamstress" || liveHandoff?.kind === "barber") {
       setLiveTargetIds([]);
     }
   };
@@ -2016,6 +2082,7 @@ export function SectsAndVioletsGameSurface({
           referenceTargetId={pendingVigormortisPoison?.previousTargetPlayerId}
           selectablePlayerIds={liveSelectablePlayerIds}
           targetIds={liveTargetIds}
+          chooserId={liveChooserId}
           characterId={liveCharacterId}
           pitHagDemonIntents={pitHagDemonIntents}
           centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
@@ -2056,6 +2123,7 @@ export function SectsAndVioletsGameSurface({
           onSeatClick={chooseLiveSeat}
           onCharacterChange={setLiveCharacterId}
           onConfirm={() => void confirmLiveHandoff()}
+          onDecline={() => void declineLiveBarberSwap()}
           onReturn={returnFromLiveHandoff}
           onCancelDayHandoff={() => void cancelLiveDayHandoff()}
           onResetDaySelection={resetLiveDaySelection}
@@ -2237,7 +2305,7 @@ export function SectsAndVioletsGameSurface({
               activeImpairments={replayState.ruleState.activeImpairments}
               operationBusy={operationBusy}
               onResolve={(resolution) => void resolveDeathConsequence(resolution)}
-              onChooseSweetheartTarget={() => startLiveHandoff("sweetheart")}
+              onChooseTarget={() => startLiveHandoff(pendingDeathConsequence.kind)}
             />
           ) : undefined}
           priorityPanelPlayerSafe={pendingDeathConsequence?.kind === "klutz"}
