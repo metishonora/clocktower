@@ -462,7 +462,13 @@ export function SectsAndVioletsGameSurface({
     const prompt = canonicalInformationStep?.informationPrompt;
     const targetCheck = prompt?.targetChecks?.find((check) => check.targetPlayerIds.length === selectedInformationTargetIds.length && check.targetPlayerIds.every((id) => selectedInformationTargetIds.includes(id)))
       ?? prompt?.targetChecks?.find((check) => check.targetPlayerIds.length === 0);
-    setSelectedInformationResult(targetCheck?.choices[0]?.result ?? prompt?.computedResult);
+    const vortoxActive = prompt?.activeReasons.some((reason) => reason.type === "vortox") ?? false;
+    const firstPromptChoice = prompt?.numberChoices[0]
+      ? { kind: "number" as const, value: prompt.numberChoices[0].value }
+      : prompt?.booleanChoices?.[0]
+        ? { kind: "boolean" as const, value: prompt.booleanChoices[0].value }
+        : undefined;
+    setSelectedInformationResult(targetCheck?.choices[0]?.result ?? (vortoxActive ? firstPromptChoice : prompt?.computedResult));
   }, [canonicalInformationStep?.id, informationCheckpoint, selectedInformationTargetIds]);
 
   useEffect(() => {

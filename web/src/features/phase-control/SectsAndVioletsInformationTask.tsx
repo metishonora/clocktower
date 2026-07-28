@@ -1,5 +1,5 @@
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
-import type { InformationResult, PhaseStep, Player, TargetCheck } from "../../core/types";
+import type { DeliveryReason, InformationResult, PhaseStep, Player, TargetCheck } from "../../core/types";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
@@ -35,9 +35,17 @@ export function SectsAndVioletsInformationTask({
   const characterId = step.character ?? actor.actualCharacter;
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
   const asset = sectsAndVioletsCharacterAsset(characterId);
+  const influence = visibleInformationInfluence(step.informationPrompt?.activeReasons ?? []);
+  const influencePresentation = influence ? informationInfluencePresentation[influence] : undefined;
   const targetCheck = targetCheckForSelection(step, selectedPlayerIds);
-  const choices = targetCheck?.choices.map((choice) => choice.result) ?? informationChoices(step);
-  const selectedResult = deliveredResult ?? (choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
+  const choices = targetCheck?.choices
+    .filter((choice) => influence !== "vortox" || !choice.isComputed)
+    .map((choice) => choice.result) ?? informationChoices(step, influence === "vortox");
+  const proposedResult = deliveredResult
+    ?? (targetCheck ? choices[0] : choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
+  const selectedResult = proposedResult && choices.some((choice) => informationResultKey(choice) === informationResultKey(proposedResult))
+    ? proposedResult
+    : choices[0];
   const targeted = characterId === "dreamer" || characterId === "seamstress";
   const needsTargets = targeted && !targetCheck;
   const usesManualStepLayout = needsTargets;
@@ -52,7 +60,10 @@ export function SectsAndVioletsInformationTask({
       >
         {asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}
         <div>
-          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? characterId}</span>
+          <span className="snvInformationRoleLine">
+            <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? characterId}</span>
+            {influencePresentation ? <em className={`snvInformationInfluenceBadge ${influence}`}>{influencePresentation.badge}</em> : null}
+          </span>
           <strong>{actor.name}</strong>
         </div>
       </CharacterDetailButton>
@@ -91,7 +102,7 @@ export function SectsAndVioletsInformationTask({
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
           <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
-            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"}`} disabled={busy || !selectedResult} onClick={onReveal}>정보 공개</button>
+            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || !selectedResult} onClick={onReveal}>{influencePresentation?.action ?? "정보 공개"}</button>
             {revealed && onContinue ? <button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button> : null}
           </div>
         </>
@@ -151,11 +162,29 @@ export function informationValueLabel(characterId: string, result?: InformationR
   return "-";
 }
 
-function informationChoices(step: PhaseStep): InformationResult[] {
+function informationChoices(step: PhaseStep, excludeComputed = false): InformationResult[] {
   const prompt = step.informationPrompt;
   if (!prompt) return [];
-  if (prompt.targetChecks?.length === 1 && prompt.targetChecks[0].targetPlayerIds.length === 0) return prompt.targetChecks[0].choices.map((choice) => choice.result);
-  return [...prompt.numberChoices.map((choice) => ({ kind: "number" as const, value: choice.value })), ...(prompt.booleanChoices ?? []).map((choice) => ({ kind: "boolean" as const, value: choice.value }))];
+  if (prompt.targetChecks?.length === 1 && prompt.targetChecks[0].targetPlayerIds.length === 0) return prompt.targetChecks[0].choices.filter((choice) => !excludeComputed || !choice.isComputed).map((choice) => choice.result);
+  return [
+    ...prompt.numberChoices.filter((choice) => !excludeComputed || !choice.isComputed).map((choice) => ({ kind: "number" as const, value: choice.value })),
+    ...(prompt.booleanChoices ?? []).filter((choice) => !excludeComputed || !choice.isComputed).map((choice) => ({ kind: "boolean" as const, value: choice.value })),
+  ];
+}
+
+type InformationInfluence = "drunk" | "poisoned" | "vortox";
+
+const informationInfluencePresentation: Record<InformationInfluence, { badge: string; action: string }> = {
+  drunk: { badge: "취함", action: "취한 정보 공개" },
+  poisoned: { badge: "중독", action: "중독 정보 공개" },
+  vortox: { badge: "보르톡스", action: "거짓 정보 공개" },
+};
+
+function visibleInformationInfluence(reasons: DeliveryReason[]): InformationInfluence | undefined {
+  if (reasons.some((reason) => reason.type === "vortox")) return "vortox";
+  if (reasons.some((reason) => reason.type === "poisoned")) return "poisoned";
+  if (reasons.some((reason) => reason.type === "drunk")) return "drunk";
+  return undefined;
 }
 
 function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
