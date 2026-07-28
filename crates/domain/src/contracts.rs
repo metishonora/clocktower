@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult, Phase,
-    PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, PlayerTransition,
+    AbilityInstanceId, Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult,
+    Phase, PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, PlayerTransition,
     RegistrationJudgment, ScriptTokenRef, StepInput, SystemTokenId,
 };
 
@@ -85,6 +85,18 @@ pub(crate) enum Command {
     UpdatePlayerAnnotations {
         payload: UpdatePlayerAnnotationsCommandPayload,
     },
+    #[serde(rename = "resolveVigormortisPoison")]
+    ResolveVigormortisPoison {
+        payload: ResolveVigormortisPoisonCommandPayload,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResolveVigormortisPoisonCommandPayload {
+    pub(crate) source_event_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) expected_event_count: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -211,6 +223,7 @@ impl Command {
         "executeMadness",
         "endGame",
         "updatePlayerAnnotations",
+        "resolveVigormortisPoison",
     ];
 
     pub(crate) fn expected_event_count(&self) -> Option<usize> {
@@ -226,6 +239,7 @@ impl Command {
             Self::ExecuteMadness { payload } => Some(payload.expected_event_count),
             Self::EndGame { payload } => Some(payload.expected_event_count),
             Self::UpdatePlayerAnnotations { payload } => Some(payload.expected_event_count),
+            Self::ResolveVigormortisPoison { payload } => Some(payload.expected_event_count),
         }
     }
 }
@@ -289,6 +303,28 @@ pub(crate) struct ReplayState {
     pub(crate) madness_assignments: Vec<MadnessAssignmentState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) pending_madness_execution: Option<PendingMadnessExecution>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) pending_vigormortis_poison_choices: Vec<PendingVigormortisPoisonChoice>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PendingVigormortisPoisonChoice {
+    pub(crate) source_event_id: String,
+    pub(crate) vigormortis_player_id: String,
+    pub(crate) minion_player_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) previous_target_player_id: Option<String>,
+    pub(crate) allowed_player_ids: Vec<String>,
+    pub(crate) reason: VigormortisPoisonInvalidReason,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum VigormortisPoisonInvalidReason {
+    NoCurrentTarget,
+    TargetNotTownsfolk,
+    TargetNotNearestTownsfolk,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -650,6 +686,10 @@ pub(crate) enum GameEventKind {
     PlayerAnnotationsUpdated {
         payload: PlayerAnnotationsUpdatedPayload,
     },
+    #[serde(rename = "vigormortisPoisonTargetChanged")]
+    VigormortisPoisonTargetChanged {
+        payload: VigormortisPoisonTargetChangedPayload,
+    },
 }
 
 impl GameEventKind {
@@ -681,7 +721,17 @@ impl GameEventKind {
         "playerTransitioned",
         "gameEnded",
         "playerAnnotationsUpdated",
+        "vigormortisPoisonTargetChanged",
     ];
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct VigormortisPoisonTargetChangedPayload {
+    pub(crate) source_event_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) previous_target_player_id: Option<String>,
+    pub(crate) target_player_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -1007,8 +1057,23 @@ pub(crate) enum NightActionResolution {
     deny_unknown_fields
 )]
 pub(crate) enum DemonAttackOutcome {
-    Deaths { deaths: Vec<NightDeath> },
-    NoEffect { reason: DemonAttackNoEffectReason },
+    Deaths {
+        deaths: Vec<NightDeath>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        vigormortis_effect: Option<VigormortisEffect>,
+    },
+    NoEffect {
+        reason: DemonAttackNoEffectReason,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct VigormortisEffect {
+    pub(crate) minion_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) poison_target_player_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

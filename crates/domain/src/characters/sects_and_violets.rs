@@ -17,11 +17,13 @@ use crate::{
         MadnessStatus, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
         NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
         NightDeathsAnnouncedPayload, PendingIdentityReveal, PendingMadnessExecution,
-        PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason,
-        PitHagTransformationOutcome, PitHagTransformationResolvedPayload, Proposal,
-        RecordDayActionCommandPayload, RecordMadnessCheckCommandPayload, ReplayState,
+        PendingVigormortisPoisonChoice, PhaseStepEventPayload,
+        PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason, PitHagTransformationOutcome,
+        PitHagTransformationResolvedPayload, Proposal, RecordDayActionCommandPayload,
+        RecordMadnessCheckCommandPayload, ReplayState, ResolveVigormortisPoisonCommandPayload,
         RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
-        SnakeCharmerNoSwapReason,
+        SnakeCharmerNoSwapReason, VigormortisEffect, VigormortisPoisonInvalidReason,
+        VigormortisPoisonTargetChangedPayload,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -705,7 +707,7 @@ fn madness_assignments(
         .map(|step| step.phase_token());
     let execution_already_occurred =
         current_day_id.is_some_and(|day_id| day_execution_occurred(day_id, events));
-    let impaired_players = active_snake_charmer_impairments(events)
+    let impaired_players = active_snv_impairments(players, events)
         .into_iter()
         .map(|impairment| impairment.player_id)
         .collect::<std::collections::HashSet<_>>();
@@ -876,6 +878,54 @@ pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     SnvCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
+fn nearest_townsfolk_neighbors(players: &[Player], source_player_id: &str) -> Vec<String> {
+    let mut seated = players.iter().collect::<Vec<_>>();
+    seated.sort_by_key(|player| player.seat);
+    let Some(source_index) = seated
+        .iter()
+        .position(|player| player.id == source_player_id)
+    else {
+        return vec![];
+    };
+    let mut neighbors = Vec::new();
+    for direction in [1_isize, -1_isize] {
+        for distance in 1..seated.len() {
+            let index = (source_index as isize + direction * distance as isize)
+                .rem_euclid(seated.len() as isize) as usize;
+            let candidate = seated[index];
+            if character_kind(&candidate.actual_character) == Some(CharacterKind::Townsfolk) {
+                if !neighbors.iter().any(|id| id == &candidate.id) {
+                    neighbors.push(candidate.id.clone());
+                }
+                break;
+            }
+        }
+    }
+    neighbors.sort_by_key(|id| {
+        players
+            .iter()
+            .find(|player| player.id == *id)
+            .map_or(u8::MAX, |player| player.seat)
+    });
+    neighbors
+}
+
+fn vigormortis_dependent_player_selections(
+    players: &[Player],
+) -> Vec<crate::model::DependentPlayerSelection> {
+    players
+        .iter()
+        .filter(|player| {
+            player.alive && character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+        })
+        .map(|minion| crate::model::DependentPlayerSelection {
+            trigger_player_id: minion.id.clone(),
+            selection_index: 1,
+            allowed_player_ids: nearest_townsfolk_neighbors(players, &minion.id),
+        })
+        .collect()
+}
+
 fn character_step(
     phase: Phase,
     prefix: &str,
@@ -921,6 +971,7 @@ fn character_step(
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
+                dependent_player_selections: vec![],
                 player_registration_options: None,
                 zero_allowed: false,
                 supports_random_suggestion: false,
@@ -951,6 +1002,7 @@ fn character_step(
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
+                dependent_player_selections: vec![],
                 player_registration_options: None,
                 zero_allowed: false,
                 supports_random_suggestion: false,
@@ -970,11 +1022,12 @@ fn character_step(
             } else {
                 1
             };
+            let vigormortis = character_id == SnvCharacterId::Vigormortis;
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
                 min_selections: Some(selections),
-                max_selections: Some(selections),
+                max_selections: Some(if vigormortis { 2 } else { selections }),
                 setup_info: None,
                 character_kind: None,
                 allowed_character_ids: None,
@@ -989,6 +1042,11 @@ fn character_step(
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
+                dependent_player_selections: if vigormortis {
+                    vigormortis_dependent_player_selections(players)
+                } else {
+                    vec![]
+                },
                 player_registration_options: None,
                 zero_allowed: false,
                 supports_random_suggestion: false,
@@ -1109,21 +1167,26 @@ fn vigormortis_keeps_minion_ability(
             .iter()
             .skip(acquisition_index.map_or(0, |index| index + 1))
             .any(|event| match &event.kind {
-                GameEventKind::NightActionResolved { payload }
-                    if payload.actor_character_id.as_deref() == Some("vigormortis")
+                GameEventKind::NightActionResolved { payload } => {
+                    let NightActionResolution::DemonAttack {
+                        outcome:
+                            DemonAttackOutcome::Deaths {
+                                vigormortis_effect: Some(effect),
+                                ..
+                            },
+                        ..
+                    } = &payload.resolution
+                    else {
+                        return false;
+                    };
+                    effect.minion_player_id == player.id
                         && players.iter().any(|candidate| {
                             candidate.id == payload.actor_player_id
                                 && candidate.alive
                                 && candidate.actual_character == "vigormortis"
-                        }) =>
-                {
-                    matches!(
-                        &payload.resolution,
-                        NightActionResolution::DemonAttack {
-                            outcome: DemonAttackOutcome::Deaths { deaths },
-                            ..
-                        } if deaths.iter().any(|death| death.player_id == player.id)
-                    )
+                                && candidate.ability_instance.id
+                                    == effect.source_ability_instance_id
+                        })
                 }
                 _ => false,
             })
@@ -1161,7 +1224,7 @@ fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[Game
                 matches!(
                     &payload.resolution,
                     NightActionResolution::DemonAttack {
-                        outcome: DemonAttackOutcome::Deaths { deaths },
+                        outcome: DemonAttackOutcome::Deaths { deaths, .. },
                         ..
                     } if deaths.iter().any(|death| death.player_id == player.id)
                 )
@@ -1258,13 +1321,18 @@ fn insert_acquired_ability_steps(
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
                 min_selections: Some(1),
-                max_selections: Some(1),
+                max_selections: Some(if character == "vigormortis" { 2 } else { 1 }),
                 allowed_player_ids: Some(
                     players
                         .iter()
                         .map(|candidate| candidate.id.clone())
                         .collect(),
                 ),
+                dependent_player_selections: if character == "vigormortis" {
+                    vigormortis_dependent_player_selections(players)
+                } else {
+                    vec![]
+                },
                 ..required_none()
             };
             step.support = PhaseStepSupport::Automated;
@@ -1346,11 +1414,16 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
             kind: RequiredInputKind::PlayerIds,
             target: Some(InputTarget::Player),
             min_selections: Some(1),
-            max_selections: Some(1),
+            max_selections: Some(if character == "vigormortis" { 2 } else { 1 }),
             setup_info: None,
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: Some(players.iter().map(|player| player.id.clone()).collect()),
+            dependent_player_selections: if character == "vigormortis" {
+                vigormortis_dependent_player_selections(players)
+            } else {
+                vec![]
+            },
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -1414,6 +1487,7 @@ fn pit_hag_arbitrary_deaths_step(
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: Some(living_ids),
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: true,
             supports_random_suggestion: false,
@@ -1861,6 +1935,23 @@ fn automatic_information_reminders(
     Ok(reminders)
 }
 
+fn automatic_vigormortis_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    players
+        .iter()
+        .filter(|player| !player.alive && vigormortis_keeps_minion_ability(player, players, events))
+        .map(|player| AutomaticReminder {
+            player_id: player.id.clone(),
+            character_id: "vigormortis".into(),
+            token_id: "hasAbility".into(),
+            label: "능력 있음".into(),
+            description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.".into(),
+        })
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -2033,21 +2124,42 @@ fn active_information_reasons(
     let Some(actor_id) = step.player_id.as_deref() else {
         return vec![];
     };
-    let mut reasons = active_snake_charmer_impairments(events)
+    let mut reasons = active_snv_impairments(players, events)
         .into_iter()
         .filter(|impairment| impairment.player_id == actor_id)
         .filter_map(|impairment| {
-            events.iter().find_map(|event| {
-                if event.id != impairment.source_event_id {
-                    return None;
-                }
-                let GameEventKind::SnakeCharmerActionResolved { payload } = &event.kind else {
-                    return None;
-                };
-                Some(DeliveryReason::Poisoned {
-                    poisoner_player_id: payload.actor_player_id.clone(),
-                    poison_event_id: event.id.clone(),
-                })
+            let poisoner_player_id = match impairment.source_character_id.as_str() {
+                "snakeCharmer" => events.iter().find_map(|event| match &event.kind {
+                    GameEventKind::SnakeCharmerActionResolved { payload }
+                        if event.id == impairment.source_event_id =>
+                    {
+                        Some(payload.actor_player_id.clone())
+                    }
+                    _ => None,
+                }),
+                "vigormortis" => events.iter().find_map(|event| match &event.kind {
+                    GameEventKind::NightActionResolved { payload }
+                        if event.id == impairment.source_event_id =>
+                    {
+                        Some(payload.actor_player_id.clone())
+                    }
+                    _ => None,
+                }),
+                "noDashii" => players.iter().find_map(|player| {
+                    let source_event_id = if player.ability_instance.source_event_id == "setup" {
+                        events.first().map(|event| event.id.as_str())
+                    } else {
+                        Some(player.ability_instance.source_event_id.as_str())
+                    };
+                    (player.actual_character == "noDashii"
+                        && source_event_id == Some(impairment.source_event_id.as_str()))
+                    .then(|| player.id.clone())
+                }),
+                _ => None,
+            }?;
+            Some(DeliveryReason::Poisoned {
+                poisoner_player_id,
+                poison_event_id: impairment.source_event_id,
             })
         })
         .collect::<Vec<_>>();
@@ -2365,7 +2477,7 @@ fn sage_killer(prefix: &str, sage: &Player, events: &[GameEvent]) -> Option<Stri
                 }) =>
             {
                 let NightActionResolution::DemonAttack {
-                    outcome: DemonAttackOutcome::Deaths { deaths },
+                    outcome: DemonAttackOutcome::Deaths { deaths, .. },
                     ..
                 } = &payload.resolution
                 else {
@@ -2494,8 +2606,33 @@ fn apply_player_event(
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
             match outcome {
-                DemonAttackOutcome::Deaths { deaths } => {
+                DemonAttackOutcome::Deaths {
+                    deaths,
+                    vigormortis_effect,
+                } => {
                     if deaths.is_empty() {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    let expected_vigormortis_effect = actor_character_id == "vigormortis"
+                        && target.alive
+                        && character_kind(&target.actual_character) == Some(CharacterKind::Minion);
+                    if expected_vigormortis_effect {
+                        let effect = vigormortis_effect
+                            .as_ref()
+                            .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                        let candidates = nearest_townsfolk_neighbors(players, &target.id);
+                        if effect.minion_player_id != target.id
+                            || effect.source_ability_instance_id != actor.ability_instance.id
+                            || (candidates.is_empty() && effect.poison_target_player_id.is_some())
+                            || (!candidates.is_empty()
+                                && !effect
+                                    .poison_target_player_id
+                                    .as_ref()
+                                    .is_some_and(|target| candidates.contains(target)))
+                        {
+                            return Err(ErrorKind::ReplayFailed.into_error());
+                        }
+                    } else if vigormortis_effect.is_some() {
                         return Err(ErrorKind::ReplayFailed.into_error());
                     }
                     for death in deaths {
@@ -2643,10 +2780,12 @@ fn apply_player_event(
             };
             let target_before = identity_state(target);
             let target_alignment = target.alignment;
-            let actor_impaired = active_impairments.iter().any(|impairment| {
-                impairment.player_id == payload.actor_player_id
-                    && impairment.kind == ImpairmentKind::Poisoned
-            });
+            let actor_impaired = active_snv_impairments(players, &events[..event_index])
+                .iter()
+                .any(|impairment| {
+                    impairment.player_id == payload.actor_player_id
+                        && impairment.kind == ImpairmentKind::Poisoned
+                });
             let target_is_demon =
                 character_kind(&target.actual_character) == Some(CharacterKind::Demon);
 
@@ -2758,10 +2897,12 @@ fn apply_player_event(
             let character_already_in_play = players
                 .iter()
                 .any(|player| player.actual_character == payload.character_id);
-            let actor_impaired = active_impairments.iter().any(|impairment| {
-                impairment.player_id == payload.actor_player_id
-                    && impairment.kind == ImpairmentKind::Poisoned
-            });
+            let actor_impaired = active_snv_impairments(players, &events[..event_index])
+                .iter()
+                .any(|impairment| {
+                    impairment.player_id == payload.actor_player_id
+                        && impairment.kind == ImpairmentKind::Poisoned
+                });
             let expected = if character_already_in_play {
                 PitHagTransformationOutcome::NoChange {
                     reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
@@ -2926,6 +3067,7 @@ fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
                     outcome:
                         DemonAttackOutcome::Deaths {
                             deaths: event_deaths,
+                            ..
                         },
                     ..
                 } = &payload.resolution
@@ -2986,6 +3128,134 @@ fn active_snake_charmer_impairments(events: &[GameEvent]) -> Vec<ActiveImpairmen
             _ => None,
         })
         .collect()
+}
+
+fn vigormortis_poison_state(
+    players: &[Player],
+    events: &[GameEvent],
+) -> (Vec<ActiveImpairment>, Vec<PendingVigormortisPoisonChoice>) {
+    let snake_poisoned = active_snake_charmer_impairments(events)
+        .into_iter()
+        .map(|impairment| impairment.player_id)
+        .collect::<HashSet<_>>();
+    let mut impairments = Vec::new();
+    let mut pending = Vec::new();
+
+    for source_event in events {
+        let GameEventKind::NightActionResolved { payload } = &source_event.kind else {
+            continue;
+        };
+        let NightActionResolution::DemonAttack {
+            outcome:
+                DemonAttackOutcome::Deaths {
+                    vigormortis_effect: Some(effect),
+                    ..
+                },
+            ..
+        } = &payload.resolution
+        else {
+            continue;
+        };
+        let Some(vigormortis) = players.iter().find(|player| {
+            player.id == payload.actor_player_id
+                && player.alive
+                && player.actual_character == "vigormortis"
+                && player.ability_instance.id == effect.source_ability_instance_id
+                && !snake_poisoned.contains(&player.id)
+        }) else {
+            continue;
+        };
+        let Some(minion) = players.iter().find(|player| {
+            player.id == effect.minion_player_id
+                && !player.alive
+                && character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+        }) else {
+            continue;
+        };
+        let current_target = events
+            .iter()
+            .filter_map(|event| match &event.kind {
+                GameEventKind::VigormortisPoisonTargetChanged { payload }
+                    if payload.source_event_id == source_event.id =>
+                {
+                    Some(payload.target_player_id.clone())
+                }
+                _ => None,
+            })
+            .next_back()
+            .or_else(|| effect.poison_target_player_id.clone());
+        let allowed_player_ids = nearest_townsfolk_neighbors(players, &minion.id);
+        if current_target
+            .as_ref()
+            .is_some_and(|target| allowed_player_ids.contains(target))
+        {
+            impairments.push(ActiveImpairment {
+                kind: ImpairmentKind::Poisoned,
+                player_id: current_target.expect("checked target"),
+                source_event_id: source_event.id.clone(),
+                source_character_id: "vigormortis".into(),
+                expires: ImpairmentExpiry::Never,
+            });
+            continue;
+        }
+        if allowed_player_ids.is_empty() {
+            continue;
+        }
+        let reason = match current_target.as_deref() {
+            None => VigormortisPoisonInvalidReason::NoCurrentTarget,
+            Some(target)
+                if players.iter().any(|player| {
+                    player.id == target
+                        && character_kind(&player.actual_character)
+                            != Some(CharacterKind::Townsfolk)
+                }) =>
+            {
+                VigormortisPoisonInvalidReason::TargetNotTownsfolk
+            }
+            Some(_) => VigormortisPoisonInvalidReason::TargetNotNearestTownsfolk,
+        };
+        pending.push(PendingVigormortisPoisonChoice {
+            source_event_id: source_event.id.clone(),
+            vigormortis_player_id: vigormortis.id.clone(),
+            minion_player_id: minion.id.clone(),
+            previous_target_player_id: current_target,
+            allowed_player_ids,
+            reason,
+        });
+    }
+    (impairments, pending)
+}
+
+fn active_snv_impairments(players: &[Player], events: &[GameEvent]) -> Vec<ActiveImpairment> {
+    let mut impairments = active_snake_charmer_impairments(events);
+    let snake_poisoned = impairments
+        .iter()
+        .map(|impairment| impairment.player_id.clone())
+        .collect::<HashSet<_>>();
+    for no_dashii in players.iter().filter(|player| {
+        player.alive
+            && player.actual_character == "noDashii"
+            && !snake_poisoned.contains(&player.id)
+    }) {
+        let source_event_id = if no_dashii.ability_instance.source_event_id == "setup" {
+            events
+                .first()
+                .map_or_else(|| "setup".into(), |event| event.id.clone())
+        } else {
+            no_dashii.ability_instance.source_event_id.clone()
+        };
+        for player_id in nearest_townsfolk_neighbors(players, &no_dashii.id) {
+            impairments.push(ActiveImpairment {
+                kind: ImpairmentKind::Poisoned,
+                player_id,
+                source_event_id: source_event_id.clone(),
+                source_character_id: "noDashii".into(),
+                expires: ImpairmentExpiry::Never,
+            });
+        }
+    }
+    impairments.extend(vigormortis_poison_state(players, events).0);
+    impairments
 }
 
 fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> {
@@ -3110,6 +3380,37 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 GameEventKind::SetupConfirmed { payload: setup }
                     if setup.players.iter().any(|player| player.id.as_deref() == Some(payload.player_id.as_str()))
             )) {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            apply_player_event(
+                &mut players,
+                &mut active_impairments,
+                events,
+                event_index,
+                event,
+            )?;
+            continue;
+        }
+        if let GameEventKind::VigormortisPoisonTargetChanged { payload } = &event.kind {
+            let pending = vigormortis_poison_state(players_at_event, &events[..event_index])
+                .1
+                .into_iter()
+                .find(|choice| choice.source_event_id == payload.source_event_id)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            let Some((phase, _, _)) = current_phase_steps(
+                players_at_event,
+                &events[..event_index],
+                events.len() + 2,
+                &statuses,
+            ) else {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            };
+            if event.phase != phase
+                || payload.previous_target_player_id != pending.previous_target_player_id
+                || !pending
+                    .allowed_player_ids
+                    .contains(&payload.target_player_id)
+            {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
             apply_player_event(
@@ -3870,6 +4171,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             day_action_records: vec![],
             madness_assignments: vec![],
             pending_madness_execution: None,
+            pending_vigormortis_poison_choices: vec![],
         });
     }
     let events = &game_file.game.events;
@@ -3939,16 +4241,16 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             winning_team: Some(Alignment::Evil),
         });
     }
+    let active_impairments = active_snv_impairments(&players, active_events);
+    let pending_vigormortis_poison_choices = vigormortis_poison_state(&players, active_events).1;
+    let mut automatic_reminders =
+        automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
+    automatic_reminders.extend(automatic_vigormortis_reminders(&players, active_events));
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
-        active_impairments: Some(active_snake_charmer_impairments(active_events)),
-        automatic_reminders: automatic_information_reminders(
-            phase,
-            current_step.as_ref(),
-            &players,
-            &day_role_actions,
-        )?,
+        active_impairments: Some(active_impairments),
+        automatic_reminders,
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(active_events);
@@ -4005,6 +4307,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         day_action_records,
         madness_assignments,
         pending_madness_execution,
+        pending_vigormortis_poison_choices,
     })
 }
 
@@ -4022,10 +4325,24 @@ pub(crate) fn propose_phase_command(
     }
     let SnvReplayContext {
         players,
+        phase,
         current_step,
         day_role_actions,
         ..
     } = replay_context(&game_file.game.events)?;
+    let pending_vigormortis_choices = vigormortis_poison_state(&players, &game_file.game.events).1;
+    if let Command::ResolveVigormortisPoison { payload } = command {
+        return propose_vigormortis_poison_target(
+            game_file,
+            phase,
+            &players,
+            &pending_vigormortis_choices,
+            payload,
+        );
+    }
+    if !pending_vigormortis_choices.is_empty() {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
     let current_step = current_step.ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
 
     match command {
@@ -4218,6 +4535,56 @@ pub(crate) fn propose_phase_command(
         Command::EndGame { payload } => propose_end_game(game_file, &current_step, payload),
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn propose_vigormortis_poison_target(
+    game_file: &GameFile,
+    phase: Phase,
+    players: &[Player],
+    pending_choices: &[PendingVigormortisPoisonChoice],
+    payload: ResolveVigormortisPoisonCommandPayload,
+) -> Result<Proposal, CoreError> {
+    let pending = pending_choices
+        .iter()
+        .find(|choice| choice.source_event_id == payload.source_event_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    if !pending
+        .allowed_player_ids
+        .contains(&payload.target_player_id)
+    {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    let target = players
+        .iter()
+        .find(|player| player.id == payload.target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let summary = format!(
+        "비고르모르티스 중독 이동: {}번 {}",
+        target.seat, target.name
+    );
+    Ok(Proposal {
+        event: GameEvent {
+            id: format!("vigormortis-poison-{}", game_file.game.events.len() + 1),
+            kind: GameEventKind::VigormortisPoisonTargetChanged {
+                payload: VigormortisPoisonTargetChangedPayload {
+                    source_event_id: payload.source_event_id,
+                    previous_target_player_id: pending.previous_target_player_id.clone(),
+                    target_player_id: payload.target_player_id,
+                },
+            },
+            phase,
+            summary: summary.clone(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    })
 }
 
 fn propose_end_game(
@@ -4512,7 +4879,7 @@ fn propose_snake_charmer_action(
         .find(|player| player.id == target_player_id && player.alive)
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
     let event_id = format!("snake-charmer-{}", game_file.game.events.len() + 1);
-    let actor_impaired = active_snake_charmer_impairments(&game_file.game.events)
+    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
         .iter()
         .any(|impairment| impairment.player_id == actor.id);
     let target_is_demon = character_kind(&target.actual_character) == Some(CharacterKind::Demon);
@@ -4647,7 +5014,7 @@ fn propose_pit_hag_transformation(
     let character_already_in_play = players
         .iter()
         .any(|player| player.actual_character == character_id);
-    let actor_impaired = active_snake_charmer_impairments(&game_file.game.events)
+    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
         .iter()
         .any(|impairment| impairment.player_id == actor.id);
     let outcome = if character_already_in_play {
@@ -4730,10 +5097,13 @@ fn propose_demon_attack(
                 && player.actual_character == actor_character_id
         })
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
-    let target_player_id = input
+    let selected_player_ids = input
         .as_ref()
         .and_then(|fields| fields.player_ids.as_ref())
-        .and_then(|ids| ids.first())
+        .cloned()
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target_player_id = selected_player_ids
+        .first()
         .cloned()
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
     let target = players
@@ -4744,6 +5114,34 @@ fn propose_demon_attack(
         .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
+    let vigormortis_effect = if actor_character_id == "vigormortis"
+        && target.alive
+        && character_kind(&target.actual_character) == Some(CharacterKind::Minion)
+        && !pit_hag_created_demon
+    {
+        let candidates = nearest_townsfolk_neighbors(players, &target.id);
+        let poison_target_player_id = selected_player_ids.get(1).cloned();
+        if candidates.is_empty() {
+            if poison_target_player_id.is_some() {
+                return Err(ErrorKind::InvalidStepInput.into_error());
+            }
+        } else if !poison_target_player_id
+            .as_ref()
+            .is_some_and(|target| candidates.contains(target))
+        {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        Some(VigormortisEffect {
+            minion_player_id: target.id.clone(),
+            source_ability_instance_id: actor.ability_instance.id.clone(),
+            poison_target_player_id,
+        })
+    } else {
+        if selected_player_ids.len() != 1 {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        None
+    };
     let (outcome, outcome_label, warnings) = if pit_hag_created_demon {
         (
             DemonAttackOutcome::NoEffect {
@@ -4763,6 +5161,7 @@ fn propose_demon_attack(
                         target_player_id: target_player_id.clone(),
                     },
                 }],
+                vigormortis_effect,
             },
             "사망",
             vec![],

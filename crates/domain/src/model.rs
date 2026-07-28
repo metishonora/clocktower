@@ -401,6 +401,8 @@ pub(crate) struct RequiredInput {
     pub(crate) allowed_character_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) allowed_player_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) dependent_player_selections: Vec<DependentPlayerSelection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_registration_options: Option<Vec<RegistrationJudgment>>,
     #[serde(skip_serializing_if = "is_false")]
@@ -418,6 +420,14 @@ pub(crate) struct RequiredInput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) demon_succession: Option<DemonSuccessionPrompt>,
     pub(crate) optional: bool,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DependentPlayerSelection {
+    pub(crate) trigger_player_id: String,
+    pub(crate) selection_index: u8,
+    pub(crate) allowed_player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

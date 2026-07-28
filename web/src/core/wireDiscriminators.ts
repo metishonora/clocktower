@@ -11,6 +11,7 @@ export const commandDiscriminators = [
   "executeMadness",
   "endGame",
   "updatePlayerAnnotations",
+  "resolveVigormortisPoison",
 ] as const;
 
 export const eventDiscriminators = [
@@ -41,6 +42,7 @@ export const eventDiscriminators = [
   "playerTransitioned",
   "gameEnded",
   "playerAnnotationsUpdated",
+  "vigormortisPoisonTargetChanged",
 ] as const;
 
 export const eventDiscriminatorSet: ReadonlySet<string> = new Set(eventDiscriminators);

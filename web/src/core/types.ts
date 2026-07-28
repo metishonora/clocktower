@@ -220,6 +220,10 @@ export type Command =
   | { type: "recordDayAction"; payload: RecordDayActionPayload }
   | { type: "recordMadnessCheck"; payload: RecordMadnessCheckPayload }
   | { type: "executeMadness"; payload: ExecuteMadnessPayload }
+  | {
+      type: "resolveVigormortisPoison";
+      payload: { sourceEventId: string; targetPlayerId: string; expectedEventCount: number };
+    }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
       type: "updatePlayerAnnotations";
@@ -302,6 +306,16 @@ export type ReplayState = {
   dayActionRecords?: ConfirmedDayActionRecord[];
   madnessAssignments?: MadnessAssignmentState[];
   pendingMadnessExecution?: PendingMadnessExecution;
+  pendingVigormortisPoisonChoices?: PendingVigormortisPoisonChoice[];
+};
+
+export type PendingVigormortisPoisonChoice = {
+  sourceEventId: string;
+  vigormortisPlayerId: string;
+  minionPlayerId: string;
+  previousTargetPlayerId?: string;
+  allowedPlayerIds: string[];
+  reason: "noCurrentTarget" | "targetNotTownsfolk" | "targetNotNearestTownsfolk";
 };
 
 export type MadnessAssignmentState = {
@@ -706,6 +720,14 @@ export type GameEvent = EventCommon &
           notes: string;
         };
       }
+    | {
+        type: "vigormortisPoisonTargetChanged";
+        payload: {
+          sourceEventId: string;
+          previousTargetPlayerId?: string;
+          targetPlayerId: string;
+        };
+      }
     | { type: "gameEnded"; payload: { winningTeam: "good" | "evil" } }
   );
 
@@ -740,6 +762,11 @@ export type NightActionResolution =
         | {
             kind: "deaths";
             deaths: NightDeath[];
+            vigormortisEffect?: {
+              minionPlayerId: string;
+              sourceAbilityInstanceId: string;
+              poisonTargetPlayerId?: string;
+            };
           }
         | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" | "pitHagCreatedDemon" };
     };
@@ -958,6 +985,11 @@ export type RequiredInput = {
   survivalAllowed?: boolean;
   mayorDecision?: MayorDecisionPrompt;
   demonSuccession?: DemonSuccessionPrompt;
+  dependentPlayerSelections?: Array<{
+    triggerPlayerId: string;
+    selectionIndex: number;
+    allowedPlayerIds: string[];
+  }>;
   optional: boolean;
 };
 

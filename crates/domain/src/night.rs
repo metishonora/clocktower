@@ -92,6 +92,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                                 .map(|p| p.id.clone())
                                 .collect(),
                         ),
+                        dependent_player_selections: vec![],
                         player_registration_options: Some(
                             players
                                 .iter()
@@ -185,6 +186,7 @@ pub(crate) fn night_steps(
                                 .map(|p| p.id.clone())
                                 .collect(),
                         ),
+                        dependent_player_selections: vec![],
                         player_registration_options: Some(
                             players
                                 .iter()

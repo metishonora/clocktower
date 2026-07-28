@@ -256,6 +256,25 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
   if (step.id.includes(":demon:")) {
     return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-3"] } } };
   }
+  if (step.informationPrompt?.deliveryMode === "selectable") {
+    const targetChoice = step.informationPrompt.targetChecks?.[0]?.choices[0];
+    const numberChoice = step.informationPrompt.numberChoices[0];
+    const booleanChoice = step.informationPrompt.booleanChoices?.[0];
+    return {
+      type: "confirmStep",
+      payload: {
+        stepId: step.id,
+        input: null,
+        deliveredResult: targetChoice?.result
+          ?? (numberChoice ? { kind: "number", value: numberChoice.value } : undefined)
+          ?? (booleanChoice ? { kind: "boolean", value: booleanChoice.value } : undefined),
+        registrationJudgments: targetChoice?.registrationJudgments
+          ?? numberChoice?.registrationJudgments
+          ?? booleanChoice?.registrationJudgments
+          ?? [],
+      },
+    };
+  }
   return { type: "confirmStep", payload: { stepId: step.id, input: null } };
 }
 

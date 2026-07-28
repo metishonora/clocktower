@@ -236,6 +236,105 @@ test("accepts the generic S&V Demon attack while preserving the Imp payload cont
   throws(() => parseGameEvent(impWithUnexpectedCharacterSnapshot), /이벤트 형식/);
 });
 
+test("accepts the Vigormortis source effect, replacement event, and pending choice projection", () => {
+  const effectEvent = {
+    id: "attack-1",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon:player-7",
+      actorPlayerId: "player-7",
+      actorCharacterId: "vigormortis",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-6",
+        outcome: {
+          kind: "deaths",
+          deaths: [{
+            playerId: "player-6",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "vigormortis",
+              targetPlayerId: "player-6",
+            },
+          }],
+          vigormortisEffect: {
+            minionPlayerId: "player-6",
+            sourceAbilityInstanceId: "setup-1:player-7",
+            poisonTargetPlayerId: "player-5",
+          },
+        },
+      },
+    },
+    summary: "비고르모르티스 공격",
+    createdAt: "2026-07-28T00:00:00.000Z",
+  };
+  const replacementEvent = {
+    id: "vigormortis-poison-2",
+    type: "vigormortisPoisonTargetChanged",
+    phase: "night",
+    payload: {
+      sourceEventId: "attack-1",
+      previousTargetPlayerId: "player-5",
+      targetPlayerId: "player-4",
+    },
+    summary: "비고르모르티스 중독 이동",
+    createdAt: "2026-07-28T00:01:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(effectEvent), effectEvent);
+  deepEqual<unknown>(parseGameEvent(replacementEvent), replacementEvent);
+
+  const currentStep = {
+    id: "night:demon:player-7",
+    phase: "night",
+    stepType: "character",
+    character: "vigormortis",
+    playerId: "player-7",
+    requiredInput: {
+      kind: "playerIds",
+      optional: false,
+      dependentPlayerSelections: [{
+        triggerPlayerId: "player-6",
+        selectionIndex: 1,
+        allowedPlayerIds: ["player-1", "player-5"],
+      }],
+    },
+    canSkip: false,
+    support: "automated",
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 1,
+    phase: "night",
+    players: [],
+    currentStep,
+    phaseOverview: [{ ...currentStep, status: "current" }],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-6",
+        characterId: "vigormortis",
+        tokenId: "hasAbility",
+        label: "능력 있음",
+        description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+    pendingVigormortisPoisonChoices: [{
+      sourceEventId: "attack-1",
+      vigormortisPlayerId: "player-7",
+      minionPlayerId: "player-6",
+      previousTargetPlayerId: "player-5",
+      allowedPlayerIds: ["player-1", "player-4"],
+      reason: "targetNotTownsfolk",
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("rejects the canonical schema-v1 fixture", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
 

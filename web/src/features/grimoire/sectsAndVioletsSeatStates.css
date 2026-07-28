@@ -100,6 +100,11 @@
   transform: translate(-50%, -50%);
 }
 
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStatePoisonTarget {
+  border-color: #8f67d8;
+  box-shadow: 0 0 0 4px rgba(143, 103, 216, .25), 0 0 32px rgba(143, 103, 216, .4);
+}
+
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected {
   z-index: 4;
   filter: none;
