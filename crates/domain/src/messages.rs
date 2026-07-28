@@ -651,6 +651,31 @@ pub(crate) fn character_label(character: &str) -> &'static str {
         "scarletWoman" => "탕녀",
         "baron" => "남작",
         "imp" => "임프",
+        "clockmaker" => "시계공",
+        "dreamer" => "꿈꾸는 자",
+        "snakeCharmer" => "뱀 조련사",
+        "mathematician" => "수학자",
+        "flowergirl" => "꽃팔이 소녀",
+        "townCrier" => "포고꾼",
+        "oracle" => "예언자",
+        "savant" => "백치천재",
+        "seamstress" => "재봉사",
+        "philosopher" => "철학자",
+        "artist" => "화가",
+        "juggler" => "곡예사",
+        "sage" => "현자",
+        "mutant" => "변종",
+        "sweetheart" => "사랑꾼",
+        "barber" => "이발사",
+        "klutz" => "얼뜨기",
+        "evilTwin" => "사악한 쌍둥이",
+        "witch" => "마녀",
+        "cerenovus" => "세레노버스",
+        "pitHag" => "마귀할멈",
+        "fangGu" => "팡 구",
+        "vigormortis" => "비고르모르티스",
+        "noDashii" => "노 다시",
+        "vortox" => "보르톡스",
         _ => "알 수 없음",
     }
 }
@@ -684,6 +709,41 @@ mod tests {
             ("scarletWoman", "탕녀"),
             ("baron", "남작"),
             ("imp", "임프"),
+        ];
+
+        for (character_id, label) in expected {
+            assert_eq!(character_label(character_id), label);
+        }
+    }
+
+    #[test]
+    fn sects_and_violets_character_labels_match_the_official_korean_edition() {
+        let expected = [
+            ("clockmaker", "시계공"),
+            ("dreamer", "꿈꾸는 자"),
+            ("snakeCharmer", "뱀 조련사"),
+            ("mathematician", "수학자"),
+            ("flowergirl", "꽃팔이 소녀"),
+            ("townCrier", "포고꾼"),
+            ("oracle", "예언자"),
+            ("savant", "백치천재"),
+            ("seamstress", "재봉사"),
+            ("philosopher", "철학자"),
+            ("artist", "화가"),
+            ("juggler", "곡예사"),
+            ("sage", "현자"),
+            ("mutant", "변종"),
+            ("sweetheart", "사랑꾼"),
+            ("barber", "이발사"),
+            ("klutz", "얼뜨기"),
+            ("evilTwin", "사악한 쌍둥이"),
+            ("witch", "마녀"),
+            ("cerenovus", "세레노버스"),
+            ("pitHag", "마귀할멈"),
+            ("fangGu", "팡 구"),
+            ("vigormortis", "비고르모르티스"),
+            ("noDashii", "노 다시"),
+            ("vortox", "보르톡스"),
         ];
 
         for (character_id, label) in expected {

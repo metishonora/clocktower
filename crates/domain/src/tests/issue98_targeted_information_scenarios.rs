@@ -141,6 +141,10 @@ fn dreamer_uses_the_target_truth_and_all_opposite_alignment_characters() {
         json!(["player-2"])
     );
     assert_eq!(
+        proposal["value"]["event"]["summary"],
+        "1번 Dreamer(꿈꾸는 자)가 2번 Seamstress(재봉사)의 캐릭터 후보를 확인했습니다. (실제 재봉사 · 능력 선택)"
+    );
+    assert_eq!(
         proposal["value"]["revealPayload"],
         json!({
             "kind": "dreamerInformation",
