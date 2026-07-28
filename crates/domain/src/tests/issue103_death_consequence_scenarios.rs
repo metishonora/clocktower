@@ -255,6 +255,59 @@ fn sweetheart_drunk_prevents_the_demons_next_attack_from_killing() {
 }
 
 #[test]
+fn sweetheart_drunk_klutz_cannot_lose_the_game_by_choosing_evil() {
+    let mut events = vec![setup_event()];
+    attack(&mut events, "player-1");
+    let sweetheart_pending = replay(&events);
+    let sweetheart_step_id = sweetheart_pending["value"]["pendingDeathConsequences"][0]["stepId"]
+        .as_str()
+        .unwrap();
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "resolveSweetheartConsequence",
+            "payload": {
+                "stepId": sweetheart_step_id,
+                "targetPlayerId": "player-3",
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    attack(&mut events, "player-3");
+    let announcement = advance_until(&mut events, "player-3", |state| {
+        state["value"]["currentStep"]["id"]
+            .as_str()
+            .is_some_and(|id| id.ends_with(":announceDeaths"))
+    });
+    append(&mut events, default_command(&announcement, "player-3"));
+
+    let klutz_pending = replay(&events);
+    let klutz_step_id = klutz_pending["value"]["pendingDeathConsequences"][0]["stepId"]
+        .as_str()
+        .unwrap();
+    let expected_event_count = events.len();
+    let choice = append(
+        &mut events,
+        json!({
+            "type": "resolveKlutzConsequence",
+            "payload": {
+                "stepId": klutz_step_id,
+                "targetPlayerId": "player-7",
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    assert_eq!(
+        choice["value"]["event"]["payload"]["outcome"],
+        json!({ "kind": "actorImpaired" })
+    );
+    assert!(replay(&events)["value"]["pendingForcedGameEnd"].is_null());
+}
+
+#[test]
 fn sweetheart_drunk_makes_the_dreamers_information_discretionary() {
     let mut setup = setup_event();
     setup["payload"]["players"][4]["actualCharacter"] = json!("dreamer");

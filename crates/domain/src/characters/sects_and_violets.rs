@@ -4783,7 +4783,11 @@ fn validate_death_consequence_event(
                 .iter()
                 .find(|player| player.id == payload.target_player_id && player.alive)
                 .ok_or_else(failed)?;
-            let expected = if pending.actor_impaired_at_trigger {
+            let actor_impaired = pending.actor_impaired_at_trigger
+                || active_snv_impairments(players, prior_events)
+                    .iter()
+                    .any(|impairment| impairment.player_id == actor.id);
+            let expected = if actor_impaired {
                 KlutzChoiceOutcome::ActorImpaired
             } else if target.alignment == Alignment::Good {
                 KlutzChoiceOutcome::Safe
@@ -5491,7 +5495,11 @@ fn propose_klutz_consequence(
         .iter()
         .find(|player| player.id == payload.target_player_id && player.alive)
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let outcome = if pending.actor_impaired_at_trigger {
+    let actor_impaired = pending.actor_impaired_at_trigger
+        || active_snv_impairments(players, &game_file.game.events)
+            .iter()
+            .any(|impairment| impairment.player_id == actor.id);
+    let outcome = if actor_impaired {
         KlutzChoiceOutcome::ActorImpaired
     } else if target.alignment == Alignment::Good {
         KlutzChoiceOutcome::Safe
@@ -6310,10 +6318,100 @@ fn propose_night_deaths_announcement(
 }
 
 #[cfg(test)]
-mod catalog_tests {
+mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::contracts::{Game, ScriptId};
+    use serde_json::json;
+
+    #[test]
+    fn klutz_choice_uses_current_impairment_even_when_trigger_snapshot_was_healthy() {
+        let events: Vec<GameEvent> = serde_json::from_value(json!([
+            {
+                "id": "setup",
+                "type": "setupConfirmed",
+                "phase": "setup",
+                "payload": { "players": [
+                    { "id": "player-1", "seat": 1, "name": "Sweetheart", "actualCharacter": "sweetheart", "shownCharacter": "sweetheart" },
+                    { "id": "player-2", "seat": 2, "name": "Barber", "actualCharacter": "barber", "shownCharacter": "barber" },
+                    { "id": "player-3", "seat": 3, "name": "Klutz", "actualCharacter": "klutz", "shownCharacter": "klutz" },
+                    { "id": "player-4", "seat": 4, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
+                    { "id": "player-5", "seat": 5, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
+                    { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
+                    { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+                ] },
+                "summary": "setup",
+                "createdAt": "2026-07-29T00:00:00.000Z"
+            },
+            {
+                "id": "sweetheart-2",
+                "type": "sweetheartConsequenceResolved",
+                "phase": "day",
+                "payload": {
+                    "stepId": "day:sweetheart",
+                    "trigger": {
+                        "sourceEventId": "death-1",
+                        "deathSequence": 1,
+                        "playerId": "sweetheart",
+                        "sourceAbilityInstanceId": "setup:sweetheart"
+                    },
+                    "targetPlayerId": "player-3",
+                    "outcome": {
+                        "kind": "drunkApplied",
+                        "impairment": {
+                            "kind": "drunk",
+                            "playerId": "player-3",
+                            "sourceEventId": "sweetheart-2",
+                            "sourceCharacterId": "sweetheart",
+                            "expires": "never"
+                        }
+                    }
+                },
+                "summary": "사랑꾼 취함 적용",
+                "createdAt": "2026-07-29T00:01:00.000Z"
+            }
+        ]))
+        .unwrap();
+        let players = setup_players(&events).unwrap();
+        let game_file = GameFile {
+            schema_version: 3,
+            script_id: ScriptId::SectsAndViolets,
+            game: Game {
+                updated_at: None,
+                events,
+            },
+        };
+        let pending = PendingDeathConsequence {
+            step_id: "day:death:klutz".into(),
+            kind: DeathConsequenceKind::Klutz,
+            source_event_id: "death-klutz".into(),
+            death_sequence: 1,
+            actor_player_id: "player-3".into(),
+            source_ability_instance_id: AbilityInstanceId::new("setup", "player-3"),
+            actor_impaired_at_trigger: false,
+            allowed_player_ids: vec!["player-7".into()],
+            eligible_chooser_player_ids: vec![],
+        };
+
+        let proposal = propose_klutz_consequence(
+            &game_file,
+            Phase::Day,
+            &players,
+            &pending,
+            ResolveKlutzConsequenceCommandPayload {
+                step_id: pending.step_id.clone(),
+                target_player_id: "player-7".into(),
+                expected_event_count: game_file.game.events.len(),
+            },
+        )
+        .unwrap();
+
+        let GameEventKind::KlutzChoiceResolved { payload } = proposal.event.kind else {
+            panic!("expected Klutz choice event");
+        };
+        assert_eq!(payload.outcome, KlutzChoiceOutcome::ActorImpaired);
+    }
 
     #[test]
     fn all_twenty_five_character_ids_have_exhaustive_typed_metadata() {

@@ -29,6 +29,7 @@ test.each([
   );
 
   const panel = screen.getByRole("group", { name: `${roleName} 능력 처리` });
+  expect(panel.classList.contains("snvDeathConsequence")).toBe(true);
   expect(within(panel).getByRole("button", { name: `${roleName} 캐릭터 상세 열기` })).toBeTruthy();
   expect(within(panel).getByText("1번 가람")).toBeTruthy();
   expect(within(panel).getByRole("heading", { name: roleName, level: 3 })).toBeTruthy();

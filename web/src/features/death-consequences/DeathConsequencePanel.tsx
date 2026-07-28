@@ -42,7 +42,7 @@ export function DeathConsequencePanel({
 
   return (
     <article
-      className={`snvCurrentStep issue116CurrentStep${pending.stepId.startsWith("day") ? " snvDayStep" : ""}`}
+      className={`snvCurrentStep issue116CurrentStep snvDeathConsequence${pending.stepId.startsWith("day") ? " snvDayStep" : ""}`}
       role="group"
       aria-label={`${character?.name ?? pending.kind} 능력 처리`}
     >
