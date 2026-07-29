@@ -181,6 +181,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         madness_assignments: vec![],
         pending_madness_execution: None,
         pending_vigormortis_poison_choices: vec![],
+        pending_death_consequences: vec![],
+        pending_forced_game_end: None,
     })
 }
 

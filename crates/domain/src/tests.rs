@@ -2,6 +2,7 @@ mod contracts_scenarios;
 mod day_scenarios;
 mod issue101_snake_charmer_scenarios;
 mod issue102_day_action_scenarios;
+mod issue103_death_consequence_scenarios;
 mod issue104_pit_hag_scenarios;
 mod issue105_madness_scenarios;
 mod issue11_imp_attack_scenarios;

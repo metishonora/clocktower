@@ -78,6 +78,9 @@ impl ScriptRules {
                             | GameEventKind::MadnessCheckRecorded { .. }
                             | GameEventKind::MadnessExecutionConfirmed { .. }
                             | GameEventKind::VigormortisPoisonTargetChanged { .. }
+                            | GameEventKind::SweetheartConsequenceResolved { .. }
+                            | GameEventKind::BarberConsequenceResolved { .. }
+                            | GameEventKind::KlutzChoiceResolved { .. }
                             | GameEventKind::GameEnded { .. }
                     )
                 }) =>
@@ -100,6 +103,9 @@ impl ScriptRules {
                 | Command::RecordMadnessCheck { .. }
                 | Command::ExecuteMadness { .. }
                 | Command::ResolveVigormortisPoison { .. }
+                | Command::ResolveSweetheartConsequence { .. }
+                | Command::ResolveBarberConsequence { .. }
+                | Command::ResolveKlutzConsequence { .. }
                 | Command::EndGame { .. },
             ) => Ok(()),
             (Self::SectsAndViolets, _) => Err(ErrorKind::CommandNotSupportedByScript.into_error()),

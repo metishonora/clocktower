@@ -1,4 +1,5 @@
 import type {
+  ActiveImpairment,
   ConfirmedInformation,
   CoreResult,
   DayActionRecordInput,
@@ -290,10 +291,25 @@ export function parseGameEvent(value: unknown): GameEvent {
         typeof payload.targetPlayerId !== "string"
       ) throw invalidEvent();
       break;
+    case "sweetheartConsequenceResolved":
+      if (!isSweetheartConsequencePayload(payload)) throw invalidEvent();
+      break;
+    case "barberConsequenceResolved":
+      if (!isBarberConsequencePayload(payload)) throw invalidEvent();
+      break;
+    case "klutzChoiceResolved":
+      if (!isKlutzConsequencePayload(payload)) throw invalidEvent();
+      break;
     case "gameEnded":
       if (
-        !hasExactKeys(payload, ["winningTeam"]) ||
-        (payload.winningTeam !== "good" && payload.winningTeam !== "evil")
+        !hasOnlyKeys(payload, ["winningTeam", "source"]) ||
+        (payload.winningTeam !== "good" && payload.winningTeam !== "evil") ||
+        (payload.source !== undefined && !(
+          isRecord(payload.source) &&
+          hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
+          payload.source.kind === "klutzChoice" &&
+          typeof payload.source.sourceEventId === "string"
+        ))
       ) throw invalidEvent();
       break;
     default:
@@ -413,6 +429,34 @@ function isPendingVigormortisPoisonChoice(value: unknown): boolean {
     && ["noCurrentTarget", "targetNotTownsfolk", "targetNotNearestTownsfolk"].includes(String(value.reason));
 }
 
+function isPendingDeathConsequence(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, [
+      "stepId", "kind", "sourceEventId", "deathSequence", "actorPlayerId",
+      "sourceAbilityInstanceId", "actorImpairedAtTrigger", "allowedPlayerIds",
+      "eligibleChooserPlayerIds",
+    ])
+    && typeof value.stepId === "string"
+    && ["sweetheart", "barber", "klutz"].includes(String(value.kind))
+    && typeof value.sourceEventId === "string"
+    && Number.isInteger(value.deathSequence)
+    && (value.deathSequence as number) > 0
+    && typeof value.actorPlayerId === "string"
+    && typeof value.sourceAbilityInstanceId === "string"
+    && typeof value.actorImpairedAtTrigger === "boolean"
+    && Array.isArray(value.allowedPlayerIds)
+    && value.allowedPlayerIds.every(isString)
+    && Array.isArray(value.eligibleChooserPlayerIds)
+    && value.eligibleChooserPlayerIds.every(isString);
+}
+
+function isPendingForcedGameEnd(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["sourceEventId", "winningTeam"])
+    && typeof value.sourceEventId === "string"
+    && (value.winningTeam === "good" || value.winningTeam === "evil");
+}
+
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
@@ -441,6 +485,11 @@ export function parseReplayState(value: unknown): ReplayState {
     (value.pendingVigormortisPoisonChoices !== undefined &&
       (!Array.isArray(value.pendingVigormortisPoisonChoices) ||
         !value.pendingVigormortisPoisonChoices.every(isPendingVigormortisPoisonChoice))) ||
+    (value.pendingDeathConsequences !== undefined &&
+      (!Array.isArray(value.pendingDeathConsequences) ||
+        !value.pendingDeathConsequences.every(isPendingDeathConsequence))) ||
+    (value.pendingForcedGameEnd !== undefined &&
+      !isPendingForcedGameEnd(value.pendingForcedGameEnd)) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -1271,14 +1320,95 @@ function isPlayerStateSnapshot(value: unknown): boolean {
     (value.alignment === "good" || value.alignment === "evil") && typeof value.alive === "boolean";
 }
 
-function isActiveImpairment(value: unknown): boolean {
+function isActiveImpairment(value: unknown): value is ActiveImpairment {
   return isRecord(value) &&
     hasExactKeys(value, ["kind", "playerId", "sourceEventId", "sourceCharacterId", "expires"]) &&
-    value.kind === "poisoned" &&
+    (value.kind === "poisoned" || value.kind === "drunk") &&
     typeof value.playerId === "string" &&
     typeof value.sourceEventId === "string" &&
     typeof value.sourceCharacterId === "string" &&
     value.expires === "never";
+}
+
+function isDeathTriggerRef(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["sourceEventId", "deathSequence", "playerId", "sourceAbilityInstanceId"])
+    && typeof value.sourceEventId === "string"
+    && Number.isInteger(value.deathSequence)
+    && (value.deathSequence as number) > 0
+    && typeof value.playerId === "string"
+    && typeof value.sourceAbilityInstanceId === "string";
+}
+
+function isDeathConsequenceNoEffect(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["kind", "reason"])
+    && value.kind === "noEffect"
+    && ["actorImpairedAtDeath", "actorImpairedAtResolution", "sourceAbilityLost", "noLivingDemon"]
+      .includes(String(value.reason));
+}
+
+function isSweetheartConsequencePayload(value: unknown): boolean {
+  if (!isRecord(value)
+    || !hasOnlyKeys(value, ["stepId", "trigger", "targetPlayerId", "outcome"])
+    || typeof value.stepId !== "string"
+    || !isDeathTriggerRef(value.trigger)
+    || (value.targetPlayerId !== undefined && typeof value.targetPlayerId !== "string")
+    || !isRecord(value.outcome)) return false;
+  return isDeathConsequenceNoEffect(value.outcome)
+    || (hasExactKeys(value.outcome, ["kind", "impairment"])
+      && value.outcome.kind === "drunkApplied"
+      && isActiveImpairment(value.outcome.impairment)
+      && value.outcome.impairment.kind === "drunk");
+}
+
+function isBarberDecision(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (value.kind === "decline") return hasExactKeys(value, ["kind"]);
+  return value.kind === "swap"
+    && hasExactKeys(value, ["kind", "playerIds"])
+    && Array.isArray(value.playerIds)
+    && value.playerIds.length === 2
+    && value.playerIds.every(isString)
+    && value.playerIds[0] !== value.playerIds[1];
+}
+
+function isBarberConsequencePayload(value: unknown): boolean {
+  if (!isRecord(value)
+    || !hasOnlyKeys(value, ["stepId", "trigger", "chooserDemonPlayerId", "decision", "outcome"])
+    || typeof value.stepId !== "string"
+    || !isDeathTriggerRef(value.trigger)
+    || (value.chooserDemonPlayerId !== undefined && typeof value.chooserDemonPlayerId !== "string")
+    || !isBarberDecision(value.decision)
+    || !isRecord(value.outcome)) return false;
+  return isDeathConsequenceNoEffect(value.outcome)
+    || (value.outcome.kind === "declined" && hasExactKeys(value.outcome, ["kind"]))
+    || (value.outcome.kind === "noChangeSameCharacter" && hasExactKeys(value.outcome, ["kind"]))
+    || (value.outcome.kind === "swapped"
+      && hasExactKeys(value.outcome, ["kind", "identityTransitions"])
+      && Array.isArray(value.outcome.identityTransitions)
+      && value.outcome.identityTransitions.length === 2
+      && value.outcome.identityTransitions.every(isPlayerIdentityTransition));
+}
+
+function isKlutzConsequencePayload(value: unknown): boolean {
+  if (!isRecord(value)
+    || !hasExactKeys(value, [
+      "stepId", "trigger", "targetPlayerId", "actorAlignment", "targetAlignment", "outcome",
+    ])
+    || typeof value.stepId !== "string"
+    || !isDeathTriggerRef(value.trigger)
+    || typeof value.targetPlayerId !== "string"
+    || !["good", "evil"].includes(String(value.actorAlignment))
+    || !["good", "evil"].includes(String(value.targetAlignment))
+    || !isRecord(value.outcome)) return false;
+  if (value.outcome.kind === "safe" || value.outcome.kind === "actorImpaired") {
+    return hasExactKeys(value.outcome, ["kind"]);
+  }
+  return value.outcome.kind === "teamLost"
+    && hasExactKeys(value.outcome, ["kind", "losingTeam", "winningTeam"])
+    && ["good", "evil"].includes(String(value.outcome.losingTeam))
+    && ["good", "evil"].includes(String(value.outcome.winningTeam));
 }
 
 function isPendingIdentityReveal(value: unknown): boolean {

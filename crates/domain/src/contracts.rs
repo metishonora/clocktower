@@ -89,6 +89,57 @@ pub(crate) enum Command {
     ResolveVigormortisPoison {
         payload: ResolveVigormortisPoisonCommandPayload,
     },
+    #[serde(rename = "resolveSweetheartConsequence")]
+    ResolveSweetheartConsequence {
+        payload: ResolveSweetheartConsequenceCommandPayload,
+    },
+    #[serde(rename = "resolveBarberConsequence")]
+    ResolveBarberConsequence {
+        payload: ResolveBarberConsequenceCommandPayload,
+    },
+    #[serde(rename = "resolveKlutzConsequence")]
+    ResolveKlutzConsequence {
+        payload: ResolveKlutzConsequenceCommandPayload,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResolveSweetheartConsequenceCommandPayload {
+    pub(crate) step_id: String,
+    #[serde(default)]
+    pub(crate) target_player_id: Option<String>,
+    pub(crate) expected_event_count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResolveBarberConsequenceCommandPayload {
+    pub(crate) step_id: String,
+    #[serde(default)]
+    pub(crate) chooser_demon_player_id: Option<String>,
+    pub(crate) decision: BarberDecision,
+    pub(crate) expected_event_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum BarberDecision {
+    Decline,
+    Swap { player_ids: Vec<String> },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResolveKlutzConsequenceCommandPayload {
+    pub(crate) step_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) expected_event_count: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -224,6 +275,9 @@ impl Command {
         "endGame",
         "updatePlayerAnnotations",
         "resolveVigormortisPoison",
+        "resolveSweetheartConsequence",
+        "resolveBarberConsequence",
+        "resolveKlutzConsequence",
     ];
 
     pub(crate) fn expected_event_count(&self) -> Option<usize> {
@@ -240,6 +294,9 @@ impl Command {
             Self::EndGame { payload } => Some(payload.expected_event_count),
             Self::UpdatePlayerAnnotations { payload } => Some(payload.expected_event_count),
             Self::ResolveVigormortisPoison { payload } => Some(payload.expected_event_count),
+            Self::ResolveSweetheartConsequence { payload } => Some(payload.expected_event_count),
+            Self::ResolveBarberConsequence { payload } => Some(payload.expected_event_count),
+            Self::ResolveKlutzConsequence { payload } => Some(payload.expected_event_count),
         }
     }
 }
@@ -305,6 +362,40 @@ pub(crate) struct ReplayState {
     pub(crate) pending_madness_execution: Option<PendingMadnessExecution>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) pending_vigormortis_poison_choices: Vec<PendingVigormortisPoisonChoice>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) pending_death_consequences: Vec<PendingDeathConsequence>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) pending_forced_game_end: Option<PendingForcedGameEnd>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PendingDeathConsequence {
+    pub(crate) step_id: String,
+    pub(crate) kind: DeathConsequenceKind,
+    pub(crate) source_event_id: String,
+    pub(crate) death_sequence: u8,
+    pub(crate) actor_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) actor_impaired_at_trigger: bool,
+    pub(crate) allowed_player_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) eligible_chooser_player_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum DeathConsequenceKind {
+    Sweetheart,
+    Barber,
+    Klutz,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PendingForcedGameEnd {
+    pub(crate) source_event_id: String,
+    pub(crate) winning_team: Alignment,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -442,6 +533,7 @@ pub(crate) struct ActiveImpairment {
 #[serde(rename_all = "camelCase")]
 pub(crate) enum ImpairmentKind {
     Poisoned,
+    Drunk,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -690,6 +782,16 @@ pub(crate) enum GameEventKind {
     VigormortisPoisonTargetChanged {
         payload: VigormortisPoisonTargetChangedPayload,
     },
+    #[serde(rename = "sweetheartConsequenceResolved")]
+    SweetheartConsequenceResolved {
+        payload: SweetheartConsequenceResolvedPayload,
+    },
+    #[serde(rename = "barberConsequenceResolved")]
+    BarberConsequenceResolved {
+        payload: BarberConsequenceResolvedPayload,
+    },
+    #[serde(rename = "klutzChoiceResolved")]
+    KlutzChoiceResolved { payload: KlutzChoiceResolvedPayload },
 }
 
 impl GameEventKind {
@@ -722,7 +824,110 @@ impl GameEventKind {
         "gameEnded",
         "playerAnnotationsUpdated",
         "vigormortisPoisonTargetChanged",
+        "sweetheartConsequenceResolved",
+        "barberConsequenceResolved",
+        "klutzChoiceResolved",
     ];
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct DeathTriggerRef {
+    pub(crate) source_event_id: String,
+    pub(crate) death_sequence: u8,
+    pub(crate) player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct SweetheartConsequenceResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) trigger: DeathTriggerRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) target_player_id: Option<String>,
+    pub(crate) outcome: SweetheartConsequenceOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum SweetheartConsequenceOutcome {
+    DrunkApplied {
+        impairment: ActiveImpairment,
+    },
+    NoEffect {
+        reason: DeathConsequenceNoEffectReason,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct BarberConsequenceResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) trigger: DeathTriggerRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) chooser_demon_player_id: Option<String>,
+    pub(crate) decision: BarberDecision,
+    pub(crate) outcome: BarberConsequenceOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum BarberConsequenceOutcome {
+    Declined,
+    Swapped {
+        identity_transitions: Vec<PlayerIdentityTransition>,
+    },
+    NoChangeSameCharacter,
+    NoEffect {
+        reason: DeathConsequenceNoEffectReason,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct KlutzChoiceResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) trigger: DeathTriggerRef,
+    pub(crate) target_player_id: String,
+    pub(crate) actor_alignment: Alignment,
+    pub(crate) target_alignment: Alignment,
+    pub(crate) outcome: KlutzChoiceOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum KlutzChoiceOutcome {
+    Safe,
+    ActorImpaired,
+    TeamLost {
+        losing_team: Alignment,
+        winning_team: Alignment,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum DeathConsequenceNoEffectReason {
+    ActorImpairedAtDeath,
+    ActorImpairedAtResolution,
+    SourceAbilityLost,
+    NoLivingDemon,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -839,6 +1044,19 @@ pub(crate) struct PlayerAnnotationsUpdatedPayload {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct GameEndedPayload {
     pub(crate) winning_team: Alignment,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) source: Option<GameEndSource>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum GameEndSource {
+    KlutzChoice { source_event_id: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

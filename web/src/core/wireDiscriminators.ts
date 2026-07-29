@@ -12,6 +12,9 @@ export const commandDiscriminators = [
   "endGame",
   "updatePlayerAnnotations",
   "resolveVigormortisPoison",
+  "resolveSweetheartConsequence",
+  "resolveBarberConsequence",
+  "resolveKlutzConsequence",
 ] as const;
 
 export const eventDiscriminators = [
@@ -43,6 +46,9 @@ export const eventDiscriminators = [
   "gameEnded",
   "playerAnnotationsUpdated",
   "vigormortisPoisonTargetChanged",
+  "sweetheartConsequenceResolved",
+  "barberConsequenceResolved",
+  "klutzChoiceResolved",
 ] as const;
 
 export const eventDiscriminatorSet: ReadonlySet<string> = new Set(eventDiscriminators);

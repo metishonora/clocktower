@@ -105,6 +105,20 @@
   box-shadow: 0 0 0 4px rgba(143, 103, 216, .25), 0 0 32px rgba(143, 103, 216, .4);
 }
 
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget {
+  z-index: 6;
+  border-color: #c9a2ff;
+  background: linear-gradient(145deg, #6f478f, #3e285a);
+  box-shadow: 0 0 0 7px rgba(166, 112, 226, .38), 0 0 40px rgba(176, 116, 236, .62);
+  filter: none;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget .snvSeatNumber,
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget .snvSeatPlayerName { color: #fff; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget small { color: #f1ddff; }
+
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected {
   z-index: 4;
   filter: none;

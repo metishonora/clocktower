@@ -10,6 +10,9 @@
 .snvInformationInfluenceBadge.vortox { background: linear-gradient(135deg, #e34a68, #a92643); }
 .snvInformationIdentity strong { color: #ddcae2; font-size: .9rem; }
 .snvInformationAbility { max-width: 620px; color: #c7b9cc !important; font-size: .82rem; line-height: 1.58; }
+.snvDaySurface .snvDeathConsequence .snvInformationIdentity strong { color: #4b3650; }
+.snvDaySurface .snvDeathConsequence .snvCurrentStepRoleName { color: #2f2033; }
+.snvDaySurface .snvDeathConsequence .snvInformationAbility { color: #624f67 !important; }
 .snvInformationValues { display: grid; margin: 18px 0 0; gap: 8px; }
 .snvInformationValues > div { display: grid; min-height: 58px; padding: 10px 14px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 13px; background: rgba(9, 5, 12, .26); }
 .snvInformationValues dt { color: #b7a5bd; font-size: .68rem; font-weight: 850; }

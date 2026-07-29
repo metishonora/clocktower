@@ -92,6 +92,11 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::ResolveVigormortisPoison { .. } => {
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
+        Command::ResolveSweetheartConsequence { .. }
+        | Command::ResolveBarberConsequence { .. }
+        | Command::ResolveKlutzConsequence { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
         Command::UpdatePlayerAnnotations { payload } => {
             propose_player_annotations(&game_file, payload)
@@ -184,6 +189,7 @@ fn propose_end_game(
             kind: GameEventKind::GameEnded {
                 payload: GameEndedPayload {
                     winning_team: payload.winning_team,
+                    source: None,
                 },
             },
             phase,

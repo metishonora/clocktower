@@ -8,22 +8,27 @@ use std::cell::Cell;
 
 use crate::{
     contracts::{
-        ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction, Command,
-        ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload,
-        DemonAttackNoEffectReason, DemonAttackOutcome, EndGameCommandPayload,
-        ExecuteMadnessCommandPayload, GameEndState, GameEndedPayload, GameEvent, GameEventKind,
-        GameFile, ImpairmentExpiry, ImpairmentKind, MadnessAssignedPayload, MadnessAssignmentState,
-        MadnessCheckRecordedPayload, MadnessCheckResult, MadnessExecutionConfirmedPayload,
-        MadnessStatus, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
-        NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
-        NightDeathsAnnouncedPayload, PendingIdentityReveal, PendingMadnessExecution,
+        ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction,
+        BarberConsequenceOutcome, BarberConsequenceResolvedPayload, BarberDecision, Command,
+        ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload, DeathConsequenceKind,
+        DeathConsequenceNoEffectReason, DeathTriggerRef, DemonAttackNoEffectReason,
+        DemonAttackOutcome, EndGameCommandPayload, ExecuteMadnessCommandPayload, GameEndSource,
+        GameEndState, GameEndedPayload, GameEvent, GameEventKind, GameFile, ImpairmentExpiry,
+        ImpairmentKind, KlutzChoiceOutcome, KlutzChoiceResolvedPayload, MadnessAssignedPayload,
+        MadnessAssignmentState, MadnessCheckRecordedPayload, MadnessCheckResult,
+        MadnessExecutionConfirmedPayload, MadnessStatus, ManualPhaseStepOutcome,
+        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
+        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingDeathConsequence,
+        PendingForcedGameEnd, PendingIdentityReveal, PendingMadnessExecution,
         PendingVigormortisPoisonChoice, PhaseStepEventPayload,
         PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason, PitHagTransformationOutcome,
         PitHagTransformationResolvedPayload, Proposal, RecordDayActionCommandPayload,
-        RecordMadnessCheckCommandPayload, ReplayState, ResolveVigormortisPoisonCommandPayload,
-        RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
-        SnakeCharmerNoSwapReason, VigormortisEffect, VigormortisPoisonInvalidReason,
-        VigormortisPoisonTargetChangedPayload,
+        RecordMadnessCheckCommandPayload, ReplayState, ResolveBarberConsequenceCommandPayload,
+        ResolveKlutzConsequenceCommandPayload, ResolveSweetheartConsequenceCommandPayload,
+        ResolveVigormortisPoisonCommandPayload, RevealPayload, RuleState,
+        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
+        SweetheartConsequenceOutcome, SweetheartConsequenceResolvedPayload, VigormortisEffect,
+        VigormortisPoisonInvalidReason, VigormortisPoisonTargetChangedPayload,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -1565,6 +1570,15 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
                     && match metadata.activity {
                         AbilityActivityPolicy::OnDeath => {
                             death_triggered_in_night_window(player, &prefix, events)
+                                && (character != "sweetheart"
+                                    || !events.iter().any(|event| {
+                                        matches!(
+                                            &event.kind,
+                                            GameEventKind::SweetheartConsequenceResolved { payload }
+                                                if payload.trigger.source_ability_instance_id
+                                                    == player.ability_instance.id
+                                        )
+                                    }))
                         }
                         AbilityActivityPolicy::KilledByDemon => {
                             sage_killer(&prefix, player, events).is_some()
@@ -2140,6 +2154,9 @@ fn active_information_reasons(
         .into_iter()
         .filter(|impairment| impairment.player_id == actor_id)
         .filter_map(|impairment| {
+            if impairment.kind == ImpairmentKind::Drunk {
+                return Some(DeliveryReason::Drunk);
+            }
             let poisoner_player_id = match impairment.source_character_id.as_str() {
                 "snakeCharmer" => events.iter().find_map(|event| match &event.kind {
                     GameEventKind::SnakeCharmerActionResolved { payload }
@@ -2628,12 +2645,15 @@ fn apply_player_event(
             let Some(target) = players.iter().find(|player| player.id == *target_player_id) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
+            let actor_impaired = active_snv_impairments(players, &events[..event_index])
+                .iter()
+                .any(|impairment| impairment.player_id == actor.id);
             match outcome {
                 DemonAttackOutcome::Deaths {
                     deaths,
                     vigormortis_effect,
                 } => {
-                    if deaths.is_empty() {
+                    if actor_impaired || deaths.is_empty() {
                         return Err(ErrorKind::ReplayFailed.into_error());
                     }
                     let expected_vigormortis_effect = actor_character_id == "vigormortis"
@@ -2693,9 +2713,14 @@ fn apply_player_event(
                     }
                 }
                 DemonAttackOutcome::NoEffect {
-                    reason:
-                        DemonAttackNoEffectReason::ActorImpaired
-                        | DemonAttackNoEffectReason::NotActualCharacter,
+                    reason: DemonAttackNoEffectReason::ActorImpaired,
+                } => {
+                    if !actor_impaired {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                }
+                DemonAttackOutcome::NoEffect {
+                    reason: DemonAttackNoEffectReason::NotActualCharacter,
                 } => {}
                 DemonAttackOutcome::NoEffect {
                     reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
@@ -2776,6 +2801,58 @@ fn apply_player_event(
                 player.death_announced = true;
             }
         }
+        GameEventKind::SweetheartConsequenceResolved { payload } => {
+            if let SweetheartConsequenceOutcome::DrunkApplied { impairment } = &payload.outcome {
+                if impairment.kind != ImpairmentKind::Drunk
+                    || impairment.source_event_id != event.id
+                    || impairment.source_character_id != "sweetheart"
+                    || payload.target_player_id.as_deref() != Some(impairment.player_id.as_str())
+                    || !players
+                        .iter()
+                        .any(|player| player.id == impairment.player_id)
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                active_impairments.push(impairment.clone());
+            }
+        }
+        GameEventKind::BarberConsequenceResolved { payload } => {
+            if let BarberConsequenceOutcome::Swapped {
+                identity_transitions,
+            } = &payload.outcome
+            {
+                if identity_transitions.len() != 2
+                    || identity_transitions[0].player_id == identity_transitions[1].player_id
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+                for transition in identity_transitions {
+                    let player = players
+                        .iter_mut()
+                        .find(|player| player.id == transition.player_id)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    if identity_state(player) != transition.before
+                        || transition.after.alignment != transition.before.alignment
+                    {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    player.actual_character = transition.after.actual_character.clone();
+                    player.shown_character = transition.after.shown_character.clone();
+                    player.ability_instance = AbilityInstance {
+                        id: AbilityInstanceId::new(&event.id, &player.id),
+                        character_id: player.actual_character.clone(),
+                        source_event_id: event.id.clone(),
+                    };
+                    player.identity_history.push(IdentityHistoryEntry {
+                        source_event_id: event.id.clone(),
+                        phase: event.phase,
+                        before: transition.before.clone(),
+                        after: transition.after.clone(),
+                    });
+                }
+            }
+        }
+        GameEventKind::KlutzChoiceResolved { .. } => {}
         GameEventKind::SnakeCharmerActionResolved { payload } => {
             let Some(actor) = players.iter().find(|player| {
                 player.id == payload.actor_player_id
@@ -3251,8 +3328,16 @@ fn vigormortis_poison_state(
 
 fn active_snv_impairments(players: &[Player], events: &[GameEvent]) -> Vec<ActiveImpairment> {
     let mut impairments = active_snake_charmer_impairments(events);
+    impairments.extend(events.iter().filter_map(|event| match &event.kind {
+        GameEventKind::SweetheartConsequenceResolved { payload } => match &payload.outcome {
+            SweetheartConsequenceOutcome::DrunkApplied { impairment } => Some(impairment.clone()),
+            SweetheartConsequenceOutcome::NoEffect { .. } => None,
+        },
+        _ => None,
+    }));
     let snake_poisoned = impairments
         .iter()
+        .filter(|impairment| impairment.source_character_id == "snakeCharmer")
         .map(|impairment| impairment.player_id.clone())
         .collect::<HashSet<_>>();
     for no_dashii in players.iter().filter(|player| {
@@ -3343,6 +3428,31 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
                 })
                 .collect()
         }
+        GameEventKind::BarberConsequenceResolved { payload } => {
+            let BarberConsequenceOutcome::Swapped {
+                identity_transitions,
+            } = &payload.outcome
+            else {
+                return vec![];
+            };
+            identity_transitions
+                .iter()
+                .enumerate()
+                .map(|(index, transition)| PendingIdentityReveal {
+                    source_event_id: event.id.clone(),
+                    sequence: (index + 1) as u8,
+                    payload: RevealPayload::CharacterChange {
+                        kind: "characterChange",
+                        player_id: transition.player_id.clone(),
+                        alignment: match transition.after.alignment {
+                            Alignment::Good => "good".into(),
+                            Alignment::Evil => "evil".into(),
+                        },
+                        character_id: transition.after.shown_character.clone(),
+                    },
+                })
+                .collect()
+        }
         GameEventKind::PlayerTransitioned { payload } => payload
             .transitions
             .iter()
@@ -3374,6 +3484,299 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
     }
 }
 
+fn phase_token(phase: Phase) -> &'static str {
+    match phase {
+        Phase::Setup => "setup",
+        Phase::FirstNight => "firstNight",
+        Phase::Day => "day",
+        Phase::Night => "night",
+    }
+}
+
+fn death_event_for_player<'a>(
+    events: &'a [GameEvent],
+    player_id: &str,
+) -> Option<(&'a GameEvent, u8)> {
+    events.iter().rev().find_map(|event| match &event.kind {
+        GameEventKind::DeathConfirmed { payload } if payload.player_id == player_id => {
+            Some((event, 1))
+        }
+        GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+            NightActionResolution::DemonAttack {
+                outcome: DemonAttackOutcome::Deaths { deaths, .. },
+                ..
+            } => deaths
+                .iter()
+                .position(|death| death.player_id == player_id)
+                .map(|index| (event, (index + 1) as u8)),
+            _ => None,
+        },
+        GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload
+            .deaths
+            .iter()
+            .position(|death| death.player_id == player_id)
+            .map(|index| (event, (index + 1) as u8)),
+        _ => None,
+    })
+}
+
+fn record_death_triggers(
+    triggers: &mut Vec<PendingDeathConsequence>,
+    players: &[Player],
+    prior_events: &[GameEvent],
+    event: &GameEvent,
+) {
+    let impaired_ids = active_snv_impairments(players, prior_events)
+        .into_iter()
+        .map(|impairment| impairment.player_id)
+        .collect::<HashSet<_>>();
+    let mut record = |player_id: &str,
+                      source_event: &GameEvent,
+                      death_sequence: u8,
+                      kind: DeathConsequenceKind| {
+        let Some(player) = players.iter().find(|player| player.id == player_id) else {
+            return;
+        };
+        if triggers.iter().any(|trigger| {
+            trigger.source_event_id == source_event.id
+                && trigger.death_sequence == death_sequence
+                && trigger.kind == kind
+        }) {
+            return;
+        }
+        let kind_token = match kind {
+            DeathConsequenceKind::Sweetheart => "sweetheart",
+            DeathConsequenceKind::Barber => "barber",
+            DeathConsequenceKind::Klutz => "klutz",
+        };
+        triggers.push(PendingDeathConsequence {
+            step_id: format!(
+                "{}:death:{}:{death_sequence}:{kind_token}",
+                phase_token(event.phase),
+                source_event.id
+            ),
+            kind,
+            source_event_id: source_event.id.clone(),
+            death_sequence,
+            actor_player_id: player.id.clone(),
+            source_ability_instance_id: player.ability_instance.id.clone(),
+            actor_impaired_at_trigger: impaired_ids.contains(&player.id),
+            allowed_player_ids: match kind {
+                DeathConsequenceKind::Klutz => players
+                    .iter()
+                    .filter(|candidate| candidate.alive)
+                    .map(|candidate| candidate.id.clone())
+                    .collect(),
+                DeathConsequenceKind::Sweetheart | DeathConsequenceKind::Barber => players
+                    .iter()
+                    .map(|candidate| candidate.id.clone())
+                    .collect(),
+            },
+            eligible_chooser_player_ids: players
+                .iter()
+                .filter(|candidate| {
+                    candidate.alive
+                        && character_kind(&candidate.actual_character) == Some(CharacterKind::Demon)
+                })
+                .map(|candidate| candidate.id.clone())
+                .collect(),
+        });
+    };
+
+    let deaths = match &event.kind {
+        GameEventKind::DeathConfirmed { payload } => vec![(payload.player_id.as_str(), 1)],
+        GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+            NightActionResolution::DemonAttack {
+                outcome: DemonAttackOutcome::Deaths { deaths, .. },
+                ..
+            } => deaths
+                .iter()
+                .enumerate()
+                .map(|(index, death)| (death.player_id.as_str(), (index + 1) as u8))
+                .collect(),
+            _ => vec![],
+        },
+        GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload
+            .deaths
+            .iter()
+            .enumerate()
+            .map(|(index, death)| (death.player_id.as_str(), (index + 1) as u8))
+            .collect(),
+        _ => vec![],
+    };
+    for (player_id, death_sequence) in deaths {
+        let Some(player) = players.iter().find(|player| player.id == player_id) else {
+            continue;
+        };
+        match player.actual_character.as_str() {
+            "sweetheart" => record(
+                player_id,
+                event,
+                death_sequence,
+                DeathConsequenceKind::Sweetheart,
+            ),
+            "barber" => record(
+                player_id,
+                event,
+                death_sequence,
+                DeathConsequenceKind::Barber,
+            ),
+            "klutz" if event.phase == Phase::Day => record(
+                player_id,
+                event,
+                death_sequence,
+                DeathConsequenceKind::Klutz,
+            ),
+            _ => {}
+        }
+    }
+
+    if let GameEventKind::NightDeathsAnnounced { payload } = &event.kind {
+        for player_id in &payload.player_ids {
+            let Some(player) = players
+                .iter()
+                .find(|player| player.id == *player_id && player.actual_character == "klutz")
+            else {
+                continue;
+            };
+            if let Some((source_event, sequence)) = death_event_for_player(prior_events, &player.id)
+            {
+                record(
+                    &player.id,
+                    source_event,
+                    sequence,
+                    DeathConsequenceKind::Klutz,
+                );
+            }
+        }
+    }
+}
+
+fn unresolved_death_consequences(
+    triggers: &[PendingDeathConsequence],
+    events: &[GameEvent],
+    players: &[Player],
+    current_step: Option<&PhaseStep>,
+) -> Vec<PendingDeathConsequence> {
+    let resolved = events
+        .iter()
+        .filter_map(|event| match &event.kind {
+            GameEventKind::SweetheartConsequenceResolved { payload } => {
+                Some((DeathConsequenceKind::Sweetheart, &payload.trigger))
+            }
+            GameEventKind::BarberConsequenceResolved { payload } => {
+                Some((DeathConsequenceKind::Barber, &payload.trigger))
+            }
+            GameEventKind::KlutzChoiceResolved { payload } => {
+                Some((DeathConsequenceKind::Klutz, &payload.trigger))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let mut pending = triggers
+        .iter()
+        .filter(|trigger| {
+            !resolved.iter().any(|(kind, resolved)| {
+                *kind == trigger.kind
+                    && resolved.source_event_id == trigger.source_event_id
+                    && resolved.death_sequence == trigger.death_sequence
+                    && resolved.player_id == trigger.actor_player_id
+            })
+        })
+        .filter(|trigger| match trigger.kind {
+            DeathConsequenceKind::Sweetheart | DeathConsequenceKind::Klutz => true,
+            DeathConsequenceKind::Barber => current_step.is_some_and(|step| {
+                let matching_barber_step = step.character.as_deref() == Some("barber")
+                    && step.player_id.as_deref() == Some(trigger.actor_player_id.as_str());
+                let after_barber_timing = step.phase == Phase::Night
+                    && (step
+                        .character
+                        .as_deref()
+                        .and_then(later_night_wake_rank)
+                        .is_some_and(|rank| rank > later_night_wake_rank("barber").unwrap())
+                        || SnvStepKey::parse(&step.id)
+                            .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay));
+                let trigger_was_after_barber_in_this_night = events.iter().any(|event| {
+                    event.id == trigger.source_event_id
+                        && matches!(
+                            event.kind,
+                            GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
+                        )
+                        && same_phase_cycle_as_step(event, step)
+                });
+                matching_barber_step
+                    || (after_barber_timing && !trigger_was_after_barber_in_this_night)
+            }),
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    for consequence in &mut pending {
+        consequence.allowed_player_ids = match consequence.kind {
+            DeathConsequenceKind::Klutz => players
+                .iter()
+                .filter(|player| player.alive)
+                .map(|player| player.id.clone())
+                .collect(),
+            _ => players.iter().map(|player| player.id.clone()).collect(),
+        };
+        consequence.eligible_chooser_player_ids = players
+            .iter()
+            .filter(|player| {
+                player.alive
+                    && character_kind(&player.actual_character) == Some(CharacterKind::Demon)
+            })
+            .map(|player| player.id.clone())
+            .collect();
+        if let Some(step) = current_step {
+            let expected_character = match consequence.kind {
+                DeathConsequenceKind::Sweetheart => Some("sweetheart"),
+                DeathConsequenceKind::Barber => Some("barber"),
+                DeathConsequenceKind::Klutz => None,
+            };
+            if expected_character.is_some_and(|character| {
+                step.character.as_deref() == Some(character)
+                    && step.player_id.as_deref() == Some(consequence.actor_player_id.as_str())
+            }) {
+                consequence.step_id = step.id.clone();
+            }
+        }
+    }
+    pending
+}
+
+fn same_phase_cycle_as_step(event: &GameEvent, step: &PhaseStep) -> bool {
+    let event_step_id = match &event.kind {
+        GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload.step_id.as_str(),
+        _ => return false,
+    };
+    match (
+        SnvStepKey::parse(event_step_id),
+        SnvStepKey::parse(&step.id),
+    ) {
+        (Some(event_key), Some(step_key)) => event_key.phase_token() == step_key.phase_token(),
+        _ => false,
+    }
+}
+
+fn pending_forced_game_end(events: &[GameEvent]) -> Option<PendingForcedGameEnd> {
+    if events
+        .iter()
+        .any(|event| matches!(event.kind, GameEventKind::GameEnded { .. }))
+    {
+        return None;
+    }
+    events.iter().rev().find_map(|event| match &event.kind {
+        GameEventKind::KlutzChoiceResolved { payload } => match payload.outcome {
+            KlutzChoiceOutcome::TeamLost { winning_team, .. } => Some(PendingForcedGameEnd {
+                source_event_id: event.id.clone(),
+                winning_team,
+            }),
+            KlutzChoiceOutcome::Safe | KlutzChoiceOutcome::ActorImpaired => None,
+        },
+        _ => None,
+    })
+}
+
 struct SnvReplayContext {
     initial_players: Vec<Player>,
     players: Vec<Player>,
@@ -3381,6 +3784,7 @@ struct SnvReplayContext {
     current_step: Option<PhaseStep>,
     phase_overview: Vec<PhaseOverviewItem>,
     day_role_actions: DayRoleActionIndex,
+    death_triggers: Vec<PendingDeathConsequence>,
 }
 
 fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
@@ -3393,10 +3797,79 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
     let mut statuses = HashMap::new();
     let mut pending_madness_overview: Option<(PendingMadnessExecution, Phase, Vec<PhaseStep>)> =
         None;
+    let mut death_triggers = Vec::<PendingDeathConsequence>::new();
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
         let players_at_event = players.as_slice();
         day_role_actions.record(event, players_at_event)?;
+        record_death_triggers(
+            &mut death_triggers,
+            players_at_event,
+            &events[..event_index],
+            event,
+        );
+        if matches!(
+            event.kind,
+            GameEventKind::SweetheartConsequenceResolved { .. }
+                | GameEventKind::BarberConsequenceResolved { .. }
+                | GameEventKind::KlutzChoiceResolved { .. }
+        ) {
+            let Some((phase, _, current)) = current_phase_steps(
+                players_at_event,
+                &events[..event_index],
+                events.len() + 2,
+                &statuses,
+            ) else {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            };
+            let pending = unresolved_death_consequences(
+                &death_triggers,
+                &events[..event_index],
+                players_at_event,
+                current.as_ref(),
+            );
+            let (step_id, trigger) = match &event.kind {
+                GameEventKind::SweetheartConsequenceResolved { payload } => {
+                    (&payload.step_id, &payload.trigger)
+                }
+                GameEventKind::BarberConsequenceResolved { payload } => {
+                    (&payload.step_id, &payload.trigger)
+                }
+                GameEventKind::KlutzChoiceResolved { payload } => {
+                    (&payload.step_id, &payload.trigger)
+                }
+                _ => unreachable!(),
+            };
+            let expected = pending
+                .iter()
+                .find(|consequence| consequence.step_id == *step_id)
+                .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            if event.phase != phase
+                || trigger.source_event_id != expected.source_event_id
+                || trigger.death_sequence != expected.death_sequence
+                || trigger.player_id != expected.actor_player_id
+                || trigger.source_ability_instance_id != expected.source_ability_instance_id
+            {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            validate_death_consequence_event(
+                event,
+                expected,
+                players_at_event,
+                &events[..event_index],
+            )?;
+            if current.as_ref().is_some_and(|step| step.id == *step_id) {
+                statuses.insert(step_id.clone(), PhaseStepStatus::Complete);
+            }
+            apply_player_event(
+                &mut players,
+                &mut active_impairments,
+                events,
+                event_index,
+                event,
+            )?;
+            continue;
+        }
         if let GameEventKind::PlayerAnnotationsUpdated { payload } = &event.kind {
             if !events[..event_index].iter().any(|candidate| matches!(
                 &candidate.kind,
@@ -4118,6 +4591,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             current_step: Some(death_step),
             phase_overview: overview,
             day_role_actions,
+            death_triggers,
         });
     }
 
@@ -4131,6 +4605,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             current_step: None,
             phase_overview: vec![],
             day_role_actions,
+            death_triggers,
         });
     };
     if let Some(step) = current.as_mut() {
@@ -4177,7 +4652,164 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         current_step: current,
         phase_overview: overview,
         day_role_actions,
+        death_triggers,
     })
+}
+
+fn validate_death_consequence_event(
+    event: &GameEvent,
+    pending: &PendingDeathConsequence,
+    players: &[Player],
+    prior_events: &[GameEvent],
+) -> Result<(), CoreError> {
+    let failed = || ErrorKind::ReplayFailed.into_error();
+    match (&event.kind, pending.kind) {
+        (
+            GameEventKind::SweetheartConsequenceResolved { payload },
+            DeathConsequenceKind::Sweetheart,
+        ) => {
+            if pending.actor_impaired_at_trigger {
+                if payload.outcome
+                    != (SweetheartConsequenceOutcome::NoEffect {
+                        reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+                    })
+                {
+                    return Err(failed());
+                }
+            } else if payload
+                .target_player_id
+                .as_ref()
+                .is_none_or(|target| !players.iter().any(|player| player.id == *target))
+                || !matches!(
+                    payload.outcome,
+                    SweetheartConsequenceOutcome::DrunkApplied { .. }
+                )
+            {
+                return Err(failed());
+            }
+        }
+        (GameEventKind::BarberConsequenceResolved { payload }, DeathConsequenceKind::Barber) => {
+            let actor = players
+                .iter()
+                .find(|player| player.id == pending.actor_player_id)
+                .ok_or_else(failed)?;
+            let no_effect_reason = if pending.actor_impaired_at_trigger {
+                Some(DeathConsequenceNoEffectReason::ActorImpairedAtDeath)
+            } else if actor.ability_instance.id != pending.source_ability_instance_id
+                || actor.actual_character != "barber"
+            {
+                Some(DeathConsequenceNoEffectReason::SourceAbilityLost)
+            } else if active_snv_impairments(players, prior_events)
+                .iter()
+                .any(|impairment| impairment.player_id == actor.id)
+            {
+                Some(DeathConsequenceNoEffectReason::ActorImpairedAtResolution)
+            } else if pending.eligible_chooser_player_ids.is_empty() {
+                Some(DeathConsequenceNoEffectReason::NoLivingDemon)
+            } else {
+                None
+            };
+            if let Some(reason) = no_effect_reason {
+                if payload.outcome != (BarberConsequenceOutcome::NoEffect { reason }) {
+                    return Err(failed());
+                }
+                return Ok(());
+            }
+            let chooser = payload
+                .chooser_demon_player_id
+                .as_ref()
+                .filter(|chooser| pending.eligible_chooser_player_ids.contains(chooser))
+                .ok_or_else(failed)?;
+            let expected_outcome = match &payload.decision {
+                BarberDecision::Decline => BarberConsequenceOutcome::Declined,
+                BarberDecision::Swap { player_ids } => {
+                    if player_ids.len() != 2 || player_ids[0] == player_ids[1] {
+                        return Err(failed());
+                    }
+                    let first = players
+                        .iter()
+                        .find(|player| player.id == player_ids[0])
+                        .ok_or_else(failed)?;
+                    let second = players
+                        .iter()
+                        .find(|player| player.id == player_ids[1])
+                        .ok_or_else(failed)?;
+                    if [first, second].iter().any(|target| {
+                        character_kind(&target.actual_character) == Some(CharacterKind::Demon)
+                            && target.id != *chooser
+                    }) {
+                        return Err(failed());
+                    }
+                    if first.actual_character == second.actual_character
+                        && first.shown_character == second.shown_character
+                    {
+                        BarberConsequenceOutcome::NoChangeSameCharacter
+                    } else {
+                        BarberConsequenceOutcome::Swapped {
+                            identity_transitions: vec![
+                                PlayerIdentityTransition {
+                                    player_id: first.id.clone(),
+                                    before: identity_state(first),
+                                    after: IdentityState {
+                                        actual_character: second.actual_character.clone(),
+                                        shown_character: second.shown_character.clone(),
+                                        alignment: first.alignment,
+                                    },
+                                },
+                                PlayerIdentityTransition {
+                                    player_id: second.id.clone(),
+                                    before: identity_state(second),
+                                    after: IdentityState {
+                                        actual_character: first.actual_character.clone(),
+                                        shown_character: first.shown_character.clone(),
+                                        alignment: second.alignment,
+                                    },
+                                },
+                            ],
+                        }
+                    }
+                }
+            };
+            if payload.outcome != expected_outcome {
+                return Err(failed());
+            }
+        }
+        (GameEventKind::KlutzChoiceResolved { payload }, DeathConsequenceKind::Klutz) => {
+            let actor = players
+                .iter()
+                .find(|player| player.id == pending.actor_player_id)
+                .ok_or_else(failed)?;
+            let target = players
+                .iter()
+                .find(|player| player.id == payload.target_player_id && player.alive)
+                .ok_or_else(failed)?;
+            let actor_impaired = pending.actor_impaired_at_trigger
+                || active_snv_impairments(players, prior_events)
+                    .iter()
+                    .any(|impairment| impairment.player_id == actor.id);
+            let expected = if actor_impaired {
+                KlutzChoiceOutcome::ActorImpaired
+            } else if target.alignment == Alignment::Good {
+                KlutzChoiceOutcome::Safe
+            } else {
+                KlutzChoiceOutcome::TeamLost {
+                    losing_team: actor.alignment,
+                    winning_team: match actor.alignment {
+                        Alignment::Good => Alignment::Evil,
+                        Alignment::Evil => Alignment::Good,
+                    },
+                }
+            };
+            if payload.actor_alignment != actor.alignment
+                || payload.target_alignment != target.alignment
+                || payload.outcome != expected
+            {
+                return Err(failed());
+            }
+        }
+        _ => return Err(failed()),
+    }
+    Ok(())
 }
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
@@ -4200,6 +4832,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             madness_assignments: vec![],
             pending_madness_execution: None,
             pending_vigormortis_poison_choices: vec![],
+            pending_death_consequences: vec![],
+            pending_forced_game_end: None,
         });
     }
     let events = &game_file.game.events;
@@ -4227,6 +4861,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         current_step,
         phase_overview,
         day_role_actions,
+        death_triggers,
     } = replay_context(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
     let day_state = if phase == Phase::Day {
@@ -4282,6 +4917,17 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(active_events);
+    let pending_death_consequences = if !ended_positions.is_empty() {
+        vec![]
+    } else {
+        unresolved_death_consequences(
+            &death_triggers,
+            active_events,
+            &players,
+            current_step.as_ref(),
+        )
+    };
+    let forced_game_end = pending_forced_game_end(events);
     let available_day_actions =
         available_day_actions(phase, current_step.as_ref(), &players, active_events);
     let day_action_records = confirmed_day_action_records(active_events);
@@ -4306,6 +4952,13 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             };
             if event.phase != phase {
                 return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            match (&payload.source, pending_forced_game_end(active_events)) {
+                (None, None) => {}
+                (Some(GameEndSource::KlutzChoice { source_event_id }), Some(forced))
+                    if *source_event_id == forced.source_event_id
+                        && payload.winning_team == forced.winning_team => {}
+                _ => return Err(ErrorKind::ReplayFailed.into_error()),
             }
             Ok(GameEndState {
                 event_id: event.id.clone(),
@@ -4336,6 +4989,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         madness_assignments,
         pending_madness_execution,
         pending_vigormortis_poison_choices,
+        pending_death_consequences,
+        pending_forced_game_end: forced_game_end,
     })
 }
 
@@ -4356,8 +5011,51 @@ pub(crate) fn propose_phase_command(
         phase,
         current_step,
         day_role_actions,
+        death_triggers,
         ..
     } = replay_context(&game_file.game.events)?;
+    if let Some(forced) = pending_forced_game_end(&game_file.game.events) {
+        return match command {
+            Command::EndGame { payload } if payload.winning_team == forced.winning_team => {
+                propose_end_game(
+                    game_file,
+                    current_step.as_ref(),
+                    phase,
+                    payload,
+                    Some(GameEndSource::KlutzChoice {
+                        source_event_id: forced.source_event_id,
+                    }),
+                )
+            }
+            _ => Err(ErrorKind::InvalidStepInput.into_error()),
+        };
+    }
+    let pending_death_consequences = unresolved_death_consequences(
+        &death_triggers,
+        &game_file.game.events,
+        &players,
+        current_step.as_ref(),
+    );
+    if let Some(pending) = pending_death_consequences.first() {
+        return match command {
+            Command::ResolveSweetheartConsequence { payload }
+                if pending.kind == DeathConsequenceKind::Sweetheart =>
+            {
+                propose_sweetheart_consequence(game_file, phase, &players, pending, payload)
+            }
+            Command::ResolveBarberConsequence { payload }
+                if pending.kind == DeathConsequenceKind::Barber =>
+            {
+                propose_barber_consequence(game_file, phase, &players, pending, payload)
+            }
+            Command::ResolveKlutzConsequence { payload }
+                if pending.kind == DeathConsequenceKind::Klutz =>
+            {
+                propose_klutz_consequence(game_file, phase, &players, pending, payload)
+            }
+            _ => Err(ErrorKind::InvalidStepInput.into_error()),
+        };
+    }
     let pending_vigormortis_choices = vigormortis_poison_state(&players, &game_file.game.events).1;
     if let Command::ResolveVigormortisPoison { payload } = command {
         return propose_vigormortis_poison_target(
@@ -4560,9 +5258,277 @@ pub(crate) fn propose_phase_command(
         Command::ExecuteMadness { payload } => {
             propose_madness_execution(game_file, &current_step, &players, payload)
         }
-        Command::EndGame { payload } => propose_end_game(game_file, &current_step, payload),
+        Command::EndGame { payload } => propose_end_game(
+            game_file,
+            Some(&current_step),
+            current_step.phase,
+            payload,
+            None,
+        ),
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
+}
+
+fn trigger_ref(pending: &PendingDeathConsequence) -> DeathTriggerRef {
+    DeathTriggerRef {
+        source_event_id: pending.source_event_id.clone(),
+        death_sequence: pending.death_sequence,
+        player_id: pending.actor_player_id.clone(),
+        source_ability_instance_id: pending.source_ability_instance_id.clone(),
+    }
+}
+
+fn consequence_event(
+    game_file: &GameFile,
+    phase: Phase,
+    id_prefix: &str,
+    kind: GameEventKind,
+    summary: String,
+) -> Proposal {
+    Proposal {
+        event: GameEvent {
+            id: format!("{id_prefix}-{}", game_file.game.events.len() + 1),
+            kind,
+            phase,
+            summary: summary.clone(),
+            created_at: game_file
+                .game
+                .updated_at
+                .clone()
+                .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".into()),
+        },
+        warnings: vec![],
+        follow_up_steps: vec![],
+        preview: json!({ "messageKo": summary }),
+        reveal_payload: None,
+    }
+}
+
+fn propose_sweetheart_consequence(
+    game_file: &GameFile,
+    phase: Phase,
+    players: &[Player],
+    pending: &PendingDeathConsequence,
+    payload: ResolveSweetheartConsequenceCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.step_id != pending.step_id {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+    let event_id = format!("sweetheart-consequence-{}", game_file.game.events.len() + 1);
+    let outcome = if pending.actor_impaired_at_trigger {
+        SweetheartConsequenceOutcome::NoEffect {
+            reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+        }
+    } else {
+        let target_player_id = payload
+            .target_player_id
+            .as_deref()
+            .filter(|target| players.iter().any(|player| player.id == *target))
+            .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+        SweetheartConsequenceOutcome::DrunkApplied {
+            impairment: ActiveImpairment {
+                kind: ImpairmentKind::Drunk,
+                player_id: target_player_id.to_string(),
+                source_event_id: event_id.clone(),
+                source_character_id: "sweetheart".into(),
+                expires: ImpairmentExpiry::Never,
+            },
+        }
+    };
+    let summary = match outcome {
+        SweetheartConsequenceOutcome::DrunkApplied { .. } => "사랑꾼 취함 적용",
+        SweetheartConsequenceOutcome::NoEffect { .. } => "사랑꾼 효과 없음",
+    };
+    let mut proposal = consequence_event(
+        game_file,
+        phase,
+        "sweetheart-consequence",
+        GameEventKind::SweetheartConsequenceResolved {
+            payload: SweetheartConsequenceResolvedPayload {
+                step_id: payload.step_id,
+                trigger: trigger_ref(pending),
+                target_player_id: payload.target_player_id,
+                outcome,
+            },
+        },
+        summary.into(),
+    );
+    proposal.event.id = event_id;
+    Ok(proposal)
+}
+
+fn propose_barber_consequence(
+    game_file: &GameFile,
+    phase: Phase,
+    players: &[Player],
+    pending: &PendingDeathConsequence,
+    payload: ResolveBarberConsequenceCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.step_id != pending.step_id {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+    let actor = players
+        .iter()
+        .find(|player| player.id == pending.actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let actor_impaired_now = active_snv_impairments(players, &game_file.game.events)
+        .iter()
+        .any(|impairment| impairment.player_id == actor.id);
+    let chooser = payload.chooser_demon_player_id.as_ref();
+    let outcome = if pending.actor_impaired_at_trigger {
+        BarberConsequenceOutcome::NoEffect {
+            reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+        }
+    } else if actor.ability_instance.id != pending.source_ability_instance_id
+        || actor.actual_character != "barber"
+    {
+        BarberConsequenceOutcome::NoEffect {
+            reason: DeathConsequenceNoEffectReason::SourceAbilityLost,
+        }
+    } else if actor_impaired_now {
+        BarberConsequenceOutcome::NoEffect {
+            reason: DeathConsequenceNoEffectReason::ActorImpairedAtResolution,
+        }
+    } else if pending.eligible_chooser_player_ids.is_empty() {
+        BarberConsequenceOutcome::NoEffect {
+            reason: DeathConsequenceNoEffectReason::NoLivingDemon,
+        }
+    } else {
+        let chooser = chooser
+            .map(String::as_str)
+            .filter(|chooser| {
+                pending
+                    .eligible_chooser_player_ids
+                    .iter()
+                    .any(|eligible| eligible == chooser)
+            })
+            .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+        match &payload.decision {
+            BarberDecision::Decline => BarberConsequenceOutcome::Declined,
+            BarberDecision::Swap { player_ids } => {
+                if player_ids.len() != 2 || player_ids[0] == player_ids[1] {
+                    return Err(ErrorKind::InvalidStepInput.into_error());
+                }
+                let first = players
+                    .iter()
+                    .find(|player| player.id == player_ids[0])
+                    .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+                let second = players
+                    .iter()
+                    .find(|player| player.id == player_ids[1])
+                    .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+                if [first, second].iter().any(|target| {
+                    character_kind(&target.actual_character) == Some(CharacterKind::Demon)
+                        && target.id != chooser
+                }) {
+                    return Err(ErrorKind::InvalidStepInput.into_error());
+                }
+                if first.actual_character == second.actual_character
+                    && first.shown_character == second.shown_character
+                {
+                    BarberConsequenceOutcome::NoChangeSameCharacter
+                } else {
+                    BarberConsequenceOutcome::Swapped {
+                        identity_transitions: vec![
+                            PlayerIdentityTransition {
+                                player_id: first.id.clone(),
+                                before: identity_state(first),
+                                after: IdentityState {
+                                    actual_character: second.actual_character.clone(),
+                                    shown_character: second.shown_character.clone(),
+                                    alignment: first.alignment,
+                                },
+                            },
+                            PlayerIdentityTransition {
+                                player_id: second.id.clone(),
+                                before: identity_state(second),
+                                after: IdentityState {
+                                    actual_character: first.actual_character.clone(),
+                                    shown_character: first.shown_character.clone(),
+                                    alignment: second.alignment,
+                                },
+                            },
+                        ],
+                    }
+                }
+            }
+        }
+    };
+    let summary = match outcome {
+        BarberConsequenceOutcome::Swapped { .. } => "이발사 직업 교환",
+        BarberConsequenceOutcome::Declined => "이발사 교환 거절",
+        BarberConsequenceOutcome::NoChangeSameCharacter => "이발사 교환 · 동일 직업",
+        BarberConsequenceOutcome::NoEffect { .. } => "이발사 효과 없음",
+    };
+    Ok(consequence_event(
+        game_file,
+        phase,
+        "barber-consequence",
+        GameEventKind::BarberConsequenceResolved {
+            payload: BarberConsequenceResolvedPayload {
+                step_id: payload.step_id,
+                trigger: trigger_ref(pending),
+                chooser_demon_player_id: payload.chooser_demon_player_id,
+                decision: payload.decision,
+                outcome,
+            },
+        },
+        summary.into(),
+    ))
+}
+
+fn propose_klutz_consequence(
+    game_file: &GameFile,
+    phase: Phase,
+    players: &[Player],
+    pending: &PendingDeathConsequence,
+    payload: ResolveKlutzConsequenceCommandPayload,
+) -> Result<Proposal, CoreError> {
+    if payload.step_id != pending.step_id {
+        return Err(ErrorKind::StaleStep.into_error());
+    }
+    let actor = players
+        .iter()
+        .find(|player| player.id == pending.actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == payload.target_player_id && player.alive)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let actor_impaired = pending.actor_impaired_at_trigger
+        || active_snv_impairments(players, &game_file.game.events)
+            .iter()
+            .any(|impairment| impairment.player_id == actor.id);
+    let outcome = if actor_impaired {
+        KlutzChoiceOutcome::ActorImpaired
+    } else if target.alignment == Alignment::Good {
+        KlutzChoiceOutcome::Safe
+    } else {
+        let winning_team = match actor.alignment {
+            Alignment::Good => Alignment::Evil,
+            Alignment::Evil => Alignment::Good,
+        };
+        KlutzChoiceOutcome::TeamLost {
+            losing_team: actor.alignment,
+            winning_team,
+        }
+    };
+    Ok(consequence_event(
+        game_file,
+        phase,
+        "klutz-choice",
+        GameEventKind::KlutzChoiceResolved {
+            payload: KlutzChoiceResolvedPayload {
+                step_id: payload.step_id,
+                trigger: trigger_ref(pending),
+                target_player_id: payload.target_player_id,
+                actor_alignment: actor.alignment,
+                target_alignment: target.alignment,
+                outcome,
+            },
+        },
+        "얼뜨기 선택 확정".into(),
+    ))
 }
 
 fn propose_vigormortis_poison_target(
@@ -4617,8 +5583,10 @@ fn propose_vigormortis_poison_target(
 
 fn propose_end_game(
     game_file: &GameFile,
-    current_step: &PhaseStep,
+    _current_step: Option<&PhaseStep>,
+    phase: Phase,
     payload: EndGameCommandPayload,
+    source: Option<GameEndSource>,
 ) -> Result<Proposal, CoreError> {
     if payload.expected_event_count != game_file.game.events.len() {
         return Err(ErrorKind::StaleCommand.into_error());
@@ -4634,9 +5602,10 @@ fn propose_end_game(
             kind: GameEventKind::GameEnded {
                 payload: GameEndedPayload {
                     winning_team: payload.winning_team,
+                    source,
                 },
             },
-            phase: current_step.phase,
+            phase,
             summary: summary.clone(),
             created_at: game_file
                 .game
@@ -5142,6 +6111,9 @@ fn propose_demon_attack(
         .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
+    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
+        .iter()
+        .any(|impairment| impairment.player_id == actor.id);
     let vigormortis_effect = if actor_character_id == "vigormortis"
         && target.alive
         && character_kind(&target.actual_character) == Some(CharacterKind::Minion)
@@ -5176,6 +6148,14 @@ fn propose_demon_attack(
                 reason: DemonAttackNoEffectReason::PitHagCreatedDemon,
             },
             "사망 대상 후보 기록",
+            vec![],
+        )
+    } else if actor_impaired {
+        (
+            DemonAttackOutcome::NoEffect {
+                reason: DemonAttackNoEffectReason::ActorImpaired,
+            },
+            "취함/중독 · 사망 없음",
             vec![],
         )
     } else if target.alive {
@@ -5338,10 +6318,100 @@ fn propose_night_deaths_announcement(
 }
 
 #[cfg(test)]
-mod catalog_tests {
+mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::contracts::{Game, ScriptId};
+    use serde_json::json;
+
+    #[test]
+    fn klutz_choice_uses_current_impairment_even_when_trigger_snapshot_was_healthy() {
+        let events: Vec<GameEvent> = serde_json::from_value(json!([
+            {
+                "id": "setup",
+                "type": "setupConfirmed",
+                "phase": "setup",
+                "payload": { "players": [
+                    { "id": "player-1", "seat": 1, "name": "Sweetheart", "actualCharacter": "sweetheart", "shownCharacter": "sweetheart" },
+                    { "id": "player-2", "seat": 2, "name": "Barber", "actualCharacter": "barber", "shownCharacter": "barber" },
+                    { "id": "player-3", "seat": 3, "name": "Klutz", "actualCharacter": "klutz", "shownCharacter": "klutz" },
+                    { "id": "player-4", "seat": 4, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
+                    { "id": "player-5", "seat": 5, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
+                    { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
+                    { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+                ] },
+                "summary": "setup",
+                "createdAt": "2026-07-29T00:00:00.000Z"
+            },
+            {
+                "id": "sweetheart-2",
+                "type": "sweetheartConsequenceResolved",
+                "phase": "day",
+                "payload": {
+                    "stepId": "day:sweetheart",
+                    "trigger": {
+                        "sourceEventId": "death-1",
+                        "deathSequence": 1,
+                        "playerId": "sweetheart",
+                        "sourceAbilityInstanceId": "setup:sweetheart"
+                    },
+                    "targetPlayerId": "player-3",
+                    "outcome": {
+                        "kind": "drunkApplied",
+                        "impairment": {
+                            "kind": "drunk",
+                            "playerId": "player-3",
+                            "sourceEventId": "sweetheart-2",
+                            "sourceCharacterId": "sweetheart",
+                            "expires": "never"
+                        }
+                    }
+                },
+                "summary": "사랑꾼 취함 적용",
+                "createdAt": "2026-07-29T00:01:00.000Z"
+            }
+        ]))
+        .unwrap();
+        let players = setup_players(&events).unwrap();
+        let game_file = GameFile {
+            schema_version: 3,
+            script_id: ScriptId::SectsAndViolets,
+            game: Game {
+                updated_at: None,
+                events,
+            },
+        };
+        let pending = PendingDeathConsequence {
+            step_id: "day:death:klutz".into(),
+            kind: DeathConsequenceKind::Klutz,
+            source_event_id: "death-klutz".into(),
+            death_sequence: 1,
+            actor_player_id: "player-3".into(),
+            source_ability_instance_id: AbilityInstanceId::new("setup", "player-3"),
+            actor_impaired_at_trigger: false,
+            allowed_player_ids: vec!["player-7".into()],
+            eligible_chooser_player_ids: vec![],
+        };
+
+        let proposal = propose_klutz_consequence(
+            &game_file,
+            Phase::Day,
+            &players,
+            &pending,
+            ResolveKlutzConsequenceCommandPayload {
+                step_id: pending.step_id.clone(),
+                target_player_id: "player-7".into(),
+                expected_event_count: game_file.game.events.len(),
+            },
+        )
+        .unwrap();
+
+        let GameEventKind::KlutzChoiceResolved { payload } = proposal.event.kind else {
+            panic!("expected Klutz choice event");
+        };
+        assert_eq!(payload.outcome, KlutzChoiceOutcome::ActorImpaired);
+    }
 
     #[test]
     fn all_twenty_five_character_ids_have_exhaustive_typed_metadata() {
