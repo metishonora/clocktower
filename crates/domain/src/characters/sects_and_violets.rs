@@ -1139,6 +1139,23 @@ fn transition_source<'a>(
         {
             Some((event, payload.step_id.as_str(), "pitHag"))
         }
+        GameEventKind::NightActionResolved { payload }
+            if event.id == player.ability_instance.source_event_id =>
+        {
+            match &payload.resolution {
+                NightActionResolution::DemonAttack {
+                    outcome:
+                        DemonAttackOutcome::FangGuJump {
+                            identity_transition,
+                            ..
+                        },
+                    ..
+                } if identity_transition.player_id == player.id => {
+                    Some((event, payload.step_id.as_str(), "fangGu"))
+                }
+                _ => None,
+            }
+        }
         _ => None,
     })
 }
@@ -1192,6 +1209,12 @@ fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[Game
                         outcome: DemonAttackOutcome::Deaths { deaths, .. },
                         ..
                     } if deaths.iter().any(|death| death.player_id == player.id)
+                ) || matches!(
+                    &payload.resolution,
+                    NightActionResolution::DemonAttack {
+                        outcome: DemonAttackOutcome::FangGuJump { death, .. },
+                        ..
+                    } if death.player_id == player.id
                 )
             }
             GameEventKind::PitHagArbitraryDeathsConfirmed { payload }
@@ -1938,6 +1961,33 @@ fn automatic_vigormortis_reminders(
         .collect()
 }
 
+fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
+    events
+        .iter()
+        .find_map(|event| match &event.kind {
+            GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+                NightActionResolution::DemonAttack {
+                    outcome:
+                        DemonAttackOutcome::FangGuJump {
+                            identity_transition,
+                            ..
+                        },
+                    ..
+                } => Some(AutomaticReminder {
+                    player_id: identity_transition.player_id.clone(),
+                    character_id: "fangGu".into(),
+                    token_id: "once".into(),
+                    label: "한 번".into(),
+                    description: "첫 외지인 이동이 사용되었습니다.".into(),
+                }),
+                _ => None,
+            },
+            _ => None,
+        })
+        .into_iter()
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -2674,6 +2724,81 @@ fn apply_player_event(
                         player.alive = false;
                     }
                 }
+                DemonAttackOutcome::FangGuJump {
+                    death,
+                    source_ability_instance_id,
+                    identity_transition,
+                } => {
+                    let expected_transition = PlayerIdentityTransition {
+                        player_id: target.id.clone(),
+                        before: identity_state(target),
+                        after: IdentityState {
+                            actual_character: "fangGu".into(),
+                            shown_character: "fangGu".into(),
+                            alignment: Alignment::Evil,
+                        },
+                    };
+                    let expected_death = NightDeath {
+                        player_id: actor.id.clone(),
+                        cause: NightDeathCause::DemonAttack {
+                            actor_player_id: actor.id.clone(),
+                            actor_character_id: "fangGu".into(),
+                            target_player_id: target.id.clone(),
+                        },
+                    };
+                    let jump_already_used = events[..event_index].iter().any(|event| {
+                        matches!(
+                            &event.kind,
+                            GameEventKind::NightActionResolved { payload }
+                                if matches!(
+                                    payload.resolution,
+                                    NightActionResolution::DemonAttack {
+                                        outcome: DemonAttackOutcome::FangGuJump { .. },
+                                        ..
+                                    }
+                                )
+                        )
+                    });
+                    let phase_prefix = SnvStepKey::parse(&payload.step_id)
+                        .map(|step| step.phase_token())
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    if actor_impaired
+                        || actor_character_id != "fangGu"
+                        || !target.alive
+                        || character_kind(&target.actual_character) != Some(CharacterKind::Outsider)
+                        || pit_hag_demon_creation(&events[..event_index], phase_prefix).is_some()
+                        || jump_already_used
+                        || source_ability_instance_id != &actor.ability_instance.id
+                        || death != &expected_death
+                        || identity_transition != &expected_transition
+                    {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                    let old_fang_gu = players
+                        .iter_mut()
+                        .find(|player| player.id == death.player_id && player.alive)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    old_fang_gu.alive = false;
+                    let new_fang_gu = players
+                        .iter_mut()
+                        .find(|player| player.id == identity_transition.player_id)
+                        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                    new_fang_gu.actual_character =
+                        identity_transition.after.actual_character.clone();
+                    new_fang_gu.shown_character = identity_transition.after.shown_character.clone();
+                    new_fang_gu.alignment = identity_transition.after.alignment;
+                    new_fang_gu.ability_instance = AbilityInstance {
+                        id: AbilityInstanceId::new(&event.id, &new_fang_gu.id),
+                        character_id: new_fang_gu.actual_character.clone(),
+                        source_event_id: event.id.clone(),
+                    };
+                    new_fang_gu.identity_history.push(IdentityHistoryEntry {
+                        source_event_id: event.id.clone(),
+                        phase: event.phase,
+                        before: identity_transition.before.clone(),
+                        after: identity_transition.after.clone(),
+                    });
+                }
                 DemonAttackOutcome::NoEffect {
                     reason: DemonAttackNoEffectReason::TargetAlreadyDead,
                 } => {
@@ -3138,6 +3263,14 @@ fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
                             deaths.push(death.player_id.clone());
                         }
                     }
+                } else if let NightActionResolution::DemonAttack {
+                    outcome: DemonAttackOutcome::FangGuJump { death, .. },
+                    ..
+                } = &payload.resolution
+                {
+                    if !deaths.contains(&death.player_id) {
+                        deaths.push(death.player_id.clone());
+                    }
                 }
             }
             GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
@@ -3363,6 +3496,26 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
         return vec![];
     };
     match &event.kind {
+        GameEventKind::NightActionResolved { payload } => match &payload.resolution {
+            NightActionResolution::DemonAttack {
+                outcome:
+                    DemonAttackOutcome::FangGuJump {
+                        identity_transition,
+                        ..
+                    },
+                ..
+            } => vec![PendingIdentityReveal {
+                source_event_id: event.id.clone(),
+                sequence: 1,
+                payload: RevealPayload::CharacterChange {
+                    kind: "characterChange",
+                    player_id: identity_transition.player_id.clone(),
+                    alignment: "evil".into(),
+                    character_id: "fangGu".into(),
+                },
+            }],
+            _ => vec![],
+        },
         GameEventKind::MadnessAssigned { payload } => vec![PendingIdentityReveal {
             source_event_id: event.id.clone(),
             sequence: 1,
@@ -3501,6 +3654,10 @@ fn death_event_for_player<'a>(
                 .iter()
                 .position(|death| death.player_id == player_id)
                 .map(|index| (event, (index + 1) as u8)),
+            NightActionResolution::DemonAttack {
+                outcome: DemonAttackOutcome::FangGuJump { death, .. },
+                ..
+            } if death.player_id == player_id => Some((event, 1)),
             _ => None,
         },
         GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload
@@ -3584,6 +3741,10 @@ fn record_death_triggers(
                 .enumerate()
                 .map(|(index, death)| (death.player_id.as_str(), (index + 1) as u8))
                 .collect(),
+            NightActionResolution::DemonAttack {
+                outcome: DemonAttackOutcome::FangGuJump { death, .. },
+                ..
+            } => vec![(death.player_id.as_str(), 1)],
             _ => vec![],
         },
         GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload
@@ -4905,6 +5066,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let mut automatic_reminders =
         automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
+    automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
@@ -6159,6 +6321,35 @@ fn propose_demon_attack(
                 reason: DemonAttackNoEffectReason::ActorImpaired,
             },
             "취함/중독 · 사망 없음",
+            vec![],
+        )
+    } else if target.alive
+        && actor_character_id == "fangGu"
+        && character_kind(&target.actual_character) == Some(CharacterKind::Outsider)
+        && automatic_fang_gu_reminder(&game_file.game.events).is_empty()
+    {
+        (
+            DemonAttackOutcome::FangGuJump {
+                death: NightDeath {
+                    player_id: actor_player_id.clone(),
+                    cause: NightDeathCause::DemonAttack {
+                        actor_player_id: actor_player_id.clone(),
+                        actor_character_id: actor_character_id.clone(),
+                        target_player_id: target_player_id.clone(),
+                    },
+                },
+                source_ability_instance_id: actor.ability_instance.id.clone(),
+                identity_transition: PlayerIdentityTransition {
+                    player_id: target_player_id.clone(),
+                    before: identity_state(target),
+                    after: IdentityState {
+                        actual_character: "fangGu".into(),
+                        shown_character: "fangGu".into(),
+                        alignment: Alignment::Evil,
+                    },
+                },
+            },
+            "팡 구 이동 · 기존 팡 구 사망",
             vec![],
         )
     } else if target.alive {

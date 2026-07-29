@@ -592,7 +592,10 @@ fn a_transformed_player_killed_before_their_wake_order_loses_the_new_ability_ste
 #[test]
 fn newly_created_death_trigger_characters_act_only_after_they_die() {
     for character in ["sweetheart", "barber", "sage"] {
-        let mut events = vec![setup_event_for_creation(character)];
+        let mut setup = setup_event_for_creation(character);
+        setup["payload"]["players"][1]["actualCharacter"] = json!("vortox");
+        setup["payload"]["players"][1]["shownCharacter"] = json!("vortox");
+        let mut events = vec![setup];
         let pit_hag = advance_to_pit_hag(&mut events);
         append(
             &mut events,

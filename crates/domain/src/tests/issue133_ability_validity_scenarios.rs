@@ -266,7 +266,7 @@ fn vigormortis_derived_poison_uses_source_bound_lifetime() {
 }
 
 fn consequence_setup_event() -> Value {
-    let mut setup = setup_event("fangGu");
+    let mut setup = setup_event("noDashii");
     setup["payload"]["players"][1]["name"] = json!("Barber");
     setup["payload"]["players"][1]["actualCharacter"] = json!("barber");
     setup["payload"]["players"][1]["shownCharacter"] = json!("barber");
@@ -407,7 +407,7 @@ fn barber_allows_an_eligible_demon_to_swap_themself_when_multiple_demons_live() 
             .iter()
             .find(|player| player["id"] == "player-4")
             .unwrap()["actualCharacter"],
-        "fangGu"
+        "noDashii"
     );
 }
 
@@ -543,7 +543,7 @@ fn trigger_impaired_klutz_proposes_target_free_canonical_no_effect() {
 
 #[test]
 fn trigger_impaired_sweetheart_rejects_a_forged_unused_target() {
-    let mut setup = setup_event("fangGu");
+    let mut setup = setup_event("vortox");
     setup["payload"]["players"][0]["name"] = json!("Snake Charmer");
     setup["payload"]["players"][0]["actualCharacter"] = json!("snakeCharmer");
     setup["payload"]["players"][0]["shownCharacter"] = json!("snakeCharmer");

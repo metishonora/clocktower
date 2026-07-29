@@ -1,0 +1,101 @@
+.issue112Prototype {
+  min-height: 100dvh;
+  color: #f7f1fb;
+  background: #09060d;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue112ReviewControls {
+  position: relative;
+  z-index: 300;
+  display: flex;
+  min-height: 66px;
+  padding: 10px 18px;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #ded6e2;
+  color: #372b3b;
+  background: #f7f4f8;
+}
+
+.issue112ReviewControls > div { display: grid; margin-right: auto; gap: 2px; }
+.issue112ReviewControls > div strong { font-size: .74rem; letter-spacing: .08em; }
+.issue112ReviewControls > div span { color: #7e7082; font-size: .68rem; }
+.issue112ReviewControls fieldset { display: flex; margin: 0; padding: 4px; gap: 4px; border: 1px solid #ded5e2; border-radius: 12px; }
+.issue112ReviewControls legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.issue112ReviewControls button { min-height: 34px; padding: 6px 11px; border: 0; border-radius: 9px; color: #5c4d61; background: transparent; font: inherit; font-size: .7rem; font-weight: 850; cursor: pointer; }
+.issue112ReviewControls button[aria-pressed="true"] { color: #fff; background: #6d4878; box-shadow: 0 5px 12px rgba(74, 45, 83, .2); }
+.issue112ReviewControls .issue112Reset { border: 1px solid #d6cadb; }
+
+.issue112ProductionScreen {
+  min-height: calc(100dvh - 66px);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #3d2848, #17101e 48%, #0b080f 100%);
+}
+
+.issue112ProductionHeader {
+  display: grid;
+  min-height: 78px;
+  padding: 0 clamp(18px, 4vw, 52px);
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid rgba(226, 207, 234, .11);
+  background: rgba(11, 7, 15, .55);
+}
+
+.issue112ProductionHeader > button { width: 42px; height: 42px; border: 1px solid rgba(229, 211, 236, .16); border-radius: 50%; color: #ecdeef; background: rgba(255, 255, 255, .035); font-size: 1.1rem; }
+.issue112ProductionHeader > div span { color: #aa91b3; font-size: .62rem; font-weight: 900; letter-spacing: .12em; }
+.issue112ProductionHeader h1 { margin: 3px 0 0; font: 700 1.55rem Georgia, serif; }
+.issue112ProductionHeader nav { display: flex; align-items: center; gap: 22px; color: #8e8194; font-size: .76rem; font-weight: 850; }
+.issue112ProductionHeader nav strong { padding: 10px 4px; border-bottom: 2px solid #dfc26f; color: #f0d984; }
+
+.issue112GrimoireFrame { position: relative; width: min(1240px, calc(100% - 24px)); margin: 0 auto; }
+.issue112GrimoireFrame .snvSeatingSurface { min-height: calc(100dvh - 156px); padding: 0 18px 24px; background: transparent; }
+.issue112GrimoireFrame .snvSeatingToolbar { min-height: 54px; }
+.issue112GrimoireFrame .snvToolbarBack { visibility: hidden; }
+
+.issue112GlobalReminder {
+  position: absolute;
+  z-index: 30;
+  top: clamp(320px, 43vw, 410px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.issue112GlobalReminder .playerPinnedToken {
+  width: 66px;
+  height: 66px;
+  padding: 5px 3px;
+  grid-template-rows: 11px 1fr 13px;
+  box-shadow: 0 5px 14px rgba(7, 2, 9, .44), inset 0 0 0 1px rgba(246, 218, 169, .17);
+}
+.issue112GlobalReminder .playerPinnedTokenSource { font-size: .46rem; }
+.issue112GlobalReminder .playerPinnedToken img { width: 28px; height: 28px; }
+.issue112GlobalReminder .playerPinnedToken strong { font-size: .58rem; }
+@media (max-width: 1040px) {
+  .issue112ReviewControls { flex-wrap: wrap; }
+  .issue112ReviewControls > div { width: 100%; }
+  .issue112ProductionScreen { min-height: calc(100dvh - 122px); }
+  .issue112GrimoireFrame .snvSeatingSurface { min-height: calc(100dvh - 200px); }
+}
+
+@media (max-width: 620px) {
+  .issue112ReviewControls { position: sticky; top: 0; padding: 8px 10px; gap: 7px; }
+  .issue112ReviewControls > div { display: none; }
+  .issue112ReviewControls fieldset:first-of-type { flex: 1 1 100%; overflow-x: auto; }
+  .issue112ReviewControls fieldset:first-of-type button { flex: 1 0 auto; }
+  .issue112ReviewControls fieldset:nth-of-type(2) { flex: 1 1 auto; }
+  .issue112ReviewControls .issue112Reset { padding-inline: 9px; }
+  .issue112ProductionHeader { min-height: 66px; padding: 0 14px; grid-template-columns: 40px 1fr; }
+  .issue112ProductionHeader nav { display: none; }
+  .issue112ProductionHeader h1 { font-size: 1.3rem; }
+  .issue112ProductionHeader > button { width: 36px; height: 36px; }
+  .issue112GrimoireFrame { width: 100%; }
+  .issue112GrimoireFrame .snvSeatingSurface { padding-inline: 6px; }
+  .issue112GlobalReminder .playerPinnedToken { width: 58px; height: 58px; padding: 4px 2px; grid-template-rows: 10px 1fr 12px; }
+  .issue112GlobalReminder .playerPinnedToken img { width: 24px; height: 24px; }
+  .issue112GlobalReminder .playerPinnedTokenSource { font-size: .42rem; }
+  .issue112GlobalReminder .playerPinnedToken strong { font-size: .52rem; }
+}

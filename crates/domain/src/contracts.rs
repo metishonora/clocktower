@@ -1286,6 +1286,11 @@ pub(crate) enum DemonAttackOutcome {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         vigormortis_effect: Option<VigormortisEffect>,
     },
+    FangGuJump {
+        death: NightDeath,
+        source_ability_instance_id: AbilityInstanceId,
+        identity_transition: PlayerIdentityTransition,
+    },
     NoEffect {
         reason: DemonAttackNoEffectReason,
     },

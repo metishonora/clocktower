@@ -312,8 +312,8 @@ fn sweetheart_drunk_makes_the_dreamers_information_discretionary() {
     let mut setup = setup_event();
     setup["payload"]["players"][4]["actualCharacter"] = json!("dreamer");
     setup["payload"]["players"][4]["shownCharacter"] = json!("dreamer");
-    setup["payload"]["players"][6]["actualCharacter"] = json!("fangGu");
-    setup["payload"]["players"][6]["shownCharacter"] = json!("fangGu");
+    setup["payload"]["players"][6]["actualCharacter"] = json!("vigormortis");
+    setup["payload"]["players"][6]["shownCharacter"] = json!("vigormortis");
     let mut events = vec![setup];
     attack(&mut events, "player-1");
     let pending = replay(&events);
