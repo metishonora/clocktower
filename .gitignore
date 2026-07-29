@@ -8,6 +8,8 @@
 /.codex-tmp/
 /web/.codex-tmp/
 
-# Local agent skill installs/cache.
-/.agents/
+# Local agent installs/cache; project skills are versioned.
+/.agents/*
+!/.agents/skills/
+!/.agents/skills/**
 /skills-lock.json

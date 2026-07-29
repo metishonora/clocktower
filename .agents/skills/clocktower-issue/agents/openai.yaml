@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clocktower Issue"
+  short_description: "Run or resume the standard issue workflow"
+  default_prompt: "Use $clocktower-issue to start or resume issue #123 from its saved checkpoint."
