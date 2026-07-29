@@ -130,7 +130,7 @@ test("moves the Barber Demon and two-player swap decision into the grimoire", as
       players={livePlayers("barber")}
       phaseLabel="1일차 낮"
       currentStep={dayConsequenceStep("barber")}
-      handoff={{ kind: "barber", complete: false, actorPlayerId: "player-1", selectionStage: "swap" }}
+      handoff={{ kind: "barber", complete: false, actorPlayerId: "player-3", selectionStage: "swap" }}
       chooserId="player-3"
       voterIds={[]}
       targetIds={["player-1", "player-2"]}
@@ -150,7 +150,7 @@ test("moves the Barber Demon and two-player swap decision into the grimoire", as
   const work = screen.getByRole("complementary", { name: "현재 마도서 작업" });
   expect(within(work).getByRole("heading", { name: "이발사 직업 교환" })).toBeTruthy();
   expect(within(work).getByText("3번 다온")).toBeTruthy();
-  expect(within(work).getAllByText("1번 가람")).toHaveLength(2);
+  expect(within(work).getByText("1번 가람")).toBeTruthy();
   expect(within(work).getByText("2번 나래")).toBeTruthy();
   expect(work.textContent).not.toContain("생존");
   expect(work.textContent).not.toContain("사망");

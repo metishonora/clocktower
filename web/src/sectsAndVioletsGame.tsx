@@ -51,6 +51,10 @@ import {
   CharacterChangeRevealPrompt,
 } from "./features/identity-change/CharacterChangeReveal";
 import {
+  BarberAbilityReveal,
+  BarberAbilityRevealPrompt,
+} from "./features/death-consequences/BarberAbilityReveal";
+import {
   CerenovusMadnessReveal,
   CerenovusMadnessRevealPrompt,
 } from "./features/madness/CerenovusMadnessReveal";
@@ -209,6 +213,7 @@ export function SectsAndVioletsGameSurface({
   const [liveNominationCheckpointId, setLiveNominationCheckpointId] = useState<string>();
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
+  const [barberAbilityRevealOpen, setBarberAbilityRevealOpen] = useState(false);
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
@@ -346,6 +351,7 @@ export function SectsAndVioletsGameSurface({
   const identityRevealPlayer = replayState?.players.find(
     (player) => player.id === nextIdentityReveal?.payload.playerId,
   );
+  const barberAbilityActor = replayState?.players.find((player) => player.id === liveChooserId);
   const effectiveMadnessAssignments = replayState?.madnessAssignments ?? [];
   const pendingVigormortisPoison = replayState?.pendingVigormortisPoisonChoices?.[0];
   const pendingDeathConsequence = replayState?.pendingDeathConsequences?.[0];
@@ -358,6 +364,8 @@ export function SectsAndVioletsGameSurface({
     ? pendingVigormortisPoison?.allowedPlayerIds
     : liveHandoff?.kind === "barber" && liveHandoff.selectionStage === "chooser"
       ? pendingDeathConsequence?.eligibleChooserPlayerIds
+    : liveHandoff?.kind === "barber" && liveHandoff.selectionStage === "reveal"
+      ? []
     : liveHandoff?.kind === "barber"
       ? pendingDeathConsequence?.allowedPlayerIds.filter((playerId) => {
           const player = replayState?.players.find((candidate) => candidate.id === playerId);
@@ -1528,12 +1536,14 @@ export function SectsAndVioletsGameSurface({
     setLiveHandoff({
       kind,
       complete: false,
-      actorPlayerId: kind === "sweetheart" || kind === "barber" || kind === "klutz"
+      actorPlayerId: kind === "barber"
+        ? soleBarberChooser
+        : kind === "sweetheart" || kind === "klutz"
         ? pendingDeathConsequence?.actorPlayerId
         : kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
-      selectionStage: kind === "demon" ? "attack" : kind === "barber" ? soleBarberChooser ? "swap" : "chooser" : undefined,
+      selectionStage: kind === "demon" ? "attack" : kind === "barber" ? soleBarberChooser ? "reveal" : "chooser" : undefined,
     });
     if (kind === "nomination") {
       setLiveNominatorId(undefined);
@@ -1543,6 +1553,7 @@ export function SectsAndVioletsGameSurface({
     }
     if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "sweetheart" || kind === "klutz") setLiveTargetId(undefined);
     if (kind === "barber") {
+      setBarberAbilityRevealOpen(false);
       setLiveChooserId(soleBarberChooser);
       setLiveTargetIds([]);
     }
@@ -1589,9 +1600,10 @@ export function SectsAndVioletsGameSurface({
         if (!pendingDeathConsequence?.eligibleChooserPlayerIds.includes(playerId)) return;
         setLiveChooserId(playerId);
         setLiveTargetIds([]);
-        setLiveHandoff({ ...liveHandoff, selectionStage: "swap" });
+        setLiveHandoff({ ...liveHandoff, actorPlayerId: playerId, selectionStage: "reveal" });
         return;
       }
+      if (liveHandoff.selectionStage !== "swap") return;
       if (!pendingDeathConsequence?.allowedPlayerIds.includes(playerId)) return;
       const candidate = replayState?.players.find((player) => player.id === playerId);
       if (characters.find((character) => character.id === candidate?.actualCharacter)?.kind === "demon"
@@ -1690,10 +1702,7 @@ export function SectsAndVioletsGameSurface({
         decision: { kind: "swap", playerIds: [liveTargetIds[0], liveTargetIds[1]] },
       });
       if (applied) {
-        setLiveHandoff(undefined);
-        setLiveChooserId(undefined);
-        setLiveTargetIds([]);
-        navigateToTab("play");
+        setLiveHandoff({ ...liveHandoff, complete: true });
       }
     } else if (!step) {
       setOperationBusy(false);
@@ -1784,6 +1793,7 @@ export function SectsAndVioletsGameSurface({
     });
     if (applied) {
       setLiveHandoff(undefined);
+      setBarberAbilityRevealOpen(false);
       setLiveChooserId(undefined);
       setLiveTargetIds([]);
       navigateToTab("play");
@@ -1793,6 +1803,7 @@ export function SectsAndVioletsGameSurface({
 
   const returnFromLiveHandoff = () => {
     setLiveHandoff(undefined);
+    setBarberAbilityRevealOpen(false);
     setLiveNominatorId(undefined);
     setLiveNomineeId(undefined);
     setLiveVoterIds([]);
@@ -2099,6 +2110,11 @@ export function SectsAndVioletsGameSurface({
                 onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
               />
             )
+          ) : liveHandoff?.kind === "barber" && liveHandoff.selectionStage === "reveal" && !barberAbilityRevealOpen ? (
+            <BarberAbilityRevealPrompt
+              player={barberAbilityActor}
+              onReveal={() => setBarberAbilityRevealOpen(true)}
+            />
           ) : undefined}
           handoffSupplement={liveHandoff?.kind === "cerenovus" ? (
             <label className="snvMadnessCharacterChoice">
@@ -2627,6 +2643,13 @@ export function SectsAndVioletsGameSurface({
             onConfirm={acknowledgeIdentityReveal}
           />
         )
+      ) : liveHandoff?.kind === "barber" && liveHandoff.selectionStage === "reveal" && barberAbilityRevealOpen ? (
+        <BarberAbilityReveal onConfirm={() => {
+          setBarberAbilityRevealOpen(false);
+          setLiveHandoff((current) => current?.kind === "barber"
+            ? { ...current, selectionStage: "swap" }
+            : current);
+        }} />
       ) : null}
     </main>
   );

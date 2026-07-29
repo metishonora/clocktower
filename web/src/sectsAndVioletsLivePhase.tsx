@@ -26,7 +26,7 @@ export type LiveHandoff = {
   kind: LiveHandoffKind;
   complete: boolean;
   actorPlayerId?: string;
-  selectionStage?: "attack" | "poison" | "chooser" | "swap";
+  selectionStage?: "attack" | "poison" | "chooser" | "reveal" | "swap";
   sourceEventId?: string;
 };
 
@@ -308,7 +308,9 @@ export function SectsAndVioletsLiveGrimoire({
     "--grimoire-height": `${heights.desktop}px`,
     "--mobile-grimoire-height": `${heights.mobile}px`,
   } as CSSProperties;
-  const actorId = handoff?.actorPlayerId ?? currentStep?.playerId;
+  const actorId = handoff?.kind === "barber"
+    ? handoff.actorPlayerId
+    : handoff?.actorPlayerId ?? currentStep?.playerId;
   const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
@@ -317,7 +319,6 @@ export function SectsAndVioletsLiveGrimoire({
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
-  const chooser = playerById(players, chooserId);
   const secondaryTarget = playerById(players, secondaryTargetId);
   const referenceTarget = playerById(players, referenceTargetId);
   const detailsPlayer = playerById(players, detailsPlayerId);
@@ -410,7 +411,7 @@ export function SectsAndVioletsLiveGrimoire({
               : handoff?.kind === "vote" && selected ? "투표"
                 : poisonTarget ? "중독 대상"
                   : handoff?.kind === "sweetheart" && selected ? "취함 대상"
-                  : handoff?.kind === "barber" && handoff.selectionStage === "chooser" && selected ? "결정 악마"
+                  : handoff?.kind === "barber" && handoff.selectionStage === "chooser" && selected ? "행동자"
                   : handoff?.kind === "barber" && selected ? "교환 대상"
                   : handoff?.kind === "klutz" && selected ? "선택 대상"
                   : handoff?.kind === "demon" && (selected || attackTarget) ? "공격 대상"
@@ -422,7 +423,7 @@ export function SectsAndVioletsLiveGrimoire({
                 : selectionRole === "투표" ? " issue116VoterSeat"
                   : selectionRole === "중독 대상" ? " snvSeatStateTarget snvSeatStatePoisonTarget"
                     : selectionRole === "취함 대상" ? " snvSeatStateTarget snvSeatStateDrunkTarget"
-                    : selectionRole === "공격 대상" || selectionRole === "선택 대상" || selectionRole === "결정 악마" || selectionRole === "교환 대상" || selectionRole === "임의 사망" ? " snvSeatStateTarget" : "";
+                    : selectionRole === "공격 대상" || selectionRole === "선택 대상" || selectionRole === "교환 대상" || selectionRole === "임의 사망" ? " snvSeatStateTarget" : "";
             const nominationSelectingNominator = handoff?.kind === "nomination" && !nominatorId;
             const ineligible = nominationSelectingNominator
               ? !dayState?.eligibleNominatorIds.includes(player.id)
@@ -444,7 +445,7 @@ export function SectsAndVioletsLiveGrimoire({
             const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
             const tokenCountLabel = playerTokenCount > 0 ? `토큰 ${playerTokenCount}개` : "토큰 없음";
             const actor = actorId === player.id;
-            const targetSeat = selectionRole === "공격 대상" || selectionRole === "중독 대상" || selectionRole === "선택 대상" || selectionRole === "취함 대상" || selectionRole === "결정 악마" || selectionRole === "교환 대상" || selectionRole === "임의 사망";
+            const targetSeat = selectionRole === "공격 대상" || selectionRole === "중독 대상" || selectionRole === "선택 대상" || selectionRole === "취함 대상" || selectionRole === "교환 대상" || selectionRole === "임의 사망";
             const settledOther = Boolean(handoff?.complete && !actor && !targetSeat);
             const genericSelected = selected && !targetSeat;
             const strongSelection = !player.alive && genericSelected
@@ -562,7 +563,6 @@ export function SectsAndVioletsLiveGrimoire({
             ) : handoff.kind === "barber" ? (
               <dl>
                 <div><dt>행동자</dt><dd>{playerLabel(playerById(players, actorId))}</dd></div>
-                <div><dt>결정할 악마</dt><dd>{playerLabel(chooser)}</dd></div>
                 {targetIds.map((id, index) => <div key={id}><dt>{index + 1}번째 교환 대상</dt><dd>{playerLabel(playerById(players, id))}</dd></div>)}
               </dl>
             ) : informationTargetCount > 0 ? (
@@ -688,7 +688,7 @@ function handoffPanelTitle(handoff: LiveHandoff, complete: boolean) {
       : kind === "snakeCharmer" ? "뱀 조련사"
         : kind === "cerenovus" ? "세레노버스 집착 지정"
         : kind === "sweetheart" ? "사랑꾼 취함 지정"
-        : kind === "barber" ? handoff.selectionStage === "chooser" ? "결정할 악마 선택" : "이발사 직업 교환"
+        : kind === "barber" ? handoff.selectionStage === "chooser" ? "행동할 악마 선택" : "이발사 직업 교환"
         : kind === "klutz" ? "얼뜨기 선택"
         : kind === "dreamer" ? "꿈꾸는 자"
           : kind === "seamstress" ? "재봉사" : "악마 공격";
@@ -712,7 +712,7 @@ function confirmLabel(handoff: LiveHandoff, nominator?: Player, nominee?: Player
   if (kind === "vote") return `${votes}표로 투표 확정`;
   if (kind === "dreamer" || kind === "seamstress") return "선택 확정";
   if (kind === "sweetheart") return target ? `${playerLabel(target)} 취함 적용` : "취함 대상을 선택하세요";
-  if (kind === "barber") return "결정할 악마를 선택하세요";
+  if (kind === "barber") return "행동할 악마를 선택하세요";
   if (kind === "klutz") return target ? `${playerLabel(target)} 선택 확정` : "생존한 플레이어를 선택하세요";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
   if (kind === "cerenovus") return target ? `${playerLabel(target)} 집착 지정` : "집착 대상을 선택하세요";
