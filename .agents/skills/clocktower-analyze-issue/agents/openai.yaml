@@ -1,4 +1,0 @@
-interface:
-  display_name: "Analyze Clocktower Issue"
-  short_description: "Analyze an issue and ask required decisions"
-  default_prompt: "Use $clocktower-analyze-issue to analyze issue #123 and stop for my decisions."

@@ -9,7 +9,7 @@
 - Branch: codex/issue-133
 - Worktree: /private/tmp/clocktower-issue-133
 - Test server: stopped after explicit acceptance
-- Next action: run `$clocktower-close-issue #133` when integration and issue closure are desired
+- Next action: merge the accepted issue branch into `develop`, push it, close the issue, and remove its worktree when requested
 
 ## Approved decisions
 
@@ -21,8 +21,7 @@ therefore advances to TDD implementation without another gate before acceptance 
 ### A1 — User acceptance
 
 On 2026-07-29, the user explicitly approved the acceptance build. The issue workflow is complete;
-integration into `develop`, GitHub closure, and worktree removal remain owned by
-`$clocktower-close-issue #133`.
+integration into `develop`, GitHub closure, and worktree removal remain pending.
 
 ### D1 — Strict canonical `NoEffect` validation within schema v3
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Clocktower Issue"
-  short_description: "Deliver an analyzed issue through acceptance"
-  default_prompt: "Use $clocktower-issue to continue analyzed issue #123 from its saved checkpoint."
