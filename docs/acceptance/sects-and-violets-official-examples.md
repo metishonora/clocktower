@@ -12,6 +12,12 @@
 
 여러 캐릭터가 상호작용하는 예시는 원래 캐릭터 이슈에 소유권을 두고 `crossCharacterIssue: 111`도 함께 기록한다.
 
+## 교차 캐릭터 회귀 연결
+
+- #133의 `issue133_ability_validity_scenarios`는 Sweetheart가 No Dashii, Vigormortis,
+  Vortox의 지속 능력을 끄는 경우와 Sweetheart/Barber의 동시 사망 순서가 이후 해결 시점
+  장애로 바뀌지 않는 경우를 `crossCharacterIssue: 111` 회귀로 소유한다.
+
 ## 인벤토리
 
 | 캐릭터 | 안정적인 예시 ID | 소유 이슈 | 분류 | 위키 리비전 |

@@ -441,14 +441,14 @@ fn no_dashii_continuously_poisons_the_nearest_townsfolk_even_when_dead() {
                 "playerId": "player-1",
                 "sourceEventId": "setup-1",
                 "sourceCharacterId": "noDashii",
-                "expires": "never"
+                "expires": "whileSourceAbilityActive"
             },
             {
                 "kind": "poisoned",
                 "playerId": "player-5",
                 "sourceEventId": "setup-1",
                 "sourceCharacterId": "noDashii",
-                "expires": "never"
+                "expires": "whileSourceAbilityActive"
             }
         ])
     );

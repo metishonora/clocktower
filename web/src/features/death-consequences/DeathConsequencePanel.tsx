@@ -1,27 +1,24 @@
-import type { ActiveImpairment, PendingDeathConsequence, PendingForcedGameEnd, Player } from "../../core/types";
+import type { PendingDeathConsequence, PendingForcedGameEnd, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
+import {
+  deathConsequenceIsNoEffect,
+  type DeathConsequenceResolution,
+} from "./deathConsequencePolicy";
 
-export type DeathConsequenceResolution =
-  | { targetPlayerId?: string }
-  | {
-      chooserDemonPlayerId?: string;
-      decision: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
-    };
+export type { DeathConsequenceResolution } from "./deathConsequencePolicy";
 
 export function DeathConsequencePanel({
   pending,
   players,
-  activeImpairments = [],
   operationBusy,
   onResolve,
   onChooseTarget = () => undefined,
 }: {
   pending: PendingDeathConsequence;
   players: Player[];
-  activeImpairments?: ActiveImpairment[];
   operationBusy: boolean;
   onResolve: (resolution: DeathConsequenceResolution) => void;
   onChooseTarget?: () => void;
@@ -29,16 +26,7 @@ export function DeathConsequencePanel({
   const actor = players.find((player) => player.id === pending.actorPlayerId);
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === pending.kind);
   const asset = sectsAndVioletsCharacterAsset(pending.kind);
-  const barberNoEffect = pending.kind === "barber" && (
-    pending.actorImpairedAtTrigger
-    || pending.eligibleChooserPlayerIds.length === 0
-    || actor?.actualCharacter !== "barber"
-    || actor.abilityInstance?.id !== pending.sourceAbilityInstanceId
-    || activeImpairments.some((impairment) => impairment.playerId === pending.actorPlayerId)
-  );
-  const noEffect = pending.kind === "sweetheart"
-    ? pending.actorImpairedAtTrigger
-    : pending.kind === "barber" && barberNoEffect;
+  const noEffect = deathConsequenceIsNoEffect(pending);
 
   return (
     <article
@@ -63,7 +51,7 @@ export function DeathConsequencePanel({
           <button
             type="button"
             disabled={operationBusy}
-            onClick={() => onResolve(pending.kind === "barber" ? { decision: { kind: "decline" } } : {})}
+            onClick={() => onResolve({})}
           >효과 없음 확정</button>
         ) : (
           <button type="button" disabled={operationBusy} onClick={onChooseTarget}>← 선택</button>

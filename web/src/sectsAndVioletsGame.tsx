@@ -46,6 +46,7 @@ import {
   ForcedGameEndPanel,
   type DeathConsequenceResolution,
 } from "./features/death-consequences/DeathConsequencePanel";
+import { deathConsequenceCommand } from "./features/death-consequences/deathConsequencePolicy";
 import {
   CharacterChangeReveal,
   CharacterChangeRevealPrompt,
@@ -1385,33 +1386,11 @@ export function SectsAndVioletsGameSurface({
     if (!pendingDeathConsequence || operationBusy) return;
     setOperationBusy(true);
     setOperationError(undefined);
-    const common = {
-      stepId: pendingDeathConsequence.stepId,
-      expectedEventCount: gameFile.game.events.length,
-    };
-    const command: Command = pendingDeathConsequence.kind === "sweetheart"
-      ? {
-          type: "resolveSweetheartConsequence",
-          payload: { ...common, targetPlayerId: "targetPlayerId" in resolution ? resolution.targetPlayerId : undefined },
-        }
-      : pendingDeathConsequence.kind === "barber"
-        ? {
-            type: "resolveBarberConsequence",
-            payload: {
-              ...common,
-              chooserDemonPlayerId: "chooserDemonPlayerId" in resolution
-                ? resolution.chooserDemonPlayerId
-                : undefined,
-              decision: "decision" in resolution ? resolution.decision : { kind: "decline" },
-            },
-          }
-        : {
-            type: "resolveKlutzConsequence",
-            payload: {
-              ...common,
-              targetPlayerId: "targetPlayerId" in resolution ? resolution.targetPlayerId ?? "" : "",
-            },
-          };
+    const command = deathConsequenceCommand(
+      pendingDeathConsequence,
+      resolution,
+      gameFile.game.events.length,
+    );
     const applied = await proposeAndApplyLiveCommand(command);
     setOperationBusy(false);
     return Boolean(applied);
@@ -2318,7 +2297,6 @@ export function SectsAndVioletsGameSurface({
             <DeathConsequencePanel
               pending={pendingDeathConsequence}
               players={replayState.players}
-              activeImpairments={replayState.ruleState.activeImpairments}
               operationBusy={operationBusy}
               onResolve={(resolution) => void resolveDeathConsequence(resolution)}
               onChooseTarget={() => startLiveHandoff(pendingDeathConsequence.kind)}
