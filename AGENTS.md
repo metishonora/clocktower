@@ -11,10 +11,11 @@
 
 ## Prototype workflow
 
-- Use prototypes to settle and record concrete UI decisions before production implementation, avoiding late redesign after the feature is built.
-- Build a disposable static harness matching the current `develop` app shell, layout, styles, and target viewports. Reuse production presentation components when practical so feedback transfers to the final UI.
+- Use prototypes to settle the intended final UI before production implementation, so production work carries the approved design forward instead of redesigning it.
+- Keep prototypes visually aligned with the current `develop` app shell, layout, styles, and target viewports so review feedback applies directly to the final experience.
 - Use only the fixture state needed for visual review. Do not create fake behavior that is unnecessary for the decisions being reviewed, and keep review controls outside the production-like screen.
 - Record approved and rejected UI decisions in the issue plan before finalizing the production plan.
+- Keep the final production UI faithful to the approved prototype, and call out necessary deviations before acceptance.
 - Prototype approval validates UI and interaction decisions only. Production acceptance must use the real production entry and runtime.
 - Skip TDD and full regression suites for isolated prototypes. Run focused checks only when shared production code or configuration changes.
 
