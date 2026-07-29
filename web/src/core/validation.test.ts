@@ -169,6 +169,75 @@ test("accepts source-bound S&V impairment projections", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
+test("accepts only the atomic Fang Gu jump event and its player-anchored ONCE reminder", () => {
+  const event = {
+    id: "night-action-12",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon:player-7",
+      actorPlayerId: "player-7",
+      actorCharacterId: "fangGu",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-5",
+        outcome: {
+          kind: "fangGuJump",
+          death: {
+            playerId: "player-7",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "fangGu",
+              targetPlayerId: "player-5",
+            },
+          },
+          sourceAbilityInstanceId: "setup-1:player-7",
+          identityTransition: {
+            playerId: "player-5",
+            before: { actualCharacter: "sweetheart", shownCharacter: "sweetheart", alignment: "good" },
+            after: { actualCharacter: "fangGu", shownCharacter: "fangGu", alignment: "evil" },
+          },
+        },
+      },
+    },
+    summary: "팡 구 이동",
+    createdAt: "2026-07-29T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(event), event);
+
+  for (const malformed of [
+    (() => { const value = structuredClone(event); value.payload.resolution.outcome.death.playerId = 7 as never; return value; })(),
+    (() => { const value = structuredClone(event); delete (value.payload.resolution.outcome as Partial<typeof event.payload.resolution.outcome>).sourceAbilityInstanceId; return value; })(),
+    (() => { const value = structuredClone(event); value.payload.resolution.outcome.identityTransition.after.alignment = "good" as "evil"; return value; })(),
+  ]) {
+    throws(() => parseGameEvent(malformed), /이벤트 형식/);
+  }
+
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 12,
+    phase: "night",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: ["player-7"],
+      automaticReminders: [{
+        playerId: "player-5",
+        characterId: "fangGu",
+        tokenId: "once",
+        label: "한 번",
+        description: "첫 외지인 이동이 사용되었습니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("accepts only canonical trigger-impaired death consequence events", () => {
   const trigger = {
     sourceEventId: "death-1",

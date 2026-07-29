@@ -860,6 +860,12 @@ export type NightActionResolution =
               poisonTargetPlayerId?: string;
             };
           }
+        | {
+            kind: "fangGuJump";
+            death: NightDeath;
+            sourceAbilityInstanceId: string;
+            identityTransition: PlayerIdentityTransition;
+          }
         | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" | "pitHagCreatedDemon" };
     };
 

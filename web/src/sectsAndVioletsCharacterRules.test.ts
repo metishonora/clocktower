@@ -151,6 +151,12 @@ test("official reminder inventory preserves all 37 physical S&V reminders", () =
   );
 });
 
+test("Fang Gu How to Run puts ONCE in the center only after the jump", () => {
+  assert.deepEqual(sectsAndVioletsRulesFor("fangGu")?.howToRun, [
+    "준비 때 주민 하나를 외지인으로 바꿉니다. 첫 살아 있는 외지인이 이 능력으로 죽으려 하면 그 외지인을 악한 팡 구로 바꾸고 기존 팡 구를 대신 사망시킨 뒤, 마도서 중앙에 한 번 표식을 놓습니다.",
+  ]);
+});
+
 test("unknown Sects & Violets character ids do not fabricate rules", () => {
   assert.equal(sectsAndVioletsRulesFor("not-in-sects-and-violets"), undefined);
 });

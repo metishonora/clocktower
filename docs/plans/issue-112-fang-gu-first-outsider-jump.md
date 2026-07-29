@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: plan
-- Status: waiting-for-user
-- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름
+- Phase: implement
+- Status: active
+- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름; I1 production architecture/implementation plan
 - Open questions: none
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
 - Test server: none
-- Next action: 사용자가 production architecture/implementation plan을 승인하면 TDD implement 단계로 전환한다.
+- Next action: 승인된 behavioral test map을 TDD로 구현하고 전체 회귀를 통과시킨다.
 
 ## 분석 근거
 
@@ -522,3 +522,24 @@ resolution을 연결하지 않는다.
 - 사용자가 전체 분석 범위를 승인했으며 finalized requirements, behavioral acceptance
   criteria와 UI prototype 필요 여부가 확정됐다. 분석 checkpoint는
   `analysis-approved / complete`이다.
+
+## 구현 및 검증 결과 (2026-07-29)
+
+- `demonAttack / fangGuJump` 원자 결과가 기존 팡 구 사망, 대상의 evil Fang Gu 전환,
+  새 ability instance와 identity history를 한 confirmed event로 저장한다. replay는 actor,
+  실제 Outsider, 생존, impairment, Pit-Hag Demon 생성, game-wide 선행 사용과 모든 witness를
+  다시 검증한다.
+- game-wide 사용 여부는 event stream의 첫 `fangGuJump`에서 파생하며, jump 대상 Player를
+  고정 presentation anchor로 하는 공식 Fang Gu `한 번` automatic reminder를 만든다.
+  Character나 ability instance 변경으로 재충전되지 않고 Undo 시 함께 사라진다.
+- 기존 CharacterChange Reveal, Player `+1` token badge/detail UI, dawn announcement와
+  저장·import/export 경로를 재사용한다. 공개 사망에는 기존 Fang Gu만 포함되고 jump 대상의
+  death consequence는 생성되지 않는다.
+- TDD Red는 기존 Fang Gu가 Sweetheart를 일반 `deaths`로 죽이는 결과와 웹 계약이
+  `fangGuJump`를 거부하는 결과로 확인했다. 최소 구현 후 focused Rust 6개, Rust workspace
+  288개, web unit 118개, web integration 408개가 통과했다.
+- `pnpm --dir web build`가 wasm-opt, TypeScript와 Vite/PWA production build를 포함해
+  통과했다. `git diff --check`, 전체 diff 및 atomicity/replay/legacy/privacy 중심 추가
+  correctness review도 완료했다.
+- `fixtures/issue-112-fang-gu-example-1.json`은 화가 정상 사망 → 사랑꾼 jump → 다음 밤
+  얼뜨기 정상 사망을 한 JSON acceptance 시나리오로 재생한다.

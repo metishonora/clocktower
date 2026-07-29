@@ -977,7 +977,7 @@ function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
     typeof value.playerId === "string" &&
-    (value.characterId === "flowergirl" || value.characterId === "townCrier" || value.characterId === "vigormortis") &&
+    (value.characterId === "flowergirl" || value.characterId === "townCrier" || value.characterId === "vigormortis" || value.characterId === "fangGu") &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string";
@@ -1045,6 +1045,25 @@ function isNightActionResolution(value: unknown): boolean {
     if (outcome.kind === "noEffect") {
       return hasExactKeys(outcome, ["kind", "reason"]) &&
         ["targetAlreadyDead", "actorImpaired", "notActualCharacter", "pitHagCreatedDemon"].includes(String(outcome.reason));
+    }
+    if (outcome.kind === "fangGuJump") {
+      if (!hasExactKeys(outcome, ["kind", "death", "sourceAbilityInstanceId", "identityTransition"]) ||
+          typeof outcome.sourceAbilityInstanceId !== "string" ||
+          !isRecord(outcome.death) || !isRecord(outcome.death.cause) ||
+          !isRecord(outcome.identityTransition) || !isRecord(outcome.identityTransition.after) ||
+          !isNightDeath(outcome.death) || !isPlayerIdentityTransition(outcome.identityTransition)) return false;
+      const death = outcome.death;
+      const transition = outcome.identityTransition;
+      const cause = death.cause as Record<string, unknown>;
+      const after = transition.after as Record<string, unknown>;
+      return cause.kind === "demonAttack" &&
+        death.playerId === cause.actorPlayerId &&
+        cause.actorCharacterId === "fangGu" &&
+        cause.targetPlayerId === value.targetPlayerId &&
+        transition.playerId === value.targetPlayerId &&
+        after.actualCharacter === "fangGu" &&
+        after.shownCharacter === "fangGu" &&
+        after.alignment === "evil";
     }
     return outcome.kind === "deaths" && hasOnlyKeys(outcome, ["kind", "deaths", "vigormortisEffect"]) &&
       Array.isArray(outcome.deaths) && outcome.deaths.length > 0 && outcome.deaths.every((death) => (

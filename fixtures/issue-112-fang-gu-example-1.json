@@ -1,0 +1,26 @@
+{
+  "id": "fangGu-example-1",
+  "setupEvent": {
+    "id": "setup-112-official-example",
+    "type": "setupConfirmed",
+    "phase": "setup",
+    "payload": {
+      "players": [
+        { "id": "player-1", "seat": 1, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
+        { "id": "player-2", "seat": 2, "name": "Dreamer", "actualCharacter": "dreamer", "shownCharacter": "dreamer" },
+        { "id": "player-3", "seat": 3, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
+        { "id": "player-4", "seat": 4, "name": "Klutz", "actualCharacter": "klutz", "shownCharacter": "klutz" },
+        { "id": "player-5", "seat": 5, "name": "Sweetheart", "actualCharacter": "sweetheart", "shownCharacter": "sweetheart" },
+        { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
+        { "id": "player-7", "seat": 7, "name": "Fang Gu", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
+      ]
+    },
+    "summary": "초기 설정 확정: 7명",
+    "createdAt": "2026-07-29T00:00:00.000Z"
+  },
+  "attacks": [
+    { "targetPlayerId": "player-3", "expectedOutcome": "deaths", "expectedDeadPlayerId": "player-3" },
+    { "targetPlayerId": "player-5", "expectedOutcome": "fangGuJump", "expectedDeadPlayerId": "player-7" },
+    { "targetPlayerId": "player-4", "expectedOutcome": "deaths", "expectedDeadPlayerId": "player-4" }
+  ]
+}
