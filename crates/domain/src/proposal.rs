@@ -412,6 +412,7 @@ pub(crate) fn propose_phase_step(
             &players,
             payload.input,
             payload.registration_judgments,
+            crate::contracts::WitchNominationResolution::NotApplicable,
         );
     }
     if !skip && current_step.required_input.kind == RequiredInputKind::NominationVote {
@@ -893,6 +894,7 @@ pub(crate) fn propose_nomination_started(
     players: &[Player],
     input: StepInput,
     registration_judgments: Vec<crate::model::RegistrationJudgment>,
+    witch_resolution: crate::contracts::WitchNominationResolution,
 ) -> Result<Proposal, CoreError> {
     let input = nomination_start_input(&input)?;
     let prefix = step_prefix(&current_step.id)?;
@@ -936,6 +938,7 @@ pub(crate) fn propose_nomination_started(
                     nominee_id: input.nominee_id.clone(),
                     registration_judgments,
                     virgin_resolution,
+                    witch_resolution,
                 },
             },
             phase: current_step.phase,

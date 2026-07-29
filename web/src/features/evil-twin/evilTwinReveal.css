@@ -1,0 +1,17 @@
+.snvInformationReveal.evilTwinReveal { width: min(720px, 100%); min-height: min(720px, calc(100dvh - 40px)); padding: clamp(24px, 5vw, 52px); grid-template-rows: auto 1fr auto; border-color: rgba(226, 197, 109, .26); border-radius: 34px; background: radial-gradient(circle at 50% 24%, rgba(90, 55, 106, .38), #160e1d 70%); }
+.evilTwinRevealHeading { text-align: center; }
+.evilTwinRevealHeading h1 { margin: 0; color: #eadcf0; font: 700 clamp(2rem, 6vw, 3.6rem)/1.08 Georgia, serif; }
+.evilTwinRevealHeading p { margin: 18px 0 0; color: #cfc2d2; font-size: clamp(.95rem, 2vw, 1.15rem); }
+.evilTwinRevealPair { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 34px); align-self: center; }
+.evilTwinRevealPair article { display: grid; min-width: 0; min-height: 300px; padding: 22px 16px; place-items: center; align-content: center; gap: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 28px; background: rgba(255,255,255,.018); text-align: center; }
+.evilTwinRevealPair article.good { color: #b9def4; }
+.evilTwinRevealPair article.evil { color: #f0a1aa; }
+.evilTwinRevealPair small { color: #d5cbd8; font-weight: 800; }
+.evilTwinRevealPair strong { color: #eee4f0; font: 700 clamp(1.15rem, 3vw, 1.7rem)/1.15 Georgia, serif; }
+.evilTwinRevealPair .characterIcon { width: clamp(90px, 19vw, 138px); height: clamp(90px, 19vw, 138px); }
+.evilTwinRevealAlignment { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 900; }
+.evilTwinRevealPrompt p { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .evilTwinRevealPair { gap: 10px; }
+  .evilTwinRevealPair article { min-height: 250px; padding: 16px 8px; }
+}

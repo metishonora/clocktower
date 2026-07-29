@@ -63,6 +63,8 @@ impl ScriptRules {
                             | GameEventKind::NightActionResolved { .. }
                             | GameEventKind::NightDeathsAnnounced { .. }
                             | GameEventKind::NominationStarted { .. }
+                            | GameEventKind::WitchCurseAssigned { .. }
+                            | GameEventKind::EvilTwinPairAssigned { .. }
                             | GameEventKind::NominationVoteConfirmed { .. }
                             | GameEventKind::PhaseStepSkipped { .. }
                             | GameEventKind::ExecutionConfirmed { .. }

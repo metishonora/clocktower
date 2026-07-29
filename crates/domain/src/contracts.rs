@@ -510,6 +510,30 @@ pub(crate) struct RuleState {
     pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) automatic_reminders: Vec<AutomaticReminder>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) active_witch_curse: Option<ActiveWitchCurse>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) evil_twin_relationships: Vec<EvilTwinRelationship>,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ActiveWitchCurse {
+    pub(crate) source_event_id: String,
+    pub(crate) source_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) target_player_id: String,
+    pub(crate) applies_to_day: String,
+    pub(crate) effective: bool,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct EvilTwinRelationship {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_owner_player_id: String,
+    pub(crate) twin_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq, Clone)]
@@ -669,6 +693,20 @@ pub(crate) enum RevealPayload {
         #[serde(rename = "characterId")]
         character_id: String,
     },
+    EvilTwinPair {
+        kind: &'static str,
+        players: Vec<EvilTwinRevealPlayer>,
+    },
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct EvilTwinRevealPlayer {
+    pub(crate) player_id: String,
+    pub(crate) seat: u8,
+    pub(crate) name: String,
+    pub(crate) alignment: Alignment,
+    pub(crate) character_id: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -726,6 +764,12 @@ pub(crate) enum GameEventKind {
     NominationVoteConfirmed { payload: NominationEventPayload },
     #[serde(rename = "nominationStarted")]
     NominationStarted { payload: NominationStartedPayload },
+    #[serde(rename = "witchCurseAssigned")]
+    WitchCurseAssigned { payload: WitchCurseAssignedPayload },
+    #[serde(rename = "evilTwinPairAssigned")]
+    EvilTwinPairAssigned {
+        payload: EvilTwinPairAssignedPayload,
+    },
     #[serde(rename = "executionConfirmed")]
     ExecutionConfirmed { payload: ExecutionEventPayload },
     #[serde(rename = "noExecutionConfirmed")]
@@ -808,6 +852,8 @@ impl GameEventKind {
         "manualPhaseStepResolved",
         "nominationVoteConfirmed",
         "nominationStarted",
+        "witchCurseAssigned",
+        "evilTwinPairAssigned",
         "executionConfirmed",
         "noExecutionConfirmed",
         "deathConfirmed",
@@ -1063,6 +1109,8 @@ pub(crate) struct GameEndedPayload {
 )]
 pub(crate) enum GameEndSource {
     KlutzChoice { source_event_id: String },
+    WitchCurseDeath { source_event_id: String },
+    EvilTwinExecution { source_event_id: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -1459,6 +1507,50 @@ pub(crate) struct NominationStartedPayload {
     pub(crate) nominee_id: String,
     pub(crate) registration_judgments: Vec<RegistrationJudgment>,
     pub(crate) virgin_resolution: VirginResolution,
+    #[serde(default, skip_serializing_if = "witch_resolution_is_not_applicable")]
+    pub(crate) witch_resolution: WitchNominationResolution,
+}
+
+fn witch_resolution_is_not_applicable(resolution: &WitchNominationResolution) -> bool {
+    matches!(resolution, WitchNominationResolution::NotApplicable)
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum WitchNominationResolution {
+    #[default]
+    NotApplicable,
+    DeathPending {
+        curse_event_id: String,
+        witch_player_id: String,
+        source_ability_instance_id: AbilityInstanceId,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct WitchCurseAssignedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) target_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) effective: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct EvilTwinPairAssignedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor_player_id: String,
+    pub(crate) twin_player_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) actor_alignment: Alignment,
+    pub(crate) twin_alignment: Alignment,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

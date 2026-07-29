@@ -61,13 +61,14 @@ export function DeathConsequencePanel({
   );
 }
 
-export function ForcedGameEndPanel({ pending, operationBusy, onConfirm }: {
+export function ForcedGameEndPanel({ pending, operationBusy, onConfirm, ariaLabel = "강제 게임 종료 확인" }: {
   pending: PendingForcedGameEnd;
   operationBusy: boolean;
   onConfirm: () => void;
+  ariaLabel?: string;
 }) {
   return (
-    <article className="snvCurrentStep issue116CurrentStep snvDayStep" role="group" aria-label="얼뜨기 패배 확정">
+    <article className="snvCurrentStep issue116CurrentStep snvDayStep" role="group" aria-label={ariaLabel}>
       <h3>{pending.winningTeam === "good" ? "선" : "악"} 진영 승리</h3>
       <div className="snvStepActions">
         <button type="button" disabled={operationBusy} onClick={onConfirm}>게임 종료 확정</button>

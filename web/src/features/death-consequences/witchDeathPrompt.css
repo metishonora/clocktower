@@ -1,0 +1,3 @@
+.witchDeathPrompt { gap: 16px; }
+.witchDeathPrompt > strong { font-size: 1.05rem; }
+.witchDeathPrompt > p { color: #efe5f2; font: 700 clamp(1rem, 2.3vw, 1.25rem)/1.3 Georgia, serif; }

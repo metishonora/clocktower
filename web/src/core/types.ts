@@ -378,7 +378,7 @@ export type PendingMadnessExecution = {
 export type PendingIdentityReveal = {
   sourceEventId: string;
   sequence: number;
-  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload;
+  payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
 };
 
 export type GameEndState = {
@@ -407,6 +407,24 @@ export type RuleState = {
     label: string;
     description: string;
   }>;
+  activeWitchCurse?: ActiveWitchCurse;
+  evilTwinRelationships?: EvilTwinRelationship[];
+};
+
+export type ActiveWitchCurse = {
+  sourceEventId: string;
+  sourcePlayerId: string;
+  sourceAbilityInstanceId: string;
+  targetPlayerId: string;
+  appliesToDay: string;
+  effective: boolean;
+};
+
+export type EvilTwinRelationship = {
+  sourceEventId: string;
+  abilityOwnerPlayerId: string;
+  twinPlayerId: string;
+  sourceAbilityInstanceId: string;
 };
 
 export type ActiveImpairment = {
@@ -543,6 +561,17 @@ export type MadnessAssignmentRevealPayload = {
   characterId: string;
 };
 
+export type EvilTwinPairRevealPayload = {
+  kind: "evilTwinPair";
+  players: Array<{
+    playerId: string;
+    seat: number;
+    name: string;
+    alignment: "good" | "evil";
+    characterId: string;
+  }>;
+};
+
 export type RoleInformationRevealPayload =
   | SetupInformationRevealPayload
   | NumericInformationRevealPayload
@@ -555,7 +584,7 @@ export type RoleInformationRevealPayload =
   | CharacterChangeRevealPayload
   | EvilInformationRevealPayload;
 
-export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload;
+export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload;
 
 export type SetupDistributionRequest = {
   scriptId: ScriptId;
@@ -613,6 +642,30 @@ export type GameEvent = EventCommon &
             | { kind: "notApplicable" }
             | { kind: "spentNoExecution"; virginPlayerId: string; impairmentContext: VirginImpairmentContext }
             | { kind: "spentAndNominatorExecuted"; virginPlayerId: string; impairmentContext: VirginImpairmentContext };
+          witchResolution?:
+            | { kind: "notApplicable" }
+            | { kind: "deathPending"; curseEventId: string; witchPlayerId: string; sourceAbilityInstanceId: string };
+        };
+      }
+    | {
+        type: "witchCurseAssigned";
+        payload: {
+          stepId: string;
+          actorPlayerId: string;
+          targetPlayerId: string;
+          sourceAbilityInstanceId: string;
+          effective: boolean;
+        };
+      }
+    | {
+        type: "evilTwinPairAssigned";
+        payload: {
+          stepId: string;
+          actorPlayerId: string;
+          twinPlayerId: string;
+          sourceAbilityInstanceId: string;
+          actorAlignment: "good" | "evil";
+          twinAlignment: "good" | "evil";
         };
       }
     | {
@@ -807,7 +860,7 @@ export type GameEvent = EventCommon &
         type: "gameEnded";
         payload: {
           winningTeam: "good" | "evil";
-          source?: { kind: "klutzChoice"; sourceEventId: string };
+          source?: { kind: "klutzChoice" | "witchCurseDeath" | "evilTwinExecution"; sourceEventId: string };
         };
       }
   );
@@ -897,6 +950,7 @@ export type StepType =
   | "nomination"
   | "execution"
   | "executionDeath"
+  | "witchDeath"
   | "slayerDeath"
   | "demonSuccession"
   | "redHerringAssignment"
