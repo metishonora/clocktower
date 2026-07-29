@@ -9,11 +9,12 @@ import {
   SectsAndVioletsLiveGrimoire,
   type LivePlayer,
 } from "./sectsAndVioletsLivePhase";
+import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import "./sectsAndVioletsFoundationPrototype.css";
 import "./issue112FangGuJumpPrototype.css";
 
 type Stage = "attack" | "prompt" | "reveal" | "complete";
-type Placement = "center" | "edge";
+type ReminderPlacement = "center" | "newFangGu";
 
 const fangGuAsset = sectsAndVioletsCharacterAsset("fangGu")!;
 
@@ -89,11 +90,22 @@ const stageLabels: Record<Stage, string> = {
 
 export function Issue112FangGuJumpPrototype() {
   const [stage, setStage] = useState<Stage>("attack");
-  const [placement, setPlacement] = useState<Placement>("center");
+  const [reminderPlacement, setReminderPlacement] = useState<ReminderPlacement>("center");
   const [targetId, setTargetId] = useState("player-3");
   const jumped = stage !== "attack";
   const players = jumped ? afterPlayers : beforePlayers;
   const newFangGu = afterPlayers.find((player) => player.id === "player-3");
+  const onceReminder = {
+    instanceId: "fang-gu-once",
+    label: "한 번",
+    sourceLabel: "팡 구",
+    sourceIconSrc: fangGuAsset.src,
+    visualKind: "usage" as const,
+    description: "첫 외지인 이동이 사용되었습니다.",
+  };
+  const tokensByPlayerId: PlayerTokensByPlayerId = reminderPlacement === "newFangGu" && jumped
+    ? { "player-3": [onceReminder] }
+    : {};
 
   function reset() {
     setStage("attack");
@@ -105,7 +117,7 @@ export function Issue112FangGuJumpPrototype() {
       <aside className="issue112ReviewControls" aria-label="프로토타입 검토 도구">
         <div>
           <strong>ISSUE 112 · PROTOTYPE</strong>
-          <span>Fang Gu jump · global ONCE token</span>
+          <span>Fang Gu jump · ONCE reminder A/B comparison</span>
         </div>
         <fieldset>
           <legend>상태</legend>
@@ -119,9 +131,9 @@ export function Issue112FangGuJumpPrototype() {
           ))}
         </fieldset>
         <fieldset>
-          <legend>토큰 위치</legend>
-          <button type="button" aria-pressed={placement === "center"} onClick={() => setPlacement("center")}>A · 중앙 인접</button>
-          <button type="button" aria-pressed={placement === "edge"} onClick={() => setPlacement("edge")}>B · 안쪽 가장자리</button>
+          <legend>표식 귀속</legend>
+          <button type="button" aria-pressed={reminderPlacement === "center"} onClick={() => setReminderPlacement("center")}>A · 공식 중앙</button>
+          <button type="button" aria-pressed={reminderPlacement === "newFangGu"} onClick={() => setReminderPlacement("newFangGu")}>B · 새 팡 구 귀속</button>
         </fieldset>
         <button className="issue112Reset" type="button" onClick={reset}>처음부터</button>
       </aside>
@@ -133,7 +145,7 @@ export function Issue112FangGuJumpPrototype() {
           <nav aria-label="게임 화면"><span>직업</span><strong>마도서</strong><span>진행</span></nav>
         </header>
 
-        <div className={`issue112GrimoireFrame placement-${placement} stage-${stage}`}>
+        <div className={`issue112GrimoireFrame stage-${stage}`}>
           <SectsAndVioletsLiveGrimoire
             players={players}
             phaseLabel="2일차 밤"
@@ -143,6 +155,7 @@ export function Issue112FangGuJumpPrototype() {
             voterIds={[]}
             targetId={jumped ? undefined : targetId}
             operationBusy={false}
+            tokensByPlayerId={tokensByPlayerId}
             centerPrompt={stage === "prompt" || stage === "reveal" ? (
               <CharacterChangeRevealPrompt
                 player={newFangGu}
@@ -160,7 +173,7 @@ export function Issue112FangGuJumpPrototype() {
             onReturnToSetup={() => undefined}
           />
 
-          {jumped ? <FangGuOnceToken /> : null}
+          {jumped && reminderPlacement === "center" ? <FangGuOnceReminder /> : null}
         </div>
       </section>
 
@@ -171,10 +184,9 @@ export function Issue112FangGuJumpPrototype() {
   );
 }
 
-function FangGuOnceToken() {
+function FangGuOnceReminder() {
   return (
-    <section className="issue112GlobalReminder" role="status" aria-label="게임 전역 표식 · 팡 구 한 번 · 자동 · 편집 불가">
-      <span className="issue112GlobalReminderLabel">게임 전역</span>
+    <section className="issue112GlobalReminder" role="status" aria-label="팡 구 한 번 표식 · 그리모어 중앙 · 자동 · 편집 불가">
       <div className="playerPinnedToken usage" title="첫 외지인 이동이 사용되었습니다.">
         <span className="playerPinnedTokenSource">팡 구</span>
         <img src={fangGuAsset.src} alt="팡 구 출처" />

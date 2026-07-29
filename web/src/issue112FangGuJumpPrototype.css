@@ -58,41 +58,27 @@
 .issue112GlobalReminder {
   position: absolute;
   z-index: 30;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
+  top: clamp(320px, 43vw, 410px);
+  left: 50%;
   transform: translate(-50%, -50%);
-  transition: top .2s ease, left .2s ease, right .2s ease, bottom .2s ease;
   pointer-events: none;
 }
 
-.issue112GlobalReminderLabel {
-  padding: 3px 7px;
-  border: 1px solid rgba(232, 213, 239, .2);
-  border-radius: 999px;
-  color: #d7c7db;
-  background: rgba(18, 10, 23, .86);
-  font-size: .58rem;
-  font-weight: 900;
-  letter-spacing: .05em;
+.issue112GlobalReminder .playerPinnedToken {
+  width: 66px;
+  height: 66px;
+  padding: 5px 3px;
+  grid-template-rows: 11px 1fr 13px;
+  box-shadow: 0 5px 14px rgba(7, 2, 9, .44), inset 0 0 0 1px rgba(246, 218, 169, .17);
 }
-
-.issue112GlobalReminder .playerPinnedToken { width: 104px; height: 104px; padding: 9px 6px 8px; grid-template-rows: 15px 1fr 17px; }
-.issue112GlobalReminder .playerPinnedToken img { width: 44px; height: 44px; }
-.issue112GrimoireFrame.placement-center .issue112GlobalReminder { top: 66%; left: 50%; }
-.issue112GrimoireFrame.placement-edge .issue112GlobalReminder { right: 5%; bottom: 11%; transform: none; }
-.issue112GrimoireFrame.stage-prompt.placement-center .issue112GlobalReminder,
-.issue112GrimoireFrame.stage-reveal.placement-center .issue112GlobalReminder { top: 72%; }
-
+.issue112GlobalReminder .playerPinnedTokenSource { font-size: .46rem; }
+.issue112GlobalReminder .playerPinnedToken img { width: 28px; height: 28px; }
+.issue112GlobalReminder .playerPinnedToken strong { font-size: .58rem; }
 @media (max-width: 1040px) {
   .issue112ReviewControls { flex-wrap: wrap; }
   .issue112ReviewControls > div { width: 100%; }
   .issue112ProductionScreen { min-height: calc(100dvh - 122px); }
   .issue112GrimoireFrame .snvSeatingSurface { min-height: calc(100dvh - 200px); }
-  .issue112GrimoireFrame.placement-center .issue112GlobalReminder { top: 62%; }
-  .issue112GrimoireFrame.stage-prompt.placement-center .issue112GlobalReminder,
-  .issue112GrimoireFrame.stage-reveal.placement-center .issue112GlobalReminder { top: 68%; }
-  .issue112GrimoireFrame.placement-edge .issue112GlobalReminder { right: 8%; bottom: 13%; }
 }
 
 @media (max-width: 620px) {
@@ -108,12 +94,8 @@
   .issue112ProductionHeader > button { width: 36px; height: 36px; }
   .issue112GrimoireFrame { width: 100%; }
   .issue112GrimoireFrame .snvSeatingSurface { padding-inline: 6px; }
-  .issue112GlobalReminder .playerPinnedToken { width: 82px; height: 82px; padding: 7px 4px 6px; grid-template-rows: 13px 1fr 15px; }
-  .issue112GlobalReminder .playerPinnedToken img { width: 34px; height: 34px; }
-  .issue112GlobalReminder .playerPinnedTokenSource { font-size: .5rem; }
-  .issue112GlobalReminder .playerPinnedToken strong { font-size: .62rem; }
-  .issue112GrimoireFrame.placement-center .issue112GlobalReminder { top: 59%; }
-  .issue112GrimoireFrame.stage-prompt.placement-center .issue112GlobalReminder,
-  .issue112GrimoireFrame.stage-reveal.placement-center .issue112GlobalReminder { top: 65%; }
-  .issue112GrimoireFrame.placement-edge .issue112GlobalReminder { right: 3%; bottom: 16%; }
+  .issue112GlobalReminder .playerPinnedToken { width: 58px; height: 58px; padding: 4px 2px; grid-template-rows: 10px 1fr 12px; }
+  .issue112GlobalReminder .playerPinnedToken img { width: 24px; height: 24px; }
+  .issue112GlobalReminder .playerPinnedTokenSource { font-size: .42rem; }
+  .issue112GlobalReminder .playerPinnedToken strong { font-size: .52rem; }
 }

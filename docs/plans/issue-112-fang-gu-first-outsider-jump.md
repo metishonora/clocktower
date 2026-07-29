@@ -4,12 +4,12 @@
 
 - Phase: prototype
 - Status: waiting-for-user
-- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인
-- Open questions: P1 공식 중앙 배치를 유지하되 큰 Player-token형 표현을 작은 ONCE reminder형으로 수정할지; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름 승인 여부
+- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 비교안은 공식 중앙 소형 reminder와 앱 최적화 새 Fang Gu 귀속 reminder
+- Open questions: P1 두 token 표시안 중 production 선택; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름 승인 여부
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
-- Test server: none; previous state /var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112 stopped
-- Next action: 공식 중앙 배치 근거와 저장소 한국어 How to Run 불일치를 사용자와 확정한 뒤 prototype 표현을 수정한다.
+- Test server: PID 27131; /var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112
+- Next action: 사용자가 A/B 중 production 표시안을 선택하고 Reveal 흐름을 승인하면 plan phase로 전환한다.
 
 ## 분석 근거
 
@@ -88,9 +88,10 @@
 - Undo로 jump 이벤트를 제거하면 기존 Fang Gu의 생존, 대상 identity/alignment, 대상 생존,
   ONCE 사용 가능, Reveal task와 발표 대기 목록이 모두 함께 복원된다. replay, reload,
   export/import도 동일한 상태를 재현한다.
-- ONCE가 소비된 동안 Grimoire의 게임 전역 reminder 영역에 공식 Fang Gu 도상과 공식 라벨
-  `한 번`을 사용하는 read-only token을 표시한다. 어느 Player에게도 귀속하지 않으며 old
-  Fang Gu가 죽거나 Character가 바뀌어도 유지한다. Undo로 소비 전으로 돌아가면 제거한다.
+- ONCE가 소비된 동안 공식 Fang Gu 도상과 공식 라벨 `한 번`을 사용하는 read-only token을
+  표시한다. 표시 위치는 prototype 승인 전까지 A `Grimoire 중앙`과 B `현재 새 Fang Gu Player`
+  두 안을 비교한다. 어느 안도 source of truth를 Player ability instance에 두지 않고 canonical
+  game-wide 소비 상태에서 파생한다. Undo로 소비 전으로 돌아가면 제거한다.
 
 ### jump가 일어나지 않는 조건
 
@@ -134,7 +135,7 @@
 8. 이미 죽은 Outsider, impaired actor, non-Actual Fang Gu 또는 `pitHagCreatedDemon` no-effect처럼
    공격이 실제 사망을 만들지 못하는 경우 jump와 ONCE 소비가 모두 발생하지 않는다.
 9. ONCE가 소비된 동안 공식 Fang Gu 도상과 공식 `한 번` reminder 라벨을 사용하는 read-only
-   global token이 Grimoire에 보이고 어느 Player에게도 귀속되지 않는다.
+   token이 승인된 A/B 위치에 보이며 canonical source는 game-wide 상태이다.
 10. Undo는 기존 Fang Gu 생존, 대상 identity/alignment와 생존, pending Reveal, 공개 사망 목록과
     ONCE token을 모두 소비 전 상태로 되돌린다.
 11. replay, reload와 export/import는 jump target, old Demon death, new Fang Gu identity,
@@ -146,36 +147,42 @@
 
 - UI prototype은 필수로 승인됐다.
 - 기존 S&V 공격 선택과 CharacterChange Reveal 표현을 유지하면서 공식 Fang Gu `한 번`
-  global token의 Grimoire 위치, jump 완료 후 Reveal 진입, iPad/mobile 가독성을 검토한다.
+  reminder의 A/B 표시 위치, jump 완료 후 Reveal 진입, iPad/mobile 가독성을 검토한다.
 - prototype은 presentation과 interaction만 결정하며 위 domain requirements를 다시 열지 않는다.
 
 ## Prototype plan
 
 ### 검토할 결정
 
-- canonical jump 직후 공식 Fang Gu `한 번` global reminder를 Grimoire 안에서 지속적으로
-  알아볼 수 있는 위치
+- canonical jump 직후 공식 Fang Gu `한 번` reminder를 공식 중앙에 직접 표시할지, 앱이
+  새 Fang Gu Player에 귀속해 표시할지
 - old Fang Gu death와 new Fang Gu identity가 반영된 마도서에서 기존 CharacterChange Reveal
   안내·공개·복귀 흐름이 자연스러운지
-- global reminder가 어느 Player에게도 귀속된 것처럼 보이지 않고, Reveal 중에도 Storyteller가
-  jump 소비를 확인할 수 있는지
+- 두 표시안 모두 Player와 독립적인 canonical game-wide 소비 상태를 정확히 전달하는지
 
 ### 표시 variant
 
-- A `중앙 인접`: 현재 phase clock/Reveal 안내 바로 아래에 global token을 배치한다. 공식
-  Grimoire 중앙 reminder 의미와 가장 가깝지만 중앙 작업과의 밀도를 검토한다.
-- B `안쪽 가장자리`: Grimoire 우측 아래 안쪽에 global token을 고정한다. 중앙 작업을 덜
-  방해하지만 작은 화면에서 Player seat와 혼동되는지 검토한다.
-- 두 variant 모두 #121의 approved token primitive, 공식 Fang Gu 도상과 공식 `한 번` 라벨을
-  사용한다. 일반 텍스트 상태칩 variant는 분석에서 제외됐다.
+- A `공식 중앙`: 현재 phase clock/Reveal 안내 바로 아래에 실제 reminder에
+  가까운 작은 원형 token을 배치한다. #121의 approved token primitive, 공식 Fang Gu 도상과
+  공식 `한 번` 라벨을 사용하되 Player token보다 작게 표현하고 비공식 `게임 전역` 라벨은
+  표시하지 않는다.
+- B `새 팡 구 귀속`: 앱이 game-wide 소비 상태와 reminder 수명을 자동 관리하므로 새 Fang Gu
+  Player의 기존 token count/detail presentation에 공식 `한 번` reminder를 귀속한다. 자리에는
+  `+1` badge가 보이고 Player 상세에서 `한 번 · 출처 팡 구`를 확인한다. 실제 상태의 source of
+  truth는 Player가 아니라 canonical game-wide state이며, Undo나 후속 Character 변경에도
+  앱이 올바른 표시 대상과 수명을 계산한다는 production 전제를 둔다.
+- 폐기안 A `중앙 대형`: Player-pinned token 크기라 별도 Character token처럼 보일 수 있어
+  2026-07-29 사용자 피드백으로 폐기했다.
+- 폐기안 B `안쪽 가장자리`: 공식 중앙 배치와 다르고 Player 귀속으로 오해될 수 있어
+  2026-07-29 사용자 피드백으로 폐기했다.
 
 ### Fixture states
 
 - `공격 선택`: 살아 있는 Sweetheart가 선택된 첫 jump 직전이며 아직 ONCE token은 없다.
 - `공개 안내`: confirm 직후 old Fang Gu는 dead, Sweetheart는 살아 있는 evil Fang Gu이며
-  global ONCE token과 CharacterChange Reveal 안내가 동시에 보인다.
+  선택한 A/B ONCE presentation과 CharacterChange Reveal 안내가 함께 적용된다.
 - `역할 공개`: 기존 player-facing evil Fang Gu CharacterChange Reveal을 사용한다.
-- `완료`: Reveal을 닫고 다음 Night step으로 돌아와도 global ONCE token이 유지된다.
+- `완료`: Reveal을 닫고 다음 Night step으로 돌아와도 선택한 A/B ONCE presentation이 유지된다.
 
 ### Target viewports
 
@@ -191,17 +198,23 @@ resolution을 연결하지 않는다.
 - 검토 URL:
   `http://100.91.205.43:4173/clocktower/sects-and-violets/?prototype=issue-112-fang-gu-jump`
 - production의 Demon 공격 선택, `CharacterChangeRevealPrompt`, `CharacterChangeReveal`, 공식
-  Fang Gu asset과 approved token primitive를 그대로 조합했다. fixture 외 domain/store/WASM
-  경로는 연결하지 않았다.
+  Fang Gu asset, player token count/detail presentation을 그대로 조합했다. fixture 외
+  domain/store/WASM 경로는 연결하지 않았다.
 - 실제 상호작용으로 공격 확정 → Player 3 공개 안내 → evil Fang Gu 역할 공개 → 확인 → 다음
   Night step 복귀를 끝까지 통과했다. jump 후 old Fang Gu만 사망하고 Player 3은 살아 있는 evil
-  Fang Gu이며, global `한 번` token은 안내·공개·완료 상태에 모두 유지됐다.
-- DOM 접근성 구조에서 token은 Player seat 밖의 read-only `status`이며 `게임 전역 표식 · 팡 구
-  한 번 · 자동 · 편집 불가`로 식별된다. 어느 Player token에도 귀속되지 않는다.
-- 1180×820, 820×1180, 390×844에서 DOM과 시각 배치를 확인했고 브라우저 warning/error는
-  없었다. A는 wide/tablet에서 중앙 reminder 의미가 가장 명확하고 mobile에서도 `게임 전역`
-  라벨로 Player 귀속과 구분된다. B는 특히 portrait에서 아래 공간이 커지고 우측 Player seat에
-  가까워 귀속 상태처럼 읽힐 위험이 있어 A를 권고한다.
+  Fang Gu이며, 선택한 A/B presentation은 canonical ONCE 소비 fixture에서 파생된다.
+- A는 Player seat 밖의 read-only `status`이며 `팡 구 한 번 표식 · 그리모어 중앙 · 자동 ·
+  편집 불가`로 식별된다. Player token보다 작은 원형 reminder이고 비공식 `게임 전역` 문구는
+  없다. wide와 tablet에서는 중앙 phase/Reveal 바로 아래에 놓이고, mobile에서는 phase card와
+  아래 좌석 사이의 제한된 중앙 공간을 차지한다.
+- B는 새 Fang Gu인 Player 3에 token 1개와 `+1` badge를 표시한다. 일반 Grimoire에서 Player 3을
+  열면 `한 번 · 출처 팡 구` official asset token을 read-only 상세로 확인한다. production의
+  player-safe Reveal prompt 동안에는 token count badge가 숨고, Reveal 완료 후 정상 Grimoire로
+  돌아오면 다시 나타난다.
+- 1180×820, 820×1180, 390×844에서 A/B DOM, 시각 배치와 B Player 상세를 확인했다. A는 공식
+  물리 위치를 직접 보존하지만 mobile 중앙 작업 영역이 더 조밀하다. B는 중앙 작업을 전혀
+  가리지 않고 현재 새 Demon과 소비 상태를 한 곳에서 보지만, official 중앙 배치와는 다르다.
+  브라우저 warning/error는 없었다.
 - `pnpm --dir web build`가 wasm, TypeScript, Vite/PWA build를 포함해 통과했다.
 
 ### Prototype feedback: ONCE reminder placement (2026-07-29)
@@ -221,6 +234,15 @@ resolution을 연결하지 않는다.
 - 기존 prototype의 중앙 의미는 맞지만, 104px Player-pinned token primitive가 실제 ONCE
   reminder보다 커서 별도 전역 Character token처럼 보일 수 있다. 공식 중앙 배치를 유지하며
   작은 reminder형 표현으로 고치는 안을 권고한다.
+- 사용자 결정: 2026-07-29 승인. 공식 중앙의 작은 ONCE reminder로 다시 만들고 비공식
+  `게임 전역` 라벨과 위치 variant를 제거한다.
+- 추가 사용자 결정: 앱이 물리 토큰 이동을 자동 처리하므로 새 Fang Gu Player에게 existing
+  reminder presentation으로 귀속하는 안도 고려안에 복원한다. 공식 중앙 소형안과 새 Fang Gu
+  귀속안을 함께 prototype에서 비교한다.
+- 공식 순서 재확인: ONCE reminder는 첫 jump 전에는 없고, Outsider가 새 Fang Gu로 바뀐 뒤
+  Grimoire 중앙에 놓으며 이후 제거하지 않는다. old Fang Gu에 교환 전 잠시 붙였다가 치우는
+  C안은 공식 How to Run을 반대로 읽은 안이므로 comparison에서 제외했다. 앱 전용으로 의도적
+  이탈하려면 별도 제품 결정을 다시 받아야 한다.
 
 ## 명시적 비범위
 
