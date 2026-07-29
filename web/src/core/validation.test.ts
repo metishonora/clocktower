@@ -143,6 +143,143 @@ test("accepts the Snake Charmer swap event, identity history, impairment, and pe
   throws(() => parseReplayState(outOfOrder), /코어 응답 형식/);
 });
 
+test("accepts source-bound S&V impairment projections", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      activeImpairments: [{
+        kind: "poisoned",
+        playerId: "player-2",
+        sourceEventId: "setup-1",
+        sourceCharacterId: "noDashii",
+        expires: "whileSourceAbilityActive",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
+test("accepts only canonical trigger-impaired death consequence events", () => {
+  const trigger = {
+    sourceEventId: "death-1",
+    deathSequence: 1,
+    playerId: "player-2",
+    sourceAbilityInstanceId: "setup:player-2",
+  };
+  const event = (type: string, payload: Record<string, unknown>) => ({
+    id: `consequence-${type}`,
+    type,
+    phase: "night",
+    payload: { stepId: "night:death:death-1:1", trigger, ...payload },
+    summary: "효과 없음",
+    createdAt: "2026-07-29T00:00:00.000Z",
+  });
+  const sweetheart = event("sweetheartConsequenceResolved", {
+    outcome: { kind: "noEffect", reason: "actorImpairedAtDeath" },
+  });
+  const barber = event("barberConsequenceResolved", {
+    outcome: { kind: "noEffect", reason: "actorImpairedAtDeath" },
+  });
+  const klutz = event("klutzChoiceResolved", { outcome: { kind: "actorImpaired" } });
+  const sweetheartEffective = event("sweetheartConsequenceResolved", {
+    targetPlayerId: "player-3",
+    outcome: {
+      kind: "drunkApplied",
+      impairment: {
+        kind: "drunk",
+        playerId: "player-3",
+        sourceEventId: "consequence-sweetheartConsequenceResolved",
+        sourceCharacterId: "sweetheart",
+        expires: "never",
+      },
+    },
+  });
+  const barberEffective = event("barberConsequenceResolved", {
+    chooserDemonPlayerId: "player-7",
+    decision: { kind: "decline" },
+    outcome: { kind: "declined" },
+  });
+  const klutzEffective = event("klutzChoiceResolved", {
+    targetPlayerId: "player-3",
+    actorAlignment: "good",
+    targetAlignment: "good",
+    outcome: { kind: "safe" },
+  });
+
+  equal(parseGameEvent(sweetheart).type, "sweetheartConsequenceResolved");
+  equal(parseGameEvent(barber).type, "barberConsequenceResolved");
+  equal(parseGameEvent(klutz).type, "klutzChoiceResolved");
+  equal(parseGameEvent(sweetheartEffective).type, "sweetheartConsequenceResolved");
+  equal(parseGameEvent(barberEffective).type, "barberConsequenceResolved");
+  equal(parseGameEvent(klutzEffective).type, "klutzChoiceResolved");
+
+  throws(
+    () => parseGameEvent({ ...sweetheart, payload: { ...sweetheart.payload, targetPlayerId: "player-3" } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...sweetheart, payload: {
+      ...sweetheart.payload,
+      outcome: { kind: "noEffect", reason: "noLivingDemon" },
+    } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...barber, payload: {
+      ...barber.payload,
+      chooserDemonPlayerId: "player-7",
+      decision: { kind: "decline" },
+    } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...klutz, payload: {
+      ...klutz.payload,
+      targetPlayerId: "player-3",
+      actorAlignment: "good",
+      targetAlignment: "evil",
+    } }),
+    /이벤트 형식/,
+  );
+});
+
+test("accepts a pending healthy Barber with no living Demon as an empty chooser list", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 4,
+    phase: "night",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+    pendingDeathConsequences: [{
+      stepId: "night:death:death-1:1:barber",
+      kind: "barber",
+      sourceEventId: "death-1",
+      deathSequence: 1,
+      actorPlayerId: "player-2",
+      sourceAbilityInstanceId: "setup:player-2",
+      actorImpairedAtTrigger: false,
+      allowedPlayerIds: [],
+      eligibleChooserPlayerIds: [],
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("accepts Pit-Hag transformation and arbitrary death audit events", () => {
   const before = { actualCharacter: "mutant", shownCharacter: "mutant", alignment: "good" };
   const after = { actualCharacter: "noDashii", shownCharacter: "noDashii", alignment: "good" };

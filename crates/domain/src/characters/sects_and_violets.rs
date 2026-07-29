@@ -712,10 +712,12 @@ fn madness_assignments(
         .map(|step| step.phase_token());
     let execution_already_occurred =
         current_day_id.is_some_and(|day_id| day_execution_occurred(day_id, events));
-    let impaired_players = active_snv_impairments(players, events)
-        .into_iter()
-        .map(|impairment| impairment.player_id)
-        .collect::<std::collections::HashSet<_>>();
+    let ability_state = SnvAbilityState::build(players, events);
+    let impaired_players = ability_state
+        .active_impairments
+        .iter()
+        .map(|impairment| impairment.player_id.clone())
+        .collect::<HashSet<_>>();
 
     let mut raw = events
         .iter()
@@ -1159,48 +1161,6 @@ fn later_night_wake_rank(character: &str) -> Option<usize> {
         .map(usize::from)
 }
 
-fn vigormortis_keeps_minion_ability(
-    player: &Player,
-    players: &[Player],
-    events: &[GameEvent],
-) -> bool {
-    let acquisition_index = events
-        .iter()
-        .position(|event| event.id == player.ability_instance.source_event_id);
-    character_kind(&player.actual_character) == Some(CharacterKind::Minion)
-        && events
-            .iter()
-            .skip(acquisition_index.map_or(0, |index| index + 1))
-            .any(|event| match &event.kind {
-                GameEventKind::NightActionResolved { payload } => {
-                    let NightActionResolution::DemonAttack {
-                        outcome:
-                            DemonAttackOutcome::Deaths {
-                                vigormortis_effect: Some(effect),
-                                ..
-                            },
-                        ..
-                    } = &payload.resolution
-                    else {
-                        return false;
-                    };
-                    effect.minion_player_id == player.id
-                        && players.iter().any(|candidate| {
-                            candidate.id == payload.actor_player_id
-                                && candidate.alive
-                                && candidate.actual_character == "vigormortis"
-                                && candidate.ability_instance.id
-                                    == effect.source_ability_instance_id
-                        })
-                }
-                _ => false,
-            })
-}
-
-fn player_has_active_ability(player: &Player, players: &[Player], events: &[GameEvent]) -> bool {
-    player.alive || vigormortis_keeps_minion_ability(player, players, events)
-}
-
 fn death_triggered_in_night_window(player: &Player, prefix: &str, events: &[GameEvent]) -> bool {
     let suffix = prefix.strip_prefix("night").unwrap_or_default();
     let day_prefix = format!("day{suffix}");
@@ -1251,7 +1211,7 @@ fn acquired_ability_is_available(
     player: &Player,
     character: &str,
     prefix: &str,
-    players: &[Player],
+    ability_state: &SnvAbilityState,
     events: &[GameEvent],
 ) -> bool {
     let Some(metadata) = SnvCharacterId::parse(character).map(SnvCharacterId::metadata) else {
@@ -1261,10 +1221,10 @@ fn acquired_ability_is_available(
         AbilityActivityPolicy::OnDeath => death_triggered_in_night_window(player, prefix, events),
         AbilityActivityPolicy::KilledByDemon => sage_killer(prefix, player, events).is_some(),
         AbilityActivityPolicy::WhileActive if character == SnvCharacterId::Juggler.as_str() => {
-            player_has_active_ability(player, players, events)
+            ability_state.has_active_ability(player)
                 && juggler_correct_count_for_night(prefix, player, events).is_some()
         }
-        AbilityActivityPolicy::WhileActive => player_has_active_ability(player, players, events),
+        AbilityActivityPolicy::WhileActive => ability_state.has_active_ability(player),
     }
 }
 
@@ -1275,6 +1235,7 @@ fn insert_acquired_ability_steps(
     players: &[Player],
     events: &[GameEvent],
 ) {
+    let ability_state = SnvAbilityState::build(players, events);
     let acquisitions = players
         .iter()
         .filter_map(|player| {
@@ -1288,7 +1249,7 @@ fn insert_acquired_ability_steps(
 
     for (player, event, source_step_id, source_character) in acquisitions {
         let character = player.actual_character.as_str();
-        if !acquired_ability_is_available(player, character, prefix, players, events) {
+        if !acquired_ability_is_available(player, character, prefix, &ability_state, events) {
             continue;
         }
         let metadata = SnvCharacterId::parse(character)
@@ -1518,6 +1479,7 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
     #[cfg(test)]
     PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let prefix = crate::phase::phase_prefix("night", cycle);
+    let ability_state = SnvAbilityState::build(players, events);
     let mut steps = Vec::new();
     let mut scheduled_characters = SnvCharacterId::ALL
         .iter()
@@ -1536,7 +1498,7 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
-                    && player_has_active_ability(player, players, events)
+                    && ability_state.has_active_ability(player)
                     && (character != "snakeCharmer"
                         || !became_snake_charmer_from_swap_in_phase(&player.id, &prefix, events))
             })
@@ -1584,7 +1546,7 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
                             sage_killer(&prefix, player, events).is_some()
                         }
                         AbilityActivityPolicy::WhileActive => {
-                            player_has_active_ability(player, players, events)
+                            ability_state.has_active_ability(player)
                         }
                     }
                     && (character_id != SnvCharacterId::Juggler
@@ -1956,11 +1918,16 @@ fn automatic_information_reminders(
 
 fn automatic_vigormortis_reminders(
     players: &[Player],
-    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
 ) -> Vec<AutomaticReminder> {
     players
         .iter()
-        .filter(|player| !player.alive && vigormortis_keeps_minion_ability(player, players, events))
+        .filter(|player| {
+            !player.alive
+                && ability_state
+                    .retained_minion_player_ids
+                    .contains(&player.id)
+        })
         .map(|player| AutomaticReminder {
             player_id: player.id.clone(),
             character_id: "vigormortis".into(),
@@ -2150,8 +2117,11 @@ fn active_information_reasons(
     let Some(actor_id) = step.player_id.as_deref() else {
         return vec![];
     };
-    let mut reasons = active_snv_impairments(players, events)
-        .into_iter()
+    let ability_state = SnvAbilityState::build(players, events);
+    let mut reasons = ability_state
+        .active_impairments
+        .iter()
+        .cloned()
         .filter(|impairment| impairment.player_id == actor_id)
         .filter_map(|impairment| {
             if impairment.kind == ImpairmentKind::Drunk {
@@ -2195,7 +2165,7 @@ fn active_information_reasons(
     if step.character.as_deref().and_then(character_kind) == Some(CharacterKind::Townsfolk) {
         if let Some(vortox) = players
             .iter()
-            .find(|player| player.alive && player.actual_character == "vortox")
+            .find(|player| ability_state.ability_functions(player, "vortox"))
         {
             reasons.push(DeliveryReason::Vortox {
                 demon_player_id: vortox.id.clone(),
@@ -2645,9 +2615,8 @@ fn apply_player_event(
             let Some(target) = players.iter().find(|player| player.id == *target_player_id) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
-            let actor_impaired = active_snv_impairments(players, &events[..event_index])
-                .iter()
-                .any(|impairment| impairment.player_id == actor.id);
+            let actor_impaired =
+                SnvAbilityState::build(players, &events[..event_index]).is_impaired(&actor.id);
             match outcome {
                 DemonAttackOutcome::Deaths {
                     deaths,
@@ -2880,12 +2849,8 @@ fn apply_player_event(
             };
             let target_before = identity_state(target);
             let target_alignment = target.alignment;
-            let actor_impaired = active_snv_impairments(players, &events[..event_index])
-                .iter()
-                .any(|impairment| {
-                    impairment.player_id == payload.actor_player_id
-                        && impairment.kind == ImpairmentKind::Poisoned
-                });
+            let actor_impaired = SnvAbilityState::build(players, &events[..event_index])
+                .is_impaired(&payload.actor_player_id);
             let target_is_demon =
                 character_kind(&target.actual_character) == Some(CharacterKind::Demon);
 
@@ -2997,12 +2962,8 @@ fn apply_player_event(
             let character_already_in_play = players
                 .iter()
                 .any(|player| player.actual_character == payload.character_id);
-            let actor_impaired = active_snv_impairments(players, &events[..event_index])
-                .iter()
-                .any(|impairment| {
-                    impairment.player_id == payload.actor_player_id
-                        && impairment.kind == ImpairmentKind::Poisoned
-                });
+            let actor_impaired = SnvAbilityState::build(players, &events[..event_index])
+                .is_impaired(&payload.actor_player_id);
             let expected = if character_already_in_play {
                 PitHagTransformationOutcome::NoChange {
                     reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
@@ -3230,103 +3191,7 @@ fn active_snake_charmer_impairments(events: &[GameEvent]) -> Vec<ActiveImpairmen
         .collect()
 }
 
-fn vigormortis_poison_state(
-    players: &[Player],
-    events: &[GameEvent],
-) -> (Vec<ActiveImpairment>, Vec<PendingVigormortisPoisonChoice>) {
-    let snake_poisoned = active_snake_charmer_impairments(events)
-        .into_iter()
-        .map(|impairment| impairment.player_id)
-        .collect::<HashSet<_>>();
-    let mut impairments = Vec::new();
-    let mut pending = Vec::new();
-
-    for source_event in events {
-        let GameEventKind::NightActionResolved { payload } = &source_event.kind else {
-            continue;
-        };
-        let NightActionResolution::DemonAttack {
-            outcome:
-                DemonAttackOutcome::Deaths {
-                    vigormortis_effect: Some(effect),
-                    ..
-                },
-            ..
-        } = &payload.resolution
-        else {
-            continue;
-        };
-        let Some(vigormortis) = players.iter().find(|player| {
-            player.id == payload.actor_player_id
-                && player.alive
-                && player.actual_character == "vigormortis"
-                && player.ability_instance.id == effect.source_ability_instance_id
-                && !snake_poisoned.contains(&player.id)
-        }) else {
-            continue;
-        };
-        let Some(minion) = players.iter().find(|player| {
-            player.id == effect.minion_player_id
-                && !player.alive
-                && character_kind(&player.actual_character) == Some(CharacterKind::Minion)
-        }) else {
-            continue;
-        };
-        let current_target = events
-            .iter()
-            .filter_map(|event| match &event.kind {
-                GameEventKind::VigormortisPoisonTargetChanged { payload }
-                    if payload.source_event_id == source_event.id =>
-                {
-                    Some(payload.target_player_id.clone())
-                }
-                _ => None,
-            })
-            .next_back()
-            .or_else(|| effect.poison_target_player_id.clone());
-        let allowed_player_ids = nearest_townsfolk_neighbors(players, &minion.id);
-        if current_target
-            .as_ref()
-            .is_some_and(|target| allowed_player_ids.contains(target))
-        {
-            impairments.push(ActiveImpairment {
-                kind: ImpairmentKind::Poisoned,
-                player_id: current_target.expect("checked target"),
-                source_event_id: source_event.id.clone(),
-                source_character_id: "vigormortis".into(),
-                expires: ImpairmentExpiry::Never,
-            });
-            continue;
-        }
-        if allowed_player_ids.is_empty() {
-            continue;
-        }
-        let reason = match current_target.as_deref() {
-            None => VigormortisPoisonInvalidReason::NoCurrentTarget,
-            Some(target)
-                if players.iter().any(|player| {
-                    player.id == target
-                        && character_kind(&player.actual_character)
-                            != Some(CharacterKind::Townsfolk)
-                }) =>
-            {
-                VigormortisPoisonInvalidReason::TargetNotTownsfolk
-            }
-            Some(_) => VigormortisPoisonInvalidReason::TargetNotNearestTownsfolk,
-        };
-        pending.push(PendingVigormortisPoisonChoice {
-            source_event_id: source_event.id.clone(),
-            vigormortis_player_id: vigormortis.id.clone(),
-            minion_player_id: minion.id.clone(),
-            previous_target_player_id: current_target,
-            allowed_player_ids,
-            reason,
-        });
-    }
-    (impairments, pending)
-}
-
-fn active_snv_impairments(players: &[Player], events: &[GameEvent]) -> Vec<ActiveImpairment> {
+fn base_snv_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
     let mut impairments = active_snake_charmer_impairments(events);
     impairments.extend(events.iter().filter_map(|event| match &event.kind {
         GameEventKind::SweetheartConsequenceResolved { payload } => match &payload.outcome {
@@ -3335,35 +3200,162 @@ fn active_snv_impairments(players: &[Player], events: &[GameEvent]) -> Vec<Activ
         },
         _ => None,
     }));
-    let snake_poisoned = impairments
-        .iter()
-        .filter(|impairment| impairment.source_character_id == "snakeCharmer")
-        .map(|impairment| impairment.player_id.clone())
-        .collect::<HashSet<_>>();
-    for no_dashii in players.iter().filter(|player| {
-        player.alive
-            && player.actual_character == "noDashii"
-            && !snake_poisoned.contains(&player.id)
-    }) {
-        let source_event_id = if no_dashii.ability_instance.source_event_id == "setup" {
-            events
-                .first()
-                .map_or_else(|| "setup".into(), |event| event.id.clone())
-        } else {
-            no_dashii.ability_instance.source_event_id.clone()
-        };
-        for player_id in nearest_townsfolk_neighbors(players, &no_dashii.id) {
-            impairments.push(ActiveImpairment {
-                kind: ImpairmentKind::Poisoned,
-                player_id,
-                source_event_id: source_event_id.clone(),
-                source_character_id: "noDashii".into(),
-                expires: ImpairmentExpiry::Never,
-            });
+    impairments
+}
+
+fn source_ability_functions_from_base(
+    player: &Player,
+    expected_character: &str,
+    base_impairments: &[ActiveImpairment],
+) -> bool {
+    player.alive
+        && player.actual_character == expected_character
+        && !base_impairments
+            .iter()
+            .any(|impairment| impairment.player_id == player.id)
+}
+
+struct SnvAbilityState {
+    active_impairments: Vec<ActiveImpairment>,
+    retained_minion_player_ids: HashSet<String>,
+    pending_vigormortis_poison_choices: Vec<PendingVigormortisPoisonChoice>,
+}
+
+impl SnvAbilityState {
+    fn build(players: &[Player], events: &[GameEvent]) -> Self {
+        let base_impairments = base_snv_impairments(events);
+        let mut active_impairments = base_impairments.clone();
+        let mut retained_minion_player_ids = HashSet::new();
+        let mut pending_vigormortis_poison_choices = Vec::new();
+
+        for no_dashii in players.iter().filter(|player| {
+            source_ability_functions_from_base(player, "noDashii", &base_impairments)
+        }) {
+            let source_event_id = if no_dashii.ability_instance.source_event_id == "setup" {
+                events
+                    .first()
+                    .map_or_else(|| "setup".into(), |event| event.id.clone())
+            } else {
+                no_dashii.ability_instance.source_event_id.clone()
+            };
+            for player_id in nearest_townsfolk_neighbors(players, &no_dashii.id) {
+                active_impairments.push(ActiveImpairment {
+                    kind: ImpairmentKind::Poisoned,
+                    player_id,
+                    source_event_id: source_event_id.clone(),
+                    source_character_id: "noDashii".into(),
+                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                });
+            }
+        }
+
+        for (source_event_index, source_event) in events.iter().enumerate() {
+            let GameEventKind::NightActionResolved { payload } = &source_event.kind else {
+                continue;
+            };
+            let NightActionResolution::DemonAttack {
+                outcome:
+                    DemonAttackOutcome::Deaths {
+                        vigormortis_effect: Some(effect),
+                        ..
+                    },
+                ..
+            } = &payload.resolution
+            else {
+                continue;
+            };
+            let Some(vigormortis) = players.iter().find(|player| {
+                player.id == payload.actor_player_id
+                    && source_ability_functions_from_base(player, "vigormortis", &base_impairments)
+                    && player.ability_instance.id == effect.source_ability_instance_id
+            }) else {
+                continue;
+            };
+            let Some(minion) = players.iter().find(|player| {
+                player.id == effect.minion_player_id
+                    && !player.alive
+                    && character_kind(&player.actual_character) == Some(CharacterKind::Minion)
+            }) else {
+                continue;
+            };
+            let current_target = events
+                .iter()
+                .filter_map(|event| match &event.kind {
+                    GameEventKind::VigormortisPoisonTargetChanged { payload }
+                        if payload.source_event_id == source_event.id =>
+                    {
+                        Some(payload.target_player_id.clone())
+                    }
+                    _ => None,
+                })
+                .next_back()
+                .or_else(|| effect.poison_target_player_id.clone());
+            let allowed_player_ids = nearest_townsfolk_neighbors(players, &minion.id);
+            if current_target
+                .as_ref()
+                .is_some_and(|target| allowed_player_ids.contains(target))
+            {
+                active_impairments.push(ActiveImpairment {
+                    kind: ImpairmentKind::Poisoned,
+                    player_id: current_target.expect("checked target"),
+                    source_event_id: source_event.id.clone(),
+                    source_character_id: "vigormortis".into(),
+                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                });
+            } else if !allowed_player_ids.is_empty() {
+                let reason = match current_target.as_deref() {
+                    None => VigormortisPoisonInvalidReason::NoCurrentTarget,
+                    Some(target)
+                        if players.iter().any(|player| {
+                            player.id == target
+                                && character_kind(&player.actual_character)
+                                    != Some(CharacterKind::Townsfolk)
+                        }) =>
+                    {
+                        VigormortisPoisonInvalidReason::TargetNotTownsfolk
+                    }
+                    Some(_) => VigormortisPoisonInvalidReason::TargetNotNearestTownsfolk,
+                };
+                pending_vigormortis_poison_choices.push(PendingVigormortisPoisonChoice {
+                    source_event_id: source_event.id.clone(),
+                    vigormortis_player_id: vigormortis.id.clone(),
+                    minion_player_id: minion.id.clone(),
+                    previous_target_player_id: current_target,
+                    allowed_player_ids,
+                    reason,
+                });
+            }
+
+            let acquisition_index = events
+                .iter()
+                .position(|event| event.id == minion.ability_instance.source_event_id);
+            if source_event_index >= acquisition_index.map_or(0, |index| index + 1) {
+                retained_minion_player_ids.insert(minion.id.clone());
+            }
+        }
+
+        Self {
+            active_impairments,
+            retained_minion_player_ids,
+            pending_vigormortis_poison_choices,
         }
     }
-    impairments.extend(vigormortis_poison_state(players, events).0);
-    impairments
+
+    fn is_impaired(&self, player_id: &str) -> bool {
+        self.active_impairments
+            .iter()
+            .any(|impairment| impairment.player_id == player_id)
+    }
+
+    fn has_active_ability(&self, player: &Player) -> bool {
+        player.alive || self.retained_minion_player_ids.contains(&player.id)
+    }
+
+    fn ability_functions(&self, player: &Player, expected_character: &str) -> bool {
+        player.actual_character == expected_character
+            && self.has_active_ability(player)
+            && !self.is_impaired(&player.id)
+    }
 }
 
 fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> {
@@ -3526,10 +3518,7 @@ fn record_death_triggers(
     prior_events: &[GameEvent],
     event: &GameEvent,
 ) {
-    let impaired_ids = active_snv_impairments(players, prior_events)
-        .into_iter()
-        .map(|impairment| impairment.player_id)
-        .collect::<HashSet<_>>();
+    let ability_state = SnvAbilityState::build(players, prior_events);
     let mut record = |player_id: &str,
                       source_event: &GameEvent,
                       death_sequence: u8,
@@ -3560,7 +3549,8 @@ fn record_death_triggers(
             death_sequence,
             actor_player_id: player.id.clone(),
             source_ability_instance_id: player.ability_instance.id.clone(),
-            actor_impaired_at_trigger: impaired_ids.contains(&player.id),
+            actor_impaired_at_trigger: ability_state.is_impaired(&player.id),
+            actor_alignment_at_trigger: player.alignment,
             allowed_player_ids: match kind {
                 DeathConsequenceKind::Klutz => players
                     .iter()
@@ -3888,8 +3878,8 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             continue;
         }
         if let GameEventKind::VigormortisPoisonTargetChanged { payload } = &event.kind {
-            let pending = vigormortis_poison_state(players_at_event, &events[..event_index])
-                .1
+            let pending = SnvAbilityState::build(players_at_event, &events[..event_index])
+                .pending_vigormortis_poison_choices
                 .into_iter()
                 .find(|choice| choice.source_event_id == payload.source_event_id)
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
@@ -4660,7 +4650,7 @@ fn validate_death_consequence_event(
     event: &GameEvent,
     pending: &PendingDeathConsequence,
     players: &[Player],
-    prior_events: &[GameEvent],
+    _prior_events: &[GameEvent],
 ) -> Result<(), CoreError> {
     let failed = || ErrorKind::ReplayFailed.into_error();
     match (&event.kind, pending.kind) {
@@ -4669,48 +4659,47 @@ fn validate_death_consequence_event(
             DeathConsequenceKind::Sweetheart,
         ) => {
             if pending.actor_impaired_at_trigger {
-                if payload.outcome
-                    != (SweetheartConsequenceOutcome::NoEffect {
-                        reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
-                    })
+                if payload.target_player_id.is_some()
+                    || payload.outcome
+                        != (SweetheartConsequenceOutcome::NoEffect {
+                            reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+                        })
                 {
                     return Err(failed());
                 }
-            } else if payload
-                .target_player_id
-                .as_ref()
-                .is_none_or(|target| !players.iter().any(|player| player.id == *target))
-                || !matches!(
-                    payload.outcome,
-                    SweetheartConsequenceOutcome::DrunkApplied { .. }
-                )
-            {
-                return Err(failed());
+            } else {
+                let target_player_id = payload
+                    .target_player_id
+                    .as_ref()
+                    .filter(|target| players.iter().any(|player| player.id == **target))
+                    .ok_or_else(failed)?;
+                let expected = SweetheartConsequenceOutcome::DrunkApplied {
+                    impairment: ActiveImpairment {
+                        kind: ImpairmentKind::Drunk,
+                        player_id: target_player_id.clone(),
+                        source_event_id: event.id.clone(),
+                        source_character_id: "sweetheart".into(),
+                        expires: ImpairmentExpiry::Never,
+                    },
+                };
+                if payload.outcome != expected {
+                    return Err(failed());
+                }
             }
         }
         (GameEventKind::BarberConsequenceResolved { payload }, DeathConsequenceKind::Barber) => {
-            let actor = players
-                .iter()
-                .find(|player| player.id == pending.actor_player_id)
-                .ok_or_else(failed)?;
             let no_effect_reason = if pending.actor_impaired_at_trigger {
                 Some(DeathConsequenceNoEffectReason::ActorImpairedAtDeath)
-            } else if actor.ability_instance.id != pending.source_ability_instance_id
-                || actor.actual_character != "barber"
-            {
-                Some(DeathConsequenceNoEffectReason::SourceAbilityLost)
-            } else if active_snv_impairments(players, prior_events)
-                .iter()
-                .any(|impairment| impairment.player_id == actor.id)
-            {
-                Some(DeathConsequenceNoEffectReason::ActorImpairedAtResolution)
             } else if pending.eligible_chooser_player_ids.is_empty() {
                 Some(DeathConsequenceNoEffectReason::NoLivingDemon)
             } else {
                 None
             };
             if let Some(reason) = no_effect_reason {
-                if payload.outcome != (BarberConsequenceOutcome::NoEffect { reason }) {
+                if payload.chooser_demon_player_id.is_some()
+                    || payload.decision.is_some()
+                    || payload.outcome != (BarberConsequenceOutcome::NoEffect { reason })
+                {
                     return Err(failed());
                 }
                 return Ok(());
@@ -4720,7 +4709,7 @@ fn validate_death_consequence_event(
                 .as_ref()
                 .filter(|chooser| pending.eligible_chooser_player_ids.contains(chooser))
                 .ok_or_else(failed)?;
-            let expected_outcome = match &payload.decision {
+            let expected_outcome = match payload.decision.as_ref().ok_or_else(failed)? {
                 BarberDecision::Decline => BarberConsequenceOutcome::Declined,
                 BarberDecision::Swap { player_ids } => {
                     if player_ids.len() != 2 || player_ids[0] == player_ids[1] {
@@ -4775,33 +4764,38 @@ fn validate_death_consequence_event(
             }
         }
         (GameEventKind::KlutzChoiceResolved { payload }, DeathConsequenceKind::Klutz) => {
-            let actor = players
-                .iter()
-                .find(|player| player.id == pending.actor_player_id)
+            if pending.actor_impaired_at_trigger {
+                if payload.target_player_id.is_some()
+                    || payload.actor_alignment.is_some()
+                    || payload.target_alignment.is_some()
+                    || payload.outcome != KlutzChoiceOutcome::ActorImpaired
+                {
+                    return Err(failed());
+                }
+                return Ok(());
+            }
+            let target_player_id = payload
+                .target_player_id
+                .as_ref()
+                .filter(|target| pending.allowed_player_ids.contains(target))
                 .ok_or_else(failed)?;
             let target = players
                 .iter()
-                .find(|player| player.id == payload.target_player_id && player.alive)
+                .find(|player| player.id == *target_player_id && player.alive)
                 .ok_or_else(failed)?;
-            let actor_impaired = pending.actor_impaired_at_trigger
-                || active_snv_impairments(players, prior_events)
-                    .iter()
-                    .any(|impairment| impairment.player_id == actor.id);
-            let expected = if actor_impaired {
-                KlutzChoiceOutcome::ActorImpaired
-            } else if target.alignment == Alignment::Good {
+            let expected = if target.alignment == Alignment::Good {
                 KlutzChoiceOutcome::Safe
             } else {
                 KlutzChoiceOutcome::TeamLost {
-                    losing_team: actor.alignment,
-                    winning_team: match actor.alignment {
+                    losing_team: pending.actor_alignment_at_trigger,
+                    winning_team: match pending.actor_alignment_at_trigger {
                         Alignment::Good => Alignment::Evil,
                         Alignment::Evil => Alignment::Good,
                     },
                 }
             };
-            if payload.actor_alignment != actor.alignment
-                || payload.target_alignment != target.alignment
+            if payload.actor_alignment != Some(pending.actor_alignment_at_trigger)
+                || payload.target_alignment != Some(target.alignment)
                 || payload.outcome != expected
             {
                 return Err(failed());
@@ -4904,11 +4898,13 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             winning_team: Some(Alignment::Evil),
         });
     }
-    let active_impairments = active_snv_impairments(&players, active_events);
-    let pending_vigormortis_poison_choices = vigormortis_poison_state(&players, active_events).1;
+    let ability_state = SnvAbilityState::build(&players, active_events);
+    let active_impairments = ability_state.active_impairments.clone();
+    let pending_vigormortis_poison_choices =
+        ability_state.pending_vigormortis_poison_choices.clone();
     let mut automatic_reminders =
         automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
-    automatic_reminders.extend(automatic_vigormortis_reminders(&players, active_events));
+    automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
@@ -5056,7 +5052,8 @@ pub(crate) fn propose_phase_command(
             _ => Err(ErrorKind::InvalidStepInput.into_error()),
         };
     }
-    let pending_vigormortis_choices = vigormortis_poison_state(&players, &game_file.game.events).1;
+    let pending_vigormortis_choices =
+        SnvAbilityState::build(&players, &game_file.game.events).pending_vigormortis_poison_choices;
     if let Command::ResolveVigormortisPoison { payload } = command {
         return propose_vigormortis_poison_target(
             game_file,
@@ -5315,25 +5312,31 @@ fn propose_sweetheart_consequence(
         return Err(ErrorKind::StaleStep.into_error());
     }
     let event_id = format!("sweetheart-consequence-{}", game_file.game.events.len() + 1);
-    let outcome = if pending.actor_impaired_at_trigger {
-        SweetheartConsequenceOutcome::NoEffect {
-            reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
-        }
+    let (target_player_id, outcome) = if pending.actor_impaired_at_trigger {
+        (
+            None,
+            SweetheartConsequenceOutcome::NoEffect {
+                reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+            },
+        )
     } else {
         let target_player_id = payload
             .target_player_id
             .as_deref()
             .filter(|target| players.iter().any(|player| player.id == *target))
             .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-        SweetheartConsequenceOutcome::DrunkApplied {
-            impairment: ActiveImpairment {
-                kind: ImpairmentKind::Drunk,
-                player_id: target_player_id.to_string(),
-                source_event_id: event_id.clone(),
-                source_character_id: "sweetheart".into(),
-                expires: ImpairmentExpiry::Never,
+        (
+            Some(target_player_id.to_string()),
+            SweetheartConsequenceOutcome::DrunkApplied {
+                impairment: ActiveImpairment {
+                    kind: ImpairmentKind::Drunk,
+                    player_id: target_player_id.to_string(),
+                    source_event_id: event_id.clone(),
+                    source_character_id: "sweetheart".into(),
+                    expires: ImpairmentExpiry::Never,
+                },
             },
-        }
+        )
     };
     let summary = match outcome {
         SweetheartConsequenceOutcome::DrunkApplied { .. } => "사랑꾼 취함 적용",
@@ -5347,7 +5350,7 @@ fn propose_sweetheart_consequence(
             payload: SweetheartConsequenceResolvedPayload {
                 step_id: payload.step_id,
                 trigger: trigger_ref(pending),
-                target_player_id: payload.target_player_id,
+                target_player_id,
                 outcome,
             },
         },
@@ -5367,27 +5370,10 @@ fn propose_barber_consequence(
     if payload.step_id != pending.step_id {
         return Err(ErrorKind::StaleStep.into_error());
     }
-    let actor = players
-        .iter()
-        .find(|player| player.id == pending.actor_player_id)
-        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let actor_impaired_now = active_snv_impairments(players, &game_file.game.events)
-        .iter()
-        .any(|impairment| impairment.player_id == actor.id);
     let chooser = payload.chooser_demon_player_id.as_ref();
     let outcome = if pending.actor_impaired_at_trigger {
         BarberConsequenceOutcome::NoEffect {
             reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
-        }
-    } else if actor.ability_instance.id != pending.source_ability_instance_id
-        || actor.actual_character != "barber"
-    {
-        BarberConsequenceOutcome::NoEffect {
-            reason: DeathConsequenceNoEffectReason::SourceAbilityLost,
-        }
-    } else if actor_impaired_now {
-        BarberConsequenceOutcome::NoEffect {
-            reason: DeathConsequenceNoEffectReason::ActorImpairedAtResolution,
         }
     } else if pending.eligible_chooser_player_ids.is_empty() {
         BarberConsequenceOutcome::NoEffect {
@@ -5403,7 +5389,11 @@ fn propose_barber_consequence(
                     .any(|eligible| eligible == chooser)
             })
             .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-        match &payload.decision {
+        match payload
+            .decision
+            .as_ref()
+            .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?
+        {
             BarberDecision::Decline => BarberConsequenceOutcome::Declined,
             BarberDecision::Swap { player_ids } => {
                 if player_ids.len() != 2 || player_ids[0] == player_ids[1] {
@@ -5460,6 +5450,11 @@ fn propose_barber_consequence(
         BarberConsequenceOutcome::NoChangeSameCharacter => "이발사 교환 · 동일 직업",
         BarberConsequenceOutcome::NoEffect { .. } => "이발사 효과 없음",
     };
+    let no_effect = matches!(outcome, BarberConsequenceOutcome::NoEffect { .. });
+    let chooser_demon_player_id = (!no_effect)
+        .then_some(payload.chooser_demon_player_id)
+        .flatten();
+    let decision = (!no_effect).then_some(payload.decision).flatten();
     Ok(consequence_event(
         game_file,
         phase,
@@ -5468,8 +5463,8 @@ fn propose_barber_consequence(
             payload: BarberConsequenceResolvedPayload {
                 step_id: payload.step_id,
                 trigger: trigger_ref(pending),
-                chooser_demon_player_id: payload.chooser_demon_player_id,
-                decision: payload.decision,
+                chooser_demon_player_id,
+                decision,
                 outcome,
             },
         },
@@ -5487,32 +5482,43 @@ fn propose_klutz_consequence(
     if payload.step_id != pending.step_id {
         return Err(ErrorKind::StaleStep.into_error());
     }
-    let actor = players
-        .iter()
-        .find(|player| player.id == pending.actor_player_id)
-        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let target = players
-        .iter()
-        .find(|player| player.id == payload.target_player_id && player.alive)
-        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
-    let actor_impaired = pending.actor_impaired_at_trigger
-        || active_snv_impairments(players, &game_file.game.events)
-            .iter()
-            .any(|impairment| impairment.player_id == actor.id);
-    let outcome = if actor_impaired {
-        KlutzChoiceOutcome::ActorImpaired
-    } else if target.alignment == Alignment::Good {
-        KlutzChoiceOutcome::Safe
-    } else {
-        let winning_team = match actor.alignment {
-            Alignment::Good => Alignment::Evil,
-            Alignment::Evil => Alignment::Good,
+    let (target_player_id, actor_alignment, target_alignment, outcome) =
+        if pending.actor_impaired_at_trigger {
+            (None, None, None, KlutzChoiceOutcome::ActorImpaired)
+        } else {
+            let target_player_id = payload
+                .target_player_id
+                .as_deref()
+                .filter(|target| {
+                    pending
+                        .allowed_player_ids
+                        .iter()
+                        .any(|allowed| allowed == target)
+                })
+                .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+            let target = players
+                .iter()
+                .find(|player| player.id == target_player_id && player.alive)
+                .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+            let outcome = if target.alignment == Alignment::Good {
+                KlutzChoiceOutcome::Safe
+            } else {
+                let winning_team = match pending.actor_alignment_at_trigger {
+                    Alignment::Good => Alignment::Evil,
+                    Alignment::Evil => Alignment::Good,
+                };
+                KlutzChoiceOutcome::TeamLost {
+                    losing_team: pending.actor_alignment_at_trigger,
+                    winning_team,
+                }
+            };
+            (
+                Some(target.id.clone()),
+                Some(pending.actor_alignment_at_trigger),
+                Some(target.alignment),
+                outcome,
+            )
         };
-        KlutzChoiceOutcome::TeamLost {
-            losing_team: actor.alignment,
-            winning_team,
-        }
-    };
     Ok(consequence_event(
         game_file,
         phase,
@@ -5521,9 +5527,9 @@ fn propose_klutz_consequence(
             payload: KlutzChoiceResolvedPayload {
                 step_id: payload.step_id,
                 trigger: trigger_ref(pending),
-                target_player_id: payload.target_player_id,
-                actor_alignment: actor.alignment,
-                target_alignment: target.alignment,
+                target_player_id,
+                actor_alignment,
+                target_alignment,
                 outcome,
             },
         },
@@ -5876,9 +5882,8 @@ fn propose_snake_charmer_action(
         .find(|player| player.id == target_player_id && player.alive)
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
     let event_id = format!("snake-charmer-{}", game_file.game.events.len() + 1);
-    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
-        .iter()
-        .any(|impairment| impairment.player_id == actor.id);
+    let actor_impaired =
+        SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
     let target_is_demon = character_kind(&target.actual_character) == Some(CharacterKind::Demon);
     let outcome = if !target_is_demon {
         SnakeCharmerActionOutcome::NoSwap {
@@ -6011,9 +6016,8 @@ fn propose_pit_hag_transformation(
     let character_already_in_play = players
         .iter()
         .any(|player| player.actual_character == character_id);
-    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
-        .iter()
-        .any(|impairment| impairment.player_id == actor.id);
+    let actor_impaired =
+        SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
     let outcome = if character_already_in_play {
         PitHagTransformationOutcome::NoChange {
             reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
@@ -6111,9 +6115,8 @@ fn propose_demon_attack(
         .map(|step| step.phase_token())
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let pit_hag_created_demon = pit_hag_demon_creation(&game_file.game.events, prefix).is_some();
-    let actor_impaired = active_snv_impairments(players, &game_file.game.events)
-        .iter()
-        .any(|impairment| impairment.player_id == actor.id);
+    let actor_impaired =
+        SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
     let vigormortis_effect = if actor_character_id == "vigormortis"
         && target.alive
         && character_kind(&target.actual_character) == Some(CharacterKind::Minion)
@@ -6326,7 +6329,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn klutz_choice_uses_current_impairment_even_when_trigger_snapshot_was_healthy() {
+    fn klutz_choice_uses_healthy_trigger_snapshot_even_when_currently_impaired() {
         let events: Vec<GameEvent> = serde_json::from_value(json!([
             {
                 "id": "setup",
@@ -6390,6 +6393,7 @@ mod tests {
             actor_player_id: "player-3".into(),
             source_ability_instance_id: AbilityInstanceId::new("setup", "player-3"),
             actor_impaired_at_trigger: false,
+            actor_alignment_at_trigger: Alignment::Good,
             allowed_player_ids: vec!["player-7".into()],
             eligible_chooser_player_ids: vec![],
         };
@@ -6401,7 +6405,7 @@ mod tests {
             &pending,
             ResolveKlutzConsequenceCommandPayload {
                 step_id: pending.step_id.clone(),
-                target_player_id: "player-7".into(),
+                target_player_id: Some("player-7".into()),
                 expected_event_count: game_file.game.events.len(),
             },
         )
@@ -6410,7 +6414,13 @@ mod tests {
         let GameEventKind::KlutzChoiceResolved { payload } = proposal.event.kind else {
             panic!("expected Klutz choice event");
         };
-        assert_eq!(payload.outcome, KlutzChoiceOutcome::ActorImpaired);
+        assert_eq!(
+            payload.outcome,
+            KlutzChoiceOutcome::TeamLost {
+                losing_team: Alignment::Good,
+                winning_team: Alignment::Evil,
+            }
+        );
     }
 
     #[test]

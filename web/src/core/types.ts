@@ -233,13 +233,13 @@ export type Command =
       payload: {
         stepId: string;
         chooserDemonPlayerId?: string;
-        decision: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+        decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
         expectedEventCount: number;
       };
     }
   | {
       type: "resolveKlutzConsequence";
-      payload: { stepId: string; targetPlayerId: string; expectedEventCount: number };
+      payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
     }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
@@ -414,7 +414,7 @@ export type ActiveImpairment = {
   playerId: string;
   sourceEventId: string;
   sourceCharacterId: string;
-  expires: "never";
+  expires: "never" | "whileSourceAbilityActive";
 };
 
 export type ButlerVoteState = {
@@ -781,7 +781,7 @@ export type GameEvent = EventCommon &
           stepId: string;
           trigger: DeathTriggerRef;
           chooserDemonPlayerId?: string;
-          decision: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+          decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
           outcome:
             | { kind: "declined" }
             | { kind: "swapped"; identityTransitions: PlayerIdentityTransition[] }
@@ -794,9 +794,9 @@ export type GameEvent = EventCommon &
         payload: {
           stepId: string;
           trigger: DeathTriggerRef;
-          targetPlayerId: string;
-          actorAlignment: "good" | "evil";
-          targetAlignment: "good" | "evil";
+          targetPlayerId?: string;
+          actorAlignment?: "good" | "evil";
+          targetAlignment?: "good" | "evil";
           outcome:
             | { kind: "safe" }
             | { kind: "actorImpaired" }
@@ -821,8 +821,6 @@ export type DeathTriggerRef = {
 
 export type DeathConsequenceNoEffectReason =
   | "actorImpairedAtDeath"
-  | "actorImpairedAtResolution"
-  | "sourceAbilityLost"
   | "noLivingDemon";
 
 export type VirginImpairmentContext =

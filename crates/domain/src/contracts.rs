@@ -118,7 +118,8 @@ pub(crate) struct ResolveBarberConsequenceCommandPayload {
     pub(crate) step_id: String,
     #[serde(default)]
     pub(crate) chooser_demon_player_id: Option<String>,
-    pub(crate) decision: BarberDecision,
+    #[serde(default)]
+    pub(crate) decision: Option<BarberDecision>,
     pub(crate) expected_event_count: usize,
 }
 
@@ -138,7 +139,8 @@ pub(crate) enum BarberDecision {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct ResolveKlutzConsequenceCommandPayload {
     pub(crate) step_id: String,
-    pub(crate) target_player_id: String,
+    #[serde(default)]
+    pub(crate) target_player_id: Option<String>,
     pub(crate) expected_event_count: usize,
 }
 
@@ -378,8 +380,9 @@ pub(crate) struct PendingDeathConsequence {
     pub(crate) actor_player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
     pub(crate) actor_impaired_at_trigger: bool,
+    #[serde(skip_serializing)]
+    pub(crate) actor_alignment_at_trigger: Alignment,
     pub(crate) allowed_player_ids: Vec<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) eligible_chooser_player_ids: Vec<String>,
 }
 
@@ -540,6 +543,7 @@ pub(crate) enum ImpairmentKind {
 #[serde(rename_all = "camelCase")]
 pub(crate) enum ImpairmentExpiry {
     Never,
+    WhileSourceAbilityActive,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -872,7 +876,8 @@ pub(crate) struct BarberConsequenceResolvedPayload {
     pub(crate) trigger: DeathTriggerRef,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) chooser_demon_player_id: Option<String>,
-    pub(crate) decision: BarberDecision,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) decision: Option<BarberDecision>,
     pub(crate) outcome: BarberConsequenceOutcome,
 }
 
@@ -899,9 +904,12 @@ pub(crate) enum BarberConsequenceOutcome {
 pub(crate) struct KlutzChoiceResolvedPayload {
     pub(crate) step_id: String,
     pub(crate) trigger: DeathTriggerRef,
-    pub(crate) target_player_id: String,
-    pub(crate) actor_alignment: Alignment,
-    pub(crate) target_alignment: Alignment,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) target_player_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) actor_alignment: Option<Alignment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) target_alignment: Option<Alignment>,
     pub(crate) outcome: KlutzChoiceOutcome,
 }
 
@@ -925,8 +933,6 @@ pub(crate) enum KlutzChoiceOutcome {
 #[serde(rename_all = "camelCase")]
 pub(crate) enum DeathConsequenceNoEffectReason {
     ActorImpairedAtDeath,
-    ActorImpairedAtResolution,
-    SourceAbilityLost,
     NoLivingDemon,
 }
 
