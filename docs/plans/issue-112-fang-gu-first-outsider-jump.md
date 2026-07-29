@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: implement
-- Status: active
+- Phase: accept
+- Status: waiting-for-user
 - Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름; I1 production architecture/implementation plan
 - Open questions: none
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
-- Test server: none
-- Next action: 승인된 behavioral test map을 TDD로 구현하고 전체 회귀를 통과시킨다.
+- Test server: PID 33968; state `/var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112`; `http://100.91.205.43:4173/`
+- Next action: 사용자가 live acceptance checklist를 확인하고 승인 또는 수정 피드백을 준다.
 
 ## 분석 근거
 
@@ -543,3 +543,6 @@ resolution을 연결하지 않는다.
   correctness review도 완료했다.
 - `fixtures/issue-112-fang-gu-example-1.json`은 화가 정상 사망 → 사랑꾼 jump → 다음 밤
   얼뜨기 정상 사망을 한 JSON acceptance 시나리오로 재생한다.
+- live production-shaped flow에서 B안 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 →
+  완료를 통과했다. 1180×820과 390×844에서 새 Fang Gu의 `+1`, 상세의 공식 Fang Gu 도상과
+  `한 번`, 기존 Fang Gu만 사망한 상태를 확인했고 browser warning/error는 없었다.
