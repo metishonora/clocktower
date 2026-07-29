@@ -66,7 +66,7 @@ test("hands the Barber choice to the selected Demon and blocks progress until ev
 
 function barberCore(): CoreAdapter {
   return {
-    replay: vi.fn(async (gameFile) => ({
+    replay: vi.fn(async (gameFile: GameFile) => ({
       ok: true as const,
       value: barberReplay(gameFile.game.events.some((event) => event.type === "barberConsequenceResolved")),
     })),
@@ -121,7 +121,13 @@ function barberReplay(swapped: boolean): ReplayState {
     players,
     currentStep,
     phaseOverview: [{ ...currentStep, status: "current" }],
-    dayState: { nominationsOpen: false, nominations: [], eligibleNominatorIds: [], eligibleNomineeIds: [], livingPlayerCount: 6, executionThreshold: 3 },
+    dayState: {
+      nominations: [],
+      eligibleNominatorIds: [],
+      eligibleNomineeIds: [],
+      executionVoteThreshold: 3,
+      highestVoteCount: 0,
+    },
     ruleState: { unannouncedNightDeathPlayerIds: [], activeImpairments: [] },
     warnings: [],
     gameEnd: null,
@@ -154,8 +160,9 @@ function barberGame(): GameFile {
     summary: "초기 설정", createdAt: "2026-07-29T00:00:00.000Z",
   } as GameEvent;
   const death = {
-    id: "death-2", type: "executionDeathResolved", phase: "day",
-    payload: {}, summary: "이발사 사망", createdAt: "2026-07-29T00:01:00.000Z",
+    id: "death-2", type: "deathConfirmed", phase: "day",
+    payload: { playerId: "player-1", stepId: "day1:executionDeath" },
+    summary: "이발사 사망", createdAt: "2026-07-29T00:01:00.000Z",
   } as GameEvent;
   const roles = players.map((player) => player.actualCharacter);
   return {
