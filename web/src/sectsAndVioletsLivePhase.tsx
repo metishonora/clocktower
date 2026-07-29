@@ -704,6 +704,8 @@ function handoffPanelTitle(handoff: LiveHandoff, complete: boolean) {
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"
       : kind === "snakeCharmer" ? "뱀 조련사"
+        : kind === "evilTwin" ? "쌍둥이 지정"
+        : kind === "witch" ? "저주 대상 선택"
         : kind === "cerenovus" ? "세레노버스 집착 지정"
         : kind === "sweetheart" ? "사랑꾼 취함 지정"
         : kind === "barber" ? handoff.selectionStage === "chooser" ? "행동할 악마 선택" : "이발사 직업 교환"
@@ -733,6 +735,8 @@ function confirmLabel(handoff: LiveHandoff, nominator?: Player, nominee?: Player
   if (kind === "barber") return "행동할 악마를 선택하세요";
   if (kind === "klutz") return target ? `${playerLabel(target)} 선택 확정` : "생존한 플레이어를 선택하세요";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
+  if (kind === "evilTwin") return target ? `${playerLabel(target)} 쌍둥이 지정` : "쌍둥이 대상을 선택하세요";
+  if (kind === "witch") return target ? `${playerLabel(target)} 저주 확정` : "저주 대상을 선택하세요";
   if (kind === "cerenovus") return target ? `${playerLabel(target)} 집착 지정` : "집착 대상을 선택하세요";
   if (kind === "vigormortisPoison") return target ? `${playerLabel(target)}로 중독 이동` : "중독 대상을 선택하세요";
   if (kind === "demon" && handoff.selectionStage === "poison") return secondaryTarget ? `${playerLabel(secondaryTarget)} 중독 확정` : "중독 대상을 선택하세요";
