@@ -2,7 +2,7 @@
 
 ## Issue workflow
 
-- Use `$clocktower-issue #<number>` to start or resume the standard issue lifecycle. Use `$clocktower-close-issue #<number>` only after explicit user acceptance.
+- Start issue work with `$clocktower-analyze-issue #<number>` and wait for its analysis questions. After it records `analysis-approved`, continue with `$clocktower-issue #<number>`. Use `$clocktower-close-issue #<number>` only after explicit user acceptance.
 - Keep `main` deployable; release by merging `develop` into `main`.
 - For code work outside the issue lifecycle, update `develop`, then create a dedicated branch and worktree from it.
 - Branch hotfixes from `main` and merge them back into `develop`.

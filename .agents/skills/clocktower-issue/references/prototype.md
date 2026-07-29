@@ -1,17 +1,6 @@
-# Analysis and prototype
+# Prototype
 
-## Analyze
-
-1. Inspect the issue, comments, relevant specifications, architecture, existing plans, implementation, and tests.
-2. Summarize current behavior, requested outcome, scope, non-goals, dependencies, and likely ownership boundaries.
-3. Ask only decisions that materially affect behavior, UI, compatibility, or implementation. Group questions, explain impact, and include a recommendation when useful.
-4. Record answers and approval in the issue plan before advancing.
-
-Do not edit production or prototype code while unresolved requirements remain.
-
-## Prototype
-
-Skip this phase when no UI or product decision needs visual approval, and record why.
+Skip this phase when the approved analysis records that no UI or product decision needs visual review.
 
 1. Use the issue branch and worktree recorded in the checkpoint; do not create a separate prototype branch.
 2. Write only a lightweight prototype plan covering the decision to review, variants, fixture states, and target viewports.
