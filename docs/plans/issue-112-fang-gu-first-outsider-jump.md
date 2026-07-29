@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: prototype
+- Phase: plan
 - Status: waiting-for-user
-- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 비교안은 공식 중앙 소형 reminder와 앱 최적화 새 Fang Gu 귀속 reminder
-- Open questions: P1 두 token 표시안 중 production 선택; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름 승인 여부
+- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름
+- Open questions: none
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
-- Test server: PID 27131; /var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112
-- Next action: 사용자가 A/B 중 production 표시안을 선택하고 Reveal 흐름을 승인하면 plan phase로 전환한다.
+- Test server: none
+- Next action: 사용자가 production architecture/implementation plan을 승인하면 TDD implement 단계로 전환한다.
 
 ## 분석 근거
 
@@ -89,9 +89,9 @@
   ONCE 사용 가능, Reveal task와 발표 대기 목록이 모두 함께 복원된다. replay, reload,
   export/import도 동일한 상태를 재현한다.
 - ONCE가 소비된 동안 공식 Fang Gu 도상과 공식 라벨 `한 번`을 사용하는 read-only token을
-  표시한다. 표시 위치는 prototype 승인 전까지 A `Grimoire 중앙`과 B `현재 새 Fang Gu Player`
-  두 안을 비교한다. 어느 안도 source of truth를 Player ability instance에 두지 않고 canonical
-  game-wide 소비 상태에서 파생한다. Undo로 소비 전으로 돌아가면 제거한다.
+  B안대로 jump 대상 Player의 기존 token count/detail presentation에 표시한다. 표시 위치만
+  jump 대상에 귀속하며 source of truth는 Player ability instance가 아니라 canonical game-wide
+  소비 상태이다. Undo로 소비 전으로 돌아가면 제거한다.
 
 ### jump가 일어나지 않는 조건
 
@@ -135,11 +135,14 @@
 8. 이미 죽은 Outsider, impaired actor, non-Actual Fang Gu 또는 `pitHagCreatedDemon` no-effect처럼
    공격이 실제 사망을 만들지 못하는 경우 jump와 ONCE 소비가 모두 발생하지 않는다.
 9. ONCE가 소비된 동안 공식 Fang Gu 도상과 공식 `한 번` reminder 라벨을 사용하는 read-only
-   token이 승인된 A/B 위치에 보이며 canonical source는 game-wide 상태이다.
+   token이 jump 대상 Player의 token count/detail에 보이며 canonical source는 game-wide
+   상태이다.
 10. Undo는 기존 Fang Gu 생존, 대상 identity/alignment와 생존, pending Reveal, 공개 사망 목록과
     ONCE token을 모두 소비 전 상태로 되돌린다.
 11. replay, reload와 export/import는 jump target, old Demon death, new Fang Gu identity,
-    game-wide ONCE, pending/acknowledged Reveal과 announcement state를 동일하게 복원한다.
+    game-wide ONCE, pending Reveal과 announcement state를 동일하게 복원한다. jump 직후
+    Reveal 확인만 하고 다음 canonical event를 확정하기 전에 reload하면 안전하게 다시
+    공개 안내를 표시한다.
 12. 공식 `fangGu-example-1`은 Artist 정상 사망, Sweetheart jump와 능력 미발동, 다음 밤 새
     Fang Gu의 Klutz 정상 사망까지 하나의 재현 가능한 acceptance 흐름으로 성립한다.
 
@@ -239,10 +242,186 @@ resolution을 연결하지 않는다.
 - 추가 사용자 결정: 앱이 물리 토큰 이동을 자동 처리하므로 새 Fang Gu Player에게 existing
   reminder presentation으로 귀속하는 안도 고려안에 복원한다. 공식 중앙 소형안과 새 Fang Gu
   귀속안을 함께 prototype에서 비교한다.
+- 최종 prototype 결정: 2026-07-29 B `새 팡 구 귀속` 표시와 공격 확정 → 공개 안내 → evil
+  Fang Gu 역할 공개 → 완료 흐름을 승인하고 plan 단계 진행을 요청했다. production UI는
+  canonical game-wide ONCE 상태에서 jump 대상 Player의 read-only `한 번 · 출처 팡 구`
+  token count/detail 표시를 파생한다.
 - 공식 순서 재확인: ONCE reminder는 첫 jump 전에는 없고, Outsider가 새 Fang Gu로 바뀐 뒤
   Grimoire 중앙에 놓으며 이후 제거하지 않는다. old Fang Gu에 교환 전 잠시 붙였다가 치우는
   C안은 공식 How to Run을 반대로 읽은 안이므로 comparison에서 제외했다. 앱 전용으로 의도적
   이탈하려면 별도 제품 결정을 다시 받아야 한다.
+
+## Production architecture and implementation plan
+
+### 승인된 제품 계약
+
+- 2026-07-29 사용자 결정으로 B `새 팡 구 귀속` 표시와 기존 CharacterChange Reveal 흐름을
+  production 기준으로 확정했다.
+- Storyteller는 기존 Demon 공격 입력에서 대상을 고르고 확정한다. 별도 jump 확인이나
+  Outsider 전용 입력은 추가하지 않는다.
+- jump 직후 기존 Fang Gu만 dead, 대상은 살아 있는 evil Fang Gu가 되며 기존
+  `CharacterChangeRevealPrompt` → `CharacterChangeReveal`을 그대로 사용한다.
+- 공식 Fang Gu asset과 `한 번` 라벨은 jump 대상 Player의 기존 `+1` badge와 상세 token으로
+  표시한다. 새로운 중앙 chip, 수동 ONCE toggle 또는 편집 가능한 Player annotation은 만들지
+  않는다.
+- B안의 표시 anchor는 jump를 받은 Player ID로 고정한다. 그 Player가 이후 죽거나 다른
+  Character로 바뀌어도 ONCE의 역사적 소비 표시는 사라지거나 임의의 새 Fang Gu에게 이동하지
+  않는다. 이 위치는 presentation anchor일 뿐, 게임 전역 ONCE의 소유권이나 재충전을 뜻하지
+  않는다.
+
+### Canonical event와 상태 소유권
+
+- 기존 `nightActionResolved / demonAttack` 한 건을 jump의 atomic transaction으로 유지한다.
+  새 top-level event나 UI-only boolean을 만들지 않는다.
+- `DemonAttackOutcome`에 새 `fangGuJump` variant를 추가한다. 기존 `deaths`와 `noEffect`
+  variant는 바꾸지 않는다. 새 jump event의 wire shape는 다음 의미를 가진다.
+
+```json
+{
+  "kind": "fangGuJump",
+  "death": {
+    "playerId": "<old-fang-gu>",
+    "cause": {
+      "kind": "demonAttack",
+      "actorPlayerId": "<old-fang-gu>",
+      "actorCharacterId": "fangGu",
+      "targetPlayerId": "<outsider>"
+    }
+  },
+  "sourceAbilityInstanceId": "<old-fang-gu ability instance>",
+  "identityTransition": {
+    "playerId": "<outsider>",
+    "before": {
+      "actualCharacter": "<actual outsider>",
+      "shownCharacter": "<shown character>",
+      "alignment": "<current alignment>"
+    },
+    "after": {
+      "actualCharacter": "fangGu",
+      "shownCharacter": "fangGu",
+      "alignment": "evil"
+    }
+  }
+}
+```
+
+- `fangGuJump` outcome이 game-wide ONCE 소비의 persisted witness다. replay는 전체 stream에서
+  이 witness가 이미 있었는지 계산하며 Player ability instance의 사용 여부를 ONCE source로
+  사용하지 않는다.
+- proposal은 현재 step의 actor가 살아 있는 Actual Fang Gu이고 정상 작동하며, 대상이 살아
+  있는 Actual Outsider이고 이전 witness가 없을 때만 위 결과를 만든다. `shownCharacter`,
+  alignment와 annotation은 eligibility에 관여하지 않는다.
+- `pitHagCreatedDemon`, actor impairment와 dead target no-effect를 먼저 보존한다. 정상 사망
+  결과가 가능한 살아 있는 target에만 jump를 적용한다. 이미 소비됐거나 non-Outsider이면
+  기존 target death 결과를 그대로 만든다.
+- replay는 소비 후 중복된 `fangGuJump`, 잘못된 source ability instance/death/transition
+  snapshot을 거부한다. jump 결과에서는 death가 old Fang Gu인지, 대상의 before state가 현재
+  truth인지, after state가 alive evil Fang Gu인지 함께 검증한다. 기능 배포 전 schema-3
+  `deaths` event는 legacy normal attack으로 계속 허용하되 새 proposal은 eligible한 첫 attack에
+  항상 `fangGuJump`를 생성한다.
+- event 적용은 old Fang Gu를 dead로 만들고 대상의 actual/shown Character와 alignment,
+  fresh ability instance, identity history를 같은 pass에서 갱신한다. 대상은 어느 중간
+  state에서도 dead가 되지 않는다.
+
+### Replay 파생값과 Night 흐름
+
+- `unannouncedNightDeathPlayerIds`는 `deaths`와 `fangGuJump.death`를 함께 수집해 old Fang
+  Gu만 얻는다.
+  dawn `nightDeathsAnnounced` payload와 공개 summary에는 그 Player만 포함하고 jump 원인이나
+  새 Demon identity는 추가하지 않는다.
+- death consequence 수집은 같은 event의 실제 deaths만 본다. jump target이 Sweetheart,
+  Barber 또는 Klutz여도 target trigger는 생성하지 않는다.
+- `pending_identity_reveals`가 마지막 confirmed event의 `fangGuJump.identityTransition`을
+  기존 `characterChange` payload로 투영한다. 앱의 기존 공개 안내, player-facing evil Fang
+  Gu 공개와 확인 UI 외 새 Reveal contract는 만들지 않는다.
+- Reveal 확인은 현재 #129 UI-session 동작을 재사용한다. jump event가 마지막 canonical
+  event인 채 reload/import되면 다시 안내하는 안전한 recovery를 택하고, 다음 canonical
+  event가 확정된 stream에서는 pending Reveal이 다시 생기지 않는다.
+- `transition_source`가 jump 대상의 새 ability instance를 `nightActionResolved` source로
+  인식하게 한다. acquisition source와 Fang Gu wake rank가 같으므로 jump가 발생한 밤에는
+  새 Demon step을 삽입하지 않고, 다음 later Night부터 정상 Fang Gu step을 만든다.
+- `automatic_fang_gu_reminder`는 최초 `fangGuJump` outcome의 transition Player ID를
+  anchor로 사용해 `AutomaticReminder { characterId: "fangGu", tokenId: "once",
+  label: "한 번" }`을 한 개만 파생한다. Undo로 witness가 제거되면 reminder도 제거되고,
+  replay/reload/export/import에서는 같은 Player에 복원된다.
+
+### TypeScript와 UI 연결
+
+- `web/src/core/types.ts`와 `validation.ts`가 `fangGuJump` outcome wire contract와
+  `characterId: "fangGu"` automatic reminder를 strict하게 검증한다. unknown/malformed
+  transition은 import 전에 거부한다.
+- `sectsAndVioletsGame.tsx`의 generic `automaticReminders` → `PlayerTokensByPlayerId`
+  projection과 `SectsAndVioletsLiveGrimoire`의 badge/detail UI를 그대로 사용한다. React는
+  jump eligibility, ONCE lifetime 또는 anchor를 계산하지 않는다.
+- token은 official Fang Gu asset, `한 번`, `출처 팡 구`, usage visual kind와
+  `첫 외지인 이동이 사용되었습니다.` 설명을 사용한다. prototype 전용 컴포넌트나 CSS는
+  production import에 연결하지 않는다.
+- `sectsAndVioletsCharacterRules.ts`의 오래된 “기존 팡 구에 사망·한 번 표식” How to Run을
+  jump 뒤 중앙 ONCE reminder를 놓는 공식 순서에 맞게 교정한다. 앱의 승인된 B presentation은
+  규칙 번역이 아니라 자동 UI 선택이므로 공식 문구와 구분한다.
+
+### 호환성, 오류와 복구
+
+- schema version은 3을 유지한다. 새 outcome variant를 추가하고 기존 `deaths` shape를 바꾸지
+  않으므로 모든 기존 S&V 저장 파일과 fixture는 변경 없이 replay한다.
+- 기능 배포 전 normal `deaths` event는 legacy history로 보존한다. 이미 확정된 Outsider
+  death를 소급 jump로 바꾸거나 ONCE를 소비시키지 않는다. 새 proposal이 만드는
+  `fangGuJump`부터 새 canonical semantics를 적용하며 별도 migration이나 silent correction은
+  만들지 않는다.
+- proposal/replay 실패는 기존 `INVALID_STEP_INPUT`, `STALE_STEP`, `REPLAY_FAILED` envelope를
+  재사용한다. UI에서 규칙을 보정하거나 partial jump를 append하지 않는다.
+- Undo는 canonical controller가 마지막 event를 제거한 뒤 replay하므로 old Fang Gu 생존,
+  대상 원래 identity/alignment, fresh ability instance, pending Reveal, dawn death와 ONCE
+  reminder가 한꺼번에 원복된다.
+
+### Behavioral test map과 TDD 순서
+
+1. 새 `issue112_fang_gu_scenarios` black-box test에서 첫 살아 있는 Actual Outsider 공격을
+   먼저 작성한다. 현재 baseline target death가 발생해 실패하는 것을 확인한 뒤 atomic event,
+   replay transition, old Fang Gu death, pending evil Fang Gu Reveal과 ONCE reminder까지
+   최소 구현한다. (criteria 1, 2, 3, 9)
+2. 같은 test module에서 같은 밤 새 Fang Gu step 부재, 다음 later Night의 새 actor,
+   이후 Outsider 정상 사망과 ONCE 유지, 새 ability instance에도 재충전되지 않음을 검증한다.
+   (criteria 5, 6, 7)
+3. dead Outsider, impaired actor, `pitHagCreatedDemon`, non-Outsider와 already-consumed
+   경계를 public propose/replay로 검증한다. 기존 baseline Demon attack regression도 유지한다.
+   (criteria 6, 8)
+4. 중복 jump, 잘못된 source ability instance, old Demon death와 target transition 변조를
+   각각 replay가 거부하는 regression을 추가하고 기존 legacy `deaths` event replay도
+   고정한다. event 하나 제거 Undo와 JSON serialize/replay equality도 함께 검증한다.
+   (criteria 10, 11)
+5. dawn까지 진행해 unannounced/announced death가 old Fang Gu 한 명뿐이고 공개 summary에
+   `fangGu`, `팡 구`, `jump`, target identity가 없음을 검증한다. jump target Sweetheart의
+   pending death consequence가 없는 것도 확인한다. (criteria 3, 4)
+6. `fixtures/acceptance/sects-and-violets/fang-gu-example-1.json`과 issue-112 manifest/test를
+   추가해 Artist 정상 사망 → Sweetheart jump/능력 미발동 → 다음 밤 Klutz 정상 사망을 한
+   연속 stream으로 replay한다. (criterion 12)
+7. Web test는 valid/malformed `fangGuJump`, Fang Gu automatic reminder의 strict validation과
+   공식 How to Run 문구 회귀를 추가한다. 실제 badge/detail, Reveal과 wide/iPad/mobile
+   interaction은 승인된 prototype 계약을 acceptance 서버에서 다시 확인한다. (criteria 2, 9)
+
+### 예상 변경 파일
+
+- Rust contracts/rules:
+  `crates/domain/src/contracts.rs`,
+  `crates/domain/src/characters/sects_and_violets.rs`
+- Rust regression:
+  `crates/domain/src/tests.rs`,
+  `crates/domain/src/tests/issue112_fang_gu_scenarios.rs`
+- 공식 JSON acceptance:
+  `fixtures/acceptance/sects-and-violets/fang-gu-example-1.json`,
+  `fixtures/acceptance/sects-and-violets/issue-112-manifest.json`
+- Web wire/rules:
+  `web/src/core/types.ts`,
+  `web/src/core/validation.ts`,
+  `web/src/core/validation.test.ts`,
+  `web/src/sectsAndVioletsCharacterRules.ts`,
+  `web/src/sectsAndVioletsCharacterRules.test.ts`
+- 기존 generic token projection에 결함이 발견될 때만
+  `web/src/sectsAndVioletsGame.tsx` 또는 별도 pure projection test를 최소 수정한다.
+  prototype 파일은 production dependency가 아니다.
+- 완료 전 `cargo test --workspace`, `pnpm --dir web test`,
+  `pnpm --dir web build`, fixture replay, full diff correctness review를 실행한다.
 
 ## 명시적 비범위
 
@@ -300,9 +479,9 @@ resolution을 연결하지 않는다.
   공개 UI나 event summary에 노출될 수 있다.
 - 기존 baseline `demonAttack` event 및 과거 S&V 저장 파일의 replay/import 호환성을 유지해야
   한다.
-- 공식 ONCE는 어느 Player에도 귀속되지 않고 게임 끝까지 남는다. 승인된 공식 Fang Gu token
-  presentation은 재사용하되 Player 귀속 automatic reminder로 옮기면 old Fang Gu의 Character
-  변경/사망 후 오해를 만든다.
+- 공식 ONCE는 어느 Player에도 귀속되지 않고 게임 끝까지 남는다. B안의 Player 귀속
+  automatic reminder가 ownership처럼 보이지 않도록 canonical source는 game-wide witness로
+  유지하고, jump target은 presentation anchor로만 기록해야 한다.
 
 ## 필요한 결정
 
