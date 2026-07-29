@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: implement
-- Status: active
+- Phase: accept
+- Status: waiting-for-user
 - Approved: D1 — strict schema v3 canonical rejection; P1 — revised concrete production plan (2026-07-29)
 - Open questions: none
 - Branch: codex/issue-133
 - Worktree: /private/tmp/clocktower-issue-133
-- Test server: stopped (`/var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-133`)
-- Next action: run final workspace/web suites, complete the high-risk diff review, then commit and push
+- Test server: running for issue 133 (PID 9988; query local state with `test-server.sh status 133`)
+- Next action: wait for explicit user acceptance or acceptance feedback
 
 ## Approved decisions
 
@@ -480,6 +480,8 @@ UI-copy changes.
 - `pnpm --dir web build`: TypeScript build, current Rust WASM optimization, Vite production build,
   and PWA generation passed.
 - `cargo fmt --all -- --check` and `git diff --check`: passed.
+- Implementation commit `6f732ab` (`Fix S&V ability validity and trigger timing`) was pushed to
+  `origin/codex/issue-133` before acceptance setup.
 
 ### Final review findings
 
