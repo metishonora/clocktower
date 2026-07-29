@@ -1,0 +1,4 @@
+interface:
+  display_name: "Close Clocktower Issue"
+  short_description: "Merge accepted work and close its issue"
+  default_prompt: "Use $clocktower-close-issue to merge and close accepted issue #123."
