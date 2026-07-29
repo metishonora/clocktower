@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: accept
-- Status: waiting-for-user
+- Phase: implement
+- Status: complete
 - Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름; I1 production architecture/implementation plan
 - Open questions: none
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
-- Test server: PID 33968; state `/var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112`; `http://100.91.205.43:4173/`
-- Next action: 사용자가 live acceptance checklist를 확인하고 승인 또는 수정 피드백을 준다.
+- Test server: none
+- Next action: 구현 결과에 대한 production 수용 의견을 받으며 prototype 재승인은 요구하지 않는다.
 
 ## 분석 근거
 
@@ -546,3 +546,5 @@ resolution을 연결하지 않는다.
 - live production-shaped flow에서 B안 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 →
   완료를 통과했다. 1180×820과 390×844에서 새 Fang Gu의 `+1`, 상세의 공식 Fang Gu 도상과
   `한 번`, 기존 Fang Gu만 사망한 상태를 확인했고 browser warning/error는 없었다.
+- 사용자 피드백: prototype 결정은 이미 승인됐으므로 acceptance에서 prototype을 다시
+  확인받지 않는다. 이후 수용 판단은 구현된 production 동작과 자동 회귀 결과만 대상으로 한다.
