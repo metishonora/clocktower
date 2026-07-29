@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: implement
+- Phase: accepted
 - Status: complete
-- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름; I1 production architecture/implementation plan
+- Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인; P1 B 새 Fang Gu 귀속 표시; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름; I1 production architecture/implementation plan; A1 production acceptance 승인 (2026-07-29)
 - Open questions: none
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
 - Test server: none
-- Next action: 구현 결과에 대한 production 수용 의견을 받으며 prototype 재승인은 요구하지 않는다.
+- Next action: `$clocktower-close-issue #112`로 develop 통합, GitHub 종료와 worktree 정리를 수행한다.
 
 ## 분석 근거
 
@@ -548,3 +548,21 @@ resolution을 연결하지 않는다.
   `한 번`, 기존 Fang Gu만 사망한 상태를 확인했고 browser warning/error는 없었다.
 - 사용자 피드백: prototype 결정은 이미 승인됐으므로 acceptance에서 prototype을 다시
   확인받지 않는다. 이후 수용 판단은 구현된 production 동작과 자동 회귀 결과만 대상으로 한다.
+
+## Production acceptance checklist
+
+- 정상 흐름: 실제 S&V 게임에서 첫 살아 있는 외지인을 팡 구로 공격한다. 기존 팡 구만
+  사망하고 대상은 살아 있는 악한 팡 구가 되며 CharacterChange 역할 공개가 이어진다.
+- ONCE 표시: 역할 공개를 마치면 새 팡 구 좌석에 `+1`이 보이고, Player 상세에서 공식 팡 구
+  도상과 `한 번` 토큰을 읽기 전용으로 확인할 수 있다.
+- 후속 밤: 새 팡 구는 이동한 같은 밤에 다시 행동하지 않고 다음 밤부터 행동한다. 이후
+  살아 있는 외지인을 공격하면 이동 없이 그 외지인이 정상 사망하며 `한 번` 표시는 유지된다.
+- 공개 정보: 다음 날 사망 발표에는 기존 팡 구만 포함되고, 이동 대상과 새 악마 정체 또는
+  팡 구 이동 원인은 공개 문구에 나타나지 않는다.
+- 실패 경계: 죽은 외지인, 취함·중독된 팡 구, 마귀할멈이 악마를 만든 밤의 공격은 이동과
+  ONCE를 소비하지 않는다. 일반 캐릭터 공격은 기존 S&V 악마 공격처럼 정상 처리된다.
+- 복구: 이동 직후 Undo하면 기존 팡 구 생존, 대상의 원래 역할·진영, 역할 공개 대기,
+  공개 사망 대기와 `한 번` 토큰이 함께 원복된다. 저장 후 새로고침/import에도 이동 상태가
+  동일하게 복원된다.
+- 화면: iPad/desktop과 390×844 mobile에서 새 팡 구의 `+1`, 역할 공개와 Player 상세가
+  겹치거나 잘리지 않는지 확인한다.
