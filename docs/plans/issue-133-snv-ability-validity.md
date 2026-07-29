@@ -2,14 +2,14 @@
 
 ## Workflow checkpoint
 
-- Phase: accept
-- Status: waiting-for-user
+- Phase: accepted
+- Status: complete
 - Approved: D1 — strict schema v3 canonical rejection; P1 — revised concrete production plan (2026-07-29)
 - Open questions: none
 - Branch: codex/issue-133
 - Worktree: /private/tmp/clocktower-issue-133
-- Test server: running for issue 133 (PID 9988; query local state with `test-server.sh status 133`)
-- Next action: wait for explicit user acceptance or acceptance feedback
+- Test server: stopped after explicit acceptance
+- Next action: run `$clocktower-close-issue #133` when integration and issue closure are desired
 
 ## Approved decisions
 
@@ -17,6 +17,12 @@
 
 On 2026-07-29, the user explicitly approved the concrete production change plan below. The issue
 therefore advances to TDD implementation without another gate before acceptance preparation.
+
+### A1 — User acceptance
+
+On 2026-07-29, the user explicitly approved the acceptance build. The issue workflow is complete;
+integration into `develop`, GitHub closure, and worktree removal remain owned by
+`$clocktower-close-issue #133`.
 
 ### D1 — Strict canonical `NoEffect` validation within schema v3
 
