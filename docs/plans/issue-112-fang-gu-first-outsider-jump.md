@@ -5,11 +5,11 @@
 - Phase: prototype
 - Status: waiting-for-user
 - Approved: D1 공식 Fang Gu `한 번` 토큰 표현 재사용; D2 UI prototype 필요; S1 분석 범위 승인
-- Open questions: P1 global token 위치 A `중앙 인접` 또는 B `안쪽 가장자리`; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름 승인 여부
+- Open questions: P1 공식 중앙 배치를 유지하되 큰 Player-token형 표현을 작은 ONCE reminder형으로 수정할지; P2 공격 확정 → 공개 안내 → evil Fang Gu 역할 공개 → 완료 흐름 승인 여부
 - Branch: codex/issue-112
 - Worktree: /private/tmp/clocktower-issue-112
-- Test server: PID 22348; /var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112
-- Next action: 사용자가 prototype의 token 위치와 Reveal 흐름을 검토·승인하면 plan phase로 전환한다.
+- Test server: none; previous state /var/folders/cc/6cn4twr55vz_zlmcglnl2pn80000gn/T/clocktower-test-server-112 stopped
+- Next action: 공식 중앙 배치 근거와 저장소 한국어 How to Run 불일치를 사용자와 확정한 뒤 prototype 표현을 수정한다.
 
 ## 분석 근거
 
@@ -203,6 +203,24 @@ resolution을 연결하지 않는다.
   라벨로 Player 귀속과 구분된다. B는 특히 portrait에서 아래 공간이 커지고 우측 Player seat에
   가까워 귀속 상태처럼 읽힐 위험이 있어 A를 권고한다.
 - `pnpm --dir web build`가 wasm, TypeScript, Vite/PWA build를 포함해 통과했다.
+
+### Prototype feedback: ONCE reminder placement (2026-07-29)
+
+- 사용자 피드백: ONCE token이 전역 중앙이 아니라 old/new Fang Gu Player 중 하나에 놓이는
+  표식인지 공식 규칙을 다시 확인해야 한다.
+- 현재 공식 Wiki `Fang Gu` How to Run은 jump 전에는 ONCE reminder가 Grimoire 중앙에 있는지로
+  이미 사용됐는지 판정하고, 첫 jump 후 ONCE reminder를 Grimoire 중앙에 놓으라고 명시한다.
+  Fang Gu가 죽거나 Character가 바뀌어도 게임 끝까지 제거하지 않는다는 주석도 있다.
+  (`https://wiki.bloodontheclocktower.com/Fang_Gu`, 2025-11-19 revision)
+- 따라서 canonical 소비 상태와 물리적 reminder 위치 모두 Player 귀속이 아니라 중앙 유지가
+  공식 정답이다. old Fang Gu에는 DEAD reminder만, new Fang Gu 자리에는 교체된 Fang Gu
+  Character token과 evil alignment가 남는다.
+- 저장소 `sectsAndVioletsCharacterRules.ts`의 한국어 How to Run은 현재 “기존 팡 구에
+  사망·한 번 표식”이라고 되어 있어 공식 최신 문구와 충돌한다. production 구현 계획에 이
+  규칙 데이터 교정을 포함한다.
+- 기존 prototype의 중앙 의미는 맞지만, 104px Player-pinned token primitive가 실제 ONCE
+  reminder보다 커서 별도 전역 Character token처럼 보일 수 있다. 공식 중앙 배치를 유지하며
+  작은 reminder형 표현으로 고치는 안을 권고한다.
 
 ## 명시적 비범위
 
