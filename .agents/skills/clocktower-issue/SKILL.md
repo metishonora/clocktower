@@ -41,10 +41,10 @@ Record detailed requirements, decisions, plans, and test results in normal plan 
 
 ## Approval gates
 
-- Pause after the prototype for visual and interaction approval.
-- Pause after the architecture and implementation plan for production approval.
+- Pause after the prototype for visual and interaction approval. This approval never counts as production acceptance; do not reuse a prototype route or harness as acceptance evidence.
+- Pause after the architecture and implementation plan for plan approval.
 - Brief the behavioral tests immediately before TDD implementation; do not require another gate unless the user asks.
-- Pause after acceptance setup with the checklist and live Tailscale URL.
+- Pause after production acceptance setup with the checklist and live Tailscale URL.
 - Mark `accepted` only from explicit user approval, then direct the user to `$clocktower-close-issue #<number>`.
 
 At each pause, state what was recorded and give the exact short resume command: `$clocktower-issue #<number> continue` plus the needed decision.
