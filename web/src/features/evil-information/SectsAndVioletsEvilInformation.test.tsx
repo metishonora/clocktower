@@ -48,6 +48,7 @@ test("S&V Minion task keeps waking, Reveal, and progression in one current-task 
   );
   match(html, /현재 할 일/);
   match(html, /하수인 정보/);
+  match(html, /class="snvEvilInformationWakeInstruction"/);
   match(html, /8번 Minion Eight, 9번 Minion Nine<\/strong>를 깨웁니다/);
   match(html, />정보 공개</);
   match(html, /disabled=""[^>]*>다음으로</);
@@ -71,6 +72,7 @@ test("S&V Demon task starts as a direct exact-three picker with selection-only s
   );
   match(empty, /악마 정보/);
   match(empty, /0 \/ 3/);
+  match(empty, /class="snvEvilInformationWakeInstruction"/);
   match(empty, /10번 Demon Ten<\/strong>를 깨웁니다/);
   match(empty, /aria-label="속임수 무작위 추천"/);
   ok(!/자동화|3개 선택 완료|>선택</.test(empty));
@@ -107,7 +109,8 @@ test("S&V Minion Reveal renders only the Demon identity and wraps long names saf
     <SectsAndVioletsEvilInformationReveal payload={payload} onClose={() => undefined} />,
   );
   match(html, /당신은 하수인입니다/);
-  match(html, />악마</);
+  match(html, /snvMinionInformationReveal/);
+  match(html, />악마는</);
   match(html, />10</);
   match(html, /VeryLongUnbrokenDemonPlayerNameThatMustWrapInsideTheSquare/);
   match(html, /확인했다면 눈을 감으세요/);

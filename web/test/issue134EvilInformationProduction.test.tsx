@@ -28,7 +28,7 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   await waitFor(() => expect(storage.latest.game.events).toHaveLength(2));
   let dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
   expect(within(dialog).getByRole("heading", { name: "당신은 하수인입니다" })).toBeTruthy();
-  expect(within(dialog).getByRole("heading", { name: "악마" })).toBeTruthy();
+  expect(within(dialog).getByRole("heading", { name: "악마는" })).toBeTruthy();
   expect(within(dialog).getByText("Demon Ten")).toBeTruthy();
   expect(within(dialog).queryByText("Minion Eight")).toBeNull();
   expect(within(dialog).queryByText("Minion Nine")).toBeNull();

@@ -138,7 +138,7 @@ export function SectsAndVioletsEvilInformationReveal({
   return (
     <div className="snvInformationRevealBackdrop">
       <section
-        className="snvInformationReveal snvEvilInformationReveal"
+        className={`snvInformationReveal snvEvilInformationReveal${isMinion ? " snvMinionInformationReveal" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={isMinion ? "하수인 정보 공개" : "악마 정보 공개"}
@@ -148,7 +148,7 @@ export function SectsAndVioletsEvilInformationReveal({
         </header>
 
         {isMinion ? (
-          <RevealSection label="악마">
+          <RevealSection label="악마는">
             <IdentityCards players={payload.demonPlayers} />
           </RevealSection>
         ) : (
