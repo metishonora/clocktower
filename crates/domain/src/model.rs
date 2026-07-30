@@ -32,6 +32,8 @@ pub(crate) enum StepType {
     Execution,
     #[serde(rename = "executionDeath")]
     ExecutionDeath,
+    #[serde(rename = "witchDeath")]
+    WitchDeath,
     #[serde(rename = "slayerDeath")]
     SlayerDeath,
     #[serde(rename = "demonSuccession")]
@@ -600,7 +602,7 @@ pub(crate) struct AbilityInstance {
     pub(crate) source_event_id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(transparent)]
 pub(crate) struct AbilityInstanceId(String);
 

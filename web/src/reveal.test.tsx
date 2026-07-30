@@ -34,6 +34,34 @@ test("character change Reveal identifies the new role without exposing Grimoire 
   equal(preview.includes("플레이어에게 공개"), true);
 });
 
+test("good-aligned Evil Twin Reveals use the neutral twin label", () => {
+  const characterChange: RevealPayload = {
+    kind: "characterChange",
+    playerId: "player-4",
+    alignment: "good",
+    characterId: "evilTwin",
+  };
+  const twinPair = {
+    kind: "evilTwinPair",
+    players: [
+      { playerId: "player-4", seat: 4, name: "지우", alignment: "good", characterId: "evilTwin" },
+      { playerId: "player-9", seat: 9, name: "예린", alignment: "evil", characterId: "vortox" },
+    ],
+  } as RevealPayload;
+
+  const changeHtml = renderToStaticMarkup(<RevealScreen payload={characterChange} onClose={() => undefined} />);
+  equal(changeHtml.includes("<strong>쌍둥이</strong>"), true);
+  equal(changeHtml.includes("<strong>사악한 쌍둥이</strong>"), false);
+
+  const pairHtml = renderToStaticMarkup(<RevealScreen payload={twinPair} onClose={() => undefined} />);
+  for (const copy of ["여러분은 쌍둥이입니다", "상대와 직업을 확인하십시오", "확인했다면 눈을 감으세요"]) {
+    equal(pairHtml.includes(copy), true);
+  }
+  for (const punctuated of ["여러분은 쌍둥이입니다,", "상대와 직업을 확인하십시오,", "확인했다면 눈을 감으세요."]) {
+    equal(pairHtml.includes(punctuated), false);
+  }
+});
+
 test("role information Reveal renders the approved copy from narrow payloads", () => {
   const payloads: RevealPayload[] = [
     { kind: "setupInformation", characterId: "washerwoman", candidatePlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], revealedCharacterId: "chef", zeroOutsiders: false },

@@ -1,0 +1,1830 @@
+{
+  "schemaVersion": 3,
+  "ui": {
+    "sectsAndVioletsSession": {
+      "version": 1,
+      "activeTab": "seating",
+      "savedAt": "2026-07-30T00:11:49.476Z",
+      "setup": {
+        "playerCount": 15,
+        "demon": "fangGu",
+        "selectedIds": [
+          "fangGu",
+          "evilTwin",
+          "witch",
+          "pitHag",
+          "mutant",
+          "barber",
+          "sweetheart",
+          "clockmaker",
+          "savant",
+          "sage",
+          "juggler",
+          "artist",
+          "seamstress",
+          "flowergirl",
+          "snakeCharmer"
+        ],
+        "seatAssignments": {
+          "1": "artist",
+          "2": "clockmaker",
+          "3": "sage",
+          "4": "pitHag",
+          "5": "savant",
+          "6": "witch",
+          "7": "barber",
+          "8": "sweetheart",
+          "9": "flowergirl",
+          "10": "snakeCharmer",
+          "11": "fangGu",
+          "12": "juggler",
+          "13": "seamstress",
+          "14": "mutant",
+          "15": "evilTwin"
+        },
+        "seatAlignments": {
+          "1": "good",
+          "2": "good",
+          "3": "good",
+          "4": "evil",
+          "5": "good",
+          "6": "evil",
+          "7": "good",
+          "8": "good",
+          "9": "good",
+          "10": "good",
+          "11": "evil",
+          "12": "good",
+          "13": "good",
+          "14": "good",
+          "15": "evil"
+        },
+        "seatNames": {},
+        "rosterConfirmed": true,
+        "seatingConfirmed": true
+      },
+      "phaseCheckpoints": [
+        {
+          "id": "setup-1",
+          "eventIds": [
+            "setup-1"
+          ],
+          "kind": "setup",
+          "eventCount": 1,
+          "summary": "초기 설정 확정: 15명",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-2",
+          "eventIds": [
+            "phase-2"
+          ],
+          "kind": "phase",
+          "eventCount": 2,
+          "summary": "단계 확정: firstNight:minionInfo",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-3",
+          "eventIds": [
+            "phase-3"
+          ],
+          "kind": "phase",
+          "eventCount": 3,
+          "summary": "단계 확정: firstNight:demonInfo",
+          "activeTab": "play"
+        },
+        {
+          "id": "snake-charmer-4",
+          "eventIds": [
+            "snake-charmer-4"
+          ],
+          "kind": "phase",
+          "eventCount": 4,
+          "summary": "뱀 조련사 선택 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-5",
+          "eventIds": [
+            "phase-5"
+          ],
+          "kind": "phase",
+          "eventCount": 5,
+          "summary": "쌍둥이 지정: 15번 플레이어 15 · 5번 플레이어 5",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-6",
+          "eventIds": [
+            "phase-6"
+          ],
+          "kind": "phase",
+          "eventCount": 6,
+          "summary": "마녀 저주 지정: 5번 플레이어 5",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-7",
+          "eventIds": [
+            "phase-7"
+          ],
+          "kind": "phase",
+          "eventCount": 7,
+          "summary": "2번 플레이어 2(시계공)가 악마와 하수인의 거리 4칸을 확인했습니다.",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-8",
+          "eventIds": [
+            "phase-8"
+          ],
+          "kind": "phase",
+          "eventCount": 8,
+          "summary": "재봉사 능력 보류",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-9",
+          "eventIds": [
+            "phase-9"
+          ],
+          "kind": "phase",
+          "eventCount": 9,
+          "summary": "단계 확정: firstNight:toDay",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-10",
+          "eventIds": [
+            "phase-10"
+          ],
+          "kind": "phase",
+          "eventCount": 10,
+          "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-11",
+          "eventIds": [
+            "phase-11"
+          ],
+          "kind": "phase",
+          "eventCount": 11,
+          "summary": "단계 확정: day:whisper",
+          "activeTab": "play"
+        },
+        {
+          "id": "day-action-12",
+          "eventIds": [
+            "day-action-12"
+          ],
+          "kind": "phase",
+          "eventCount": 12,
+          "summary": "곡예사 자유 행동 기록: 12번 플레이어 12",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-13",
+          "eventIds": [
+            "phase-13"
+          ],
+          "kind": "phase",
+          "eventCount": 13,
+          "summary": "단계 확정: day:discussion",
+          "activeTab": "play"
+        },
+        {
+          "id": "nomination-vote-15",
+          "eventIds": [
+            "nomination-started-14",
+            "nomination-vote-15"
+          ],
+          "kind": "phase",
+          "eventCount": 15,
+          "summary": "지목 투표 확정: 1번 플레이어 1(화가) → 5번 플레이어 5(백치천재), 6표",
+          "activeTab": "seating"
+        },
+        {
+          "id": "nomination-started-16",
+          "eventIds": [
+            "nomination-started-16"
+          ],
+          "kind": "phase",
+          "eventCount": 16,
+          "summary": "지목 확정: 5번 플레이어 5(백치천재) → 15번 플레이어 15(사악한 쌍둥이)",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-17",
+          "eventIds": [
+            "phase-17"
+          ],
+          "kind": "phase",
+          "eventCount": 17,
+          "summary": "사망 확정: 5번 플레이어 5(백치천재)",
+          "activeTab": "seating"
+        },
+        {
+          "id": "nomination-vote-18",
+          "eventIds": [
+            "nomination-vote-18"
+          ],
+          "kind": "phase",
+          "eventCount": 18,
+          "summary": "지목 투표 확정: 5번 플레이어 5(백치천재) → 15번 플레이어 15(사악한 쌍둥이), 8표",
+          "activeTab": "seating"
+        },
+        {
+          "id": "nomination-closed-19",
+          "eventIds": [
+            "nomination-closed-19"
+          ],
+          "kind": "phase",
+          "eventCount": 19,
+          "summary": "지목 종료",
+          "activeTab": "play"
+        },
+        {
+          "id": "execution-20",
+          "eventIds": [
+            "execution-20"
+          ],
+          "kind": "phase",
+          "eventCount": 20,
+          "summary": "처형 확정: 15번 플레이어 15(사악한 쌍둥이)",
+          "activeTab": "play"
+        },
+        {
+          "id": "execution-death-21",
+          "eventIds": [
+            "execution-death-21"
+          ],
+          "kind": "phase",
+          "eventCount": 21,
+          "summary": "사망 확정: 15번 플레이어 15(사악한 쌍둥이)",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-22",
+          "eventIds": [
+            "phase-22"
+          ],
+          "kind": "phase",
+          "eventCount": 22,
+          "summary": "단계 확정: day:toNight",
+          "activeTab": "play"
+        },
+        {
+          "id": "snake-charmer-23",
+          "eventIds": [
+            "snake-charmer-23"
+          ],
+          "kind": "phase",
+          "eventCount": 23,
+          "summary": "뱀 조련사 교환 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-24",
+          "eventIds": [
+            "phase-24"
+          ],
+          "kind": "phase",
+          "eventCount": 24,
+          "summary": "마녀 저주 지정: 13번 플레이어 13",
+          "activeTab": "seating"
+        },
+        {
+          "id": "pit-hag-25",
+          "eventIds": [
+            "pit-hag-25"
+          ],
+          "kind": "phase",
+          "eventCount": 25,
+          "summary": "마귀할멈 직업 변경 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-26",
+          "eventIds": [
+            "phase-26"
+          ],
+          "kind": "phase",
+          "eventCount": 26,
+          "summary": "10번 플레이어 10(fangGu) → 2번 플레이어 2 공격 · 사망 대상 후보 기록",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-27",
+          "eventIds": [
+            "phase-27"
+          ],
+          "kind": "phase",
+          "eventCount": 27,
+          "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-28",
+          "eventIds": [
+            "phase-28"
+          ],
+          "kind": "phase",
+          "eventCount": 28,
+          "summary": "재봉사 능력 보류",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-29",
+          "eventIds": [
+            "phase-29"
+          ],
+          "kind": "phase",
+          "eventCount": 29,
+          "summary": "정보 확정: night:juggler",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-30",
+          "eventIds": [
+            "phase-30"
+          ],
+          "kind": "phase",
+          "eventCount": 30,
+          "summary": "마귀할멈 임의 사망 확정 · 1명",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-31",
+          "eventIds": [
+            "phase-31"
+          ],
+          "kind": "phase",
+          "eventCount": 31,
+          "summary": "단계 확정: night:toDay",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-32",
+          "eventIds": [
+            "phase-32"
+          ],
+          "kind": "phase",
+          "eventCount": 32,
+          "summary": "밤 결과 · 사망자: 1번 플레이어 1 · 부활: 없음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-33",
+          "eventIds": [
+            "phase-33"
+          ],
+          "kind": "phase",
+          "eventCount": 33,
+          "summary": "단계 확정: day2:whisper",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-34",
+          "eventIds": [
+            "phase-34"
+          ],
+          "kind": "phase",
+          "eventCount": 34,
+          "summary": "단계 확정: day2:discussion",
+          "activeTab": "play"
+        },
+        {
+          "id": "nomination-closed-35",
+          "eventIds": [
+            "nomination-closed-35"
+          ],
+          "kind": "phase",
+          "eventCount": 35,
+          "summary": "지목 종료",
+          "activeTab": "play"
+        },
+        {
+          "id": "execution-36",
+          "eventIds": [
+            "execution-36"
+          ],
+          "kind": "phase",
+          "eventCount": 36,
+          "summary": "처형 없음 확정",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-37",
+          "eventIds": [
+            "phase-37"
+          ],
+          "kind": "phase",
+          "eventCount": 37,
+          "summary": "단계 확정: day2:toNight",
+          "activeTab": "play"
+        },
+        {
+          "id": "snake-charmer-38",
+          "eventIds": [
+            "snake-charmer-38"
+          ],
+          "kind": "phase",
+          "eventCount": 38,
+          "summary": "뱀 조련사 선택 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-39",
+          "eventIds": [
+            "phase-39"
+          ],
+          "kind": "phase",
+          "eventCount": 39,
+          "summary": "마녀 저주 지정: 14번 플레이어 14",
+          "activeTab": "seating"
+        },
+        {
+          "id": "pit-hag-40",
+          "eventIds": [
+            "pit-hag-40"
+          ],
+          "kind": "phase",
+          "eventCount": 40,
+          "summary": "마귀할멈 직업 변경 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-41",
+          "eventIds": [
+            "phase-41"
+          ],
+          "kind": "phase",
+          "eventCount": 41,
+          "summary": "쌍둥이 지정: 13번 플레이어 13 · 4번 플레이어 4",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-42",
+          "eventIds": [
+            "phase-42"
+          ],
+          "kind": "phase",
+          "eventCount": 42,
+          "summary": "10번 플레이어 10(fangGu) → 2번 플레이어 2 공격 · 사망",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-43",
+          "eventIds": [
+            "phase-43"
+          ],
+          "kind": "phase",
+          "eventCount": 43,
+          "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-44",
+          "eventIds": [
+            "phase-44"
+          ],
+          "kind": "phase",
+          "eventCount": 44,
+          "summary": "단계 확정: night2:toDay",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-45",
+          "eventIds": [
+            "phase-45"
+          ],
+          "kind": "phase",
+          "eventCount": 45,
+          "summary": "밤 결과 · 사망자: 2번 플레이어 2 · 부활: 없음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-46",
+          "eventIds": [
+            "phase-46"
+          ],
+          "kind": "phase",
+          "eventCount": 46,
+          "summary": "단계 확정: day3:whisper",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-47",
+          "eventIds": [
+            "phase-47"
+          ],
+          "kind": "phase",
+          "eventCount": 47,
+          "summary": "단계 확정: day3:discussion",
+          "activeTab": "play"
+        },
+        {
+          "id": "nomination-closed-48",
+          "eventIds": [
+            "nomination-closed-48"
+          ],
+          "kind": "phase",
+          "eventCount": 48,
+          "summary": "지목 종료",
+          "activeTab": "play"
+        },
+        {
+          "id": "execution-49",
+          "eventIds": [
+            "execution-49"
+          ],
+          "kind": "phase",
+          "eventCount": 49,
+          "summary": "처형 없음 확정",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-50",
+          "eventIds": [
+            "phase-50"
+          ],
+          "kind": "phase",
+          "eventCount": 50,
+          "summary": "단계 확정: day3:toNight",
+          "activeTab": "play"
+        },
+        {
+          "id": "snake-charmer-51",
+          "eventIds": [
+            "snake-charmer-51"
+          ],
+          "kind": "phase",
+          "eventCount": 51,
+          "summary": "뱀 조련사 선택 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-52",
+          "eventIds": [
+            "phase-52"
+          ],
+          "kind": "phase",
+          "eventCount": 52,
+          "summary": "마녀 저주 지정: 14번 플레이어 14",
+          "activeTab": "seating"
+        },
+        {
+          "id": "pit-hag-53",
+          "eventIds": [
+            "pit-hag-53"
+          ],
+          "kind": "phase",
+          "eventCount": 53,
+          "summary": "마귀할멈 직업 변경 확정",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-54",
+          "eventIds": [
+            "phase-54"
+          ],
+          "kind": "phase",
+          "eventCount": 54,
+          "summary": "10번 플레이어 10(fangGu) → 3번 플레이어 3 공격 · 사망 대상 후보 기록",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-55",
+          "eventIds": [
+            "phase-55"
+          ],
+          "kind": "phase",
+          "eventCount": 55,
+          "summary": "14번 플레이어 14(vigormortis) → 14번 플레이어 14 공격 · 사망 대상 후보 기록",
+          "activeTab": "seating"
+        },
+        {
+          "id": "phase-56",
+          "eventIds": [
+            "phase-56"
+          ],
+          "kind": "phase",
+          "eventCount": 56,
+          "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+          "activeTab": "play"
+        },
+        {
+          "id": "phase-57",
+          "eventIds": [
+            "phase-57"
+          ],
+          "kind": "phase",
+          "eventCount": 57,
+          "summary": "마귀할멈 임의 사망 확정 · 8명",
+          "activeTab": "seating"
+        },
+        {
+          "id": "barber-consequence-58",
+          "eventIds": [
+            "barber-consequence-58"
+          ],
+          "kind": "phase",
+          "eventCount": 58,
+          "summary": "이발사 직업 교환",
+          "activeTab": "seating"
+        }
+      ]
+    }
+  },
+  "game": {
+    "scriptId": "sectsAndViolets",
+    "id": "local-snv-game",
+    "name": "Sects & Violets",
+    "createdAt": "2026-07-29T23:53:13.140Z",
+    "updatedAt": "2026-07-30T00:11:37.581Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "sage",
+              "shownCharacter": "sage"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "witch",
+              "shownCharacter": "witch"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "barber",
+              "shownCharacter": "barber"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "flowergirl",
+              "shownCharacter": "flowergirl"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
+              "actualCharacter": "snakeCharmer",
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "id": "player-11",
+              "seat": 11,
+              "name": "플레이어 11",
+              "actualCharacter": "fangGu",
+              "shownCharacter": "fangGu"
+            },
+            {
+              "id": "player-12",
+              "seat": 12,
+              "name": "플레이어 12",
+              "actualCharacter": "juggler",
+              "shownCharacter": "juggler"
+            },
+            {
+              "id": "player-13",
+              "seat": 13,
+              "name": "플레이어 13",
+              "actualCharacter": "seamstress",
+              "shownCharacter": "seamstress"
+            },
+            {
+              "id": "player-14",
+              "seat": 14,
+              "name": "플레이어 14",
+              "actualCharacter": "mutant",
+              "shownCharacter": "mutant"
+            },
+            {
+              "id": "player-15",
+              "seat": 15,
+              "name": "플레이어 15",
+              "actualCharacter": "evilTwin",
+              "shownCharacter": "evilTwin"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-07-29T23:53:13.140Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:minionInfo",
+        "createdAt": "2026-07-29T23:56:31.064Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:demonInfo",
+        "createdAt": "2026-07-29T23:56:33.312Z"
+      },
+      {
+        "id": "snake-charmer-4",
+        "type": "snakeCharmerActionResolved",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:player-10",
+          "actorPlayerId": "player-10",
+          "targetPlayerId": "player-1",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "뱀 조련사 선택 확정",
+        "createdAt": "2026-07-29T23:59:14.053Z"
+      },
+      {
+        "id": "phase-5",
+        "type": "evilTwinPairAssigned",
+        "payload": {
+          "stepId": "firstNight:evilTwin",
+          "actorPlayerId": "player-15",
+          "twinPlayerId": "player-5",
+          "sourceAbilityInstanceId": "setup:player-15",
+          "actorAlignment": "evil",
+          "twinAlignment": "good"
+        },
+        "phase": "firstNight",
+        "summary": "쌍둥이 지정: 15번 플레이어 15 · 5번 플레이어 5",
+        "createdAt": "2026-07-29T23:59:16.118Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "firstNight:witch",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-5",
+          "sourceAbilityInstanceId": "setup:player-6",
+          "effective": true
+        },
+        "phase": "firstNight",
+        "summary": "마녀 저주 지정: 5번 플레이어 5",
+        "createdAt": "2026-07-29T23:59:45.875Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-2",
+              "characterId": "clockmaker"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 4
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 4
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "2번 플레이어 2(시계공)가 악마와 하수인의 거리 4칸을 확인했습니다.",
+        "createdAt": "2026-07-30T00:00:49.359Z"
+      },
+      {
+        "id": "phase-8",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "firstNight:seamstress"
+        },
+        "phase": "firstNight",
+        "summary": "재봉사 능력 보류",
+        "createdAt": "2026-07-30T00:04:27.166Z"
+      },
+      {
+        "id": "phase-9",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-07-30T00:04:29.095Z"
+      },
+      {
+        "id": "phase-10",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "createdAt": "2026-07-30T00:04:29.692Z"
+      },
+      {
+        "id": "phase-11",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-07-30T00:04:31.508Z"
+      },
+      {
+        "id": "day-action-12",
+        "type": "dayActionRecorded",
+        "payload": {
+          "dayId": "day",
+          "actorPlayerId": "player-12",
+          "characterId": "juggler",
+          "record": {
+            "kind": "juggler",
+            "correctCount": 2
+          }
+        },
+        "phase": "day",
+        "summary": "곡예사 자유 행동 기록: 12번 플레이어 12",
+        "createdAt": "2026-07-30T00:04:32.289Z"
+      },
+      {
+        "id": "phase-13",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-07-30T00:04:36.526Z"
+      },
+      {
+        "id": "nomination-started-14",
+        "type": "nominationStarted",
+        "payload": {
+          "stepId": "day:nomination:1",
+          "nominatorId": "player-1",
+          "nomineeId": "player-5",
+          "registrationJudgments": [],
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 1번 플레이어 1(화가) → 5번 플레이어 5(백치천재)",
+        "createdAt": "2026-07-30T00:05:28.563Z"
+      },
+      {
+        "id": "nomination-vote-15",
+        "type": "nominationVoteConfirmed",
+        "payload": {
+          "stepId": "day:nomination:1:vote",
+          "nominationEventId": "nomination-started-14",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-5",
+            "player-6"
+          ],
+          "ghostVoteSpentPlayerIds": []
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 1번 플레이어 1(화가) → 5번 플레이어 5(백치천재), 6표",
+        "createdAt": "2026-07-30T00:05:32.146Z"
+      },
+      {
+        "id": "nomination-started-16",
+        "type": "nominationStarted",
+        "payload": {
+          "stepId": "day:nomination:2",
+          "nominatorId": "player-5",
+          "nomineeId": "player-15",
+          "registrationJudgments": [],
+          "virginResolution": {
+            "kind": "notApplicable"
+          },
+          "witchResolution": {
+            "kind": "deathPending",
+            "curseEventId": "phase-6",
+            "witchPlayerId": "player-6",
+            "sourceAbilityInstanceId": "setup:player-6"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 5번 플레이어 5(백치천재) → 15번 플레이어 15(사악한 쌍둥이)",
+        "createdAt": "2026-07-30T00:05:33.940Z"
+      },
+      {
+        "id": "phase-17",
+        "type": "deathConfirmed",
+        "payload": {
+          "playerId": "player-5",
+          "stepId": "day:nomination:2:witchDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 5번 플레이어 5(백치천재)",
+        "createdAt": "2026-07-30T00:05:38.052Z"
+      },
+      {
+        "id": "nomination-vote-18",
+        "type": "nominationVoteConfirmed",
+        "payload": {
+          "stepId": "day:nomination:2:vote",
+          "nominationEventId": "nomination-started-16",
+          "voterIds": [
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-6",
+            "player-7",
+            "player-8",
+            "player-13",
+            "player-12"
+          ],
+          "ghostVoteSpentPlayerIds": []
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 5번 플레이어 5(백치천재) → 15번 플레이어 15(사악한 쌍둥이), 8표",
+        "createdAt": "2026-07-30T00:05:41.261Z"
+      },
+      {
+        "id": "nomination-closed-19",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:3"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-30T00:05:47.670Z"
+      },
+      {
+        "id": "execution-20",
+        "type": "executionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": true,
+            "playerId": "player-15"
+          }
+        },
+        "phase": "day",
+        "summary": "처형 확정: 15번 플레이어 15(사악한 쌍둥이)",
+        "createdAt": "2026-07-30T00:06:09.853Z"
+      },
+      {
+        "id": "execution-death-21",
+        "type": "deathConfirmed",
+        "payload": {
+          "playerId": "player-15",
+          "stepId": "day:executionDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 15번 플레이어 15(사악한 쌍둥이)",
+        "createdAt": "2026-07-30T00:06:10.364Z"
+      },
+      {
+        "id": "phase-22",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-07-30T00:06:10.370Z"
+      },
+      {
+        "id": "snake-charmer-23",
+        "type": "snakeCharmerActionResolved",
+        "payload": {
+          "stepId": "night:snakeCharmer:player-10",
+          "actorPlayerId": "player-10",
+          "targetPlayerId": "player-11",
+          "outcome": {
+            "kind": "swap",
+            "identityTransitions": [
+              {
+                "playerId": "player-10",
+                "before": {
+                  "actualCharacter": "snakeCharmer",
+                  "shownCharacter": "snakeCharmer",
+                  "alignment": "good"
+                },
+                "after": {
+                  "actualCharacter": "fangGu",
+                  "shownCharacter": "fangGu",
+                  "alignment": "evil"
+                }
+              },
+              {
+                "playerId": "player-11",
+                "before": {
+                  "actualCharacter": "fangGu",
+                  "shownCharacter": "fangGu",
+                  "alignment": "evil"
+                },
+                "after": {
+                  "actualCharacter": "snakeCharmer",
+                  "shownCharacter": "snakeCharmer",
+                  "alignment": "good"
+                }
+              }
+            ],
+            "impairment": {
+              "kind": "poisoned",
+              "playerId": "player-11",
+              "sourceEventId": "snake-charmer-23",
+              "sourceCharacterId": "snakeCharmer",
+              "expires": "never"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 교환 확정",
+        "createdAt": "2026-07-30T00:06:11.017Z"
+      },
+      {
+        "id": "phase-24",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "night:witch",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-13",
+          "sourceAbilityInstanceId": "setup:player-6",
+          "effective": true
+        },
+        "phase": "night",
+        "summary": "마녀 저주 지정: 13번 플레이어 13",
+        "createdAt": "2026-07-30T00:06:16.875Z"
+      },
+      {
+        "id": "pit-hag-25",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night:pitHag:player-4",
+          "actorPlayerId": "player-4",
+          "targetPlayerId": "player-15",
+          "characterId": "noDashii",
+          "outcome": {
+            "kind": "changed",
+            "identityTransition": {
+              "playerId": "player-15",
+              "before": {
+                "actualCharacter": "evilTwin",
+                "shownCharacter": "evilTwin",
+                "alignment": "evil"
+              },
+              "after": {
+                "actualCharacter": "noDashii",
+                "shownCharacter": "noDashii",
+                "alignment": "evil"
+              }
+            },
+            "createdDemon": true
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "createdAt": "2026-07-30T00:06:26.124Z"
+      },
+      {
+        "id": "phase-26",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:demon:player-10",
+          "actorPlayerId": "player-10",
+          "actorCharacterId": "fangGu",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-2",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "pitHagCreatedDemon"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "10번 플레이어 10(fangGu) → 2번 플레이어 2 공격 · 사망 대상 후보 기록",
+        "createdAt": "2026-07-30T00:06:49.192Z"
+      },
+      {
+        "id": "phase-27",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:flowergirl",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-9",
+              "characterId": "flowergirl"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+        "createdAt": "2026-07-30T00:06:54.148Z"
+      },
+      {
+        "id": "phase-28",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "night:seamstress"
+        },
+        "phase": "night",
+        "summary": "재봉사 능력 보류",
+        "createdAt": "2026-07-30T00:06:55.414Z"
+      },
+      {
+        "id": "phase-29",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:juggler",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-12",
+              "characterId": "juggler"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 2
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 2
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "정보 확정: night:juggler",
+        "createdAt": "2026-07-30T00:06:57.311Z"
+      },
+      {
+        "id": "phase-30",
+        "type": "pitHagArbitraryDeathsConfirmed",
+        "payload": {
+          "stepId": "night:pitHagArbitraryDeaths",
+          "sourceTransformationEventId": "pit-hag-25",
+          "deaths": [
+            {
+              "playerId": "player-1",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-25"
+              }
+            }
+          ]
+        },
+        "phase": "night",
+        "summary": "마귀할멈 임의 사망 확정 · 1명",
+        "createdAt": "2026-07-30T00:06:57.908Z"
+      },
+      {
+        "id": "phase-31",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:toDay",
+          "input": null
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:toDay",
+        "createdAt": "2026-07-30T00:07:15.453Z"
+      },
+      {
+        "id": "phase-32",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day2:announceDeaths",
+          "playerIds": [
+            "player-1"
+          ]
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 1번 플레이어 1 · 부활: 없음",
+        "createdAt": "2026-07-30T00:07:25.232Z"
+      },
+      {
+        "id": "phase-33",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:whisper",
+        "createdAt": "2026-07-30T00:07:25.775Z"
+      },
+      {
+        "id": "phase-34",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:discussion",
+        "createdAt": "2026-07-30T00:07:26.261Z"
+      },
+      {
+        "id": "nomination-closed-35",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day2:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-30T00:07:26.713Z"
+      },
+      {
+        "id": "execution-36",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day2:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-07-30T00:07:27.276Z"
+      },
+      {
+        "id": "phase-37",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day2:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:toNight",
+        "createdAt": "2026-07-30T00:07:27.812Z"
+      },
+      {
+        "id": "snake-charmer-38",
+        "type": "snakeCharmerActionResolved",
+        "payload": {
+          "stepId": "night2:snakeCharmer:player-11",
+          "actorPlayerId": "player-11",
+          "targetPlayerId": "player-2",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          }
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 선택 확정",
+        "createdAt": "2026-07-30T00:07:28.362Z"
+      },
+      {
+        "id": "phase-39",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "night2:witch",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-14",
+          "sourceAbilityInstanceId": "setup:player-6",
+          "effective": true
+        },
+        "phase": "night",
+        "summary": "마녀 저주 지정: 14번 플레이어 14",
+        "createdAt": "2026-07-30T00:07:31.870Z"
+      },
+      {
+        "id": "pit-hag-40",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night2:pitHag:player-4",
+          "actorPlayerId": "player-4",
+          "targetPlayerId": "player-13",
+          "characterId": "evilTwin",
+          "outcome": {
+            "kind": "changed",
+            "identityTransition": {
+              "playerId": "player-13",
+              "before": {
+                "actualCharacter": "seamstress",
+                "shownCharacter": "seamstress",
+                "alignment": "good"
+              },
+              "after": {
+                "actualCharacter": "evilTwin",
+                "shownCharacter": "evilTwin",
+                "alignment": "good"
+              }
+            },
+            "createdDemon": false
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "createdAt": "2026-07-30T00:10:10.702Z"
+      },
+      {
+        "id": "phase-41",
+        "type": "evilTwinPairAssigned",
+        "payload": {
+          "stepId": "night2:ability:pit-hag-40:player-13:evilTwin",
+          "actorPlayerId": "player-13",
+          "twinPlayerId": "player-4",
+          "sourceAbilityInstanceId": "pit-hag-40:player-13",
+          "actorAlignment": "good",
+          "twinAlignment": "evil"
+        },
+        "phase": "night",
+        "summary": "쌍둥이 지정: 13번 플레이어 13 · 4번 플레이어 4",
+        "createdAt": "2026-07-30T00:10:17.504Z"
+      },
+      {
+        "id": "phase-42",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night2:demon:player-10",
+          "actorPlayerId": "player-10",
+          "actorCharacterId": "fangGu",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-2",
+            "outcome": {
+              "kind": "deaths",
+              "deaths": [
+                {
+                  "playerId": "player-2",
+                  "cause": {
+                    "kind": "demonAttack",
+                    "actorPlayerId": "player-10",
+                    "actorCharacterId": "fangGu",
+                    "targetPlayerId": "player-2"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "10번 플레이어 10(fangGu) → 2번 플레이어 2 공격 · 사망",
+        "createdAt": "2026-07-30T00:10:47.748Z"
+      },
+      {
+        "id": "phase-43",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night2:flowergirl",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-9",
+              "characterId": "flowergirl"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+        "createdAt": "2026-07-30T00:10:52.611Z"
+      },
+      {
+        "id": "phase-44",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night2:toDay",
+          "input": null
+        },
+        "phase": "night",
+        "summary": "단계 확정: night2:toDay",
+        "createdAt": "2026-07-30T00:10:53.811Z"
+      },
+      {
+        "id": "phase-45",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day3:announceDeaths",
+          "playerIds": [
+            "player-2"
+          ]
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 2번 플레이어 2 · 부활: 없음",
+        "createdAt": "2026-07-30T00:10:55.542Z"
+      },
+      {
+        "id": "phase-46",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day3:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:whisper",
+        "createdAt": "2026-07-30T00:10:56.116Z"
+      },
+      {
+        "id": "phase-47",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day3:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:discussion",
+        "createdAt": "2026-07-30T00:10:56.622Z"
+      },
+      {
+        "id": "nomination-closed-48",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day3:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-07-30T00:10:57.040Z"
+      },
+      {
+        "id": "execution-49",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day3:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-07-30T00:10:57.488Z"
+      },
+      {
+        "id": "phase-50",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day3:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:toNight",
+        "createdAt": "2026-07-30T00:10:57.920Z"
+      },
+      {
+        "id": "snake-charmer-51",
+        "type": "snakeCharmerActionResolved",
+        "payload": {
+          "stepId": "night3:snakeCharmer:player-11",
+          "actorPlayerId": "player-11",
+          "targetPlayerId": "player-3",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          }
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 선택 확정",
+        "createdAt": "2026-07-30T00:10:58.388Z"
+      },
+      {
+        "id": "phase-52",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "night3:witch",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-14",
+          "sourceAbilityInstanceId": "setup:player-6",
+          "effective": true
+        },
+        "phase": "night",
+        "summary": "마녀 저주 지정: 14번 플레이어 14",
+        "createdAt": "2026-07-30T00:10:59.914Z"
+      },
+      {
+        "id": "pit-hag-53",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night3:pitHag:player-4",
+          "actorPlayerId": "player-4",
+          "targetPlayerId": "player-14",
+          "characterId": "vigormortis",
+          "outcome": {
+            "kind": "changed",
+            "identityTransition": {
+              "playerId": "player-14",
+              "before": {
+                "actualCharacter": "mutant",
+                "shownCharacter": "mutant",
+                "alignment": "good"
+              },
+              "after": {
+                "actualCharacter": "vigormortis",
+                "shownCharacter": "vigormortis",
+                "alignment": "good"
+              }
+            },
+            "createdDemon": true
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "createdAt": "2026-07-30T00:11:03.715Z"
+      },
+      {
+        "id": "phase-54",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night3:demon:player-10",
+          "actorPlayerId": "player-10",
+          "actorCharacterId": "fangGu",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-3",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "pitHagCreatedDemon"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "10번 플레이어 10(fangGu) → 3번 플레이어 3 공격 · 사망 대상 후보 기록",
+        "createdAt": "2026-07-30T00:11:09.291Z"
+      },
+      {
+        "id": "phase-55",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night3:demon:player-14",
+          "actorPlayerId": "player-14",
+          "actorCharacterId": "vigormortis",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-14",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "pitHagCreatedDemon"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "14번 플레이어 14(vigormortis) → 14번 플레이어 14 공격 · 사망 대상 후보 기록",
+        "createdAt": "2026-07-30T00:11:12.901Z"
+      },
+      {
+        "id": "phase-56",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night3:flowergirl",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-9",
+              "characterId": "flowergirl"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "9번 플레이어 9(꽃팔이 소녀)가 오늘 악마의 투표를 확인했습니다: 투표하지 않음",
+        "createdAt": "2026-07-30T00:11:14.913Z"
+      },
+      {
+        "id": "phase-57",
+        "type": "pitHagArbitraryDeathsConfirmed",
+        "payload": {
+          "stepId": "night3:pitHagArbitraryDeaths",
+          "sourceTransformationEventId": "pit-hag-53",
+          "deaths": [
+            {
+              "playerId": "player-14",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-13",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-3",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-4",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-12",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-7",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-11",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            },
+            {
+              "playerId": "player-8",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-4",
+                "sourceTransformationEventId": "pit-hag-53"
+              }
+            }
+          ]
+        },
+        "phase": "night",
+        "summary": "마귀할멈 임의 사망 확정 · 8명",
+        "createdAt": "2026-07-30T00:11:15.929Z"
+      },
+      {
+        "id": "barber-consequence-58",
+        "type": "barberConsequenceResolved",
+        "payload": {
+          "stepId": "night3:barber",
+          "trigger": {
+            "sourceEventId": "phase-57",
+            "deathSequence": 6,
+            "playerId": "player-7",
+            "sourceAbilityInstanceId": "setup:player-7"
+          },
+          "chooserDemonPlayerId": "player-10",
+          "decision": {
+            "kind": "swap",
+            "playerIds": [
+              "player-6",
+              "player-9"
+            ]
+          },
+          "outcome": {
+            "kind": "swapped",
+            "identityTransitions": [
+              {
+                "playerId": "player-6",
+                "before": {
+                  "actualCharacter": "witch",
+                  "shownCharacter": "witch",
+                  "alignment": "evil"
+                },
+                "after": {
+                  "actualCharacter": "flowergirl",
+                  "shownCharacter": "flowergirl",
+                  "alignment": "evil"
+                }
+              },
+              {
+                "playerId": "player-9",
+                "before": {
+                  "actualCharacter": "flowergirl",
+                  "shownCharacter": "flowergirl",
+                  "alignment": "good"
+                },
+                "after": {
+                  "actualCharacter": "witch",
+                  "shownCharacter": "witch",
+                  "alignment": "good"
+                }
+              }
+            ]
+          }
+        },
+        "phase": "night",
+        "summary": "이발사 직업 교환",
+        "createdAt": "2026-07-30T00:11:29.578Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-07-30T00:11:49.479Z"
+}

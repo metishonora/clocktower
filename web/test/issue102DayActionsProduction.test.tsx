@@ -170,6 +170,14 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
       },
     };
   }
+  if (step.requiredInput.kind === "playerIds") {
+    const target = step.requiredInput.allowedPlayerIds?.[0];
+    if (!target) throw new Error(`expected a target for ${step.character ?? step.id}`);
+    return {
+      type: "confirmStep",
+      payload: { stepId: step.id, input: { playerIds: [target] } },
+    };
+  }
   if (step.informationPrompt?.deliveryMode === "selectable") {
     const numberChoice = step.informationPrompt.numberChoices[0];
     if (numberChoice) {

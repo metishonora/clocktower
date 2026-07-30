@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    contracts::{GameEvent, GameEventKind, VirginResolution},
+    contracts::{GameEvent, GameEventKind, VirginResolution, WitchNominationResolution},
     error::{CoreError, ErrorKind},
     model::{
         ActiveNomination, ConfirmedExecution, DayState, ExecutionCandidate, ExecutionStanding,
@@ -66,6 +66,14 @@ pub(crate) fn day_steps(
                         RequiredInputKind::Night,
                     ));
                     return steps;
+                }
+                if let Some(nominator_id) = witch_death_nominator(events, &nomination_id) {
+                    let death_step = witch_death_step(&nomination_id, nominator_id);
+                    let death_done = step_status(&death_step.id, statuses).is_done();
+                    steps.push(death_step);
+                    if !death_done {
+                        break;
+                    }
                 }
                 if legacy_nomination_complete(events, &nomination_id) {
                     nomination_number += 1;
@@ -174,6 +182,36 @@ pub(crate) fn day_steps(
         RequiredInputKind::Night,
     ));
     steps
+}
+
+fn witch_death_nominator(events: &[GameEvent], nomination_step_id: &str) -> Option<String> {
+    events.iter().find_map(|event| match &event.kind {
+        GameEventKind::NominationStarted { payload }
+            if payload.step_id == nomination_step_id
+                && matches!(
+                    payload.witch_resolution,
+                    WitchNominationResolution::DeathPending { .. }
+                ) =>
+        {
+            Some(payload.nominator_id.clone())
+        }
+        _ => None,
+    })
+}
+
+fn witch_death_step(nomination_step_id: &str, nominator_id: String) -> PhaseStep {
+    PhaseStep {
+        id: format!("{nomination_step_id}:witchDeath"),
+        phase: Phase::Day,
+        step_type: StepType::WitchDeath,
+        character: Some("witch".into()),
+        player_id: Some(nominator_id),
+        required_input: required_none(),
+        can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
+        information_prompt: None,
+        pre_action_reveal: None,
+    }
 }
 
 pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseStep {

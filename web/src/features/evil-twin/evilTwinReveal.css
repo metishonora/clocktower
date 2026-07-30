@@ -1,0 +1,22 @@
+.snvInformationReveal.evilTwinReveal { width: min(720px, 100%); }
+.evilTwinReveal > p { font-size: .95rem; }
+.evilTwinRevealPair { display: grid; width: 100%; margin-top: 28px; align-items: center; grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr); gap: 14px; }
+.evilTwinRevealPair > b { color: #d7bd72; font: 700 1.5rem Georgia, serif; }
+.evilTwinRevealIdentity { position: relative; display: grid; min-width: 0; min-height: 210px; padding: 18px; align-content: center; justify-items: center; gap: 7px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 20px; background: rgba(255, 255, 255, .04); }
+.evilTwinRevealIdentity.alignment-good { background: radial-gradient(circle at 50% 42%, rgba(69, 151, 190, .2), rgba(255, 255, 255, .035) 72%); }
+.evilTwinRevealIdentity.alignment-evil { background: radial-gradient(circle at 50% 42%, rgba(190, 66, 90, .2), rgba(255, 255, 255, .035) 72%); }
+.evilTwinRevealIdentity > span { color: #cdbed1; font-size: .68rem; font-weight: 850; }
+.evilTwinRevealIdentity > img { width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .4)); }
+.evilTwinRevealIdentity > strong { font: 700 1.15rem Georgia, serif; }
+.evilTwinRevealIdentity > small { position: absolute; top: 13px; right: 13px; display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: #e8d8ec; font-weight: 900; }
+.evilTwinRevealPromptPlayers { display: grid; width: 100%; gap: 7px; }
+.evilTwinRevealPromptPlayers > span { display: block; min-height: 40px; padding: 10px 11px; border: 1px solid rgba(238, 217, 153, .2); border-radius: 12px; color: #f7e9bd; background: rgba(255, 255, 255, .045); font-size: .76rem; font-weight: 850; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .evilTwinReveal { padding-right: 18px; padding-left: 18px; }
+  .evilTwinRevealPair { gap: 7px; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); }
+  .evilTwinRevealIdentity { min-height: 180px; padding: 13px 7px; }
+  .evilTwinRevealIdentity > img { width: min(82px, 22vw); height: min(82px, 22vw); }
+  .evilTwinRevealIdentity > strong { font-size: .95rem; }
+  .evilTwinRevealIdentity > span { font-size: .58rem; }
+  .evilTwinRevealIdentity > small { top: 8px; right: 8px; width: 25px; height: 25px; font-size: .68rem; }
+}

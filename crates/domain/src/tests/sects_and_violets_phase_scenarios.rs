@@ -162,6 +162,11 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
             "type": "confirmStep",
             "payload": { "stepId": step["id"], "input": { "playerIds": ["player-6"] } }
         })
+    } else if step["character"] == "witch" {
+        json!({
+            "type": "confirmStep",
+            "payload": { "stepId": step["id"], "input": { "playerIds": ["player-7"] } }
+        })
     } else if step["character"] == "seamstress" {
         json!({ "type": "skipStep", "payload": { "stepId": step["id"] } })
     } else if step["support"] == "manual" {

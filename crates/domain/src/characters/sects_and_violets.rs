@@ -8,27 +8,30 @@ use std::cell::Cell;
 
 use crate::{
     contracts::{
-        ActiveImpairment, ArtistAnswer, AutomaticReminder, AvailableDayAction,
+        ActiveImpairment, ActiveWitchCurse, ArtistAnswer, AutomaticReminder, AvailableDayAction,
         BarberConsequenceOutcome, BarberConsequenceResolvedPayload, BarberDecision, Command,
         ConfirmedDayActionRecord, DayActionRecord, DayActionRecordedPayload, DeathConsequenceKind,
-        DeathConsequenceNoEffectReason, DeathTriggerRef, DemonAttackNoEffectReason,
-        DemonAttackOutcome, EndGameCommandPayload, ExecuteMadnessCommandPayload, GameEndSource,
-        GameEndState, GameEndedPayload, GameEvent, GameEventKind, GameFile, ImpairmentExpiry,
-        ImpairmentKind, KlutzChoiceOutcome, KlutzChoiceResolvedPayload, MadnessAssignedPayload,
-        MadnessAssignmentState, MadnessCheckRecordedPayload, MadnessCheckResult,
-        MadnessExecutionConfirmedPayload, MadnessStatus, ManualPhaseStepOutcome,
-        ManualPhaseStepResolvedPayload, NightActionResolution, NightActionResolvedPayload,
-        NightDeath, NightDeathCause, NightDeathsAnnouncedPayload, PendingDeathConsequence,
-        PendingForcedGameEnd, PendingIdentityReveal, PendingMadnessExecution,
-        PendingVigormortisPoisonChoice, PhaseStepEventPayload,
-        PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason, PitHagTransformationOutcome,
-        PitHagTransformationResolvedPayload, Proposal, RecordDayActionCommandPayload,
-        RecordMadnessCheckCommandPayload, ReplayState, ResolveBarberConsequenceCommandPayload,
-        ResolveKlutzConsequenceCommandPayload, ResolveSweetheartConsequenceCommandPayload,
-        ResolveVigormortisPoisonCommandPayload, RevealPayload, RuleState,
-        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
-        SweetheartConsequenceOutcome, SweetheartConsequenceResolvedPayload, VigormortisEffect,
-        VigormortisPoisonInvalidReason, VigormortisPoisonTargetChangedPayload,
+        DeathConsequenceNoEffectReason, DeathEventPayload, DeathTriggerRef,
+        DemonAttackNoEffectReason, DemonAttackOutcome, EndGameCommandPayload,
+        EvilTwinPairAssignedPayload, EvilTwinRelationship, EvilTwinRevealPlayer,
+        ExecuteMadnessCommandPayload, GameEndSource, GameEndState, GameEndedPayload, GameEvent,
+        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, KlutzChoiceOutcome,
+        KlutzChoiceResolvedPayload, MadnessAssignedPayload, MadnessAssignmentState,
+        MadnessCheckRecordedPayload, MadnessCheckResult, MadnessExecutionConfirmedPayload,
+        MadnessStatus, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
+        NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
+        NightDeathsAnnouncedPayload, PendingDeathConsequence, PendingForcedGameEnd,
+        PendingIdentityReveal, PendingMadnessExecution, PendingVigormortisPoisonChoice,
+        PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason,
+        PitHagTransformationOutcome, PitHagTransformationResolvedPayload, Proposal,
+        RecordDayActionCommandPayload, RecordMadnessCheckCommandPayload, ReplayState,
+        ResolveBarberConsequenceCommandPayload, ResolveKlutzConsequenceCommandPayload,
+        ResolveSweetheartConsequenceCommandPayload, ResolveVigormortisPoisonCommandPayload,
+        RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
+        SnakeCharmerNoSwapReason, SweetheartConsequenceOutcome,
+        SweetheartConsequenceResolvedPayload, VigormortisEffect, VigormortisPoisonInvalidReason,
+        VigormortisPoisonTargetChangedPayload, WitchCurseAssignedPayload,
+        WitchNominationResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -393,8 +396,8 @@ impl SnvCharacterId {
                 kind: CharacterKind::Minion,
                 first_night_rank: Some(4),
                 later_night_rank: None,
-                input: NoInput,
-                support: manual,
+                input: OnePlayer,
+                support: automated,
                 activity: WhileActive,
                 once_per_ability_instance: false,
                 same_night_acquisition: StartKnowingImmediately,
@@ -403,8 +406,8 @@ impl SnvCharacterId {
                 kind: CharacterKind::Minion,
                 first_night_rank: Some(5),
                 later_night_rank: Some(2),
-                input: NoInput,
-                support: manual,
+                input: OnePlayer,
+                support: automated,
                 activity: WhileActive,
                 once_per_ability_instance: false,
                 same_night_acquisition: WakeIfOrderPending,
@@ -1030,6 +1033,8 @@ fn character_step(
                 1
             };
             let vigormortis = character_id == SnvCharacterId::Vigormortis;
+            let evil_twin = character_id == SnvCharacterId::EvilTwin;
+            let witch = character_id == SnvCharacterId::Witch;
             RequiredInput {
                 kind: RequiredInputKind::PlayerIds,
                 target: Some(InputTarget::Player),
@@ -1042,7 +1047,11 @@ fn character_step(
                     players
                         .iter()
                         .filter(|candidate| {
-                            snake_charmer && candidate.alive
+                            witch
+                                || evil_twin
+                                    && candidate.id != player.id
+                                    && candidate.alignment != player.alignment
+                                || snake_charmer && candidate.alive
                                 || targeted_information && candidate.id != player.id
                                 || metadata.kind == CharacterKind::Demon
                         })
@@ -1138,6 +1147,19 @@ fn transition_source<'a>(
             if event.id == player.ability_instance.source_event_id =>
         {
             Some((event, payload.step_id.as_str(), "pitHag"))
+        }
+        GameEventKind::BarberConsequenceResolved { payload }
+            if event.id == player.ability_instance.source_event_id
+                && matches!(
+                    &payload.outcome,
+                    BarberConsequenceOutcome::Swapped {
+                        identity_transitions
+                    } if identity_transitions
+                        .iter()
+                        .any(|transition| transition.player_id == player.id)
+                ) =>
+        {
+            Some((event, payload.step_id.as_str(), "barber"))
         }
         GameEventKind::NightActionResolved { payload }
             if event.id == player.ability_instance.source_event_id =>
@@ -1272,6 +1294,9 @@ fn insert_acquired_ability_steps(
 
     for (player, event, source_step_id, source_character) in acquisitions {
         let character = player.actual_character.as_str();
+        if character == "witch" && players.iter().filter(|player| player.alive).count() == 3 {
+            continue;
+        }
         if !acquired_ability_is_available(player, character, prefix, &ability_state, events) {
             continue;
         }
@@ -1351,6 +1376,57 @@ fn insert_acquired_ability_steps(
             })
         }
         .unwrap_or(steps.len());
+        steps.insert(insert_at, step);
+    }
+}
+
+fn insert_evil_twin_repair_steps(
+    steps: &mut Vec<PhaseStep>,
+    phase: Phase,
+    prefix: &str,
+    players: &[Player],
+    events: &[GameEvent],
+) {
+    let ability_state = SnvAbilityState::build(players, events);
+    let mut latest =
+        HashMap::<AbilityInstanceId, (&GameEvent, &EvilTwinPairAssignedPayload)>::new();
+    for event in events {
+        if let GameEventKind::EvilTwinPairAssigned { payload } = &event.kind {
+            latest.insert(payload.source_ability_instance_id.clone(), (event, payload));
+        }
+    }
+    let mut repairs = latest
+        .into_values()
+        .filter_map(|(pair_event, pair)| {
+            let actor = players.iter().find(|player| {
+                player.id == pair.actor_player_id
+                    && player.actual_character == "evilTwin"
+                    && player.ability_instance.id == pair.source_ability_instance_id
+                    && player.alive
+                    && !ability_state.is_impaired(&player.id)
+            })?;
+            let twin = players
+                .iter()
+                .find(|player| player.id == pair.twin_player_id)?;
+            let has_opposing_candidate = players.iter().any(|candidate| {
+                candidate.id != actor.id && candidate.alignment != actor.alignment
+            });
+            (actor.alignment == twin.alignment && has_opposing_candidate).then(|| {
+                let mut step = character_step(phase, prefix, "evilTwin", actor, players);
+                step.id = format!("{prefix}:ability:{}:{}:evilTwin", pair_event.id, actor.id);
+                (actor.seat, step)
+            })
+        })
+        .collect::<Vec<_>>();
+    repairs.sort_by_key(|(seat, _)| *seat);
+    for (_, step) in repairs {
+        let insert_at = steps
+            .iter()
+            .position(|candidate| {
+                SnvStepKey::parse(&candidate.id)
+                    .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
+            })
+            .unwrap_or(steps.len());
         steps.insert(insert_at, step);
     }
 }
@@ -1522,6 +1598,8 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
                     && ability_state.has_active_ability(player)
+                    && (character != "witch"
+                        || players.iter().filter(|candidate| candidate.alive).count() != 3)
                     && (character != "snakeCharmer"
                         || !became_snake_charmer_from_swap_in_phase(&player.id, &prefix, events))
             })
@@ -1596,6 +1674,7 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
         crate::model::RequiredInputKind::Day,
     ));
     insert_acquired_ability_steps(&mut steps, Phase::Night, &prefix, players, events);
+    insert_evil_twin_repair_steps(&mut steps, Phase::Night, &prefix, players, events);
     if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
         let insert_at = steps
             .iter()
@@ -3491,7 +3570,10 @@ impl SnvAbilityState {
     }
 }
 
-fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> {
+fn pending_identity_reveals(
+    events: &[GameEvent],
+    players: &[Player],
+) -> Vec<PendingIdentityReveal> {
     let Some(event) = events.last() else {
         return vec![];
     };
@@ -3516,6 +3598,37 @@ fn pending_identity_reveals(events: &[GameEvent]) -> Vec<PendingIdentityReveal> 
             }],
             _ => vec![],
         },
+        GameEventKind::EvilTwinPairAssigned { payload } => {
+            let Some(actor) = players
+                .iter()
+                .find(|player| player.id == payload.actor_player_id)
+            else {
+                return vec![];
+            };
+            let Some(twin) = players
+                .iter()
+                .find(|player| player.id == payload.twin_player_id)
+            else {
+                return vec![];
+            };
+            vec![PendingIdentityReveal {
+                source_event_id: event.id.clone(),
+                sequence: 1,
+                payload: RevealPayload::EvilTwinPair {
+                    kind: "evilTwinPair",
+                    players: [actor, twin]
+                        .into_iter()
+                        .map(|player| EvilTwinRevealPlayer {
+                            player_id: player.id.clone(),
+                            seat: player.seat,
+                            name: player.name.clone(),
+                            alignment: player.alignment,
+                            character_id: player.shown_character.clone(),
+                        })
+                        .collect(),
+                },
+            }]
+        }
         GameEventKind::MadnessAssigned { payload } => vec![PendingIdentityReveal {
             source_event_id: event.id.clone(),
             sequence: 1,
@@ -3909,23 +4022,112 @@ fn same_phase_cycle_as_step(event: &GameEvent, step: &PhaseStep) -> bool {
     }
 }
 
-fn pending_forced_game_end(events: &[GameEvent]) -> Option<PendingForcedGameEnd> {
+fn pending_forced_game_end(
+    events: &[GameEvent],
+    players: &[Player],
+) -> Option<PendingForcedGameEnd> {
     if events
         .iter()
         .any(|event| matches!(event.kind, GameEventKind::GameEnded { .. }))
     {
         return None;
     }
-    events.iter().rev().find_map(|event| match &event.kind {
-        GameEventKind::KlutzChoiceResolved { payload } => match payload.outcome {
-            KlutzChoiceOutcome::TeamLost { winning_team, .. } => Some(PendingForcedGameEnd {
+    events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(event_index, event)| match &event.kind {
+            GameEventKind::KlutzChoiceResolved { payload } => match payload.outcome {
+                KlutzChoiceOutcome::TeamLost { winning_team, .. } => Some(PendingForcedGameEnd {
+                    source_event_id: event.id.clone(),
+                    winning_team,
+                }),
+                KlutzChoiceOutcome::Safe | KlutzChoiceOutcome::ActorImpaired => None,
+            },
+            GameEventKind::DeathConfirmed { payload }
+                if payload
+                    .step_id
+                    .as_deref()
+                    .is_some_and(|step| step.ends_with(":witchDeath"))
+                    && players.iter().filter(|player| player.alive).count() <= 2 =>
+            {
+                Some(PendingForcedGameEnd {
+                    source_event_id: event.id.clone(),
+                    winning_team: Alignment::Evil,
+                })
+            }
+            GameEventKind::DeathConfirmed { payload }
+                if payload
+                    .step_id
+                    .as_deref()
+                    .is_some_and(|step| step.ends_with(":executionDeath")) =>
+            {
+                let executed = players
+                    .iter()
+                    .find(|player| player.id == payload.player_id)?;
+                if executed.alignment != Alignment::Good {
+                    return None;
+                }
+                events[..event_index].iter().rev().find_map(|pair_event| {
+                    let GameEventKind::EvilTwinPairAssigned { payload: pair } = &pair_event.kind
+                    else {
+                        return None;
+                    };
+                    let actor = players.iter().find(|player| {
+                        player.id == pair.actor_player_id
+                            && player.actual_character == "evilTwin"
+                            && player.ability_instance.id == pair.source_ability_instance_id
+                    })?;
+                    let twin = players
+                        .iter()
+                        .find(|player| player.id == pair.twin_player_id)?;
+                    let actor_was_alive = actor.alive || actor.id == executed.id;
+                    (actor_was_alive
+                        && actor.alignment != twin.alignment
+                        && (actor.id == executed.id || twin.id == executed.id))
+                        .then(|| PendingForcedGameEnd {
+                            source_event_id: event.id.clone(),
+                            winning_team: Alignment::Evil,
+                        })
+                })
+            }
+            _ => None,
+        })
+}
+
+fn forced_game_end_source(
+    events: &[GameEvent],
+    pending: &PendingForcedGameEnd,
+) -> Option<GameEndSource> {
+    let event = events
+        .iter()
+        .find(|event| event.id == pending.source_event_id)?;
+    match &event.kind {
+        GameEventKind::KlutzChoiceResolved { .. } => Some(GameEndSource::KlutzChoice {
+            source_event_id: event.id.clone(),
+        }),
+        GameEventKind::DeathConfirmed { payload }
+            if payload
+                .step_id
+                .as_deref()
+                .is_some_and(|step| step.ends_with(":witchDeath")) =>
+        {
+            Some(GameEndSource::WitchCurseDeath {
                 source_event_id: event.id.clone(),
-                winning_team,
-            }),
-            KlutzChoiceOutcome::Safe | KlutzChoiceOutcome::ActorImpaired => None,
-        },
+            })
+        }
+        GameEventKind::DeathConfirmed { payload }
+            if payload
+                .step_id
+                .as_deref()
+                .is_some_and(|step| step.ends_with(":executionDeath")) =>
+        {
+            Some(GameEndSource::EvilTwinExecution {
+                source_event_id: event.id.clone(),
+            })
+        }
         _ => None,
-    })
+    }
 }
 
 struct SnvReplayContext {
@@ -4313,6 +4515,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             GameEventKind::MadnessAssigned { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
+            GameEventKind::WitchCurseAssigned { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
+            GameEventKind::EvilTwinPairAssigned { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
             GameEventKind::NominationStarted { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
             }
@@ -4442,6 +4650,10 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && current.character.as_deref() == Some("pitHag")
                 && legacy_player_scoped_step;
+        let legacy_manual_witch_or_evil_twin =
+            matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
+                && matches!(current.character.as_deref(), Some("witch" | "evilTwin"))
+                && (legacy_player_scoped_step || current.id == *event_step_id);
         let legacy_manual_information =
             matches!(&event.kind, GameEventKind::ManualPhaseStepResolved { .. })
                 && is_information_character(current.character.as_deref());
@@ -4486,6 +4698,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 if legacy_manual_demon
                     || legacy_manual_snake_charmer
                     || legacy_manual_pit_hag
+                    || legacy_manual_witch_or_evil_twin
                     || legacy_manual_information => {}
             (GameEventKind::NightActionResolved { payload }, PhaseStepSupport::Automated)
                 if current.character.as_deref().is_some_and(is_demon)
@@ -4576,6 +4789,56 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 )
                 .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
             }
+            (GameEventKind::WitchCurseAssigned { payload }, PhaseStepSupport::Automated)
+                if current.character.as_deref() == Some("witch")
+                    && current.player_id.as_deref() == Some(payload.actor_player_id.as_str()) =>
+            {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(vec![payload.target_player_id.clone()]),
+                        ..Default::default()
+                    }),
+                    players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                let actor = players_at_event
+                    .iter()
+                    .find(|player| player.id == payload.actor_player_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                if actor.ability_instance.id != payload.source_ability_instance_id {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
+            (GameEventKind::EvilTwinPairAssigned { payload }, PhaseStepSupport::Automated)
+                if current.character.as_deref() == Some("evilTwin")
+                    && current.player_id.as_deref() == Some(payload.actor_player_id.as_str()) =>
+            {
+                validate_required_input(
+                    &current.required_input,
+                    &Some(crate::model::StepInputFields {
+                        player_ids: Some(vec![payload.twin_player_id.clone()]),
+                        ..Default::default()
+                    }),
+                    players_at_event,
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                let actor = players_at_event
+                    .iter()
+                    .find(|player| player.id == payload.actor_player_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                let twin = players_at_event
+                    .iter()
+                    .find(|player| player.id == payload.twin_player_id)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+                if actor.ability_instance.id != payload.source_ability_instance_id
+                    || actor.alignment != payload.actor_alignment
+                    || twin.alignment != payload.twin_alignment
+                    || actor.alignment == twin.alignment
+                {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
             (GameEventKind::NightDeathsAnnounced { .. }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::Announcement => {}
             (GameEventKind::NominationStarted { payload }, PhaseStepSupport::Automated)
@@ -4590,6 +4853,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     &payload.nominee_id,
                 )
                 .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                let expected_witch = witch_nomination_resolution(
+                    &payload.step_id,
+                    &payload.nominator_id,
+                    players_at_event,
+                    &events[..event_index],
+                );
+                if payload.witch_resolution != expected_witch {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
             }
             (GameEventKind::NominationVoteConfirmed { payload }, PhaseStepSupport::Automated)
                 if current.required_input.kind == RequiredInputKind::NominationVote =>
@@ -4621,6 +4893,9 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     && payload.input.player_id.is_none() => {}
             (GameEventKind::DeathConfirmed { payload }, PhaseStepSupport::Automated)
                 if current.step_type == StepType::ExecutionDeath
+                    && current.player_id.as_deref() == Some(payload.player_id.as_str()) => {}
+            (GameEventKind::DeathConfirmed { payload }, PhaseStepSupport::Automated)
+                if current.step_type == StepType::WitchDeath
                     && current.player_id.as_deref() == Some(payload.player_id.as_str()) => {}
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         }
@@ -5028,6 +5303,16 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     } else {
         None
     };
+    let ability_state = SnvAbilityState::build(&players, active_events);
+    let active_witch_curse = active_witch_curse(
+        phase,
+        current_step.as_ref(),
+        &players,
+        active_events,
+        &ability_state,
+    );
+    let evil_twin_relationships =
+        active_evil_twin_relationships(&players, active_events, &ability_state);
     let unannounced_night_death_player_ids = unannounced_night_death_player_ids(active_events);
     let unannounced_night_resurrection_player_ids =
         unannounced_night_resurrection_player_ids(active_events);
@@ -5040,6 +5325,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         });
     }
     if !players.is_empty()
+        && !living_evil_twin_pair(&players, &evil_twin_relationships)
         && !players.iter().any(|player| {
             player.alive && character_kind(&player.actual_character) == Some(CharacterKind::Demon)
         })
@@ -5059,7 +5345,6 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             winning_team: Some(Alignment::Evil),
         });
     }
-    let ability_state = SnvAbilityState::build(&players, active_events);
     let active_impairments = ability_state.active_impairments.clone();
     let pending_vigormortis_poison_choices =
         ability_state.pending_vigormortis_poison_choices.clone();
@@ -5067,14 +5352,34 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
+    if let Some(curse) = active_witch_curse.as_ref() {
+        automatic_reminders.push(AutomaticReminder {
+            player_id: curse.target_player_id.clone(),
+            character_id: "witch".into(),
+            token_id: "cursed".into(),
+            label: "저주".into(),
+            description: "다음 낮 지명하면 사망합니다.".into(),
+        });
+    }
+    for relationship in &evil_twin_relationships {
+        automatic_reminders.push(AutomaticReminder {
+            player_id: relationship.twin_player_id.clone(),
+            character_id: "evilTwin".into(),
+            token_id: "twin".into(),
+            label: "쌍둥이".into(),
+            description: "사악한 쌍둥이와 연결되어 있습니다.".into(),
+        });
+    }
     let rule_state = RuleState {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
         active_impairments: Some(active_impairments),
         automatic_reminders,
+        active_witch_curse,
+        evil_twin_relationships,
         ..RuleState::default()
     };
-    let pending_identity_reveals = pending_identity_reveals(active_events);
+    let pending_identity_reveals = pending_identity_reveals(active_events, &players);
     let pending_death_consequences = if !ended_positions.is_empty() {
         vec![]
     } else {
@@ -5085,7 +5390,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             current_step.as_ref(),
         )
     };
-    let forced_game_end = pending_forced_game_end(events);
+    let forced_game_end = pending_forced_game_end(events, &players);
     let available_day_actions =
         available_day_actions(phase, current_step.as_ref(), &players, active_events);
     let day_action_records = confirmed_day_action_records(active_events);
@@ -5111,10 +5416,10 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             if event.phase != phase {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            match (&payload.source, pending_forced_game_end(active_events)) {
-                (None, None) => {}
-                (Some(GameEndSource::KlutzChoice { source_event_id }), Some(forced))
-                    if *source_event_id == forced.source_event_id
+            match pending_forced_game_end(active_events, &players) {
+                None if payload.source.is_none() => {}
+                Some(forced)
+                    if payload.source == forced_game_end_source(active_events, &forced)
                         && payload.winning_team == forced.winning_team => {}
                 _ => return Err(ErrorKind::ReplayFailed.into_error()),
             }
@@ -5172,17 +5477,17 @@ pub(crate) fn propose_phase_command(
         death_triggers,
         ..
     } = replay_context(&game_file.game.events)?;
-    if let Some(forced) = pending_forced_game_end(&game_file.game.events) {
+    if let Some(forced) = pending_forced_game_end(&game_file.game.events, &players) {
         return match command {
             Command::EndGame { payload } if payload.winning_team == forced.winning_team => {
+                let source = forced_game_end_source(&game_file.game.events, &forced)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                 propose_end_game(
                     game_file,
                     current_step.as_ref(),
                     phase,
                     payload,
-                    Some(GameEndSource::KlutzChoice {
-                        source_event_id: forced.source_event_id,
-                    }),
+                    Some(source),
                 )
             }
             _ => Err(ErrorKind::InvalidStepInput.into_error()),
@@ -5285,12 +5590,26 @@ pub(crate) fn propose_phase_command(
             }
             validate_required_input(&current_step.required_input, &payload.input, &players)?;
             if current_step.required_input.kind == RequiredInputKind::Nomination {
+                let witch_resolution = payload
+                    .input
+                    .as_ref()
+                    .and_then(|fields| fields.nominator_id.as_deref())
+                    .map(|nominator_id| {
+                        witch_nomination_resolution(
+                            &current_step.id,
+                            nominator_id,
+                            &players,
+                            &game_file.game.events,
+                        )
+                    })
+                    .unwrap_or(WitchNominationResolution::NotApplicable);
                 return crate::proposal::propose_nomination_started(
                     game_file,
                     &current_step,
                     &players,
                     payload.input,
                     payload.registration_judgments,
+                    witch_resolution,
                 );
             }
             if current_step.required_input.kind == RequiredInputKind::NominationVote {
@@ -5316,6 +5635,9 @@ pub(crate) fn propose_phase_command(
                     &players,
                     payload.input,
                 );
+            }
+            if current_step.step_type == StepType::WitchDeath {
+                return propose_witch_death(game_file, &current_step, &players);
             }
             if current_step.step_type == StepType::PitHagArbitraryDeaths {
                 return propose_pit_hag_arbitrary_deaths(
@@ -5348,6 +5670,12 @@ pub(crate) fn propose_phase_command(
                     &players,
                     payload.input,
                 );
+            }
+            if current_step.character.as_deref() == Some("evilTwin") {
+                return propose_evil_twin_pair(game_file, &current_step, &players, payload.input);
+            }
+            if current_step.character.as_deref() == Some("witch") {
+                return propose_witch_curse(game_file, &current_step, &players, payload.input);
             }
             if current_step.character.as_deref().is_some_and(is_demon) {
                 return propose_demon_attack(game_file, &current_step, &players, payload.input);
@@ -5785,6 +6113,300 @@ fn propose_end_game(
         follow_up_steps: vec![],
         preview: json!({ "messageKo": summary }),
         reveal_payload: None,
+    })
+}
+
+fn propose_witch_death(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+) -> Result<Proposal, CoreError> {
+    let player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let player = players
+        .iter()
+        .find(|player| player.id == player_id && player.alive)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let nomination_step_id = step
+        .id
+        .strip_suffix(":witchDeath")
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let valid_trigger = game_file.game.events.iter().any(|event| matches!(
+        &event.kind,
+        GameEventKind::NominationStarted { payload }
+            if payload.step_id == nomination_step_id
+                && payload.nominator_id == player.id
+                && matches!(payload.witch_resolution, WitchNominationResolution::DeathPending { .. })
+    ));
+    if !valid_trigger {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    Ok(phase_proposal(
+        game_file,
+        step,
+        GameEventKind::DeathConfirmed {
+            payload: DeathEventPayload {
+                player_id: player.id.clone(),
+                step_id: Some(step.id.clone()),
+            },
+        },
+        crate::messages::execution_death_event_summary(players, &player.id),
+        vec![],
+    ))
+}
+
+fn propose_evil_twin_pair(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let actor_player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let twin_player_id = input
+        .and_then(|fields| fields.player_ids)
+        .and_then(|ids| ids.into_iter().next())
+        .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let actor = players
+        .iter()
+        .find(|player| player.id == actor_player_id)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let twin = players
+        .iter()
+        .find(|player| player.id == twin_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    if actor.id == twin.id || actor.alignment == twin.alignment {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    Ok(phase_proposal(
+        game_file,
+        step,
+        GameEventKind::EvilTwinPairAssigned {
+            payload: EvilTwinPairAssignedPayload {
+                step_id: step.id.clone(),
+                actor_player_id: actor.id.clone(),
+                twin_player_id: twin.id.clone(),
+                source_ability_instance_id: actor.ability_instance.id.clone(),
+                actor_alignment: actor.alignment,
+                twin_alignment: twin.alignment,
+            },
+        },
+        format!(
+            "쌍둥이 지정: {}번 {} · {}번 {}",
+            actor.seat, actor.name, twin.seat, twin.name
+        ),
+        vec![],
+    ))
+}
+
+fn propose_witch_curse(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    input: crate::model::StepInput,
+) -> Result<Proposal, CoreError> {
+    let actor_player_id = step
+        .player_id
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let target_player_id = input
+        .and_then(|fields| fields.player_ids)
+        .and_then(|ids| ids.into_iter().next())
+        .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+    let actor = players
+        .iter()
+        .find(|player| player.id == actor_player_id)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let target = players
+        .iter()
+        .find(|player| player.id == target_player_id)
+        .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+    let effective = !SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
+    Ok(phase_proposal(
+        game_file,
+        step,
+        GameEventKind::WitchCurseAssigned {
+            payload: WitchCurseAssignedPayload {
+                step_id: step.id.clone(),
+                actor_player_id: actor.id.clone(),
+                target_player_id: target.id.clone(),
+                source_ability_instance_id: actor.ability_instance.id.clone(),
+                effective,
+            },
+        },
+        format!("마녀 저주 지정: {}번 {}", target.seat, target.name),
+        vec![],
+    ))
+}
+
+fn witch_nomination_resolution(
+    nomination_step_id: &str,
+    nominator_id: &str,
+    players: &[Player],
+    events: &[GameEvent],
+) -> WitchNominationResolution {
+    if players.iter().filter(|player| player.alive).count() == 3
+        || !players
+            .iter()
+            .any(|player| player.id == nominator_id && player.alive)
+    {
+        return WitchNominationResolution::NotApplicable;
+    }
+    let nomination_day = nomination_step_id.split(':').next().unwrap_or_default();
+    let ability_state = SnvAbilityState::build(players, events);
+    events
+        .iter()
+        .rev()
+        .find_map(|event| {
+            let GameEventKind::WitchCurseAssigned { payload } = &event.kind else {
+                return None;
+            };
+            if !payload.effective
+                || payload.target_player_id != nominator_id
+                || witch_curse_day(&payload.step_id).as_deref() != Some(nomination_day)
+            {
+                return None;
+            }
+            let actor = players.iter().find(|player| {
+                player.id == payload.actor_player_id
+                    && player.ability_instance.id == payload.source_ability_instance_id
+            })?;
+            ability_state.ability_functions(actor, "witch").then(|| {
+                WitchNominationResolution::DeathPending {
+                    curse_event_id: event.id.clone(),
+                    witch_player_id: actor.id.clone(),
+                    source_ability_instance_id: actor.ability_instance.id.clone(),
+                }
+            })
+        })
+        .unwrap_or(WitchNominationResolution::NotApplicable)
+}
+
+fn witch_curse_day(step_id: &str) -> Option<String> {
+    let phase = step_id.split(':').next()?;
+    if phase == "firstNight" {
+        return Some("day".into());
+    }
+    let suffix = phase.strip_prefix("night")?;
+    let night_cycle = if suffix.is_empty() {
+        1
+    } else {
+        suffix.parse::<usize>().ok()?
+    };
+    let day_cycle = night_cycle + 1;
+    Some(if day_cycle == 1 {
+        "day".into()
+    } else {
+        format!("day{day_cycle}")
+    })
+}
+
+fn active_witch_curse(
+    phase: Phase,
+    current_step: Option<&PhaseStep>,
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Option<ActiveWitchCurse> {
+    if players.iter().filter(|player| player.alive).count() == 3 {
+        return None;
+    }
+    let current_prefix = current_step
+        .and_then(|step| step.id.split(':').next())
+        .unwrap_or_default();
+    events.iter().rev().find_map(|event| {
+        let GameEventKind::WitchCurseAssigned { payload } = &event.kind else {
+            return None;
+        };
+        let applies_to_day = witch_curse_day(&payload.step_id)?;
+        let assignment_prefix = payload.step_id.split(':').next().unwrap_or_default();
+        let in_lifetime = match phase {
+            Phase::FirstNight | Phase::Night => current_prefix == assignment_prefix,
+            Phase::Day => current_prefix == applies_to_day,
+            Phase::Setup => false,
+        };
+        if !in_lifetime
+            || events.iter().any(|candidate| {
+                matches!(
+                    &candidate.kind,
+                    GameEventKind::NominationStarted { payload: nomination }
+                        if matches!(
+                            &nomination.witch_resolution,
+                            WitchNominationResolution::DeathPending { curse_event_id, .. }
+                                if curse_event_id == &event.id
+                        )
+                )
+            })
+        {
+            return None;
+        }
+        let actor = players.iter().find(|player| {
+            player.id == payload.actor_player_id
+                && player.ability_instance.id == payload.source_ability_instance_id
+        })?;
+        if !payload.effective || !ability_state.ability_functions(actor, "witch") {
+            return None;
+        }
+        Some(ActiveWitchCurse {
+            source_event_id: event.id.clone(),
+            source_player_id: actor.id.clone(),
+            source_ability_instance_id: actor.ability_instance.id.clone(),
+            target_player_id: payload.target_player_id.clone(),
+            applies_to_day,
+            effective: true,
+        })
+    })
+}
+
+fn active_evil_twin_relationships(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<EvilTwinRelationship> {
+    let mut latest =
+        HashMap::<AbilityInstanceId, (&GameEvent, &EvilTwinPairAssignedPayload)>::new();
+    for event in events {
+        if let GameEventKind::EvilTwinPairAssigned { payload } = &event.kind {
+            latest.insert(payload.source_ability_instance_id.clone(), (event, payload));
+        }
+    }
+    latest
+        .into_values()
+        .filter_map(|(event, payload)| {
+            let actor = players.iter().find(|player| {
+                player.id == payload.actor_player_id
+                    && player.actual_character == "evilTwin"
+                    && player.ability_instance.id == payload.source_ability_instance_id
+                    && player.alive
+            })?;
+            let twin = players
+                .iter()
+                .find(|player| player.id == payload.twin_player_id)?;
+            if actor.alignment == twin.alignment || ability_state.is_impaired(&actor.id) {
+                return None;
+            }
+            Some(EvilTwinRelationship {
+                source_event_id: event.id.clone(),
+                ability_owner_player_id: actor.id.clone(),
+                twin_player_id: twin.id.clone(),
+                source_ability_instance_id: actor.ability_instance.id.clone(),
+            })
+        })
+        .collect()
+}
+
+fn living_evil_twin_pair(players: &[Player], relationships: &[EvilTwinRelationship]) -> bool {
+    relationships.iter().any(|relationship| {
+        players
+            .iter()
+            .any(|player| player.id == relationship.ability_owner_player_id && player.alive)
+            && players
+                .iter()
+                .any(|player| player.id == relationship.twin_player_id && player.alive)
     })
 }
 
@@ -6713,5 +7335,37 @@ mod tests {
             .iter()
             .filter(|(rank, _)| *rank == 5)
             .all(|(_, id)| is_demon(id)));
+    }
+
+    #[test]
+    fn later_night_does_not_schedule_a_base_witch_after_deaths_leave_three_alive() {
+        let events: Vec<GameEvent> = serde_json::from_value(json!([{
+            "id": "setup",
+            "type": "setupConfirmed",
+            "phase": "setup",
+            "payload": { "players": [
+                { "id": "player-1", "seat": 1, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
+                { "id": "player-2", "seat": 2, "name": "Dreamer", "actualCharacter": "dreamer", "shownCharacter": "dreamer" },
+                { "id": "player-3", "seat": 3, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
+                { "id": "player-4", "seat": 4, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
+                { "id": "player-5", "seat": 5, "name": "Witch", "actualCharacter": "witch", "shownCharacter": "witch" },
+                { "id": "player-6", "seat": 6, "name": "Sage", "actualCharacter": "sage", "shownCharacter": "sage" },
+                { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            ] },
+            "summary": "setup",
+            "createdAt": "2026-07-30T00:00:00.000Z"
+        }]))
+        .unwrap();
+        let mut players = setup_players(&events).unwrap();
+        for player in &mut players[..4] {
+            player.alive = false;
+        }
+
+        let steps = later_night_steps(&players, &events, 1);
+
+        assert_eq!(players.iter().filter(|player| player.alive).count(), 3);
+        assert!(steps
+            .iter()
+            .all(|step| step.character.as_deref() != Some("witch")));
     }
 }

@@ -1346,6 +1346,8 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         butler_vote,
         active_impairments: None,
         automatic_reminders: vec![],
+        active_witch_curse: None,
+        evil_twin_relationships: vec![],
     }
 }
 

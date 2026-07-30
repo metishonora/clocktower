@@ -26,6 +26,8 @@ export const eventDiscriminators = [
   "manualPhaseStepResolved",
   "nominationVoteConfirmed",
   "nominationStarted",
+  "witchCurseAssigned",
+  "evilTwinPairAssigned",
   "executionConfirmed",
   "noExecutionConfirmed",
   "deathConfirmed",

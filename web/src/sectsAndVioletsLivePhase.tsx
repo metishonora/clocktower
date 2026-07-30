@@ -21,7 +21,7 @@ import {
 } from "./features/pitHag/PitHagSelectionPanel";
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 
-export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
+export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
   kind: LiveHandoffKind;
   complete: boolean;
@@ -54,6 +54,8 @@ export function SectsAndVioletsLiveProgress({
   onStartPitHag = () => undefined,
   onStartPitHagDeaths = () => undefined,
   onStartCerenovus,
+  onStartEvilTwin = () => undefined,
+  onStartWitch = () => undefined,
   onAdvance,
   onResolveManual,
 }: {
@@ -75,6 +77,8 @@ export function SectsAndVioletsLiveProgress({
   onStartPitHag?: () => void;
   onStartPitHagDeaths?: () => void;
   onStartCerenovus: () => void;
+  onStartEvilTwin?: () => void;
+  onStartWitch?: () => void;
   onAdvance: () => void;
   onResolveManual: (outcome: "handled" | "notApplicable") => void;
 }) {
@@ -127,6 +131,19 @@ export function SectsAndVioletsLiveProgress({
               disabled={operationBusy}
               onClick={onConfirmExecution}
             >{pendingMadnessExecution ? "처형 후 밤으로" : "확정"}</button>
+          </article>
+        ) : (step?.character === "evilTwin" || step?.character === "witch") && step.requiredInput.kind === "playerIds" && actor ? (
+          <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label={step.character === "evilTwin" ? "쌍둥이 지정" : "마녀 저주 지정"}>
+            <CharacterDetailButton
+              details={sectsAndVioletsCharacterDetail(step.character)}
+              className="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            >
+              {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt="" /> : null}
+              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{step.character === "evilTwin" ? "사악한 쌍둥이" : "마녀"}</span><strong>{actor.name}</strong></div>
+            </CharacterDetailButton>
+            <p className="snvInformationAbility">{actorSummary}</p>
+            <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={step.character === "evilTwin" ? onStartEvilTwin : onStartWitch}>대상 선택</button></div>
           </article>
         ) : step?.character === "cerenovus" && step.requiredInput.kind === "madnessAssignment" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="세레노버스 집착 지정">
@@ -315,7 +332,7 @@ export function SectsAndVioletsLiveGrimoire({
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
     ? " issue116NominationMode"
-    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "vigormortisPoison" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" || isDeathConsequenceHandoff(handoff) ? " issue116AttackMode" : "";
+    : handoff?.kind === "vote" ? " issue116VoteMode" : handoff?.kind === "demon" || handoff?.kind === "vigormortisPoison" || handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "evilTwin" || handoff?.kind === "witch" || handoff?.kind === "dreamer" || handoff?.kind === "seamstress" || isDeathConsequenceHandoff(handoff) ? " issue116AttackMode" : "";
   const nominator = playerById(players, nominatorId);
   const nominee = playerById(players, nomineeId);
   const target = playerById(players, targetId);
@@ -359,6 +376,7 @@ export function SectsAndVioletsLiveGrimoire({
       : handoff?.kind === "pitHag" ? Boolean(targetId && characterId)
         : handoff?.kind === "pitHagDeaths" ? true
           : handoff?.kind === "cerenovus" ? Boolean(targetId) && handoffSupplementReady
+            : handoff?.kind === "evilTwin" || handoff?.kind === "witch" ? Boolean(targetId)
             : informationTargetCount > 0 ? targetIds.length === informationTargetCount : true;
 
   const closePlayerDetails = useCallback(() => {
@@ -379,7 +397,7 @@ export function SectsAndVioletsLiveGrimoire({
           {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
           {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
             <button type="button" disabled={operationBusy} onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
-          ) : !handoff.complete && (handoff.kind === "pitHag" || isDeathConsequenceHandoff(handoff)) ? (
+          ) : !handoff.complete && (handoff.kind === "pitHag" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff)) ? (
             <button type="button" disabled={operationBusy} onClick={onReturn}>선택 취소 →</button>
           ) : null}
         </div>
@@ -416,7 +434,7 @@ export function SectsAndVioletsLiveGrimoire({
                   : handoff?.kind === "klutz" && selected ? "선택 대상"
                   : handoff?.kind === "demon" && (selected || attackTarget) ? "공격 대상"
                   : handoff?.kind === "pitHagDeaths" && selected ? "임의 사망"
-                    : (handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "cerenovus" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
+                    : (handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "cerenovus" || handoff?.kind === "evilTwin" || handoff?.kind === "witch" || informationTargetCount > 0) && selected ? "선택 대상" : undefined;
             const selectionClass = selfNominee ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
               : selectionRole === "지명자" ? " issue116NominatorSeat"
               : selectionRole === "피지명자" ? " issue116NomineeSeat"
@@ -430,7 +448,7 @@ export function SectsAndVioletsLiveGrimoire({
               : handoff?.kind === "nomination" ? !dayState?.eligibleNomineeIds.includes(player.id)
                 : choosingVigormortisPoison ? !attackTarget && !selectablePlayerIds?.includes(player.id)
                   : isDeathConsequenceHandoff(handoff) ? !selectablePlayerIds?.includes(player.id)
-                  : handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
+                  : handoff?.kind === "snakeCharmer" || handoff?.kind === "pitHag" || handoff?.kind === "pitHagDeaths" || handoff?.kind === "cerenovus" || handoff?.kind === "evilTwin" || handoff?.kind === "witch" || informationTargetCount > 0 ? !currentStep?.requiredInput.allowedPlayerIds?.includes(player.id)
                   : false;
             const spentGhostCannotVote = handoff?.kind === "vote" && !player.alive && player.ghostVoteUsed;
             const selectionLocked = Boolean(attackTarget);
@@ -516,7 +534,7 @@ export function SectsAndVioletsLiveGrimoire({
             <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
               {centerPrompt}
             </div>
-          ) : !handoff || handoff.kind === "demon" || handoff.kind === "vigormortisPoison" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || handoff.kind === "cerenovus" || isDeathConsequenceHandoff(handoff) || informationTargetCount > 0 ? (
+          ) : !handoff || handoff.kind === "demon" || handoff.kind === "vigormortisPoison" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || handoff.kind === "cerenovus" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff) || informationTargetCount > 0 ? (
             <div className="snvGrimoireCenter live issue116PhaseClock" role="group" aria-label="현재 단계">
               <strong>{phaseLabel}</strong>
               <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
@@ -686,6 +704,8 @@ function handoffPanelTitle(handoff: LiveHandoff, complete: boolean) {
   const task = kind === "nomination" ? "지명"
     : kind === "vote" ? "투표"
       : kind === "snakeCharmer" ? "뱀 조련사"
+        : kind === "evilTwin" ? "쌍둥이 지정"
+        : kind === "witch" ? "저주 대상 선택"
         : kind === "cerenovus" ? "세레노버스 집착 지정"
         : kind === "sweetheart" ? "사랑꾼 취함 지정"
         : kind === "barber" ? handoff.selectionStage === "chooser" ? "행동할 악마 선택" : "이발사 직업 교환"
@@ -715,6 +735,8 @@ function confirmLabel(handoff: LiveHandoff, nominator?: Player, nominee?: Player
   if (kind === "barber") return "행동할 악마를 선택하세요";
   if (kind === "klutz") return target ? `${playerLabel(target)} 선택 확정` : "생존한 플레이어를 선택하세요";
   if (kind === "snakeCharmer") return target ? `${playerLabel(target)} 선택 확정` : "대상을 선택하세요";
+  if (kind === "evilTwin") return target ? `${playerLabel(target)} 쌍둥이 지정` : "쌍둥이 대상을 선택하세요";
+  if (kind === "witch") return target ? `${playerLabel(target)} 저주 확정` : "저주 대상을 선택하세요";
   if (kind === "cerenovus") return target ? `${playerLabel(target)} 집착 지정` : "집착 대상을 선택하세요";
   if (kind === "vigormortisPoison") return target ? `${playerLabel(target)}로 중독 이동` : "중독 대상을 선택하세요";
   if (kind === "demon" && handoff.selectionStage === "poison") return secondaryTarget ? `${playerLabel(secondaryTarget)} 중독 확정` : "중독 대상을 선택하세요";

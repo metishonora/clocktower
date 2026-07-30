@@ -59,6 +59,8 @@ import {
   CerenovusMadnessReveal,
   CerenovusMadnessRevealPrompt,
 } from "./features/madness/CerenovusMadnessReveal";
+import { EvilTwinReveal, EvilTwinRevealPrompt } from "./features/evil-twin/EvilTwinReveal";
+import { WitchDeathPrompt } from "./features/death-consequences/WitchDeathPrompt";
 import type { PlayerTokenPresentation, PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   browserRuntimeClock,
@@ -119,8 +121,8 @@ const firstNightOrder: FirstNightStep[] = [
   { id: "minionInfo", name: "하수인 정보", support: "automated", summary: "하수인에게 악마와 다른 하수인을 알려줍니다." },
   { id: "demonInfo", name: "악마 정보", support: "automated", summary: "악마에게 하수인과 블러프 직업을 알려줍니다." },
   { id: "snakeCharmer", name: "뱀 조련사", characterId: "snakeCharmer", support: "manual", summary: characters.find((character) => character.id === "snakeCharmer")!.ability },
-  { id: "evilTwin", name: "사악한 쌍둥이", characterId: "evilTwin", support: "manual", summary: "두 쌍둥이가 서로를 확인하도록 안내합니다." },
-  { id: "witch", name: "마녀", characterId: "witch", support: "manual", summary: "저주할 플레이어를 선택합니다." },
+  { id: "evilTwin", name: "사악한 쌍둥이", characterId: "evilTwin", support: "automated", summary: "선택한 두 쌍둥이가 서로와 직업을 확인합니다." },
+  { id: "witch", name: "마녀", characterId: "witch", support: "automated", summary: "저주할 플레이어를 선택합니다." },
   { id: "cerenovus", name: "세레노버스", characterId: "cerenovus", support: "manual", summary: "플레이어와 광기 직업을 선택합니다." },
   { id: "clockmaker", name: "시계공", characterId: "clockmaker", support: "automated", summary: "악마와 가장 가까운 하수인 사이의 거리를 알려줍니다." },
   { id: "dreamer", name: "꿈꾸는 자", characterId: "dreamer", support: "manual", summary: "플레이어를 선택하고 직업 정보 두 개를 확인합니다." },
@@ -349,9 +351,15 @@ export function SectsAndVioletsGameSurface({
     ? identityRevealKey(gameFile.game.id, nextIdentityReveal.sourceEventId, nextIdentityReveal.sequence)
     : undefined;
   const identityRevealOpen = nextIdentityRevealKey === openedIdentityRevealKey;
+  const identityRevealPlayerId = nextIdentityReveal?.payload.kind === "evilTwinPair"
+    ? undefined
+    : nextIdentityReveal?.payload.playerId;
   const identityRevealPlayer = replayState?.players.find(
-    (player) => player.id === nextIdentityReveal?.payload.playerId,
+    (player) => player.id === identityRevealPlayerId,
   );
+  const witchDeathPlayer = replayState?.currentStep?.stepType === "witchDeath"
+    ? replayState.players.find((player) => player.id === replayState.currentStep?.playerId)
+    : undefined;
   const barberAbilityActor = replayState?.players.find((player) => player.id === liveChooserId);
   const effectiveMadnessAssignments = replayState?.madnessAssignments ?? [];
   const pendingVigormortisPoison = replayState?.pendingVigormortisPoisonChoices?.[0];
@@ -1411,6 +1419,22 @@ export function SectsAndVioletsGameSurface({
     setOperationBusy(false);
   };
 
+  const confirmWitchDeath = async () => {
+    const step = replayState?.currentStep;
+    if (!step || step.stepType !== "witchDeath" || operationBusy) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const applied = await proposeAndApplyLiveCommand({
+      type: "confirmStep",
+      payload: { stepId: step.id, input: null },
+    });
+    if (applied?.replayState.pendingForcedGameEnd) {
+      setLiveHandoff(undefined);
+      navigateToTab("play");
+    }
+    setOperationBusy(false);
+  };
+
   useEffect(() => {
     if (!pendingVigormortisPoison) {
       autoResolvedVigormortisPoisonRef.current = undefined;
@@ -1519,7 +1543,7 @@ export function SectsAndVioletsGameSurface({
         ? soleBarberChooser
         : kind === "sweetheart" || kind === "klutz"
         ? pendingDeathConsequence?.actorPlayerId
-        : kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "dreamer" || kind === "seamstress"
+        : kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "evilTwin" || kind === "witch" || kind === "dreamer" || kind === "seamstress"
         ? replayState?.currentStep?.playerId
         : undefined,
       selectionStage: kind === "demon" ? "attack" : kind === "barber" ? soleBarberChooser ? "reveal" : "chooser" : undefined,
@@ -1530,7 +1554,7 @@ export function SectsAndVioletsGameSurface({
       setLiveVoterIds([]);
       setLiveNominationCheckpointId(undefined);
     }
-    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "sweetheart" || kind === "klutz") setLiveTargetId(undefined);
+    if (kind === "demon" || kind === "snakeCharmer" || kind === "pitHag" || kind === "cerenovus" || kind === "evilTwin" || kind === "witch" || kind === "sweetheart" || kind === "klutz") setLiveTargetId(undefined);
     if (kind === "barber") {
       setBarberAbilityRevealOpen(false);
       setLiveChooserId(soleBarberChooser);
@@ -1631,7 +1655,7 @@ export function SectsAndVioletsGameSurface({
         : { ...liveHandoff, selectionStage: "attack" });
       return;
     }
-    if (liveHandoff.kind === "snakeCharmer" || liveHandoff.kind === "cerenovus") {
+    if (liveHandoff.kind === "snakeCharmer" || liveHandoff.kind === "cerenovus" || liveHandoff.kind === "evilTwin" || liveHandoff.kind === "witch") {
       if (!replayState?.currentStep?.requiredInput.allowedPlayerIds?.includes(playerId)) return;
     }
     setLiveTargetId((current) => current === playerId ? undefined : playerId);
@@ -2075,8 +2099,19 @@ export function SectsAndVioletsGameSurface({
           chooserId={liveChooserId}
           characterId={liveCharacterId}
           pitHagDemonIntents={pitHagDemonIntents}
-          centerPrompt={nextIdentityReveal && !identityRevealOpen ? (
-            nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+          centerPrompt={replayState.currentStep.stepType === "witchDeath" ? (
+            <WitchDeathPrompt
+              player={witchDeathPlayer}
+              operationBusy={operationBusy}
+              onConfirm={() => void confirmWitchDeath()}
+            />
+          ) : nextIdentityReveal && !identityRevealOpen ? (
+            nextIdentityReveal.payload.kind === "evilTwinPair" ? (
+              <EvilTwinRevealPrompt
+                payload={nextIdentityReveal.payload}
+                onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
+              />
+            ) : nextIdentityReveal.payload.kind === "madnessAssignment" ? (
               <CerenovusMadnessRevealPrompt
                 player={identityRevealPlayer}
                 onReveal={() => setOpenedIdentityRevealKey(nextIdentityRevealKey)}
@@ -2312,6 +2347,8 @@ export function SectsAndVioletsGameSurface({
           onStartPitHag={() => startLiveHandoff("pitHag")}
           onStartPitHagDeaths={() => startLiveHandoff("pitHagDeaths")}
           onStartCerenovus={() => startLiveHandoff("cerenovus")}
+          onStartEvilTwin={() => startLiveHandoff("evilTwin")}
+          onStartWitch={() => startLiveHandoff("witch")}
           onAdvance={() => void advanceFirstNight()}
           onResolveManual={(outcome) => void advanceFirstNight(outcome)}
         />
@@ -2366,7 +2403,9 @@ export function SectsAndVioletsGameSurface({
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 <p>{currentFirstNightStep.summary}</p>
                 <div className="snvStepActions">
-                  {(replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds") || replayState?.currentStep?.requiredInput.kind === "madnessAssignment" ? null : currentFirstNightStep.support === "automated" ? (
+                  {(replayState?.currentStep?.requiredInput.kind === "playerIds"
+                    && ["snakeCharmer", "evilTwin", "witch"].includes(replayState.currentStep.character ?? ""))
+                    || replayState?.currentStep?.requiredInput.kind === "madnessAssignment" ? null : currentFirstNightStep.support === "automated" ? (
                     <button
                       type="button"
                       className={`informationReveal ${revealedStepIds.includes(currentFirstNightStep.id) ? "" : "prominent"}`}
@@ -2375,6 +2414,10 @@ export function SectsAndVioletsGameSurface({
                   ) : null}
                   {replayState?.currentStep?.character === "snakeCharmer" && replayState.currentStep.requiredInput.kind === "playerIds" ? (
                     <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("snakeCharmer")}>대상 선택</button>
+                  ) : replayState?.currentStep?.character === "evilTwin" && replayState.currentStep.requiredInput.kind === "playerIds" ? (
+                    <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("evilTwin")}>쌍둥이 선택</button>
+                  ) : replayState?.currentStep?.character === "witch" && replayState.currentStep.requiredInput.kind === "playerIds" ? (
+                    <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("witch")}>저주 대상 선택</button>
                   ) : replayState?.currentStep?.requiredInput.kind === "madnessAssignment" ? (
                     <button type="button" disabled={operationBusy} onClick={() => startLiveHandoff("cerenovus")}>집착 지정</button>
                   ) : (
@@ -2609,7 +2652,12 @@ export function SectsAndVioletsGameSurface({
         </div>
       ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
-        nextIdentityReveal.payload.kind === "madnessAssignment" ? (
+        nextIdentityReveal.payload.kind === "evilTwinPair" ? (
+          <EvilTwinReveal
+            reveal={nextIdentityReveal}
+            onConfirm={acknowledgeIdentityReveal}
+          />
+        ) : nextIdentityReveal.payload.kind === "madnessAssignment" ? (
           <CerenovusMadnessReveal
             reveal={nextIdentityReveal}
             onConfirm={acknowledgeIdentityReveal}

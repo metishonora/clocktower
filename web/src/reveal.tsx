@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { EvilInformationRevealPayload, RevealIdentity, RevealPayload, RevealPlayer, RoleInformationRevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
-import { isRoleInformationRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
+import type { EvilInformationRevealPayload, EvilTwinPairRevealPayload, RevealIdentity, RevealPayload, RevealPlayer, RoleInformationRevealPayload, SpyGrimoireRevealPayload, TextRevealPayload } from "./core/types.js";
+import { isEvilTwinPairRevealPayload, isRoleInformationRevealPayload, isSpyGrimoireRevealPayload } from "./core/revealPayload.js";
 import { characterLabel } from "./setupDraft.js";
 import { spySeatPosition } from "./spyGrimoireLayout.js";
 import { CharacterIcon } from "./components/CharacterIcon.js";
@@ -16,6 +16,14 @@ export function RevealPreview({
   disabled?: boolean;
 }) {
   if (isSpyGrimoireRevealPayload(payload)) return null;
+  if (isEvilTwinPairRevealPayload(payload)) {
+    return (
+      <section className="revealPreview" aria-label="Reveal 미리보기">
+        <p className="revealPreviewMessage">쌍둥이 확인</p>
+        <button type="button" className="primaryButton" onClick={onShow} disabled={disabled}>플레이어에게 공개</button>
+      </section>
+    );
+  }
   if (isRoleInformationRevealPayload(payload)) {
     return (
       <section className="revealPreview" aria-label="Reveal 미리보기">
@@ -44,8 +52,37 @@ export function RevealScreen({ payload, onClose }: { payload: RevealPayload; onC
   if (isSpyGrimoireRevealPayload(payload)) {
     return <SpyGrimoireReveal payload={payload} onClose={onClose} />;
   }
+  if (isEvilTwinPairRevealPayload(payload)) {
+    return <GenericEvilTwinReveal payload={payload} onClose={onClose} />;
+  }
   if (isRoleInformationRevealPayload(payload)) return <RoleInformationReveal payload={payload} onClose={onClose} />;
   return <TextReveal payload={payload} onClose={onClose} />;
+}
+
+function GenericEvilTwinReveal({ payload, onClose }: {
+  payload: EvilTwinPairRevealPayload;
+  onClose: () => void;
+}) {
+  return (
+    <main className="revealShell" aria-label="쌍둥이 정보 공개">
+      <section className="revealCard">
+        <h1>여러분은 쌍둥이입니다</h1>
+        <p>상대와 직업을 확인하십시오</p>
+        {payload.players.map((player) => (
+          <div key={player.playerId}>
+            <strong>{player.seat}번 · {player.name}</strong>
+            <CharacterIcon characterId={player.characterId} />
+            <span>{player.alignment === "good" && player.characterId === "evilTwin"
+              ? "쌍둥이"
+              : displayCharacterLabel(player.characterId)}</span>
+          </div>
+        ))}
+        <button type="button" className="revealCloseButton" onClick={onClose}>
+          확인했다면 눈을 감으세요
+        </button>
+      </section>
+    </main>
+  );
 }
 
 function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationRevealPayload; onClose: () => void }) {
@@ -88,7 +125,7 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
   } else if (payload.kind === "sageInformation") {
     content = <><h1>현자 정보</h1><p>당신을 죽인 악마는…</p><div className="roleInformationPair roleInformationPlayerPair"><RevealPlayers players={[payload.candidatePlayers[0]]} /><b>또는</b><RevealPlayers players={[payload.candidatePlayers[1]]} /></div></>;
   } else {
-    content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} /></>;
+    content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} label={payload.alignment === "good" && payload.characterId === "evilTwin" ? "쌍둥이" : undefined} /></>;
   }
   return (
     <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.kind === "characterChange" ? payload.playerId : undefined}>
@@ -153,8 +190,8 @@ function RevealPlayers({ players }: { players: readonly RevealPlayer[] }) {
   return <div className="roleInformationPlayers" aria-label="확인 대상">{players.map((player) => <div key={player.playerId}><span>{player.seat}</span><strong>{player.name}</strong></div>)}</div>;
 }
 
-function CharacterResult({ characterId }: { characterId: string }) {
-  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{displayCharacterLabel(characterId)}</strong></div>;
+function CharacterResult({ characterId, label }: { characterId: string; label?: string }) {
+  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{label ?? displayCharacterLabel(characterId)}</strong></div>;
 }
 
 function displayCharacterLabel(characterId: string) {

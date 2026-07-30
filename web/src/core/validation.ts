@@ -15,7 +15,7 @@ import type {
   ReplayState,
   SetupDistribution,
 } from "./types.js";
-import { isCharacterChangeRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
+import { isCharacterChangeRevealPayload, isEvilTwinPairRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
@@ -32,6 +32,7 @@ const stepTypes = new Set<PhaseStep["stepType"]>([
   "nomination",
   "execution",
   "executionDeath",
+  "witchDeath",
   "slayerDeath",
   "demonSuccession",
   "redHerringAssignment",
@@ -155,16 +156,38 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "nominationStarted":
       if (
-        !hasExactKeys(payload, ["stepId", "nominatorId", "nomineeId", "registrationJudgments", "virginResolution"]) ||
+        !(
+          hasExactKeys(payload, ["stepId", "nominatorId", "nomineeId", "registrationJudgments", "virginResolution"]) ||
+          hasExactKeys(payload, ["stepId", "nominatorId", "nomineeId", "registrationJudgments", "virginResolution", "witchResolution"])
+        ) ||
         typeof payload.stepId !== "string" ||
         typeof payload.nominatorId !== "string" ||
         typeof payload.nomineeId !== "string" ||
         !Array.isArray(payload.registrationJudgments) ||
         !payload.registrationJudgments.every(isRegistrationJudgment) ||
-        !isVirginResolution(payload.virginResolution)
+        !isVirginResolution(payload.virginResolution) ||
+        (payload.witchResolution !== undefined && !isWitchNominationResolution(payload.witchResolution))
       ) {
         throw invalidEvent();
       }
+      break;
+    case "witchCurseAssigned":
+      if (
+        !hasExactKeys(payload, ["stepId", "actorPlayerId", "targetPlayerId", "sourceAbilityInstanceId", "effective"]) ||
+        typeof payload.stepId !== "string" || typeof payload.actorPlayerId !== "string" ||
+        typeof payload.targetPlayerId !== "string" || typeof payload.sourceAbilityInstanceId !== "string" ||
+        typeof payload.effective !== "boolean"
+      ) throw invalidEvent();
+      break;
+    case "evilTwinPairAssigned":
+      if (
+        !hasExactKeys(payload, ["stepId", "actorPlayerId", "twinPlayerId", "sourceAbilityInstanceId", "actorAlignment", "twinAlignment"]) ||
+        typeof payload.stepId !== "string" || typeof payload.actorPlayerId !== "string" ||
+        typeof payload.twinPlayerId !== "string" || typeof payload.sourceAbilityInstanceId !== "string" ||
+        (payload.actorAlignment !== "good" && payload.actorAlignment !== "evil") ||
+        (payload.twinAlignment !== "good" && payload.twinAlignment !== "evil") ||
+        payload.actorAlignment === payload.twinAlignment
+      ) throw invalidEvent();
       break;
     case "executionConfirmed":
     case "noExecutionConfirmed":
@@ -307,7 +330,7 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.source !== undefined && !(
           isRecord(payload.source) &&
           hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
-          payload.source.kind === "klutzChoice" &&
+          (payload.source.kind === "klutzChoice" || payload.source.kind === "witchCurseDeath" || payload.source.kind === "evilTwinExecution") &&
           typeof payload.source.sourceEventId === "string"
         ))
       ) throw invalidEvent();
@@ -940,6 +963,8 @@ function isRuleState(value: unknown): boolean {
       "butlerVote",
       "activeImpairments",
       "automaticReminders",
+      "activeWitchCurse",
+      "evilTwinRelationships",
     ]) &&
     isOptionalString(value.redHerringPlayerId) &&
     (value.activePoison === undefined || isActiveRuleEffect(value.activePoison)) &&
@@ -969,15 +994,31 @@ function isRuleState(value: unknown): boolean {
     (value.activeImpairments === undefined ||
       (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment))) &&
     (value.automaticReminders === undefined ||
-      (Array.isArray(value.automaticReminders) && value.automaticReminders.every(isAutomaticReminder)))
+      (Array.isArray(value.automaticReminders) && value.automaticReminders.every(isAutomaticReminder))) &&
+    (value.activeWitchCurse === undefined || isActiveWitchCurse(value.activeWitchCurse)) &&
+    (value.evilTwinRelationships === undefined ||
+      (Array.isArray(value.evilTwinRelationships) && value.evilTwinRelationships.every(isEvilTwinRelationship)))
   );
+}
+
+function isActiveWitchCurse(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["sourceEventId", "sourcePlayerId", "sourceAbilityInstanceId", "targetPlayerId", "appliesToDay", "effective"]) &&
+    [value.sourceEventId, value.sourcePlayerId, value.sourceAbilityInstanceId, value.targetPlayerId, value.appliesToDay].every(isString) &&
+    typeof value.effective === "boolean";
+}
+
+function isEvilTwinRelationship(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["sourceEventId", "abilityOwnerPlayerId", "twinPlayerId", "sourceAbilityInstanceId"]) &&
+    [value.sourceEventId, value.abilityOwnerPlayerId, value.twinPlayerId, value.sourceAbilityInstanceId].every(isString);
 }
 
 function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
     typeof value.playerId === "string" &&
-    (value.characterId === "flowergirl" || value.characterId === "townCrier" || value.characterId === "vigormortis" || value.characterId === "fangGu") &&
+    ["flowergirl", "townCrier", "vigormortis", "fangGu", "witch", "evilTwin"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string";
@@ -1162,6 +1203,15 @@ function isVirginResolution(value: unknown): boolean {
   return (value.kind === "spentNoExecution" || value.kind === "spentAndNominatorExecuted") &&
     hasExactKeys(value, ["kind", "virginPlayerId", "impairmentContext"]) &&
     typeof value.virginPlayerId === "string" && isVirginImpairmentContext(value.impairmentContext);
+}
+
+function isWitchNominationResolution(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "notApplicable") return hasExactKeys(value, ["kind"]);
+  return value.kind === "deathPending" &&
+    hasExactKeys(value, ["kind", "curseEventId", "witchPlayerId", "sourceAbilityInstanceId"]) &&
+    typeof value.curseEventId === "string" && typeof value.witchPlayerId === "string" &&
+    typeof value.sourceAbilityInstanceId === "string";
 }
 
 function isVirginImpairmentContext(value: unknown): boolean {
@@ -1451,7 +1501,7 @@ function isPendingIdentityReveal(value: unknown): boolean {
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) > 0 &&
-    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload));
+    (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload));
 }
 
 function isPendingIdentityRevealList(value: unknown): boolean {
