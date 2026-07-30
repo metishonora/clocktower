@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event(players: Value) -> Value {
     json!({
         "id": "setup-1",
@@ -74,10 +76,14 @@ fn advance_to_snake_charmer(events: &mut Vec<Value>, later_night_only: bool) -> 
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
         } else if step["requiredInput"]["kind"] == "characterTransformation" {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } } })
+        } else if step_id == "firstNight:demonInfo" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) } })
         } else if step["support"] == "manual" {
             json!({ "type": "resolveManualStep", "payload": { "stepId": step_id, "outcome": "handled" } })
         } else if step["id"].as_str().is_some_and(|id| id.contains(":demon:")) {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": ["player-2"] } } })
+        } else if step_id == "firstNight:demonInfo" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) } })
         } else if step["character"] == "dreamer" {
             let check = &step["informationPrompt"]["targetChecks"][0];
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "playerIds": check["targetPlayerIds"] }, "deliveredResult": check["choices"][0]["result"] } })

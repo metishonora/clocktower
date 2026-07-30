@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event() -> Value {
     json!({
         "id": "setup-1",
@@ -49,11 +51,16 @@ fn propose(events: &[Value], command: Value) -> Value {
 fn confirm_current(events: &mut Vec<Value>) {
     let state = replay(events);
     let step = &state["value"]["currentStep"];
+    let input = if step["id"] == "firstNight:demonInfo" {
+        snv_demon_bluff_input(step)
+    } else {
+        Value::Null
+    };
     let proposal = propose(
         events,
         json!({
             "type": "confirmStep",
-            "payload": { "stepId": step["id"], "input": null }
+            "payload": { "stepId": step["id"], "input": input }
         }),
     );
     assert_eq!(proposal["ok"], true, "{proposal}");
@@ -80,6 +87,8 @@ fn advance_until(events: &mut Vec<Value>, target_step_id: &str) -> Value {
             json!({ "type": "skipStep", "payload": { "stepId": step_id } })
         } else if step["requiredInput"]["kind"] == "executionDecision" {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
+        } else if step_id == "firstNight:demonInfo" {
+            json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) } })
         } else if matches!(
             step["character"].as_str(),
             Some("fangGu" | "vigormortis" | "noDashii" | "vortox")

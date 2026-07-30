@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 const DEMONS: [&str; 4] = ["fangGu", "vigormortis", "noDashii", "vortox"];
 
 fn setup_event(demon: &str) -> Value {
@@ -70,6 +72,10 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
                 "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] }
             }
         })
+    } else if step["id"] == "firstNight:demonInfo" {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step["id"], "input": snv_demon_bluff_input(step)
+        } })
     } else if step["support"] == "manual" {
         json!({
             "type": "resolveManualStep",

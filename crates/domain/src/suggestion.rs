@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    characters::phase_input_suggestion_pool,
+    characters::rules,
     contracts::{GameFile, PhaseInputSuggestion, PhaseInputSuggestionRequest},
     error::{CoreError, ErrorKind},
     model::{RequiredInputKind, StepInput},
@@ -26,7 +26,8 @@ pub(crate) fn suggest_phase_input(
         .information_prompt
         .as_ref()
         .is_some_and(|prompt| !prompt.active_reasons.is_empty());
-    let pool = phase_input_suggestion_pool(&step, &replayed.players, impaired);
+    let pool =
+        rules(replayed.script_id).phase_input_suggestion_pool(&step, &replayed.players, impaired);
     let input = select_input(
         &step.required_input.kind,
         pool,

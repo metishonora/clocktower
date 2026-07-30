@@ -1,0 +1,61 @@
+.snvEvilInformationTask { min-height: 0; padding: clamp(22px, 3vw, 34px); }
+.snvEvilInformationTask > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.snvEvilInformationTask > header > div { display: grid; gap: 5px; }
+.snvEvilInformationTask h3 { margin: 0; font-size: clamp(2rem, 4vw, 3.1rem); }
+.snvEvilInformationTask > header > span { display: grid; min-width: 58px; min-height: 42px; place-items: center; border: 1px solid rgba(231, 208, 239, .2); border-radius: 999px; color: #c8b7cf; background: rgba(17, 9, 23, .36); font-size: .78rem; font-weight: 900; }
+.snvEvilInformationTask > header > span.complete { border-color: rgba(120, 218, 170, .4); color: #bcebd2; background: rgba(38, 135, 94, .2); }
+.snvBluffCandidateGrid { display: grid; margin-top: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.snvBluffCandidateGrid button { position: relative; display: grid; min-width: 0; min-height: 104px; padding: 10px; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 2px 10px; border: 1px solid rgba(230, 209, 237, .14); border-radius: 14px; color: #f5eaf8; background: rgba(255, 255, 255, .035); font: inherit; text-align: left; cursor: pointer; }
+.snvBluffCandidateGrid button img { width: 48px; height: 48px; grid-row: 1 / -1; object-fit: contain; }
+.snvBluffCandidateGrid button strong { min-width: 0; align-self: center; font-size: .84rem; overflow-wrap: anywhere; }
+.snvBluffCandidateGrid button small { align-self: start; color: #f4d98f; font-size: .64rem; font-weight: 800; }
+.snvBluffCandidateGrid button.selected { border-color: #efd68d; background: linear-gradient(145deg, rgba(130, 80, 154, .55), rgba(174, 115, 28, .22)); box-shadow: 0 0 0 2px rgba(239, 214, 141, .11); }
+.snvBluffCandidateGrid button:disabled { opacity: .38; cursor: not-allowed; }
+.snvEvilInformationTaskActions { display: flex; margin-top: 18px; align-items: center; justify-content: flex-end; gap: 9px; }
+.snvEvilInformationTaskActions button { min-height: 46px; padding: 10px 16px; border: 1px solid rgba(230, 209, 237, .22); border-radius: 12px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
+.snvEvilInformationTaskActions .snvBluffShuffle { display: grid; width: 46px; padding: 0; place-items: center; color: #efd68d; background: rgba(174, 115, 28, .1); }
+.snvBluffShuffle svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.snvEvilInformationTaskActions .snvBluffConfirm,
+.snvEvilInformationTaskActions .prominent { min-width: 130px; border-color: #efd68d; color: #291c08; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 10px 28px rgba(205, 143, 45, .25); }
+.snvEvilInformationTaskActions button:disabled { border-color: rgba(230, 209, 237, .12); color: #766d7b; background: rgba(255, 255, 255, .035); box-shadow: none; cursor: not-allowed; }
+.snvEvilInformationFollowup h3 { margin-top: 10px; }
+.snvEvilInformationFollowupActions { display: grid; margin-top: 26px; grid-template-columns: 1fr 1fr; gap: 10px; }
+.snvEvilInformationFollowupActions button { min-height: 50px; padding: 11px 15px; border: 1px solid rgba(214, 169, 226, .35); border-radius: 13px; color: #f8f0fb; background: #82509a; font: inherit; font-size: .8rem; font-weight: 900; cursor: pointer; }
+.snvEvilInformationFollowupActions .prominent { border-color: #efd68d; color: #251906; background: linear-gradient(135deg, #f5d488, #dca854); }
+.snvInformationReveal.snvEvilInformationReveal { width: min(940px, 100%); min-height: min(620px, calc(100dvh - 40px)); padding: clamp(22px, 3vw, 34px); gap: clamp(18px, 2.5vw, 28px); border-color: rgba(214, 169, 226, .2); background: linear-gradient(145deg, rgba(132, 75, 155, .16), rgba(23, 13, 29, .72)), rgba(17, 9, 22, .96); }
+.snvEvilInformationRevealHeading { display: grid; justify-items: center; text-align: center; }
+.snvEvilInformationRevealHeading h1 { margin: 0; color: #fff; font: clamp(2.25rem, 5vw, 4.2rem)/1.02 Georgia, "Noto Serif KR", serif; letter-spacing: -.035em; }
+.snvEvilInformationRevealSection { display: grid; gap: 12px; }
+.snvEvilInformationRevealSection > header { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+.snvEvilInformationRevealSection > header > span { color: #d9bd72; font: 800 .72rem Georgia, serif; letter-spacing: .08em; }
+.snvEvilInformationRevealSection h2 { margin: 0; color: #f3e7f6; font-size: 1.02rem; font-weight: 900; }
+.snvEvilInformationIdentityCards,
+.snvEvilInformationCharacterCards { display: grid; padding: 0; grid-auto-flow: column; grid-auto-columns: clamp(92px, 16vw, 148px); justify-content: center; gap: 12px; }
+.snvEvilInformationIdentityCards > article,
+.snvEvilInformationCharacterCards > article { display: grid; box-sizing: border-box; min-width: 0; min-height: 0; padding: 12px 10px; aspect-ratio: 1; place-items: center; align-content: center; gap: 9px; border: 1px solid rgba(214, 169, 226, .22); border-radius: 20px; color: #f9f2fb; background: linear-gradient(145deg, rgba(132, 75, 155, .22), rgba(255, 255, 255, .025)); text-align: center; overflow: hidden; }
+.snvEvilInformationIdentityCards > article > span { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid rgba(239, 214, 141, .34); border-radius: 50%; color: #f4d98f; background: rgba(174, 115, 28, .14); font: 800 1.05rem Georgia, serif; }
+.snvEvilInformationIdentityCards strong,
+.snvEvilInformationCharacterCards strong { min-width: 0; max-width: 100%; color: #fff; font-size: clamp(.72rem, 1.4vw, 1rem); line-height: 1.15; overflow-wrap: anywhere; word-break: break-word; }
+.snvEvilInformationCharacterCards > article > span { display: grid; width: clamp(46px, 46%, 66px); aspect-ratio: 1; place-items: center; border: 1px solid rgba(239, 214, 141, .24); border-radius: 50%; background: radial-gradient(circle, rgba(239, 214, 141, .12), rgba(130, 80, 154, .08)); }
+.snvEvilInformationCharacterCards img { width: 80%; height: 80%; object-fit: contain; }
+.snvInformationReveal.snvEvilInformationReveal > button { justify-self: center; min-height: 44px; margin-top: 0; padding: 9px 22px; border: 1px solid #efd68d; color: #291c08; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 10px 28px rgba(205, 143, 45, .25); font-weight: 900; }
+
+@media (max-width: 900px) {
+  .snvBluffCandidateGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .snvBluffCandidateGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .snvBluffCandidateGrid button { min-height: 0; padding: 8px 4px; aspect-ratio: 1; grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; justify-items: center; gap: 5px; text-align: center; }
+  .snvBluffCandidateGrid button img { width: 38px; height: 38px; grid-row: auto; }
+  .snvBluffCandidateGrid button strong { grid-row: auto; align-self: center; font-size: .68rem; line-height: 1.2; }
+  .snvBluffCandidateGrid button small { position: absolute; top: 5px; right: 5px; padding: 2px 4px; border-radius: 999px; background: rgba(34, 19, 40, .84); font-size: .48rem; }
+  .snvEvilInformationTaskActions { align-items: stretch; }
+  .snvEvilInformationTaskActions .snvBluffShuffle { flex: 0 0 46px; }
+  .snvEvilInformationTaskActions .snvBluffConfirm { flex: 1; }
+  .snvEvilInformationFollowupActions { grid-template-columns: 1fr; }
+  .snvInformationRevealBackdrop { padding: 12px; }
+  .snvInformationReveal.snvEvilInformationReveal { min-height: calc(100dvh - 24px); padding: 22px 12px; border-radius: 24px; }
+  .snvEvilInformationIdentityCards,
+  .snvEvilInformationCharacterCards { grid-auto-columns: minmax(82px, 27vw); gap: 8px; }
+}

@@ -323,8 +323,10 @@ pub(crate) fn validate_character_selection(
     });
     for character_id in &character_ids {
         let character_id = character_id.as_str();
+        let unknown_without_explicit_catalog =
+            allowed_character_ids.is_none() && character_kind(character_id).is_none();
         if !unique_character_ids.insert(character_id)
-            || character_kind(character_id).is_none()
+            || unknown_without_explicit_catalog
             || allowed_character_ids
                 .as_ref()
                 .is_some_and(|allowed| !allowed.contains(character_id))

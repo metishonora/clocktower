@@ -47,7 +47,10 @@ use crate::{
         PlayerStateSnapshot, PlayerTransition, RequiredInput, RequiredInputKind, StepInput,
         StepType, TargetInformationCheck, TargetInformationChoice,
     },
-    phase::{phase_transition_step, required_none, simple_step, validate_required_input},
+    phase::{
+        phase_transition_step, required_characters, required_none, simple_step,
+        validate_required_input,
+    },
     setup::{
         player_from_setup_input_for_script, validate_setup_inputs_for_script,
         validate_setup_warnings_for_script,
@@ -491,6 +494,49 @@ fn script_character_ids() -> Vec<String> {
         .iter()
         .map(|character| character.as_str().to_string())
         .collect()
+}
+
+fn legal_demon_bluff_character_ids(players: &[Player]) -> Vec<String> {
+    let assigned = players
+        .iter()
+        .map(|player| player.actual_character.as_str())
+        .collect::<HashSet<_>>();
+    SnvCharacterId::ALL
+        .iter()
+        .copied()
+        .filter(|character| {
+            matches!(
+                character.metadata().kind,
+                CharacterKind::Townsfolk | CharacterKind::Outsider
+            ) && !assigned.contains(character.as_str())
+        })
+        .map(|character| character.as_str().to_string())
+        .collect()
+}
+
+pub(crate) fn phase_input_suggestion_pool(step: &PhaseStep, players: &[Player]) -> Vec<StepInput> {
+    if !step.id.ends_with(":demonInfo")
+        || step.required_input.kind != RequiredInputKind::CharacterIds
+    {
+        return Vec::new();
+    }
+    let legal = legal_demon_bluff_character_ids(players);
+    let mut suggestions = Vec::new();
+    for first in 0..legal.len() {
+        for second in (first + 1)..legal.len() {
+            for third in (second + 1)..legal.len() {
+                suggestions.push(Some(crate::model::StepInputFields {
+                    character_ids: Some(vec![
+                        legal[first].clone(),
+                        legal[second].clone(),
+                        legal[third].clone(),
+                    ]),
+                    ..crate::model::StepInputFields::default()
+                }));
+            }
+        }
+    }
+    suggestions
 }
 
 fn day_action_character(record: &DayActionRecord) -> &'static str {
@@ -1790,7 +1836,7 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
             "firstNight",
             "demonInfo",
             StepType::EvilInfo,
-            required_none(),
+            required_characters(3, 3, Some(legal_demon_bluff_character_ids(players)), true),
             false,
         ));
     }
@@ -2116,6 +2162,46 @@ fn snv_information_result(
             })
             .map(|player_id| InformationResult::Player { player_id }),
         _ => None,
+    })
+}
+
+fn snv_evil_information(
+    step: &PhaseStep,
+    players: &[Player],
+    input: &StepInput,
+) -> Result<ConfirmedInformation, CoreError> {
+    let demon_player_ids = players
+        .iter()
+        .filter(|player| character_kind(&player.actual_character) == Some(CharacterKind::Demon))
+        .map(|player| player.id.clone())
+        .collect::<Vec<_>>();
+    if demon_player_ids.len() != 1 {
+        return Err(ErrorKind::InvalidEvilTeamState.into_error());
+    }
+    let minion_player_ids = players
+        .iter()
+        .filter(|player| character_kind(&player.actual_character) == Some(CharacterKind::Minion))
+        .map(|player| player.id.clone())
+        .collect::<Vec<_>>();
+    let bluff_character_ids = if step.id.ends_with(":demonInfo") {
+        input
+            .as_ref()
+            .and_then(|fields| fields.character_ids.clone())
+            .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?
+    } else {
+        Vec::new()
+    };
+    let result = InformationResult::TeamInfo {
+        demon_player_ids,
+        minion_player_ids,
+        bluff_character_ids,
+    };
+    Ok(ConfirmedInformation {
+        actor: None,
+        target_player_ids: vec![],
+        computed_result: Some(result.clone()),
+        delivered_result: result,
+        delivery_context: DeliveryContext::Fixed,
     })
 }
 
@@ -4667,12 +4753,28 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         }
         match (&event.kind, current.support) {
             (GameEventKind::PhaseStepConfirmed { payload }, PhaseStepSupport::Automated) => {
-                validate_required_input(&current.required_input, &payload.input, players_at_event)
+                let legacy_evil_information = current.step_type == StepType::EvilInfo
+                    && payload.input.is_none()
+                    && payload.information.is_none();
+                if !legacy_evil_information {
+                    validate_required_input(
+                        &current.required_input,
+                        &payload.input,
+                        players_at_event,
+                    )
                     .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                }
                 let legacy_juggler_without_information = current.character.as_deref()
                     == Some("juggler")
                     && payload.information.is_none();
-                if is_information_character(current.character.as_deref())
+                if current.step_type == StepType::EvilInfo && !legacy_evil_information {
+                    let expected = snv_evil_information(&current, players_at_event, &payload.input)
+                        .map(Some)
+                        .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                    if payload.information != expected {
+                        return Err(ErrorKind::ReplayFailed.into_error());
+                    }
+                } else if is_information_character(current.character.as_deref())
                     && !legacy_juggler_without_information
                 {
                     let expected = snv_confirmed_information(
@@ -5682,6 +5784,36 @@ pub(crate) fn propose_phase_command(
             }
             if current_step.step_type == StepType::Announcement {
                 return propose_night_deaths_announcement(game_file, &current_step, &players);
+            }
+            if current_step.step_type == StepType::EvilInfo {
+                let information = snv_evil_information(&current_step, &players, &payload.input)?;
+                let summary = crate::messages::phase_step_summary(
+                    &current_step,
+                    &players,
+                    &payload.input,
+                    Some(&information),
+                )
+                .unwrap_or_else(|| format!("정보 확정: {}", current_step.id));
+                let reveal_payload = crate::messages::phase_step_reveal_payload(
+                    &current_step,
+                    &information,
+                    &players,
+                );
+                let mut proposal = phase_proposal(
+                    game_file,
+                    &current_step,
+                    GameEventKind::PhaseStepConfirmed {
+                        payload: Box::new(PhaseStepEventPayload {
+                            step_id: payload.step_id,
+                            input: payload.input,
+                            information: Some(information),
+                        }),
+                    },
+                    summary,
+                    vec![],
+                );
+                proposal.reveal_payload = reveal_payload;
+                return Ok(proposal);
             }
             if is_information_character(current_step.character.as_deref()) {
                 let information = snv_confirmed_information(

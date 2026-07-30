@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event() -> Value {
     json!({
         "id": "setup-98",
@@ -66,6 +68,8 @@ fn advance_until(events: &mut Vec<Value>, target: &str) -> Value {
             json!({ "type": "skipStep", "payload": { "stepId": id } })
         } else if step["requiredInput"]["kind"] == "executionDecision" {
             json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "execute": false } } })
+        } else if id == "firstNight:demonInfo" {
+            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": snv_demon_bluff_input(step) } })
         } else if matches!(
             step["character"].as_str(),
             Some("fangGu" | "vigormortis" | "noDashii" | "vortox")

@@ -25,7 +25,25 @@ export async function replayOrThrow(gameFile: GameFile): Promise<ReplayState> {
 }
 
 export async function proposeAndAppend(gameFile: GameFile, command: Command): Promise<Proposal> {
-  const result = await realWasmCore().propose(gameFile, command);
+  let canonicalCommand = command;
+  if (
+    command.type === "confirmStep"
+    && command.payload.stepId === "firstNight:demonInfo"
+    && command.payload.input == null
+  ) {
+    const state = await replayOrThrow(gameFile);
+    const allowed = state.currentStep?.requiredInput.kind === "characterIds"
+      ? state.currentStep.requiredInput.allowedCharacterIds ?? []
+      : [];
+    canonicalCommand = {
+      ...command,
+      payload: {
+        ...command.payload,
+        input: { characterIds: allowed.slice(0, 3) },
+      },
+    };
+  }
+  const result = await realWasmCore().propose(gameFile, canonicalCommand);
   if (!result.ok) throw new Error(`${result.error.code}: ${result.error.messageKo}`);
   gameFile.game.events.push(result.value.event);
   return result.value;

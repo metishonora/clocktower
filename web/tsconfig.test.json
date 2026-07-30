@@ -46,6 +46,8 @@
     "src/phaseRuntime.test.ts",
     "src/features/death-consequences/deathConsequencePolicy.ts",
     "src/features/death-consequences/deathConsequencePolicy.test.ts",
+    "src/features/evil-information/SectsAndVioletsEvilInformation.tsx",
+    "src/features/evil-information/SectsAndVioletsEvilInformation.test.tsx",
     "src/voting.ts",
     "src/voting.test.ts",
     "src/node-test.d.ts",
