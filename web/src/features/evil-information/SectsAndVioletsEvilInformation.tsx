@@ -5,20 +5,26 @@ import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters.js";
 
 export function SectsAndVioletsEvilInformationTask({
   step,
+  wakePlayers,
   selectedCharacterIds,
+  revealed,
   busy,
   suggesting,
   onToggle,
   onShuffle,
-  onConfirm,
+  onReveal,
+  onContinue,
 }: {
   step: PhaseStep;
+  wakePlayers: Array<{ seat: number; name: string }>;
   selectedCharacterIds: string[];
+  revealed: boolean;
   busy: boolean;
   suggesting: boolean;
   onToggle: (characterId: string) => void;
   onShuffle: () => void;
-  onConfirm: () => void;
+  onReveal: () => void;
+  onContinue: () => void;
 }) {
   const isDemon = step.id.endsWith(":demonInfo");
   if (!isDemon) {
@@ -26,10 +32,13 @@ export function SectsAndVioletsEvilInformationTask({
       <article className="snvCurrentStep snvEvilInformationTask snvMinionInformationTask">
         <p className="snvCurrentStepLabel">현재 할 일</p>
         <h3>하수인 정보</h3>
-        <p>하수인을 깨우고 악마를 확인시킵니다.</p>
+        <WakeInstruction players={wakePlayers} />
         <div className="snvEvilInformationTaskActions">
-          <button type="button" className="prominent" disabled={busy} onClick={onConfirm}>
-            정보 확정
+          <button type="button" className="prominent" disabled={busy} onClick={onReveal}>
+            정보 공개
+          </button>
+          <button type="button" disabled={busy || !revealed} onClick={onContinue}>
+            다음으로
           </button>
         </div>
       </article>
@@ -47,6 +56,7 @@ export function SectsAndVioletsEvilInformationTask({
         </div>
         <span className={complete ? "complete" : undefined}>{selectedCharacterIds.length} / 3</span>
       </header>
+      <WakeInstruction players={wakePlayers} />
 
       <div className="snvBluffCandidateGrid" aria-label="사용 가능한 속임수">
         {allowed.map((characterId) => {
@@ -58,7 +68,7 @@ export function SectsAndVioletsEvilInformationTask({
               className={selected ? "selected" : undefined}
               aria-pressed={selected}
               aria-label={`${character.name}${selected ? ", 선택됨" : ""}`}
-              disabled={busy || suggesting || (!selected && complete)}
+              disabled={busy || suggesting || revealed || (!selected && complete)}
               onClick={() => onToggle(characterId)}
               key={characterId}
             >
@@ -76,7 +86,7 @@ export function SectsAndVioletsEvilInformationTask({
           className="snvBluffShuffle"
           aria-label="속임수 무작위 추천"
           title="무작위 추천"
-          disabled={busy || suggesting}
+          disabled={busy || suggesting || revealed}
           onClick={onShuffle}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -89,42 +99,31 @@ export function SectsAndVioletsEvilInformationTask({
         </button>
         <button
           type="button"
-          className="snvBluffConfirm"
+          className="prominent"
           disabled={busy || suggesting || !complete}
-          onClick={onConfirm}
+          onClick={onReveal}
         >
-          속임수 확정
+          정보 공개
+        </button>
+        <button
+          type="button"
+          className="snvEvilInformationNext"
+          disabled={busy || !revealed}
+          onClick={onContinue}
+        >
+          다음으로
         </button>
       </div>
     </article>
   );
 }
 
-export function SectsAndVioletsEvilInformationFollowup({
-  payload,
-  busy,
-  onReveal,
-  onContinue,
-}: {
-  payload: EvilInformationRevealPayload;
-  busy: boolean;
-  onReveal: () => void;
-  onContinue: () => void;
-}) {
-  const label = payload.kind === "minionInformation" ? "하수인 정보" : "악마 정보";
+function WakeInstruction({ players }: { players: Array<{ seat: number; name: string }> }) {
+  const playerText = players.map((player) => `${player.seat}번 ${player.name}`).join(", ");
   return (
-    <article className="snvCurrentStep snvEvilInformationFollowup">
-      <p className="snvCurrentStepLabel">확정된 정보</p>
-      <h3>{label}</h3>
-      <div className="snvEvilInformationFollowupActions">
-        <button type="button" className="prominent" disabled={busy} onClick={onReveal}>
-          플레이어에게 공개
-        </button>
-        <button type="button" disabled={busy} onClick={onContinue}>
-          다음 단계로 계속
-        </button>
-      </div>
-    </article>
+    <p className="snvEvilInformationWakeInstruction">
+      <strong>{playerText}</strong>를 깨웁니다.
+    </p>
   );
 }
 

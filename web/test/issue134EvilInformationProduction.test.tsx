@@ -20,11 +20,12 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
 
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   expect(await within(app).findByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  await user.click(within(app).getByRole("button", { name: "정보 확정" }));
-  expect(await within(app).findByRole("heading", { name: "하수인 정보" })).toBeTruthy();
+  expect(app.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toBe(
+    "8번 Minion Eight, 9번 Minion Nine를 깨웁니다.",
+  );
+  expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(true);
+  await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   await waitFor(() => expect(storage.latest.game.events).toHaveLength(2));
-
-  await user.click(within(app).getByRole("button", { name: "플레이어에게 공개" }));
   let dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
   expect(within(dialog).getByRole("heading", { name: "당신은 하수인입니다" })).toBeTruthy();
   expect(within(dialog).getByRole("heading", { name: "악마" })).toBeTruthy();
@@ -34,22 +35,25 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
   expect(storage.latest.game.events).toHaveLength(2);
 
-  await user.click(within(app).getByRole("button", { name: "플레이어에게 공개" }));
+  await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
   await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
   expect(storage.latest.game.events).toHaveLength(2);
-  await user.click(within(app).getByRole("button", { name: "다음 단계로 계속" }));
+  await user.click(within(app).getByRole("button", { name: "다음으로" }));
 
   expect(await within(app).findByRole("heading", { name: "악마 정보" })).toBeTruthy();
+  expect(app.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toBe(
+    "10번 Demon Ten를 깨웁니다.",
+  );
   expect(within(app).getByText("0 / 3")).toBeTruthy();
-  expect(within(app).getByRole("button", { name: "속임수 확정" }).hasAttribute("disabled")).toBe(true);
+  expect(within(app).getByRole("button", { name: "정보 공개" }).hasAttribute("disabled")).toBe(true);
+  expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(true);
   await user.click(within(app).getByRole("button", { name: "속임수 무작위 추천" }));
   await waitFor(() => expect(within(app).getAllByText("선택됨")).toHaveLength(3));
-  expect(within(app).getByRole("button", { name: "속임수 확정" }).hasAttribute("disabled")).toBe(false);
-  await user.click(within(app).getByRole("button", { name: "속임수 확정" }));
+  expect(within(app).getByRole("button", { name: "정보 공개" }).hasAttribute("disabled")).toBe(false);
+  await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   await waitFor(() => expect(storage.latest.game.events).toHaveLength(3));
 
-  await user.click(within(app).getByRole("button", { name: "플레이어에게 공개" }));
   dialog = screen.getByRole("dialog", { name: "악마 정보 공개" });
   expect(within(dialog).getByRole("heading", { name: "당신은 악마입니다" })).toBeTruthy();
   expect(within(dialog).getByRole("heading", { name: "당신의 하수인" })).toBeTruthy();
@@ -59,6 +63,8 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   expect(dialog.textContent).not.toContain("마녀");
   expect(dialog.textContent).not.toContain("세레노버스");
   expect(storage.latest.game.events).toHaveLength(3);
+  await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(false);
 });
 
 class MemoryStorage implements GameStorageDriver {

@@ -44,7 +44,6 @@ import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { SectsAndVioletsReveal } from "./features/reveal/SectsAndVioletsReveal";
 import {
-  SectsAndVioletsEvilInformationFollowup,
   SectsAndVioletsEvilInformationReveal,
   SectsAndVioletsEvilInformationTask,
 } from "./features/evil-information/SectsAndVioletsEvilInformation";
@@ -121,6 +120,7 @@ type InformationCheckpoint = {
 type EvilInformationCheckpoint = {
   sourceEventId: string;
   stepId: string;
+  step: PhaseStep;
   payload: EvilInformationRevealPayload;
 };
 
@@ -361,6 +361,10 @@ export function SectsAndVioletsGameSurface({
   const canonicalEvilInformationStep = replayState?.currentStep?.stepType === "evilInfo"
     ? replayState.currentStep
     : undefined;
+  const activeEvilInformationStep = evilInformationCheckpoint?.step ?? canonicalEvilInformationStep;
+  const evilInformationWakePlayers = activeEvilInformationStep
+    ? evilInformationPlayersToWake(activeEvilInformationStep, replayState?.players ?? [])
+    : [];
   const activeInformationStep = informationCheckpoint?.step ?? canonicalInformationStep;
   const activeInformationActor = informationCheckpoint?.actor ?? (
     activeInformationStep?.playerId
@@ -1234,10 +1238,19 @@ export function SectsAndVioletsGameSurface({
     setEvilInformationCheckpoint({
       sourceEventId: result.value.event.id,
       stepId: canonicalEvilInformationStep.id,
+      step: canonicalEvilInformationStep,
       payload: revealPayload,
     });
-    setEvilInformationRevealOpen(false);
+    setEvilInformationRevealOpen(true);
     setOperationBusy(false);
+  };
+
+  const revealEvilInformation = () => {
+    if (evilInformationCheckpoint) {
+      setEvilInformationRevealOpen(true);
+      return;
+    }
+    void confirmEvilInformation();
   };
 
   const continueAfterEvilInformation = () => {
@@ -2505,22 +2518,20 @@ export function SectsAndVioletsGameSurface({
           </header>
 
           <div className="snvFirstNightPrimary">
-            {evilInformationCheckpoint ? (
-              <SectsAndVioletsEvilInformationFollowup
-                payload={evilInformationCheckpoint.payload}
-                busy={operationBusy}
-                onReveal={() => setEvilInformationRevealOpen(true)}
-                onContinue={continueAfterEvilInformation}
-              />
-            ) : canonicalEvilInformationStep ? (
+            {activeEvilInformationStep ? (
               <SectsAndVioletsEvilInformationTask
-                step={canonicalEvilInformationStep}
-                selectedCharacterIds={selectedBluffCharacterIds}
+                step={activeEvilInformationStep}
+                wakePlayers={evilInformationWakePlayers}
+                selectedCharacterIds={evilInformationCheckpoint?.payload.kind === "demonInformation"
+                  ? evilInformationCheckpoint.payload.bluffCharacterIds
+                  : selectedBluffCharacterIds}
+                revealed={Boolean(evilInformationCheckpoint)}
                 busy={operationBusy}
                 suggesting={suggestingBluffs}
                 onToggle={toggleBluffCharacter}
                 onShuffle={() => void suggestDemonBluffs()}
-                onConfirm={() => void confirmEvilInformation()}
+                onReveal={revealEvilInformation}
+                onContinue={continueAfterEvilInformation}
               />
             ) : activeInformationStep && activeInformationActor ? (
               <SectsAndVioletsInformationTask
@@ -2988,6 +2999,13 @@ function formatAutosaveTime(value: string | undefined) {
 function defaultAlignment(characterId: string): Alignment {
   const kind = characters.find((character) => character.id === characterId)?.kind;
   return kind === "minion" || kind === "demon" ? "evil" : "good";
+}
+
+function evilInformationPlayersToWake(step: PhaseStep, players: Player[]) {
+  const kind = step.id.endsWith(":demonInfo") ? "demon" : "minion";
+  return players
+    .filter((player) => characters.find((character) => character.id === player.actualCharacter)?.kind === kind)
+    .map(({ seat, name }) => ({ seat, name }));
 }
 
 function DistributionValues({ values }: { values: [number, number, number, number] }) {
