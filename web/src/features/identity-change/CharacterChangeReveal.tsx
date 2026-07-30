@@ -15,6 +15,9 @@ export function CharacterChangeReveal({
   if (reveal.payload.kind !== "characterChange") return null;
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const evil = reveal.payload.alignment === "evil";
+  const characterLabel = !evil && reveal.payload.characterId === "evilTwin"
+    ? "쌍둥이"
+    : asset?.label ?? reveal.payload.characterId;
   return (
     <SectsAndVioletsReveal
       dialogLabel={`역할 변경 공개 ${reveal.sequence}/${total}`}
@@ -25,7 +28,7 @@ export function CharacterChangeReveal({
       <div className="snakeCharmerRevealIdentity">
         <h1>당신의 직업이 변경되었습니다</h1>
         {asset ? <img src={asset.src} alt="" /> : null}
-        <h2>{asset?.label ?? reveal.payload.characterId}</h2>
+        <h2>{characterLabel}</h2>
         <span className="snakeCharmerRevealAlignment" aria-label={`현재 진영 · ${evil ? "악" : "선"}`}>
           {evil ? "악" : "선"}
         </span>

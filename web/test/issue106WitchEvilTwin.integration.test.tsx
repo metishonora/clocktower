@@ -4,6 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { WitchDeathPrompt } from "../src/features/death-consequences/WitchDeathPrompt";
 import { EvilTwinReveal, EvilTwinRevealPrompt } from "../src/features/evil-twin/EvilTwinReveal";
+import { CharacterChangeReveal } from "../src/features/identity-change/CharacterChangeReveal";
 import { SectsAndVioletsLiveGrimoire, type LiveHandoffKind, type LivePlayer } from "../src/sectsAndVioletsLivePhase";
 import type { EvilTwinPairRevealPayload, PendingIdentityReveal, PhaseStep, Player } from "../src/core/types";
 
@@ -39,14 +40,35 @@ describe("issue #106 live prompts", () => {
 
     rerender(<EvilTwinReveal reveal={twinReveal} onConfirm={() => undefined} />);
     expect(screen.getByText("사악한 쌍둥이")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "여러분은 쌍둥이입니다," })).toBeTruthy();
-    expect(screen.getByText("상대와 직업을 확인하십시오,")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "확인했다면 눈을 감으세요." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "여러분은 쌍둥이입니다" })).toBeTruthy();
+    expect(screen.getByText("상대와 직업을 확인하십시오")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "확인했다면 눈을 감으세요" })).toBeTruthy();
+    expect(screen.queryByText("여러분은 쌍둥이입니다,")).toBeNull();
+    expect(screen.queryByText("상대와 직업을 확인하십시오,")).toBeNull();
     expect(screen.getByText("↔")).toBeTruthy();
     const goodTwin = document.querySelector(".evilTwinRevealIdentity.alignment-good");
     expect(goodTwin).toBeTruthy();
     expect(within(goodTwin as HTMLElement).getByText("쌍둥이")).toBeTruthy();
     expect(within(goodTwin as HTMLElement).queryByText("사악한 쌍둥이")).toBeNull();
+  });
+
+  it("shows a good-aligned Evil Twin character change as 쌍둥이", () => {
+    const goodTwinChange: PendingIdentityReveal = {
+      sourceEventId: "pit-hag-1",
+      sequence: 1,
+      payload: {
+        kind: "characterChange",
+        playerId: "p4",
+        alignment: "good",
+        characterId: "evilTwin",
+      },
+    };
+
+    render(<CharacterChangeReveal reveal={goodTwinChange} total={1} onConfirm={() => undefined} />);
+
+    const reveal = screen.getByRole("dialog", { name: "역할 변경 공개 1/1" });
+    expect(within(reveal).getByRole("heading", { name: "쌍둥이" })).toBeTruthy();
+    expect(within(reveal).queryByRole("heading", { name: "사악한 쌍둥이" })).toBeNull();
   });
 
   it("renders the same icon-free Witch death confirmation copy", () => {

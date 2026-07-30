@@ -426,3 +426,31 @@ fn a_twin_who_changes_to_the_same_alignment_requires_a_new_opposing_twin() {
     assert!(!allowed.contains(&json!("player-1")));
     assert!(allowed.contains(&json!("player-2")));
 }
+
+#[test]
+fn a_witch_acquired_after_night_deaths_is_not_backfilled_into_first_night_at_three_alive() {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../../fixtures/acceptance/sects-and-violets/issue-106-night-three-living.json"
+    ))
+    .unwrap();
+
+    let result: Value = serde_json::from_str(&replay_json(&fixture.to_string())).unwrap();
+
+    assert_eq!(result["ok"], true, "{result}");
+    assert_eq!(
+        result["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|player| player["alive"] == true)
+            .count(),
+        3
+    );
+    assert_ne!(result["value"]["currentStep"]["character"], "witch");
+    assert!(
+        result["value"]["currentStep"]["id"]
+            .as_str()
+            .is_some_and(|id| id.starts_with("night3:")),
+        "{result}"
+    );
+}

@@ -29,12 +29,12 @@ export function EvilTwinReveal({ reveal, onConfirm }: {
     <SectsAndVioletsReveal
       dialogLabel="쌍둥이 정보 공개"
       className="evilTwinReveal"
-      closeLabel="확인했다면 눈을 감으세요."
+      closeLabel="확인했다면 눈을 감으세요"
       onClose={onConfirm}
     >
       <span>사악한 쌍둥이</span>
-      <h2>여러분은 쌍둥이입니다,</h2>
-      <p>상대와 직업을 확인하십시오,</p>
+      <h2>여러분은 쌍둥이입니다</h2>
+      <p>상대와 직업을 확인하십시오</p>
       <div className="evilTwinRevealPair">
         {reveal.payload.players.map((player, index) => (
           <Fragment key={player.playerId}>

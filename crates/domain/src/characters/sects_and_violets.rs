@@ -1148,6 +1148,19 @@ fn transition_source<'a>(
         {
             Some((event, payload.step_id.as_str(), "pitHag"))
         }
+        GameEventKind::BarberConsequenceResolved { payload }
+            if event.id == player.ability_instance.source_event_id
+                && matches!(
+                    &payload.outcome,
+                    BarberConsequenceOutcome::Swapped {
+                        identity_transitions
+                    } if identity_transitions
+                        .iter()
+                        .any(|transition| transition.player_id == player.id)
+                ) =>
+        {
+            Some((event, payload.step_id.as_str(), "barber"))
+        }
         GameEventKind::NightActionResolved { payload }
             if event.id == player.ability_instance.source_event_id =>
         {
@@ -7322,5 +7335,37 @@ mod tests {
             .iter()
             .filter(|(rank, _)| *rank == 5)
             .all(|(_, id)| is_demon(id)));
+    }
+
+    #[test]
+    fn later_night_does_not_schedule_a_base_witch_after_deaths_leave_three_alive() {
+        let events: Vec<GameEvent> = serde_json::from_value(json!([{
+            "id": "setup",
+            "type": "setupConfirmed",
+            "phase": "setup",
+            "payload": { "players": [
+                { "id": "player-1", "seat": 1, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
+                { "id": "player-2", "seat": 2, "name": "Dreamer", "actualCharacter": "dreamer", "shownCharacter": "dreamer" },
+                { "id": "player-3", "seat": 3, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
+                { "id": "player-4", "seat": 4, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
+                { "id": "player-5", "seat": 5, "name": "Witch", "actualCharacter": "witch", "shownCharacter": "witch" },
+                { "id": "player-6", "seat": 6, "name": "Sage", "actualCharacter": "sage", "shownCharacter": "sage" },
+                { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            ] },
+            "summary": "setup",
+            "createdAt": "2026-07-30T00:00:00.000Z"
+        }]))
+        .unwrap();
+        let mut players = setup_players(&events).unwrap();
+        for player in &mut players[..4] {
+            player.alive = false;
+        }
+
+        let steps = later_night_steps(&players, &events, 1);
+
+        assert_eq!(players.iter().filter(|player| player.alive).count(), 3);
+        assert!(steps
+            .iter()
+            .all(|step| step.character.as_deref() != Some("witch")));
     }
 }

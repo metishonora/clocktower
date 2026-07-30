@@ -66,8 +66,8 @@ function GenericEvilTwinReveal({ payload, onClose }: {
   return (
     <main className="revealShell" aria-label="쌍둥이 정보 공개">
       <section className="revealCard">
-        <h1>여러분은 쌍둥이입니다,</h1>
-        <p>상대와 직업을 확인하십시오,</p>
+        <h1>여러분은 쌍둥이입니다</h1>
+        <p>상대와 직업을 확인하십시오</p>
         {payload.players.map((player) => (
           <div key={player.playerId}>
             <strong>{player.seat}번 · {player.name}</strong>
@@ -78,7 +78,7 @@ function GenericEvilTwinReveal({ payload, onClose }: {
           </div>
         ))}
         <button type="button" className="revealCloseButton" onClick={onClose}>
-          확인했다면 눈을 감으세요.
+          확인했다면 눈을 감으세요
         </button>
       </section>
     </main>
@@ -125,7 +125,7 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
   } else if (payload.kind === "sageInformation") {
     content = <><h1>현자 정보</h1><p>당신을 죽인 악마는…</p><div className="roleInformationPair roleInformationPlayerPair"><RevealPlayers players={[payload.candidatePlayers[0]]} /><b>또는</b><RevealPlayers players={[payload.candidatePlayers[1]]} /></div></>;
   } else {
-    content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} /></>;
+    content = <><h1>당신의 역할이 변경되었습니다.</h1><span className={`roleInformationAlignment ${payload.alignment}`}>{payload.alignment === "good" ? "선" : "악"}</span><CharacterResult characterId={payload.characterId} label={payload.alignment === "good" && payload.characterId === "evilTwin" ? "쌍둥이" : undefined} /></>;
   }
   return (
     <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.kind === "characterChange" ? payload.playerId : undefined}>
@@ -190,8 +190,8 @@ function RevealPlayers({ players }: { players: readonly RevealPlayer[] }) {
   return <div className="roleInformationPlayers" aria-label="확인 대상">{players.map((player) => <div key={player.playerId}><span>{player.seat}</span><strong>{player.name}</strong></div>)}</div>;
 }
 
-function CharacterResult({ characterId }: { characterId: string }) {
-  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{displayCharacterLabel(characterId)}</strong></div>;
+function CharacterResult({ characterId, label }: { characterId: string; label?: string }) {
+  return <div className="roleInformationCharacter"><CharacterIcon characterId={characterId} /><strong>{label ?? displayCharacterLabel(characterId)}</strong></div>;
 }
 
 function displayCharacterLabel(characterId: string) {
