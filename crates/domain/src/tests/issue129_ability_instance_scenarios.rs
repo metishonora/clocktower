@@ -13,7 +13,7 @@ fn setup_event() -> Value {
             { "id": "player-4", "seat": 4, "name": "Seamstress", "actualCharacter": "seamstress", "shownCharacter": "seamstress" },
             { "id": "player-5", "seat": 5, "name": "Math", "actualCharacter": "mathematician", "shownCharacter": "mathematician" },
             { "id": "player-6", "seat": 6, "name": "Mutant", "actualCharacter": "mutant", "shownCharacter": "mutant" },
-            { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
         ]},
         "summary": "setup", "createdAt": "2026-07-27T00:00:00.000Z"
     })
@@ -101,7 +101,7 @@ fn advance_to_with_demon_target(
                 "type": "confirmStep",
                 "payload": {
                     "stepId": step_id, "input": null,
-                    "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"] }
+                    "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"].as_u64().unwrap_or(100) }
                 }
             }),
             _ if step["support"] == "manual" => {

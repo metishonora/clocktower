@@ -190,6 +190,16 @@ function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
         },
       };
     }
+    if (step.informationPrompt.numberConstraint) {
+      return {
+        type: "confirmStep",
+        payload: {
+          stepId: step.id,
+          input: null,
+          deliveredResult: { kind: "number", value: 100 },
+        },
+      };
+    }
     const booleanChoice = step.informationPrompt.booleanChoices?.[0];
     if (booleanChoice) {
       return {

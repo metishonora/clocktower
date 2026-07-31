@@ -330,7 +330,7 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.source !== undefined && !(
           isRecord(payload.source) &&
           hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
-          (payload.source.kind === "klutzChoice" || payload.source.kind === "witchCurseDeath" || payload.source.kind === "evilTwinExecution") &&
+          (payload.source.kind === "klutzChoice" || payload.source.kind === "witchCurseDeath" || payload.source.kind === "evilTwinExecution" || payload.source.kind === "vortoxNoExecution") &&
           typeof payload.source.sourceEventId === "string"
         ))
       ) throw invalidEvent();
@@ -633,6 +633,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     !value.registrationCandidatePlayerIds.every(isString) ||
     !Array.isArray(value.numberChoices) ||
     !value.numberChoices.every(isNumberChoice) ||
+    (value.numberConstraint !== undefined && !isNumberConstraint(value.numberConstraint)) ||
     (value.booleanChoices !== undefined &&
       (!Array.isArray(value.booleanChoices) || !value.booleanChoices.every(isBooleanChoice))) ||
     !Array.isArray(value.setupInfoRegistrationOptions) ||
@@ -664,6 +665,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   if (value.targetChecks && value.targetChecks.length > 0) {
     return (value.computedResult === undefined || isInformationResult(value.computedResult))
       && value.numberChoices.length === 0
+      && value.numberConstraint === undefined
       && (value.booleanChoices?.length ?? 0) === 0
       && (!vortoxActive || value.targetChecks.every((check) =>
         isRecord(check)
@@ -672,7 +674,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
       ));
   }
   if (value.computedResult === undefined) {
-    return inputKind === "setupInfo" && value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
+    return inputKind === "setupInfo" && value.numberChoices.length === 0 && value.numberConstraint === undefined && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (!isInformationResult(value.computedResult)) return false;
   if (value.computedResult.kind === "boolean") {
@@ -682,16 +684,26 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     const computedChoiceIsValid = vortoxActive
       ? computedChoices.length === 0 && choices.every((choice) => choice.value !== computedValue)
       : computedChoices.length === 1 && computedChoices[0]?.value === computedValue;
-    return value.numberChoices.length === 0 && computedChoiceIsValid &&
+    return value.numberChoices.length === 0 && value.numberConstraint === undefined && computedChoiceIsValid &&
       new Set(choices.map((choice) => choice.value)).size === choices.length;
   }
   if (value.computedResult.kind !== "number") {
-    return value.numberChoices.length === 0 && (value.booleanChoices?.length ?? 0) === 0;
+    return value.numberChoices.length === 0 && value.numberConstraint === undefined && (value.booleanChoices?.length ?? 0) === 0;
   }
 
   const computedChoices = value.numberChoices.filter((choice) => choice.isComputed);
   const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
   const computedValue = value.computedResult.value;
+  if (value.numberConstraint !== undefined) {
+    return vortoxActive
+      && value.deliveryMode === "selectable"
+      && value.numberChoices.length === 0
+      && (value.booleanChoices?.length ?? 0) === 0
+      && value.numberConstraint.min === 0
+      && value.numberConstraint.max === Number.MAX_SAFE_INTEGER
+      && value.numberConstraint.excludedValues.length === 1
+      && value.numberConstraint.excludedValues[0] === computedValue;
+  }
   return (
     (vortoxActive
       ? computedChoices.length === 0 && value.numberChoices.every((choice) => choice.value !== computedValue)
@@ -744,9 +756,9 @@ function isInformationResult(value: unknown): value is InformationResult {
     case "number":
       return (
         typeof value.value === "number" &&
-        Number.isInteger(value.value) &&
+        Number.isSafeInteger(value.value) &&
         value.value >= 0 &&
-        value.value <= 15
+        value.value <= Number.MAX_SAFE_INTEGER
       );
     case "boolean":
       return typeof value.value === "boolean";
@@ -855,6 +867,20 @@ function isNumberChoice(value: unknown): boolean {
     typeof value.isComputed === "boolean" &&
     Array.isArray(value.registrationJudgments) &&
     value.registrationJudgments.every(isRegistrationJudgment)
+  );
+}
+
+function isNumberConstraint(value: unknown): value is NonNullable<InformationPrompt["numberConstraint"]> {
+  if (!isRecord(value) || !hasExactKeys(value, ["min", "max", "excludedValues"])) return false;
+  const { min, max, excludedValues } = value;
+  return (
+    typeof min === "number" && Number.isSafeInteger(min) && min >= 0 &&
+    typeof max === "number" && Number.isSafeInteger(max) && max >= min &&
+    Array.isArray(excludedValues) &&
+    excludedValues.every((candidate) =>
+      typeof candidate === "number" && Number.isSafeInteger(candidate) && candidate >= min && candidate <= max
+    ) &&
+    new Set(excludedValues).size === excludedValues.length
   );
 }
 

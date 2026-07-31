@@ -13,7 +13,7 @@ fn setup_event() -> Value {
             { "id": "player-4", "seat": 4, "name": "도윤", "actualCharacter": "mutant", "shownCharacter": "mutant" },
             { "id": "player-5", "seat": 5, "name": "유나", "actualCharacter": "witch", "shownCharacter": "witch" },
             { "id": "player-6", "seat": 6, "name": "하린", "actualCharacter": "cerenovus", "shownCharacter": "cerenovus" },
-            { "id": "player-7", "seat": 7, "name": "준호", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "준호", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
         ]},
         "summary": "초기 설정 확정: 7명",
         "createdAt": "2026-07-26T00:00:00.000Z"

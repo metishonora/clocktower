@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import type { DeliveryReason, InformationResult, PhaseStep, Player, TargetCheck } from "../../core/types";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
@@ -26,7 +27,7 @@ export function SectsAndVioletsInformationTask({
   revealed: boolean;
   busy: boolean;
   deliveredResult?: InformationResult;
-  onDeliveredResultChange?: (result: InformationResult) => void;
+  onDeliveredResultChange?: (result: InformationResult | undefined) => void;
   onChooseTargets?: () => void;
   onSkip?: () => void;
   onReveal: () => void;
@@ -35,17 +36,37 @@ export function SectsAndVioletsInformationTask({
   const characterId = step.character ?? actor.actualCharacter;
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
   const asset = sectsAndVioletsCharacterAsset(characterId);
-  const influence = visibleInformationInfluence(step.informationPrompt?.activeReasons ?? []);
+  const influences = visibleInformationInfluences(step.informationPrompt?.activeReasons ?? []);
+  const influence = actionInformationInfluence(influences);
   const influencePresentation = influence ? informationInfluencePresentation[influence] : undefined;
+  const numberConstraint = step.informationPrompt?.numberConstraint;
+  const [numberDraft, setNumberDraft] = useState(() => deliveredResult?.kind === "number" ? String(deliveredResult.value) : "");
+  const [truthWarningAttempt, setTruthWarningAttempt] = useState(0);
+  useEffect(() => {
+    setNumberDraft(deliveredResult?.kind === "number" ? String(deliveredResult.value) : "");
+    setTruthWarningAttempt(0);
+  }, [step.id, numberConstraint?.min, numberConstraint?.max, numberConstraint?.excludedValues.join(",")]);
+  const numberError = useMemo(
+    () => numberConstraint ? numberConstraintError(numberDraft, numberConstraint) : undefined,
+    [numberConstraint, numberDraft],
+  );
+  const directNumberResult = numberConstraint && !numberError
+    ? { kind: "number" as const, value: Number(numberDraft) }
+    : undefined;
+  const truthConstraintViolation = numberConstraint
+    ? isTruthConstraintViolation(numberDraft, numberConstraint)
+    : false;
   const targetCheck = targetCheckForSelection(step, selectedPlayerIds);
   const choices = targetCheck?.choices
     .filter((choice) => influence !== "vortox" || !choice.isComputed)
     .map((choice) => choice.result) ?? informationChoices(step, influence === "vortox");
-  const proposedResult = deliveredResult
+  const proposedResult = directNumberResult ?? deliveredResult
     ?? (targetCheck ? choices[0] : choices.length === 1 ? choices[0] : step.informationPrompt?.computedResult);
-  const selectedResult = proposedResult && choices.some((choice) => informationResultKey(choice) === informationResultKey(proposedResult))
-    ? proposedResult
-    : choices[0];
+  const selectedResult = numberConstraint
+    ? directNumberResult
+    : proposedResult && choices.some((choice) => informationResultKey(choice) === informationResultKey(proposedResult))
+      ? proposedResult
+      : choices[0];
   const targeted = characterId === "dreamer" || characterId === "seamstress";
   const needsTargets = targeted && !targetCheck;
   const usesManualStepLayout = needsTargets;
@@ -62,7 +83,7 @@ export function SectsAndVioletsInformationTask({
         <div>
           <span className="snvInformationRoleLine">
             <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? characterId}</span>
-            {influencePresentation ? <em className={`snvInformationInfluenceBadge ${influence}`}>{influencePresentation.badge}</em> : null}
+            {influences.length ? <span className="snvInformationInfluenceBadges" aria-label="정보 영향">{influences.map((activeInfluence) => <em key={activeInfluence} className={`snvInformationInfluenceBadge ${activeInfluence}`}>{informationInfluencePresentation[activeInfluence].badge}</em>)}</span> : null}
           </span>
           <strong>{actor.name}</strong>
         </div>
@@ -98,17 +119,47 @@ export function SectsAndVioletsInformationTask({
             <SeamstressEditor value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : characterId === "sage" ? (
             <SageEditor players={players} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
+          ) : numberConstraint ? (
+            <NumberConstraintEditor
+              step={step}
+              value={numberDraft}
+              error={numberError}
+              truthWarningAttempt={truthWarningAttempt}
+              busy={busy || revealed}
+              onChange={(value) => {
+                setNumberDraft(value);
+                setTruthWarningAttempt(0);
+                const error = numberConstraintError(value, numberConstraint);
+                onDeliveredResultChange?.(error ? undefined : { kind: "number", value: Number(value) });
+              }}
+            />
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
           <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
-            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || !selectedResult} onClick={onReveal}>{influencePresentation?.action ?? "정보 공개"}</button>
+            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || (!selectedResult && !truthConstraintViolation)} onClick={() => {
+              if (truthConstraintViolation) {
+                setTruthWarningAttempt((attempt) => attempt + 1);
+                return;
+              }
+              onReveal();
+            }}>{influencePresentation?.action ?? "정보 공개"}</button>
             {revealed && onContinue ? <button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button> : null}
           </div>
         </>
       )}
     </article>
   );
+}
+
+function NumberConstraintEditor({ step, value, error, truthWarningAttempt, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; busy: boolean; onChange: (value: string) => void }) {
+  const characterId = step.character ?? "";
+  const truth = step.informationPrompt?.computedResult?.kind === "number" ? step.informationPrompt.computedResult.value : undefined;
+  const truthError = error === "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
+  return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 거짓 정보"><div>
+    <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
+    <dd><input id={`delivered-${step.id}`} aria-label="전달할 숫자" type="number" min="0" step="1" inputMode="numeric" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)} /><span>{numericUnit(characterId)}</span></dd>
+  </div><p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p></dl>;
 }
 
 function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
@@ -180,16 +231,39 @@ const informationInfluencePresentation: Record<InformationInfluence, { badge: st
   vortox: { badge: "보르톡스", action: "거짓 정보 공개" },
 };
 
-function visibleInformationInfluence(reasons: DeliveryReason[]): InformationInfluence | undefined {
-  if (reasons.some((reason) => reason.type === "vortox")) return "vortox";
-  if (reasons.some((reason) => reason.type === "poisoned")) return "poisoned";
-  if (reasons.some((reason) => reason.type === "drunk")) return "drunk";
+function visibleInformationInfluences(reasons: DeliveryReason[]): InformationInfluence[] {
+  return (["drunk", "poisoned", "vortox"] as const).filter((influence) => reasons.some((reason) => reason.type === influence));
+}
+
+function actionInformationInfluence(influences: InformationInfluence[]): InformationInfluence | undefined {
+  if (influences.includes("vortox")) return "vortox";
+  if (influences.includes("poisoned")) return "poisoned";
+  return influences.includes("drunk") ? "drunk" : undefined;
+}
+
+function numberConstraintError(value: string, constraint: NonNullable<NonNullable<PhaseStep["informationPrompt"]>["numberConstraint"]>): string | undefined {
+  if (!/^\d+$/.test(value)) return "0 이상의 정수를 입력하세요.";
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < constraint.min || number > constraint.max) return "입력할 수 있는 정수 범위를 벗어났습니다.";
+  if (constraint.excludedValues.includes(number)) return "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
   return undefined;
+}
+
+function isTruthConstraintViolation(value: string, constraint: NonNullable<NonNullable<PhaseStep["informationPrompt"]>["numberConstraint"]>): boolean {
+  if (!/^\d+$/.test(value)) return false;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && constraint.excludedValues.includes(number);
+}
+
+function numericUnit(characterId: string): string {
+  if (characterId === "clockmaker") return "칸";
+  if (characterId === "juggler") return "개";
+  return "명";
 }
 
 function targetCheckForSelection(step: PhaseStep, ids: string[]) { return step.informationPrompt?.targetChecks?.find((check) => check.targetPlayerIds.length === ids.length && check.targetPlayerIds.every((id) => ids.includes(id))); }
 function matchesTargetedInformationCharacter(characterId: string) { return characterId === "dreamer" || characterId === "seamstress" || characterId === "sage"; }
-function usesSpaciousGenericInformationLayout(characterId: string) { return characterId === "clockmaker" || characterId === "flowergirl" || characterId === "townCrier" || characterId === "oracle"; }
+function usesSpaciousGenericInformationLayout(characterId: string) { return characterId === "clockmaker" || characterId === "flowergirl" || characterId === "townCrier" || characterId === "oracle" || characterId === "juggler"; }
 function usesSpaciousInformationLayout(characterId: string) { return matchesTargetedInformationCharacter(characterId) || usesSpaciousGenericInformationLayout(characterId); }
 function informationResultKey(result: InformationResult) { return JSON.stringify(result); }
 function characterName(id: string) { return sectsAndVioletsCharacters.find((character) => character.id === id)?.name ?? id; }

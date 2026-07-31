@@ -37,7 +37,7 @@ fn valid_setup_event() -> Value {
             { "id": "player-4", "seat": 4, "name": "Artist", "actualCharacter": "artist", "shownCharacter": "artist" },
             { "id": "player-5", "seat": 5, "name": "Juggler", "actualCharacter": "juggler", "shownCharacter": "juggler" },
             { "id": "player-6", "seat": 6, "name": "Sage", "actualCharacter": "sage", "shownCharacter": "sage" },
-            { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
         ] },
         "summary": "valid initial setup",
         "createdAt": "2026-07-27T00:00:00.000Z"
@@ -49,7 +49,7 @@ fn setup_event_for_creation(character: &str) -> Value {
     for index in 1..7 {
         if setup["payload"]["players"][index]["actualCharacter"] == character {
             let replacement = if character == "fangGu" {
-                "vortox"
+                "noDashii"
             } else {
                 "savant"
             };
@@ -84,7 +84,12 @@ fn append(events: &mut Vec<Value>, command: Value) -> Value {
         &command.to_string(),
     ))
     .unwrap();
-    assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
+    assert_eq!(
+        proposal["ok"],
+        true,
+        "proposal failed for {command}: {proposal}; state: {}",
+        replay(events)
+    );
     events.push(proposal["value"]["event"].clone());
     proposal
 }
@@ -601,8 +606,8 @@ fn a_transformed_player_killed_before_their_wake_order_loses_the_new_ability_ste
 fn newly_created_death_trigger_characters_act_only_after_they_die() {
     for character in ["sweetheart", "barber", "sage"] {
         let mut setup = setup_event_for_creation(character);
-        setup["payload"]["players"][1]["actualCharacter"] = json!("vortox");
-        setup["payload"]["players"][1]["shownCharacter"] = json!("vortox");
+        setup["payload"]["players"][1]["actualCharacter"] = json!("vigormortis");
+        setup["payload"]["players"][1]["shownCharacter"] = json!("vigormortis");
         let mut events = vec![setup];
         let pit_hag = advance_to_pit_hag(&mut events);
         append(

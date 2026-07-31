@@ -15,7 +15,7 @@ fn setup_event() -> Value {
             { "id": "player-4", "seat": 4, "name": "Clockmaker", "actualCharacter": "clockmaker", "shownCharacter": "clockmaker" },
             { "id": "player-5", "seat": 5, "name": "Savant", "actualCharacter": "savant", "shownCharacter": "savant" },
             { "id": "player-6", "seat": 6, "name": "Pit-Hag", "actualCharacter": "pitHag", "shownCharacter": "pitHag" },
-            { "id": "player-7", "seat": 7, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "Vigormortis", "actualCharacter": "vigormortis", "shownCharacter": "vigormortis" }
         ] },
         "summary": "issue 103 setup",
         "createdAt": "2026-07-28T00:00:00.000Z"
@@ -93,7 +93,7 @@ fn default_command(state: &Value, demon_target: &str) -> Value {
                 "input": null,
                 "deliveredResult": {
                     "kind": "number",
-                    "value": step["informationPrompt"]["numberChoices"][0]["value"]
+                    "value": step["informationPrompt"]["numberChoices"][0]["value"].as_u64().unwrap_or(100)
                 }
             }
         }),
