@@ -25,6 +25,15 @@
 .snvNumberConstraintEditor > p { margin: 0 4px; font-size: .68rem; line-height: 1.45; }
 .snvInformationInputHint { color: #b7a5bd; }
 .snvInformationInputError { color: #ff9caf; }
+.snvInformationInputTruthWarning { color: #b7a5bd; }
+.snvInformationInputTruthWarning.truthPulse { animation: snvTruthWarningPulse 1.45s ease-in-out; }
+@keyframes snvTruthWarningPulse {
+  0%, 100% { color: #b7a5bd; text-shadow: 0 0 0 rgba(255, 70, 104, 0); }
+  50% { color: #ff4668; text-shadow: 0 0 14px rgba(255, 70, 104, .72); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .snvInformationInputTruthWarning.truthPulse { animation: none; }
+}
 .snvInformationActions { margin-top: auto !important; }
 .snvInformationActions button { flex: 1 1 0; min-height: 50px; }
 .snvStepActions button.informationReveal.poisoned,

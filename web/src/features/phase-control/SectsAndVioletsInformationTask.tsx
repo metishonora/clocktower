@@ -41,8 +41,10 @@ export function SectsAndVioletsInformationTask({
   const influencePresentation = influence ? informationInfluencePresentation[influence] : undefined;
   const numberConstraint = step.informationPrompt?.numberConstraint;
   const [numberDraft, setNumberDraft] = useState(() => deliveredResult?.kind === "number" ? String(deliveredResult.value) : "");
+  const [truthWarningAttempt, setTruthWarningAttempt] = useState(0);
   useEffect(() => {
     setNumberDraft(deliveredResult?.kind === "number" ? String(deliveredResult.value) : "");
+    setTruthWarningAttempt(0);
   }, [step.id, numberConstraint?.min, numberConstraint?.max, numberConstraint?.excludedValues.join(",")]);
   const numberError = useMemo(
     () => numberConstraint ? numberConstraintError(numberDraft, numberConstraint) : undefined,
@@ -51,6 +53,9 @@ export function SectsAndVioletsInformationTask({
   const directNumberResult = numberConstraint && !numberError
     ? { kind: "number" as const, value: Number(numberDraft) }
     : undefined;
+  const truthConstraintViolation = numberConstraint
+    ? isTruthConstraintViolation(numberDraft, numberConstraint)
+    : false;
   const targetCheck = targetCheckForSelection(step, selectedPlayerIds);
   const choices = targetCheck?.choices
     .filter((choice) => influence !== "vortox" || !choice.isComputed)
@@ -119,9 +124,11 @@ export function SectsAndVioletsInformationTask({
               step={step}
               value={numberDraft}
               error={numberError}
+              truthWarningAttempt={truthWarningAttempt}
               busy={busy || revealed}
               onChange={(value) => {
                 setNumberDraft(value);
+                setTruthWarningAttempt(0);
                 const error = numberConstraintError(value, numberConstraint);
                 onDeliveredResultChange?.(error ? undefined : { kind: "number", value: Number(value) });
               }}
@@ -130,7 +137,13 @@ export function SectsAndVioletsInformationTask({
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
           <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
-            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || !selectedResult} onClick={onReveal}>{influencePresentation?.action ?? "정보 공개"}</button>
+            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || (!selectedResult && !truthConstraintViolation)} onClick={() => {
+              if (truthConstraintViolation) {
+                setTruthWarningAttempt((attempt) => attempt + 1);
+                return;
+              }
+              onReveal();
+            }}>{influencePresentation?.action ?? "정보 공개"}</button>
             {revealed && onContinue ? <button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button> : null}
           </div>
         </>
@@ -139,13 +152,14 @@ export function SectsAndVioletsInformationTask({
   );
 }
 
-function NumberConstraintEditor({ step, value, error, busy, onChange }: { step: PhaseStep; value: string; error?: string; busy: boolean; onChange: (value: string) => void }) {
+function NumberConstraintEditor({ step, value, error, truthWarningAttempt, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; busy: boolean; onChange: (value: string) => void }) {
   const characterId = step.character ?? "";
   const truth = step.informationPrompt?.computedResult?.kind === "number" ? step.informationPrompt.computedResult.value : undefined;
+  const truthError = error === "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
   return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 거짓 정보"><div>
     <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
     <dd><input id={`delivered-${step.id}`} aria-label="전달할 숫자" type="number" min="0" step="1" inputMode="numeric" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)} /><span>{numericUnit(characterId)}</span></dd>
-  </div><p className={error ? "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p></dl>;
+  </div><p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p></dl>;
 }
 
 function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
@@ -233,6 +247,12 @@ function numberConstraintError(value: string, constraint: NonNullable<NonNullabl
   if (!Number.isSafeInteger(number) || number < constraint.min || number > constraint.max) return "입력할 수 있는 정수 범위를 벗어났습니다.";
   if (constraint.excludedValues.includes(number)) return "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
   return undefined;
+}
+
+function isTruthConstraintViolation(value: string, constraint: NonNullable<NonNullable<PhaseStep["informationPrompt"]>["numberConstraint"]>): boolean {
+  if (!/^\d+$/.test(value)) return false;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && constraint.excludedValues.includes(number);
 }
 
 function numericUnit(characterId: string): string {

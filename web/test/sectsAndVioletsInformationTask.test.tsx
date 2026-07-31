@@ -133,6 +133,30 @@ test("shows every information influence and accepts an obviously false Vortox nu
   expect(within(task).getByText("0 이상의 정수 · 진실 1 제외")).toBeTruthy();
 });
 
+test("pulses the Vortox truth warning instead of revealing when confirmation is attempted", async () => {
+  const onReveal = vi.fn();
+  const influencedStep = {
+    ...step,
+    informationPrompt: {
+      ...step.informationPrompt!,
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "vortox", demonPlayerId: "player-7" }],
+      numberChoices: [],
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [1] },
+    },
+  } as PhaseStep;
+  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onReveal={onReveal} />);
+
+  const task = screen.getByRole("article", { name: "시계공 정보" });
+  await userEvent.setup().type(within(task).getByRole("spinbutton", { name: "전달할 숫자" }), "1");
+  const reveal = within(task).getByRole("button", { name: "거짓 정보 공개" });
+  expect((reveal as HTMLButtonElement).disabled).toBe(false);
+  await userEvent.setup().click(reveal);
+
+  expect(onReveal).not.toHaveBeenCalled();
+  expect(within(task).getByText("보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.").classList.contains("truthPulse")).toBe(true);
+});
+
 test.each([
   {
     reason: { type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" } as const,
