@@ -33,7 +33,13 @@ const core = vi.hoisted(() => ({
     const step = setupEvent ? steps[gameFile.game.events.length - 1] : undefined;
     const currentStep = step ? {
       ...step,
-      requiredInput: { kind: "none" as const, optional: false },
+      requiredInput: step.id === "firstNight:demonInfo" ? {
+        kind: "characterIds" as const,
+        minSelections: 3,
+        maxSelections: 3,
+        optional: false,
+        allowedCharacterIds: ["philosopher", "artist", "savant", "juggler"],
+      } : { kind: "none" as const, optional: false },
       canSkip: false,
     } : null;
     return {
@@ -56,6 +62,25 @@ const core = vi.hoisted(() => ({
     const setup = command.type === "createGame";
     const manual = command.type === "resolveManualStep";
     const nextEventId = `event-${gameFile.game.events.length + 1}`;
+    const evilInfo = command.type === "confirmStep"
+      && (command.payload.stepId === "firstNight:minionInfo" || command.payload.stepId === "firstNight:demonInfo");
+    const demon = playersForMock(gameFile).find((player) => player.actualCharacter === "fangGu")!;
+    const minions = playersForMock(gameFile).filter((player) => player.actualCharacter === "evilTwin");
+    const revealPayload = command.type === "confirmStep" && command.payload.stepId === "firstNight:minionInfo"
+      ? {
+          kind: "minionInformation" as const,
+          demonPlayers: [{ seat: demon.seat, name: demon.name }],
+          minionPlayers: minions.map(({ seat, name }) => ({ seat, name })),
+        }
+      : command.type === "confirmStep" && command.payload.stepId === "firstNight:demonInfo"
+        ? {
+            kind: "demonInformation" as const,
+            minionPlayers: minions.map(({ seat, name }) => ({ seat, name })),
+            bluffCharacterIds: command.payload.input && "characterIds" in command.payload.input
+              ? command.payload.input.characterIds
+              : [],
+          }
+        : undefined;
     return {
       ok: true as const,
       value: {
@@ -77,13 +102,14 @@ const core = vi.hoisted(() => ({
           id: nextEventId,
           type: "phaseStepConfirmed" as const,
           phase: "firstNight" as const,
-          payload: { stepId: command.payload.stepId, input: null },
+          payload: { stepId: command.payload.stepId, input: command.payload.input ?? null },
           summary: `단계 확정: ${command.payload.stepId}`,
           createdAt: "2026-07-22T00:01:00.000Z",
         },
         warnings: [],
         followUpSteps: [],
         preview: null,
+        ...(evilInfo ? { revealPayload } : {}),
       },
     };
   }),
@@ -233,7 +259,7 @@ test("advances the production first-night step through the canonical phase comma
   await user.click(within(app).getByRole("button", { name: "진행" }));
 
   expect(await within(app).findByRole("heading", { name: "하수인 정보" })).toBeTruthy();
-  await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+  await completeCurrentEvilInformation(user, app);
   expect(core.propose).toHaveBeenLastCalledWith(
     expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
     { type: "confirmStep", payload: { stepId: "firstNight:minionInfo", input: null } },
@@ -254,8 +280,8 @@ test("records manual work and follows the canonical first-night to day boundary"
   await user.click(within(app).getByRole("button", { name: "배치 확정" }));
   await user.click(within(app).getByRole("button", { name: "진행" }));
 
-  await user.click(within(app).getByRole("button", { name: "다음 단계" }));
-  await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+  await completeCurrentEvilInformation(user, app);
+  await completeCurrentEvilInformation(user, app);
   expect(await within(app).findByRole("heading", { name: "뱀 조련사" })).toBeTruthy();
   expect(within(app).getByText("매일 밤, 생존한 플레이어 1명을 선택합니다: 악마를 선택한다면, 악마는 당신과 소속 및 캐릭터를 맞바꾼 다음 중독됩니다.")).toBeTruthy();
   expect(within(app).queryByText("선택한 플레이어를 확인하고 필요하면 직업과 성향을 교환합니다.")).toBeNull();
@@ -300,9 +326,9 @@ test("shows one transient S&V phase stopwatch across the Grimoire and progressio
     const progressionTimer = within(progression).getByLabelText("1일차 밤 경과 시간 05:07");
     expect(progressionTimer.closest(".snvProgressPhaseHeader")).toBeTruthy();
 
-    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    await completeCurrentEvilInformation(user, app);
     expect(await within(app).findByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
-    await user.click(within(app).getByRole("button", { name: "다음 단계" }));
+    await completeCurrentEvilInformation(user, app);
     await user.click(within(app).getByRole("button", { name: "처리 완료" }));
     expect(await within(app).findByRole("heading", { name: "1일차 밤 종료" })).toBeTruthy();
 
@@ -520,7 +546,7 @@ test("undoes one completed S&V phase checkpoint while keeping the current page",
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await completeSevenPlayerSetup(user, app);
   await user.click(within(app).getByRole("button", { name: "진행" }));
-  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await completeCurrentEvilInformation(user, app);
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2));
 
   const headerUndo = within(app).getByRole("button", { name: /최근 행동 되돌리기: 단계 확정: firstNight:minionInfo/ });
@@ -621,7 +647,7 @@ test("imports a replay-valid S&V checkpoint and restores its saved page", async 
   let app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await completeSevenPlayerSetup(user, app);
   await user.click(within(app).getByRole("button", { name: "진행" }));
-  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await completeCurrentEvilInformation(user, app);
   await waitFor(() => expect(sourceStorage.savedGames.at(-1)?.game.events).toHaveLength(2));
   const exported = sourceStorage.savedGames.at(-1)!;
   expect(exported.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
@@ -678,7 +704,7 @@ test("returns to the preserved roster and seating with progress removed", async 
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await completeSevenPlayerSetup(user, app);
   await user.click(within(app).getByRole("button", { name: "진행" }));
-  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await completeCurrentEvilInformation(user, app);
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(2));
   await user.click(within(app).getByRole("button", { name: "마도서" }));
 
@@ -944,6 +970,27 @@ function savedDayGame(players: SetupPlayerInput[]): GameFile {
       ],
     },
   };
+}
+
+function playersForMock(gameFile: GameFile): SetupPlayerInput[] {
+  const setup = gameFile.game.events.find((event) => event.type === "setupConfirmed");
+  return setup?.type === "setupConfirmed" ? setup.payload.players : [];
+}
+
+async function completeCurrentEvilInformation(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+) {
+  if (within(app).queryByRole("heading", { name: "악마 정보" })) {
+    const candidates = app.querySelector<HTMLElement>(".snvBluffCandidateGrid")!;
+    for (const candidate of within(candidates).getAllByRole("button").slice(0, 3)) {
+      await user.click(candidate);
+    }
+  }
+  await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
+  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(await within(app).findByRole("button", { name: "다음으로" }));
 }
 
 async function completeSevenPlayerSetup(

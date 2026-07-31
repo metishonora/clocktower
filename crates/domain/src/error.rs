@@ -27,6 +27,7 @@ pub(crate) enum ErrorKind {
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
+    InvalidEvilTeamState,
     InvalidButlerMaster,
     ButlerMasterVoteRequired,
     GhostVoteAlreadySpent,
@@ -114,6 +115,10 @@ impl ErrorKind {
             ),
             Self::ReplayFailed => ("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."),
             Self::InvalidStepInput => ("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."),
+            Self::InvalidEvilTeamState => (
+                "INVALID_EVIL_TEAM_STATE",
+                "악한 팀 구성이 올바르지 않아 정보를 공개할 수 없습니다.",
+            ),
             Self::InvalidButlerMaster => (
                 "INVALID_BUTLER_MASTER",
                 "집사는 자신을 주인으로 선택할 수 없습니다.",

@@ -143,3 +143,15 @@ pub(super) fn phase_event_with_input(event_type: &str, step_id: &str, input: Val
         "createdAt": "2026-01-01T00:00:00.000Z"
     })
 }
+
+pub(super) fn snv_demon_bluff_input(step: &Value) -> Value {
+    let character_ids = step["requiredInput"]["allowedCharacterIds"]
+        .as_array()
+        .expect("S&V Demon information should expose its legal bluff catalog")
+        .iter()
+        .take(3)
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_eq!(character_ids.len(), 3, "S&V needs three legal Demon bluffs");
+    json!({ "characterIds": character_ids })
+}

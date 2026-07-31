@@ -73,8 +73,8 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
 
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
-  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
-  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  await completeMinionInformation(user, app);
+  await completeDemonInformation(user, app);
   await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
   await user.click(within(app).getByRole("button", { name: /1번 좌석/ }));
   await user.click(within(app).getByRole("button", { name: "1번 플레이어 1 선택 확정" }));
@@ -125,7 +125,27 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
 
   const deadSnakeCharmer = await within(app).findByRole("button", {
     name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
+});
+
+async function completeMinionInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: "하수인 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(await within(app).findByRole("button", { name: "다음으로" }));
+}
+
+async function completeDemonInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  const candidates = await waitFor(() => {
+    const grid = app.querySelector<HTMLElement>(".snvBluffCandidateGrid");
+    expect(grid).not.toBeNull();
+    return within(grid!).getAllByRole("button");
   });
+  for (const candidate of candidates.slice(0, 3)) await user.click(candidate);
+  await user.click(within(app).getByRole("button", { name: "정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: "악마 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(await within(app).findByRole("button", { name: "다음으로" }));
+}
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
   await user.click(deadSnakeCharmer);
   expect(within(app).getByText("1표")).toBeTruthy();

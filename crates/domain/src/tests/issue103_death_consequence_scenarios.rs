@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event() -> Value {
     json!({
         "id": "setup-issue-103",
@@ -64,6 +66,10 @@ fn default_command(state: &Value, demon_target: &str) -> Value {
         "characterTransformation" => json!({
             "type": "confirmStep",
             "payload": { "stepId": step_id, "input": { "playerIds": ["player-6"], "characterIds": ["pitHag"] } }
+        }),
+        "characterIds" if step_id == "firstNight:demonInfo" => json!({
+            "type": "confirmStep",
+            "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) }
         }),
         "playerIds" if step_id.contains(":demon:") => json!({
             "type": "confirmStep",

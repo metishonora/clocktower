@@ -10,6 +10,8 @@ use crate::{
 };
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event() -> Value {
     json!({
         "id": "setup-long-session",
@@ -88,6 +90,14 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
     }
 
     match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
+        "characterIds" if step_id == "firstNight:demonInfo" => json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": step_id,
+                "expectedEventCount": event_count,
+                "input": snv_demon_bluff_input(step)
+            }
+        }),
         "nomination"
             if state["value"]["dayState"]["nominations"]
                 .as_array()

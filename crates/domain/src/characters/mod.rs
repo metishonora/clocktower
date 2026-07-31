@@ -23,11 +23,11 @@ pub(crate) use trouble_brewing::{
     has_actual_outsider, imp_self_kill_successor_ids, is_townsfolk, is_valid_script_token,
     legal_demon_bluff_character_ids, legal_number_choices, mayor_decision_prompt,
     mayor_win_eligible, night_order, number_result_with_registration_judgments,
-    phase_input_suggestion_pool, registration_candidate_player_ids, resolve_imp_attack,
-    scarlet_woman_successor, setup_info_character_is_represented,
-    setup_info_input_is_valid_impaired, setup_info_input_is_valid_normal,
-    setup_info_input_is_valid_registration, setup_info_registration_options, slayer_registration,
-    spy_grimoire_result, target_information_checks, validate_butler_voters, virgin_resolution,
+    registration_candidate_player_ids, resolve_imp_attack, scarlet_woman_successor,
+    setup_info_character_is_represented, setup_info_input_is_valid_impaired,
+    setup_info_input_is_valid_normal, setup_info_input_is_valid_registration,
+    setup_info_registration_options, slayer_registration, spy_grimoire_result,
+    target_information_checks, validate_butler_voters, virgin_resolution,
 };
 
 use crate::{
@@ -131,6 +131,20 @@ impl ScriptRules {
 
     pub(crate) fn is_townsfolk(self, character: &str) -> bool {
         self.character_kind(character) == Some(CharacterKind::Townsfolk)
+    }
+
+    pub(crate) fn phase_input_suggestion_pool(
+        self,
+        step: &crate::model::PhaseStep,
+        players: &[crate::model::Player],
+        impaired: bool,
+    ) -> Vec<crate::model::StepInput> {
+        match self {
+            Self::TroubleBrewing => {
+                trouble_brewing::phase_input_suggestion_pool(step, players, impaired)
+            }
+            Self::SectsAndViolets => sects_and_violets::phase_input_suggestion_pool(step, players),
+        }
     }
 
     pub(crate) fn adjust_setup_distribution(

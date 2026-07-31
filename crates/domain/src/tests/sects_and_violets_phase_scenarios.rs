@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event() -> Value {
     json!({
         "id": "setup-1",
@@ -169,6 +171,10 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
         })
     } else if step["character"] == "seamstress" {
         json!({ "type": "skipStep", "payload": { "stepId": step["id"] } })
+    } else if step["id"] == "firstNight:demonInfo" {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step["id"], "input": snv_demon_bluff_input(step)
+        } })
     } else if step["support"] == "manual" {
         json!({
             "type": "resolveManualStep",

@@ -7,6 +7,7 @@ import type {
   Command,
   AvailableDayAction,
   DayActionRecordInput,
+  EvilInformationRevealPayload,
   GameEvent,
   GameFile,
   InformationResult,
@@ -19,6 +20,7 @@ import type {
   SectsAndVioletsSessionState,
   SetupDistribution,
 } from "./core/types";
+import { proposalRevealPayload } from "./core/revealPayload";
 import {
   SectsAndVioletsLiveGrimoire,
   SectsAndVioletsLiveProgress,
@@ -41,6 +43,11 @@ import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets"
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { SectsAndVioletsReveal } from "./features/reveal/SectsAndVioletsReveal";
+import {
+  SectsAndVioletsEvilInformationReveal,
+  SectsAndVioletsEvilInformationTask,
+} from "./features/evil-information/SectsAndVioletsEvilInformation";
+import "./features/evil-information/sectsAndVioletsEvilInformation.css";
 import {
   DeathConsequencePanel,
   ForcedGameEndPanel,
@@ -68,6 +75,10 @@ import {
   type RuntimeClock,
 } from "./features/phase-control/phaseRuntime";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
+import {
+  browserCryptoChoiceToken,
+  type ChoiceTokenSource,
+} from "./features/phase-control/randomSuggestion";
 import {
   informationValueLabel,
   SectsAndVioletsInformationTask,
@@ -105,6 +116,12 @@ type InformationCheckpoint = {
   targetPlayerIds: string[];
   deliveredResult: InformationResult;
   revealPayload: Extract<RevealPayload, { kind: "numericInformation" | "booleanInformation" | "dreamerInformation" | "seamstressInformation" | "sageInformation" }>;
+};
+type EvilInformationCheckpoint = {
+  sourceEventId: string;
+  stepId: string;
+  step: PhaseStep;
+  payload: EvilInformationRevealPayload;
 };
 
 const kindLabels: Record<CharacterKind, string> = {
@@ -149,6 +166,7 @@ export type SectsAndVioletsFoundationPrototypeProps = {
   storageDriver?: GameStorageDriver;
   production?: boolean;
   phaseRuntimeClock?: RuntimeClock;
+  choiceTokenSource?: ChoiceTokenSource;
 };
 
 export function SectsAndVioletsFoundationPrototype() {
@@ -160,6 +178,7 @@ export function SectsAndVioletsGameSurface({
   storageDriver,
   production = false,
   phaseRuntimeClock = browserRuntimeClock,
+  choiceTokenSource = browserCryptoChoiceToken,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const canonicalSession = useMemo(
     () => coreAdapter ? new CanonicalSessionController(coreAdapter) : undefined,
@@ -186,6 +205,10 @@ export function SectsAndVioletsGameSurface({
   const [informationStepId, setInformationStepId] = useState<string>();
   const [informationCheckpoint, setInformationCheckpoint] = useState<InformationCheckpoint>();
   const [informationRevealOpen, setInformationRevealOpen] = useState(false);
+  const [evilInformationCheckpoint, setEvilInformationCheckpoint] = useState<EvilInformationCheckpoint>();
+  const [evilInformationRevealOpen, setEvilInformationRevealOpen] = useState(false);
+  const [selectedBluffCharacterIds, setSelectedBluffCharacterIds] = useState<string[]>([]);
+  const [suggestingBluffs, setSuggestingBluffs] = useState(false);
   const [selectedInformationResult, setSelectedInformationResult] = useState<InformationResult>();
   const [playPhase, setPlayPhase] = useState<PlayPhase>("firstNight");
   const [dayComplete, setDayComplete] = useState(false);
@@ -335,6 +358,13 @@ export function SectsAndVioletsGameSurface({
   const canonicalInformationStep = replayState?.currentStep?.informationPrompt && isAutomatedInformationCharacter(replayState.currentStep.character)
     ? replayState.currentStep
     : undefined;
+  const canonicalEvilInformationStep = replayState?.currentStep?.stepType === "evilInfo"
+    ? replayState.currentStep
+    : undefined;
+  const activeEvilInformationStep = evilInformationCheckpoint?.step ?? canonicalEvilInformationStep;
+  const evilInformationWakePlayers = activeEvilInformationStep
+    ? evilInformationPlayersToWake(activeEvilInformationStep, replayState?.players ?? [])
+    : [];
   const activeInformationStep = informationCheckpoint?.step ?? canonicalInformationStep;
   const activeInformationActor = informationCheckpoint?.actor ?? (
     activeInformationStep?.playerId
@@ -510,6 +540,20 @@ export function SectsAndVioletsGameSurface({
   useEffect(() => {
     setSelectedInformationTargetIds([]);
   }, [canonicalInformationStep?.id]);
+
+  useEffect(() => {
+    if (!evilInformationCheckpoint) setSelectedBluffCharacterIds([]);
+  }, [canonicalEvilInformationStep?.id, evilInformationCheckpoint]);
+
+  useEffect(() => {
+    if (!evilInformationCheckpoint) return;
+    const sourceStillExists = gameFile.game.events.some(
+      (event) => event.id === evilInformationCheckpoint.sourceEventId,
+    );
+    if (sourceStillExists) return;
+    setEvilInformationCheckpoint(undefined);
+    setEvilInformationRevealOpen(false);
+  }, [evilInformationCheckpoint, gameFile.game.events]);
 
   useEffect(() => {
     if (pendingIdentityReveals.length === 0) {
@@ -874,6 +918,10 @@ export function SectsAndVioletsGameSurface({
     setInformationStepId(undefined);
     setInformationCheckpoint(undefined);
     setInformationRevealOpen(false);
+    setEvilInformationCheckpoint(undefined);
+    setEvilInformationRevealOpen(false);
+    setSelectedBluffCharacterIds([]);
+    setSuggestingBluffs(false);
     setSelectedInformationResult(undefined);
     setPlayPhase("firstNight");
     setDayComplete(false);
@@ -915,6 +963,10 @@ export function SectsAndVioletsGameSurface({
     setInformationStepId(undefined);
     setInformationCheckpoint(undefined);
     setInformationRevealOpen(false);
+    setEvilInformationCheckpoint(undefined);
+    setEvilInformationRevealOpen(false);
+    setSelectedBluffCharacterIds([]);
+    setSuggestingBluffs(false);
     setSelectedInformationResult(undefined);
     setPlayPhase("firstNight");
     setDayComplete(false);
@@ -1016,6 +1068,10 @@ export function SectsAndVioletsGameSurface({
     setInformationStepId(undefined);
     setInformationCheckpoint(undefined);
     setInformationRevealOpen(false);
+    setEvilInformationCheckpoint(undefined);
+    setEvilInformationRevealOpen(false);
+    setSelectedBluffCharacterIds([]);
+    setSuggestingBluffs(false);
     setSelectedInformationResult(undefined);
     setSelectedInformationTargetIds([]);
     setRevealedStepIds([]);
@@ -1112,6 +1168,95 @@ export function SectsAndVioletsGameSurface({
     }
     setInformationStepId(undefined);
     setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
+  };
+
+  const toggleBluffCharacter = (characterId: string) => {
+    if (operationBusy || suggestingBluffs) return;
+    setSelectedBluffCharacterIds((current) => {
+      if (current.includes(characterId)) return current.filter((id) => id !== characterId);
+      if (current.length >= 3) return current;
+      return [...current, characterId];
+    });
+  };
+
+  const suggestDemonBluffs = async () => {
+    if (!coreAdapter || !canonicalEvilInformationStep?.id.endsWith(":demonInfo") || suggestingBluffs) return;
+    setSuggestingBluffs(true);
+    setOperationError(undefined);
+    const stepId = canonicalEvilInformationStep.id;
+    const result = await coreAdapter.suggestPhaseInput(gameFile, {
+      stepId,
+      ...(selectedBluffCharacterIds.length > 0
+        ? { currentInput: { characterIds: selectedBluffCharacterIds } }
+        : {}),
+      choiceToken: choiceTokenSource(),
+    });
+    setSuggestingBluffs(false);
+    if (!result.ok) {
+      setOperationError(result.error.messageKo);
+      return;
+    }
+    if (replayState?.currentStep?.id !== stepId || result.value.stepId !== stepId) return;
+    const input = result.value.input;
+    if (!input || !("characterIds" in input) || input.characterIds.length !== 3) {
+      setOperationError("속임수 추천 결과가 올바르지 않습니다.");
+      return;
+    }
+    setSelectedBluffCharacterIds([...input.characterIds]);
+  };
+
+  const confirmEvilInformation = async () => {
+    if (!canonicalSession || !canonicalEvilInformationStep || operationBusy) return;
+    const isDemon = canonicalEvilInformationStep.id.endsWith(":demonInfo");
+    if (isDemon && selectedBluffCharacterIds.length !== 3) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const result = await canonicalSession.propose(gameFile, replayState, {
+      type: "confirmStep",
+      payload: {
+        stepId: canonicalEvilInformationStep.id,
+        input: isDemon ? { characterIds: selectedBluffCharacterIds } : null,
+      },
+    });
+    if (!result.ok) {
+      setOperationBusy(false);
+      setOperationError(result.error.messageKo);
+      return;
+    }
+    const revealPayload = proposalRevealPayload(result.value);
+    if (!revealPayload || !("kind" in revealPayload)
+      || (revealPayload.kind !== "minionInformation" && revealPayload.kind !== "demonInformation")) {
+      setOperationBusy(false);
+      setOperationError("공개할 악한 팀 정보가 없습니다.");
+      return;
+    }
+    const applied = await applyCanonicalEvent(result.value.event, "phase");
+    if (!applied) {
+      setOperationBusy(false);
+      return;
+    }
+    setEvilInformationCheckpoint({
+      sourceEventId: result.value.event.id,
+      stepId: canonicalEvilInformationStep.id,
+      step: canonicalEvilInformationStep,
+      payload: revealPayload,
+    });
+    setEvilInformationRevealOpen(true);
+    setOperationBusy(false);
+  };
+
+  const revealEvilInformation = () => {
+    if (evilInformationCheckpoint) {
+      setEvilInformationRevealOpen(true);
+      return;
+    }
+    void confirmEvilInformation();
+  };
+
+  const continueAfterEvilInformation = () => {
+    setEvilInformationRevealOpen(false);
+    setEvilInformationCheckpoint(undefined);
+    setSelectedBluffCharacterIds([]);
   };
 
   const showCurrentStepInformation = () => {
@@ -2373,7 +2518,22 @@ export function SectsAndVioletsGameSurface({
           </header>
 
           <div className="snvFirstNightPrimary">
-            {activeInformationStep && activeInformationActor ? (
+            {activeEvilInformationStep ? (
+              <SectsAndVioletsEvilInformationTask
+                step={activeEvilInformationStep}
+                wakePlayers={evilInformationWakePlayers}
+                selectedCharacterIds={evilInformationCheckpoint?.payload.kind === "demonInformation"
+                  ? evilInformationCheckpoint.payload.bluffCharacterIds
+                  : selectedBluffCharacterIds}
+                revealed={Boolean(evilInformationCheckpoint)}
+                busy={operationBusy}
+                suggesting={suggestingBluffs}
+                onToggle={toggleBluffCharacter}
+                onShuffle={() => void suggestDemonBluffs()}
+                onReveal={revealEvilInformation}
+                onContinue={continueAfterEvilInformation}
+              />
+            ) : activeInformationStep && activeInformationActor ? (
               <SectsAndVioletsInformationTask
                 step={activeInformationStep}
                 actor={activeInformationActor}
@@ -2461,8 +2621,8 @@ export function SectsAndVioletsGameSurface({
           {effectivePlayPhase === "firstNight" ? (
             <ol className="snvPhaseOverview" aria-label="첫날 밤 순서">
               {firstNightSteps.map((step, index) => (
-                <li key={step.id} className={phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, informationCheckpoint?.step.id).className}>
-                  <span>{phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, informationCheckpoint?.step.id).label}</span>
+                <li key={step.id} className={phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).className}>
+                  <span>{phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).label}</span>
                   <strong>{step.name}</strong>
                 </li>
               ))}
@@ -2477,8 +2637,8 @@ export function SectsAndVioletsGameSurface({
           ) : (
             <ol className="snvPhaseOverview" aria-label="이후 밤 순서">
               {canonicalSteps.length > 0 ? canonicalSteps.map((step, index) => (
-                <li key={step.id} className={phaseStepPresentation(step.id, index, 0, replayState?.phaseOverview, informationCheckpoint?.step.id).className}>
-                  <span>{phaseStepPresentation(step.id, index, 0, replayState?.phaseOverview, informationCheckpoint?.step.id).label}</span>
+                <li key={step.id} className={phaseStepPresentation(step.id, index, 0, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).className}>
+                  <span>{phaseStepPresentation(step.id, index, 0, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).label}</span>
                   <strong>{step.name}</strong>
                 </li>
               )) : <li className="current"><span>현재</span><strong>밤 진행 준비</strong></li>}
@@ -2575,6 +2735,12 @@ export function SectsAndVioletsGameSurface({
             onExecute={(assignmentId) => void executeMadness(assignmentId)}
           />
         ) : null}
+      {evilInformationCheckpoint && evilInformationRevealOpen ? (
+        <SectsAndVioletsEvilInformationReveal
+          payload={evilInformationCheckpoint.payload}
+          onClose={() => setEvilInformationRevealOpen(false)}
+        />
+      ) : null}
       {informationStep ? (
         <SectsAndVioletsReveal
           dialogLabel={`${informationStep.name} 공개`}
@@ -2833,6 +2999,13 @@ function formatAutosaveTime(value: string | undefined) {
 function defaultAlignment(characterId: string): Alignment {
   const kind = characters.find((character) => character.id === characterId)?.kind;
   return kind === "minion" || kind === "demon" ? "evil" : "good";
+}
+
+function evilInformationPlayersToWake(step: PhaseStep, players: Player[]) {
+  const kind = step.id.endsWith(":demonInfo") ? "demon" : "minion";
+  return players
+    .filter((player) => characters.find((character) => character.id === player.actualCharacter)?.kind === kind)
+    .map(({ seat, name }) => ({ seat, name }));
 }
 
 function DistributionValues({ values }: { values: [number, number, number, number] }) {
