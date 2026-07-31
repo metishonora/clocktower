@@ -64,51 +64,68 @@ fn advance_until(events: &mut Vec<Value>, target: &str) -> Value {
             return state;
         }
         let id = step["id"].as_str().expect("current step id");
-        let command = if step["requiredInput"]["kind"] == "nomination" {
-            json!({ "type": "skipStep", "payload": { "stepId": id } })
-        } else if step["requiredInput"]["kind"] == "executionDecision" {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "execute": false } } })
-        } else if id == "firstNight:demonInfo" {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": snv_demon_bluff_input(step) } })
-        } else if matches!(
-            step["character"].as_str(),
-            Some("fangGu" | "vigormortis" | "noDashii" | "vortox")
-        ) {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "playerIds": ["player-3"] } } })
-        } else if step["character"] == "evilTwin" {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "playerIds": ["player-1"] } } })
-        } else if step["character"] == "dreamer" {
-            let check = &step["informationPrompt"]["targetChecks"][0];
-            json!({ "type": "confirmStep", "payload": {
-                "stepId": id,
-                "input": { "playerIds": check["targetPlayerIds"] },
-                "deliveredResult": check["choices"][0]["result"]
-            }})
-        } else if step["character"] == "seamstress" {
-            json!({ "type": "skipStep", "payload": { "stepId": id } })
-        } else if step["character"] == "sage" {
-            let check = &step["informationPrompt"]["targetChecks"][0];
-            json!({ "type": "confirmStep", "payload": {
-                "stepId": id,
-                "input": null,
-                "deliveredResult": check["choices"][0]["result"]
-            }})
-        } else if step["informationPrompt"]["deliveryMode"] == "selectable"
-            && step["informationPrompt"]["computedResult"]["kind"] == "number"
-        {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null, "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"] } } })
-        } else if step["informationPrompt"]["deliveryMode"] == "selectable"
-            && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
-        {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null, "deliveredResult": { "kind": "boolean", "value": step["informationPrompt"]["booleanChoices"][0]["value"] } } })
-        } else if step["support"] == "manual" {
-            json!({ "type": "resolveManualStep", "payload": { "stepId": id, "outcome": "handled" } })
+        let vortox_active = state["value"]["players"].as_array().is_some_and(|players| {
+            players
+                .iter()
+                .any(|player| player["actualCharacter"] == "vortox")
+        });
+        let command = if vortox_active {
+            super::support::snv_day_execution_command(&state, "player-4")
+                .unwrap_or_else(|| default_advance_command(step, id))
         } else {
-            json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null } })
+            default_advance_command(step, id)
         };
         append(events, command);
     }
     panic!("did not reach {target}");
+}
+
+fn default_advance_command(step: &Value, id: &str) -> Value {
+    if step["requiredInput"]["kind"] == "nomination" {
+        json!({ "type": "skipStep", "payload": { "stepId": id } })
+    } else if step["requiredInput"]["kind"] == "executionDecision" {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "execute": false } } })
+    } else if id == "firstNight:demonInfo" {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": snv_demon_bluff_input(step) } })
+    } else if matches!(
+        step["character"].as_str(),
+        Some("fangGu" | "vigormortis" | "noDashii" | "vortox")
+    ) {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "playerIds": ["player-3"] } } })
+    } else if step["character"] == "evilTwin" {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": { "playerIds": ["player-1"] } } })
+    } else if step["character"] == "dreamer" {
+        let check = &step["informationPrompt"]["targetChecks"][0];
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": id,
+            "input": { "playerIds": check["targetPlayerIds"] },
+            "deliveredResult": check["choices"][0]["result"]
+        }})
+    } else if step["character"] == "seamstress" {
+        json!({ "type": "skipStep", "payload": { "stepId": id } })
+    } else if step["character"] == "sage" {
+        let check = &step["informationPrompt"]["targetChecks"][0];
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": id,
+            "input": null,
+            "deliveredResult": check["choices"][0]["result"]
+        }})
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "number"
+    {
+        let value = step["informationPrompt"]["numberChoices"][0]["value"]
+            .as_u64()
+            .unwrap_or(100);
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null, "deliveredResult": { "kind": "number", "value": value } } })
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
+    {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null, "deliveredResult": { "kind": "boolean", "value": step["informationPrompt"]["booleanChoices"][0]["value"] } } })
+    } else if step["support"] == "manual" {
+        json!({ "type": "resolveManualStep", "payload": { "stepId": id, "outcome": "handled" } })
+    } else {
+        json!({ "type": "confirmStep", "payload": { "stepId": id, "input": null } })
+    }
 }
 
 #[test]
@@ -205,11 +222,10 @@ fn vortox_oracle_excludes_and_rejects_the_truthful_number() {
         .unwrap()
         .iter()
         .any(|reason| reason["type"] == "vortox"));
-    assert!(prompt["numberChoices"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .all(|choice| choice["value"] != truth));
+    assert_eq!(
+        prompt["numberConstraint"],
+        json!({ "min": 0, "max": 9_007_199_254_740_991_u64, "excludedValues": [truth] })
+    );
 
     let truthful = propose(
         &events,

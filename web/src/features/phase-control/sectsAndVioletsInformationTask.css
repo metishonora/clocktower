@@ -4,6 +4,7 @@
 .snvInformationPendingIdentity { margin: 34px 0 12px !important; }
 .snvInformationIdentity > div { display: grid; gap: 7px; }
 .snvInformationRoleLine { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.snvInformationInfluenceBadges { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .snvInformationInfluenceBadge { display: inline-grid; min-height: 26px; padding: 0 10px; place-items: center; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; color: #fff; box-shadow: 0 7px 18px rgba(0, 0, 0, .25); font-size: .62rem; font-style: normal; font-weight: 900; letter-spacing: .02em; }
 .snvInformationInfluenceBadge.poisoned,
 .snvInformationInfluenceBadge.drunk { background: linear-gradient(135deg, #a95bd2, #71378f); }
@@ -18,6 +19,12 @@
 .snvInformationValues dt { color: #b7a5bd; font-size: .68rem; font-weight: 850; }
 .snvInformationValues dd { margin: 0; color: #fff; font: 1.18rem Georgia, serif; }
 .snvInformationValues select { min-width: 148px; padding: 9px 30px 9px 11px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .78rem system-ui, sans-serif; }
+.snvNumberConstraintEditor > div dd { display: flex; align-items: center; gap: 8px; }
+.snvNumberConstraintEditor input { width: 118px; min-height: 42px; padding: 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .82rem system-ui, sans-serif; }
+.snvNumberConstraintEditor dd span { color: #d9c9de; font: 850 .72rem system-ui, sans-serif; }
+.snvNumberConstraintEditor > p { margin: 0 4px; font-size: .68rem; line-height: 1.45; }
+.snvInformationInputHint { color: #b7a5bd; }
+.snvInformationInputError { color: #ff9caf; }
 .snvInformationActions { margin-top: auto !important; }
 .snvInformationActions button { flex: 1 1 0; min-height: 50px; }
 .snvStepActions button.informationReveal.poisoned,

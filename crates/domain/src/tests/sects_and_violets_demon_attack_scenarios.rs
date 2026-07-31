@@ -54,7 +54,23 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
     let state = replay(demon, events);
     assert_eq!(state["ok"], true, "replay failed: {state}");
     let step = &state["value"]["currentStep"];
-    let command = if step["requiredInput"]["kind"] == "nomination" {
+    let command = if demon == "vortox" {
+        super::support::snv_day_execution_command(&state, "player-3")
+            .unwrap_or_else(|| default_resolution_command(step))
+    } else {
+        default_resolution_command(step)
+    };
+    let proposal = propose(demon, events, command);
+    assert_eq!(
+        proposal["ok"], true,
+        "proposal failed from {state}: {proposal}"
+    );
+    events.push(proposal["value"]["event"].clone());
+    state
+}
+
+fn default_resolution_command(step: &Value) -> Value {
+    if step["requiredInput"]["kind"] == "nomination" {
         json!({
             "type": "skipStep",
             "payload": { "stepId": step["id"] }
@@ -84,7 +100,10 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
     } else if step["informationPrompt"]["deliveryMode"] == "selectable"
         && step["informationPrompt"]["computedResult"]["kind"] == "number"
     {
-        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"] } } })
+        let value = step["informationPrompt"]["numberChoices"][0]["value"]
+            .as_u64()
+            .unwrap_or(100);
+        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "number", "value": value } } })
     } else if step["informationPrompt"]["deliveryMode"] == "selectable"
         && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
     {
@@ -94,14 +113,7 @@ fn append_current_resolution(demon: &str, events: &mut Vec<Value>) -> Value {
             "type": "confirmStep",
             "payload": { "stepId": step["id"], "input": null }
         })
-    };
-    let proposal = propose(demon, events, command);
-    assert_eq!(
-        proposal["ok"], true,
-        "proposal failed from {state}: {proposal}"
-    );
-    events.push(proposal["value"]["event"].clone());
-    state
+    }
 }
 
 fn advance_to_demon(demon: &str, events: &mut Vec<Value>) -> Value {

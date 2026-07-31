@@ -62,6 +62,67 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
+test("accepts only the canonical Vortox numeric constraint and game-end source", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: {
+      id: "firstNight:clockmaker",
+      phase: "firstNight",
+      stepType: "character",
+      character: "clockmaker",
+      playerId: "player-1",
+      requiredInput: { kind: "none", optional: false },
+      canSkip: false,
+      support: "automated",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 2 },
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "vortox", demonPlayerId: "player-7" }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        numberConstraint: {
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          excludedValues: [2],
+        },
+        booleanChoices: [],
+        setupInfoRegistrationOptions: [],
+        targetChecks: [],
+      },
+    },
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+  deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
+
+  const unsafeMaximum = structuredClone(replay);
+  unsafeMaximum.currentStep.informationPrompt.numberConstraint.max = Number.MAX_SAFE_INTEGER + 1;
+  throws(() => parseReplayState(unsafeMaximum), /코어 응답 형식/);
+
+  const truthNotExcluded = structuredClone(replay);
+  truthNotExcluded.currentStep.informationPrompt.numberConstraint.excludedValues = [3];
+  throws(() => parseReplayState(truthNotExcluded), /코어 응답 형식/);
+
+  const ended = {
+    id: "game-ended-3",
+    type: "gameEnded",
+    phase: "day",
+    payload: {
+      winningTeam: "evil",
+      source: { kind: "vortoxNoExecution", sourceEventId: "execution-2" },
+    },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-31T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(ended), ended);
+});
+
 test("accepts the Snake Charmer swap event, identity history, impairment, and pending reveals", () => {
   const beforeSnake = { actualCharacter: "snakeCharmer", shownCharacter: "snakeCharmer", alignment: "good" };
   const afterSnake = { actualCharacter: "vigormortis", shownCharacter: "vigormortis", alignment: "evil" };

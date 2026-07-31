@@ -30,7 +30,7 @@ use crate::{
         RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
         SnakeCharmerNoSwapReason, SweetheartConsequenceOutcome,
         SweetheartConsequenceResolvedPayload, VigormortisEffect, VigormortisPoisonInvalidReason,
-        VigormortisPoisonTargetChangedPayload, WitchCurseAssignedPayload,
+        VigormortisPoisonTargetChangedPayload, VirginResolution, WitchCurseAssignedPayload,
         WitchNominationResolution,
     },
     day::{
@@ -42,10 +42,10 @@ use crate::{
         AbilityInstance, AbilityInstanceId, Alignment, BooleanInformationChoice, CharacterKind,
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry,
         IdentityState, InformationActor, InformationDeliveryMode, InformationPrompt,
-        InformationResult, InputTarget, NumberInformationChoice, Phase, PhaseOverviewItem,
-        PhaseStep, PhaseStepStatus, PhaseStepSupport, Player, PlayerIdentityTransition,
-        PlayerStateSnapshot, PlayerTransition, RequiredInput, RequiredInputKind, StepInput,
-        StepType, TargetInformationCheck, TargetInformationChoice,
+        InformationResult, InputTarget, NumberInformationChoice, NumberInformationConstraint,
+        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, PhaseStepSupport, Player,
+        PlayerIdentityTransition, PlayerStateSnapshot, PlayerTransition, RequiredInput,
+        RequiredInputKind, StepInput, StepType, TargetInformationCheck, TargetInformationChoice,
     },
     phase::{
         phase_transition_step, required_characters, required_none, simple_step,
@@ -743,6 +743,14 @@ fn day_execution_occurred(day_id: &str, events: &[GameEvent]) -> bool {
         GameEventKind::MadnessExecutionConfirmed { payload } => {
             SnvStepKey::parse(&payload.interrupted_step_id)
                 .is_some_and(|step| step.is_in_phase(day_id))
+        }
+        GameEventKind::NominationStarted { payload }
+            if matches!(
+                payload.virgin_resolution,
+                VirginResolution::SpentAndNominatorExecuted { .. }
+            ) =>
+        {
+            SnvStepKey::parse(&payload.step_id).is_some_and(|step| step.is_in_phase(day_id))
         }
         _ => false,
     })
@@ -2120,9 +2128,9 @@ fn snv_information_result(
     day_role_actions: &DayRoleActionIndex,
 ) -> Result<Option<InformationResult>, CoreError> {
     Ok(match step.character.as_deref() {
-        Some("clockmaker") => {
-            clockmaker_distance(players).map(|value| InformationResult::Number { value })
-        }
+        Some("clockmaker") => clockmaker_distance(players).map(|value| InformationResult::Number {
+            value: value as u64,
+        }),
         Some("flowergirl") => Some(InformationResult::Boolean {
             value: preceding_day_role_action(step, day_role_actions, CharacterKind::Demon)?,
         }),
@@ -2133,7 +2141,7 @@ fn snv_information_result(
             value: players
                 .iter()
                 .filter(|player| !player.alive && player.alignment == Alignment::Evil)
-                .count(),
+                .count() as u64,
         }),
         Some("juggler") => step
             .player_id
@@ -2147,7 +2155,7 @@ fn snv_information_result(
                 )
             })
             .map(|value| InformationResult::Number {
-                value: usize::from(value),
+                value: u64::from(value),
             }),
         Some("sage") => step
             .player_id
@@ -2228,6 +2236,7 @@ fn snv_information_prompt(
             active_reasons,
             registration_candidate_player_ids: vec![],
             number_choices: vec![],
+            number_constraint: None,
             boolean_choices: vec![],
             setup_info_registration_options: vec![],
             target_checks,
@@ -2248,6 +2257,7 @@ fn snv_information_prompt(
             active_reasons,
             registration_candidate_player_ids: vec![],
             number_choices: vec![],
+            number_constraint: None,
             boolean_choices: vec![],
             setup_info_registration_options: vec![],
             target_checks: vec![TargetInformationCheck {
@@ -2257,26 +2267,25 @@ fn snv_information_prompt(
             }],
         }));
     }
-    let (number_choices, boolean_choices) = match computed_result {
+    let (number_choices, number_constraint, boolean_choices) = match computed_result {
         InformationResult::Number { value } => (
-            if impaired {
+            if impaired && !vortox_active {
                 let range = if step.character.as_deref() == Some("clockmaker") {
                     1..=players.len() / 2
                 } else if step.character.as_deref() == Some("juggler") {
                     0..=5
-                } else if vortox_active {
-                    0..=players.len()
                 } else {
                     0..=players.iter().filter(|player| !player.alive).count()
                 };
                 range
-                    .filter(|candidate| !vortox_active || *candidate != value)
                     .map(|candidate| NumberInformationChoice {
-                        value: candidate,
-                        is_computed: candidate == value,
+                        value: candidate as u64,
+                        is_computed: candidate as u64 == value,
                         registration_judgments: vec![],
                     })
                     .collect()
+            } else if vortox_active {
+                vec![]
             } else {
                 vec![NumberInformationChoice {
                     value,
@@ -2284,10 +2293,16 @@ fn snv_information_prompt(
                     registration_judgments: vec![],
                 }]
             },
+            vortox_active.then(|| NumberInformationConstraint {
+                min: 0,
+                max: crate::model::MAX_SAFE_INFORMATION_NUMBER,
+                excluded_values: vec![value],
+            }),
             vec![],
         ),
         InformationResult::Boolean { value } => (
             vec![],
+            None,
             if impaired {
                 [false, true]
                     .into_iter()
@@ -2318,6 +2333,7 @@ fn snv_information_prompt(
         active_reasons,
         registration_candidate_player_ids: vec![],
         number_choices,
+        number_constraint,
         boolean_choices,
         setup_info_registration_options: vec![],
         target_checks: vec![],
@@ -2433,10 +2449,19 @@ fn snv_confirmed_information(
         let delivered =
             delivered_result.ok_or_else(|| ErrorKind::MissingDeliveredInformation.into_error())?;
         let legal = match &delivered {
-            InformationResult::Number { value } => prompt
-                .number_choices
-                .iter()
-                .any(|choice| choice.value == *value),
+            InformationResult::Number { value } => prompt.number_constraint.as_ref().map_or_else(
+                || {
+                    prompt
+                        .number_choices
+                        .iter()
+                        .any(|choice| choice.value == *value)
+                },
+                |constraint| {
+                    *value >= constraint.min
+                        && *value <= constraint.max
+                        && !constraint.excluded_values.contains(value)
+                },
+            ),
             InformationResult::Boolean { value } => prompt
                 .boolean_choices
                 .iter()
@@ -4177,6 +4202,26 @@ fn pending_forced_game_end(
                         })
                 })
             }
+            GameEventKind::NoExecutionConfirmed { payload } => {
+                let day_id = SnvStepKey::parse(&payload.step_id)?.phase_token();
+                if day_execution_occurred(day_id, &events[..event_index]) {
+                    return None;
+                }
+                let ability_state = SnvAbilityState::build(players, &events[..=event_index]);
+                players
+                    .iter()
+                    .filter(|player| {
+                        player.ability_instance.source_event_id == "setup"
+                            || events[..=event_index].iter().any(|candidate| {
+                                candidate.id == player.ability_instance.source_event_id
+                            })
+                    })
+                    .any(|player| ability_state.ability_functions(player, "vortox"))
+                    .then(|| PendingForcedGameEnd {
+                        source_event_id: event.id.clone(),
+                        winning_team: Alignment::Evil,
+                    })
+            }
             _ => None,
         })
 }
@@ -4212,6 +4257,9 @@ fn forced_game_end_source(
                 source_event_id: event.id.clone(),
             })
         }
+        GameEventKind::NoExecutionConfirmed { .. } => Some(GameEndSource::VortoxNoExecution {
+            source_event_id: event.id.clone(),
+        }),
         _ => None,
     }
 }

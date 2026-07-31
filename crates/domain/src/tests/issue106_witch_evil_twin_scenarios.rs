@@ -17,7 +17,7 @@ fn setup_event() -> Value {
             { "id": "player-6", "seat": 6, "name": "Sweetheart", "actualCharacter": "sweetheart", "shownCharacter": "sweetheart" },
             { "id": "player-7", "seat": 7, "name": "Evil Twin", "actualCharacter": "evilTwin", "shownCharacter": "evilTwin" },
             { "id": "player-8", "seat": 8, "name": "Witch", "actualCharacter": "witch", "shownCharacter": "witch" },
-            { "id": "player-9", "seat": 9, "name": "Vortox", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-9", "seat": 9, "name": "Fang Gu", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
         ] },
         "summary": "issue 106 setup",
         "createdAt": "2026-07-29T00:00:00.000Z"

@@ -60,8 +60,10 @@ fn propose(events: &[Value], command: Value) -> Value {
 fn append(events: &mut Vec<Value>, command: Value) -> Value {
     let proposal = propose(events, command.clone());
     assert_eq!(
-        proposal["ok"], true,
-        "proposal failed for {command}: {proposal}"
+        proposal["ok"],
+        true,
+        "proposal failed for {command}: {proposal}; state: {}",
+        replay(events)
     );
     events.push(proposal["value"]["event"].clone());
     proposal
@@ -70,6 +72,21 @@ fn append(events: &mut Vec<Value>, command: Value) -> Value {
 fn default_command(state: &Value, demon_targets: &[&str]) -> Value {
     let step = &state["value"]["currentStep"];
     let step_id = step["id"].as_str().expect("step id");
+    let vortox_active = state["value"]["players"].as_array().is_some_and(|players| {
+        players
+            .iter()
+            .any(|player| player["actualCharacter"] == "vortox")
+    });
+    if vortox_active {
+        let nominee_id = state["value"]["players"]
+            .as_array()
+            .and_then(|players| players.iter().find(|player| player["alive"] == false))
+            .and_then(|player| player["id"].as_str())
+            .unwrap_or("player-2");
+        if let Some(command) = super::support::snv_day_execution_command(state, nominee_id) {
+            return command;
+        }
+    }
     match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
         "characterIds" if step_id == "firstNight:demonInfo" => json!({
             "type": "confirmStep",
@@ -108,7 +125,7 @@ fn default_command(state: &Value, demon_targets: &[&str]) -> Value {
                     "input": null,
                     "deliveredResult": {
                         "kind": "number",
-                        "value": step["informationPrompt"]["numberChoices"][0]["value"]
+                        "value": step["informationPrompt"]["numberChoices"][0]["value"].as_u64().unwrap_or(100)
                     }
                 }
             })

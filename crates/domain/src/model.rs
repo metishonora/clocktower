@@ -123,7 +123,7 @@ pub(crate) enum InformationResult {
         character_ids: Vec<String>,
     },
     Number {
-        value: usize,
+        value: u64,
     },
     Player {
         player_id: String,
@@ -252,6 +252,8 @@ pub(crate) struct InformationPrompt {
     pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) registration_candidate_player_ids: Vec<String>,
     pub(crate) number_choices: Vec<NumberInformationChoice>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) number_constraint: Option<NumberInformationConstraint>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) boolean_choices: Vec<BooleanInformationChoice>,
     pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
@@ -286,9 +288,19 @@ pub(crate) struct TargetInformationChoice {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NumberInformationChoice {
-    pub(crate) value: usize,
+    pub(crate) value: u64,
     pub(crate) is_computed: bool,
     pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
+pub(crate) const MAX_SAFE_INFORMATION_NUMBER: u64 = 9_007_199_254_740_991;
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NumberInformationConstraint {
+    pub(crate) min: u64,
+    pub(crate) max: u64,
+    pub(crate) excluded_values: Vec<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

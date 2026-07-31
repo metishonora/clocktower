@@ -50,6 +50,52 @@ test("real WASM repeats Clockmaker information until explicit next-step progress
   expect(within(app).queryByRole("button", { name: "다음" })).toBeNull();
 });
 
+test("real WASM accepts an obviously false Vortox number and restores the prompt after undo", async () => {
+  const game = clockmakerGame();
+  const setup = game.game.events[0];
+  if (setup?.type !== "setupConfirmed") throw new Error("expected setup");
+  setup.payload.players[6] = {
+    ...setup.payload.players[6]!,
+    actualCharacter: "vortox",
+    shownCharacter: "vortox",
+  };
+  for (let index = 0; index < 2; index += 1) {
+    const state = await replayOrThrow(game);
+    await proposeAndAppend(game, {
+      type: "confirmStep",
+      payload: { stepId: state.currentStep!.id, input: null },
+    });
+  }
+
+  const prompt = (await replayOrThrow(game)).currentStep?.informationPrompt;
+  expect(prompt?.numberConstraint).toEqual({
+    min: 0,
+    max: Number.MAX_SAFE_INTEGER,
+    excludedValues: [1],
+  });
+  const proposal = await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:clockmaker",
+      input: null,
+      deliveredResult: { kind: "number", value: 100 },
+    },
+  });
+  expect(proposal.event.type).toBe("phaseStepConfirmed");
+  if (proposal.event.type !== "phaseStepConfirmed") throw new Error("expected phase event");
+  expect(proposal.event.payload.information?.deliveredResult).toEqual({ kind: "number", value: 100 });
+  expect(proposal.revealPayload).toEqual({
+    kind: "numericInformation",
+    characterId: "clockmaker",
+    value: 100,
+  });
+
+  game.game.events.pop();
+  const undone = await replayOrThrow(game);
+  expect(undone.currentStep?.id).toBe("firstNight:clockmaker");
+  expect(undone.currentStep?.informationPrompt?.numberConstraint?.excludedValues).toEqual([1]);
+});
+
 test("real WASM keeps Dreamer targets available for repeated information reveals", async () => {
   const fixturePath = resolve(process.cwd(), "../fixtures/acceptance/sects-and-violets/issue-98-dreamer.json");
   const game = importGameFileJson(readFileSync(fixturePath, "utf8"), "sectsAndViolets");

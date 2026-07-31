@@ -804,10 +804,10 @@ pub(crate) fn computed_information_result(
             })
         }
         "chef" => Some(InformationResult::Number {
-            value: evil_neighbor_pair_count(players),
+            value: evil_neighbor_pair_count(players) as u64,
         }),
         "empath" => Some(InformationResult::Number {
-            value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)?,
+            value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)? as u64,
         }),
         "spy" => Some(spy_grimoire_result(players, &[], &[])),
         _ => None,
@@ -956,15 +956,15 @@ pub(crate) fn legal_number_choices(
         };
         return (0..=max)
             .map(|value| NumberInformationChoice {
-                value,
-                is_computed: value == computed,
+                value: value as u64,
+                is_computed: value as u64 == computed,
                 registration_judgments: Vec::new(),
             })
             .collect();
     }
 
     let candidates = registration_candidate_player_ids(step, players);
-    let mut by_value = BTreeMap::<usize, Vec<RegistrationJudgment>>::new();
+    let mut by_value = BTreeMap::<u64, Vec<RegistrationJudgment>>::new();
     by_value.insert(computed, Vec::new());
     for mask in 0..(1usize << candidates.len()) {
         let judgments = candidates
@@ -984,8 +984,8 @@ pub(crate) fn legal_number_choices(
         else {
             continue;
         };
-        if value != computed {
-            by_value.entry(value).or_insert(judgments);
+        if value as u64 != computed {
+            by_value.entry(value as u64).or_insert(judgments);
         }
     }
 

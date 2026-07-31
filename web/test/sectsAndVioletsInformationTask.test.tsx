@@ -102,8 +102,9 @@ test("Clockmaker keeps its selectable information editor spacious when impaired"
   expect(within(task).getByRole("button", { name: "중독 정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
 });
 
-test("shows only the highest-priority information influence and blocks Vortox truth", () => {
-  const influencedStep: PhaseStep = {
+test("shows every information influence and accepts an obviously false Vortox number", async () => {
+  const onDeliveredResultChange = vi.fn();
+  const influencedStep = {
     ...step,
     informationPrompt: {
       ...step.informationPrompt!,
@@ -113,19 +114,23 @@ test("shows only the highest-priority information influence and blocks Vortox tr
         { type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" },
         { type: "vortox", demonPlayerId: "player-7" },
       ],
-      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+      numberChoices: [],
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [1] },
     },
-  };
-  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
+  } as unknown as PhaseStep;
+  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onDeliveredResultChange={onDeliveredResultChange} onReveal={() => undefined} />);
 
   const task = screen.getByRole("article", { name: "시계공 정보" });
   expect(within(task).getByText("보르톡스").classList.contains("vortox")).toBe(true);
-  expect(within(task).queryByText("중독")).toBeNull();
-  expect(within(task).queryByText("취함")).toBeNull();
+  expect(within(task).getByText("중독").classList.contains("poisoned")).toBe(true);
+  expect(within(task).getByText("취함").classList.contains("drunk")).toBe(true);
   const reveal = within(task).getByRole("button", { name: "거짓 정보 공개" });
   expect(reveal.classList.contains("vortox")).toBe(true);
-  expect(within(task).getByRole("combobox", { name: "전달할 정보" }).querySelectorAll("option")).toHaveLength(2);
-  expect(within(task).queryByRole("option", { name: "1칸" })).toBeNull();
+  expect((reveal as HTMLButtonElement).disabled).toBe(true);
+  const input = within(task).getByRole("spinbutton", { name: "전달할 숫자" });
+  await userEvent.setup().type(input, "100");
+  expect(onDeliveredResultChange).toHaveBeenLastCalledWith({ kind: "number", value: 100 });
+  expect(within(task).getByText("0 이상의 정수 · 진실 1 제외")).toBeTruthy();
 });
 
 test.each([

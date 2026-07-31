@@ -61,6 +61,7 @@ pub(crate) fn information_prompt(
         active_reasons,
         registration_candidate_player_ids,
         number_choices,
+        number_constraint: None,
         boolean_choices: Vec::new(),
         setup_info_registration_options,
         target_checks,
@@ -542,7 +543,10 @@ fn legacy_numeric_registration_information_is_valid(
     if active_reasons.is_empty() {
         number_result_with_registration_judgments(step, players, judgments).is_some_and(
             |expected| {
-                information.delivered_result == InformationResult::Number { value: expected }
+                information.delivered_result
+                    == InformationResult::Number {
+                        value: expected as u64,
+                    }
             },
         )
     } else {

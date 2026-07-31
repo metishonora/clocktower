@@ -13,7 +13,7 @@ fn setup_event() -> Value {
             { "id": "player-4", "seat": 4, "name": "도윤", "actualCharacter": "mutant", "shownCharacter": "mutant" },
             { "id": "player-5", "seat": 5, "name": "유나", "actualCharacter": "klutz", "shownCharacter": "klutz" },
             { "id": "player-6", "seat": 6, "name": "하린", "actualCharacter": "evilTwin", "shownCharacter": "evilTwin" },
-            { "id": "player-7", "seat": 7, "name": "준호", "actualCharacter": "vortox", "shownCharacter": "vortox" }
+            { "id": "player-7", "seat": 7, "name": "준호", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
         ]},
         "summary": "초기 설정 확정: 7명",
         "createdAt": "2026-07-25T00:00:00.000Z"
@@ -273,7 +273,7 @@ fn juggler_count_is_limited_to_five_and_drives_that_nights_information() {
             "payload": {
                 "stepId": "night:juggler",
                 "input": null,
-                "deliveredResult": { "kind": "number", "value": 2 }
+                "deliveredResult": { "kind": "number", "value": 3 }
             }
         }),
     );
@@ -284,11 +284,11 @@ fn juggler_count_is_limited_to_five_and_drives_that_nights_information() {
     );
     assert_eq!(
         revealed["value"]["event"]["payload"]["information"]["deliveredResult"],
-        json!({ "kind": "number", "value": 2 })
+        json!({ "kind": "number", "value": 3 })
     );
     assert_eq!(
         revealed["value"]["revealPayload"],
-        json!({ "kind": "numericInformation", "characterId": "juggler", "value": 2 })
+        json!({ "kind": "numericInformation", "characterId": "juggler", "value": 3 })
     );
 
     let mut legacy_events = events;

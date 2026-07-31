@@ -6,6 +6,7 @@ mod issue103_death_consequence_scenarios;
 mod issue104_pit_hag_scenarios;
 mod issue105_madness_scenarios;
 mod issue106_witch_evil_twin_scenarios;
+mod issue109_vortox_scenarios;
 mod issue112_fang_gu_scenarios;
 mod issue11_imp_attack_scenarios;
 mod issue11_succession_saint_scenarios;

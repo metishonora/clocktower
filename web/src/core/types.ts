@@ -159,6 +159,11 @@ export type InformationPrompt = {
   activeReasons: DeliveryReason[];
   registrationCandidatePlayerIds: string[];
   numberChoices: NumberChoice[];
+  numberConstraint?: {
+    min: number;
+    max: number;
+    excludedValues: number[];
+  };
   booleanChoices?: Array<{
     value: boolean;
     isComputed: boolean;
@@ -860,7 +865,7 @@ export type GameEvent = EventCommon &
         type: "gameEnded";
         payload: {
           winningTeam: "good" | "evil";
-          source?: { kind: "klutzChoice" | "witchCurseDeath" | "evilTwinExecution"; sourceEventId: string };
+          source?: { kind: "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
         };
       }
   );

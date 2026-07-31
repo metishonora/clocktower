@@ -637,7 +637,7 @@ pub(crate) enum RevealPayload {
         kind: &'static str,
         #[serde(rename = "characterId")]
         character_id: String,
-        value: usize,
+        value: u64,
     },
     BooleanInformation {
         kind: &'static str,
@@ -1111,6 +1111,7 @@ pub(crate) enum GameEndSource {
     KlutzChoice { source_event_id: String },
     WitchCurseDeath { source_event_id: String },
     EvilTwinExecution { source_event_id: String },
+    VortoxNoExecution { source_event_id: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

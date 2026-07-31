@@ -183,7 +183,10 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
     } else if step["informationPrompt"]["deliveryMode"] == "selectable"
         && step["informationPrompt"]["computedResult"]["kind"] == "number"
     {
-        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "number", "value": step["informationPrompt"]["numberChoices"][0]["value"] } } })
+        let value = step["informationPrompt"]["numberChoices"][0]["value"]
+            .as_u64()
+            .unwrap_or(100);
+        json!({ "type": "confirmStep", "payload": { "stepId": step["id"], "input": null, "deliveredResult": { "kind": "number", "value": value } } })
     } else if step["informationPrompt"]["deliveryMode"] == "selectable"
         && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
     {

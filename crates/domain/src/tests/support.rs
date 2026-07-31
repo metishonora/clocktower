@@ -155,3 +155,45 @@ pub(super) fn snv_demon_bluff_input(step: &Value) -> Value {
     assert_eq!(character_ids.len(), 3, "S&V needs three legal Demon bluffs");
     json!({ "characterIds": character_ids })
 }
+
+pub(super) fn snv_day_execution_command(state: &Value, nominee_id: &str) -> Option<Value> {
+    let step = &state["value"]["currentStep"];
+    match step["requiredInput"]["kind"].as_str()? {
+        "nomination" => {
+            if state["value"]["dayState"]["executionCandidate"].is_object() {
+                return Some(json!({ "type": "skipStep", "payload": { "stepId": step["id"] } }));
+            }
+            let nominator_id = state["value"]["dayState"]["eligibleNominatorIds"]
+                .as_array()?
+                .iter()
+                .filter_map(Value::as_str)
+                .find(|id| *id != nominee_id)?;
+            Some(json!({ "type": "confirmStep", "payload": {
+                "stepId": step["id"],
+                "input": { "nominatorId": nominator_id, "nomineeId": nominee_id }
+            }}))
+        }
+        "nominationVote" => {
+            let threshold = state["value"]["dayState"]["executionVoteThreshold"].as_u64()? as usize;
+            let voter_ids = state["value"]["players"]
+                .as_array()?
+                .iter()
+                .filter(|player| player["alive"] == true)
+                .filter_map(|player| player["id"].as_str())
+                .take(threshold)
+                .collect::<Vec<_>>();
+            (voter_ids.len() == threshold).then(|| {
+                json!({ "type": "confirmStep", "payload": {
+                    "stepId": step["id"], "input": { "voterIds": voter_ids }
+                }})
+            })
+        }
+        "executionDecision" => Some(json!({ "type": "confirmStep", "payload": {
+            "stepId": step["id"], "input": { "execute": true }
+        }})),
+        "executionDeathDecision" => Some(json!({ "type": "confirmStep", "payload": {
+            "stepId": step["id"], "input": { "died": true }
+        }})),
+        _ => None,
+    }
+}

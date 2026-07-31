@@ -371,7 +371,7 @@ pub(crate) fn phase_step_summary(
     }
 }
 
-fn number_result(information: &ConfirmedInformation) -> Option<usize> {
+fn number_result(information: &ConfirmedInformation) -> Option<u64> {
     match &information.delivered_result {
         InformationResult::Number { value } => Some(*value),
         _ => None,
