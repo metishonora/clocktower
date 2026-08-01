@@ -435,7 +435,7 @@ fn barber_allows_an_eligible_demon_to_swap_themself_when_multiple_demons_live() 
 }
 
 #[test]
-fn healthy_barber_with_no_living_demon_emits_canonical_no_effect() {
+fn demon_absence_locks_the_game_before_a_barber_consequence_can_be_resolved() {
     let mut events = vec![consequence_setup_event()];
     confirm_pit_hag_arbitrary_deaths(&mut events, &["player-2", "player-5", "player-7"]);
 
@@ -447,6 +447,8 @@ fn healthy_barber_with_no_living_demon_emits_canonical_no_effect() {
         .as_array()
         .unwrap()
         .is_empty());
+    assert_eq!(state["value"]["pendingGameEnd"]["winningTeam"], "good");
+    assert_eq!(state["value"]["pendingGameEnd"]["cause"], "demonAbsent");
     let proposal = propose(
         &events,
         json!({
@@ -457,17 +459,7 @@ fn healthy_barber_with_no_living_demon_emits_canonical_no_effect() {
             }
         }),
     );
-    assert_eq!(proposal["ok"], true, "proposal failed: {proposal}");
-    assert_eq!(
-        proposal["value"]["event"]["payload"]["outcome"],
-        json!({ "kind": "noEffect", "reason": "noLivingDemon" })
-    );
-    assert!(proposal["value"]["event"]["payload"]
-        .get("chooserDemonPlayerId")
-        .is_none());
-    assert!(proposal["value"]["event"]["payload"]
-        .get("decision")
-        .is_none());
+    assert_eq!(proposal["error"]["code"], "INVALID_STEP_INPUT");
 }
 
 #[test]

@@ -330,7 +330,8 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.source !== undefined && !(
           isRecord(payload.source) &&
           hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
-          (payload.source.kind === "klutzChoice" || payload.source.kind === "witchCurseDeath" || payload.source.kind === "evilTwinExecution" || payload.source.kind === "vortoxNoExecution") &&
+          (["demonAbsent", "twoLivingPlayers", "klutzChoice", "witchCurseDeath", "evilTwinExecution", "vortoxNoExecution"]
+            .includes(String(payload.source.kind))) &&
           typeof payload.source.sourceEventId === "string"
         ))
       ) throw invalidEvent();
@@ -473,11 +474,18 @@ function isPendingDeathConsequence(value: unknown): boolean {
     && value.eligibleChooserPlayerIds.every(isString);
 }
 
-function isPendingForcedGameEnd(value: unknown): boolean {
+function isGameEndCause(value: unknown): boolean {
+  return ["demonAbsent", "twoLivingPlayers", "klutzChoice", "evilTwinExecution", "vortoxNoExecution"]
+    .includes(String(value));
+}
+
+function isPendingGameEnd(value: unknown): boolean {
   return isRecord(value)
-    && hasExactKeys(value, ["sourceEventId", "winningTeam"])
+    && hasExactKeys(value, ["sourceEventId", "winningTeam", "cause", "reasonKo"])
     && typeof value.sourceEventId === "string"
-    && (value.winningTeam === "good" || value.winningTeam === "evil");
+    && (value.winningTeam === "good" || value.winningTeam === "evil")
+    && isGameEndCause(value.cause)
+    && typeof value.reasonKo === "string";
 }
 
 export function parseReplayState(value: unknown): ReplayState {
@@ -511,8 +519,8 @@ export function parseReplayState(value: unknown): ReplayState {
     (value.pendingDeathConsequences !== undefined &&
       (!Array.isArray(value.pendingDeathConsequences) ||
         !value.pendingDeathConsequences.every(isPendingDeathConsequence))) ||
-    (value.pendingForcedGameEnd !== undefined &&
-      !isPendingForcedGameEnd(value.pendingForcedGameEnd)) ||
+    (value.pendingGameEnd !== undefined &&
+      !isPendingGameEnd(value.pendingGameEnd)) ||
     !(
       value.gameEnd === undefined ||
       value.gameEnd === null ||
@@ -1637,9 +1645,14 @@ function isWarning(value: unknown): boolean {
 
 function isGameEndState(value: unknown): boolean {
   return isRecord(value) &&
-    hasExactKeys(value, ["eventId", "winningTeam"]) &&
+    hasOnlyKeys(value, ["eventId", "winningTeam", "sourceEventId", "cause", "reasonKo"]) &&
     typeof value.eventId === "string" &&
-    (value.winningTeam === "good" || value.winningTeam === "evil");
+    (value.winningTeam === "good" || value.winningTeam === "evil") &&
+    (value.sourceEventId === undefined || typeof value.sourceEventId === "string") &&
+    (value.cause === undefined || isGameEndCause(value.cause)) &&
+    (value.reasonKo === undefined || typeof value.reasonKo === "string") &&
+    ((value.sourceEventId === undefined && value.cause === undefined && value.reasonKo === undefined)
+      || (typeof value.sourceEventId === "string" && isGameEndCause(value.cause) && typeof value.reasonKo === "string"));
 }
 
 function isPhase(value: unknown): value is Phase {

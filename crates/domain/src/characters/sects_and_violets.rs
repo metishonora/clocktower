@@ -14,13 +14,13 @@ use crate::{
         DeathConsequenceNoEffectReason, DeathEventPayload, DeathTriggerRef,
         DemonAttackNoEffectReason, DemonAttackOutcome, EndGameCommandPayload,
         EvilTwinPairAssignedPayload, EvilTwinRelationship, EvilTwinRevealPlayer,
-        ExecuteMadnessCommandPayload, GameEndSource, GameEndState, GameEndedPayload, GameEvent,
-        GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, KlutzChoiceOutcome,
+        ExecuteMadnessCommandPayload, GameEndCause, GameEndSource, GameEndState, GameEndedPayload,
+        GameEvent, GameEventKind, GameFile, ImpairmentExpiry, ImpairmentKind, KlutzChoiceOutcome,
         KlutzChoiceResolvedPayload, MadnessAssignedPayload, MadnessAssignmentState,
         MadnessCheckRecordedPayload, MadnessCheckResult, MadnessExecutionConfirmedPayload,
         MadnessStatus, ManualPhaseStepOutcome, ManualPhaseStepResolvedPayload,
         NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
-        NightDeathsAnnouncedPayload, PendingDeathConsequence, PendingForcedGameEnd,
+        NightDeathsAnnouncedPayload, PendingDeathConsequence, PendingGameEnd,
         PendingIdentityReveal, PendingMadnessExecution, PendingVigormortisPoisonChoice,
         PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason,
         PitHagTransformationOutcome, PitHagTransformationResolvedPayload, Proposal,
@@ -38,6 +38,7 @@ use crate::{
         validate_nomination_start_roles,
     },
     error::{CoreError, ErrorKind},
+    messages::game_end_reason_ko,
     model::{
         AbilityInstance, AbilityInstanceId, Alignment, BooleanInformationChoice, CharacterKind,
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry,
@@ -4133,134 +4134,129 @@ fn same_phase_cycle_as_step(event: &GameEvent, step: &PhaseStep) -> bool {
     }
 }
 
-fn pending_forced_game_end(
-    events: &[GameEvent],
-    players: &[Player],
-) -> Option<PendingForcedGameEnd> {
-    if events
-        .iter()
-        .any(|event| matches!(event.kind, GameEventKind::GameEnded { .. }))
-    {
-        return None;
-    }
-    events
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(event_index, event)| match &event.kind {
-            GameEventKind::KlutzChoiceResolved { payload } => match payload.outcome {
-                KlutzChoiceOutcome::TeamLost { winning_team, .. } => Some(PendingForcedGameEnd {
-                    source_event_id: event.id.clone(),
-                    winning_team,
-                }),
-                KlutzChoiceOutcome::Safe | KlutzChoiceOutcome::ActorImpaired => None,
-            },
-            GameEventKind::DeathConfirmed { payload }
-                if payload
-                    .step_id
-                    .as_deref()
-                    .is_some_and(|step| step.ends_with(":witchDeath"))
-                    && players.iter().filter(|player| player.alive).count() <= 2 =>
-            {
-                Some(PendingForcedGameEnd {
-                    source_event_id: event.id.clone(),
-                    winning_team: Alignment::Evil,
-                })
+fn pending_game_end(
+    events_before: &[GameEvent],
+    event: &GameEvent,
+    players_before: &[Player],
+    players_after: &[Player],
+    death_triggers: &[PendingDeathConsequence],
+) -> Option<PendingGameEnd> {
+    let direct = match &event.kind {
+        GameEventKind::KlutzChoiceResolved { payload } => match payload.outcome {
+            KlutzChoiceOutcome::TeamLost { winning_team, .. } => {
+                Some((winning_team, GameEndCause::KlutzChoice))
             }
-            GameEventKind::DeathConfirmed { payload }
-                if payload
-                    .step_id
-                    .as_deref()
-                    .is_some_and(|step| step.ends_with(":executionDeath")) =>
-            {
-                let executed = players
-                    .iter()
-                    .find(|player| player.id == payload.player_id)?;
-                if executed.alignment != Alignment::Good {
-                    return None;
-                }
-                events[..event_index].iter().rev().find_map(|pair_event| {
-                    let GameEventKind::EvilTwinPairAssigned { payload: pair } = &pair_event.kind
-                    else {
-                        return None;
-                    };
-                    let actor = players.iter().find(|player| {
-                        player.id == pair.actor_player_id
-                            && player.actual_character == "evilTwin"
-                            && player.ability_instance.id == pair.source_ability_instance_id
-                    })?;
-                    let twin = players
-                        .iter()
-                        .find(|player| player.id == pair.twin_player_id)?;
-                    let actor_was_alive = actor.alive || actor.id == executed.id;
-                    (actor_was_alive
-                        && actor.alignment != twin.alignment
-                        && (actor.id == executed.id || twin.id == executed.id))
-                        .then(|| PendingForcedGameEnd {
-                            source_event_id: event.id.clone(),
-                            winning_team: Alignment::Evil,
-                        })
-                })
-            }
-            GameEventKind::NoExecutionConfirmed { payload } => {
-                let day_id = SnvStepKey::parse(&payload.step_id)?.phase_token();
-                if day_execution_occurred(day_id, &events[..event_index]) {
-                    return None;
-                }
-                let ability_state = SnvAbilityState::build(players, &events[..=event_index]);
-                players
-                    .iter()
-                    .filter(|player| {
-                        player.ability_instance.source_event_id == "setup"
-                            || events[..=event_index].iter().any(|candidate| {
-                                candidate.id == player.ability_instance.source_event_id
-                            })
-                    })
-                    .any(|player| ability_state.ability_functions(player, "vortox"))
-                    .then(|| PendingForcedGameEnd {
-                        source_event_id: event.id.clone(),
-                        winning_team: Alignment::Evil,
-                    })
-            }
-            _ => None,
-        })
-}
-
-fn forced_game_end_source(
-    events: &[GameEvent],
-    pending: &PendingForcedGameEnd,
-) -> Option<GameEndSource> {
-    let event = events
-        .iter()
-        .find(|event| event.id == pending.source_event_id)?;
-    match &event.kind {
-        GameEventKind::KlutzChoiceResolved { .. } => Some(GameEndSource::KlutzChoice {
-            source_event_id: event.id.clone(),
-        }),
-        GameEventKind::DeathConfirmed { payload }
-            if payload
-                .step_id
-                .as_deref()
-                .is_some_and(|step| step.ends_with(":witchDeath")) =>
-        {
-            Some(GameEndSource::WitchCurseDeath {
-                source_event_id: event.id.clone(),
-            })
-        }
+            KlutzChoiceOutcome::Safe | KlutzChoiceOutcome::ActorImpaired => None,
+        },
         GameEventKind::DeathConfirmed { payload }
             if payload
                 .step_id
                 .as_deref()
                 .is_some_and(|step| step.ends_with(":executionDeath")) =>
         {
-            Some(GameEndSource::EvilTwinExecution {
-                source_event_id: event.id.clone(),
-            })
+            let executed = players_before
+                .iter()
+                .find(|player| player.id == payload.player_id && player.alive)?;
+            let ability_state = SnvAbilityState::build(players_before, events_before);
+            let relationships =
+                active_evil_twin_relationships(players_before, events_before, &ability_state);
+            (executed.alignment == Alignment::Good
+                && relationships
+                    .iter()
+                    .any(|relationship| relationship.twin_player_id == executed.id))
+            .then_some((Alignment::Evil, GameEndCause::EvilTwinExecution))
         }
-        GameEventKind::NoExecutionConfirmed { .. } => Some(GameEndSource::VortoxNoExecution {
-            source_event_id: event.id.clone(),
-        }),
+        GameEventKind::NoExecutionConfirmed { payload } => {
+            let day_id = SnvStepKey::parse(&payload.step_id)?.phase_token();
+            if day_execution_occurred(day_id, events_before) {
+                None
+            } else {
+                let ability_state = SnvAbilityState::build(players_before, events_before);
+                players_before
+                    .iter()
+                    .any(|player| ability_state.ability_functions(player, "vortox"))
+                    .then_some((Alignment::Evil, GameEndCause::VortoxNoExecution))
+            }
+        }
         _ => None,
+    };
+    let candidate = direct.or_else(|| {
+        let active_events = events_before
+            .iter()
+            .chain(std::iter::once(event))
+            .cloned()
+            .collect::<Vec<_>>();
+        let unresolved_klutz =
+            unresolved_death_consequences(death_triggers, &active_events, players_after, None)
+                .iter()
+                .any(|pending| pending.kind == DeathConsequenceKind::Klutz)
+                || unannounced_night_death_player_ids(&active_events)
+                    .iter()
+                    .any(|player_id| {
+                        players_after.iter().any(|player| {
+                            player.id == *player_id && player.actual_character == "klutz"
+                        })
+                    });
+        if unresolved_klutz {
+            return None;
+        }
+        let ability_state = SnvAbilityState::build(players_after, &active_events);
+        let relationships =
+            active_evil_twin_relationships(players_after, &active_events, &ability_state);
+        let good_can_win = !living_evil_twin_pair(players_after, &relationships);
+        let demon_absent = good_can_win
+            && !players_after.iter().any(|player| {
+                player.alive
+                    && character_kind(&player.actual_character) == Some(CharacterKind::Demon)
+            });
+        if demon_absent {
+            Some((Alignment::Good, GameEndCause::DemonAbsent))
+        } else if players_after.iter().filter(|player| player.alive).count() <= 2 {
+            Some((Alignment::Evil, GameEndCause::TwoLivingPlayers))
+        } else {
+            None
+        }
+    });
+    let (winning_team, cause) = candidate?;
+    Some(PendingGameEnd {
+        source_event_id: event.id.clone(),
+        winning_team,
+        cause,
+        reason_ko: game_end_reason_ko(cause).into(),
+    })
+}
+
+fn apply_replay_player_event(
+    players: &mut [Player],
+    active_impairments: &mut Vec<ActiveImpairment>,
+    events: &[GameEvent],
+    event_index: usize,
+    event: &GameEvent,
+    players_before: &[Player],
+    death_triggers: &[PendingDeathConsequence],
+    first_game_end: &mut Option<PendingGameEnd>,
+) -> Result<(), CoreError> {
+    apply_player_event(players, active_impairments, events, event_index, event)?;
+    if first_game_end.is_none() {
+        *first_game_end = pending_game_end(
+            &events[..event_index],
+            event,
+            players_before,
+            players,
+            death_triggers,
+        );
+    }
+    Ok(())
+}
+
+fn game_end_source(pending: &PendingGameEnd) -> GameEndSource {
+    let source_event_id = pending.source_event_id.clone();
+    match pending.cause {
+        GameEndCause::DemonAbsent => GameEndSource::DemonAbsent { source_event_id },
+        GameEndCause::TwoLivingPlayers => GameEndSource::TwoLivingPlayers { source_event_id },
+        GameEndCause::KlutzChoice => GameEndSource::KlutzChoice { source_event_id },
+        GameEndCause::EvilTwinExecution => GameEndSource::EvilTwinExecution { source_event_id },
+        GameEndCause::VortoxNoExecution => GameEndSource::VortoxNoExecution { source_event_id },
     }
 }
 
@@ -4272,6 +4268,7 @@ struct SnvReplayContext {
     phase_overview: Vec<PhaseOverviewItem>,
     day_role_actions: DayRoleActionIndex,
     death_triggers: Vec<PendingDeathConsequence>,
+    pending_game_end: Option<PendingGameEnd>,
 }
 
 fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
@@ -4285,9 +4282,11 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
     let mut pending_madness_overview: Option<(PendingMadnessExecution, Phase, Vec<PhaseStep>)> =
         None;
     let mut death_triggers = Vec::<PendingDeathConsequence>::new();
+    let mut pending_game_end = None;
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
-        let players_at_event = players.as_slice();
+        let players_before_event = players.clone();
+        let players_at_event = players_before_event.as_slice();
         day_role_actions.record(event, players_at_event)?;
         record_death_triggers(
             &mut death_triggers,
@@ -4348,12 +4347,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             if current.as_ref().is_some_and(|step| step.id == *step_id) {
                 statuses.insert(step_id.clone(), PhaseStepStatus::Complete);
             }
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4365,12 +4367,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             )) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4396,12 +4401,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4438,12 +4446,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4512,12 +4523,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 phase,
                 steps,
             ));
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4537,12 +4551,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
                 pending_madness_overview = None;
-                apply_player_event(
+                apply_replay_player_event(
                     &mut players,
                     &mut active_impairments,
                     events,
                     event_index,
                     event,
+                    players_at_event,
+                    &death_triggers,
+                    &mut pending_game_end,
                 )?;
                 continue;
             }
@@ -4565,12 +4582,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 &events[..event_index],
             )
             .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -4606,12 +4626,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 }
                 statuses.insert(format!("{prefix}:nomination:1"), PhaseStepStatus::Skipped);
                 statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
-                apply_player_event(
+                apply_replay_player_event(
                     &mut players,
                     &mut active_impairments,
                     events,
                     event_index,
                     event,
+                    players_at_event,
+                    &death_triggers,
+                    &mut pending_game_end,
                 )?;
                 continue;
             }
@@ -4753,12 +4776,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 }
             }
             statuses.insert(event_step_id.clone(), status);
-            apply_player_event(
+            apply_replay_player_event(
                 &mut players,
                 &mut active_impairments,
                 events,
                 event_index,
                 event,
+                players_at_event,
+                &death_triggers,
+                &mut pending_game_end,
             )?;
             continue;
         }
@@ -5091,12 +5117,15 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             let prefix = step_prefix(&payload.step_id)?;
             statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
         }
-        apply_player_event(
+        apply_replay_player_event(
             &mut players,
             &mut active_impairments,
             events,
             event_index,
             event,
+            players_at_event,
+            &death_triggers,
+            &mut pending_game_end,
         )?;
     }
 
@@ -5168,6 +5197,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             phase_overview: overview,
             day_role_actions,
             death_triggers,
+            pending_game_end,
         });
     }
 
@@ -5182,6 +5212,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             phase_overview: vec![],
             day_role_actions,
             death_triggers,
+            pending_game_end,
         });
     };
     if let Some(step) = current.as_mut() {
@@ -5229,6 +5260,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         phase_overview: overview,
         day_role_actions,
         death_triggers,
+        pending_game_end,
     })
 }
 
@@ -5413,7 +5445,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             pending_madness_execution: None,
             pending_vigormortis_poison_choices: vec![],
             pending_death_consequences: vec![],
-            pending_forced_game_end: None,
+            pending_game_end: None,
         });
     }
     let events = &game_file.game.events;
@@ -5442,6 +5474,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         phase_overview,
         day_role_actions,
         death_triggers,
+        pending_game_end,
     } = replay_context(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
     let day_state = if phase == Phase::Day {
@@ -5472,27 +5505,6 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             severity: "warning",
             message_ko: "공개하지 않은 밤 사망이 있습니다.".into(),
             winning_team: None,
-        });
-    }
-    if !players.is_empty()
-        && !living_evil_twin_pair(&players, &evil_twin_relationships)
-        && !players.iter().any(|player| {
-            player.alive && character_kind(&player.actual_character) == Some(CharacterKind::Demon)
-        })
-    {
-        warnings.push(CoreWarning {
-            code: "DEMON_DEAD_GOOD_WIN".into(),
-            severity: "warning",
-            message_ko: "악마 사망: 선 승리 확인 필요".into(),
-            winning_team: Some(Alignment::Good),
-        });
-    }
-    if !players.is_empty() && players.iter().filter(|player| player.alive).count() <= 2 {
-        warnings.push(CoreWarning {
-            code: "TWO_LIVING_PLAYERS_EVIL_WIN".into(),
-            severity: "warning",
-            message_ko: "생존자 2명: 악 승리 확인 필요".into(),
-            winning_team: Some(Alignment::Evil),
         });
     }
     let active_impairments = ability_state.active_impairments.clone();
@@ -5540,7 +5552,6 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             current_step.as_ref(),
         )
     };
-    let forced_game_end = pending_forced_game_end(events, &players);
     let available_day_actions =
         available_day_actions(phase, current_step.as_ref(), &players, active_events);
     let day_action_records = confirmed_day_action_records(active_events);
@@ -5566,16 +5577,23 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             if event.phase != phase {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            match pending_forced_game_end(active_events, &players) {
-                None if payload.source.is_none() => {}
-                Some(forced)
-                    if payload.source == forced_game_end_source(active_events, &forced)
-                        && payload.winning_team == forced.winning_team => {}
+            let rules_owned = pending_game_end.as_ref();
+            let resolved = match (&payload.source, rules_owned) {
+                (Some(source), Some(pending))
+                    if *source == game_end_source(pending)
+                        && payload.winning_team == pending.winning_team =>
+                {
+                    Some(pending)
+                }
+                (None, _) => None,
                 _ => return Err(ErrorKind::ReplayFailed.into_error()),
-            }
+            };
             Ok(GameEndState {
                 event_id: event.id.clone(),
                 winning_team: payload.winning_team,
+                source_event_id: resolved.map(|pending| pending.source_event_id.clone()),
+                cause: resolved.map(|pending| pending.cause),
+                reason_ko: resolved.map(|pending| pending.reason_ko.clone()),
             })
         })
         .transpose()?;
@@ -5584,6 +5602,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     } else {
         (current_step, phase_overview)
     };
+    let pending_game_end = game_end.is_none().then_some(pending_game_end).flatten();
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -5603,7 +5622,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_madness_execution,
         pending_vigormortis_poison_choices,
         pending_death_consequences,
-        pending_forced_game_end: forced_game_end,
+        pending_game_end,
     })
 }
 
@@ -5625,19 +5644,18 @@ pub(crate) fn propose_phase_command(
         current_step,
         day_role_actions,
         death_triggers,
+        pending_game_end,
         ..
     } = replay_context(&game_file.game.events)?;
-    if let Some(forced) = pending_forced_game_end(&game_file.game.events, &players) {
+    if let Some(pending) = pending_game_end {
         return match command {
-            Command::EndGame { payload } if payload.winning_team == forced.winning_team => {
-                let source = forced_game_end_source(&game_file.game.events, &forced)
-                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+            Command::EndGame { payload } if payload.winning_team == pending.winning_team => {
                 propose_end_game(
                     game_file,
                     current_step.as_ref(),
                     phase,
                     payload,
-                    Some(source),
+                    Some(game_end_source(&pending)),
                 )
             }
             _ => Err(ErrorKind::InvalidStepInput.into_error()),
@@ -5925,13 +5943,7 @@ pub(crate) fn propose_phase_command(
         Command::ExecuteMadness { payload } => {
             propose_madness_execution(game_file, &current_step, &players, payload)
         }
-        Command::EndGame { payload } => propose_end_game(
-            game_file,
-            Some(&current_step),
-            current_step.phase,
-            payload,
-            None,
-        ),
+        Command::EndGame { .. } => Err(ErrorKind::InvalidStepInput.into_error()),
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
 }

@@ -155,6 +155,9 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             Ok(GameEndState {
                 event_id: event.id.clone(),
                 winning_team: payload.winning_team,
+                source_event_id: None,
+                cause: None,
+                reason_ko: None,
             })
         })
         .transpose()?;
@@ -182,7 +185,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_madness_execution: None,
         pending_vigormortis_poison_choices: vec![],
         pending_death_consequences: vec![],
-        pending_forced_game_end: None,
+        pending_game_end: None,
     })
 }
 

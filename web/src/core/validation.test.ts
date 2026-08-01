@@ -860,6 +860,52 @@ test("validates win warnings and the canonical game-ended contract", () => {
   throws(() => parseReplayState(malformedWarning), /코어 응답 형식/);
 });
 
+test("validates the S&V rules-owned game-end cause and Korean reason", () => {
+  const event = {
+    id: "game-ended-12",
+    type: "gameEnded",
+    phase: "day",
+    payload: {
+      winningTeam: "evil",
+      source: { kind: "vortoxNoExecution", sourceEventId: "no-execution-11" },
+    },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "gameEnded");
+
+  const pendingReplay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 11,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+    pendingGameEnd: {
+      sourceEventId: "no-execution-11",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    },
+  };
+  deepEqual<unknown>(parseReplayState(pendingReplay), pendingReplay);
+
+  const endedReplay: Record<string, unknown> = structuredClone(pendingReplay);
+  delete (endedReplay as { pendingGameEnd?: unknown }).pendingGameEnd;
+  endedReplay.gameEnd = {
+    eventId: "game-ended-12",
+    sourceEventId: "no-execution-11",
+    winningTeam: "evil",
+    cause: "vortoxNoExecution",
+    reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+  };
+  deepEqual<unknown>(parseReplayState(endedReplay), endedReplay);
+});
+
 test("validates canonical player annotation events and replay projections", () => {
   const event = {
     id: "player-annotations-2",

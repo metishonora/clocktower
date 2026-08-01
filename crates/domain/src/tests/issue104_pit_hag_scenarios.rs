@@ -213,6 +213,23 @@ fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value
     panic!("wanted phase step was not reached");
 }
 
+fn advance_to_pit_hag_arbitrary_deaths(events: &mut Vec<Value>) -> Value {
+    let pit_hag = advance_to_pit_hag(events);
+    append(
+        events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-7"], "characterIds": ["noDashii"] }
+            }
+        }),
+    );
+    advance_to(events, |state| {
+        state["value"]["currentStep"]["id"] == "night:pitHagArbitraryDeaths"
+    })
+}
+
 #[test]
 fn pit_hag_requires_one_player_and_one_script_character() {
     let mut events = vec![setup_event()];
@@ -824,22 +841,9 @@ fn creating_clockmaker_reveals_the_change_then_runs_start_knowing_immediately() 
 }
 
 #[test]
-fn two_living_players_surface_the_evil_win_confirmation() {
+fn two_living_players_create_one_rule_resolved_game_end() {
     let mut events = vec![setup_event()];
-    let pit_hag = advance_to_pit_hag(&mut events);
-    append(
-        &mut events,
-        json!({
-            "type": "confirmStep",
-            "payload": {
-                "stepId": pit_hag["value"]["currentStep"]["id"],
-                "input": { "playerIds": ["player-7"], "characterIds": ["noDashii"] }
-            }
-        }),
-    );
-    let arbitrary_deaths = advance_to(&mut events, |state| {
-        state["value"]["currentStep"]["id"] == "night:pitHagArbitraryDeaths"
-    });
+    let arbitrary_deaths = advance_to_pit_hag_arbitrary_deaths(&mut events);
     assert_eq!(
         arbitrary_deaths["value"]["players"]
             .as_array()
@@ -856,23 +860,12 @@ fn two_living_players_surface_the_evil_win_confirmation() {
             "type": "confirmStep",
             "payload": {
                 "stepId": "night:pitHagArbitraryDeaths",
-                "input": { "playerIds": ["player-1", "player-3", "player-4", "player-5", "player-6"] }
+                "input": { "playerIds": ["player-1", "player-3", "player-4", "player-5", "player-7"] }
             }
         }),
     );
 
-    let two_living = advance_to(&mut events, |state| {
-        state["value"]["pendingDeathConsequences"]
-            .as_array()
-            .is_none_or(Vec::is_empty)
-            && state["value"]["players"].as_array().is_some_and(|players| {
-                players
-                    .iter()
-                    .filter(|player| player["alive"] == true)
-                    .count()
-                    == 2
-            })
-    });
+    let two_living = replay(&events);
     assert_eq!(
         two_living["value"]["players"]
             .as_array()
@@ -882,17 +875,40 @@ fn two_living_players_surface_the_evil_win_confirmation() {
             .count(),
         2
     );
-    assert!(two_living["value"]["warnings"]
+    let cause_event_id = events.last().unwrap()["id"].clone();
+    assert_eq!(
+        two_living["value"]["pendingGameEnd"],
+        json!({
+            "sourceEventId": cause_event_id,
+            "winningTeam": "evil",
+            "cause": "twoLivingPlayers",
+            "reasonKo": "생존자가 2명 이하로 남았습니다."
+        })
+    );
+    assert!(!two_living["value"]["warnings"]
         .as_array()
         .unwrap()
         .iter()
-        .any(|warning| warning
-            == &json!({
-                "code": "TWO_LIVING_PLAYERS_EVIL_WIN",
-                "severity": "warning",
-                "messageKo": "생존자 2명: 악 승리 확인 필요",
-                "winningTeam": "evil"
-            })));
+        .any(|warning| warning["winningTeam"].is_string()));
+
+    events.push(json!({
+        "id": "legacy-after-first-win",
+        "type": "playerAnnotationsUpdated",
+        "phase": "night",
+        "payload": {
+            "playerId": "player-1",
+            "systemTokenIds": [],
+            "scriptTokens": [],
+            "notes": "historical continuation"
+        },
+        "summary": "legacy event after first win",
+        "createdAt": "2026-07-26T00:30:00.000Z"
+    }));
+    assert_eq!(
+        replay(&events)["value"]["pendingGameEnd"]["sourceEventId"],
+        cause_event_id,
+        "the first terminal result must remain authoritative"
+    );
 
     let expected_event_count = events.len();
     let ended = append(
@@ -908,7 +924,10 @@ fn two_living_players_surface_the_evil_win_confirmation() {
         ended_state["value"]["gameEnd"],
         json!({
             "eventId": ended["value"]["event"]["id"],
-            "winningTeam": "evil"
+            "sourceEventId": cause_event_id,
+            "winningTeam": "evil",
+            "cause": "twoLivingPlayers",
+            "reasonKo": "생존자가 2명 이하로 남았습니다."
         })
     );
     assert!(ended_state["value"]["currentStep"].is_null());
@@ -929,6 +948,108 @@ fn two_living_players_surface_the_evil_win_confirmation() {
     let undone = replay(&events);
     assert!(undone["value"]["gameEnd"].is_null());
     assert!(!undone["value"]["currentStep"].is_null());
+}
+
+#[test]
+fn simultaneous_basic_conditions_resolve_as_good() {
+    let mut events = vec![setup_event()];
+    advance_to_pit_hag_arbitrary_deaths(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:pitHagArbitraryDeaths",
+                "input": { "playerIds": ["player-1", "player-2", "player-3", "player-4", "player-7"] }
+            }
+        }),
+    );
+
+    assert_eq!(
+        replay(&events)["value"]["pendingGameEnd"],
+        json!({
+            "sourceEventId": events.last().unwrap()["id"],
+            "winningTeam": "good",
+            "cause": "demonAbsent",
+            "reasonKo": "살아 있는 악마가 없습니다."
+        })
+    );
+}
+
+#[test]
+fn legacy_source_less_game_end_remains_winner_only() {
+    let mut events = vec![setup_event()];
+    advance_to_pit_hag_arbitrary_deaths(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:pitHagArbitraryDeaths",
+                "input": { "playerIds": ["player-1", "player-3", "player-4", "player-5", "player-7"] }
+            }
+        }),
+    );
+    events.push(json!({
+        "id": "legacy-game-ended",
+        "type": "gameEnded",
+        "phase": "night",
+        "payload": { "winningTeam": "evil" },
+        "summary": "legacy manual game end",
+        "createdAt": "2026-07-26T00:30:00.000Z"
+    }));
+
+    assert_eq!(
+        replay(&events)["value"]["gameEnd"],
+        json!({
+            "eventId": "legacy-game-ended",
+            "winningTeam": "evil"
+        })
+    );
+}
+
+#[test]
+fn a_klutz_death_defers_the_basic_win_until_the_choice_is_resolved() {
+    let mut events = vec![setup_event()];
+    advance_to_pit_hag_arbitrary_deaths(&mut events);
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "night:pitHagArbitraryDeaths",
+                "input": { "playerIds": ["player-1", "player-3", "player-4", "player-5", "player-6"] }
+            }
+        }),
+    );
+
+    let state = replay(&events);
+    assert!(state["value"]["pendingGameEnd"].is_null());
+    assert_eq!(
+        state["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|player| player["alive"] == true)
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn storyteller_cannot_end_snv_without_a_rules_owned_result() {
+    let events = vec![setup_event()];
+    let result: Value = serde_json::from_str(&propose_json(
+        &game(events).to_string(),
+        &json!({
+            "type": "endGame",
+            "payload": { "winningTeam": "good", "expectedEventCount": 1 }
+        })
+        .to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(result["error"]["code"], "INVALID_STEP_INPUT");
 }
 
 #[test]

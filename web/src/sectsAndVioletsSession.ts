@@ -123,6 +123,23 @@ export function inferSectsAndVioletsCheckpoints(
       const nomination = checkpoints.pop()!;
       checkpoint.eventIds = [...(nomination.eventIds ?? [nomination.id]), event.id];
     }
+    if (event.type === "gameEnded" && event.payload.source) {
+      const sourceIndex = checkpoints.findIndex((candidate) =>
+        (candidate.eventIds ?? [candidate.id]).includes(event.payload.source!.sourceEventId));
+      if (sourceIndex >= 0) {
+        const groupedEventIds = checkpoints
+          .slice(sourceIndex)
+          .flatMap((candidate) => candidate.eventIds ?? [candidate.id]);
+        const sourceCheckpoint = checkpoints[sourceIndex];
+        checkpoints.splice(sourceIndex);
+        checkpoints.push({
+          ...checkpoint,
+          id: sourceCheckpoint.id,
+          eventIds: [...groupedEventIds, event.id],
+        });
+        return checkpoints;
+      }
+    }
     checkpoints.push(checkpoint);
     return checkpoints;
   }, []);

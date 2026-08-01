@@ -51,6 +51,46 @@ test("canonical undo scope is unchanged when S&V UI session metadata is absent",
   expect(undone?.gameFile.ui).toBeUndefined();
 });
 
+test("inferred S&V checkpoints group a rules-owned game end with its causal event", () => {
+  const cause = event("cause");
+  const ended: GameEvent = {
+    id: "game-ended",
+    type: "gameEnded",
+    phase: "firstNight",
+    payload: {
+      winningTeam: "good",
+      source: { kind: "demonAbsent", sourceEventId: cause.id },
+    },
+    summary: "게임 종료 · 선한 팀 승리",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+  const game = sessionGame([event("setup", "setupConfirmed"), cause, event("legacy-after-win"), ended], []);
+  delete game.ui;
+
+  const undone = removeLatestSectsAndVioletsPhaseCheckpoint(game);
+
+  expect(undone?.removed.eventIds).toEqual(["cause", "legacy-after-win", "game-ended"]);
+  expect(undone?.gameFile.game.events.map((candidate) => candidate.id)).toEqual(["setup"]);
+});
+
+test("legacy source-less S&V game ends remain a single-event undo", () => {
+  const ended: GameEvent = {
+    id: "legacy-game-ended",
+    type: "gameEnded",
+    phase: "firstNight",
+    payload: { winningTeam: "evil" },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+  const game = sessionGame([event("setup", "setupConfirmed"), event("cause"), ended], []);
+  delete game.ui;
+
+  const undone = removeLatestSectsAndVioletsPhaseCheckpoint(game);
+
+  expect(undone?.removed.eventIds).toEqual(["legacy-game-ended"]);
+  expect(undone?.gameFile.game.events.map((candidate) => candidate.id)).toEqual(["setup", "cause"]);
+});
+
 function sessionGame(events: GameEvent[], phaseCheckpoints: SectsAndVioletsSessionState["phaseCheckpoints"]): GameFile {
   const gameFile: GameFile = {
     schemaVersion: 3,

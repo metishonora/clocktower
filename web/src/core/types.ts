@@ -330,7 +330,7 @@ export type ReplayState = {
   pendingMadnessExecution?: PendingMadnessExecution;
   pendingVigormortisPoisonChoices?: PendingVigormortisPoisonChoice[];
   pendingDeathConsequences?: PendingDeathConsequence[];
-  pendingForcedGameEnd?: PendingForcedGameEnd;
+  pendingGameEnd?: PendingGameEnd;
 };
 
 export type PendingDeathConsequence = {
@@ -345,9 +345,18 @@ export type PendingDeathConsequence = {
   eligibleChooserPlayerIds: string[];
 };
 
-export type PendingForcedGameEnd = {
+export type GameEndCause =
+  | "demonAbsent"
+  | "twoLivingPlayers"
+  | "klutzChoice"
+  | "evilTwinExecution"
+  | "vortoxNoExecution";
+
+export type PendingGameEnd = {
   sourceEventId: string;
   winningTeam: "good" | "evil";
+  cause: GameEndCause;
+  reasonKo: string;
 };
 
 export type PendingVigormortisPoisonChoice = {
@@ -389,6 +398,9 @@ export type PendingIdentityReveal = {
 export type GameEndState = {
   eventId: string;
   winningTeam: "good" | "evil";
+  sourceEventId?: string;
+  cause?: GameEndCause;
+  reasonKo?: string;
 };
 
 export type RuleState = {
@@ -865,7 +877,7 @@ export type GameEvent = EventCommon &
         type: "gameEnded";
         payload: {
           winningTeam: "good" | "evil";
-          source?: { kind: "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
+          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
         };
       }
   );

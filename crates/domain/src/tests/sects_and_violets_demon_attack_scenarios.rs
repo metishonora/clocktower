@@ -308,7 +308,7 @@ fn a_dead_target_is_a_legal_audited_no_effect_and_does_not_die_twice() {
 }
 
 #[test]
-fn a_self_attack_kills_the_demon_and_surfaces_the_existing_good_win_warning() {
+fn a_self_attack_kills_the_demon_and_resolves_a_good_game_end() {
     let demon = "noDashii";
     let mut events = vec![setup_event(demon)];
     confirm_attack(demon, &mut events, "player-7");
@@ -316,11 +316,15 @@ fn a_self_attack_kills_the_demon_and_surfaces_the_existing_good_win_warning() {
     let replayed = replay(demon, &events);
     assert_eq!(replayed["ok"], true, "replay failed: {replayed}");
     assert_eq!(replayed["value"]["players"][6]["alive"], false);
-    assert!(replayed["value"]["warnings"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|warning| warning["code"] == "DEMON_DEAD_GOOD_WIN"));
+    assert_eq!(
+        replayed["value"]["pendingGameEnd"],
+        json!({
+            "sourceEventId": events.last().unwrap()["id"],
+            "winningTeam": "good",
+            "cause": "demonAbsent",
+            "reasonKo": "살아 있는 악마가 없습니다."
+        })
+    );
 }
 
 #[test]

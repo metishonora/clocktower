@@ -281,6 +281,7 @@ export function SectsAndVioletsLiveGrimoire({
   onResetAttackSelection = () => undefined,
   onGoToProgress,
   onReturnToSetup,
+  readOnly = false,
 }: {
   players: LivePlayer[];
   phaseLabel: string;
@@ -315,6 +316,7 @@ export function SectsAndVioletsLiveGrimoire({
   onResetAttackSelection?: () => void;
   onGoToProgress: () => void;
   onReturnToSetup: () => void;
+  readOnly?: boolean;
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
   const seatRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -390,7 +392,7 @@ export function SectsAndVioletsLiveGrimoire({
   }, [handoff]);
 
   return (
-    <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
+    <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={readOnly ? "종료된 게임의 읽기 전용 마도서" : currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
       {handoff ? (
         <div className="snvSeatingToolbar" aria-label="마도서 도구">
           <span className="issue116PhaseChip">{phaseLabel}</span>
@@ -401,6 +403,8 @@ export function SectsAndVioletsLiveGrimoire({
             <button type="button" disabled={operationBusy} onClick={onReturn}>선택 취소 →</button>
           ) : null}
         </div>
+      ) : readOnly ? (
+        <div className="snvSeatingToolbar" aria-label="마도서 도구"><span className="issue116PhaseChip">읽기 전용</span></div>
       ) : (
         <div className="snvSeatingToolbar" aria-label="마도서 도구">
           <button type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={onReturnToSetup}><span aria-hidden="true">←</span></button>

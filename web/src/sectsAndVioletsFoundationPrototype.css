@@ -413,3 +413,11 @@
 }
 @keyframes snvMobilePanelSwapIn { from { transform: translateY(-12px); } to { transform: translateY(0); } }
 @keyframes snvSeatPanelIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.snvEndedGrimoireCenter { display: grid; justify-items: center; gap: 4px; }
+.snvEndedGrimoireCenter strong { font: 500 1.55rem Georgia, serif; }
+.snvEndedGrimoireCenter span { font-size: .7rem; font-weight: 850; }
+.snvEndedPlaySurface { display: grid; box-sizing: border-box; min-height: 430px; max-width: 1180px; margin: 0 auto 110px; padding: clamp(38px, 7vw, 78px); place-content: center; justify-items: center; border: 1px solid rgba(91, 58, 99, .14); border-radius: 26px; background: rgba(255, 255, 255, .48); text-align: center; }
+.snvEndedPlaySurface > span { display: grid; width: 54px; height: 54px; place-items: center; color: #ffe0e7; border-radius: 12px; background: #8e2948; font-weight: 950; }
+.snvEndedPlaySurface h2 { margin: 24px 0 0; color: #421b2a; font: 500 clamp(2.35rem, 5vw, 3.5rem) Georgia, serif; }
+.snvEndedPlaySurface p { margin: 14px 0 0; color: #725462; font-size: .9rem; font-weight: 700; }
+.snvEndedPlaySurface button { min-width: 220px; min-height: 48px; margin-top: 38px; border: 1px solid rgba(91, 58, 99, .22); border-radius: 12px; color: #553c5c; background: rgba(255, 255, 255, .78); font: inherit; font-weight: 900; cursor: pointer; }

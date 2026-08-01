@@ -356,9 +356,10 @@ fn executing_the_good_twin_forces_evil_victory() {
     );
 
     let forced = replay(&events);
+    assert_eq!(forced["value"]["pendingGameEnd"]["winningTeam"], "evil");
     assert_eq!(
-        forced["value"]["pendingForcedGameEnd"]["winningTeam"],
-        "evil"
+        forced["value"]["pendingGameEnd"]["reasonKo"],
+        "선한 쌍둥이가 처형되었습니다."
     );
     let rejected = propose(
         &events,
