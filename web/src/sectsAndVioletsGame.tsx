@@ -91,7 +91,6 @@ import {
 } from "./sectsAndVioletsSession";
 import { DayActionDock } from "./features/day-actions/DayActionDock";
 import { MadnessActionDock } from "./features/madness/MadnessActionDock";
-import { savantReferenceCategoriesForState } from "./features/day-actions/dayActionReferences";
 import {
   sectsAndVioletsCharacters as characters,
   type SectsAndVioletsCharacter as CatalogCharacter,
@@ -331,10 +330,6 @@ export function SectsAndVioletsGameSurface({
       characterKind: character?.kind ?? "townsfolk",
     };
   }), [replayState?.players]);
-  const savantReferenceCategories = useMemo(
-    () => replayState ? savantReferenceCategoriesForState(replayState) : [],
-    [replayState],
-  );
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
   const pitHagDemonIntents = useMemo(() => {
@@ -2732,7 +2727,6 @@ export function SectsAndVioletsGameSurface({
             players={replayState.players}
             availableActions={replayState.availableDayActions ?? []}
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
-            savantCategories={savantReferenceCategories}
             busy={operationBusy}
             groupActive={activeFreeActionGroup === "day"}
             onGroupActivate={() => setActiveFreeActionGroup("day")}

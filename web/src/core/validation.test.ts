@@ -740,7 +740,8 @@ test("validates the strict daytime free-action audit event used by import and ex
       dayId: "day",
       actorPlayerId: "player-2",
       characterId: "artist",
-      record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no" },
+      record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no", truthful: true },
+      activeReasons: [],
     },
     summary: "화가: 2번 Ada · 질문과 답변 기록",
     createdAt: "2026-07-25T00:00:00.000Z",
@@ -750,6 +751,28 @@ test("validates the strict daytime free-action audit event used by import and ex
   const invalid = structuredClone(event);
   invalid.payload.record.answer = "maybe";
   throws(() => parseGameEvent(invalid), /이벤트 형식/);
+
+  const savant = {
+    ...event,
+    id: "event-savant-action",
+    payload: {
+      ...event.payload,
+      actorPlayerId: "player-1",
+      characterId: "savant",
+      record: {
+        kind: "savant",
+        statements: [
+          { text: "악마는 홀수 좌석에 있습니다.", truthful: true },
+          { text: "", truthful: false },
+        ],
+      },
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-7", poisonEventId: "poison-1" }],
+    },
+  };
+  equal(parseGameEvent(savant).type, "dayActionRecorded");
+  const legacy = structuredClone(savant) as unknown as { payload: { record: Record<string, unknown> } };
+  legacy.payload.record = { kind: "savant", referenceSentences: [] };
+  throws(() => parseGameEvent(legacy), /이벤트 형식/);
 });
 
 test("validates daytime free-action replay projections at the WASM boundary", () => {
@@ -764,13 +787,14 @@ test("validates daytime free-action replay projections at the WASM boundary", ()
     warnings: [],
     ruleState: { unannouncedNightDeathPlayerIds: [] },
     gameEnd: null,
-    availableDayActions: [{ actorPlayerId: "player-1", characterId: "juggler", dayId: "day" }],
+    availableDayActions: [{ actorPlayerId: "player-1", characterId: "juggler", dayId: "day", activeReasons: [] }],
     dayActionRecords: [{
       eventId: "day-action-6",
       actorPlayerId: "player-1",
       characterId: "juggler",
       dayId: "day",
       record: { kind: "juggler", correctCount: 3 },
+      activeReasons: [],
     }],
   };
 

@@ -25,8 +25,9 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
   await user.click(screen.getByRole("button", { name: "캐릭터 상세 닫기" }));
 
   await user.type(within(actionPanel).getByRole("textbox", { name: "질문" }), "악마가 홀수 좌석에 있나요?");
-  await user.click(within(actionPanel).getByRole("button", { name: "아니오" }));
-  await user.click(within(actionPanel).getByRole("button", { name: "질문과 답변 기록" }));
+  expect(within(actionPanel).getByText("보르톡스")).toBeTruthy();
+  await user.click(within(actionPanel).getByRole("button", { name: "X 아니오" }));
+  await user.click(within(actionPanel).getByRole("button", { name: "거짓 정보 전달" }));
 
   await waitFor(() => expect(screen.queryByRole("button", { name: /화가 행동/ })).toBeNull());
   await waitFor(() => {
@@ -35,7 +36,8 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
       payload: {
         actorPlayerId: "player-2",
         characterId: "artist",
-        record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no" },
+        record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no", truthful: false },
+        activeReasons: [{ type: "vortox", demonPlayerId: "player-7" }],
       },
     });
   });
@@ -46,7 +48,7 @@ test("the production UI records an Artist action, autosaves it, and shows it fro
   await user.click(screen.getByRole("button", { name: /2번 좌석, 현우, 화가/ }));
   const playerDetails = screen.getByRole("dialog", { name: "2번 현우 플레이어 상세" });
   expect(within(playerDetails).getByText("악마가 홀수 좌석에 있나요?")).toBeTruthy();
-  expect(within(playerDetails).getByText("답변 · 아니오")).toBeTruthy();
+  expect(within(playerDetails).getByText("답변 · X · 거짓")).toBeTruthy();
 });
 
 test("a recorded Juggler result adds stacked reminder tokens instead of changing the character identity", async () => {

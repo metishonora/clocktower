@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import type { Player } from "../src/core/types";
+import type { AvailableDayAction, Player } from "../src/core/types";
 import { DayActionDock } from "../src/features/day-actions/DayActionDock";
 
 const players: Player[] = [
@@ -10,24 +10,13 @@ const players: Player[] = [
   player("player-3", 3, "서준", "juggler"),
 ];
 
-const availableActions = [
-  { actorPlayerId: "player-1", characterId: "savant", dayId: "day" },
-  { actorPlayerId: "player-2", characterId: "artist", dayId: "day" },
-  { actorPlayerId: "player-3", characterId: "juggler", dayId: "day" },
-] as const;
-
-const savantCategories = [
-  {
-    title: "악마 좁히기",
-    references: [
-      { id: "demon-player", text: "현재 악마는 준호입니다." },
-      { id: "demon-character", text: "현재 악마의 캐릭터는 보르톡스입니다." },
-      { id: "demon-pair", text: "준호와 유나 중 한 명은 악마입니다." },
-    ],
-  },
+const availableActions: AvailableDayAction[] = [
+  { actorPlayerId: "player-1", characterId: "savant", dayId: "day", activeReasons: [] },
+  { actorPlayerId: "player-2", characterId: "artist", dayId: "day", activeReasons: [] },
+  { actorPlayerId: "player-3", characterId: "juggler", dayId: "day", activeReasons: [] },
 ];
 
-test("Savant selects zero to two reference sentences in a cancellable non-modal floating panel", async () => {
+test("Savant records two optional Storyteller-authored statements and their truth values", async () => {
   const user = userEvent.setup();
   const onConfirm = vi.fn();
   render(
@@ -35,7 +24,6 @@ test("Savant selects zero to two reference sentences in a cancellable non-modal 
       players={players}
       availableActions={[...availableActions]}
       phaseLabel="2일차 낮"
-      savantCategories={savantCategories}
       busy={false}
       onConfirm={onConfirm}
     />,
@@ -45,20 +33,19 @@ test("Savant selects zero to two reference sentences in a cancellable non-modal 
   const panel = screen.getByRole("dialog", { name: "백치천재 능력 사용" });
   expect(panel.getAttribute("aria-modal")).toBeNull();
   expect(screen.getByRole("button", { name: "백치천재 행동 창 닫기" })).toBeTruthy();
-  expect(within(panel).getByRole("heading", { name: "악마 좁히기" })).toBeTruthy();
-
-  await user.click(within(panel).getByRole("button", { name: "현재 악마는 준호입니다." }));
-  await user.click(within(panel).getByRole("button", { name: "현재 악마의 캐릭터는 보르톡스입니다." }));
-  expect(within(panel).getByRole("button", { name: "준호와 유나 중 한 명은 악마입니다." }).hasAttribute("disabled")).toBe(true);
-
-  await user.click(within(panel).getByRole("button", { name: "오늘 정보 전달 완료" }));
+  expect(within(panel).queryByText(/두 가지 정보를 적고/)).toBeNull();
+  await user.type(within(panel).getByRole("textbox", { name: "정보 1" }), "악마는 홀수 좌석에 있습니다.");
+  const truthGroups = within(panel).getAllByRole("group");
+  await user.click(within(truthGroups[0]).getByRole("button", { name: "진실" }));
+  await user.click(within(truthGroups[1]).getByRole("button", { name: "거짓" }));
+  await user.click(within(panel).getByRole("button", { name: "정보 전달" }));
   expect(onConfirm).toHaveBeenCalledWith(
     availableActions[0],
     {
       kind: "savant",
-      referenceSentences: [
-        "현재 악마는 준호입니다.",
-        "현재 악마의 캐릭터는 보르톡스입니다.",
+      statements: [
+        { text: "악마는 홀수 좌석에 있습니다.", truthful: true },
+        { text: "", truthful: false },
       ],
     },
   );
@@ -72,7 +59,6 @@ test("Artist and Juggler submit only their approved compact records", async () =
       players={players}
       availableActions={[...availableActions]}
       phaseLabel="2일차 낮"
-      savantCategories={savantCategories}
       busy={false}
       onConfirm={onConfirm}
     />,
@@ -83,12 +69,13 @@ test("Artist and Juggler submit only their approved compact records", async () =
   expect(artist.classList.contains("snvDayActionPanel--artist")).toBe(true);
   await user.clear(within(artist).getByRole("textbox", { name: "질문" }));
   await user.type(within(artist).getByRole("textbox", { name: "질문" }), "악마가 홀수 번호 좌석에 있나요?");
-  await user.click(within(artist).getByRole("button", { name: "아니오" }));
-  await user.click(within(artist).getByRole("button", { name: "질문과 답변 기록" }));
+  await user.click(within(artist).getByRole("button", { name: "X 아니오" }));
+  await user.click(within(artist).getByRole("button", { name: "정보 전달" }));
   expect(onConfirm).toHaveBeenLastCalledWith(availableActions[1], {
     kind: "artist",
     question: "악마가 홀수 번호 좌석에 있나요?",
     answer: "no",
+    truthful: true,
   });
 
   await user.click(screen.getByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
@@ -100,6 +87,37 @@ test("Artist and Juggler submit only their approved compact records", async () =
   expect(onConfirm).toHaveBeenLastCalledWith(availableActions[2], {
     kind: "juggler",
     correctCount: 3,
+  });
+});
+
+test("Vortox wins the influence priority and locks false Storyteller judgments", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const vortoxArtist = {
+    ...availableActions[1],
+    activeReasons: [
+      { type: "drunk" as const },
+      { type: "poisoned" as const, poisonerPlayerId: "player-9", poisonEventId: "poison-1" },
+      { type: "vortox" as const, demonPlayerId: "player-7" },
+    ],
+  };
+  render(<DayActionDock players={players} availableActions={[vortoxArtist]} phaseLabel="2일차 낮" busy={false} onConfirm={onConfirm} />);
+
+  await user.click(screen.getByRole("button", { name: "화가 행동 열기, 2번 현우" }));
+  const panel = screen.getByRole("dialog", { name: "화가 능력 사용" });
+  expect(within(panel).getByText("보르톡스")).toBeTruthy();
+  expect(within(panel).queryByText("중독")).toBeNull();
+  expect(within(panel).queryByText("취함")).toBeNull();
+  const falseButton = within(panel).getByRole("button", { name: "거짓" });
+  expect(falseButton.getAttribute("aria-pressed")).toBe("true");
+  expect(falseButton.hasAttribute("disabled")).toBe(true);
+  await user.click(within(panel).getByRole("button", { name: "? 모르겠음" }));
+  await user.click(within(panel).getByRole("button", { name: "거짓 정보 전달" }));
+  expect(onConfirm).toHaveBeenCalledWith(vortoxArtist, {
+    kind: "artist",
+    question: "",
+    answer: "unknown",
+    truthful: false,
   });
 });
 

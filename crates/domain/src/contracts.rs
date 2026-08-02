@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    AbilityInstanceId, Alignment, ConfirmedInformation, CoreWarning, DayState, InformationResult,
-    Phase, PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition, PlayerTransition,
-    RegistrationJudgment, ScriptTokenRef, StepInput, SystemTokenId,
+    AbilityInstanceId, Alignment, ConfirmedInformation, CoreWarning, DayState, DeliveryReason,
+    InformationResult, Phase, PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition,
+    PlayerTransition, RegistrationJudgment, ScriptTokenRef, StepInput, SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -439,6 +439,7 @@ pub(crate) struct AvailableDayAction {
     pub(crate) actor_player_id: String,
     pub(crate) character_id: String,
     pub(crate) day_id: String,
+    pub(crate) active_reasons: Vec<DeliveryReason>,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -448,6 +449,7 @@ pub(crate) struct ConfirmedDayActionRecord {
     pub(crate) day_id: String,
     pub(crate) actor_player_id: String,
     pub(crate) character_id: String,
+    pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) record: DayActionRecord,
 }
 
@@ -1178,6 +1180,7 @@ pub(crate) struct DayActionRecordedPayload {
     pub(crate) day_id: String,
     pub(crate) actor_player_id: String,
     pub(crate) character_id: String,
+    pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) record: DayActionRecord,
 }
 
@@ -1223,13 +1226,21 @@ pub(crate) enum DayActionRecord {
     Artist {
         question: String,
         answer: ArtistAnswer,
+        truthful: bool,
     },
     Savant {
-        reference_sentences: Vec<String>,
+        statements: [SavantStatement; 2],
     },
     Juggler {
         correct_count: u8,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct SavantStatement {
+    pub(crate) text: String,
+    pub(crate) truthful: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]

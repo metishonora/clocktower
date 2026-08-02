@@ -268,9 +268,14 @@ export type UseSlayerAbilityPayload = {
 
 export type ArtistAnswer = "yes" | "no" | "unknown";
 
+export type SavantStatement = {
+  text: string;
+  truthful: boolean;
+};
+
 export type DayActionRecordInput =
-  | { kind: "artist"; question: string; answer: ArtistAnswer }
-  | { kind: "savant"; referenceSentences: string[] }
+  | { kind: "artist"; question: string; answer: ArtistAnswer; truthful: boolean }
+  | { kind: "savant"; statements: [SavantStatement, SavantStatement] }
   | { kind: "juggler"; correctCount: number };
 
 export type RecordDayActionPayload = {
@@ -297,6 +302,7 @@ export type AvailableDayAction = {
   actorPlayerId: string;
   characterId: "artist" | "savant" | "juggler";
   dayId: string;
+  activeReasons: DeliveryReason[];
 };
 
 export type ConfirmedDayActionRecord = {
@@ -305,6 +311,7 @@ export type ConfirmedDayActionRecord = {
   actorPlayerId: string;
   characterId: "artist" | "savant" | "juggler";
   record: DayActionRecordInput;
+  activeReasons: DeliveryReason[];
 };
 
 export type CoreResult<T> =
@@ -729,6 +736,7 @@ export type GameEvent = EventCommon &
           actorPlayerId: string;
           characterId: "artist" | "savant" | "juggler";
           record: DayActionRecordInput;
+          activeReasons: DeliveryReason[];
         };
       }
     | {
