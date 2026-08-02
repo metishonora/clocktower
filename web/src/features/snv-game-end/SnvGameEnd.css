@@ -32,21 +32,7 @@
   text-align: center;
 }
 
-.snvGameEndOrnament span {
-  display: grid;
-  width: 52px;
-  height: 52px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--end-light) 54%, transparent);
-  border-radius: 7px;
-  color: var(--end-light);
-  background: color-mix(in srgb, var(--end-tone) 20%, transparent);
-  font-size: 1.35rem;
-}
-
-.snvGameEndDialog[data-team="evil"] .snvGameEndOrnament span { transform: rotate(45deg); }
-.snvGameEndDialog[data-team="good"] .snvGameEndOrnament span { border-radius: 50%; }
-.snvGameEndDialog h2 { margin: 28px 0 14px; color: #fff; font: 500 clamp(2.5rem, 6vw, 3.7rem)/.96 Georgia, serif; letter-spacing: -.045em; }
+.snvGameEndDialog h2 { margin: 0 0 14px; color: #fff; font: 500 clamp(2.5rem, 6vw, 3.7rem)/.96 Georgia, serif; letter-spacing: -.045em; }
 .snvGameEndDialog p { margin: 0; color: color-mix(in srgb, var(--end-light) 88%, #fff); font-size: clamp(.88rem, 1.8vw, 1.08rem); font-weight: 750; line-height: 1.6; }
 .snvGameEndDialog button { width: min(100%, 300px); min-height: 52px; margin-top: clamp(34px, 6vw, 58px); border: 1px solid color-mix(in srgb, var(--end-light) 48%, transparent); border-radius: 12px; color: var(--end-deep); background: var(--end-light); box-shadow: 0 12px 30px rgba(0, 0, 0, .2); font: inherit; font-weight: 950; cursor: pointer; }
 .snvGameEndDialog button:disabled { opacity: .58; cursor: default; }
@@ -62,7 +48,7 @@
   left: max(22px, env(safe-area-inset-left));
   display: grid;
   padding: 15px 17px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 14px;
   color: #fff;
@@ -76,11 +62,7 @@
 .snvGameEndMark { display: grid; width: 54px; height: 54px; place-items: center; border: 1px solid rgba(255, 255, 255, .28); border-radius: 12px; background: rgba(255, 255, 255, .09); font-weight: 950; }
 .snvGameEndDock strong { font-size: 1rem; }
 .snvGameEndDock p { margin: 3px 0 0; color: color-mix(in srgb, var(--end-dock-light) 80%, transparent); font-size: .72rem; }
-.snvGameEndDock button { min-width: 110px; min-height: 44px; border: 1px solid var(--end-dock-light); border-radius: 12px; color: var(--end-dock-deep); background: var(--end-dock-light); font: inherit; font-weight: 900; cursor: pointer; }
-.snvGameEndDock button:disabled { opacity: .58; cursor: default; }
-
 @media (max-width: 760px) {
   .snvGameEndDialog { padding-inline: 24px; }
-  .snvGameEndDock { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); left: 10px; grid-template-columns: auto 1fr; }
-  .snvGameEndDock button { grid-column: 1 / -1; width: 100%; }
+  .snvGameEndDock { position: static; margin: 12px 10px max(10px, env(safe-area-inset-bottom)); }
 }

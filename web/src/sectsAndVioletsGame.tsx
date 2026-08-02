@@ -2112,7 +2112,7 @@ export function SectsAndVioletsGameSurface({
           <p>7–15명</p>
         </div>
         <div className="snvPhaseActions" aria-label="현재 페이즈와 되돌리기">
-          {latestUndoCheckpoint && !replayState?.gameEnd ? (
+          {latestUndoCheckpoint ? (
             <button
               ref={undoTriggerRef}
               type="button"
@@ -2330,6 +2330,7 @@ export function SectsAndVioletsGameSurface({
           onGoToProgress={() => navigateToTab("play")}
           onReturnToSetup={() => setReturnConfirmOpen(true)}
           readOnly={Boolean(replayState.gameEnd)}
+          theme={effectivePlayPhase === "day" ? "day" : "night"}
         />
       ) : (
         <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
@@ -2725,6 +2726,7 @@ export function SectsAndVioletsGameSurface({
         && !liveHandoff
         && !pendingDeathConsequence
         && !replayState.pendingGameEnd
+        && !replayState.gameEnd
         && !nextIdentityReveal ? (
           <DayActionDock
             players={replayState.players}
@@ -2745,6 +2747,7 @@ export function SectsAndVioletsGameSurface({
         && !liveHandoff
         && !pendingDeathConsequence
         && !replayState.pendingGameEnd
+        && !replayState.gameEnd
         && !nextIdentityReveal
         && !replayState.pendingMadnessExecution ? (
           <MadnessActionDock
@@ -2800,11 +2803,7 @@ export function SectsAndVioletsGameSurface({
         />
       ) : null}
       {replayState?.gameEnd ? (
-        <SnvGameEndDock
-          gameEnd={replayState.gameEnd}
-          busy={operationBusy}
-          onUndo={() => latestUndoCheckpoint && setUndoCheckpoint(latestUndoCheckpoint)}
-        />
+        <SnvGameEndDock gameEnd={replayState.gameEnd} />
       ) : null}
       {returnConfirmOpen ? (
         <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeReturnConfirmation(); }}>

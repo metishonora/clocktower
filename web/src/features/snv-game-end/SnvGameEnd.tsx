@@ -20,9 +20,6 @@ export function SnvGameEndDialog({ pending, busy, onConfirm }: {
         aria-modal="true"
         aria-label={title}
       >
-        <div className="snvGameEndOrnament" aria-hidden="true">
-          <span>{pending.winningTeam === "good" ? "☾" : "✦"}</span>
-        </div>
         <h2>{title}</h2>
         <p>{pending.reasonKo}</p>
         <button type="button" disabled={busy} onClick={onConfirm}>
@@ -33,10 +30,8 @@ export function SnvGameEndDialog({ pending, busy, onConfirm }: {
   );
 }
 
-export function SnvGameEndDock({ gameEnd, busy, onUndo }: {
+export function SnvGameEndDock({ gameEnd }: {
   gameEnd: GameEndState;
-  busy: boolean;
-  onUndo: () => void;
 }) {
   return (
     <aside className="snvGameEndDock" data-team={gameEnd.winningTeam} role="region" aria-label="게임 종료 상태">
@@ -45,7 +40,6 @@ export function SnvGameEndDock({ gameEnd, busy, onUndo }: {
         <strong>{teamTitle(gameEnd.winningTeam)}</strong>
         {gameEnd.reasonKo ? <p>{gameEnd.reasonKo}</p> : null}
       </div>
-      <button type="button" disabled={busy} onClick={onUndo}>Undo</button>
     </aside>
   );
 }

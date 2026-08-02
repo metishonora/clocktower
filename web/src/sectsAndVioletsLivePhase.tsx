@@ -282,6 +282,7 @@ export function SectsAndVioletsLiveGrimoire({
   onGoToProgress,
   onReturnToSetup,
   readOnly = false,
+  theme,
 }: {
   players: LivePlayer[];
   phaseLabel: string;
@@ -317,8 +318,10 @@ export function SectsAndVioletsLiveGrimoire({
   onGoToProgress: () => void;
   onReturnToSetup: () => void;
   readOnly?: boolean;
+  theme?: "day" | "night";
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
+  const phaseTheme = theme ?? (currentStep?.phase === "day" ? "day" : "night");
   const seatRefs = useRef(new Map<string, HTMLButtonElement>());
   const desktopPositions = useMemo(() => rectangularSeatPositions(players.length, false), [players.length]);
   const mobilePositions = useMemo(() => rectangularSeatPositions(players.length, true), [players.length]);
@@ -519,7 +522,7 @@ export function SectsAndVioletsLiveGrimoire({
                     count={playerTokenCount}
                     position={desktopPositions[index]}
                     mobilePosition={mobilePositions[index]}
-                    theme={currentStep?.phase === "day" ? "day" : "night"}
+                    theme={phaseTheme}
                   />
                 ) : null}
               </Fragment>
@@ -627,7 +630,7 @@ export function SectsAndVioletsLiveGrimoire({
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
           details={<DayActionRecordHistory records={detailsDayActionRecords} />}
           jugglerCorrectCount={detailsJugglerCorrectCount}
-          theme={currentStep?.phase === "day" ? "day" : "night"}
+          theme={phaseTheme}
           onClose={closePlayerDetails}
         />
       ) : null}

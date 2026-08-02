@@ -18,6 +18,7 @@ describe("S&V rules-owned game end", () => {
 
     const dialog = screen.getByRole("dialog", { name: "악 진영 승리" });
     expect(dialog.getAttribute("data-team")).toBe("evil");
+    expect(dialog.querySelector(".snvGameEndOrnament")).toBeNull();
     expect(within(dialog).getByRole("heading", { name: "악 진영 승리" })).toBeTruthy();
     expect(within(dialog).getByText(pending.reasonKo)).toBeTruthy();
     expect(within(dialog).queryByRole("button", { name: /닫기|취소|최소화/ })).toBeNull();
@@ -25,21 +26,18 @@ describe("S&V rules-owned game end", () => {
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
-  test("keeps winner, reason, and Undo in the post-end dock", async () => {
-    const onUndo = vi.fn();
-    const user = userEvent.setup();
+  test("keeps only winner and reason in the post-end dock", () => {
     render(<SnvGameEndDock gameEnd={{
       eventId: "game-ended-19",
       sourceEventId: pending.sourceEventId,
       winningTeam: pending.winningTeam,
       cause: pending.cause,
       reasonKo: pending.reasonKo,
-    }} busy={false} onUndo={onUndo} />);
+    }} />);
 
     const dock = screen.getByRole("region", { name: "게임 종료 상태" });
     expect(within(dock).getByText("악 진영 승리")).toBeTruthy();
     expect(within(dock).getByText(pending.reasonKo)).toBeTruthy();
-    await user.click(within(dock).getByRole("button", { name: "Undo" }));
-    expect(onUndo).toHaveBeenCalledOnce();
+    expect(within(dock).queryByRole("button")).toBeNull();
   });
 });

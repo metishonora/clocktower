@@ -838,6 +838,7 @@ test("restores a pending rules-owned game end dialog from autosave", async () =>
 
 test("restores an ended autosave to the final read-only Grimoire", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
   const setupPlayers = standardSetupPlayers();
   const saved = savedDayGame(setupPlayers);
   saved.game.events.push({
@@ -855,6 +856,18 @@ test("restores an ended autosave to the final read-only Grimoire", async () => {
     phase: "day",
     currentStep: null,
     phaseOverview: [],
+    availableDayActions: [{ actorPlayerId: "player-1", characterId: "artist", dayId: "day" }],
+    madnessAssignments: [{
+      assignmentId: "madness-1",
+      sourcePlayerId: "player-6",
+      sourceCharacterId: "cerenovus",
+      targetPlayerId: "player-1",
+      requiredCharacterId: "artist",
+      status: "unchecked",
+      sourceEffective: true,
+      canCheck: true,
+      canExecute: false,
+    }],
     gameEnd: {
       eventId: "game-ended-3",
       sourceEventId: "phase-2",
@@ -867,10 +880,17 @@ test("restores an ended autosave to the final read-only Grimoire", async () => {
 
   render(<SectsAndVioletsApp storageDriver={storage} />);
 
-  expect(await screen.findByRole("region", { name: "종료된 게임의 읽기 전용 마도서" })).toBeTruthy();
+  const grimoire = await screen.findByRole("region", { name: "종료된 게임의 읽기 전용 마도서" });
   const dock = screen.getByRole("region", { name: "게임 종료 상태" });
   expect(within(dock).getByText("악 진영 승리")).toBeTruthy();
-  expect(within(dock).getByRole("button", { name: "Undo" })).toBeTruthy();
+  expect(within(dock).queryByRole("button")).toBeNull();
+  expect(screen.getByRole("button", { name: /최근 행동 되돌리기/ })).toBeTruthy();
+  expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
+  expect(screen.queryByLabelText("집착 확인 자유 행동")).toBeNull();
+
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석/ }));
+  const details = screen.getByRole("dialog", { name: "1번 플레이어 1 플레이어 상세" });
+  expect(details.closest(".playerTokenDetailBackdrop")?.classList.contains("day")).toBe(true);
 });
 
 test("ends a pending game and one Undo removes both the end and its causal checkpoint", async () => {
@@ -937,8 +957,8 @@ test("ends a pending game and one Undo removes both the end and its causal check
 
   await user.click(within(await screen.findByRole("dialog", { name: "악 진영 승리" }))
     .getByRole("button", { name: "게임 종료" }));
-  const dock = await screen.findByRole("region", { name: "게임 종료 상태" });
-  await user.click(within(dock).getByRole("button", { name: "Undo" }));
+  await screen.findByRole("region", { name: "게임 종료 상태" });
+  await user.click(screen.getByRole("button", { name: /최근 행동 되돌리기/ }));
   const undo = screen.getByRole("dialog", { name: "Undo" });
   expect(within(undo).getAllByRole("listitem")).toHaveLength(2);
   await user.click(within(undo).getByRole("button", { name: "되돌리기" }));
