@@ -21,9 +21,12 @@
 
 ## Test server lifecycle
 
-- Run requested test servers detached from the tool session, bound to `0.0.0.0`, with logs and PID recorded so they remain available after the response.
+- Reserve port `5173` for the `develop` worktree. For issue worktrees, use port `10000 + issue number`; choose and record an unused port for other worktrees or necessary exceptions.
+- If the assigned port is occupied by anything other than the server recorded for the current worktree, do not stop it; use and record an alternate port.
+- Run requested test servers detached from the tool session, bound to `0.0.0.0`, and record their PID, port, log, and worktree so they remain available after the response.
+- Stop only a recorded server after verifying its PID and command belong to the current worktree. Never terminate an unknown process merely because it occupies the desired port.
 - Verify the process and server response, then provide a clickable Tailscale IPv4 URL.
-- At the start of the next user turn, stop the recorded server unless the user explicitly asks to keep it running.
+- At the start of the next user turn, stop only the server recorded for that worktree unless the user explicitly asks to keep it running.
 
 ## Completion
 
