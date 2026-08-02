@@ -1,4 +1,4 @@
-import type { PendingDeathConsequence, PendingForcedGameEnd, Player } from "../../core/types";
+import type { PendingDeathConsequence, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
@@ -56,22 +56,6 @@ export function DeathConsequencePanel({
         ) : (
           <button type="button" disabled={operationBusy} onClick={onChooseTarget}>← 선택</button>
         )}
-      </div>
-    </article>
-  );
-}
-
-export function ForcedGameEndPanel({ pending, operationBusy, onConfirm, ariaLabel = "강제 게임 종료 확인" }: {
-  pending: PendingForcedGameEnd;
-  operationBusy: boolean;
-  onConfirm: () => void;
-  ariaLabel?: string;
-}) {
-  return (
-    <article className="snvCurrentStep issue116CurrentStep snvDayStep" role="group" aria-label={ariaLabel}>
-      <h3>{pending.winningTeam === "good" ? "선" : "악"} 진영 승리</h3>
-      <div className="snvStepActions">
-        <button type="button" disabled={operationBusy} onClick={onConfirm}>게임 종료 확정</button>
       </div>
     </article>
   );

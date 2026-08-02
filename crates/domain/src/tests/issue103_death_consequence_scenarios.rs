@@ -310,7 +310,7 @@ fn sweetheart_drunk_klutz_cannot_lose_the_game_by_choosing_evil() {
         choice["value"]["event"]["payload"]["outcome"],
         json!({ "kind": "actorImpaired" })
     );
-    assert!(replay(&events)["value"]["pendingForcedGameEnd"].is_null());
+    assert!(replay(&events)["value"]["pendingGameEnd"].is_null());
 }
 
 #[test]
@@ -490,9 +490,11 @@ fn night_klutz_waits_for_death_announcement_then_evil_choice_forces_a_separate_g
     );
 
     let forced = replay(&events);
+    assert_eq!(forced["value"]["pendingGameEnd"]["winningTeam"], "evil");
+    assert_eq!(forced["value"]["pendingGameEnd"]["cause"], "klutzChoice");
     assert_eq!(
-        forced["value"]["pendingForcedGameEnd"]["winningTeam"],
-        "evil"
+        forced["value"]["pendingGameEnd"]["reasonKo"],
+        "얼뜨기가 악한 팀을 선택했습니다."
     );
     let blocked = propose(
         &events,

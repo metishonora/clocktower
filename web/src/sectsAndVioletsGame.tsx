@@ -50,9 +50,9 @@ import {
 import "./features/evil-information/sectsAndVioletsEvilInformation.css";
 import {
   DeathConsequencePanel,
-  ForcedGameEndPanel,
   type DeathConsequenceResolution,
 } from "./features/death-consequences/DeathConsequencePanel";
+import { SnvGameEndDialog, SnvGameEndDock } from "./features/snv-game-end/SnvGameEnd";
 import { deathConsequenceCommand } from "./features/death-consequences/deathConsequencePolicy";
 import {
   CharacterChangeReveal,
@@ -867,12 +867,12 @@ export function SectsAndVioletsGameSurface({
       seatingConfirmed: canonicalPlayers.length > 0,
     } satisfies SectsAndVioletsSessionState["setup"];
     const setup = storedSession?.setup ?? fallbackSetup;
-    const fallbackTab: PrototypeTab = replayed.eventCount > 1
+    const fallbackTab: PrototypeTab = replayed.gameEnd ? "seating" : replayed.eventCount > 1
       ? "play"
       : replayed.eventCount === 1
         ? "seating"
         : "roles";
-    const requestedTab = storedSession?.activeTab ?? fallbackTab;
+    const requestedTab = replayed.gameEnd ? "seating" : storedSession?.activeTab ?? fallbackTab;
     const restoredTab = requestedTab === "play" && !setup.seatingConfirmed
       ? setup.rosterConfirmed ? "seating" : "roles"
       : requestedTab === "seating" && !setup.rosterConfirmed
@@ -1509,12 +1509,30 @@ export function SectsAndVioletsGameSurface({
     const linkedNominationId = event.type === "nominationVoteConfirmed"
       ? event.payload.nominationEventId
       : undefined;
-    setPhaseCheckpoints((current) => linkedNominationId && current.at(-1)?.id === linkedNominationId
+    const gameEndSourceId = event.type === "gameEnded" ? event.payload.source?.sourceEventId : undefined;
+    setPhaseCheckpoints((current) => {
+      if (gameEndSourceId) {
+        const sourceIndex = current.findIndex((candidate) =>
+          (candidate.eventIds ?? [candidate.id]).includes(gameEndSourceId));
+        if (sourceIndex >= 0) {
+          const source = current[sourceIndex];
+          return [...current.slice(0, sourceIndex), {
+            ...checkpoint,
+            id: source.id,
+            eventIds: [
+              ...current.slice(sourceIndex).flatMap((candidate) => candidate.eventIds ?? [candidate.id]),
+              event.id,
+            ],
+          }];
+        }
+      }
+      return linkedNominationId && current.at(-1)?.id === linkedNominationId
       ? [...current.slice(0, -1), {
           ...checkpoint,
           eventIds: [...(current.at(-1)?.eventIds ?? [linkedNominationId]), event.id],
         }]
-      : [...current, checkpoint]);
+      : [...current, checkpoint];
+    });
     setInformationStepId(undefined);
     setDayComplete(false);
     if (scheduleAutosave) markAutosaveNeeded();
@@ -1550,17 +1568,21 @@ export function SectsAndVioletsGameSurface({
   };
 
   const confirmForcedGameEnd = async () => {
-    const pending = replayState?.pendingForcedGameEnd;
+    const pending = replayState?.pendingGameEnd;
     if (!pending || operationBusy) return;
     setOperationBusy(true);
     setOperationError(undefined);
-    await proposeAndApplyLiveCommand({
+    const applied = await proposeAndApplyLiveCommand({
       type: "endGame",
       payload: {
         winningTeam: pending.winningTeam,
         expectedEventCount: gameFile.game.events.length,
       },
     });
+    if (applied?.replayState.gameEnd) {
+      setLiveHandoff(undefined);
+      navigateToTab("seating");
+    }
     setOperationBusy(false);
   };
 
@@ -1573,7 +1595,7 @@ export function SectsAndVioletsGameSurface({
       type: "confirmStep",
       payload: { stepId: step.id, input: null },
     });
-    if (applied?.replayState.pendingForcedGameEnd) {
+    if (applied?.replayState.pendingGameEnd) {
       setLiveHandoff(undefined);
       navigateToTab("play");
     }
@@ -2225,10 +2247,10 @@ export function SectsAndVioletsGameSurface({
             </div>
           </section>
         </section>
-      ) : activeTab === "seating" ? production && seatingConfirmed && replayState?.currentStep ? (
+      ) : activeTab === "seating" ? production && seatingConfirmed && (replayState?.currentStep || replayState?.gameEnd) ? (
         <SectsAndVioletsLiveGrimoire
           players={livePlayers}
-          phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
+          phaseLabel={replayState.gameEnd ? "게임 종료" : phaseLabel(effectivePlayPhase, replayState.currentStep)}
           phaseRuntime={phaseRuntime ?? "00:00"}
           currentStep={replayState.currentStep}
           dayState={replayState.dayState}
@@ -2244,7 +2266,9 @@ export function SectsAndVioletsGameSurface({
           chooserId={liveChooserId}
           characterId={liveCharacterId}
           pitHagDemonIntents={pitHagDemonIntents}
-          centerPrompt={replayState.currentStep.stepType === "witchDeath" ? (
+          centerPrompt={replayState.gameEnd ? (
+            <div className="snvEndedGrimoireCenter"><strong>게임 종료</strong><span>최종 상태</span></div>
+          ) : replayState.currentStep?.stepType === "witchDeath" ? (
             <WitchDeathPrompt
               player={witchDeathPlayer}
               operationBusy={operationBusy}
@@ -2305,6 +2329,8 @@ export function SectsAndVioletsGameSurface({
           onResetAttackSelection={resetVigormortisAttackSelection}
           onGoToProgress={() => navigateToTab("play")}
           onReturnToSetup={() => setReturnConfirmOpen(true)}
+          readOnly={Boolean(replayState.gameEnd)}
+          theme={effectivePlayPhase === "day" ? "day" : "night"}
         />
       ) : (
         <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
@@ -2458,6 +2484,13 @@ export function SectsAndVioletsGameSurface({
             ) : null}
           </div>
         </section>
+      ) : activeTab === "play" && replayState?.gameEnd ? (
+        <section className="snvEndedPlaySurface snvTabPanel" aria-label="종료된 게임">
+          <span aria-hidden="true">{replayState.gameEnd.winningTeam === "good" ? "선" : "악"}</span>
+          <h2>{replayState.gameEnd.winningTeam === "good" ? "선" : "악"} 진영 승리</h2>
+          {replayState.gameEnd.reasonKo ? <p>{replayState.gameEnd.reasonKo}</p> : null}
+          <button type="button" onClick={() => navigateToTab("seating")}>마도서 보기</button>
+        </section>
       ) : activeTab === "play" ? production && replayState?.currentStep && effectivePlayPhase !== "firstNight" && !activeInformationStep ? (
         <SectsAndVioletsLiveProgress
           replayState={replayState}
@@ -2467,13 +2500,7 @@ export function SectsAndVioletsGameSurface({
           actorRoleName={liveActorCharacter?.name ?? replayState.currentStep.character}
           actorCharacterId={liveActor?.actualCharacter ?? replayState.currentStep.character}
           actorSummary={liveActorCharacter?.ability}
-          priorityPanel={replayState.pendingForcedGameEnd ? (
-            <ForcedGameEndPanel
-              pending={replayState.pendingForcedGameEnd}
-              operationBusy={operationBusy}
-              onConfirm={() => void confirmForcedGameEnd()}
-            />
-          ) : pendingDeathConsequence ? (
+          priorityPanel={pendingDeathConsequence ? (
             <DeathConsequencePanel
               pending={pendingDeathConsequence}
               players={replayState.players}
@@ -2698,7 +2725,8 @@ export function SectsAndVioletsGameSurface({
         && (activeTab === "seating" || activeTab === "play")
         && !liveHandoff
         && !pendingDeathConsequence
-        && !replayState.pendingForcedGameEnd
+        && !replayState.pendingGameEnd
+        && !replayState.gameEnd
         && !nextIdentityReveal ? (
           <DayActionDock
             players={replayState.players}
@@ -2718,7 +2746,8 @@ export function SectsAndVioletsGameSurface({
         && (activeTab === "seating" || activeTab === "play")
         && !liveHandoff
         && !pendingDeathConsequence
-        && !replayState.pendingForcedGameEnd
+        && !replayState.pendingGameEnd
+        && !replayState.gameEnd
         && !nextIdentityReveal
         && !replayState.pendingMadnessExecution ? (
           <MadnessActionDock
@@ -2765,6 +2794,16 @@ export function SectsAndVioletsGameSurface({
         >
           <ProductionInformationRevealContent checkpoint={informationCheckpoint} />
         </SectsAndVioletsReveal>
+      ) : null}
+      {replayState?.pendingGameEnd ? (
+        <SnvGameEndDialog
+          pending={replayState.pendingGameEnd}
+          busy={operationBusy}
+          onConfirm={() => void confirmForcedGameEnd()}
+        />
+      ) : null}
+      {replayState?.gameEnd ? (
+        <SnvGameEndDock gameEnd={replayState.gameEnd} />
       ) : null}
       {returnConfirmOpen ? (
         <div className="snvDetailsBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeReturnConfirmation(); }}>

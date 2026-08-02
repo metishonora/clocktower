@@ -1,5 +1,5 @@
 use crate::{
-    contracts::{RevealIdentity, RevealPayload, RevealPlayer, SetupDistribution},
+    contracts::{GameEndCause, RevealIdentity, RevealPayload, RevealPlayer, SetupDistribution},
     model::{
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
         InformationResult, NominationRecord, PhaseStep, Player, StepInput,
@@ -21,6 +21,16 @@ pub(crate) fn setup_event_summary(player_count: usize) -> String {
 
 pub(crate) fn setup_preview(player_count: usize) -> Value {
     json!({ "messageKo": format!("플레이어 {player_count}명 설정을 확정합니다.") })
+}
+
+pub(crate) fn game_end_reason_ko(cause: GameEndCause) -> &'static str {
+    match cause {
+        GameEndCause::DemonAbsent => "살아 있는 악마가 없습니다.",
+        GameEndCause::TwoLivingPlayers => "생존자가 2명 이하로 남았습니다.",
+        GameEndCause::KlutzChoice => "얼뜨기가 악한 팀을 선택했습니다.",
+        GameEndCause::EvilTwinExecution => "선한 쌍둥이가 처형되었습니다.",
+        GameEndCause::VortoxNoExecution => "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    }
 }
 
 pub(crate) fn phase_step_event_summary(

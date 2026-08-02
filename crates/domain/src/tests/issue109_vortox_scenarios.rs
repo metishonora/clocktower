@@ -172,10 +172,12 @@ fn no_execution_with_an_active_vortox_creates_an_evil_forced_game_end() {
 
     let state = replay(&events);
     assert_eq!(
-        state["value"]["pendingForcedGameEnd"],
+        state["value"]["pendingGameEnd"],
         json!({
             "sourceEventId": no_execution["value"]["event"]["id"],
-            "winningTeam": "evil"
+            "winningTeam": "evil",
+            "cause": "vortoxNoExecution",
+            "reasonKo": "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다."
         })
     );
 
@@ -205,7 +207,7 @@ fn no_execution_with_an_active_vortox_creates_an_evil_forced_game_end() {
 
     events.pop();
     assert_eq!(
-        replay(&events)["value"]["pendingForcedGameEnd"]["winningTeam"],
+        replay(&events)["value"]["pendingGameEnd"]["winningTeam"],
         "evil"
     );
 }

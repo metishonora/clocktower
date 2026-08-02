@@ -811,6 +811,166 @@ test("shows actionable replay warnings but not the expected pending night-death 
   expect(within(app).queryByRole("status", { name: "게임 경고" })).toBeNull();
 });
 
+test("restores a pending rules-owned game end dialog from autosave", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const setupPlayers = standardSetupPlayers();
+  const saved = savedDayGame(setupPlayers);
+  storage.savedGames.push(saved);
+  const base = await defaultReplayImplementation(saved) as { ok: true; value: ReplayState };
+  const pendingState: ReplayState = {
+    ...base.value,
+    phase: "day",
+    pendingGameEnd: {
+      sourceEventId: "phase-2",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    },
+  };
+  core.replay.mockResolvedValue({ ok: true, value: pendingState } as never);
+
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+
+  const dialog = await screen.findByRole("dialog", { name: "악 진영 승리" });
+  expect(within(dialog).getByText(pendingState.pendingGameEnd!.reasonKo)).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: /닫기|취소|최소화/ })).toBeNull();
+});
+
+test("restores an ended autosave to the final read-only Grimoire", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const user = userEvent.setup();
+  const setupPlayers = standardSetupPlayers();
+  const saved = savedDayGame(setupPlayers);
+  saved.game.events.push({
+    id: "game-ended-3",
+    type: "gameEnded",
+    phase: "day",
+    payload: { winningTeam: "evil", source: { kind: "vortoxNoExecution", sourceEventId: "phase-2" } },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-23T00:02:00.000Z",
+  });
+  storage.savedGames.push(saved);
+  const base = await defaultReplayImplementation(saved) as { ok: true; value: ReplayState };
+  const endedState: ReplayState = {
+    ...base.value,
+    phase: "day",
+    currentStep: null,
+    phaseOverview: [],
+    availableDayActions: [{ actorPlayerId: "player-1", characterId: "artist", dayId: "day" }],
+    madnessAssignments: [{
+      assignmentId: "madness-1",
+      sourcePlayerId: "player-6",
+      sourceCharacterId: "cerenovus",
+      targetPlayerId: "player-1",
+      requiredCharacterId: "artist",
+      status: "unchecked",
+      sourceEffective: true,
+      canCheck: true,
+      canExecute: false,
+    }],
+    gameEnd: {
+      eventId: "game-ended-3",
+      sourceEventId: "phase-2",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    },
+  };
+  core.replay.mockResolvedValue({ ok: true, value: endedState } as never);
+
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+
+  const grimoire = await screen.findByRole("region", { name: "종료된 게임의 읽기 전용 마도서" });
+  const dock = screen.getByRole("region", { name: "게임 종료 상태" });
+  expect(within(dock).getByText("악 진영 승리")).toBeTruthy();
+  expect(within(dock).queryByRole("button")).toBeNull();
+  expect(screen.getByRole("button", { name: /최근 행동 되돌리기/ })).toBeTruthy();
+  expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
+  expect(screen.queryByLabelText("집착 확인 자유 행동")).toBeNull();
+
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석/ }));
+  const details = screen.getByRole("dialog", { name: "1번 플레이어 1 플레이어 상세" });
+  expect(details.closest(".playerTokenDetailBackdrop")?.classList.contains("day")).toBe(true);
+});
+
+test("ends a pending game and one Undo removes both the end and its causal checkpoint", async () => {
+  const storage = new MemorySectsAndVioletsStorageDriver();
+  const saved = savedDayGame(standardSetupPlayers());
+  storage.savedGames.push(saved);
+  const pendingBase = await defaultReplayImplementation(saved) as { ok: true; value: ReplayState };
+  const pendingState: ReplayState = {
+    ...pendingBase.value,
+    phase: "day",
+    pendingGameEnd: {
+      sourceEventId: "phase-2",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    },
+  };
+  const endedState: ReplayState = {
+    ...pendingState,
+    eventCount: 3,
+    currentStep: null,
+    phaseOverview: [],
+    pendingGameEnd: undefined,
+    gameEnd: {
+      eventId: "game-ended-3",
+      sourceEventId: "phase-2",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: pendingState.pendingGameEnd!.reasonKo,
+    },
+  };
+  core.replay.mockImplementation(async (gameFile: GameFile) => {
+    if (gameFile.game.events.some((event) => event.type === "gameEnded")) {
+      return { ok: true, value: endedState } as never;
+    }
+    if (gameFile.game.events.some((event) => event.id === "phase-2")) {
+      return { ok: true, value: pendingState } as never;
+    }
+    return defaultReplayImplementation(gameFile);
+  });
+  core.propose.mockImplementation(async (gameFile: GameFile, command: { type: string }) => {
+    if (command.type === "endGame") {
+      return {
+        ok: true,
+        value: {
+          event: {
+            id: "game-ended-3",
+            type: "gameEnded",
+            phase: "day",
+            payload: { winningTeam: "evil", source: { kind: "vortoxNoExecution", sourceEventId: "phase-2" } },
+            summary: "게임 종료 · 악한 팀 승리",
+            createdAt: "2026-07-23T00:02:00.000Z",
+          },
+          warnings: [],
+          followUpSteps: [],
+          preview: null,
+        },
+      } as never;
+    }
+    return defaultProposeImplementation(gameFile, command as never);
+  });
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={storage} />);
+
+  await user.click(within(await screen.findByRole("dialog", { name: "악 진영 승리" }))
+    .getByRole("button", { name: "게임 종료" }));
+  await screen.findByRole("region", { name: "게임 종료 상태" });
+  await user.click(screen.getByRole("button", { name: /최근 행동 되돌리기/ }));
+  const undo = screen.getByRole("dialog", { name: "Undo" });
+  expect(within(undo).getAllByRole("listitem")).toHaveLength(2);
+  await user.click(within(undo).getByRole("button", { name: "되돌리기" }));
+
+  await waitFor(() => {
+    const lastReplayFile = core.replay.mock.calls.at(-1)?.[0] as GameFile;
+    expect(lastReplayFile.game.events.map((event) => event.id)).toEqual(["setup-1"]);
+  });
+  expect(screen.queryByRole("dialog", { name: "악 진영 승리" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "게임 종료 상태" })).toBeNull();
+});
+
 test("places game warnings in layout before Grimoire reminder tokens", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const setupPlayers: SetupPlayerInput[] = [
@@ -975,6 +1135,17 @@ function savedDayGame(players: SetupPlayerInput[]): GameFile {
 function playersForMock(gameFile: GameFile): SetupPlayerInput[] {
   const setup = gameFile.game.events.find((event) => event.type === "setupConfirmed");
   return setup?.type === "setupConfirmed" ? setup.payload.players : [];
+}
+
+function standardSetupPlayers(): SetupPlayerInput[] {
+  return ["clockmaker", "dreamer", "snakeCharmer", "mathematician", "mutant", "evilTwin", "fangGu"]
+    .map((actualCharacter, index) => ({
+      id: `player-${index + 1}`,
+      seat: index + 1,
+      name: `플레이어 ${index + 1}`,
+      actualCharacter,
+      shownCharacter: actualCharacter,
+    }));
 }
 
 async function completeCurrentEvilInformation(

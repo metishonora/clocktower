@@ -367,7 +367,7 @@ pub(crate) struct ReplayState {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) pending_death_consequences: Vec<PendingDeathConsequence>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) pending_forced_game_end: Option<PendingForcedGameEnd>,
+    pub(crate) pending_game_end: Option<PendingGameEnd>,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -396,9 +396,21 @@ pub(crate) enum DeathConsequenceKind {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PendingForcedGameEnd {
+pub(crate) struct PendingGameEnd {
     pub(crate) source_event_id: String,
     pub(crate) winning_team: Alignment,
+    pub(crate) cause: GameEndCause,
+    pub(crate) reason_ko: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum GameEndCause {
+    DemonAbsent,
+    TwoLivingPlayers,
+    KlutzChoice,
+    EvilTwinExecution,
+    VortoxNoExecution,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -486,6 +498,12 @@ pub(crate) enum MadnessCheckResult {
 pub(crate) struct GameEndState {
     pub(crate) event_id: String,
     pub(crate) winning_team: Alignment,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) source_event_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) cause: Option<GameEndCause>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) reason_ko: Option<String>,
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -1108,6 +1126,8 @@ pub(crate) struct GameEndedPayload {
     deny_unknown_fields
 )]
 pub(crate) enum GameEndSource {
+    DemonAbsent { source_event_id: String },
+    TwoLivingPlayers { source_event_id: String },
     KlutzChoice { source_event_id: String },
     WitchCurseDeath { source_event_id: String },
     EvilTwinExecution { source_event_id: String },
