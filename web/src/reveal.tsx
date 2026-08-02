@@ -78,7 +78,7 @@ function GenericEvilTwinReveal({ payload, onClose }: {
           </div>
         ))}
         <button type="button" className="revealCloseButton" onClick={onClose}>
-          확인했다면 눈을 감으세요
+          확인했으면 눈을 감으세요
         </button>
       </section>
     </main>
@@ -131,7 +131,7 @@ function RoleInformationReveal({ payload, onClose }: { payload: RoleInformationR
     <main className="revealShell" aria-label="플레이어 공개 화면" data-player-id={payload.kind === "characterChange" ? payload.playerId : undefined}>
       <section className="roleInformationCard">
         <div className="roleInformationContent">{content}</div>
-        <button type="button" className="revealCloseButton" onClick={onClose}>확인했다면 눈을 감으세요.</button>
+        <button type="button" className="revealCloseButton" onClick={onClose}>확인했으면 눈을 감으세요</button>
       </section>
     </main>
   );
@@ -163,7 +163,7 @@ function EvilInformationReveal({ payload, onClose }: { payload: EvilInformationR
           </section>
         ) : null}
       </section>
-      <button type="button" className="revealCloseButton evilInformationClose" onClick={onClose}>확인했다면 눈을 감으세요.</button>
+      <button type="button" className="revealCloseButton evilInformationClose" onClick={onClose}>확인했으면 눈을 감으세요</button>
     </main>
   );
 }
@@ -224,7 +224,7 @@ function TextReveal({ payload, onClose }: { payload: TextRevealPayload; onClose:
         {label ? <h1 className="revealPlayerLabel">{label}</h1> : null}
         <p>{value}</p>
         <button type="button" className="revealCloseButton" onClick={onClose}>
-          확인했다면 눈을 감으세요.
+          확인했으면 눈을 감으세요
         </button>
       </section>
     </main>
@@ -294,7 +294,7 @@ function SpyGrimoireReveal({
       </section>
 
       <button className="spyGrimoireClose" type="button" onClick={onClose}>
-        확인했다면 눈을 감으세요.
+        확인했으면 눈을 감으세요
       </button>
     </main>
   );

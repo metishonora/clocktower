@@ -1372,14 +1372,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByText("마도서")).toBeNull();
     expect(screen.queryByText("이벤트 로그")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.queryByLabelText("플레이어 공개 화면")).toBeNull();
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "초공감자: 3번 Cy" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
     const reopenedReveal = screen.getByLabelText("플레이어 공개 화면");
-    await user.click(within(reopenedReveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reopenedReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
     expect(core.propose).toHaveBeenCalledTimes(1);
     expect(vi.mocked(core.replay).mock.calls).toHaveLength(replayCallsAfterConfirm);
@@ -1510,14 +1510,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByText("이벤트 로그")).toBeNull();
     expect(screen.queryByText("설정 및 불러오기")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "낮 시작" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
     await user.click(
       within(screen.getByLabelText("플레이어 공개 화면")).getByRole("button", {
-        name: "확인했다면 눈을 감으세요.",
+        name: "확인했으면 눈을 감으세요",
       }),
     );
     await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));

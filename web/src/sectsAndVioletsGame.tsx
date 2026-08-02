@@ -2781,8 +2781,7 @@ export function SectsAndVioletsGameSurface({
         <SectsAndVioletsReveal
           dialogLabel={`${characters.find((character) => character.id === informationCheckpoint.step.character)?.name ?? informationCheckpoint.step.character} 정보 공개`}
           className="snvProductionInformationReveal"
-          closeLabel="확인"
-          closeAriaLabel="정보 공개 닫기"
+          closeLabel="확인했으면 눈을 감으세요"
           closeButtonRef={informationCloseRef}
           onClose={() => setInformationRevealOpen(false)}
         >

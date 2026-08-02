@@ -113,7 +113,7 @@ test("S&V Minion Reveal renders only the Demon identity and wraps long names saf
   match(html, />악마는</);
   match(html, />10</);
   match(html, /VeryLongUnbrokenDemonPlayerNameThatMustWrapInsideTheSquare/);
-  match(html, /확인했다면 눈을 감으세요/);
+  match(html, /확인했으면 눈을 감으세요/);
   ok(!/숨겨야 하는 다른 하수인|당신의 하수인|속임수/.test(html));
 });
 

@@ -156,7 +156,7 @@ test("the production first-night UI assigns a clearly selected Cerenovus target 
   expect(within(reveal).getByRole("heading", { name: "내일 시계공이라고 집착해야 합니다." })).toBeTruthy();
   expect(within(reveal).getByRole("img", { name: "시계공" })).toBeTruthy();
   expect(within(reveal).queryByRole("heading", { name: "시계공" })).toBeNull();
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(screen.queryByRole("dialog", { name: "세레노버스 집착 공개" })).toBeNull();
 });
 

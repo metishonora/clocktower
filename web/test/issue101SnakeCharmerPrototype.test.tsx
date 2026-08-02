@@ -28,7 +28,7 @@ test("shows the two private identity reveals in order, then the canonical poison
   expect(within(reveal).queryByText("1 / 2")).toBeNull();
   expect(within(reveal).getByText("비고르모르티스")).toBeTruthy();
   expect(within(reveal).getByText("악")).toBeTruthy();
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   prompt = screen.getByRole("dialog", { name: "직업 변경 안내 2/2" });
   expect(within(prompt).getByText("7번 도윤을 깨우세요")).toBeTruthy();
@@ -40,7 +40,7 @@ test("shows the two private identity reveals in order, then the canonical poison
   expect(within(reveal).queryByText("2 / 2")).toBeNull();
   expect(within(reveal).getByText("뱀 조련사")).toBeTruthy();
   expect(within(reveal).getByText("선")).toBeTruthy();
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   const grimoire = within(prototype).getByRole("region", { name: "교환 후 밤 마도서" });
   expect(within(grimoire).getByText("비고르모르티스 · 1번 민서")).toBeTruthy();
@@ -55,7 +55,7 @@ test("a reload rehearsal restarts the ordered reveal at the first player", async
 
   await user.click(within(prototype).getByRole("button", { name: "선택 확정" }));
   await user.click(screen.getByRole("button", { name: "공개" }));
-  await user.click(screen.getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(screen.getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(screen.getByRole("button", { name: "공개" }));
   await user.click(screen.getByRole("button", { name: "새로고침 동작 재현" }));
 

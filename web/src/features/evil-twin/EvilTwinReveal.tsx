@@ -29,7 +29,7 @@ export function EvilTwinReveal({ reveal, onConfirm }: {
     <SectsAndVioletsReveal
       dialogLabel="쌍둥이 정보 공개"
       className="evilTwinReveal"
-      closeLabel="확인했다면 눈을 감으세요"
+      closeLabel="확인했으면 눈을 감으세요"
       onClose={onConfirm}
     >
       <span>사악한 쌍둥이</span>

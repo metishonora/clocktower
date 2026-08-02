@@ -1160,7 +1160,7 @@ async function completeCurrentEvilInformation(
   }
   await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
   const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
-  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(await within(app).findByRole("button", { name: "다음으로" }));
 }
 

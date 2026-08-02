@@ -42,7 +42,7 @@ describe("issue #106 live prompts", () => {
     expect(screen.getByText("사악한 쌍둥이")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "여러분은 쌍둥이입니다" })).toBeTruthy();
     expect(screen.getByText("상대와 직업을 확인하십시오")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "확인했다면 눈을 감으세요" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "확인했으면 눈을 감으세요" })).toBeTruthy();
     expect(screen.queryByText("여러분은 쌍둥이입니다,")).toBeNull();
     expect(screen.queryByText("상대와 직업을 확인하십시오,")).toBeNull();
     expect(screen.getByText("↔")).toBeTruthy();

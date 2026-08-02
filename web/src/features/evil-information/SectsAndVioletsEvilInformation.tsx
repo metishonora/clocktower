@@ -168,8 +168,8 @@ export function SectsAndVioletsEvilInformationReveal({
             </RevealSection>
           </>
         )}
-        <button type="button" aria-label="악한 팀 정보 공개 닫기" onClick={onClose}>
-          확인했다면 눈을 감으세요
+        <button type="button" onClick={onClose}>
+          확인했으면 눈을 감으세요
         </button>
       </section>
     </div>

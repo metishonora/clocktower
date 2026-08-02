@@ -37,20 +37,20 @@ test("real WASM repeats Clockmaker information until explicit next-step progress
   let reveal = await screen.findByRole("dialog", { name: "시계공 정보 공개" });
   expect(within(reveal).getByText("악마와 하수인의 거리")).toBeTruthy();
   expect(within(reveal).getByText("1칸")).toBeTruthy();
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   const confirmedTask = await within(app).findByRole("article", { name: "시계공 정보" });
   await user.click(within(confirmedTask).getByRole("button", { name: "정보 공개" }));
   reveal = await screen.findByRole("dialog", { name: "시계공 정보 공개" });
   expect(within(reveal).getByText("1칸")).toBeTruthy();
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   await user.click(within(confirmedTask).getByRole("button", { name: "다음 단계" }));
   expect(await within(app).findByRole("heading", { name: "꿈꾸는 자" })).toBeTruthy();
   expect(within(app).queryByRole("button", { name: "다음" })).toBeNull();
 });
 
-test("real WASM accepts an obviously false Vortox number and restores the prompt after undo", async () => {
+test("real WASM reveals false Vortox information with the eyes-closed confirmation and restores the prompt after undo", async () => {
   const game = clockmakerGame();
   const setup = game.game.events[0];
   if (setup?.type !== "setupConfirmed") throw new Error("expected setup");
@@ -94,6 +94,27 @@ test("real WASM accepts an obviously false Vortox number and restores the prompt
   const undone = await replayOrThrow(game);
   expect(undone.currentStep?.id).toBe("firstNight:clockmaker");
   expect(undone.currentStep?.informationPrompt?.numberConstraint?.excludedValues).toEqual([1]);
+
+  game.ui = liveSession();
+  const session = game.ui.sectsAndVioletsSession!;
+  session.setup.demon = "vortox";
+  session.setup.selectedIds[6] = "vortox";
+  session.setup.seatAssignments[7] = "vortox";
+  const user = userEvent.setup();
+  render(
+    <SectsAndVioletsApp
+      coreAdapter={realWasmCore()}
+      storageDriver={new MemoryGameStorageDriver(game)}
+    />,
+  );
+
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const task = await within(app).findByRole("article", { name: "시계공 정보" });
+  await user.type(within(task).getByRole("spinbutton", { name: "전달할 숫자" }), "100");
+  await user.click(within(task).getByRole("button", { name: "거짓 정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: "시계공 정보 공개" });
+  expect(within(reveal).queryByRole("button", { name: "확인" })).toBeNull();
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 });
 
 test("real WASM keeps Dreamer targets available for repeated information reveals", async () => {
@@ -118,14 +139,14 @@ test("real WASM keeps Dreamer targets available for repeated information reveals
   expect(within(task).getByRole("group", { name: "대상과 진실" }).textContent).toContain("2번 Seamstress");
   await user.click(within(task).getByRole("button", { name: "정보 공개" }));
   let reveal = await screen.findByRole("dialog", { name: "꿈꾸는 자 정보 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   task = await within(app).findByRole("article", { name: "꿈꾸는 자 정보" });
   expect(within(task).getByRole("group", { name: "대상과 진실" }).textContent).toContain("2번 Seamstress");
   expect(within(within(app).getByRole("list", { name: "첫날 밤 순서" })).getAllByText("현재")).toHaveLength(1);
   await user.click(within(task).getByRole("button", { name: "정보 공개" }));
   reveal = await screen.findByRole("dialog", { name: "꿈꾸는 자 정보 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   await user.click(within(task).getByRole("button", { name: "다음 단계" }));
   expect(await within(app).findByRole("heading", { name: "재봉사" })).toBeTruthy();

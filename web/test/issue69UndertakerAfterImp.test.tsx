@@ -50,12 +50,12 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     expect(within(reveal).getByText("요리사")).toBeTruthy();
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
     let currentFollowup = await screen.findByLabelText("확정된 Reveal 후속 조치");
     await user.click(within(currentFollowup).getByRole("button", { name: "플레이어에게 공개" }));
     reveal = await screen.findByLabelText("플레이어 공개 화면");
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     await expectSavedEventCount(storage, beforeAttackCount + 2);
 
     currentFollowup = await screen.findByLabelText("확정된 Reveal 후속 조치");
@@ -90,7 +90,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     let reveal = await screen.findByLabelText("플레이어 공개 화면");
     expect(within(reveal).getByText("Imp")).toBeTruthy();
     expect(within(reveal).getByText("임프")).toBeTruthy();
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
     await user.click(within(followup).getByRole("button", { name: "다음 단계로 계속" }));
 
@@ -103,7 +103,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     reveal = await screen.findByLabelText("플레이어 공개 화면");
     expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
     await user.click(within(followup).getByRole("button", { name: "다음 단계로 계속" }));
     expect(await screen.findByRole("heading", { name: "낮 시작" })).toBeTruthy();

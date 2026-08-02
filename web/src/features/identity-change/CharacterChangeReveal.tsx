@@ -22,7 +22,7 @@ export function CharacterChangeReveal({
     <SectsAndVioletsReveal
       dialogLabel={`역할 변경 공개 ${reveal.sequence}/${total}`}
       className={`snakeCharmerReveal ${evil ? "evil" : "good"}`}
-      closeLabel="확인했다면 눈을 감으세요"
+      closeLabel="확인했으면 눈을 감으세요"
       onClose={onConfirm}
     >
       <div className="snakeCharmerRevealIdentity">

@@ -55,10 +55,10 @@ test("hands the Barber choice to the selected Demon and blocks progress until ev
   expect(within(app).queryByRole("region", { name: "낮 진행" })).toBeNull();
 
   await user.click(within(firstPrompt).getByRole("button", { name: "공개" }));
-  await user.click(within(await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" })).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(await screen.findByRole("dialog", { name: "역할 변경 공개 1/2" })).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   const secondPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 2/2" });
   await user.click(within(secondPrompt).getByRole("button", { name: "공개" }));
-  await user.click(within(await screen.findByRole("dialog", { name: "역할 변경 공개 2/2" })).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(await screen.findByRole("dialog", { name: "역할 변경 공개 2/2" })).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   await waitFor(() => expect(within(app).queryByRole("dialog", { name: /직업 변경 안내/ })).toBeNull());
   expect((within(app).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(false);

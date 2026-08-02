@@ -582,7 +582,7 @@ export function ClocktowerApp({
             {activeSpyRevealPayload ? (
               <aside className="spyRevealRail" aria-label="첩자 Reveal 닫기 동작">
                 <button type="button" className="primaryButton" onClick={closeActiveReveal}>
-                  확인했다면 눈을 감으세요.
+                  확인했으면 눈을 감으세요
                 </button>
               </aside>
             ) : <aside className="setupRail">

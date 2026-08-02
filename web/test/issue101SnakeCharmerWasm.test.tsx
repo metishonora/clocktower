@@ -72,7 +72,7 @@ test("the production UI continues to the later role after both swap reveals", as
     const prompt = await screen.findByRole("dialog", { name: `직업 변경 안내 ${sequence}/2` });
     await user.click(within(prompt).getByRole("button", { name: "공개" }));
     const reveal = await screen.findByRole("dialog", { name: `역할 변경 공개 ${sequence}/2` });
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   }
 
   await user.click(await within(app).findByRole("button", { name: "진행 →" }));

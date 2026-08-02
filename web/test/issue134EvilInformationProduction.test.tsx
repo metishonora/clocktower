@@ -32,12 +32,12 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   expect(within(dialog).getByText("Demon Ten")).toBeTruthy();
   expect(within(dialog).queryByText("Minion Eight")).toBeNull();
   expect(within(dialog).queryByText("Minion Nine")).toBeNull();
-  await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(storage.latest.game.events).toHaveLength(2);
 
   await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
-  await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(storage.latest.game.events).toHaveLength(2);
   await user.click(within(app).getByRole("button", { name: "다음으로" }));
 
@@ -63,7 +63,7 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   expect(dialog.textContent).not.toContain("마녀");
   expect(dialog.textContent).not.toContain("세레노버스");
   expect(storage.latest.game.events).toHaveLength(3);
-  await user.click(within(dialog).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(false);
 });
 

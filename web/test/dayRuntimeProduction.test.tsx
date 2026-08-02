@@ -154,7 +154,7 @@ test("hides the runtime in full-screen Reveal and preserves elapsed wall-clock t
   expect(within(reveal).queryByLabelText(/경과 시간/)).toBeNull();
 
   now += 2 * 60_000;
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(screen.getByLabelText("2일차 낮 경과 시간 05:00")).toBeTruthy();
 });
 

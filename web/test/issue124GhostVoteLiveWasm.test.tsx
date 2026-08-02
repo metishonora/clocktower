@@ -109,7 +109,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   for (let informationIndex = 0; informationIndex < 3; informationIndex += 1) {
     await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
     const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
-    await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
   }
   await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
@@ -130,7 +130,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
 async function completeMinionInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
   await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
   const reveal = await screen.findByRole("dialog", { name: "하수인 정보 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(await within(app).findByRole("button", { name: "다음으로" }));
 }
 
@@ -143,7 +143,7 @@ async function completeDemonInformation(user: ReturnType<typeof userEvent.setup>
   for (const candidate of candidates.slice(0, 3)) await user.click(candidate);
   await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   const reveal = await screen.findByRole("dialog", { name: "악마 정보 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "악한 팀 정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(await within(app).findByRole("button", { name: "다음으로" }));
 }
   expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
@@ -218,14 +218,14 @@ async function acknowledgeSnakeCharmerSwap(user: ReturnType<typeof userEvent.set
     const prompt = await screen.findByRole("dialog", { name: `직업 변경 안내 ${sequence}/2` });
     await user.click(within(prompt).getByRole("button", { name: "공개" }));
     const reveal = await screen.findByRole("dialog", { name: `역할 변경 공개 ${sequence}/2` });
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   }
 }
 
 async function revealCurrentInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
   await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
   const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
-  await user.click(within(reveal).getByRole("button", { name: "정보 공개 닫기" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
 }
 
@@ -306,7 +306,7 @@ async function assignCerenovus(user: ReturnType<typeof userEvent.setup>, app: HT
   const prompt = await within(app).findByRole("dialog", { name: "집착 안내" });
   await user.click(within(prompt).getByRole("button", { name: "공개" }));
   const reveal = within(app).getByRole("dialog", { name: "세레노버스 집착 공개" });
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   await user.click(await within(app).findByRole("button", { name: "진행 →" }));
 }
 

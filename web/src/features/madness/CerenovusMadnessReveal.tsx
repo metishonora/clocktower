@@ -18,7 +18,7 @@ export function CerenovusMadnessReveal({
     <SectsAndVioletsReveal
       dialogLabel="세레노버스 집착 공개"
       className="cerenovusMadnessReveal"
-      closeLabel="확인했다면 눈을 감으세요"
+      closeLabel="확인했으면 눈을 감으세요"
       onClose={onConfirm}
     >
       <div className="cerenovusMadnessRevealIdentity">

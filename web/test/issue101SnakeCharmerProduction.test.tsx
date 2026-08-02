@@ -75,7 +75,7 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   expect(within(firstReveal).queryByText("1번 가람")).toBeNull();
   expect(within(firstReveal).queryByText("1 / 2")).toBeNull();
   expect(within(firstReveal).queryByText("악한 진영")).toBeNull();
-  await user.click(within(firstReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(firstReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   const secondPrompt = await screen.findByRole("dialog", { name: "직업 변경 안내 2/2" });
   expect(within(secondPrompt).getByText("플레이어 7")).toBeTruthy();
@@ -87,7 +87,7 @@ test("runs the Snake Charmer target, ordered identity reveals, and permanent poi
   expect(within(secondReveal).queryByText("7번 도윤")).toBeNull();
   expect(within(secondReveal).queryByText("2 / 2")).toBeNull();
   expect(within(secondReveal).queryByText("선한 진영")).toBeNull();
-  await user.click(within(secondReveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(secondReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   await user.click(within(app).getByRole("button", { name: /7번 좌석, 도윤, 뱀 조련사, 토큰 1개/ }));
   const details = await screen.findByRole("dialog", { name: "7번 도윤 플레이어 상세" });

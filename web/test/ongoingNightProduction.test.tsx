@@ -247,7 +247,7 @@ describe("ongoing-night production UI", () => {
     expect(within(reveal).getByText("있음")).toBeTruthy();
     expect(within(reveal).getByText("서연")).toBeTruthy();
     expect(within(reveal).getByText("하린")).toBeTruthy();
-    await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });
 

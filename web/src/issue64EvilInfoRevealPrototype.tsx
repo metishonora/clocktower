@@ -128,7 +128,7 @@ function EvilInfoReveal({ audience, onClose }: { audience: Audience; onClose: ()
       </section>
 
       <button type="button" className="issue64RevealClose" onClick={onClose}>
-        확인했다면 눈을 감으세요.
+        확인했으면 눈을 감으세요
       </button>
     </main>
   );

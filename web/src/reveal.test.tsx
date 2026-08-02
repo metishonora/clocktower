@@ -15,7 +15,7 @@ test("RevealScreen renders from RevealPayload alone", () => {
 
   equal(html.includes("서로 이웃한 악한 팀 쌍"), true);
   equal(html.includes("1쌍"), true);
-  equal(html.includes("확인했다면 눈을 감으세요."), true);
+  equal(html.includes("확인했으면 눈을 감으세요"), true);
   equal(html.includes("actualCharacter"), false);
   equal(html.includes("eventList"), false);
   equal(html.includes("마도서"), false);
@@ -29,7 +29,7 @@ test("character change Reveal identifies the new role without exposing Grimoire 
   equal(html.includes(">악<"), true);
   equal(html.includes("임프"), true);
   equal(html.includes("마도서"), false);
-  equal(html.includes("확인했다면 눈을 감으세요."), true);
+  equal(html.includes("확인했으면 눈을 감으세요"), true);
   const preview = renderToStaticMarkup(<RevealPreview payload={payload} onShow={() => undefined} />);
   equal(preview.includes("플레이어에게 공개"), true);
 });
@@ -54,10 +54,10 @@ test("good-aligned Evil Twin Reveals use the neutral twin label", () => {
   equal(changeHtml.includes("<strong>사악한 쌍둥이</strong>"), false);
 
   const pairHtml = renderToStaticMarkup(<RevealScreen payload={twinPair} onClose={() => undefined} />);
-  for (const copy of ["여러분은 쌍둥이입니다", "상대와 직업을 확인하십시오", "확인했다면 눈을 감으세요"]) {
+  for (const copy of ["여러분은 쌍둥이입니다", "상대와 직업을 확인하십시오", "확인했으면 눈을 감으세요"]) {
     equal(pairHtml.includes(copy), true);
   }
-  for (const punctuated of ["여러분은 쌍둥이입니다,", "상대와 직업을 확인하십시오,", "확인했다면 눈을 감으세요."]) {
+  for (const punctuated of ["여러분은 쌍둥이입니다,", "상대와 직업을 확인하십시오,", "확인했으면 눈을 감으세요."]) {
     equal(pairHtml.includes(punctuated), false);
   }
 });

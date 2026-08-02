@@ -178,7 +178,7 @@ function IdentityReveal({
           <h2>{asset.label}</h2>
           <span className="issue101RevealAlignment" aria-label={`현재 진영 · ${alignment}`}>{alignment}</span>
         </div>
-        <button className="issue101RevealConfirm" type="button" onClick={onConfirm}>확인했다면 눈을 감으세요</button>
+        <button className="issue101RevealConfirm" type="button" onClick={onConfirm}>확인했으면 눈을 감으세요</button>
         <button className="issue101ReloadRehearsal" type="button" onClick={onReload}>새로고침 동작 재현</button>
       </section>
     </div>

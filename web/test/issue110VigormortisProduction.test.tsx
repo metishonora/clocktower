@@ -161,7 +161,7 @@ test("waits for a pending identity reveal before automatic replacement", async (
   expect(core.propose).not.toHaveBeenCalled();
   await user.click(within(prompt).getByRole("button", { name: "공개" }));
   const reveal = await screen.findByRole("dialog", { name: "역할 변경 공개 1/1" });
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요" }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
   await waitFor(() => expect(core.propose).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
     type: "resolveVigormortisPoison",
