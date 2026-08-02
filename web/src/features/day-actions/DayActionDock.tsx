@@ -4,20 +4,19 @@ import type {
   AvailableDayAction,
   ConfirmedDayActionRecord,
   DayActionRecordInput,
+  DeliveryReason,
   Player,
 } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
-import type { SavantReferenceCategory } from "./dayActionReferences";
 import "./dayActionDock.css";
 
 export function DayActionDock({
   players,
   availableActions,
   phaseLabel,
-  savantCategories,
   busy,
   groupActive = true,
   onGroupActivate = noop,
@@ -27,7 +26,6 @@ export function DayActionDock({
   players: Player[];
   availableActions: AvailableDayAction[];
   phaseLabel: string;
-  savantCategories: SavantReferenceCategory[];
   busy: boolean;
   groupActive?: boolean;
   onGroupActivate?: () => void;
@@ -47,6 +45,9 @@ export function DayActionDock({
   const activePlayer = activeAction
     ? players.find((player) => player.id === activeAction.actorPlayerId)
     : undefined;
+  const informationInfluence = activeAction
+    ? primaryInformationInfluence(activeAction.activeReasons)
+    : undefined;
 
   return (
     <>
@@ -57,11 +58,11 @@ export function DayActionDock({
           role="dialog"
           aria-label={`${characterLabel(activeAction.characterId)} 능력 사용`}
         >
-          <DayActionHeader action={activeAction} player={activePlayer} phaseLabel={phaseLabel} />
+          <DayActionHeader action={activeAction} player={activePlayer} phaseLabel={phaseLabel} influence={informationInfluence} />
           {activeAction.characterId === "artist" ? (
-            <ArtistForm busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
+            <ArtistForm influence={informationInfluence} busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
           ) : activeAction.characterId === "savant" ? (
-            <SavantForm categories={savantCategories} busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
+            <SavantForm influence={informationInfluence} busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
           ) : (
             <JugglerForm busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
           )}
@@ -103,10 +104,11 @@ export function DayActionDock({
 
 function noop() {}
 
-function DayActionHeader({ action, player, phaseLabel }: {
+function DayActionHeader({ action, player, phaseLabel, influence }: {
   action: AvailableDayAction;
   player: Player;
   phaseLabel: string;
+  influence?: InformationInfluence;
 }) {
   const label = characterLabel(action.characterId);
   const asset = sectsAndVioletsCharacterAsset(action.characterId);
@@ -121,7 +123,10 @@ function DayActionHeader({ action, player, phaseLabel }: {
         {asset ? <img src={asset.src} alt={`${label} 공식 캐릭터 아이콘`} /> : null}
         <div>
           <span>{phaseLabel} · {player.seat}번 {player.name}</span>
-          <h2>{label}</h2>
+          <span className="snvDayActionRoleLine">
+            <h2>{label}</h2>
+            {influence ? <em className={`snvInformationInfluenceBadge ${influence}`}>{informationInfluencePresentation[influence].badge}</em> : null}
+          </span>
         </div>
       </CharacterDetailButton>
       {ability ? <p>{ability}</p> : null}
@@ -129,66 +134,79 @@ function DayActionHeader({ action, player, phaseLabel }: {
   );
 }
 
-function ArtistForm({ busy, onComplete }: {
+function ArtistForm({ influence, busy, onComplete }: {
+  influence?: InformationInfluence;
   busy: boolean;
   onComplete: (record: Extract<DayActionRecordInput, { kind: "artist" }>) => void;
 }) {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<ArtistAnswer>("yes");
+  const [answer, setAnswer] = useState<ArtistAnswer>();
+  const [truthful, setTruthful] = useState<boolean>();
+  const effectiveTruthful = influence === "vortox" ? false : influence ? truthful : true;
+  const truthLocked = influence === undefined || influence === "vortox";
+  const ready = answer !== undefined && effectiveTruthful !== undefined;
   const answers: Array<{ value: ArtistAnswer; label: string }> = [
-    { value: "yes", label: "예" },
-    { value: "no", label: "아니오" },
-    { value: "unknown", label: "모르겠습니다" },
+    { value: "yes", label: "O" },
+    { value: "no", label: "X" },
+    { value: "unknown", label: "?" },
   ];
+  useEffect(() => setTruthful(undefined), [influence]);
   return (
     <div className="snvDayActionForm snvArtistForm">
-      <label>질문<textarea aria-label="질문" maxLength={500} value={question} onChange={(event) => setQuestion(event.target.value)} /></label>
+      <label><span>질문 <em>선택 사항</em></span><textarea aria-label="질문" maxLength={500} value={question} onChange={(event) => setQuestion(event.target.value)} /></label>
       <fieldset>
         <legend>답변</legend>
         <div>{answers.map((choice) => (
-          <button key={choice.value} type="button" className={answer === choice.value ? "selected" : ""} aria-pressed={answer === choice.value} onClick={() => setAnswer(choice.value)}>{choice.label}</button>
+          <button key={choice.value} type="button" className={answer === choice.value ? "selected" : ""} aria-label={`${choice.label} ${choice.value === "yes" ? "예" : choice.value === "no" ? "아니오" : "모르겠음"}`} aria-pressed={answer === choice.value} onClick={() => setAnswer(choice.value)}>{choice.label}<small>{choice.value === "yes" ? "예" : choice.value === "no" ? "아니오" : "모르겠음"}</small></button>
         ))}</div>
       </fieldset>
-      <button type="button" className="snvDayActionConfirm" disabled={busy || !question.trim()} onClick={() => onComplete({ kind: "artist", question: question.trim(), answer })}>질문과 답변 기록</button>
+      <fieldset>
+        <legend>정보 판정</legend>
+        <div className="snvDayActionTruthChoices">{[[true, "진실"], [false, "거짓"]].map(([value, label]) => (
+          <button key={String(value)} type="button" className={effectiveTruthful === value ? "selected" : ""} aria-pressed={effectiveTruthful === value} disabled={truthLocked} onClick={() => setTruthful(value as boolean)}>{label}</button>
+        ))}</div>
+      </fieldset>
+      <button type="button" className={`snvDayActionConfirm ${influence ?? "normal"}`} disabled={busy || !ready} onClick={() => answer !== undefined && effectiveTruthful !== undefined && onComplete({ kind: "artist", question: question.trim(), answer, truthful: effectiveTruthful })}>{informationActionLabel(influence)}</button>
     </div>
   );
 }
 
-function SavantForm({ categories, busy, onComplete }: {
-  categories: SavantReferenceCategory[];
+function SavantForm({ influence, busy, onComplete }: {
+  influence?: InformationInfluence;
   busy: boolean;
   onComplete: (record: Extract<DayActionRecordInput, { kind: "savant" }>) => void;
 }) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const references = categories.flatMap((category) => category.references);
-  const selectedSentences = selectedIds.flatMap((id) => {
-    const reference = references.find((candidate) => candidate.id === id);
-    return reference ? [reference.text] : [];
-  });
+  const [statements, setStatements] = useState<Array<{ text: string; truthful?: boolean }>>([
+    { text: "" },
+    { text: "" },
+  ]);
+  const effectiveStatements = influence === "vortox"
+    ? statements.map((statement) => ({ ...statement, truthful: false }))
+    : statements;
+  const complete = effectiveStatements.every((statement) => statement.truthful !== undefined);
+  const trueCount = effectiveStatements.filter((statement) => statement.truthful).length;
+  const valid = complete && (influence ? true : trueCount === 1);
+  useEffect(() => setStatements([{ text: "" }, { text: "" }]), [influence]);
+  const updateStatement = (index: number, patch: Partial<{ text: string; truthful: boolean }>) => {
+    setStatements((current) => current.map((statement, statementIndex) => statementIndex === index ? { ...statement, ...patch } : statement));
+  };
   return (
     <div className="snvDayActionForm snvSavantForm">
-      <div className="snvSavantSelectionCount"><span>참고한 문장만 선택</span><strong>{selectedIds.length} / 2</strong></div>
-      <div className="snvSavantReferenceList">
-        {categories.map((category) => (
-          <section key={category.title}>
-            <h3>{category.title}</h3>
-            <div>{category.references.map((reference) => {
-              const selected = selectedIds.includes(reference.id);
-              return (
-                <button
-                  key={reference.id}
-                  type="button"
-                  className={selected ? "selected" : ""}
-                  aria-pressed={selected}
-                  disabled={!selected && selectedIds.length >= 2}
-                  onClick={() => setSelectedIds((current) => selected ? current.filter((id) => id !== reference.id) : [...current, reference.id])}
-                >{reference.text}</button>
-              );
-            })}</div>
-          </section>
-        ))}
-      </div>
-      <button type="button" className="snvDayActionConfirm" disabled={busy} onClick={() => onComplete({ kind: "savant", referenceSentences: selectedSentences })}>오늘 정보 전달 완료</button>
+      {effectiveStatements.map((statement, index) => (
+        <section className="snvSavantStatement" key={index}>
+          <label><span>정보 {index + 1} <em>선택 사항</em></span><textarea aria-label={`정보 ${index + 1}`} maxLength={500} value={statements[index]?.text ?? ""} onChange={(event) => updateStatement(index, { text: event.target.value })} /></label>
+          <fieldset>
+            <legend>정보 {index + 1} 판정</legend>
+            <div className="snvDayActionTruthChoices">{[[true, "진실"], [false, "거짓"]].map(([value, label]) => (
+              <button key={String(value)} type="button" className={statement.truthful === value ? "selected" : ""} aria-pressed={statement.truthful === value} disabled={influence === "vortox"} onClick={() => updateStatement(index, { truthful: value as boolean })}>{label}</button>
+            ))}</div>
+          </fieldset>
+        </section>
+      ))}
+      <button type="button" className={`snvDayActionConfirm ${influence ?? "normal"}`} disabled={busy || !valid} onClick={() => valid && onComplete({ kind: "savant", statements: [
+        { text: statements[0]?.text.trim() ?? "", truthful: effectiveStatements[0]!.truthful! },
+        { text: statements[1]?.text.trim() ?? "", truthful: effectiveStatements[1]!.truthful! },
+      ] })}>{informationActionLabel(influence)}</button>
     </div>
   );
 }
@@ -220,8 +238,8 @@ export function DayActionRecordHistory({ records }: { records: ConfirmedDayActio
       <ol>{historyRecords.map((entry) => (
         <li key={entry.eventId}>
           <span>{dayActionDayLabel(entry.dayId)}</span>
-          {entry.record.kind === "artist" ? <><strong>화가</strong><p>{entry.record.question}</p><em>답변 · {artistAnswerLabel(entry.record.answer)}</em></> : null}
-          {entry.record.kind === "savant" ? <><strong>백치천재</strong><small>참고한 문장 · {entry.record.referenceSentences.length}개</small>{entry.record.referenceSentences.length ? <ul>{entry.record.referenceSentences.map((sentence) => <li key={sentence}>{sentence}</li>)}</ul> : <p>참고 문장 없이 정보 전달 완료</p>}</> : null}
+          {entry.record.kind === "artist" ? <><strong>화가</strong>{entry.record.question ? <p>{entry.record.question}</p> : null}<em>답변 · {artistAnswerLabel(entry.record.answer)} · {truthLabel(entry.record.truthful)}</em></> : null}
+          {entry.record.kind === "savant" ? <><strong>백치천재</strong><ul>{entry.record.statements.map((statement, index) => <li key={index}>{statement.text || "미입력"} · {truthLabel(statement.truthful)}</li>)}</ul></> : null}
         </li>
       ))}</ol>
     </section>
@@ -235,10 +253,33 @@ export function dayActionDayLabel(dayId: string): string {
 }
 
 function artistAnswerLabel(answer: ArtistAnswer): string {
-  if (answer === "yes") return "예";
-  if (answer === "no") return "아니오";
-  return "모르겠습니다";
+  if (answer === "yes") return "O";
+  if (answer === "no") return "X";
+  return "?";
 }
+
+type InformationInfluence = "drunk" | "poisoned" | "vortox";
+
+const informationInfluencePresentation: Record<InformationInfluence, { badge: string }> = {
+  drunk: { badge: "취함" },
+  poisoned: { badge: "중독" },
+  vortox: { badge: "보르톡스" },
+};
+
+function primaryInformationInfluence(reasons: DeliveryReason[]): InformationInfluence | undefined {
+  if (reasons.some((reason) => reason.type === "vortox")) return "vortox";
+  if (reasons.some((reason) => reason.type === "poisoned")) return "poisoned";
+  return reasons.some((reason) => reason.type === "drunk") ? "drunk" : undefined;
+}
+
+function informationActionLabel(influence?: InformationInfluence): string {
+  if (influence === "vortox") return "거짓 정보 전달";
+  if (influence === "poisoned") return "중독 정보 전달";
+  if (influence === "drunk") return "취한 정보 전달";
+  return "정보 전달";
+}
+
+function truthLabel(truthful: boolean): string { return truthful ? "진실" : "거짓"; }
 
 function characterLabel(characterId: string): string {
   return sectsAndVioletsCharacters.find((character) => character.id === characterId)?.name ?? characterId;

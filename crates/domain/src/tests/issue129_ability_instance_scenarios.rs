@@ -435,7 +435,7 @@ fn once_per_game_usage_is_scoped_to_the_latest_ability_acquisition() {
             "type": "recordDayAction",
             "payload": {
                 "dayId": "day", "expectedEventCount": expected_event_count, "actorPlayerId": "player-2",
-                "record": { "kind": "artist", "question": "test", "answer": "yes" }
+                "record": { "kind": "artist", "question": "test", "answer": "yes", "truthful": true }
             }
         }),
     );

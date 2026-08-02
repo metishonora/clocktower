@@ -907,6 +907,7 @@
           "dayId": "day",
           "actorPlayerId": "player-12",
           "characterId": "juggler",
+          "activeReasons": [],
           "record": {
             "kind": "juggler",
             "correctCount": 2

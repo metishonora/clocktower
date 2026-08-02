@@ -550,33 +550,63 @@ fn day_action_character(record: &DayActionRecord) -> &'static str {
 
 fn validate_day_action_record(record: &DayActionRecord) -> Result<(), CoreError> {
     let valid_text = |value: &str, max: usize| {
-        !value.is_empty() && value.trim() == value && value.chars().count() <= max
+        value.is_empty() || (value.trim() == value && value.chars().count() <= max)
     };
     match record {
         DayActionRecord::Artist {
             question,
             answer: ArtistAnswer::Yes | ArtistAnswer::No | ArtistAnswer::Unknown,
+            ..
         } => {
             if !valid_text(question, 500) {
                 return Err(ErrorKind::InvalidDayActionRecord.into_error());
             }
         }
-        DayActionRecord::Savant {
-            reference_sentences,
-        } => {
-            if reference_sentences.len() > 2
-                || reference_sentences
-                    .iter()
-                    .any(|sentence| !valid_text(sentence, 240))
-                || reference_sentences
-                    .windows(2)
-                    .any(|pair| pair[0] == pair[1])
+        DayActionRecord::Savant { statements } => {
+            if statements
+                .iter()
+                .any(|statement| !valid_text(&statement.text, 500))
             {
                 return Err(ErrorKind::InvalidDayActionRecord.into_error());
             }
         }
         DayActionRecord::Juggler { correct_count } if *correct_count > 5 => {
             return Err(ErrorKind::InvalidDayActionRecord.into_error());
+        }
+        DayActionRecord::Juggler { .. } => {}
+    }
+    Ok(())
+}
+
+fn validate_day_action_truth(
+    record: &DayActionRecord,
+    active_reasons: &[DeliveryReason],
+) -> Result<(), CoreError> {
+    let vortox_active = active_reasons
+        .iter()
+        .any(|reason| matches!(reason, DeliveryReason::Vortox { .. }));
+    let impaired = active_reasons.iter().any(|reason| {
+        matches!(
+            reason,
+            DeliveryReason::Drunk | DeliveryReason::Poisoned { .. }
+        )
+    });
+    match record {
+        DayActionRecord::Artist { truthful, .. } => {
+            if (*truthful && vortox_active) || (!*truthful && !vortox_active && !impaired) {
+                return Err(ErrorKind::InvalidDayActionRecord.into_error());
+            }
+        }
+        DayActionRecord::Savant { statements } => {
+            let truthful_count = statements
+                .iter()
+                .filter(|statement| statement.truthful)
+                .count();
+            if (vortox_active && truthful_count != 0)
+                || (!vortox_active && !impaired && truthful_count != 1)
+            {
+                return Err(ErrorKind::InvalidDayActionRecord.into_error());
+            }
         }
         DayActionRecord::Juggler { .. } => {}
     }
@@ -652,6 +682,12 @@ fn validate_day_action_payload(
     if !day_action_is_available(actor, expected_character, &payload.day_id, prior_events) {
         return Err(ErrorKind::DayActionUnavailable.into_error());
     }
+    let expected_reasons =
+        day_action_active_reasons(actor, expected_character, players, prior_events);
+    if payload.active_reasons != expected_reasons {
+        return Err(ErrorKind::InvalidDayActionRecord.into_error());
+    }
+    validate_day_action_truth(&payload.record, &expected_reasons)?;
     Ok(())
 }
 
@@ -679,6 +715,12 @@ fn available_day_actions(
                 && day_action_is_available(player, &player.actual_character, &day_id, events)
         })
         .map(|player| AvailableDayAction {
+            active_reasons: day_action_active_reasons(
+                player,
+                &player.actual_character,
+                players,
+                events,
+            ),
             actor_player_id: player.id.clone(),
             character_id: player.actual_character.clone(),
             day_id: day_id.clone(),
@@ -695,6 +737,7 @@ fn confirmed_day_action_records(events: &[GameEvent]) -> Vec<ConfirmedDayActionR
                 day_id: payload.day_id.clone(),
                 actor_player_id: payload.actor_player_id.clone(),
                 character_id: payload.character_id.clone(),
+                active_reasons: payload.active_reasons.clone(),
                 record: payload.record.clone(),
             }),
             _ => None,
@@ -2346,7 +2389,33 @@ fn active_information_reasons(
     players: &[Player],
     events: &[GameEvent],
 ) -> Vec<DeliveryReason> {
-    let Some(actor_id) = step.player_id.as_deref() else {
+    active_reasons_for_actor(
+        step.character.as_deref(),
+        step.player_id.as_deref(),
+        players,
+        events,
+    )
+}
+
+fn day_action_active_reasons(
+    actor: &Player,
+    character_id: &str,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<DeliveryReason> {
+    if !matches!(character_id, "artist" | "savant") {
+        return vec![];
+    }
+    active_reasons_for_actor(Some(character_id), Some(actor.id.as_str()), players, events)
+}
+
+fn active_reasons_for_actor(
+    character_id: Option<&str>,
+    actor_id: Option<&str>,
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<DeliveryReason> {
+    let Some(actor_id) = actor_id else {
         return vec![];
     };
     let ability_state = SnvAbilityState::build(players, events);
@@ -2394,7 +2463,7 @@ fn active_information_reasons(
             })
         })
         .collect::<Vec<_>>();
-    if step.character.as_deref().and_then(character_kind) == Some(CharacterKind::Townsfolk) {
+    if character_id.and_then(character_kind) == Some(CharacterKind::Townsfolk) {
         if let Some(vortox) = players
             .iter()
             .find(|player| ability_state.ability_functions(player, "vortox"))
@@ -6663,10 +6732,17 @@ fn propose_day_action(
         return Err(ErrorKind::StaleCommand.into_error());
     }
     let character_id = day_action_character(&payload.record).to_string();
+    let actor = players
+        .iter()
+        .find(|player| player.id == payload.actor_player_id)
+        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
+    let active_reasons =
+        day_action_active_reasons(actor, &character_id, players, &game_file.game.events);
     let canonical = DayActionRecordedPayload {
         day_id: payload.day_id,
         actor_player_id: payload.actor_player_id,
         character_id,
+        active_reasons,
         record: payload.record,
     };
     validate_day_action_payload(
@@ -6676,10 +6752,6 @@ fn propose_day_action(
         players,
         &game_file.game.events,
     )?;
-    let actor = players
-        .iter()
-        .find(|player| player.id == canonical.actor_player_id)
-        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
     let character_label = match canonical.character_id.as_str() {
         "artist" => "화가",
         "savant" => "백치천재",

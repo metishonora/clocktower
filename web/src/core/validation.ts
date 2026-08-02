@@ -346,9 +346,11 @@ export function parseGameEvent(value: unknown): GameEvent {
 function isDayActionRecordedPayload(value: unknown): boolean {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["dayId", "actorPlayerId", "characterId", "record"]) ||
+    !hasExactKeys(value, ["dayId", "actorPlayerId", "characterId", "record", "activeReasons"]) ||
     typeof value.dayId !== "string" ||
     typeof value.actorPlayerId !== "string" ||
+    !Array.isArray(value.activeReasons) ||
+    !value.activeReasons.every(isDeliveryReason) ||
     !isDayActionRecord(value.record)
   ) return false;
   return value.characterId === value.record.kind;
@@ -357,15 +359,25 @@ function isDayActionRecordedPayload(value: unknown): boolean {
 function isDayActionRecord(value: unknown): value is DayActionRecordInput {
   if (!isRecord(value)) return false;
   if (value.kind === "artist") {
-    return hasExactKeys(value, ["kind", "question", "answer"])
+    return hasExactKeys(value, ["kind", "question", "answer", "truthful"])
       && typeof value.question === "string"
+      && value.question.length <= 500
+      && (value.question.length === 0 || value.question.trim() === value.question)
+      && typeof value.truthful === "boolean"
       && ["yes", "no", "unknown"].includes(String(value.answer));
   }
   if (value.kind === "savant") {
-    return hasExactKeys(value, ["kind", "referenceSentences"])
-      && Array.isArray(value.referenceSentences)
-      && value.referenceSentences.length <= 2
-      && value.referenceSentences.every(isString);
+    return hasExactKeys(value, ["kind", "statements"])
+      && Array.isArray(value.statements)
+      && value.statements.length === 2
+      && value.statements.every((statement) =>
+        isRecord(statement)
+        && hasExactKeys(statement, ["text", "truthful"])
+        && typeof statement.text === "string"
+        && statement.text.length <= 500
+        && (statement.text.length === 0 || statement.text.trim() === statement.text)
+        && typeof statement.truthful === "boolean"
+      );
   }
   if (value.kind === "juggler") {
     return hasExactKeys(value, ["kind", "correctCount"])
@@ -378,20 +390,24 @@ function isDayActionRecord(value: unknown): value is DayActionRecordInput {
 
 function isAvailableDayAction(value: unknown): boolean {
   return isRecord(value)
-    && hasExactKeys(value, ["actorPlayerId", "characterId", "dayId"])
+    && hasExactKeys(value, ["actorPlayerId", "characterId", "dayId", "activeReasons"])
     && typeof value.actorPlayerId === "string"
     && ["artist", "savant", "juggler"].includes(String(value.characterId))
-    && typeof value.dayId === "string";
+    && typeof value.dayId === "string"
+    && Array.isArray(value.activeReasons)
+    && value.activeReasons.every(isDeliveryReason);
 }
 
 function isConfirmedDayActionRecord(value: unknown): boolean {
   return isRecord(value)
-    && hasExactKeys(value, ["eventId", "actorPlayerId", "characterId", "dayId", "record"])
+    && hasExactKeys(value, ["eventId", "actorPlayerId", "characterId", "dayId", "record", "activeReasons"])
     && typeof value.eventId === "string"
     && typeof value.actorPlayerId === "string"
     && typeof value.dayId === "string"
     && isDayActionRecord(value.record)
-    && value.characterId === value.record.kind;
+    && value.characterId === value.record.kind
+    && Array.isArray(value.activeReasons)
+    && value.activeReasons.every(isDeliveryReason);
 }
 
 function isMadnessSource(value: unknown): value is "mutant" | "cerenovus" {

@@ -92,9 +92,9 @@ fn first_day_exposes_only_the_three_available_character_actions() {
     assert_eq!(
         state["value"]["availableDayActions"],
         json!([
-            { "actorPlayerId": "player-1", "characterId": "savant", "dayId": "day" },
-            { "actorPlayerId": "player-2", "characterId": "artist", "dayId": "day" },
-            { "actorPlayerId": "player-3", "characterId": "juggler", "dayId": "day" }
+            { "actorPlayerId": "player-1", "characterId": "savant", "dayId": "day", "activeReasons": [] },
+            { "actorPlayerId": "player-2", "characterId": "artist", "dayId": "day", "activeReasons": [] },
+            { "actorPlayerId": "player-3", "characterId": "juggler", "dayId": "day", "activeReasons": [] }
         ])
     );
     assert!(state["value"].get("dayActionRecords").is_none());
@@ -111,7 +111,8 @@ fn artist_question_is_replayable_once_per_game_and_undo_restores_the_opportunity
             json!({
                 "kind": "artist",
                 "question": "악마가 홀수 번호 좌석에 있나요?",
-                "answer": "no"
+                "answer": "no",
+                "truthful": true
             }),
         ),
     );
@@ -130,10 +131,12 @@ fn artist_question_is_replayable_once_per_game_and_undo_restores_the_opportunity
             "dayId": "day",
             "actorPlayerId": "player-2",
             "characterId": "artist",
+            "activeReasons": [],
             "record": {
                 "kind": "artist",
                 "question": "악마가 홀수 번호 좌석에 있나요?",
-                "answer": "no"
+                "answer": "no",
+                "truthful": true
             }
         })
     );
@@ -148,7 +151,7 @@ fn artist_question_is_replayable_once_per_game_and_undo_restores_the_opportunity
         day_action_command(
             &used_events,
             "player-2",
-            json!({ "kind": "artist", "question": "다시 질문", "answer": "yes" }),
+            json!({ "kind": "artist", "question": "다시 질문", "answer": "yes", "truthful": true }),
         ),
     );
     assert_eq!(repeated["error"]["code"], "DAY_ACTION_UNAVAILABLE");
@@ -162,20 +165,173 @@ fn artist_question_is_replayable_once_per_game_and_undo_restores_the_opportunity
 }
 
 #[test]
-fn savant_records_zero_to_two_reference_sentences_without_delivered_truth_metadata() {
+fn healthy_artist_and_savant_truth_flags_are_validated_without_calculating_semantics() {
     let events = first_day_events();
-    let zero = propose(
+    let artist_false = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-2",
+            json!({
+                "kind": "artist",
+                "question": "어떤 질문인가요?",
+                "answer": "yes",
+                "truthful": false
+            }),
+        ),
+    );
+    assert_eq!(artist_false["error"]["code"], "INVALID_DAY_ACTION_RECORD");
+
+    let savant_both_true = propose(
         &events,
         day_action_command(
             &events,
             "player-1",
-            json!({ "kind": "savant", "referenceSentences": [] }),
+            json!({
+                "kind": "savant",
+                "statements": [
+                    { "text": "첫 문장", "truthful": true },
+                    { "text": "둘째 문장", "truthful": true }
+                ]
+            }),
         ),
     );
-    assert_eq!(zero["ok"], true, "{zero}");
     assert_eq!(
-        zero["value"]["event"]["payload"]["record"],
-        json!({ "kind": "savant", "referenceSentences": [] })
+        savant_both_true["error"]["code"],
+        "INVALID_DAY_ACTION_RECORD"
+    );
+}
+
+#[test]
+fn impaired_day_actions_expose_poison_reason_and_allow_any_truth_pattern() {
+    let mut events = first_day_events();
+    events[0]["payload"]["players"][2]["actualCharacter"] = json!("noDashii");
+    events[0]["payload"]["players"][2]["shownCharacter"] = json!("noDashii");
+    let state = replay(&events);
+    assert_eq!(state["ok"], true, "{state}");
+    assert_eq!(
+        state["value"]["availableDayActions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|action| action["characterId"] == "artist")
+            .unwrap()["activeReasons"],
+        json!([{ "type": "poisoned", "poisonerPlayerId": "player-3", "poisonEventId": "setup-1" }])
+    );
+
+    let artist = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-2",
+            json!({
+                "kind": "artist",
+                "question": "",
+                "answer": "unknown",
+                "truthful": false
+            }),
+        ),
+    );
+    assert_eq!(artist["ok"], true, "{artist}");
+
+    let savant = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-1",
+            json!({
+                "kind": "savant",
+                "statements": [
+                    { "text": "", "truthful": true },
+                    { "text": "둘째 문장", "truthful": true }
+                ]
+            }),
+        ),
+    );
+    assert_eq!(savant["ok"], true, "{savant}");
+}
+
+#[test]
+fn vortox_day_actions_require_false_truth_flags_and_persist_canonical_reason() {
+    let mut events = first_day_events();
+    events[0]["payload"]["players"][6]["actualCharacter"] = json!("vortox");
+    events[0]["payload"]["players"][6]["shownCharacter"] = json!("vortox");
+    let state = replay(&events);
+    assert_eq!(state["ok"], true, "{state}");
+    assert_eq!(
+        state["value"]["availableDayActions"][0]["activeReasons"],
+        json!([{ "type": "vortox", "demonPlayerId": "player-7" }])
+    );
+
+    let artist_true = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-2",
+            json!({
+                "kind": "artist",
+                "question": "질문",
+                "answer": "no",
+                "truthful": true
+            }),
+        ),
+    );
+    assert_eq!(artist_true["error"]["code"], "INVALID_DAY_ACTION_RECORD");
+
+    let artist_false = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-2",
+            json!({
+                "kind": "artist",
+                "question": "질문",
+                "answer": "no",
+                "truthful": false
+            }),
+        ),
+    );
+    assert_eq!(artist_false["ok"], true, "{artist_false}");
+    assert_eq!(
+        artist_false["value"]["event"]["payload"]["activeReasons"],
+        json!([{ "type": "vortox", "demonPlayerId": "player-7" }])
+    );
+
+    let mut tampered = events;
+    tampered.push(artist_false["value"]["event"].clone());
+    tampered[5]["payload"]["activeReasons"] = json!([]);
+    let replayed = replay(&tampered);
+    assert_eq!(replayed["ok"], false, "{replayed}");
+    assert_eq!(replayed["error"]["code"], "REPLAY_FAILED");
+}
+
+#[test]
+fn savant_records_two_statements_with_delivered_truth_metadata() {
+    let events = first_day_events();
+    let recorded = propose(
+        &events,
+        day_action_command(
+            &events,
+            "player-1",
+            json!({
+                "kind": "savant",
+                "statements": [
+                    { "text": "문장 1", "truthful": true },
+                    { "text": "문장 2", "truthful": false }
+                ]
+            }),
+        ),
+    );
+    assert_eq!(recorded["ok"], true, "{recorded}");
+    assert_eq!(
+        recorded["value"]["event"]["payload"]["record"],
+        json!({
+            "kind": "savant",
+            "statements": [
+                { "text": "문장 1", "truthful": true },
+                { "text": "문장 2", "truthful": false }
+            ]
+        })
     );
 
     let too_many = propose(
@@ -185,11 +341,15 @@ fn savant_records_zero_to_two_reference_sentences_without_delivered_truth_metada
             "player-1",
             json!({
                 "kind": "savant",
-                "referenceSentences": ["문장 1", "문장 2", "문장 3"]
+                "statements": [
+                    { "text": "문장 1", "truthful": true },
+                    { "text": "문장 2", "truthful": false },
+                    { "text": "문장 3", "truthful": true }
+                ]
             }),
         ),
     );
-    assert_eq!(too_many["error"]["code"], "INVALID_DAY_ACTION_RECORD");
+    assert_eq!(too_many["error"]["code"], "MALFORMED_COMMAND");
 }
 
 #[test]

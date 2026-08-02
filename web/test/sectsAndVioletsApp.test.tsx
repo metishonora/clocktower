@@ -856,7 +856,7 @@ test("restores an ended autosave to the final read-only Grimoire", async () => {
     phase: "day",
     currentStep: null,
     phaseOverview: [],
-    availableDayActions: [{ actorPlayerId: "player-1", characterId: "artist", dayId: "day" }],
+    availableDayActions: [{ actorPlayerId: "player-1", characterId: "artist", dayId: "day", activeReasons: [] }],
     madnessAssignments: [{
       assignmentId: "madness-1",
       sourcePlayerId: "player-6",
