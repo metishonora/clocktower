@@ -323,14 +323,24 @@ export function SectsAndVioletsGameSurface({
     clock: phaseRuntimeClock,
   });
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
+  const philosopherDisplayByPlayerId = useMemo(() => {
+    const display = new Map<string, string>();
+    for (const grant of replayState?.ruleState.abilityGrants ?? []) {
+      const selectedInPlay = replayState?.players.some((player) => player.actualCharacter === grant.characterId);
+      if (!selectedInPlay) display.set(grant.ownerPlayerId, grant.characterId);
+    }
+    return display;
+  }, [replayState?.players, replayState?.ruleState.abilityGrants]);
   const livePlayers = useMemo<LivePlayer[]>(() => (replayState?.players ?? []).map((player) => {
-    const character = characters.find((candidate) => candidate.id === player.actualCharacter);
+    const displayedCharacter = philosopherDisplayByPlayerId.get(player.id) ?? player.actualCharacter;
+    const character = characters.find((candidate) => candidate.id === displayedCharacter);
     return {
       ...player,
-      characterName: character?.name ?? player.actualCharacter,
+      actualCharacter: displayedCharacter,
+      characterName: character?.name ?? displayedCharacter,
       characterKind: character?.kind ?? "townsfolk",
     };
-  }), [replayState?.players]);
+  }), [philosopherDisplayByPlayerId, replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
   useEffect(() => {
@@ -466,14 +476,6 @@ export function SectsAndVioletsGameSurface({
     return result;
   }, [effectiveMadnessAssignments, replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders]);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
-  const philosopherDisplayByPlayerId = useMemo(() => {
-    const display = new Map<string, string>();
-    for (const grant of replayState?.ruleState.abilityGrants ?? []) {
-      const selectedInPlay = replayState?.players.some((player) => player.actualCharacter === grant.characterId);
-      if (!selectedInPlay) display.set(grant.ownerPlayerId, grant.characterId);
-    }
-    return display;
-  }, [replayState?.players, replayState?.ruleState.abilityGrants]);
   const displayedCharacterForSeat = (seat: number) => {
     const player = replayState?.players.find((candidate) => candidate.seat === seat);
     return player ? philosopherDisplayByPlayerId.get(player.id) ?? seatAssignments[seat] : seatAssignments[seat];
