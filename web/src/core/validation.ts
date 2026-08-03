@@ -719,14 +719,16 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
   const computedValue = value.computedResult.value;
   if (value.numberConstraint !== undefined) {
-    return vortoxActive
+    return (impaired || vortoxActive)
       && value.deliveryMode === "selectable"
       && value.numberChoices.length === 0
       && (value.booleanChoices?.length ?? 0) === 0
       && value.numberConstraint.min === 0
       && value.numberConstraint.max === Number.MAX_SAFE_INTEGER
-      && value.numberConstraint.excludedValues.length === 1
-      && value.numberConstraint.excludedValues[0] === computedValue;
+      && (vortoxActive
+        ? value.numberConstraint.excludedValues.length === 1
+          && value.numberConstraint.excludedValues[0] === computedValue
+        : value.numberConstraint.excludedValues.length === 0);
   }
   return (
     (vortoxActive

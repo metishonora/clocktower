@@ -149,7 +149,7 @@ export function StepInputFields({
   onCharacterChange: (characterId: string) => void;
   onCharactersChange: (characterIds: string[]) => void;
   onZeroOutsidersChange: (checked: boolean) => void;
-  onNumberChoiceChange: (choice: NumberChoice) => void;
+  onNumberChoiceChange: (choice: NumberChoice | undefined) => void;
   onTargetChoiceChange: (choice: TargetCheck["choices"][number]) => void;
   onMayorDecisionChange: (decision: MayorDecisionInput | undefined) => void;
   onRegistrationJudgmentsChange: (judgments: RegistrationJudgment[]) => void;
@@ -582,10 +582,51 @@ function InformationDeliveryInput({
   players: Player[];
   selectedNumberChoice?: NumberChoice;
   busy: boolean;
-  onNumberChoiceChange: (choice: NumberChoice) => void;
+  onNumberChoiceChange: (choice: NumberChoice | undefined) => void;
 }) {
   const prompt = step.informationPrompt;
-  if (!prompt || prompt.numberChoices.length === 0) return null;
+  if (!prompt) return null;
+
+  if (prompt.numberConstraint) {
+    const numberConstraint = prompt.numberConstraint;
+    const computed = prompt.computedResult?.kind === "number"
+      ? prompt.computedResult.value
+      : undefined;
+    return (
+      <div className="stepSpecificInput informationDeliveryInput numberConstraintDeliveryInput" aria-label="전달 정보">
+        <NeighborVisualization step={step} players={players} />
+        <label>
+          전달할 숫자
+          <input
+            type="number"
+            min={numberConstraint.min}
+            max={numberConstraint.max}
+            step="1"
+            inputMode="numeric"
+            aria-label="전달할 숫자"
+            value={selectedNumberChoice?.value ?? ""}
+            disabled={busy}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              const valid = event.target.value !== ""
+                && Number.isSafeInteger(value)
+                && value >= numberConstraint.min
+                && value <= numberConstraint.max
+                && !numberConstraint.excludedValues.includes(value);
+              onNumberChoiceChange(valid ? {
+                value,
+                isComputed: value === computed,
+                registrationJudgments: [],
+              } : undefined);
+            }}
+          />
+        </label>
+        <small>0 이상의 정수</small>
+      </div>
+    );
+  }
+
+  if (prompt.numberChoices.length === 0) return null;
 
   return (
     <div className="stepSpecificInput informationDeliveryInput" aria-label="전달 정보">

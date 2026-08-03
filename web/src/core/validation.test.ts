@@ -62,7 +62,7 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
-test("accepts only the canonical Vortox numeric constraint and game-end source", () => {
+test("accepts canonical Vortox and impaired numeric constraints", () => {
   const replay = {
     schemaVersion: 3,
     scriptId: "sectsAndViolets",
@@ -100,6 +100,15 @@ test("accepts only the canonical Vortox numeric constraint and game-end source",
     gameEnd: null,
   };
   deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
+
+  const poisoned = structuredClone(replay);
+  poisoned.currentStep.informationPrompt.activeReasons = [{
+    type: "poisoned",
+    poisonerPlayerId: "player-4",
+    poisonEventId: "poison-1",
+  }] as unknown as typeof poisoned.currentStep.informationPrompt.activeReasons;
+  poisoned.currentStep.informationPrompt.numberConstraint.excludedValues = [];
+  deepEqual<unknown>(parseReplayState(poisoned).currentStep, poisoned.currentStep);
 
   const unsafeMaximum = structuredClone(replay);
   unsafeMaximum.currentStep.informationPrompt.numberConstraint.max = Number.MAX_SAFE_INTEGER + 1;

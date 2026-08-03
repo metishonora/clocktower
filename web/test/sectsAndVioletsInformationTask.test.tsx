@@ -91,7 +91,8 @@ test("Clockmaker keeps its selectable information editor spacious when impaired"
       ...step.informationPrompt!,
       deliveryMode: "selectable",
       activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
-      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+      numberChoices: [],
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [] },
     },
   };
   render(<SectsAndVioletsInformationTask step={impairedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
@@ -99,6 +100,8 @@ test("Clockmaker keeps its selectable information editor spacious when impaired"
   const task = screen.getByRole("article", { name: "시계공 정보" });
   expect(task.querySelector(".snvSpaciousInformationContext")).toBeTruthy();
   expect(task.querySelector(".snvSpaciousInformationEditor")).toBeTruthy();
+  expect(within(task).getByRole("spinbutton", { name: "전달할 숫자" })).toBeTruthy();
+  expect(within(task).getByText("0 이상의 정수 · 진실도 전달 가능")).toBeTruthy();
   expect(within(task).getByRole("button", { name: "중독 정보 공개" }).parentElement?.classList.contains("snvSpaciousInformationActions")).toBe(true);
 });
 
@@ -170,22 +173,25 @@ test.each([
     action: "취한 정보 공개",
     className: "drunk",
   },
-])("presents $badge as a purple discretionary information state", ({ reason, badge, action, className }) => {
+])("presents $badge and accepts an arbitrary numeric result", async ({ reason, badge, action, className }) => {
+  const onDeliveredResultChange = vi.fn();
   const influencedStep: PhaseStep = {
     ...step,
     informationPrompt: {
       ...step.informationPrompt!,
       deliveryMode: "selectable",
       activeReasons: [reason],
-      numberChoices: [0, 1, 2].map((value) => ({ value, isComputed: value === 1, registrationJudgments: [] })),
+      numberChoices: [],
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [] },
     },
   };
-  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onReveal={() => undefined} />);
+  render(<SectsAndVioletsInformationTask step={influencedStep} actor={actor} revealed={false} busy={false} onDeliveredResultChange={onDeliveredResultChange} onReveal={() => undefined} />);
 
   const task = screen.getByRole("article", { name: "시계공 정보" });
   expect(within(task).getByText(badge).classList.contains(className)).toBe(true);
   expect(within(task).getByRole("button", { name: action }).classList.contains(className)).toBe(true);
-  expect(within(task).getByRole("combobox", { name: "전달할 정보" }).querySelectorAll("option")).toHaveLength(3);
+  await userEvent.setup().type(within(task).getByRole("spinbutton", { name: "전달할 숫자" }), "100");
+  expect(onDeliveredResultChange).toHaveBeenLastCalledWith({ kind: "number", value: 100 });
 });
 
 test("Dreamer exposes the selected target truth and the full legal opposite-alignment catalog", () => {
