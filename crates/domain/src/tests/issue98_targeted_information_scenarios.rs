@@ -275,12 +275,49 @@ fn seamstress_compares_two_other_players_and_a_completed_use_does_not_return() {
             "sameAlignment": false
         })
     );
+    let completed = replay(&events);
+    assert!(completed["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .contains(&json!({
+            "playerId": "player-2",
+            "characterId": "seamstress",
+            "tokenId": "noAbility",
+            "label": "능력 없음",
+            "description": "재봉사 능력을 이미 사용했습니다."
+        })));
+    let undone = replay(&events[..events.len() - 1]);
+    assert!(!undone["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|reminder| reminder["characterId"] == "seamstress"));
+
     let later = advance_until(&mut events, "night:toDay");
     assert!(!later["value"]["phaseOverview"]
         .as_array()
         .unwrap()
         .iter()
         .any(|item| item["character"] == "seamstress"));
+}
+
+#[test]
+fn seamstress_skip_does_not_place_the_no_ability_reminder() {
+    let mut events = vec![setup_event()];
+    advance_until(&mut events, "firstNight:seamstress");
+    append(
+        &mut events,
+        json!({ "type": "skipStep", "payload": { "stepId": "firstNight:seamstress" } }),
+    );
+
+    let skipped = replay(&events);
+    assert!(!skipped["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|reminder| reminder["characterId"] == "seamstress"));
+    let later = advance_until(&mut events, "night:seamstress");
+    assert_eq!(later["value"]["currentStep"]["character"], "seamstress");
 }
 
 #[test]
