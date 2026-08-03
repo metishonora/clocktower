@@ -65,6 +65,7 @@ pub(crate) fn information_prompt(
         boolean_choices: Vec::new(),
         setup_info_registration_options,
         target_checks,
+        mathematician_audit: None,
     })
 }
 

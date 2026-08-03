@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "script": "sectsAndViolets",
+  "issue": 108,
+  "officialSources": [
+    "https://wiki.bloodontheclocktower.com/Mathematician"
+  ],
+  "cases": [
+    {
+      "id": "mathematician-example-2",
+      "characterId": "mathematician",
+      "file": "mathematician-example-2.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mathematician",
+      "officialExample": "mathematician-example-2",
+      "phaseBoundary": "night3:mathematician",
+      "truthfulAuditCount": 1,
+      "deliveredResult": { "kind": "number", "value": 1 }
+    },
+    {
+      "id": "mathematician-example-3",
+      "characterId": "mathematician",
+      "file": "mathematician-example-3.json",
+      "officialSource": "https://wiki.bloodontheclocktower.com/Mathematician",
+      "officialExample": "mathematician-example-3",
+      "phaseBoundary": "night2:mathematician",
+      "truthfulAuditCount": 6,
+      "deliveredResult": { "kind": "number", "value": 4 }
+    }
+  ]
+}

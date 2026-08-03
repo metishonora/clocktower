@@ -193,7 +193,7 @@ pub(crate) fn phase_step_reveal_payload(
         InformationResult::Number { value }
             if matches!(
                 step.character.as_deref(),
-                Some("chef" | "empath" | "clockmaker" | "oracle" | "juggler")
+                Some("chef" | "empath" | "clockmaker" | "mathematician" | "oracle" | "juggler")
             ) =>
         {
             Some(RevealPayload::NumericInformation {

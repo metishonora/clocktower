@@ -2884,7 +2884,7 @@ function identityRevealKey(gameId: string, sourceEventId: string, sequence: numb
 }
 
 function isAutomatedInformationCharacter(characterId: string | undefined): boolean {
-  return ["clockmaker", "dreamer", "flowergirl", "townCrier", "oracle", "juggler", "seamstress", "sage"].includes(characterId ?? "");
+  return ["clockmaker", "dreamer", "mathematician", "flowergirl", "townCrier", "oracle", "juggler", "seamstress", "sage"].includes(characterId ?? "");
 }
 
 function automatedInformationRevealPayload(

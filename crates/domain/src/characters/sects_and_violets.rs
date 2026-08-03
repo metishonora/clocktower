@@ -40,13 +40,15 @@ use crate::{
     error::{CoreError, ErrorKind},
     messages::game_end_reason_ko,
     model::{
-        AbilityInstance, AbilityInstanceId, Alignment, BooleanInformationChoice, CharacterKind,
-        ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry,
-        IdentityState, InformationActor, InformationDeliveryMode, InformationPrompt,
-        InformationResult, InputTarget, NumberInformationChoice, NumberInformationConstraint,
-        Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus, PhaseStepSupport, Player,
-        PlayerIdentityTransition, PlayerStateSnapshot, PlayerTransition, RequiredInput,
-        RequiredInputKind, StepInput, StepType, TargetInformationCheck, TargetInformationChoice,
+        AbilityInstance, AbilityInstanceId, AbnormalAbilityAuditRecord, AbnormalAbilityEffect,
+        AbnormalAbilityEvidence, AbnormalAbilityOutcome, Alignment, BooleanInformationChoice,
+        CharacterKind, ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason,
+        IdentityHistoryEntry, IdentityState, InformationActor, InformationDeliveryMode,
+        InformationPrompt, InformationResult, InputTarget, MathematicianAudit,
+        NumberInformationChoice, NumberInformationConstraint, Phase, PhaseOverviewItem, PhaseStep,
+        PhaseStepStatus, PhaseStepSupport, Player, PlayerIdentityTransition, PlayerStateSnapshot,
+        PlayerTransition, RequiredInput, RequiredInputKind, StepInput, StepType,
+        TargetInformationCheck, TargetInformationChoice,
     },
     phase::{
         phase_transition_step, required_characters, required_none, simple_step,
@@ -261,7 +263,7 @@ impl SnvCharacterId {
                 first_night_rank: Some(10),
                 later_night_rank: Some(15),
                 input: NoInput,
-                support: manual,
+                support: automated,
                 activity: WhileActive,
                 once_per_ability_instance: false,
                 same_night_acquisition: WakeIfOrderPending,
@@ -1952,6 +1954,7 @@ fn is_information_character(character: Option<&str>) -> bool {
                 | "flowergirl"
                 | "townCrier"
                 | "oracle"
+                | "mathematician"
                 | "juggler"
                 | "seamstress"
                 | "sage"
@@ -2185,6 +2188,33 @@ fn automatic_seamstress_reminders(
         .collect()
 }
 
+fn automatic_mathematician_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+    audit_index: &MathematicianAuditIndex,
+) -> Vec<AutomaticReminder> {
+    if !players
+        .iter()
+        .any(|player| player.alive && player.actual_character == "mathematician")
+    {
+        return vec![];
+    }
+
+    audit_index
+        .for_window_start(mathematician_reminder_window_start(events))
+        .records
+        .into_iter()
+        .map(|record| AutomaticReminder {
+            player_id: record.subject_player_id,
+            character_id: "mathematician".into(),
+            token_id: "abnormal".into(),
+            label: "비정상".into(),
+            description: "새벽 이후 다른 캐릭터의 영향으로 능력이 비정상적으로 작동했습니다."
+                .into(),
+        })
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -2304,6 +2334,7 @@ fn snv_information_prompt(
             boolean_choices: vec![],
             setup_info_registration_options: vec![],
             target_checks,
+            mathematician_audit: None,
         }));
     }
     let Some(computed_result) = snv_information_result(step, players, events, day_role_actions)?
@@ -2329,6 +2360,7 @@ fn snv_information_prompt(
                 computed_result,
                 choices,
             }],
+            mathematician_audit: None,
         }));
     }
     let (number_choices, number_constraint, boolean_choices) = match computed_result {
@@ -2401,6 +2433,7 @@ fn snv_information_prompt(
         boolean_choices,
         setup_info_registration_options: vec![],
         target_checks: vec![],
+        mathematician_audit: None,
     }))
 }
 
@@ -2442,8 +2475,8 @@ fn active_reasons_for_actor(
     let mut reasons = ability_state
         .active_impairments
         .iter()
-        .cloned()
         .filter(|impairment| impairment.player_id == actor_id)
+        .cloned()
         .filter_map(|impairment| {
             if impairment.kind == ImpairmentKind::Drunk {
                 return Some(DeliveryReason::Drunk);
@@ -2519,16 +2552,26 @@ fn snv_confirmed_information(
             registration_judgments,
         );
     }
-    let Some(computed_result) = snv_information_result(step, players, events, day_role_actions)?
-    else {
+    let computed_result = if step.character.as_deref() == Some("mathematician") {
+        step.information_prompt
+            .as_ref()
+            .and_then(|prompt| prompt.computed_result.clone())
+    } else {
+        snv_information_result(step, players, events, day_role_actions)?
+    };
+    let Some(computed_result) = computed_result else {
         return Ok(None);
     };
     if !registration_judgments.is_empty() {
         return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
     }
     let reasons = active_information_reasons(step, players, events);
-    let prompt = snv_information_prompt(step, players, events, day_role_actions)?
-        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let prompt = if step.character.as_deref() == Some("mathematician") {
+        step.information_prompt.clone()
+    } else {
+        snv_information_prompt(step, players, events, day_role_actions)?
+    }
+    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let delivered_result = if reasons.is_empty() {
         let delivered = delivered_result.unwrap_or_else(|| computed_result.clone());
         if delivered != computed_result {
@@ -4349,6 +4392,584 @@ fn game_end_source(pending: &PendingGameEnd) -> GameEndSource {
     }
 }
 
+#[derive(Clone)]
+struct IndexedAbnormalAbilityAudit {
+    event_index: usize,
+    record: AbnormalAbilityAuditRecord,
+}
+
+#[derive(Default)]
+struct MathematicianAuditIndex {
+    records: Vec<IndexedAbnormalAbilityAudit>,
+}
+
+impl MathematicianAuditIndex {
+    fn record_event(
+        &mut self,
+        event_index: usize,
+        event: &GameEvent,
+        players: &[Player],
+        prior_events: &[GameEvent],
+    ) {
+        match &event.kind {
+            GameEventKind::PhaseStepConfirmed { payload } => {
+                let Some(information) = payload.information.as_ref() else {
+                    return;
+                };
+                let Some(actor) = information.actor.as_ref() else {
+                    return;
+                };
+                let Some(computed_result) = information.computed_result.as_ref() else {
+                    return;
+                };
+                if information_result_is_abnormal(
+                    &actor.character_id,
+                    computed_result,
+                    &information.delivered_result,
+                ) {
+                    let causes = information_delivery_causes(&information.delivery_context);
+                    if !causes.is_empty() {
+                        self.push_for_player(
+                            event_index,
+                            event,
+                            &payload.step_id,
+                            actor.player_id.as_str(),
+                            actor.character_id.as_str(),
+                            players,
+                            AbnormalAbilityOutcome::IncorrectInformation {
+                                computed_result: computed_result.clone(),
+                                delivered_result: information.delivered_result.clone(),
+                            },
+                            causes,
+                        );
+                    }
+                } else if character_kind(&actor.character_id) == Some(CharacterKind::Townsfolk) {
+                    self.record_impaired_vortox_failure(
+                        event_index,
+                        event,
+                        &payload.step_id,
+                        players,
+                        prior_events,
+                        AbnormalAbilityEffect::VortoxFalseInformation,
+                    );
+                }
+            }
+            GameEventKind::DayActionRecorded { payload } => {
+                let abnormal = match &payload.record {
+                    DayActionRecord::Artist { truthful, .. } => {
+                        (!truthful).then_some(AbnormalAbilityOutcome::IncorrectInformation {
+                            computed_result: InformationResult::Boolean { value: true },
+                            delivered_result: InformationResult::Boolean { value: false },
+                        })
+                    }
+                    DayActionRecord::Savant { statements } => {
+                        let truthful_count = statements
+                            .iter()
+                            .filter(|statement| statement.truthful)
+                            .count() as u8;
+                        (truthful_count != 1).then_some(
+                            AbnormalAbilityOutcome::InvalidSavantPattern { truthful_count },
+                        )
+                    }
+                    DayActionRecord::Juggler { .. } => None,
+                };
+                if let Some(outcome) = abnormal {
+                    let causes = payload
+                        .active_reasons
+                        .iter()
+                        .filter(|reason| is_external_ability_cause(reason))
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    if !causes.is_empty() {
+                        self.push_for_player(
+                            event_index,
+                            event,
+                            &format!("{}:{}", payload.day_id, payload.character_id),
+                            &payload.actor_player_id,
+                            &payload.character_id,
+                            players,
+                            outcome,
+                            causes,
+                        );
+                    }
+                } else if matches!(payload.character_id.as_str(), "artist" | "savant") {
+                    self.record_impaired_vortox_failure(
+                        event_index,
+                        event,
+                        &format!("{}:{}", payload.day_id, payload.character_id),
+                        players,
+                        prior_events,
+                        AbnormalAbilityEffect::VortoxFalseInformation,
+                    );
+                }
+            }
+            GameEventKind::SnakeCharmerActionResolved { payload }
+                if matches!(
+                    payload.outcome,
+                    SnakeCharmerActionOutcome::NoSwap {
+                        reason: SnakeCharmerNoSwapReason::ActorImpaired
+                    }
+                ) =>
+            {
+                self.push_effect_failure(
+                    event_index,
+                    event,
+                    &payload.step_id,
+                    &payload.actor_player_id,
+                    "snakeCharmer",
+                    players,
+                    prior_events,
+                    AbnormalAbilityEffect::SnakeCharmerSwap,
+                );
+            }
+            GameEventKind::PitHagTransformationResolved { payload }
+                if matches!(
+                    payload.outcome,
+                    PitHagTransformationOutcome::NoChange {
+                        reason: PitHagNoChangeReason::ActorImpaired
+                    }
+                ) =>
+            {
+                self.push_effect_failure(
+                    event_index,
+                    event,
+                    &payload.step_id,
+                    &payload.actor_player_id,
+                    "pitHag",
+                    players,
+                    prior_events,
+                    AbnormalAbilityEffect::PitHagCharacterChange,
+                );
+            }
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::DemonAttack {
+                        outcome: DemonAttackOutcome::NoEffect {
+                            reason: DemonAttackNoEffectReason::ActorImpaired
+                        },
+                        ..
+                    }
+                ) =>
+            {
+                if let Some(character_id) = payload.actor_character_id.as_deref() {
+                    self.push_effect_failure(
+                        event_index,
+                        event,
+                        &payload.step_id,
+                        &payload.actor_player_id,
+                        character_id,
+                        players,
+                        prior_events,
+                        AbnormalAbilityEffect::DemonDeath,
+                    );
+                }
+            }
+            GameEventKind::SweetheartConsequenceResolved { payload } => match &payload.outcome {
+                SweetheartConsequenceOutcome::NoEffect {
+                    reason: DeathConsequenceNoEffectReason::ActorImpairedAtDeath,
+                } => {
+                    self.push_effect_failure(
+                        event_index,
+                        event,
+                        &payload.step_id,
+                        &payload.trigger.player_id,
+                        "sweetheart",
+                        players,
+                        prior_events,
+                        AbnormalAbilityEffect::SweetheartDrunkenness,
+                    );
+                }
+                SweetheartConsequenceOutcome::DrunkApplied { impairment } => {
+                    self.record_persistent_effect_loss(
+                        event_index,
+                        event,
+                        &payload.step_id,
+                        &impairment.player_id,
+                        players,
+                        prior_events,
+                    );
+                }
+                _ => {}
+            },
+            GameEventKind::NominationStarted { payload }
+                if matches!(
+                    payload.witch_resolution,
+                    WitchNominationResolution::NotApplicable
+                ) && players.iter().filter(|player| player.alive).count() > 3
+                    && players
+                        .iter()
+                        .any(|player| player.id == payload.nominator_id && player.alive) =>
+            {
+                let day_id = payload.step_id.split(':').next().unwrap_or_default();
+                if let Some(curse) = prior_events.iter().rev().find_map(|candidate| {
+                    let GameEventKind::WitchCurseAssigned { payload: curse } = &candidate.kind
+                    else {
+                        return None;
+                    };
+                    let source_still_functions = players.iter().any(|player| {
+                        player.id == curse.actor_player_id
+                            && player.alive
+                            && player.actual_character == "witch"
+                            && player.ability_instance.id == curse.source_ability_instance_id
+                    });
+                    (!curse.effective
+                        && source_still_functions
+                        && curse.target_player_id == payload.nominator_id
+                        && witch_curse_day(&curse.step_id).as_deref() == Some(day_id))
+                    .then_some(curse)
+                }) {
+                    self.push_effect_failure(
+                        event_index,
+                        event,
+                        &payload.step_id,
+                        &curse.actor_player_id,
+                        "witch",
+                        players,
+                        prior_events,
+                        AbnormalAbilityEffect::WitchDeath,
+                    );
+                }
+            }
+            GameEventKind::NoExecutionConfirmed { payload } => {
+                self.record_impaired_vortox_failure(
+                    event_index,
+                    event,
+                    &payload.step_id,
+                    players,
+                    prior_events,
+                    AbnormalAbilityEffect::VortoxExecution,
+                );
+            }
+            _ => {}
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn push_effect_failure(
+        &mut self,
+        event_index: usize,
+        event: &GameEvent,
+        step_id: &str,
+        player_id: &str,
+        character_id: &str,
+        players: &[Player],
+        prior_events: &[GameEvent],
+        effect: AbnormalAbilityEffect,
+    ) {
+        let causes =
+            active_reasons_for_actor(Some(character_id), Some(player_id), players, prior_events)
+                .into_iter()
+                .filter(is_external_ability_cause)
+                .collect::<Vec<_>>();
+        if causes.is_empty() {
+            return;
+        }
+        self.push_for_player(
+            event_index,
+            event,
+            step_id,
+            player_id,
+            character_id,
+            players,
+            AbnormalAbilityOutcome::EffectFailure { effect },
+            causes,
+        );
+    }
+
+    fn record_impaired_vortox_failure(
+        &mut self,
+        event_index: usize,
+        event: &GameEvent,
+        step_id: &str,
+        players: &[Player],
+        prior_events: &[GameEvent],
+        effect: AbnormalAbilityEffect,
+    ) {
+        let ability_state = SnvAbilityState::build(players, prior_events);
+        let Some(vortox) = players.iter().find(|player| {
+            player.alive
+                && player.actual_character == "vortox"
+                && ability_state.is_impaired(&player.id)
+        }) else {
+            return;
+        };
+        let causes =
+            active_reasons_for_actor(Some("vortox"), Some(&vortox.id), players, prior_events)
+                .into_iter()
+                .filter(is_external_ability_cause)
+                .collect::<Vec<_>>();
+        if causes.is_empty() {
+            return;
+        }
+        self.push_for_player(
+            event_index,
+            event,
+            step_id,
+            &vortox.id,
+            "vortox",
+            players,
+            AbnormalAbilityOutcome::EffectFailure { effect },
+            causes,
+        );
+    }
+
+    fn record_persistent_effect_loss(
+        &mut self,
+        event_index: usize,
+        event: &GameEvent,
+        step_id: &str,
+        player_id: &str,
+        players: &[Player],
+        prior_events: &[GameEvent],
+    ) {
+        let Some(player) = players.iter().find(|player| player.id == player_id) else {
+            return;
+        };
+        let ability_state = SnvAbilityState::build(players, prior_events);
+        let effect = match player.actual_character.as_str() {
+            "noDashii"
+                if ability_state.ability_functions(player, "noDashii")
+                    && !nearest_townsfolk_neighbors(players, &player.id).is_empty() =>
+            {
+                Some(AbnormalAbilityEffect::NoDashiiPoison)
+            }
+            "vigormortis"
+                if ability_state.ability_functions(player, "vigormortis")
+                    && (!ability_state.retained_minion_player_ids.is_empty()
+                        || ability_state
+                            .active_impairments
+                            .iter()
+                            .any(|impairment| impairment.source_character_id == "vigormortis")) =>
+            {
+                Some(AbnormalAbilityEffect::VigormortisOngoingEffect)
+            }
+            _ => None,
+        };
+        let Some(effect) = effect else {
+            return;
+        };
+        self.push_for_player(
+            event_index,
+            event,
+            step_id,
+            &player.id,
+            &player.actual_character,
+            players,
+            AbnormalAbilityOutcome::EffectFailure { effect },
+            vec![DeliveryReason::Drunk],
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn push_for_player(
+        &mut self,
+        event_index: usize,
+        event: &GameEvent,
+        step_id: &str,
+        player_id: &str,
+        character_id: &str,
+        players: &[Player],
+        outcome: AbnormalAbilityOutcome,
+        causes: Vec<DeliveryReason>,
+    ) {
+        if character_id == "mathematician" {
+            return;
+        }
+        let Some(player) = players.iter().find(|player| player.id == player_id) else {
+            return;
+        };
+        self.records.push(IndexedAbnormalAbilityAudit {
+            event_index,
+            record: AbnormalAbilityAuditRecord {
+                subject_player_id: player.id.clone(),
+                character_id: character_id.into(),
+                ability_instance_id: player.ability_instance.id.clone(),
+                evidence: vec![AbnormalAbilityEvidence {
+                    resolution_event_id: event.id.clone(),
+                    step_id: step_id.into(),
+                    phase: event.phase,
+                    character_id: character_id.into(),
+                    ability_instance_id: player.ability_instance.id.clone(),
+                    outcome,
+                    causes,
+                }],
+            },
+        });
+    }
+
+    fn for_step(&self, step: &PhaseStep, events: &[GameEvent]) -> MathematicianAudit {
+        self.for_window_start(mathematician_window_start(step, events))
+    }
+
+    fn for_window_start(&self, start: usize) -> MathematicianAudit {
+        let mut records = Vec::<AbnormalAbilityAuditRecord>::new();
+        for indexed in self
+            .records
+            .iter()
+            .filter(|record| record.event_index >= start)
+        {
+            if let Some(existing) = records
+                .iter_mut()
+                .find(|record| record.subject_player_id == indexed.record.subject_player_id)
+            {
+                existing.character_id = indexed.record.character_id.clone();
+                existing.ability_instance_id = indexed.record.ability_instance_id.clone();
+                existing.evidence.extend(indexed.record.evidence.clone());
+            } else {
+                records.push(indexed.record.clone());
+            }
+        }
+        MathematicianAudit { records }
+    }
+}
+
+fn information_delivery_causes(context: &DeliveryContext) -> Vec<DeliveryReason> {
+    match context {
+        DeliveryContext::Fixed => vec![],
+        DeliveryContext::Discretionary { reasons } => reasons
+            .iter()
+            .filter(|reason| is_external_ability_cause(reason))
+            .cloned()
+            .collect(),
+    }
+}
+
+fn information_result_is_abnormal(
+    character_id: &str,
+    computed: &InformationResult,
+    delivered: &InformationResult,
+) -> bool {
+    match (character_id, computed, delivered) {
+        (
+            "dreamer",
+            InformationResult::Character { character_id },
+            InformationResult::CharacterPair { character_ids },
+        ) => !character_ids.contains(character_id),
+        (
+            "sage",
+            InformationResult::Player { player_id },
+            InformationResult::PlayerPair { player_ids },
+        ) => !player_ids.contains(player_id),
+        _ => computed != delivered,
+    }
+}
+
+fn is_external_ability_cause(reason: &DeliveryReason) -> bool {
+    matches!(
+        reason,
+        DeliveryReason::Drunk | DeliveryReason::Poisoned { .. } | DeliveryReason::Vortox { .. }
+    )
+}
+
+fn mathematician_window_start(step: &PhaseStep, events: &[GameEvent]) -> usize {
+    if step.id.starts_with("firstNight:") {
+        return 1;
+    }
+    events
+        .iter()
+        .rposition(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::PhaseStepConfirmed { payload }
+                    if payload.step_id.ends_with(":toDay")
+            )
+        })
+        .map_or(1, |index| index + 1)
+}
+
+fn mathematician_reminder_window_start(events: &[GameEvent]) -> usize {
+    events
+        .iter()
+        .rposition(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::PhaseStepConfirmed { payload }
+                    if payload.step_id.ends_with(":toDay")
+                        || payload
+                            .information
+                            .as_ref()
+                            .and_then(|information| information.actor.as_ref())
+                            .is_some_and(|actor| actor.character_id == "mathematician")
+            )
+        })
+        .map_or(1, |index| index + 1)
+}
+
+fn mathematician_information_prompt(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+    audit_index: &MathematicianAuditIndex,
+) -> InformationPrompt {
+    let audit = audit_index.for_step(step, events);
+    let value = audit.records.len() as u64;
+    let active_reasons = active_information_reasons(step, players, events);
+    let impaired = !active_reasons.is_empty();
+    let vortox_active = active_reasons
+        .iter()
+        .any(|reason| matches!(reason, DeliveryReason::Vortox { .. }));
+    InformationPrompt {
+        computed_result: Some(InformationResult::Number { value }),
+        delivery_mode: if impaired {
+            InformationDeliveryMode::Selectable
+        } else {
+            InformationDeliveryMode::Fixed
+        },
+        active_reasons,
+        registration_candidate_player_ids: vec![],
+        number_choices: if impaired && !vortox_active {
+            (0..=players.len())
+                .map(|candidate| NumberInformationChoice {
+                    value: candidate as u64,
+                    is_computed: candidate as u64 == value,
+                    registration_judgments: vec![],
+                })
+                .collect()
+        } else if vortox_active {
+            vec![]
+        } else {
+            vec![NumberInformationChoice {
+                value,
+                is_computed: true,
+                registration_judgments: vec![],
+            }]
+        },
+        number_constraint: vortox_active.then(|| NumberInformationConstraint {
+            min: 0,
+            max: crate::model::MAX_SAFE_INFORMATION_NUMBER,
+            excluded_values: vec![value],
+        }),
+        boolean_choices: vec![],
+        setup_info_registration_options: vec![],
+        target_checks: vec![],
+        mathematician_audit: Some(audit),
+    }
+}
+
+fn replay_phase_steps(
+    players: &[Player],
+    events: &[GameEvent],
+    next_event_count: usize,
+    statuses: &HashMap<String, PhaseStepStatus>,
+    audit_index: &MathematicianAuditIndex,
+) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
+    let (phase, steps, mut current) =
+        current_phase_steps(players, events, next_event_count, statuses)?;
+    if let Some(step) = current
+        .as_mut()
+        .filter(|step| step.character.as_deref() == Some("mathematician"))
+    {
+        step.information_prompt = Some(mathematician_information_prompt(
+            step,
+            players,
+            events,
+            audit_index,
+        ));
+    }
+    Some((phase, steps, current))
+}
+
 struct SnvReplayContext {
     initial_players: Vec<Player>,
     players: Vec<Player>,
@@ -4358,6 +4979,7 @@ struct SnvReplayContext {
     day_role_actions: DayRoleActionIndex,
     death_triggers: Vec<PendingDeathConsequence>,
     pending_game_end: Option<PendingGameEnd>,
+    mathematician_audit: MathematicianAuditIndex,
 }
 
 fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
@@ -4372,6 +4994,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         None;
     let mut death_triggers = Vec::<PendingDeathConsequence>::new();
     let mut pending_game_end = None;
+    let mut mathematician_audit = MathematicianAuditIndex::default();
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
         let players_before_event = players.clone();
@@ -4383,17 +5006,24 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             &events[..event_index],
             event,
         );
+        mathematician_audit.record_event(
+            event_index,
+            event,
+            players_at_event,
+            &events[..event_index],
+        );
         if matches!(
             event.kind,
             GameEventKind::SweetheartConsequenceResolved { .. }
                 | GameEventKind::BarberConsequenceResolved { .. }
                 | GameEventKind::KlutzChoiceResolved { .. }
         ) {
-            let Some((phase, _, current)) = current_phase_steps(
+            let Some((phase, _, current)) = replay_phase_steps(
                 players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
+                &mathematician_audit,
             ) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
@@ -4474,11 +5104,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 .into_iter()
                 .find(|choice| choice.source_event_id == payload.source_event_id)
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
-            let Some((phase, _, _)) = current_phase_steps(
+            let Some((phase, _, _)) = replay_phase_steps(
                 players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
+                &mathematician_audit,
             ) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
@@ -4506,11 +5137,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             if pending_madness_overview.is_some() {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            let Some((phase, _, Some(current))) = current_phase_steps(
+            let Some((phase, _, Some(current))) = replay_phase_steps(
                 players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
+                &mathematician_audit,
             ) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
@@ -4551,11 +5183,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             if pending_madness_overview.is_some() {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            let Some((phase, steps, Some(current))) = current_phase_steps(
+            let Some((phase, steps, Some(current))) = replay_phase_steps(
                 players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
+                &mathematician_audit,
             ) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
@@ -4655,11 +5288,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         if let GameEventKind::DayActionRecorded { payload } = &event.kind {
-            let Some((_, _, Some(current))) = current_phase_steps(
+            let Some((_, _, Some(current))) = replay_phase_steps(
                 players_at_event,
                 &events[..event_index],
                 events.len() + 2,
                 &statuses,
+                &mathematician_audit,
             ) else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
@@ -4685,11 +5319,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         }
         if let GameEventKind::ManualPhaseStepResolved { payload } = &event.kind {
             if let Some(prefix) = payload.step_id.strip_suffix(":manual") {
-                let Some((phase, _, current)) = current_phase_steps(
+                let Some((phase, _, current)) = replay_phase_steps(
                     players_at_event,
                     &events[..event_index],
                     events.len() + 2,
                     &statuses,
+                    &mathematician_audit,
                 ) else {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 };
@@ -4789,11 +5424,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             ),
             _ => return Err(ErrorKind::ReplayFailed.into_error()),
         };
-        let Some((_, _, Some(current))) = current_phase_steps(
+        let Some((_, _, Some(current))) = replay_phase_steps(
             players_at_event,
             &events[..event_index],
             events.len() + 2,
             &statuses,
+            &mathematician_audit,
         ) else {
             return Err(ErrorKind::ReplayFailed.into_error());
         };
@@ -5287,12 +5923,17 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             day_role_actions,
             death_triggers,
             pending_game_end,
+            mathematician_audit,
         });
     }
 
-    let Some((phase, steps, mut current)) =
-        current_phase_steps(&players, events, events.len() + 2, &statuses)
-    else {
+    let Some((phase, steps, mut current)) = replay_phase_steps(
+        &players,
+        events,
+        events.len() + 2,
+        &statuses,
+        &mathematician_audit,
+    ) else {
         return Ok(SnvReplayContext {
             initial_players,
             players,
@@ -5302,11 +5943,14 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             day_role_actions,
             death_triggers,
             pending_game_end,
+            mathematician_audit,
         });
     };
     if let Some(step) = current.as_mut() {
-        step.information_prompt =
-            snv_information_prompt(step, &players, events, &day_role_actions)?;
+        if step.character.as_deref() != Some("mathematician") {
+            step.information_prompt =
+                snv_information_prompt(step, &players, events, &day_role_actions)?;
+        }
     }
     let current_id = current.as_ref().map(|step| step.id.as_str());
     let overview = if current.is_none() {
@@ -5316,7 +5960,16 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             .into_iter()
             .map(|step| -> Result<PhaseOverviewItem, CoreError> {
                 let information_prompt = if Some(step.id.as_str()) == current_id {
-                    snv_information_prompt(&step, &players, events, &day_role_actions)?
+                    if step.character.as_deref() == Some("mathematician") {
+                        Some(mathematician_information_prompt(
+                            &step,
+                            &players,
+                            events,
+                            &mathematician_audit,
+                        ))
+                    } else {
+                        snv_information_prompt(&step, &players, events, &day_role_actions)?
+                    }
                 } else {
                     None
                 };
@@ -5350,6 +6003,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         day_role_actions,
         death_triggers,
         pending_game_end,
+        mathematician_audit,
     })
 }
 
@@ -5564,6 +6218,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         day_role_actions,
         death_triggers,
         pending_game_end,
+        mathematician_audit,
     } = replay_context(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
     let day_state = if phase == Phase::Day {
@@ -5604,6 +6259,11 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
     automatic_reminders.extend(automatic_seamstress_reminders(&players, active_events));
+    automatic_reminders.extend(automatic_mathematician_reminders(
+        &players,
+        active_events,
+        &mathematician_audit,
+    ));
     if let Some(curse) = active_witch_curse.as_ref() {
         automatic_reminders.push(AutomaticReminder {
             player_id: curse.target_player_id.clone(),

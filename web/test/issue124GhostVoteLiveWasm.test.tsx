@@ -81,7 +81,11 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(await within(app).findByRole("button", { name: "다음 →" }));
   await assignCerenovus(user, app);
   await revealCurrentInformation(user, app);
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  const mathematicianTask = await within(app).findByRole("article", { name: "수학자 정보" });
+  expect(within(mathematicianTask).getByText("진실").nextElementSibling?.textContent).toContain("0명");
+  expect(within(mathematicianTask).getByText("비정상 작동 기록 없음")).toBeTruthy();
+  expect(within(mathematicianTask).getByRole("group", { hidden: true, name: "계산 근거" }).hasAttribute("open")).toBe(false);
+  await revealCurrentInformation(user, app);
   await user.click(await within(app).findByRole("button", { name: "낮으로" }));
   await user.click(await within(app).findByRole("button", { name: "발표 완료" }));
   await user.click(await within(app).findByRole("button", { name: "밀담 종료" }));
@@ -112,7 +116,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
   }
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await revealCurrentInformation(user, app);
   await user.click(await within(app).findByRole("button", { name: "다음 →" }));
   await user.click(await within(app).findByRole("button", { name: "발표 완료" }));
   await user.click(await within(app).findByRole("button", { name: "밀담 종료" }));

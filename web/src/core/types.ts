@@ -116,6 +116,48 @@ export type InformationResult =
       }>;
     };
 
+export type MathematicianAudit = {
+  records: MathematicianAuditRecord[];
+};
+
+export type MathematicianAuditRecord = {
+  subjectPlayerId: string;
+  characterId: string;
+  abilityInstanceId: string;
+  evidence: MathematicianAuditEvidence[];
+};
+
+export type MathematicianAuditEvidence = {
+  resolutionEventId: string;
+  stepId: string;
+  phase: "setup" | "night" | "day" | "firstNight";
+  characterId: string;
+  abilityInstanceId: string;
+  outcome: MathematicianAuditOutcome;
+  causes: DeliveryReason[];
+};
+
+export type MathematicianAuditOutcome =
+  | {
+      kind: "incorrectInformation";
+      computedResult: InformationResult;
+      deliveredResult: InformationResult;
+    }
+  | { kind: "invalidSavantPattern"; truthfulCount: number }
+  | {
+      kind: "effectFailure";
+      effect:
+        | "snakeCharmerSwap"
+        | "witchDeath"
+        | "sweetheartDrunkenness"
+        | "demonDeath"
+        | "pitHagCharacterChange"
+        | "noDashiiPoison"
+        | "vigormortisOngoingEffect"
+        | "vortoxFalseInformation"
+        | "vortoxExecution";
+    };
+
 export type RegistrationJudgment = {
   playerId: string;
   registeredAs: "good" | "evil" | "townsfolk" | "outsider" | "minion" | "demon";
@@ -171,6 +213,7 @@ export type InformationPrompt = {
   }>;
   setupInfoRegistrationOptions: SetupInfoRegistrationOption[];
   targetChecks?: TargetCheck[];
+  mathematicianAudit?: MathematicianAudit;
 };
 
 export type TargetCheck = {

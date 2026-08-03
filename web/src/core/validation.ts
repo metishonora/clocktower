@@ -662,6 +662,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
       (!Array.isArray(value.booleanChoices) || !value.booleanChoices.every(isBooleanChoice))) ||
     !Array.isArray(value.setupInfoRegistrationOptions) ||
     !value.setupInfoRegistrationOptions.every(isSetupInfoRegistrationOption) ||
+    (value.mathematicianAudit !== undefined && !isMathematicianAudit(value.mathematicianAudit)) ||
     (value.targetChecks !== undefined &&
       (!Array.isArray(value.targetChecks) || !value.targetChecks.every(isTargetCheck)))
   ) {
@@ -735,6 +736,52 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     uniqueValues.size === value.numberChoices.length &&
     (value.booleanChoices?.length ?? 0) === 0
   );
+}
+
+function isMathematicianAudit(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["records"])
+    && Array.isArray(value.records)
+    && value.records.every((record) => isRecord(record)
+      && hasExactKeys(record, ["subjectPlayerId", "characterId", "abilityInstanceId", "evidence"])
+      && typeof record.subjectPlayerId === "string"
+      && typeof record.characterId === "string"
+      && typeof record.abilityInstanceId === "string"
+      && Array.isArray(record.evidence)
+      && record.evidence.every(isMathematicianAuditEvidence));
+}
+
+function isMathematicianAuditEvidence(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["resolutionEventId", "stepId", "phase", "characterId", "abilityInstanceId", "outcome", "causes"])
+    && typeof value.resolutionEventId === "string"
+    && typeof value.stepId === "string"
+    && isPhase(value.phase)
+    && typeof value.characterId === "string"
+    && typeof value.abilityInstanceId === "string"
+    && isMathematicianAuditOutcome(value.outcome)
+    && Array.isArray(value.causes)
+    && value.causes.every(isDeliveryReason);
+}
+
+function isMathematicianAuditOutcome(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "incorrectInformation") {
+    return hasExactKeys(value, ["kind", "computedResult", "deliveredResult"])
+      && isInformationResult(value.computedResult)
+      && isInformationResult(value.deliveredResult);
+  }
+  if (value.kind === "invalidSavantPattern") {
+    return hasExactKeys(value, ["kind", "truthfulCount"])
+      && Number.isInteger(value.truthfulCount);
+  }
+  return value.kind === "effectFailure"
+    && hasExactKeys(value, ["kind", "effect"])
+    && [
+      "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
+      "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
+      "vortoxFalseInformation", "vortoxExecution",
+    ].includes(String(value.effect));
 }
 
 function isConfirmedInformation(value: unknown): value is ConfirmedInformation {
@@ -1068,7 +1115,7 @@ function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
     typeof value.playerId === "string" &&
-    ["flowergirl", "townCrier", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress"].includes(String(value.characterId)) &&
+    ["flowergirl", "townCrier", "mathematician", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string";
