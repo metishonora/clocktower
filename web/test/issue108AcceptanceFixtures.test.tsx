@@ -62,11 +62,20 @@ describe("Sects & Violets issue 108 acceptance fixtures", () => {
       };
       const beforeState = await replayOrThrow(beforeMathematician);
       expect(beforeState.currentStep?.id).toBe(acceptanceCase.phaseBoundary);
-      expect(beforeState.currentStep?.informationPrompt?.mathematicianAudit?.records).toHaveLength(
-        acceptanceCase.truthfulAuditCount,
+      const records = beforeState.currentStep?.informationPrompt?.mathematicianAudit?.records ?? [];
+      expect(records).toHaveLength(acceptanceCase.truthfulAuditCount);
+      const abnormalReminders = (beforeState.ruleState.automaticReminders ?? []).filter(
+        ({ characterId, tokenId }) => characterId === "mathematician" && tokenId === "abnormal",
       );
+      expect(abnormalReminders.map(({ playerId }) => playerId)).toEqual(
+        records.map(({ subjectPlayerId }) => subjectPlayerId),
+      );
+      expect(abnormalReminders.every(({ label }) => label === "비정상")).toBe(true);
 
-      await expect(replayOrThrow(game)).resolves.toBeTruthy();
+      const afterState = await replayOrThrow(game);
+      expect((afterState.ruleState.automaticReminders ?? []).some(
+        ({ characterId, tokenId }) => characterId === "mathematician" && tokenId === "abnormal",
+      )).toBe(false);
     });
   }
 });

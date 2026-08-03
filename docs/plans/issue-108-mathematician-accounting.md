@@ -7,6 +7,7 @@
 - An impairment state is not itself abnormal. Record only a delivered result or concrete effect that falls outside the healthy ability's permitted outcomes.
 - Preserve every contributing resolution as audit evidence, including character, ability instance, resolution event, cause, phase, and step.
 - Exclude Mathematician's own delivery from its truthful count. Apply the common Delivered Information contract only after the truthful projection is complete.
+- While a living Mathematician is in play, place one automatic `비정상` reminder on each counted player's character. Remove the reminders when the Mathematician information is confirmed; undo restores them.
 
 ## Approved production UI
 
@@ -23,6 +24,7 @@
 3. Expose the projection only on the current Mathematician information prompt and use its record count as the computed truth.
 4. Confirm the step through the existing numeric Delivered Information path, including Vortox's non-negative safe-integer constraint and truthful-value exclusion.
 5. Render the approved audit disclosure in the production information task and keep Reveal payloads audit-free.
+6. Project the same deduplicated records as automatic Mathematician reminders in the Grimoire until the information is confirmed.
 
 ## Verification
 

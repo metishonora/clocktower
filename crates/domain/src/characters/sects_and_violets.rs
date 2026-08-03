@@ -2168,6 +2168,33 @@ fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
         .collect()
 }
 
+fn automatic_mathematician_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+    audit_index: &MathematicianAuditIndex,
+) -> Vec<AutomaticReminder> {
+    if !players
+        .iter()
+        .any(|player| player.alive && player.actual_character == "mathematician")
+    {
+        return vec![];
+    }
+
+    audit_index
+        .for_window_start(mathematician_reminder_window_start(events))
+        .records
+        .into_iter()
+        .map(|record| AutomaticReminder {
+            player_id: record.subject_player_id,
+            character_id: "mathematician".into(),
+            token_id: "abnormal".into(),
+            label: "비정상".into(),
+            description: "새벽 이후 다른 캐릭터의 영향으로 능력이 비정상적으로 작동했습니다."
+                .into(),
+        })
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -4752,7 +4779,10 @@ impl MathematicianAuditIndex {
     }
 
     fn for_step(&self, step: &PhaseStep, events: &[GameEvent]) -> MathematicianAudit {
-        let start = mathematician_window_start(step, events);
+        self.for_window_start(mathematician_window_start(step, events))
+    }
+
+    fn for_window_start(&self, start: usize) -> MathematicianAudit {
         let mut records = Vec::<AbnormalAbilityAuditRecord>::new();
         for indexed in self
             .records
@@ -4823,6 +4853,24 @@ fn mathematician_window_start(step: &PhaseStep, events: &[GameEvent]) -> usize {
                 &event.kind,
                 GameEventKind::PhaseStepConfirmed { payload }
                     if payload.step_id.ends_with(":toDay")
+            )
+        })
+        .map_or(1, |index| index + 1)
+}
+
+fn mathematician_reminder_window_start(events: &[GameEvent]) -> usize {
+    events
+        .iter()
+        .rposition(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::PhaseStepConfirmed { payload }
+                    if payload.step_id.ends_with(":toDay")
+                        || payload
+                            .information
+                            .as_ref()
+                            .and_then(|information| information.actor.as_ref())
+                            .is_some_and(|actor| actor.character_id == "mathematician")
             )
         })
         .map_or(1, |index| index + 1)
@@ -4911,6 +4959,7 @@ struct SnvReplayContext {
     day_role_actions: DayRoleActionIndex,
     death_triggers: Vec<PendingDeathConsequence>,
     pending_game_end: Option<PendingGameEnd>,
+    mathematician_audit: MathematicianAuditIndex,
 }
 
 fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
@@ -5854,6 +5903,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             day_role_actions,
             death_triggers,
             pending_game_end,
+            mathematician_audit,
         });
     }
 
@@ -5873,6 +5923,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             day_role_actions,
             death_triggers,
             pending_game_end,
+            mathematician_audit,
         });
     };
     if let Some(step) = current.as_mut() {
@@ -5932,6 +5983,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
         day_role_actions,
         death_triggers,
         pending_game_end,
+        mathematician_audit,
     })
 }
 
@@ -6146,6 +6198,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         day_role_actions,
         death_triggers,
         pending_game_end,
+        mathematician_audit,
     } = replay_context(active_events)?;
     let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
     let day_state = if phase == Phase::Day {
@@ -6185,6 +6238,11 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
+    automatic_reminders.extend(automatic_mathematician_reminders(
+        &players,
+        active_events,
+        &mathematician_audit,
+    ));
     if let Some(curse) = active_witch_curse.as_ref() {
         automatic_reminders.push(AutomaticReminder {
             player_id: curse.target_player_id.clone(),

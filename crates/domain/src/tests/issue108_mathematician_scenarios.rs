@@ -307,6 +307,17 @@ fn audit_records(state: &Value) -> &Vec<Value> {
         .expect("Mathematician audit records")
 }
 
+fn mathematician_reminders(state: &Value) -> Vec<&Value> {
+    state["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .expect("automatic reminders")
+        .iter()
+        .filter(|reminder| {
+            reminder["characterId"] == "mathematician" && reminder["tokenId"] == "abnormal"
+        })
+        .collect()
+}
+
 #[test]
 fn first_night_mathematician_starts_at_zero() {
     let mut events = vec![setup_event("noDashii")];
@@ -359,6 +370,37 @@ fn impaired_truthful_information_is_normal_but_a_false_value_is_audit_evidence()
         records[0]["evidence"][0]["outcome"]["kind"],
         "incorrectInformation"
     );
+
+    let reminders = mathematician_reminders(&false_math);
+    assert_eq!(reminders.len(), 1);
+    assert_eq!(reminders[0]["playerId"], "player-3");
+    assert_eq!(reminders[0]["label"], "비정상");
+
+    confirm_information(&mut false_events, &false_math["value"]["currentStep"], None);
+    assert!(mathematician_reminders(&replay(&false_events)).is_empty());
+    assert_eq!(
+        mathematician_reminders(&replay(&false_events[..false_events.len() - 1])).len(),
+        1,
+        "undoing the Mathematician confirmation restores the reminder"
+    );
+}
+
+#[test]
+fn abnormal_reminders_are_not_projected_without_a_living_mathematician() {
+    let mut setup = setup_event("noDashii");
+    setup["payload"]["players"][0]["actualCharacter"] = json!("dreamer");
+    setup["payload"]["players"][0]["shownCharacter"] = json!("dreamer");
+    let mut events = vec![setup];
+
+    let clockmaker = advance_to_clockmaker(&mut events);
+    let step = &clockmaker["value"]["currentStep"];
+    confirm_information(
+        &mut events,
+        step,
+        Some(json!({ "kind": "number", "value": false_number(step) })),
+    );
+
+    assert!(mathematician_reminders(&replay(&events)).is_empty());
 }
 
 #[test]
