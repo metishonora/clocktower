@@ -1142,7 +1142,7 @@ function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
     typeof value.playerId === "string" &&
-    ["flowergirl", "townCrier", "mathematician", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress"].includes(String(value.characterId)) &&
+    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string";

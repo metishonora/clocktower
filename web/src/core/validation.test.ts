@@ -91,6 +91,39 @@ test("accepts only the canonical Philosopher resolution and grant references", (
   }));
 });
 
+test("accepts Philosopher grants and automatic reminder tokens in replay state", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      abilityGrants: [{
+        ownerPlayerId: "player-6",
+        characterId: "savant",
+        sourceEventId: "phase-2",
+        sourceAbilityInstanceId: "setup:player-6",
+        abilityInstanceId: "phase-2:player-6",
+      }],
+      automaticReminders: [{
+        playerId: "player-9",
+        characterId: "philosopher",
+        tokenId: "drunk",
+        label: "취함",
+        description: "철학자의 능력으로 취했습니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("accepts canonical Vortox and impaired numeric constraints", () => {
   const replay = {
     schemaVersion: 3,
