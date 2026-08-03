@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
-import type { DeliveryReason, InformationResult, PhaseStep, Player, TargetCheck } from "../../core/types";
+import type {
+  DeliveryReason,
+  InformationResult,
+  MathematicianAudit,
+  MathematicianAuditEvidence,
+  MathematicianAuditOutcome,
+  PhaseStep,
+  Player,
+  TargetCheck,
+} from "../../core/types";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
@@ -40,6 +49,7 @@ export function SectsAndVioletsInformationTask({
   const influence = actionInformationInfluence(influences);
   const influencePresentation = influence ? informationInfluencePresentation[influence] : undefined;
   const numberConstraint = step.informationPrompt?.numberConstraint;
+  const mathematicianAudit = characterId === "mathematician" ? step.informationPrompt?.mathematicianAudit : undefined;
   const [numberDraft, setNumberDraft] = useState(() => deliveredResult?.kind === "number" ? String(deliveredResult.value) : "");
   const [truthWarningAttempt, setTruthWarningAttempt] = useState(0);
   useEffect(() => {
@@ -47,10 +57,10 @@ export function SectsAndVioletsInformationTask({
     setTruthWarningAttempt(0);
   }, [step.id, numberConstraint?.min, numberConstraint?.max, numberConstraint?.excludedValues.join(",")]);
   const numberError = useMemo(
-    () => numberConstraint ? numberConstraintError(numberDraft, numberConstraint) : undefined,
+    () => numberConstraint && numberDraft !== "" ? numberConstraintError(numberDraft, numberConstraint) : undefined,
     [numberConstraint, numberDraft],
   );
-  const directNumberResult = numberConstraint && !numberError
+  const directNumberResult = numberConstraint && numberDraft !== "" && !numberError
     ? { kind: "number" as const, value: Number(numberDraft) }
     : undefined;
   const truthConstraintViolation = numberConstraint
@@ -125,6 +135,7 @@ export function SectsAndVioletsInformationTask({
               value={numberDraft}
               error={numberError}
               truthWarningAttempt={truthWarningAttempt}
+              suppressHint={characterId === "mathematician"}
               busy={busy || revealed}
               onChange={(value) => {
                 setNumberDraft(value);
@@ -136,6 +147,7 @@ export function SectsAndVioletsInformationTask({
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
+          {mathematicianAudit ? <MathematicianAuditDisclosure audit={mathematicianAudit} players={players} /> : null}
           <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
             <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || (!selectedResult && !truthConstraintViolation)} onClick={() => {
               if (truthConstraintViolation) {
@@ -152,14 +164,100 @@ export function SectsAndVioletsInformationTask({
   );
 }
 
-function NumberConstraintEditor({ step, value, error, truthWarningAttempt, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; busy: boolean; onChange: (value: string) => void }) {
+function NumberConstraintEditor({ step, value, error, truthWarningAttempt, suppressHint = false, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; suppressHint?: boolean; busy: boolean; onChange: (value: string) => void }) {
   const characterId = step.character ?? "";
   const truth = step.informationPrompt?.computedResult?.kind === "number" ? step.informationPrompt.computedResult.value : undefined;
   const truthError = error === "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
   return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 거짓 정보"><div>
     <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
     <dd><input id={`delivered-${step.id}`} aria-label="전달할 숫자" type="number" min="0" step="1" inputMode="numeric" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)} /><span>{numericUnit(characterId)}</span></dd>
-  </div><p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p></dl>;
+  </div>{error || !suppressHint ? <p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p> : null}</dl>;
+}
+
+function MathematicianAuditDisclosure({ audit, players }: { audit: MathematicianAudit; players: Player[] }) {
+  const records = dedupeMathematicianRecords(audit.records);
+  return <details className="snvMathematicianAudit" aria-label="계산 근거">
+    <summary><span>계산 근거</span><small>{records.length}명</small></summary>
+    {records.length === 0 ? <p className="snvMathematicianAuditEmpty">비정상 작동 기록 없음</p> : <ol className="snvMathematicianAuditList" aria-label="비정상 작동 기록">
+      {records.map((record) => <MathematicianAuditRow key={`${record.subjectPlayerId}:${record.abilityInstanceId}`} record={record} players={players} />)}
+    </ol>}
+  </details>;
+}
+
+function MathematicianAuditRow({ record, players }: { record: MathematicianAudit["records"][number]; players: Player[] }) {
+  const evidence = latestMathematicianEvidence(record);
+  return <li className="snvMathematicianAuditRow">
+    <div className="snvMathematicianAuditMain">
+      <strong>{playerLabel(players, record.subjectPlayerId)}</strong>
+      <span className="snvMathematicianAuditCharacter">{characterName(evidence?.characterId ?? record.characterId)}</span>
+      <span className="snvMathematicianAuditOutcome">{evidence ? mathematicianOutcomeLabel(evidence.outcome) : "근거 없음"}</span>
+    </div>
+    {evidence ? <div className="snvMathematicianAuditMeta">
+      <span className="snvMathematicianAuditCauses" aria-label="원인">{dedupeMathematicianCauses(evidence.causes).map((cause) => <em key={cause.type} className={`snvMathematicianAuditCause ${cause.type}`}>{mathematicianCauseLabel(cause)}</em>)}</span>
+      <time>{mathematicianTimingLabel(evidence)}</time>
+    </div> : null}
+  </li>;
+}
+
+function dedupeMathematicianRecords(records: MathematicianAudit["records"]): MathematicianAudit["records"] {
+  const latestBySubject = new Map<string, MathematicianAudit["records"][number]>();
+  for (const record of records) latestBySubject.set(record.subjectPlayerId, record);
+  return [...latestBySubject.values()];
+}
+
+function latestMathematicianEvidence(record: MathematicianAudit["records"][number]): MathematicianAuditEvidence | undefined {
+  return record.evidence.at(-1) ?? record.evidence[0];
+}
+
+function mathematicianOutcomeLabel(outcome: MathematicianAuditOutcome): string {
+  if (outcome.kind === "incorrectInformation") return "거짓 정보 전달";
+  if (outcome.kind === "invalidSavantPattern") {
+    if (outcome.truthfulCount === 2) return "두 문장 모두 참";
+    if (outcome.truthfulCount === 0) return "두 문장 모두 거짓";
+    return `정보 패턴 오류 · ${outcome.truthfulCount}/2 참`;
+  }
+  return mathematicianEffectLabel(outcome.effect);
+}
+
+function mathematicianEffectLabel(effect: Extract<MathematicianAuditOutcome, { kind: "effectFailure" }>["effect"]): string {
+  const labels: Record<typeof effect, string> = {
+    snakeCharmerSwap: "악마 선택 · 교환되지 않음",
+    witchDeath: "저주 대상 지명 · 생존",
+    sweetheartDrunkenness: "사망 · 취함 미적용",
+    demonDeath: "유효 대상 공격 · 사망 없음",
+    pitHagCharacterChange: "유효 직업 선택 · 변경 없음",
+    noDashiiPoison: "이웃 중독 효과 해제",
+    vigormortisOngoingEffect: "유지 중인 능력/중독 효과 해제",
+    vortoxFalseInformation: "참 정보 전달",
+    vortoxExecution: "처형 없음 효과 미발동",
+  };
+  return labels[effect];
+}
+
+function dedupeMathematicianCauses(causes: DeliveryReason[]): DeliveryReason[] {
+  const seen = new Set<DeliveryReason["type"]>();
+  return causes.filter((cause) => {
+    if (seen.has(cause.type)) return false;
+    seen.add(cause.type);
+    return true;
+  });
+}
+
+function mathematicianCauseLabel(cause: DeliveryReason): string {
+  if (cause.type === "drunk") return "취함";
+  if (cause.type === "poisoned") return "중독";
+  if (cause.type === "vortox") return "보르톡스";
+  if (cause.type === "abilityChoice") return "능력 선택";
+  return "등록 판정";
+}
+
+function mathematicianTimingLabel(evidence: Pick<MathematicianAuditEvidence, "phase" | "stepId">): string {
+  if (evidence.phase === "setup") return "게임 시작";
+  const phaseMatch = /^(?:firstNight|night|day)(\d*)/.exec(evidence.stepId);
+  if (evidence.phase === "firstNight" || phaseMatch?.[0].startsWith("firstNight")) return "1일차 밤";
+  if (!phaseMatch || (phaseMatch[1] && !Number.isSafeInteger(Number(phaseMatch[1])))) return evidence.phase === "day" ? "낮" : "밤";
+  const cycle = Number(phaseMatch?.[1] || "1") + (evidence.phase === "night" ? 1 : 0);
+  return `${cycle}일차 ${evidence.phase === "day" ? "낮" : "밤"}`;
 }
 
 function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {

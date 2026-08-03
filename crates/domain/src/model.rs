@@ -259,6 +259,68 @@ pub(crate) struct InformationPrompt {
     pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) target_checks: Vec<TargetInformationCheck>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) mathematician_audit: Option<MathematicianAudit>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MathematicianAudit {
+    pub(crate) records: Vec<AbnormalAbilityAuditRecord>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AbnormalAbilityAuditRecord {
+    pub(crate) subject_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+    pub(crate) evidence: Vec<AbnormalAbilityEvidence>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AbnormalAbilityEvidence {
+    pub(crate) resolution_event_id: String,
+    pub(crate) step_id: String,
+    pub(crate) phase: Phase,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+    pub(crate) outcome: AbnormalAbilityOutcome,
+    pub(crate) causes: Vec<DeliveryReason>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum AbnormalAbilityOutcome {
+    IncorrectInformation {
+        computed_result: InformationResult,
+        delivered_result: InformationResult,
+    },
+    InvalidSavantPattern {
+        truthful_count: u8,
+    },
+    EffectFailure {
+        effect: AbnormalAbilityEffect,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum AbnormalAbilityEffect {
+    SnakeCharmerSwap,
+    WitchDeath,
+    SweetheartDrunkenness,
+    DemonDeath,
+    PitHagCharacterChange,
+    NoDashiiPoison,
+    VigormortisOngoingEffect,
+    VortoxFalseInformation,
+    VortoxExecution,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

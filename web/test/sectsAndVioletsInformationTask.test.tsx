@@ -374,3 +374,99 @@ test("renders Flowergirl and Town Crier Reveal as status statements", () => {
     cleanup();
   }
 });
+
+test("keeps Mathematician calculation grounds collapsed and shows the latest evidence when expanded", async () => {
+  const mathActor = { ...actor, actualCharacter: "mathematician", shownCharacter: "mathematician" };
+  const mathPlayers = [
+    mathActor,
+    { ...actor, id: "player-2", seat: 2, name: "유나", actualCharacter: "clockmaker", shownCharacter: "clockmaker" },
+    { ...actor, id: "player-3", seat: 3, name: "도윤", actualCharacter: "witch", shownCharacter: "witch" },
+  ];
+  const mathStep: PhaseStep = {
+    ...step,
+    id: "firstNight:mathematician",
+    character: "mathematician",
+    informationPrompt: {
+      ...step.informationPrompt!,
+      computedResult: { kind: "number", value: 2 },
+      numberChoices: [{ value: 2, isComputed: true, registrationJudgments: [] }],
+      mathematicianAudit: {
+        records: [
+          {
+            subjectPlayerId: "player-2",
+            characterId: "clockmaker",
+            abilityInstanceId: "ability-2",
+            evidence: [{
+              resolutionEventId: "event-2",
+              stepId: "firstNight:clockmaker",
+              phase: "firstNight",
+              characterId: "clockmaker",
+              abilityInstanceId: "ability-2",
+              outcome: { kind: "incorrectInformation", computedResult: { kind: "number", value: 1 }, deliveredResult: { kind: "number", value: 2 } },
+              causes: [{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }],
+            }],
+          },
+          {
+            subjectPlayerId: "player-3",
+            characterId: "witch",
+            abilityInstanceId: "ability-3",
+            evidence: [{
+              resolutionEventId: "event-3",
+              stepId: "night2:witch",
+              phase: "night",
+              characterId: "witch",
+              abilityInstanceId: "ability-3",
+              outcome: { kind: "effectFailure", effect: "witchDeath" },
+              causes: [{ type: "drunk" }],
+            }],
+          },
+        ],
+      },
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={mathStep} actor={mathActor} players={mathPlayers} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "수학자 정보" });
+  const grounds = within(task).getByText("계산 근거").closest("details");
+  expect(grounds).toBeTruthy();
+  expect((grounds as HTMLDetailsElement).open).toBe(false);
+  expect(within(grounds as HTMLElement).getByText("2명")).toBeTruthy();
+  await userEvent.setup().click(within(task).getByText("계산 근거"));
+
+  expect((grounds as HTMLDetailsElement).open).toBe(true);
+  expect(within(task).getByText("2번 유나")).toBeTruthy();
+  expect(within(task).getByText("시계공")).toBeTruthy();
+  expect(within(task).getByText("거짓 정보 전달")).toBeTruthy();
+  expect(within(task).getByText("중독")).toBeTruthy();
+  expect(within(task).getByText("1일차 밤")).toBeTruthy();
+  expect(within(task).getByText("3번 도윤")).toBeTruthy();
+  expect(within(task).getByText("마녀")).toBeTruthy();
+  expect(within(task).getByText("저주 대상 지명 · 생존")).toBeTruthy();
+  expect(within(task).getByText("취함")).toBeTruthy();
+  expect(within(task).getByText("3일차 밤")).toBeTruthy();
+});
+
+test("renders an explicit empty Mathematician audit without adding reveal copy", () => {
+  const mathActor = { ...actor, actualCharacter: "mathematician", shownCharacter: "mathematician" };
+  const mathStep: PhaseStep = {
+    ...step,
+    id: "firstNight:mathematician",
+    character: "mathematician",
+    informationPrompt: {
+      ...step.informationPrompt!,
+      computedResult: { kind: "number", value: 0 },
+      deliveryMode: "selectable",
+      numberChoices: [{ value: 0, isComputed: true, registrationJudgments: [] }],
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [] },
+      mathematicianAudit: { records: [] },
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={mathStep} actor={mathActor} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const task = screen.getByRole("article", { name: "수학자 정보" });
+  expect(within(task).getAllByText("0명")).toHaveLength(2);
+  expect(within(task).getByText("비정상 작동 기록 없음")).toBeTruthy();
+  expect(within(task).queryByText("0 이상의 정수 · 진실 0 제외")).toBeNull();
+  expect(within(task).queryByRole("alert")).toBeNull();
+  expect((within(task).getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
+});

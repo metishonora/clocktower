@@ -83,7 +83,7 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && payload.bluffCharacterIds.every((characterId) => typeof characterId === "string" && characterIds.has(characterId));
   }
   if (payload.kind === "numericInformation") {
-    return ["chef", "empath", "clockmaker", "oracle", "juggler"].includes(String(payload.characterId))
+    return ["chef", "empath", "clockmaker", "mathematician", "oracle", "juggler"].includes(String(payload.characterId))
       && Number.isInteger(payload.value) && (payload.value as number) >= 0
       && hasExactKeys(payload, ["characterId", "kind", "value"]);
   }
