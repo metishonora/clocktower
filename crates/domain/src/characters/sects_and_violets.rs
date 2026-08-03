@@ -22,16 +22,16 @@ use crate::{
         NightActionResolution, NightActionResolvedPayload, NightDeath, NightDeathCause,
         NightDeathsAnnouncedPayload, PendingDeathConsequence, PendingGameEnd,
         PendingIdentityReveal, PendingMadnessExecution, PendingVigormortisPoisonChoice,
-        PhaseStepEventPayload, PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason,
-        PitHagTransformationOutcome, PitHagTransformationResolvedPayload, Proposal,
-        RecordDayActionCommandPayload, RecordMadnessCheckCommandPayload, ReplayState,
-        ResolveBarberConsequenceCommandPayload, ResolveKlutzConsequenceCommandPayload,
-        ResolveSweetheartConsequenceCommandPayload, ResolveVigormortisPoisonCommandPayload,
-        RevealPayload, RuleState, SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload,
-        SnakeCharmerNoSwapReason, SweetheartConsequenceOutcome,
-        SweetheartConsequenceResolvedPayload, VigormortisEffect, VigormortisPoisonInvalidReason,
-        VigormortisPoisonTargetChangedPayload, VirginResolution, WitchCurseAssignedPayload,
-        WitchNominationResolution,
+        PhaseStepEventPayload, PhilosopherAbilityOutcome, PhilosopherAbilityResolvedPayload,
+        PitHagArbitraryDeathsConfirmedPayload, PitHagNoChangeReason, PitHagTransformationOutcome,
+        PitHagTransformationResolvedPayload, Proposal, RecordDayActionCommandPayload,
+        RecordMadnessCheckCommandPayload, ReplayState, ResolveBarberConsequenceCommandPayload,
+        ResolveKlutzConsequenceCommandPayload, ResolveSweetheartConsequenceCommandPayload,
+        ResolveVigormortisPoisonCommandPayload, RevealPayload, RuleState,
+        SnakeCharmerActionOutcome, SnakeCharmerActionResolvedPayload, SnakeCharmerNoSwapReason,
+        SweetheartConsequenceOutcome, SweetheartConsequenceResolvedPayload, VigormortisEffect,
+        VigormortisPoisonInvalidReason, VigormortisPoisonTargetChangedPayload, VirginResolution,
+        WitchCurseAssignedPayload, WitchNominationResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -40,15 +40,16 @@ use crate::{
     error::{CoreError, ErrorKind},
     messages::game_end_reason_ko,
     model::{
-        AbilityInstance, AbilityInstanceId, AbnormalAbilityAuditRecord, AbnormalAbilityEffect,
-        AbnormalAbilityEvidence, AbnormalAbilityOutcome, Alignment, BooleanInformationChoice,
-        CharacterKind, ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason,
-        IdentityHistoryEntry, IdentityState, InformationActor, InformationDeliveryMode,
-        InformationPrompt, InformationResult, InputTarget, MathematicianAudit,
-        NumberInformationChoice, NumberInformationConstraint, Phase, PhaseOverviewItem, PhaseStep,
-        PhaseStepStatus, PhaseStepSupport, Player, PlayerIdentityTransition, PlayerStateSnapshot,
-        PlayerTransition, RequiredInput, RequiredInputKind, StepInput, StepType,
-        TargetInformationCheck, TargetInformationChoice,
+        AbilityGrant, AbilityInstance, AbilityInstanceId, AbilityUseRef,
+        AbnormalAbilityAuditRecord, AbnormalAbilityEffect, AbnormalAbilityEvidence,
+        AbnormalAbilityOutcome, Alignment, BooleanInformationChoice, CharacterKind,
+        ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, IdentityHistoryEntry,
+        IdentityState, InformationActor, InformationDeliveryMode, InformationPrompt,
+        InformationResult, InputTarget, MathematicianAudit, NumberInformationChoice,
+        NumberInformationConstraint, Phase, PhaseOverviewItem, PhaseStep, PhaseStepStatus,
+        PhaseStepSupport, Player, PlayerIdentityTransition, PlayerStateSnapshot, PlayerTransition,
+        RequiredInput, RequiredInputKind, StepInput, StepType, TargetInformationCheck,
+        TargetInformationChoice,
     },
     phase::{
         phase_transition_step, required_characters, required_none, simple_step,
@@ -323,7 +324,7 @@ impl SnvCharacterId {
                 first_night_rank: Some(0),
                 later_night_rank: Some(0),
                 input: NoInput,
-                support: manual,
+                support: automated,
                 activity: WhileActive,
                 once_per_ability_instance: false,
                 same_night_acquisition: WakeIfOrderPending,
@@ -495,6 +496,19 @@ fn is_demon(character: &str) -> bool {
 fn script_character_ids() -> Vec<String> {
     SnvCharacterId::ALL
         .iter()
+        .map(|character| character.as_str().to_string())
+        .collect()
+}
+
+fn good_character_ids() -> Vec<String> {
+    SnvCharacterId::ALL
+        .iter()
+        .filter(|character| {
+            matches!(
+                character.metadata().kind,
+                CharacterKind::Townsfolk | CharacterKind::Outsider
+            )
+        })
         .map(|character| character.as_str().to_string())
         .collect()
 }
@@ -1066,7 +1080,14 @@ fn character_step(
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(player.id.clone()),
-        required_input: if metadata.input == CharacterInputPolicy::CharacterTransformation {
+        ability_use: Some(AbilityUseRef {
+            owner_player_id: player.id.clone(),
+            character_id: character.to_string(),
+            ability_instance_id: player.ability_instance.id.clone(),
+        }),
+        required_input: if character_id == SnvCharacterId::Philosopher {
+            required_characters(1, 1, Some(good_character_ids()), false)
+        } else if metadata.input == CharacterInputPolicy::CharacterTransformation {
             RequiredInput {
                 kind: RequiredInputKind::CharacterTransformation,
                 target: None,
@@ -1182,7 +1203,10 @@ fn character_step(
         } else {
             required_none()
         },
-        can_skip: character_id == SnvCharacterId::Seamstress,
+        can_skip: matches!(
+            character_id,
+            SnvCharacterId::Seamstress | SnvCharacterId::Philosopher
+        ),
         support: metadata.support,
         information_prompt: None,
         pre_action_reveal: None,
@@ -1478,6 +1502,83 @@ fn insert_acquired_ability_steps(
         .unwrap_or(steps.len());
         steps.insert(insert_at, step);
     }
+
+    let grants = philosopher_ability_grants(players, events, &ability_state);
+    for grant in grants {
+        let Some(source_event) = events
+            .iter()
+            .find(|event| event.id == grant.source_event_id)
+        else {
+            continue;
+        };
+        let GameEventKind::PhilosopherAbilityResolved { payload } = &source_event.kind else {
+            continue;
+        };
+        if !payload.step_id.starts_with(&format!("{prefix}:")) {
+            continue;
+        }
+        let Some(player) = players
+            .iter()
+            .find(|player| player.id == grant.owner_player_id)
+        else {
+            continue;
+        };
+        let Some(character_id) = SnvCharacterId::parse(&grant.character_id) else {
+            continue;
+        };
+        let metadata = character_id.metadata();
+        let start_knowing = matches!(
+            metadata.same_night_acquisition,
+            SameNightAcquisitionPolicy::StartKnowingImmediately
+        );
+        let source_rank = SnvCharacterId::Philosopher.metadata();
+        let ordered_after_source = match phase {
+            Phase::FirstNight => source_rank
+                .first_night_rank
+                .zip(metadata.first_night_rank)
+                .is_some_and(|(source, target)| target > source),
+            Phase::Night => source_rank
+                .later_night_rank
+                .zip(metadata.later_night_rank)
+                .is_some_and(|(source, target)| target > source),
+            _ => false,
+        };
+        let should_run = start_knowing
+            || matches!(
+                metadata.same_night_acquisition,
+                SameNightAcquisitionPolicy::WakeIfOrderPending
+                    | SameNightAcquisitionPolicy::TriggerIfEligible
+            ) && ordered_after_source;
+        if !should_run
+            || !acquired_ability_is_available(
+                player,
+                &grant.character_id,
+                prefix,
+                &ability_state,
+                events,
+            )
+        {
+            continue;
+        }
+        let mut step = character_step(phase, prefix, &grant.character_id, player, players);
+        step.id = format!(
+            "{prefix}:ability:{}:{}:{}",
+            grant.source_event_id, grant.owner_player_id, grant.character_id
+        );
+        step.ability_use = Some(AbilityUseRef {
+            owner_player_id: grant.owner_player_id.clone(),
+            character_id: grant.character_id.clone(),
+            ability_instance_id: grant.ability_instance_id.clone(),
+        });
+        // A Philosopher resolves the newly gained ability during their wake,
+        // before the grimoire proceeds to the next ordinary wake entry.
+        let insert_at = steps
+            .iter()
+            .position(|candidate| candidate.id == payload.step_id)
+            .map(|index| index + 1)
+            .unwrap_or(steps.len());
+        steps.insert(insert_at, step);
+    }
 }
 
 fn insert_evil_twin_repair_steps(
@@ -1579,6 +1680,14 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
         step_type: StepType::Character,
         character: Some(character.to_string()),
         player_id: Some(actor.to_string()),
+        ability_use: players
+            .iter()
+            .find(|player| player.id == actor)
+            .map(|player| AbilityUseRef {
+                owner_player_id: player.id.clone(),
+                character_id: character.to_string(),
+                ability_instance_id: player.ability_instance.id.clone(),
+            }),
         required_input: RequiredInput {
             kind: RequiredInputKind::PlayerIds,
             target: Some(InputTarget::Player),
@@ -1647,6 +1756,7 @@ fn pit_hag_arbitrary_deaths_step(
         step_type: StepType::PitHagArbitraryDeaths,
         character: None,
         player_id: None,
+        ability_use: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::PlayerIds,
             target: Some(InputTarget::Players),
@@ -1697,6 +1807,8 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
+                    && (character_id != SnvCharacterId::Philosopher
+                        || philosopher_step_belongs_in_phase(player, &prefix, events))
                     && ability_state.has_active_ability(player)
                     && (character != "witch"
                         || players.iter().filter(|candidate| candidate.alive).count() != 3)
@@ -1730,6 +1842,8 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, &prefix, events)
+                    && (character_id != SnvCharacterId::Philosopher
+                        || philosopher_step_belongs_in_phase(player, &prefix, events))
                     && match metadata.activity {
                         AbilityActivityPolicy::OnDeath => {
                             death_triggered_in_night_window(player, &prefix, events)
@@ -1845,6 +1959,8 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
             .filter(|player| {
                 player.actual_character == character
                     && ability_is_base_for_phase(player, "firstNight", events)
+                    && (character_id != SnvCharacterId::Philosopher
+                        || philosopher_step_belongs_in_phase(player, "firstNight", events))
                     && ((character_id != SnvCharacterId::Clockmaker || player.alive)
                         && (character_id != SnvCharacterId::SnakeCharmer
                             || (player.alive
@@ -3656,6 +3772,148 @@ fn source_ability_functions_from_base(
             .any(|impairment| impairment.player_id == player.id)
 }
 
+fn philosopher_actor(player: &Player) -> AbilityUseRef {
+    AbilityUseRef {
+        owner_player_id: player.id.clone(),
+        character_id: SnvCharacterId::Philosopher.as_str().into(),
+        ability_instance_id: player.ability_instance.id.clone(),
+    }
+}
+
+fn philosopher_source_player<'a>(
+    players: &'a [Player],
+    actor: &AbilityUseRef,
+) -> Option<&'a Player> {
+    players.iter().find(|player| {
+        player.id == actor.owner_player_id
+            && player.actual_character == SnvCharacterId::Philosopher.as_str()
+            && player.ability_instance.id == actor.ability_instance_id
+            && actor.character_id == SnvCharacterId::Philosopher.as_str()
+    })
+}
+
+fn philosopher_source_is_active(
+    players: &[Player],
+    actor: &AbilityUseRef,
+    impairments: &[ActiveImpairment],
+) -> bool {
+    philosopher_source_player(players, actor).is_some_and(|player| {
+        player.alive
+            && !impairments
+                .iter()
+                .any(|impairment| impairment.player_id == player.id)
+    })
+}
+
+fn philosopher_ability_spent(player: &Player, events: &[GameEvent]) -> bool {
+    events.iter().any(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhilosopherAbilityResolved { payload }
+                if payload.actor == philosopher_actor(player)
+                    && !matches!(payload.outcome, PhilosopherAbilityOutcome::Deferred)
+        )
+    })
+}
+
+fn philosopher_step_belongs_in_phase(player: &Player, prefix: &str, events: &[GameEvent]) -> bool {
+    events
+        .iter()
+        .find_map(|event| match &event.kind {
+            GameEventKind::PhilosopherAbilityResolved { payload }
+                if payload.actor == philosopher_actor(player)
+                    && !matches!(payload.outcome, PhilosopherAbilityOutcome::Deferred) =>
+            {
+                Some(payload.step_id.starts_with(&format!("{prefix}:")))
+            }
+            _ => None,
+        })
+        .unwrap_or(true)
+}
+
+fn philosopher_impairments(
+    players: &[Player],
+    events: &[GameEvent],
+    existing: &[ActiveImpairment],
+) -> Vec<ActiveImpairment> {
+    let mut impairments = Vec::new();
+    for event in events {
+        let GameEventKind::PhilosopherAbilityResolved { payload } = &event.kind else {
+            continue;
+        };
+        match &payload.outcome {
+            PhilosopherAbilityOutcome::SelfDrunk
+                if philosopher_source_player(players, &payload.actor)
+                    .is_some_and(|player| player.alive) =>
+            {
+                impairments.push(ActiveImpairment {
+                    kind: ImpairmentKind::Drunk,
+                    player_id: payload.actor.owner_player_id.clone(),
+                    source_event_id: event.id.clone(),
+                    source_character_id: SnvCharacterId::Philosopher.as_str().into(),
+                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                });
+            }
+            PhilosopherAbilityOutcome::Acquired { .. }
+                if philosopher_source_is_active(players, &payload.actor, existing) =>
+            {
+                let Some(selected) = payload.selected_character_id.as_deref() else {
+                    continue;
+                };
+                if let Some(holder) = players
+                    .iter()
+                    .find(|player| player.actual_character == selected)
+                {
+                    impairments.push(ActiveImpairment {
+                        kind: ImpairmentKind::Drunk,
+                        player_id: holder.id.clone(),
+                        source_event_id: event.id.clone(),
+                        source_character_id: SnvCharacterId::Philosopher.as_str().into(),
+                        expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+    impairments
+}
+
+fn philosopher_ability_grants(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<AbilityGrant> {
+    events
+        .iter()
+        .filter_map(|event| {
+            let GameEventKind::PhilosopherAbilityResolved { payload } = &event.kind else {
+                return None;
+            };
+            let PhilosopherAbilityOutcome::Acquired {
+                granted_ability_instance_id,
+            } = &payload.outcome
+            else {
+                return None;
+            };
+            if !philosopher_source_is_active(
+                players,
+                &payload.actor,
+                &ability_state.active_impairments,
+            ) {
+                return None;
+            }
+            Some(AbilityGrant {
+                owner_player_id: payload.actor.owner_player_id.clone(),
+                character_id: payload.selected_character_id.clone()?,
+                source_event_id: event.id.clone(),
+                source_ability_instance_id: payload.actor.ability_instance_id.clone(),
+                ability_instance_id: granted_ability_instance_id.clone(),
+            })
+        })
+        .collect()
+}
+
 struct SnvAbilityState {
     active_impairments: Vec<ActiveImpairment>,
     retained_minion_player_ids: HashSet<String>,
@@ -3774,6 +4032,12 @@ impl SnvAbilityState {
                 retained_minion_player_ids.insert(minion.id.clone());
             }
         }
+
+        active_impairments.extend(philosopher_impairments(
+            players,
+            events,
+            &active_impairments,
+        ));
 
         Self {
             active_impairments,
@@ -5396,6 +5660,9 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             GameEventKind::PhaseStepSkipped { payload } => {
                 (&payload.step_id, PhaseStepStatus::Skipped)
             }
+            GameEventKind::PhilosopherAbilityResolved { payload } => {
+                (&payload.step_id, PhaseStepStatus::Complete)
+            }
             GameEventKind::ExecutionConfirmed { payload }
             | GameEventKind::NoExecutionConfirmed { payload } => {
                 (&payload.step_id, PhaseStepStatus::Complete)
@@ -5536,6 +5803,22 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             return Err(ErrorKind::ReplayFailed.into_error());
         }
         match (&event.kind, current.support) {
+            (
+                GameEventKind::PhilosopherAbilityResolved { payload },
+                PhaseStepSupport::Automated,
+            ) if current.character.as_deref() == Some("philosopher") => {
+                let expected = expected_philosopher_resolution(
+                    &current,
+                    players_at_event,
+                    &events[..event_index],
+                    &event.id,
+                    payload.selected_character_id.clone(),
+                )
+                .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
+                if *payload != expected {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
+            }
             (GameEventKind::PhaseStepConfirmed { payload }, PhaseStepSupport::Automated) => {
                 let legacy_evil_information = current.step_type == StepType::EvilInfo
                     && payload.input.is_none()
@@ -5580,6 +5863,8 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 }
             }
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Manual) => {}
+            (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Automated)
+                if current.character.as_deref() == Some("philosopher") => {}
             (GameEventKind::ManualPhaseStepResolved { .. }, PhaseStepSupport::Automated)
                 if legacy_manual_demon
                     || legacy_manual_snake_charmer
@@ -5846,6 +6131,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             step_type: StepType::ExecutionDeath,
             character: None,
             player_id: Some(pending.target_player_id.clone()),
+            ability_use: None,
             required_input: RequiredInput {
                 kind: RequiredInputKind::ExecutionDeathDecision,
                 target: Some(InputTarget::Execution),
@@ -6237,6 +6523,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         });
     }
     let active_impairments = ability_state.active_impairments.clone();
+    let ability_grants = philosopher_ability_grants(&players, active_events, &ability_state);
     let pending_vigormortis_poison_choices =
         ability_state.pending_vigormortis_poison_choices.clone();
     let mut automatic_reminders =
@@ -6249,6 +6536,32 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         active_events,
         &mathematician_audit,
     ));
+    for impairment in active_impairments
+        .iter()
+        .filter(|impairment| impairment.source_character_id == "philosopher")
+    {
+        automatic_reminders.push(AutomaticReminder {
+            player_id: impairment.player_id.clone(),
+            character_id: "philosopher".into(),
+            token_id: "drunk".into(),
+            label: "취함".into(),
+            description: "철학자의 능력으로 취했습니다.".into(),
+        });
+    }
+    for grant in &ability_grants {
+        if !players
+            .iter()
+            .any(|player| player.actual_character == grant.character_id)
+        {
+            automatic_reminders.push(AutomaticReminder {
+                player_id: grant.owner_player_id.clone(),
+                character_id: "philosopher".into(),
+                token_id: "isThePhilosopher".into(),
+                label: "철학자임".into(),
+                description: "철학자가 이 캐릭터의 능력을 가집니다.".into(),
+            });
+        }
+    }
     if let Some(curse) = active_witch_curse.as_ref() {
         automatic_reminders.push(AutomaticReminder {
             player_id: curse.target_player_id.clone(),
@@ -6271,6 +6584,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         unannounced_night_death_player_ids,
         unannounced_night_resurrection_player_ids,
         active_impairments: Some(active_impairments),
+        ability_grants: Some(ability_grants),
         automatic_reminders,
         active_witch_curse,
         evil_twin_relationships,
@@ -6359,6 +6673,89 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_death_consequences,
         pending_game_end,
     })
+}
+
+fn expected_philosopher_resolution(
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+    event_id: &str,
+    selected_character_id: Option<String>,
+) -> Result<PhilosopherAbilityResolvedPayload, CoreError> {
+    if step.character.as_deref() != Some(SnvCharacterId::Philosopher.as_str()) {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    let actor = step
+        .ability_use
+        .clone()
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    let source = philosopher_source_player(players, &actor)
+        .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
+    if philosopher_ability_spent(source, events) {
+        return Err(ErrorKind::InvalidStepInput.into_error());
+    }
+    let outcome = match selected_character_id.as_deref() {
+        None => PhilosopherAbilityOutcome::Deferred,
+        Some(selected) if !good_character_ids().iter().any(|id| id == selected) => {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        Some(selected) => {
+            let active = SnvAbilityState::build(players, events)
+                .active_impairments
+                .into_iter()
+                .filter(|impairment| impairment.player_id == source.id)
+                .collect::<Vec<_>>();
+            if !active.is_empty() {
+                PhilosopherAbilityOutcome::NoEffect {
+                    impairments: active,
+                }
+            } else if selected == SnvCharacterId::Philosopher.as_str() {
+                PhilosopherAbilityOutcome::SelfDrunk
+            } else {
+                PhilosopherAbilityOutcome::Acquired {
+                    granted_ability_instance_id: AbilityInstanceId::new(event_id, &source.id),
+                }
+            }
+        }
+    };
+    Ok(PhilosopherAbilityResolvedPayload {
+        step_id: step.id.clone(),
+        actor,
+        selected_character_id,
+        outcome,
+    })
+}
+
+fn propose_philosopher_resolution(
+    game_file: &GameFile,
+    step: &PhaseStep,
+    players: &[Player],
+    selected_character_id: Option<String>,
+) -> Result<Proposal, CoreError> {
+    let event_id = format!("phase-{}", game_file.game.events.len() + 1);
+    let payload = expected_philosopher_resolution(
+        step,
+        players,
+        &game_file.game.events,
+        &event_id,
+        selected_character_id,
+    )?;
+    let summary = match &payload.outcome {
+        PhilosopherAbilityOutcome::Deferred => "철학자 능력 보류".into(),
+        PhilosopherAbilityOutcome::Acquired { .. } => format!(
+            "철학자 능력 획득: {}",
+            payload.selected_character_id.as_deref().unwrap_or_default()
+        ),
+        PhilosopherAbilityOutcome::SelfDrunk => "철학자 자신 선택: 취함".into(),
+        PhilosopherAbilityOutcome::NoEffect { .. } => "철학자 능력 사용: 효과 없음".into(),
+    };
+    Ok(phase_proposal(
+        game_file,
+        step,
+        GameEventKind::PhilosopherAbilityResolved { payload },
+        summary,
+        vec![],
+    ))
 }
 
 pub(crate) fn propose_phase_command(
@@ -6462,6 +6859,9 @@ pub(crate) fn propose_phase_command(
                     vec![],
                 ));
             }
+            if current_step.character.as_deref() == Some("philosopher") {
+                return propose_philosopher_resolution(game_file, &current_step, &players, None);
+            }
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
         Command::ResolveManualStep { payload } => {
@@ -6492,6 +6892,21 @@ pub(crate) fn propose_phase_command(
                 return Err(ErrorKind::StepRequiresManualResolution.into_error());
             }
             validate_required_input(&current_step.required_input, &payload.input, &players)?;
+            if current_step.character.as_deref() == Some("philosopher") {
+                let selected = payload
+                    .input
+                    .as_ref()
+                    .and_then(|fields| fields.character_ids.as_ref())
+                    .and_then(|ids| ids.first())
+                    .cloned()
+                    .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
+                return propose_philosopher_resolution(
+                    game_file,
+                    &current_step,
+                    &players,
+                    Some(selected),
+                );
+            }
             if current_step.required_input.kind == RequiredInputKind::Nomination {
                 let witch_resolution = payload
                     .input

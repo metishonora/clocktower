@@ -133,7 +133,9 @@ async function gameAtFirstNomination(): Promise<GameFile> {
     if (step?.id === "day:nomination:1") break;
     if (!step) throw new Error("game ended before the first nomination");
     let command: Command;
-    if (step.support === "manual") {
+    if (step.character === "philosopher") {
+      command = { type: "skipStep", payload: { stepId: step.id } };
+    } else if (step.support === "manual") {
       command = { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };
     } else if (step.character === "snakeCharmer") {
       command = {

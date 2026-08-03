@@ -483,6 +483,7 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
         step_type: StepType::DemonSuccession,
         character: Some("imp".into()),
         player_id,
+        ability_use: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::DemonSuccession,
             target,
@@ -1121,6 +1122,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
         step_type: StepType::SlayerDeath,
         character: None,
         player_id: Some(player_id.into()),
+        ability_use: None,
         can_skip: false,
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
@@ -1348,6 +1350,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         virgin_ability: None,
         butler_vote,
         active_impairments: None,
+        ability_grants: None,
         automatic_reminders: vec![],
         active_witch_curse: None,
         evil_twin_relationships: vec![],

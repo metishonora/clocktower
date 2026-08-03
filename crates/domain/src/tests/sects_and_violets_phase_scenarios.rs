@@ -47,7 +47,7 @@ fn sects_and_violets_first_night_interleaves_system_and_present_character_steps(
         actual["value"]["currentStep"]["id"],
         "firstNight:philosopher"
     );
-    assert_eq!(actual["value"]["currentStep"]["support"], "manual");
+    assert_eq!(actual["value"]["currentStep"]["support"], "automated");
 
     let ids = actual["value"]["phaseOverview"]
         .as_array()
@@ -74,13 +74,12 @@ fn sects_and_violets_first_night_interleaves_system_and_present_character_steps(
 }
 
 #[test]
-fn manual_step_resolution_has_a_dedicated_replayable_outcome() {
+fn philosopher_defer_has_a_dedicated_replayable_outcome() {
     let before = game(vec![setup_event()]);
     let command = json!({
-        "type": "resolveManualStep",
+        "type": "skipStep",
         "payload": {
-            "stepId": "firstNight:philosopher",
-            "outcome": "handled"
+            "stepId": "firstNight:philosopher"
         }
     });
     let proposed: Value =
@@ -89,9 +88,12 @@ fn manual_step_resolution_has_a_dedicated_replayable_outcome() {
     assert_eq!(proposed["ok"], true, "{proposed}");
     assert_eq!(
         proposed["value"]["event"]["type"],
-        "manualPhaseStepResolved"
+        "philosopherAbilityResolved"
     );
-    assert_eq!(proposed["value"]["event"]["payload"]["outcome"], "handled");
+    assert_eq!(
+        proposed["value"]["event"]["payload"]["outcome"]["kind"],
+        "deferred"
+    );
 
     let mut events = vec![setup_event()];
     events.push(proposed["value"]["event"].clone());
@@ -102,10 +104,7 @@ fn manual_step_resolution_has_a_dedicated_replayable_outcome() {
         "firstNight:minionInfo"
     );
     assert_eq!(replayed["value"]["currentStep"]["support"], "automated");
-    assert_eq!(
-        replayed["value"]["phaseOverview"][0]["status"],
-        "manualComplete"
-    );
+    assert_eq!(replayed["value"]["phaseOverview"][0]["status"], "complete");
 }
 
 #[test]
@@ -120,7 +119,18 @@ fn manual_and_automated_steps_reject_the_wrong_resolution_path() {
         &confirm_manual.to_string(),
     ))
     .unwrap();
-    assert_eq!(rejected["error"]["code"], "STEP_REQUIRES_MANUAL_RESOLUTION");
+    assert_eq!(rejected["error"]["code"], "MISSING_STEP_INPUT");
+
+    let resolve_philosopher_manually = json!({
+        "type": "resolveManualStep",
+        "payload": { "stepId": "firstNight:philosopher", "outcome": "handled" }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &before.to_string(),
+        &resolve_philosopher_manually.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(rejected["error"]["code"], "STEP_IS_AUTOMATED");
 
     let resolve_automated = json!({
         "type": "resolveManualStep",
@@ -159,7 +169,9 @@ fn append_current_resolution(events: &mut Vec<Value>) -> Value {
     let state: Value = serde_json::from_str(&replay_json(&before.to_string())).unwrap();
     assert_eq!(state["ok"], true, "{state}");
     let step = &state["value"]["currentStep"];
-    let command = if step["character"] == "snakeCharmer" {
+    let command = if step["character"] == "philosopher" {
+        json!({ "type": "skipStep", "payload": { "stepId": step["id"] } })
+    } else if step["character"] == "snakeCharmer" {
         json!({
             "type": "confirmStep",
             "payload": { "stepId": step["id"], "input": { "playerIds": ["player-6"] } }

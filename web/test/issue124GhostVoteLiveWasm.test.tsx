@@ -72,7 +72,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await user.click(await within(app).findByRole("button", { name: "이번 밤 보류" }));
   await completeMinionInformation(user, app);
   await completeDemonInformation(user, app);
   await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
@@ -96,7 +96,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await user.click(await within(app).findByRole("button", { name: "확정" }));
   await user.click(await within(app).findByRole("button", { name: "다음 →" }));
 
-  await user.click(await within(app).findByRole("button", { name: "처리 완료" }));
+  await user.click(await within(app).findByRole("button", { name: "이번 밤 보류" }));
   await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
   await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
   await user.click(within(app).getByRole("button", { name: "3번 플레이어 3 선택 확정" }));
@@ -246,6 +246,9 @@ async function completePitHagNoChange(
 }
 
 function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
+  if (step.character === "philosopher") {
+    return { type: "skipStep", payload: { stepId: step.id } };
+  }
   if (step.id === "day:nomination:1") {
     return {
       type: "confirmStep",

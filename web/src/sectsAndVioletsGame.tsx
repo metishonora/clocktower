@@ -68,7 +68,7 @@ import {
 } from "./features/madness/CerenovusMadnessReveal";
 import { EvilTwinReveal, EvilTwinRevealPrompt } from "./features/evil-twin/EvilTwinReveal";
 import { WitchDeathPrompt } from "./features/death-consequences/WitchDeathPrompt";
-import type { PlayerTokenPresentation, PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
+import { PlayerTokenCountBadge, type PlayerTokenPresentation, type PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
 import {
   browserRuntimeClock,
   numberedPhaseForStep,
@@ -207,6 +207,7 @@ export function SectsAndVioletsGameSurface({
   const [evilInformationCheckpoint, setEvilInformationCheckpoint] = useState<EvilInformationCheckpoint>();
   const [evilInformationRevealOpen, setEvilInformationRevealOpen] = useState(false);
   const [selectedBluffCharacterIds, setSelectedBluffCharacterIds] = useState<string[]>([]);
+  const [selectedPhilosopherCharacterId, setSelectedPhilosopherCharacterId] = useState("");
   const [suggestingBluffs, setSuggestingBluffs] = useState(false);
   const [selectedInformationResult, setSelectedInformationResult] = useState<InformationResult>();
   const [playPhase, setPlayPhase] = useState<PlayPhase>("firstNight");
@@ -332,6 +333,9 @@ export function SectsAndVioletsGameSurface({
   }), [replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
+  useEffect(() => {
+    setSelectedPhilosopherCharacterId("");
+  }, [replayState?.currentStep?.id]);
   const pitHagDemonIntents = useMemo(() => {
     const prefix = replayState?.currentStep?.id.split(":")[0];
     if (!prefix) return [];
@@ -416,7 +420,9 @@ export function SectsAndVioletsGameSurface({
     for (const impairment of replayState?.ruleState.activeImpairments ?? []) {
       const source = characters.find((character) => character.id === impairment.sourceCharacterId);
       const description = impairment.kind === "drunk"
-        ? "사랑꾼의 능력으로 영구히 취한 상태입니다."
+        ? impairment.sourceCharacterId === "philosopher"
+          ? "철학자의 능력이 작동하는 동안 취한 상태입니다."
+          : "사랑꾼의 능력으로 영구히 취한 상태입니다."
         : impairment.sourceCharacterId === "vigormortis"
         ? "비고르모르티스가 죽인 하수인의 주민 이웃으로 중독된 상태입니다."
         : impairment.sourceCharacterId === "noDashii"
@@ -433,13 +439,14 @@ export function SectsAndVioletsGameSurface({
       (result[impairment.playerId] ??= []).push(token);
     }
     for (const reminder of replayState?.ruleState.automaticReminders ?? []) {
+      if (reminder.tokenId === "drunk" && replayState?.ruleState.activeImpairments?.some((impairment) => impairment.playerId === reminder.playerId && impairment.sourceCharacterId === reminder.characterId)) continue;
       const source = characters.find((character) => character.id === reminder.characterId);
       (result[reminder.playerId] ??= []).push({
         instanceId: `canonical-${reminder.characterId}-${reminder.tokenId}-${reminder.playerId}`,
         label: reminder.label,
         sourceLabel: source?.name ?? reminder.characterId,
         sourceIconSrc: sectsAndVioletsCharacterAsset(reminder.characterId)?.src,
-        visualKind: "usage",
+        visualKind: reminder.tokenId === "isThePhilosopher" ? "assignment" : reminder.tokenId === "drunk" ? "impairment" : "usage",
         description: reminder.description,
       });
     }
@@ -459,9 +466,23 @@ export function SectsAndVioletsGameSurface({
     return result;
   }, [effectiveMadnessAssignments, replayState?.ruleState.activeImpairments, replayState?.ruleState.automaticReminders]);
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
-  const selectedSeatCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
+  const philosopherDisplayByPlayerId = useMemo(() => {
+    const display = new Map<string, string>();
+    for (const grant of replayState?.ruleState.abilityGrants ?? []) {
+      const selectedInPlay = replayState?.players.some((player) => player.actualCharacter === grant.characterId);
+      if (!selectedInPlay) display.set(grant.ownerPlayerId, grant.characterId);
+    }
+    return display;
+  }, [replayState?.players, replayState?.ruleState.abilityGrants]);
+  const displayedCharacterForSeat = (seat: number) => {
+    const player = replayState?.players.find((candidate) => candidate.seat === seat);
+    return player ? philosopherDisplayByPlayerId.get(player.id) ?? seatAssignments[seat] : seatAssignments[seat];
+  };
+  const selectedSeatCharacterId = selectedSeat ? displayedCharacterForSeat(selectedSeat) : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
   const selectedSeatAsset = sectsAndVioletsCharacterAsset(selectedSeatCharacterId);
+  const selectedCanonicalPlayer = selectedSeat ? replayState?.players.find((player) => player.seat === selectedSeat) : undefined;
+  const selectedSeatTokens = selectedCanonicalPlayer ? canonicalTokensByPlayerId[selectedCanonicalPlayer.id] ?? [] : [];
   const desktopSeatPositions = rectangularSeatPositions(playerCount, false);
   const mobileSeatPositions = rectangularSeatPositions(playerCount, true);
   const heights = grimoireHeights(playerCount);
@@ -1163,6 +1184,32 @@ export function SectsAndVioletsGameSurface({
     }
     setInformationStepId(undefined);
     setFirstNightStepIndex((current) => Math.min(current + 1, firstNightSteps.length));
+  };
+
+  const resolvePhilosopher = async (defer = false) => {
+    const step = replayState?.currentStep;
+    if (!canonicalSession || !step || step.character !== "philosopher" || operationBusy) return;
+    if (!defer && !selectedPhilosopherCharacterId) return;
+    setOperationBusy(true);
+    setOperationError(undefined);
+    const command: Command = defer
+      ? { type: "skipStep", payload: { stepId: step.id } }
+      : {
+          type: "confirmStep",
+          payload: {
+            stepId: step.id,
+            input: { characterIds: [selectedPhilosopherCharacterId] },
+          },
+        };
+    const result = await canonicalSession.propose(gameFile, replayState, command);
+    if (!result.ok) {
+      setOperationBusy(false);
+      setOperationError(result.error.messageKo);
+      return;
+    }
+    await applyCanonicalEvent(result.value.event, "phase");
+    setSelectedPhilosopherCharacterId("");
+    setOperationBusy(false);
   };
 
   const toggleBluffCharacter = (characterId: string) => {
@@ -2347,21 +2394,23 @@ export function SectsAndVioletsGameSurface({
             <div className="snvGrimoireDraft rectangular" aria-label={`${playerCount}자리 그리모어`} style={grimoireSizeStyle}>
               {Array.from({ length: playerCount }, (_, index) => {
                 const seat = index + 1;
-                const characterId = seatAssignments[seat];
+                const assignedCharacterId = seatAssignments[seat];
+                const characterId = seatingConfirmed ? displayedCharacterForSeat(seat) : assignedCharacterId;
                 const character = characters.find((candidate) => candidate.id === characterId);
                 const asset = sectsAndVioletsCharacterAsset(characterId);
                 const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
                 const desktopPosition = desktopSeatPositions[index];
                 const mobilePosition = mobileSeatPositions[index];
                 const canonicalActorSeat = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId)?.seat;
+                const canonicalPlayer = replayState?.players.find((player) => player.seat === seat);
+                const tokenCount = canonicalPlayer ? canonicalTokensByPlayerId[canonicalPlayer.id]?.length ?? 0 : 0;
                 const isCurrentActor = Boolean(
                   seatingConfirmed && characterId && (
                     canonicalActorSeat ? canonicalActorSeat === seat : currentFirstNightStep?.characterId === characterId
                   ),
                 );
-                return (
+                return <Fragment key={seat}>
                   <button
-                    key={seat}
                     type="button"
                     className={`fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "snvCurrentActorSeat " : ""}${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
                     aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
@@ -2379,7 +2428,8 @@ export function SectsAndVioletsGameSurface({
                     <span className="snvSeatPlayerName">{playerName}</span>
                     <small>{character?.name ?? "미할당"}</small>
                   </button>
-                );
+                  {seatingConfirmed && tokenCount > 0 ? <PlayerTokenCountBadge count={tokenCount} position={desktopPosition} mobilePosition={mobilePosition} theme={effectivePlayPhase === "day" ? "day" : "night"} /> : null}
+                </Fragment>;
               })}
               <div className={`snvGrimoireCenter ${seatingConfirmed ? "live" : ""}`}>
                 <strong>{seatingConfirmed ? phaseLabel(effectivePlayPhase, replayState?.currentStep) : `${assignedCount}/${playerCount}`}</strong>
@@ -2418,6 +2468,7 @@ export function SectsAndVioletsGameSurface({
                     </CharacterDetailButton>
                     <div className="snvLiveStatuses" aria-label="현재 상태">
                       <span>생존</span>
+                      {selectedSeatTokens.map((token) => <span key={token.instanceId}>{token.label}</span>)}
                     </div>
                   </>
                 ) : <span>좌석을 선택하세요</span>}
@@ -2486,7 +2537,7 @@ export function SectsAndVioletsGameSurface({
           {replayState.gameEnd.reasonKo ? <p>{replayState.gameEnd.reasonKo}</p> : null}
           <button type="button" onClick={() => navigateToTab("seating")}>마도서 보기</button>
         </section>
-      ) : activeTab === "play" ? production && replayState?.currentStep && effectivePlayPhase !== "firstNight" && !activeInformationStep ? (
+      ) : activeTab === "play" ? production && replayState?.currentStep && effectivePlayPhase !== "firstNight" && !activeInformationStep && replayState.currentStep.character !== "philosopher" ? (
         <SectsAndVioletsLiveProgress
           replayState={replayState}
           phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
@@ -2569,6 +2620,16 @@ export function SectsAndVioletsGameSurface({
                 onSkip={() => void skipCanonicalInformation()}
                 onReveal={() => void showCanonicalInformation()}
                 onContinue={advanceCanonicalInformation}
+              />
+            ) : replayState?.currentStep?.character === "philosopher" && liveActor ? (
+              <PhilosopherAbilityTask
+                step={replayState.currentStep}
+                actor={liveActor}
+                value={selectedPhilosopherCharacterId}
+                busy={operationBusy}
+                onChange={setSelectedPhilosopherCharacterId}
+                onConfirm={() => void resolvePhilosopher(false)}
+                onDefer={() => void resolvePhilosopher(true)}
               />
             ) : effectivePlayPhase === "firstNight" && currentFirstNightStep && !isTransitionStep(currentFirstNightStep) ? (
               <article className="snvCurrentStep">
@@ -2937,6 +2998,47 @@ function informationRevealLabel(characterId: string | undefined): string {
   if (characterId === "townCrier") return "오늘 하수인이…";
   if (characterId === "juggler") return "맞힌 추측";
   return "죽은 악한 플레이어";
+}
+
+function PhilosopherAbilityTask({
+  step,
+  actor,
+  value,
+  busy,
+  onChange,
+  onConfirm,
+  onDefer,
+}: {
+  step: PhaseStep;
+  actor: Player;
+  value: string;
+  busy: boolean;
+  onChange: (characterId: string) => void;
+  onConfirm: () => void;
+  onDefer: () => void;
+}) {
+  const philosopher = characters.find((character) => character.id === "philosopher")!;
+  const asset = sectsAndVioletsCharacterAsset("philosopher");
+  const allowed = new Set(step.requiredInput.allowedCharacterIds ?? []);
+  return <article className="snvCurrentStep issue107Step" aria-label="철학자 능력 선택">
+    <p className="snvCurrentStepLabel">현재 할 일</p>
+    <CharacterDetailButton details={sectsAndVioletsCharacterDetail("philosopher")} className="snvCurrentStepIdentity interactive issue107ActorIdentity" theme="snv-night">
+      {asset ? <img src={asset.src} alt="철학자 공식 캐릭터 아이콘" /> : null}
+      <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{philosopher.name}</span><strong>{actor.seat}번 {actor.name}</strong></div>
+    </CharacterDetailButton>
+    <p className="snvInformationAbility">{philosopher.ability}</p>
+    <label className="issue107AbilitySelect">
+      <span>능력</span>
+      <select aria-label="얻을 선한 캐릭터 능력" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)}>
+        <option value="">선택</option>
+        {characters.filter((character) => allowed.has(character.id)).map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}
+      </select>
+    </label>
+    <div className="snvStepActions">
+      <button type="button" disabled={busy || !value} onClick={onConfirm}>선택 확정</button>
+      <button type="button" className="secondary" disabled={busy} onClick={onDefer}>이번 밤 보류</button>
+    </div>
+  </article>;
 }
 
 function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {

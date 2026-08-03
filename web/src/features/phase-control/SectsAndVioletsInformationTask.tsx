@@ -45,6 +45,9 @@ export function SectsAndVioletsInformationTask({
   const characterId = step.character ?? actor.actualCharacter;
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
   const asset = sectsAndVioletsCharacterAsset(characterId);
+  const grantedAbility = Boolean(step.abilityUse && step.abilityUse.characterId !== actor.actualCharacter);
+  const actorCharacter = sectsAndVioletsCharacters.find((candidate) => candidate.id === actor.actualCharacter);
+  const actorAsset = sectsAndVioletsCharacterAsset(actor.actualCharacter);
   const influences = visibleInformationInfluences(step.informationPrompt?.activeReasons ?? []);
   const influence = actionInformationInfluence(influences);
   const influencePresentation = influence ? informationInfluencePresentation[influence] : undefined;
@@ -84,6 +87,21 @@ export function SectsAndVioletsInformationTask({
   return (
     <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}${characterId === "clockmaker" ? " snvClockmakerInformationTask" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
       {usesManualStepLayout ? <p className="snvCurrentStepLabel">현재 할 일</p> : null}
+      {grantedAbility ? <>
+        <CharacterDetailButton
+          details={sectsAndVioletsCharacterDetail(actor.actualCharacter)}
+          className="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity"
+          theme="snv-night"
+        >
+          {actorAsset ? <img src={actorAsset.src} alt={`${actorCharacter?.name ?? actor.actualCharacter} 공식 캐릭터 아이콘`} /> : null}
+          <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorCharacter?.name ?? actor.actualCharacter}</span><strong>{actor.name}</strong></div>
+        </CharacterDetailButton>
+        <CharacterDetailButton details={sectsAndVioletsCharacterDetail(characterId)} className="issue107AbilityResult interactive" theme="snv-night">
+          <span>획득한 능력</span>
+          {asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}
+          <div><strong>{character?.name ?? characterId}</strong><p>{character?.ability}</p></div>
+        </CharacterDetailButton>
+      </> : <>
       <CharacterDetailButton
         details={sectsAndVioletsCharacterDetail(characterId)}
         className={`snvCurrentStepIdentity interactive snvInformationIdentity${usesManualStepLayout ? " snvInformationPendingIdentity" : ""}`}
@@ -100,6 +118,7 @@ export function SectsAndVioletsInformationTask({
       </CharacterDetailButton>
 
       <p className="snvInformationAbility">{character?.ability}</p>
+      </>}
       {needsTargets ? (
         <div className="snvStepActions snvInformationTargetActions">
           <button type="button" className="prominent" disabled={busy} onClick={onChooseTargets}>대상 선택</button>

@@ -421,3 +421,16 @@
 .snvEndedPlaySurface h2 { margin: 24px 0 0; color: #421b2a; font: 500 clamp(2.35rem, 5vw, 3.5rem) Georgia, serif; }
 .snvEndedPlaySurface p { margin: 14px 0 0; color: #725462; font-size: .9rem; font-weight: 700; }
 .snvEndedPlaySurface button { min-width: 220px; min-height: 48px; margin-top: 38px; border: 1px solid rgba(91, 58, 99, .22); border-radius: 12px; color: #553c5c; background: rgba(255, 255, 255, .78); font: inherit; font-weight: 900; cursor: pointer; }
+
+.issue107Step { min-height: 390px; }
+.issue107Step .issue107ActorIdentity { margin: 26px 0 12px !important; }
+.issue107ActorIdentity > div { display: grid; gap: 7px; }
+.issue107ActorIdentity strong { color: #ddcae2; font-size: .9rem; }
+.issue107Step > .snvInformationAbility { margin-top: 0; }
+.issue107AbilitySelect { display: grid; width: min(360px, 100%); margin-top: 28px; gap: 7px; }
+.issue107AbilitySelect span { color: #c7b4cf; font-size: .72rem; font-weight: 850; }
+.issue107AbilitySelect select { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 12px; color: #f8f0fb; background: #3a2147; font: inherit; font-weight: 800; }
+@media (max-width: 760px) {
+  .issue107Step { min-height: 320px; }
+  .issue107Step .issue107ActorIdentity { margin-top: 20px !important; }
+}

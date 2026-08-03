@@ -149,6 +149,7 @@ pub(crate) fn day_steps(
             step_type: StepType::ExecutionDeath,
             character: None,
             player_id: executed_player_id,
+            ability_use: None,
             required_input: RequiredInput {
                 kind: RequiredInputKind::ExecutionDeathDecision,
                 target: Some(InputTarget::Execution),
@@ -206,6 +207,7 @@ fn witch_death_step(nomination_step_id: &str, nominator_id: String) -> PhaseStep
         step_type: StepType::WitchDeath,
         character: Some("witch".into()),
         player_id: Some(nominator_id),
+        ability_use: None,
         required_input: required_none(),
         can_skip: false,
         support: crate::model::PhaseStepSupport::Automated,
@@ -221,6 +223,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
         step_type: StepType::Nomination,
         character: None,
         player_id: None,
+        ability_use: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::Nomination,
             target: Some(InputTarget::Players),
@@ -275,6 +278,7 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
         step_type: StepType::Nomination,
         character: None,
         player_id: None,
+        ability_use: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::NominationVote,
             target: Some(InputTarget::Players),
@@ -309,6 +313,7 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
         step_type: StepType::ExecutionDeath,
         character: Some("virgin".into()),
         player_id: Some(player_id.clone()),
+        ability_use: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::ExecutionDeathDecision,
             target: Some(InputTarget::Execution),

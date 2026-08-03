@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    AbilityInstanceId, Alignment, ConfirmedInformation, CoreWarning, DayState, DeliveryReason,
-    InformationResult, Phase, PhaseOverviewItem, PhaseStep, Player, PlayerIdentityTransition,
-    PlayerTransition, RegistrationJudgment, ScriptTokenRef, StepInput, SystemTokenId,
+    AbilityGrant, AbilityInstanceId, AbilityUseRef, Alignment, ConfirmedInformation, CoreWarning,
+    DayState, DeliveryReason, InformationResult, Phase, PhaseOverviewItem, PhaseStep, Player,
+    PlayerIdentityTransition, PlayerTransition, RegistrationJudgment, ScriptTokenRef, StepInput,
+    SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -528,6 +529,8 @@ pub(crate) struct RuleState {
     pub(crate) butler_vote: Option<ButlerVoteState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_grants: Option<Vec<AbilityGrant>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) automatic_reminders: Vec<AutomaticReminder>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -776,6 +779,10 @@ pub(crate) enum GameEventKind {
     PhaseStepSkipped { payload: StepIdPayload },
     #[serde(rename = "phaseStepNeedsFollowUp")]
     PhaseStepNeedsFollowUp { payload: StepIdPayload },
+    #[serde(rename = "philosopherAbilityResolved")]
+    PhilosopherAbilityResolved {
+        payload: PhilosopherAbilityResolvedPayload,
+    },
     #[serde(rename = "manualPhaseStepResolved")]
     ManualPhaseStepResolved {
         payload: ManualPhaseStepResolvedPayload,
@@ -869,6 +876,7 @@ impl GameEventKind {
         "phaseStepConfirmed",
         "phaseStepSkipped",
         "phaseStepNeedsFollowUp",
+        "philosopherAbilityResolved",
         "manualPhaseStepResolved",
         "nominationVoteConfirmed",
         "nominationStarted",
@@ -1505,6 +1513,34 @@ pub(crate) struct SetupEventPayload {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepIdPayload {
     pub(crate) step_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PhilosopherAbilityResolvedPayload {
+    pub(crate) step_id: String,
+    pub(crate) actor: AbilityUseRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) selected_character_id: Option<String>,
+    pub(crate) outcome: PhilosopherAbilityOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum PhilosopherAbilityOutcome {
+    Deferred,
+    Acquired {
+        granted_ability_instance_id: AbilityInstanceId,
+    },
+    SelfDrunk,
+    NoEffect {
+        impairments: Vec<ActiveImpairment>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

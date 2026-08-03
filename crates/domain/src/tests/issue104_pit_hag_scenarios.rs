@@ -103,7 +103,9 @@ fn advance_to_pit_hag(events: &mut Vec<Value>) -> Value {
             return state;
         }
         let step_id = step["id"].as_str().expect("step id");
-        let command = if step["requiredInput"]["kind"] == "nomination" {
+        let command = if step["character"] == "philosopher" {
+            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
+        } else if step["requiredInput"]["kind"] == "nomination" {
             json!({ "type": "skipStep", "payload": { "stepId": step_id } })
         } else if step["requiredInput"]["kind"] == "executionDecision" {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })
@@ -177,6 +179,9 @@ fn advance_to(events: &mut Vec<Value>, wanted: impl Fn(&Value) -> bool) -> Value
         let step = &state["value"]["currentStep"];
         let step_id = step["id"].as_str().expect("current step id");
         let command = match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
+            "characterIds" if step["character"] == "philosopher" => json!({
+                "type": "skipStep", "payload": { "stepId": step_id }
+            }),
             "characterIds" if step_id == "firstNight:demonInfo" => json!({
                 "type": "confirmStep",
                 "payload": { "stepId": step_id, "input": snv_demon_bluff_input(step) }

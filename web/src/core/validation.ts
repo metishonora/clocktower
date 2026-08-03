@@ -142,6 +142,9 @@ export function parseGameEvent(value: unknown): GameEvent {
     case "phaseStepNeedsFollowUp":
       if (typeof payload.stepId !== "string") throw invalidEvent();
       break;
+    case "philosopherAbilityResolved":
+      if (!isPhilosopherAbilityResolvedPayload(payload)) throw invalidEvent();
+      break;
     case "manualPhaseStepResolved":
       if (
         !hasExactKeys(payload, ["stepId", "outcome"]) ||
@@ -627,6 +630,7 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     stepTypes.has(value.stepType as PhaseStep["stepType"]) &&
     isOptionalString(value.character) &&
     isOptionalString(value.playerId) &&
+    (value.abilityUse === undefined || isAbilityUseRef(value.abilityUse)) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
     (value.support === undefined || value.support === "automated" || value.support === "manual") &&
@@ -634,6 +638,14 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     (value.informationPrompt === undefined ||
       isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
   );
+}
+
+function isAbilityUseRef(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["ownerPlayerId", "characterId", "abilityInstanceId"]) &&
+    typeof value.ownerPlayerId === "string" &&
+    typeof value.characterId === "string" &&
+    typeof value.abilityInstanceId === "string";
 }
 
 function isPreActionReveal(value: unknown): boolean {
@@ -1061,6 +1073,7 @@ function isRuleState(value: unknown): boolean {
       "virginAbility",
       "butlerVote",
       "activeImpairments",
+      "abilityGrants",
       "automaticReminders",
       "activeWitchCurse",
       "evilTwinRelationships",
@@ -1092,12 +1105,24 @@ function isRuleState(value: unknown): boolean {
         typeof value.butlerVote.restrictionApplies === "boolean")) &&
     (value.activeImpairments === undefined ||
       (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment))) &&
+    (value.abilityGrants === undefined ||
+      (Array.isArray(value.abilityGrants) && value.abilityGrants.every(isAbilityGrant))) &&
     (value.automaticReminders === undefined ||
       (Array.isArray(value.automaticReminders) && value.automaticReminders.every(isAutomaticReminder))) &&
     (value.activeWitchCurse === undefined || isActiveWitchCurse(value.activeWitchCurse)) &&
     (value.evilTwinRelationships === undefined ||
       (Array.isArray(value.evilTwinRelationships) && value.evilTwinRelationships.every(isEvilTwinRelationship)))
   );
+}
+
+function isAbilityGrant(value: unknown): boolean {
+  return isRecord(value) &&
+    hasExactKeys(value, ["ownerPlayerId", "characterId", "sourceEventId", "sourceAbilityInstanceId", "abilityInstanceId"]) &&
+    typeof value.ownerPlayerId === "string" &&
+    typeof value.characterId === "string" &&
+    typeof value.sourceEventId === "string" &&
+    typeof value.sourceAbilityInstanceId === "string" &&
+    typeof value.abilityInstanceId === "string";
 }
 
 function isActiveWitchCurse(value: unknown): boolean {
@@ -1496,6 +1521,32 @@ function isActiveImpairment(value: unknown): value is ActiveImpairment {
     typeof value.sourceEventId === "string" &&
     typeof value.sourceCharacterId === "string" &&
     (value.expires === "never" || value.expires === "whileSourceAbilityActive");
+}
+
+function isPhilosopherAbilityResolvedPayload(value: unknown): boolean {
+  if (!isRecord(value) || !hasOnlyKeys(value, ["stepId", "actor", "selectedCharacterId", "outcome"]) ||
+      typeof value.stepId !== "string" || !isAbilityUseRef(value.actor) ||
+      (value.selectedCharacterId !== undefined && typeof value.selectedCharacterId !== "string") ||
+      !isRecord(value.outcome)) {
+    return false;
+  }
+  const outcome = value.outcome;
+  if (outcome.kind === "deferred") {
+    return hasExactKeys(outcome, ["kind"]) && value.selectedCharacterId === undefined;
+  }
+  if (outcome.kind === "acquired") {
+    return hasExactKeys(outcome, ["kind", "grantedAbilityInstanceId"]) &&
+      typeof outcome.grantedAbilityInstanceId === "string" &&
+      typeof value.selectedCharacterId === "string";
+  }
+  if (outcome.kind === "selfDrunk") {
+    return hasExactKeys(outcome, ["kind"]) && typeof value.selectedCharacterId === "string";
+  }
+  return outcome.kind === "noEffect" &&
+    hasExactKeys(outcome, ["kind", "impairments"]) &&
+    typeof value.selectedCharacterId === "string" &&
+    Array.isArray(outcome.impairments) &&
+    outcome.impairments.every(isActiveImpairment);
 }
 
 function isDeathTriggerRef(value: unknown): boolean {

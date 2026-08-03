@@ -32,6 +32,7 @@ pub(crate) fn simple_step(
         step_type,
         character: None,
         player_id: None,
+        ability_use: None,
         required_input,
         can_skip,
         support: crate::model::PhaseStepSupport::Automated,
@@ -52,6 +53,7 @@ pub(crate) fn phase_transition_step(
         step_type: StepType::PhaseTransition,
         character: None,
         player_id: None,
+        ability_use: None,
         required_input: RequiredInput {
             kind: next_phase,
             target: Some(InputTarget::Phase),

@@ -1063,6 +1063,7 @@ pub(crate) fn character_steps(
                 player_id: waking_characters
                     .get(character)
                     .map(|player| player.id.clone()),
+                ability_use: None,
                 required_input: character_required_input(character),
                 can_skip: true,
                 support: crate::model::PhaseStepSupport::Automated,

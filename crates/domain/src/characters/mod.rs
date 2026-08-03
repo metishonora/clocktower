@@ -67,6 +67,7 @@ impl ScriptRules {
                             | GameEventKind::EvilTwinPairAssigned { .. }
                             | GameEventKind::NominationVoteConfirmed { .. }
                             | GameEventKind::PhaseStepSkipped { .. }
+                            | GameEventKind::PhilosopherAbilityResolved { .. }
                             | GameEventKind::ExecutionConfirmed { .. }
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }

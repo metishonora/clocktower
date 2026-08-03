@@ -62,6 +62,35 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   deepEqual<unknown>(parseReplayState(replay), replay);
 });
 
+test("accepts only the canonical Philosopher resolution and grant references", () => {
+  const event = {
+    id: "phase-2",
+    type: "philosopherAbilityResolved",
+    phase: "firstNight",
+    payload: {
+      stepId: "firstNight:philosopher",
+      actor: {
+        ownerPlayerId: "player-1",
+        characterId: "philosopher",
+        abilityInstanceId: "setup:player-1",
+      },
+      selectedCharacterId: "dreamer",
+      outcome: { kind: "acquired", grantedAbilityInstanceId: "phase-2:player-1" },
+    },
+    summary: "철학자 능력 획득: dreamer",
+    createdAt: "2026-08-04T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "philosopherAbilityResolved");
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, outcome: { kind: "acquired" } },
+  }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, forgedTargetPlayerId: "player-2" },
+  }));
+});
+
 test("accepts canonical Vortox and impaired numeric constraints", () => {
   const replay = {
     schemaVersion: 3,

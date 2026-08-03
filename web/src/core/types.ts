@@ -467,6 +467,7 @@ export type RuleState = {
   };
   butlerVote?: ButlerVoteState;
   activeImpairments?: ActiveImpairment[];
+  abilityGrants?: AbilityGrant[];
   automaticReminders?: Array<{
     playerId: string;
     characterId: string;
@@ -512,6 +513,20 @@ export type ActiveRuleEffect = {
   playerId: string;
   sourcePlayerId: string;
   sourceEventId: string;
+};
+
+export type AbilityUseRef = {
+  ownerPlayerId: string;
+  characterId: string;
+  abilityInstanceId: string;
+};
+
+export type AbilityGrant = {
+  ownerPlayerId: string;
+  characterId: string;
+  sourceEventId: string;
+  sourceAbilityInstanceId: string;
+  abilityInstanceId: string;
 };
 
 export type Proposal = {
@@ -673,6 +688,21 @@ type EventCommon = {
   createdAt: string;
 };
 
+export type PhilosopherAbilityOutcome =
+  | { kind: "deferred" }
+  | { kind: "acquired"; grantedAbilityInstanceId: string }
+  | { kind: "selfDrunk" }
+  | { kind: "noEffect"; impairments: ActiveImpairment[] };
+
+export type PhilosopherAbilityResolvedOutcome = PhilosopherAbilityOutcome;
+
+export type PhilosopherAbilityResolvedPayload = {
+  stepId: string;
+  actor: AbilityUseRef;
+  selectedCharacterId?: string;
+  outcome: PhilosopherAbilityOutcome;
+};
+
 export type GameEvent = EventCommon &
   (
     | { type: "smokeConfirmed"; payload: { source: string } }
@@ -683,6 +713,7 @@ export type GameEvent = EventCommon &
       }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
+    | { type: "philosopherAbilityResolved"; payload: PhilosopherAbilityResolvedPayload }
     | {
         type: "manualPhaseStepResolved";
         payload: { stepId: string; outcome: "handled" | "notApplicable" };
@@ -1109,6 +1140,7 @@ export type PhaseStep = {
   stepType: StepType;
   character?: string;
   playerId?: string;
+  abilityUse?: AbilityUseRef;
   requiredInput: RequiredInput;
   canSkip: boolean;
   support?: "automated" | "manual";

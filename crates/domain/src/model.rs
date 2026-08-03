@@ -440,6 +440,8 @@ pub(crate) struct PhaseStep {
     pub(crate) character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
     pub(crate) support: PhaseStepSupport,
@@ -684,6 +686,29 @@ impl AbilityInstanceId {
     pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
         Self(format!("{source_event_id}:{player_id}"))
     }
+}
+
+/// Identifies the concrete ability instance that is acting. A player keeps
+/// their current base ability instance, while replay-derived grants get their
+/// own independent instance IDs.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityUseRef {
+    pub(crate) owner_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+}
+
+/// A healthy Philosopher acquisition projected from the confirmed event
+/// stream. The grant does not alter the owning player's canonical identity.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityGrant {
+    pub(crate) owner_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) source_event_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) ability_instance_id: AbilityInstanceId,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

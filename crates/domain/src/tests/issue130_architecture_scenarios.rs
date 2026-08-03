@@ -90,6 +90,10 @@ fn command_for_current_step(state: &Value, event_count: usize) -> Value {
     }
 
     match step["requiredInput"]["kind"].as_str().unwrap_or("none") {
+        "characterIds" if step["character"] == "philosopher" => json!({
+            "type": "skipStep",
+            "payload": { "stepId": step_id, "expectedEventCount": event_count }
+        }),
         "characterIds" if step_id == "firstNight:demonInfo" => json!({
             "type": "confirmStep",
             "payload": {

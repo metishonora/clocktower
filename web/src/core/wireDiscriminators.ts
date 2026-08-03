@@ -23,6 +23,7 @@ export const eventDiscriminators = [
   "phaseStepConfirmed",
   "phaseStepSkipped",
   "phaseStepNeedsFollowUp",
+  "philosopherAbilityResolved",
   "manualPhaseStepResolved",
   "nominationVoteConfirmed",
   "nominationStarted",
