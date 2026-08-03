@@ -586,6 +586,12 @@ test("accepts the Vigormortis source effect, replacement event, and pending choi
         tokenId: "hasAbility",
         label: "능력 있음",
         description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.",
+      }, {
+        playerId: "player-2",
+        characterId: "seamstress",
+        tokenId: "noAbility",
+        label: "능력 없음",
+        description: "재봉사 능력을 이미 사용했습니다.",
       }],
     },
     warnings: [],

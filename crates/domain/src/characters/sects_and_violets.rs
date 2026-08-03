@@ -2165,6 +2165,26 @@ fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
         .collect()
 }
 
+fn automatic_seamstress_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    players
+        .iter()
+        .filter(|player| {
+            player.actual_character == "seamstress"
+                && ability_instance_already_used(SnvCharacterId::Seamstress, player, events)
+        })
+        .map(|player| AutomaticReminder {
+            player_id: player.id.clone(),
+            character_id: "seamstress".into(),
+            token_id: "noAbility".into(),
+            label: "능력 없음".into(),
+            description: "재봉사 능력을 이미 사용했습니다.".into(),
+        })
+        .collect()
+}
+
 fn snv_information_result(
     step: &PhaseStep,
     players: &[Player],
@@ -5583,6 +5603,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
+    automatic_reminders.extend(automatic_seamstress_reminders(&players, active_events));
     if let Some(curse) = active_witch_curse.as_ref() {
         automatic_reminders.push(AutomaticReminder {
             player_id: curse.target_player_id.clone(),
