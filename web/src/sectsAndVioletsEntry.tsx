@@ -33,6 +33,13 @@ const DevIssue112FangGuJumpPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue107PhilosopherAbilityPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue107PhilosopherAbilityPrototype");
+      return { default: module.Issue107PhilosopherAbilityPrototype };
+    })
+  : undefined;
+
 const showIssue120Prototype = Boolean(
   DevIssue120EventLogPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
@@ -53,9 +60,18 @@ const showIssue112Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-112-fang-gu-jump",
 );
 
+const showIssue107Prototype = Boolean(
+  DevIssue107PhilosopherAbilityPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-107-philosopher-ability",
+);
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue112Prototype && DevIssue112FangGuJumpPrototype ? (
+    {showIssue107Prototype && DevIssue107PhilosopherAbilityPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue107PhilosopherAbilityPrototype />
+      </React.Suspense>
+    ) : showIssue112Prototype && DevIssue112FangGuJumpPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue112FangGuJumpPrototype />
       </React.Suspense>

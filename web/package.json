@@ -27,6 +27,7 @@
     "prototype:issue-116-phase-handoff": "vite --host 0.0.0.0",
     "prototype:issue-120-event-log": "vite --host 0.0.0.0",
     "prototype:issue-121-token-overview": "vite --host 0.0.0.0",
+    "prototype:issue-107-philosopher-ability": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "generate:pwa-assets": "pwa-assets-generator --preset minimal --root public --manifest false assets/icons/app-icon.svg",
