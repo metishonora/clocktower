@@ -169,7 +169,7 @@ fn philosopher_step_exposes_the_good_catalog_and_defers_without_spending() {
 }
 
 #[test]
-fn out_of_play_dreamer_grant_keeps_identity_and_runs_the_same_night() {
+fn out_of_play_dreamer_grant_keeps_identity_and_waits_for_its_first_night_order() {
     let mut events = vec![setup_event("vortox")];
     let base_ability_id = replay(&events)["value"]["players"][0]["abilityInstance"]["id"]
         .as_str()
@@ -200,12 +200,22 @@ fn out_of_play_dreamer_grant_keeps_identity_and_runs_the_same_night() {
         grant["abilityInstanceId"],
         event["payload"]["outcome"]["grantedAbilityInstanceId"]
     );
-    assert_eq!(after["value"]["currentStep"]["character"], "dreamer");
-    assert_eq!(after["value"]["currentStep"]["playerId"], "player-1");
-    assert_eq!(
-        after["value"]["currentStep"]["abilityUse"]["abilityInstanceId"],
-        grant["abilityInstanceId"]
-    );
+    assert_eq!(after["value"]["currentStep"]["id"], "firstNight:minionInfo");
+    let overview = after["value"]["phaseOverview"].as_array().unwrap();
+    let clockmaker_index = overview
+        .iter()
+        .position(|step| step["character"] == "clockmaker")
+        .unwrap();
+    let dreamer_index = overview
+        .iter()
+        .position(|step| step["character"] == "dreamer" && step["playerId"] == "player-1")
+        .unwrap();
+    let mathematician_index = overview
+        .iter()
+        .position(|step| step["character"] == "mathematician")
+        .unwrap();
+    assert!(clockmaker_index < dreamer_index);
+    assert!(dreamer_index < mathematician_index);
     assert!(has_reminder(&after, "player-1", "isThePhilosopher"));
     assert!(!has_impairment(
         &after,

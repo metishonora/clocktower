@@ -1570,12 +1570,44 @@ fn insert_acquired_ability_steps(
             character_id: grant.character_id.clone(),
             ability_instance_id: grant.ability_instance_id.clone(),
         });
-        // A Philosopher resolves the newly gained ability during their wake,
-        // before the grimoire proceeds to the next ordinary wake entry.
-        let insert_at = steps
-            .iter()
-            .position(|candidate| candidate.id == payload.step_id)
-            .map(|index| index + 1)
+        let target_rank = match phase {
+            Phase::FirstNight => metadata.first_night_rank,
+            Phase::Night => metadata.later_night_rank,
+            _ => None,
+        };
+        let insert_at = target_rank
+            .and_then(|target_rank| {
+                steps.iter().position(|candidate| {
+                    SnvStepKey::parse(&candidate.id)
+                        .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
+                        || candidate
+                            .character
+                            .as_deref()
+                            .and_then(SnvCharacterId::parse)
+                            .and_then(|character| match phase {
+                                Phase::FirstNight => character.metadata().first_night_rank,
+                                Phase::Night => character.metadata().later_night_rank,
+                                _ => None,
+                            })
+                            .is_some_and(|rank| rank > target_rank)
+                })
+            })
+            .or_else(|| {
+                start_knowing
+                    .then(|| {
+                        steps
+                            .iter()
+                            .position(|candidate| candidate.id == payload.step_id)
+                            .map(|index| index + 1)
+                    })
+                    .flatten()
+            })
+            .or_else(|| {
+                steps.iter().position(|candidate| {
+                    SnvStepKey::parse(&candidate.id)
+                        .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
+                })
+            })
             .unwrap_or(steps.len());
         steps.insert(insert_at, step);
     }
