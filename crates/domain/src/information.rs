@@ -12,8 +12,9 @@ use crate::{
     error::{CoreError, ErrorKind},
     model::{
         ConfirmedInformation, DeliveryContext, DeliveryReason, InformationActor,
-        InformationDeliveryMode, InformationPrompt, InformationResult, PhaseStep, Player,
-        RegistrationJudgment, RegistrationValue, RequiredInputKind, StepInput,
+        InformationDeliveryMode, InformationPrompt, InformationResult, NumberInformationConstraint,
+        PhaseStep, Player, RegistrationJudgment, RegistrationValue, RequiredInputKind, StepInput,
+        MAX_SAFE_INFORMATION_NUMBER,
     },
 };
 
@@ -35,11 +36,17 @@ pub(crate) fn information_prompt(
     } else {
         Vec::new()
     };
-    let number_choices = if is_number {
+    let number_choices = if is_number && active_reasons.is_empty() {
         legal_number_choices(step, players, !active_reasons.is_empty())
     } else {
         Vec::new()
     };
+    let number_constraint =
+        (is_number && !active_reasons.is_empty()).then(|| NumberInformationConstraint {
+            min: 0,
+            max: MAX_SAFE_INFORMATION_NUMBER,
+            excluded_values: vec![],
+        });
     let setup_info_registration_options = if is_setup_info {
         setup_info_registration_options(step, players)
     } else {
@@ -61,7 +68,7 @@ pub(crate) fn information_prompt(
         active_reasons,
         registration_candidate_player_ids,
         number_choices,
-        number_constraint: None,
+        number_constraint,
         boolean_choices: Vec::new(),
         setup_info_registration_options,
         target_checks,
@@ -275,7 +282,7 @@ fn confirmed_number_information(
         let InformationResult::Number { value } = delivered else {
             return Err(ErrorKind::InvalidDeliveredInformation.into_error());
         };
-        if !choices.iter().any(|choice| choice.value == value) {
+        if value > MAX_SAFE_INFORMATION_NUMBER {
             return Err(ErrorKind::InvalidDeliveredInformation.into_error());
         }
         (

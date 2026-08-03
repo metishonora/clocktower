@@ -259,7 +259,12 @@ export function stepInputReady(
   }
   if (step.requiredInput.kind === "executionDecision") return true;
   if (step.requiredInput.kind === "executionDeathDecision") return true;
-  if (step.informationPrompt?.numberChoices.length) {
+  if (step.informationPrompt?.numberConstraint) {
+    if (!numberChoiceSatisfiesConstraint(
+      selectedNumberChoice,
+      step.informationPrompt.numberConstraint,
+    )) return false;
+  } else if (step.informationPrompt?.numberChoices.length) {
     if (!selectedNumberChoice) return false;
     if (
       !step.informationPrompt.numberChoices.some(
@@ -468,6 +473,15 @@ export function phaseStepConfirmation(
   const choice = step.informationPrompt?.numberChoices.find(
     (candidate) => candidate.value === draft.selectedNumberChoice?.value,
   );
+  const constraint = step.informationPrompt?.numberConstraint;
+  const constrainedChoice = draft.selectedNumberChoice;
+  if (constraint && constrainedChoice && numberChoiceSatisfiesConstraint(constrainedChoice, constraint)) {
+    confirmation.deliveredResult = {
+      kind: "number",
+      value: constrainedChoice.value,
+    };
+    return confirmation;
+  }
   if (!choice) return confirmation;
   const impaired = setupInfoDeliveryIsImpaired(step);
   if (!choice.isComputed || impaired) {
@@ -477,6 +491,19 @@ export function phaseStepConfirmation(
     confirmation.registrationJudgments = choice.registrationJudgments;
   }
   return confirmation;
+}
+
+export function numberChoiceSatisfiesConstraint(
+  choice: NumberChoice | undefined,
+  constraint: NonNullable<NonNullable<PhaseStep["informationPrompt"]>["numberConstraint"]>,
+): boolean {
+  return Boolean(
+    choice
+      && Number.isSafeInteger(choice.value)
+      && choice.value >= constraint.min
+      && choice.value <= constraint.max
+      && !constraint.excludedValues.includes(choice.value),
+  );
 }
 
 export function targetCheckForSelection(

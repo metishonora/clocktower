@@ -1181,7 +1181,7 @@ fn recluse_next_to_imp_can_register_evil_for_chef() {
 }
 
 #[test]
-fn poisoned_chef_prompt_exposes_full_script_range_and_rejects_out_of_range() {
+fn poisoned_chef_accepts_any_nonnegative_safe_integer() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
             { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
@@ -1199,23 +1199,41 @@ fn poisoned_chef_prompt_exposes_full_script_range_and_rejects_out_of_range() {
         )
     ]));
     let replayed: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
-    let choices = replayed["value"]["currentStep"]["informationPrompt"]["numberChoices"]
-        .as_array()
-        .unwrap();
-    assert_eq!(choices.len(), 6);
-    assert_eq!(choices[0]["value"], 0);
-    assert_eq!(choices[5]["value"], 5);
+    let prompt = &replayed["value"]["currentStep"]["informationPrompt"];
+    assert_eq!(prompt["numberChoices"], json!([]));
+    assert_eq!(
+        prompt["numberConstraint"],
+        json!({
+            "min": 0,
+            "max": 9_007_199_254_740_991_u64,
+            "excludedValues": []
+        })
+    );
 
-    let forged = json!({
+    let arbitrary = json!({
         "type": "confirmStep",
         "payload": {
             "stepId": "firstNight:chef",
-            "deliveredResult": { "kind": "number", "value": 6 }
+            "deliveredResult": { "kind": "number", "value": 100 }
         }
     });
-    let rejected: Value =
-        serde_json::from_str(&propose_json(&game.to_string(), &forged.to_string())).unwrap();
-    assert_eq!(rejected["ok"], false);
+    let accepted: Value =
+        serde_json::from_str(&propose_json(&game.to_string(), &arbitrary.to_string())).unwrap();
+    assert_eq!(accepted["ok"], true, "{accepted}");
+
+    let unsafe_integer = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": 9_007_199_254_740_992_u64 }
+        }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &unsafe_integer.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(rejected["ok"], false, "{rejected}");
     assert_eq!(rejected["error"]["code"], "INVALID_DELIVERED_INFORMATION");
 }
 

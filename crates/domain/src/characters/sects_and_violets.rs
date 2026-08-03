@@ -2365,22 +2365,7 @@ fn snv_information_prompt(
     }
     let (number_choices, number_constraint, boolean_choices) = match computed_result {
         InformationResult::Number { value } => (
-            if impaired && !vortox_active {
-                let range = if step.character.as_deref() == Some("clockmaker") {
-                    1..=players.len() / 2
-                } else if step.character.as_deref() == Some("juggler") {
-                    0..=5
-                } else {
-                    0..=players.iter().filter(|player| !player.alive).count()
-                };
-                range
-                    .map(|candidate| NumberInformationChoice {
-                        value: candidate as u64,
-                        is_computed: candidate as u64 == value,
-                        registration_judgments: vec![],
-                    })
-                    .collect()
-            } else if vortox_active {
+            if impaired {
                 vec![]
             } else {
                 vec![NumberInformationChoice {
@@ -2389,10 +2374,10 @@ fn snv_information_prompt(
                     registration_judgments: vec![],
                 }]
             },
-            vortox_active.then(|| NumberInformationConstraint {
+            impaired.then(|| NumberInformationConstraint {
                 min: 0,
                 max: crate::model::MAX_SAFE_INFORMATION_NUMBER,
-                excluded_values: vec![value],
+                excluded_values: if vortox_active { vec![value] } else { vec![] },
             }),
             vec![],
         ),

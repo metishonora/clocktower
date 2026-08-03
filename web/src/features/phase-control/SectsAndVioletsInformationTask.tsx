@@ -141,7 +141,7 @@ export function SectsAndVioletsInformationTask({
                 setNumberDraft(value);
                 setTruthWarningAttempt(0);
                 const error = numberConstraintError(value, numberConstraint);
-                onDeliveredResultChange?.(error ? undefined : { kind: "number", value: Number(value) });
+                onDeliveredResultChange?.(value === "" || error ? undefined : { kind: "number", value: Number(value) });
               }}
             />
           ) : step.informationPrompt?.deliveryMode === "selectable" && choices.length > 1 ? (
@@ -167,11 +167,12 @@ export function SectsAndVioletsInformationTask({
 function NumberConstraintEditor({ step, value, error, truthWarningAttempt, suppressHint = false, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; suppressHint?: boolean; busy: boolean; onChange: (value: string) => void }) {
   const characterId = step.character ?? "";
   const truth = step.informationPrompt?.computedResult?.kind === "number" ? step.informationPrompt.computedResult.value : undefined;
+  const excludesTruth = Boolean(step.informationPrompt?.numberConstraint?.excludedValues.length);
   const truthError = error === "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
-  return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 거짓 정보"><div>
+  return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 숫자 정보"><div>
     <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
     <dd><input id={`delivered-${step.id}`} aria-label="전달할 숫자" type="number" min="0" step="1" inputMode="numeric" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)} /><span>{numericUnit(characterId)}</span></dd>
-  </div>{error || !suppressHint ? <p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외`}</p> : null}</dl>;
+  </div>{error || !suppressHint ? <p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? (excludesTruth ? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외` : "0 이상의 정수 · 진실도 전달 가능")}</p> : null}</dl>;
 }
 
 function MathematicianAuditDisclosure({ audit, players }: { audit: MathematicianAudit; players: Player[] }) {
@@ -340,6 +341,7 @@ function actionInformationInfluence(influences: InformationInfluence[]): Informa
 }
 
 function numberConstraintError(value: string, constraint: NonNullable<NonNullable<PhaseStep["informationPrompt"]>["numberConstraint"]>): string | undefined {
+  if (value === "") return undefined;
   if (!/^\d+$/.test(value)) return "0 이상의 정수를 입력하세요.";
   const number = Number(value);
   if (!Number.isSafeInteger(number) || number < constraint.min || number > constraint.max) return "입력할 수 있는 정수 범위를 벗어났습니다.";

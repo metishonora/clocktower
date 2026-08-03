@@ -1259,6 +1259,55 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
+  test("submits an arbitrary safe integer for poisoned numeric information", async () => {
+    const currentStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
+      kind: "number",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 1 },
+        deliveryMode: "selectable",
+        activeReasons: [{
+          type: "poisoned",
+          poisonerPlayerId: "player-4",
+          poisonEventId: "poison-1",
+        }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        numberConstraint: {
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          excludedValues: [],
+        },
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("event-poisoned-chef", "중독된 요리사 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "100");
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:chef",
+        input: null,
+        deliveredResult: { kind: "number", value: 100 },
+      },
+    });
+  });
+
   test("shows a Recluse and adjacent Demon before dynamic Chef truth and alternate buttons", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-4"

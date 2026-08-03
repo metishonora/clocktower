@@ -362,6 +362,61 @@ fn sweetheart_drunk_makes_the_dreamers_information_discretionary() {
 }
 
 #[test]
+fn sweetheart_drunk_oracle_accepts_truth_or_any_other_nonnegative_safe_integer() {
+    let mut setup = setup_event();
+    setup["payload"]["players"][4]["actualCharacter"] = json!("oracle");
+    setup["payload"]["players"][4]["shownCharacter"] = json!("oracle");
+    let mut events = vec![setup];
+    attack(&mut events, "player-1");
+    let pending = replay(&events);
+    let step_id = pending["value"]["pendingDeathConsequences"][0]["stepId"]
+        .as_str()
+        .unwrap();
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "resolveSweetheartConsequence",
+            "payload": {
+                "stepId": step_id,
+                "targetPlayerId": "player-5",
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    let state = advance_until(&mut events, "player-4", |state| {
+        state["value"]["currentStep"]["character"] == "oracle"
+    });
+    let prompt = &state["value"]["currentStep"]["informationPrompt"];
+    let truth = prompt["computedResult"]["value"].as_u64().unwrap();
+    assert_eq!(prompt["numberChoices"], json!([]));
+    assert_eq!(
+        prompt["numberConstraint"],
+        json!({
+            "min": 0,
+            "max": 9_007_199_254_740_991_u64,
+            "excludedValues": []
+        })
+    );
+
+    for value in [truth, 100] {
+        let proposal = propose(
+            &events,
+            json!({
+                "type": "confirmStep",
+                "payload": {
+                    "stepId": state["value"]["currentStep"]["id"],
+                    "input": null,
+                    "deliveredResult": { "kind": "number", "value": value }
+                }
+            }),
+        );
+        assert_eq!(proposal["ok"], true, "{proposal}");
+    }
+}
+
+#[test]
 fn barber_death_lets_the_storyteller_choose_a_living_demon_and_atomically_swap_two_players() {
     let mut events = vec![setup_event()];
     attack(&mut events, "player-2");
