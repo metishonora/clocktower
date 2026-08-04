@@ -87,12 +87,33 @@ test("a recorded Juggler result adds stacked reminder tokens instead of changing
 });
 
 test("a zero-correct Juggler result uses one muted result token", () => {
-  render(<PlayerTokenList tokens={[]} theme="day" jugglerResult={{ correctCount: 0 }} />);
+  render(<PlayerTokenList tokens={[{
+    instanceId: "juggler-correct-player-1",
+    label: "정답",
+    sourceLabel: "곡예사",
+    visualKind: "usage",
+    count: 0,
+  }]} theme="day" />);
 
   const resultTokens = screen.getByLabelText("곡예사 정답 토큰 0개");
   expect(resultTokens.children).toHaveLength(1);
-  expect(resultTokens.firstElementChild?.classList.contains("zeroCorrect")).toBe(true);
+  expect(resultTokens.firstElementChild?.classList.contains("zeroCount")).toBe(true);
   expect(within(resultTokens).getByText("정답 • 0개")).toBeTruthy();
+});
+
+test("a canonical counted reminder uses the shared stacked token presentation", () => {
+  render(<PlayerTokenList tokens={[{
+    instanceId: "juggler-correct-player-1",
+    label: "정답",
+    sourceLabel: "곡예사",
+    visualKind: "usage",
+    description: "첫 낮 공개 추측의 정답 수입니다.",
+    count: 3,
+  }]} theme="day" />);
+
+  const resultTokens = screen.getByLabelText("곡예사 정답 토큰 3개");
+  expect(resultTokens.children).toHaveLength(3);
+  expect(within(resultTokens).getByText("정답 • 3개")).toBeTruthy();
 });
 
 async function firstDayGame(): Promise<GameFile> {

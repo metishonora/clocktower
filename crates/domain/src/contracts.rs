@@ -567,6 +567,8 @@ pub(crate) struct AutomaticReminder {
     pub(crate) token_id: String,
     pub(crate) label: String,
     pub(crate) description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) count: Option<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

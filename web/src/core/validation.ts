@@ -1140,12 +1140,13 @@ function isEvilTwinRelationship(value: unknown): boolean {
 
 function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
-    hasExactKeys(value, ["playerId", "characterId", "tokenId", "label", "description"]) &&
+    hasOnlyKeys(value, ["playerId", "characterId", "tokenId", "label", "description", "count"]) &&
     typeof value.playerId === "string" &&
-    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress"].includes(String(value.characterId)) &&
+    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress", "artist", "juggler", "barber"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
-    typeof value.description === "string";
+    typeof value.description === "string" &&
+    (value.count === undefined || (Number.isInteger(value.count) && Number(value.count) >= 0));
 }
 
 function isActiveRuleEffect(value: unknown): boolean {

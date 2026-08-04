@@ -2254,6 +2254,7 @@ fn automatic_information_reminders(
     current_step: Option<&PhaseStep>,
     players: &[Player],
     day_role_actions: &DayRoleActionIndex,
+    ability_grants: &[AbilityGrant],
 ) -> Result<Vec<AutomaticReminder>, CoreError> {
     let Some(step) = current_step else {
         return Ok(vec![]);
@@ -2297,10 +2298,19 @@ fn automatic_information_reminders(
             },
         ),
     ] {
-        let Some(player) = players
+        let granted_owner = ability_grants
             .iter()
-            .find(|player| player.alive && player.actual_character == character_id)
-        else {
+            .find(|grant| grant.character_id == character_id)
+            .and_then(|grant| {
+                players
+                    .iter()
+                    .find(|player| player.alive && player.id == grant.owner_player_id)
+            });
+        let Some(player) = granted_owner.or_else(|| {
+            players
+                .iter()
+                .find(|player| player.alive && player.actual_character == character_id)
+        }) else {
             continue;
         };
         reminders.push(AutomaticReminder {
@@ -2309,6 +2319,7 @@ fn automatic_information_reminders(
             token_id: if triggered { true_token } else { false_token }.into(),
             label: if triggered { true_label } else { false_label }.into(),
             description: description.into(),
+            count: None,
         });
     }
     Ok(reminders)
@@ -2332,6 +2343,7 @@ fn automatic_vigormortis_reminders(
             token_id: "hasAbility".into(),
             label: "능력 있음".into(),
             description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.".into(),
+            count: None,
         })
         .collect()
 }
@@ -2354,6 +2366,7 @@ fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
                     token_id: "once".into(),
                     label: "한 번".into(),
                     description: "첫 외지인 이동이 사용되었습니다.".into(),
+                    count: None,
                 }),
                 _ => None,
             },
@@ -2366,8 +2379,9 @@ fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
 fn automatic_seamstress_reminders(
     players: &[Player],
     events: &[GameEvent],
+    ability_state: &SnvAbilityState,
 ) -> Vec<AutomaticReminder> {
-    ability_actors_for_character(players, events, "seamstress")
+    active_ability_actors_for_character(players, events, ability_state, "seamstress")
         .into_iter()
         .filter(|player| ability_instance_already_used(SnvCharacterId::Seamstress, player, events))
         .map(|player| AutomaticReminder {
@@ -2376,6 +2390,129 @@ fn automatic_seamstress_reminders(
             token_id: "noAbility".into(),
             label: "능력 없음".into(),
             description: "재봉사 능력을 이미 사용했습니다.".into(),
+            count: None,
+        })
+        .collect()
+}
+
+fn day_action_already_used(player: &Player, character_id: &str, events: &[GameEvent]) -> bool {
+    let acquisition_index = events
+        .iter()
+        .position(|event| event.id == player.ability_instance.source_event_id);
+    events
+        .iter()
+        .skip(acquisition_index.map_or(0, |index| index + 1))
+        .any(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::DayActionRecorded { payload }
+                    if payload.actor_player_id == player.id
+                        && payload.character_id == character_id
+            )
+        })
+}
+
+fn automatic_artist_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<AutomaticReminder> {
+    active_ability_actors_for_character(players, events, ability_state, "artist")
+        .into_iter()
+        .filter(|player| day_action_already_used(player, "artist", events))
+        .map(|player| AutomaticReminder {
+            player_id: player.id,
+            character_id: "artist".into(),
+            token_id: "noAbility".into(),
+            label: "능력 없음".into(),
+            description: "화가 능력을 이미 사용했습니다.".into(),
+            count: None,
+        })
+        .collect()
+}
+
+fn corresponding_night_prefix(day_id: &str) -> Option<String> {
+    if day_id == "day" {
+        return Some("night".into());
+    }
+    day_id
+        .strip_prefix("day")
+        .filter(|suffix| {
+            !suffix.is_empty() && suffix.chars().all(|character| character.is_ascii_digit())
+        })
+        .map(|suffix| format!("night{suffix}"))
+}
+
+fn automatic_juggler_reminders(
+    phase: Phase,
+    current_step: Option<&PhaseStep>,
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<AutomaticReminder> {
+    let Some(current_prefix) = current_step.and_then(|step| step_prefix(&step.id).ok()) else {
+        return vec![];
+    };
+    let active_actor_ids =
+        active_ability_actors_for_character(players, events, ability_state, "juggler")
+            .into_iter()
+            .map(|actor| actor.id)
+            .collect::<HashSet<_>>();
+    events
+        .iter()
+        .enumerate()
+        .filter_map(|(event_index, event)| {
+            let GameEventKind::DayActionRecorded { payload } = &event.kind else {
+                return None;
+            };
+            let DayActionRecord::Juggler { correct_count } = payload.record else {
+                return None;
+            };
+            let night_prefix = corresponding_night_prefix(&payload.day_id)?;
+            let in_active_window = match phase {
+                Phase::Day => current_prefix == payload.day_id,
+                Phase::Night => current_prefix == night_prefix,
+                _ => false,
+            };
+            let actor_active = active_actor_ids.contains(&payload.actor_player_id)
+                && players
+                    .iter()
+                    .any(|player| player.id == payload.actor_player_id && player.alive);
+            let information_delivered = events.iter().skip(event_index + 1).any(|candidate| {
+                matches!(
+                    &candidate.kind,
+                    GameEventKind::PhaseStepConfirmed { payload: confirmed }
+                        if step_prefix(&confirmed.step_id).ok().as_deref() == Some(night_prefix.as_str())
+                            && confirmed.information.as_ref().and_then(|information| information.actor.as_ref()).is_some_and(|actor| {
+                                actor.player_id == payload.actor_player_id && actor.character_id == "juggler"
+                            })
+                )
+            });
+            (in_active_window && actor_active && !information_delivered).then(|| AutomaticReminder {
+                player_id: payload.actor_player_id.clone(),
+                character_id: "juggler".into(),
+                token_id: "correct".into(),
+                label: "정답".into(),
+                description: "첫 낮 공개 추측의 정답 수입니다.".into(),
+                count: Some(correct_count),
+            })
+        })
+        .collect()
+}
+
+fn automatic_barber_reminders(
+    pending_death_consequences: &[PendingDeathConsequence],
+) -> Vec<AutomaticReminder> {
+    pending_death_consequences
+        .iter()
+        .filter(|pending| pending.kind == DeathConsequenceKind::Barber)
+        .map(|pending| AutomaticReminder {
+            player_id: pending.actor_player_id.clone(),
+            character_id: "barber".into(),
+            token_id: "haircutsTonight".into(),
+            label: "오늘 밤 이발".into(),
+            description: "오늘 밤 악마가 두 플레이어의 캐릭터를 교환할 수 있습니다.".into(),
+            count: None,
         })
         .collect()
 }
@@ -2410,6 +2547,7 @@ fn automatic_mathematician_reminders(
             label: "비정상".into(),
             description: "새벽 이후 다른 캐릭터의 영향으로 능력이 비정상적으로 작동했습니다."
                 .into(),
+            count: None,
         })
         .collect()
 }
@@ -4009,6 +4147,27 @@ fn philosopher_ability_grants(
             })
         })
         .collect()
+}
+
+fn active_ability_actors_for_character(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+    character_id: &str,
+) -> Vec<Player> {
+    let mut actors = players
+        .iter()
+        .filter(|player| player.actual_character == character_id)
+        .cloned()
+        .collect::<Vec<_>>();
+    actors.extend(
+        philosopher_ability_grants(players, events, ability_state)
+            .into_iter()
+            .filter(|grant| grant.character_id == character_id)
+            .filter_map(|grant| projected_grant_actor(players, &grant)),
+    );
+    actors.sort_by_key(|actor| actor.seat);
+    actors
 }
 
 fn projected_grant_actor(players: &[Player], grant: &AbilityGrant) -> Option<Player> {
@@ -6728,11 +6887,43 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let ability_grants = philosopher_ability_grants(&players, active_events, &ability_state);
     let pending_vigormortis_poison_choices =
         ability_state.pending_vigormortis_poison_choices.clone();
-    let mut automatic_reminders =
-        automatic_information_reminders(phase, current_step.as_ref(), &players, &day_role_actions)?;
+    let pending_death_consequences = if !ended_positions.is_empty() {
+        vec![]
+    } else {
+        unresolved_death_consequences(
+            &death_triggers,
+            active_events,
+            &players,
+            current_step.as_ref(),
+        )
+    };
+    let mut automatic_reminders = automatic_information_reminders(
+        phase,
+        current_step.as_ref(),
+        &players,
+        &day_role_actions,
+        &ability_grants,
+    )?;
     automatic_reminders.extend(automatic_vigormortis_reminders(&players, &ability_state));
     automatic_reminders.extend(automatic_fang_gu_reminder(active_events));
-    automatic_reminders.extend(automatic_seamstress_reminders(&players, active_events));
+    automatic_reminders.extend(automatic_seamstress_reminders(
+        &players,
+        active_events,
+        &ability_state,
+    ));
+    automatic_reminders.extend(automatic_artist_reminders(
+        &players,
+        active_events,
+        &ability_state,
+    ));
+    automatic_reminders.extend(automatic_juggler_reminders(
+        phase,
+        current_step.as_ref(),
+        &players,
+        active_events,
+        &ability_state,
+    ));
+    automatic_reminders.extend(automatic_barber_reminders(&pending_death_consequences));
     automatic_reminders.extend(automatic_mathematician_reminders(
         &players,
         active_events,
@@ -6749,6 +6940,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             token_id: "drunk".into(),
             label: "취함".into(),
             description: "철학자의 능력으로 취했습니다.".into(),
+            count: None,
         });
     }
     for grant in &ability_grants {
@@ -6762,6 +6954,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
                 token_id: "isThePhilosopher".into(),
                 label: "철학자임".into(),
                 description: "철학자가 이 캐릭터의 능력을 가집니다.".into(),
+                count: None,
             });
         }
     }
@@ -6772,6 +6965,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             token_id: "cursed".into(),
             label: "저주".into(),
             description: "다음 낮 지명하면 사망합니다.".into(),
+            count: None,
         });
     }
     for relationship in &evil_twin_relationships {
@@ -6781,6 +6975,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             token_id: "twin".into(),
             label: "쌍둥이".into(),
             description: "사악한 쌍둥이와 연결되어 있습니다.".into(),
+            count: None,
         });
     }
     let rule_state = RuleState {
@@ -6794,16 +6989,6 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         ..RuleState::default()
     };
     let pending_identity_reveals = pending_identity_reveals(active_events, &players);
-    let pending_death_consequences = if !ended_positions.is_empty() {
-        vec![]
-    } else {
-        unresolved_death_consequences(
-            &death_triggers,
-            active_events,
-            &players,
-            current_step.as_ref(),
-        )
-    };
     let available_day_actions =
         available_day_actions(phase, current_step.as_ref(), &players, active_events);
     let day_action_records = confirmed_day_action_records(active_events);

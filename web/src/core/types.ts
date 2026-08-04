@@ -474,6 +474,7 @@ export type RuleState = {
     tokenId: string;
     label: string;
     description: string;
+    count?: number;
   }>;
   activeWitchCurse?: ActiveWitchCurse;
   evilTwinRelationships?: EvilTwinRelationship[];

@@ -472,6 +472,7 @@ export function SectsAndVioletsGameSurface({
         sourceIconSrc: sectsAndVioletsCharacterAsset(reminder.characterId)?.src,
         visualKind: reminder.tokenId === "isThePhilosopher" ? "assignment" : reminder.tokenId === "drunk" ? "impairment" : "usage",
         description: reminder.description,
+        count: reminder.count,
       });
     }
     for (const assignment of effectiveMadnessAssignments) {

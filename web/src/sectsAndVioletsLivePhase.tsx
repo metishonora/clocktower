@@ -410,22 +410,6 @@ export function SectsAndVioletsLiveGrimoire({
   const detailsDayActionRecords = detailsPlayer
     ? dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)
     : [];
-  const jugglerCorrectCountsByPlayerId = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const record of dayActionRecords) {
-      if (record.record.kind === "juggler") {
-        counts[record.actorPlayerId] = Math.max(0, Math.min(5, record.record.correctCount));
-      }
-    }
-    return counts;
-  }, [dayActionRecords]);
-  const detailsJugglerRecord = [...detailsDayActionRecords]
-    .reverse()
-    .find((record) => record.record.kind === "juggler");
-  const detailsJugglerCorrectCount = detailsPlayer?.actualCharacter === "juggler"
-    && detailsJugglerRecord?.record.kind === "juggler"
-    ? detailsJugglerRecord.record.correctCount
-    : undefined;
   const informationTargetCount = handoff?.kind === "dreamer" ? 1 : handoff?.kind === "seamstress" ? 2 : 0;
   const barberTargetCount = handoff?.kind === "barber" && handoff.selectionStage === "swap" ? 2 : 0;
   const multipleTargetCount = informationTargetCount || barberTargetCount;
@@ -476,10 +460,10 @@ export function SectsAndVioletsLiveGrimoire({
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
           {players.map((player, index) => {
             const playerTokens = tokensByPlayerId[player.id] ?? [];
-            const jugglerTokenCount = player.actualCharacter === "juggler"
-              ? jugglerCorrectCountsByPlayerId[player.id] ?? 0
-              : 0;
-            const playerTokenCount = playerTokens.length + jugglerTokenCount;
+            const playerTokenCount = playerTokens.reduce(
+              (total, token) => total + (token.count === undefined ? 1 : Math.max(1, token.count)),
+              0,
+            );
             const attackTarget = handoff?.kind === "demon" && handoff.selectionStage === "poison" && player.id === targetId;
             const poisonTarget = choosingVigormortisPoison && player.id === (handoff?.kind === "demon" ? secondaryTargetId : targetId);
             const selected = handoff?.kind === "nomination"
@@ -710,7 +694,6 @@ export function SectsAndVioletsLiveGrimoire({
           }}
           tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
           details={<DayActionRecordHistory records={detailsDayActionRecords} />}
-          jugglerCorrectCount={detailsJugglerCorrectCount}
           theme={phaseTheme}
           onClose={closePlayerDetails}
         />

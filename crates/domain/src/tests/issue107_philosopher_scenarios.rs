@@ -253,6 +253,22 @@ fn has_reminder(state: &Value, player_id: &str, token_id: &str) -> bool {
         })
 }
 
+fn automatic_reminder<'a>(
+    state: &'a Value,
+    player_id: &str,
+    character_id: &str,
+    token_id: &str,
+) -> Option<&'a Value> {
+    state["value"]["ruleState"]["automaticReminders"]
+        .as_array()?
+        .iter()
+        .find(|reminder| {
+            reminder["playerId"] == player_id
+                && reminder["characterId"] == character_id
+                && reminder["tokenId"] == token_id
+        })
+}
+
 fn has_impairment(state: &Value, player_id: &str, source_event_id: &str) -> bool {
     state["value"]["ruleState"]["activeImpairments"]
         .as_array()
@@ -669,6 +685,156 @@ fn every_recurring_night_grant_is_scheduled_again_after_the_acquisition_night() 
             "character={character_id}, state={later_night}"
         );
     }
+}
+
+#[test]
+fn acquired_day_status_reminders_follow_the_effective_ability_owner() {
+    for character_id in ["flowergirl", "townCrier"] {
+        let mut out_of_play_events = vec![setup_event("fangGu")];
+        append_acquisition(&mut out_of_play_events, character_id);
+        let out_of_play_day = advance_to_day(&mut out_of_play_events);
+        assert!(
+            automatic_reminder(
+                &out_of_play_day,
+                "player-1",
+                character_id,
+                if character_id == "flowergirl" {
+                    "demonDidNotVote"
+                } else {
+                    "minionDidNotNominate"
+                }
+            )
+            .is_some(),
+            "out-of-play grant did not own {character_id} reminder: {out_of_play_day}"
+        );
+
+        let mut in_play_events = vec![setup_with_in_play_good_character(character_id)];
+        append_acquisition(&mut in_play_events, character_id);
+        let in_play_day = advance_to_day(&mut in_play_events);
+        let token_id = if character_id == "flowergirl" {
+            "demonDidNotVote"
+        } else {
+            "minionDidNotNominate"
+        };
+        assert!(
+            automatic_reminder(&in_play_day, "player-1", character_id, token_id).is_some(),
+            "Philosopher did not own duplicated {character_id} reminder: {in_play_day}"
+        );
+        assert!(
+            automatic_reminder(&in_play_day, "player-2", character_id, token_id).is_none(),
+            "drunk original retained duplicated {character_id} reminder: {in_play_day}"
+        );
+
+        let after_philosopher_death = kill_philosopher_on_the_following_night(&mut in_play_events);
+        assert!(
+            automatic_reminder(&after_philosopher_death, "player-1", character_id, token_id)
+                .is_none(),
+            "dead Philosopher retained {character_id} reminder: {after_philosopher_death}"
+        );
+        assert!(
+            automatic_reminder(&after_philosopher_death, "player-2", character_id, token_id)
+                .is_some(),
+            "sobered original did not regain {character_id} reminder: {after_philosopher_death}"
+        );
+    }
+}
+
+#[test]
+fn acquired_artist_and_juggler_reminders_use_the_granted_ability_owner_and_lifetime() {
+    let mut artist_events = vec![setup_with_in_play_good_character("artist")];
+    append_acquisition(&mut artist_events, "artist");
+    advance_to_day(&mut artist_events);
+    let artist = propose(
+        &artist_events,
+        json!({ "type": "recordDayAction", "payload": {
+            "dayId": "day",
+            "expectedEventCount": artist_events.len(),
+            "actorPlayerId": "player-1",
+            "record": {
+                "kind": "artist",
+                "question": "악마가 홀수 좌석에 있나요?",
+                "answer": "yes",
+                "truthful": true
+            }
+        }}),
+    );
+    assert_eq!(artist["ok"], true, "{artist}");
+    artist_events.push(artist["value"]["event"].clone());
+    let artist_used = replay(&artist_events);
+    assert!(
+        automatic_reminder(&artist_used, "player-1", "artist", "noAbility").is_some(),
+        "state={artist_used}"
+    );
+    let artist_after_death = kill_philosopher_on_the_following_night(&mut artist_events);
+    assert!(
+        automatic_reminder(&artist_after_death, "player-1", "artist", "noAbility").is_none(),
+        "inactive grant retained Artist reminder: {artist_after_death}"
+    );
+
+    let mut juggler_events = vec![setup_with_in_play_good_character("juggler")];
+    append_acquisition(&mut juggler_events, "juggler");
+    advance_to_day(&mut juggler_events);
+    let juggler = propose(
+        &juggler_events,
+        json!({ "type": "recordDayAction", "payload": {
+            "dayId": "day",
+            "expectedEventCount": juggler_events.len(),
+            "actorPlayerId": "player-1",
+            "record": { "kind": "juggler", "correctCount": 3 }
+        }}),
+    );
+    assert_eq!(juggler["ok"], true, "{juggler}");
+    juggler_events.push(juggler["value"]["event"].clone());
+    let juggler_day = replay(&juggler_events);
+    let reminder = automatic_reminder(&juggler_day, "player-1", "juggler", "correct")
+        .expect("granted Juggler reminder");
+    assert_eq!(reminder["count"], 3);
+    assert!(automatic_reminder(&juggler_day, "player-2", "juggler", "correct").is_none());
+
+    advance_to_later_night(&mut juggler_events);
+    loop {
+        let state = replay(&juggler_events);
+        let step = &state["value"]["currentStep"];
+        if step["character"] == "juggler" && step["playerId"] == "player-1" {
+            assert!(automatic_reminder(&state, "player-1", "juggler", "correct").is_some());
+            append_default_current_step(&mut juggler_events);
+            break;
+        }
+        append_default_current_step(&mut juggler_events);
+    }
+    let after_information = replay(&juggler_events);
+    assert!(
+        automatic_reminder(&after_information, "player-1", "juggler", "correct").is_none(),
+        "state={after_information}"
+    );
+}
+
+#[test]
+fn acquired_barber_pending_consequence_owns_a_temporary_reminder() {
+    let mut events = vec![setup_event("fangGu")];
+    append_acquisition(&mut events, "barber");
+    let pending = kill_philosopher_on_the_following_night(&mut events);
+    assert!(
+        automatic_reminder(&pending, "player-1", "barber", "haircutsTonight").is_some(),
+        "state={pending}"
+    );
+    let consequence = &pending["value"]["pendingDeathConsequences"][0];
+    let resolved = propose(
+        &events,
+        json!({
+            "type": "resolveBarberConsequence",
+            "payload": {
+                "stepId": consequence["stepId"],
+                "chooserDemonPlayerId": consequence["eligibleChooserPlayerIds"][0],
+                "decision": { "kind": "decline" },
+                "expectedEventCount": events.len()
+            }
+        }),
+    );
+    assert_eq!(resolved["ok"], true, "{resolved}");
+    events.push(resolved["value"]["event"].clone());
+    let after = replay(&events);
+    assert!(automatic_reminder(&after, "player-1", "barber", "haircutsTonight").is_none());
 }
 
 #[test]
