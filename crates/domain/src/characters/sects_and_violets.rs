@@ -2384,6 +2384,7 @@ fn automatic_mathematician_reminders(
     players: &[Player],
     events: &[GameEvent],
     audit_index: &MathematicianAuditIndex,
+    current_step: Option<&PhaseStep>,
 ) -> Vec<AutomaticReminder> {
     if !ability_actors_for_character(players, events, "mathematician")
         .iter()
@@ -2392,8 +2393,14 @@ fn automatic_mathematician_reminders(
         return vec![];
     }
 
-    audit_index
-        .for_window_start(mathematician_reminder_window_start(events))
+    let audit = current_step
+        .filter(|step| step.character.as_deref() == Some("mathematician"))
+        .map_or_else(
+            || audit_index.for_window_start(mathematician_reminder_window_start(events)),
+            |step| audit_index.for_step(step, events),
+        );
+
+    audit
         .records
         .into_iter()
         .map(|record| AutomaticReminder {
@@ -4859,6 +4866,7 @@ impl MathematicianAuditIndex {
                             actor.player_id.as_str(),
                             actor.character_id.as_str(),
                             players,
+                            prior_events,
                             AbnormalAbilityOutcome::IncorrectInformation {
                                 computed_result: computed_result.clone(),
                                 delivered_result: information.delivered_result.clone(),
@@ -4911,6 +4919,7 @@ impl MathematicianAuditIndex {
                             &payload.actor_player_id,
                             &payload.character_id,
                             players,
+                            prior_events,
                             outcome,
                             causes,
                         );
@@ -5095,6 +5104,7 @@ impl MathematicianAuditIndex {
             player_id,
             character_id,
             players,
+            prior_events,
             AbnormalAbilityOutcome::EffectFailure { effect },
             causes,
         );
@@ -5132,6 +5142,7 @@ impl MathematicianAuditIndex {
             &vortox.id,
             "vortox",
             players,
+            prior_events,
             AbnormalAbilityOutcome::EffectFailure { effect },
             causes,
         );
@@ -5179,6 +5190,7 @@ impl MathematicianAuditIndex {
             &player.id,
             &player.actual_character,
             players,
+            prior_events,
             AbnormalAbilityOutcome::EffectFailure { effect },
             vec![DeliveryReason::Drunk],
         );
@@ -5193,27 +5205,27 @@ impl MathematicianAuditIndex {
         player_id: &str,
         character_id: &str,
         players: &[Player],
+        prior_events: &[GameEvent],
         outcome: AbnormalAbilityOutcome,
         causes: Vec<DeliveryReason>,
     ) {
-        if character_id == "mathematician" {
-            return;
-        }
-        let Some(player) = players.iter().find(|player| player.id == player_id) else {
+        let Some(actor) =
+            ability_actor_for_character(players, prior_events, player_id, character_id)
+        else {
             return;
         };
         self.records.push(IndexedAbnormalAbilityAudit {
             event_index,
             record: AbnormalAbilityAuditRecord {
-                subject_player_id: player.id.clone(),
+                subject_player_id: actor.id.clone(),
                 character_id: character_id.into(),
-                ability_instance_id: player.ability_instance.id.clone(),
+                ability_instance_id: actor.ability_instance.id.clone(),
                 evidence: vec![AbnormalAbilityEvidence {
                     resolution_event_id: event.id.clone(),
                     step_id: step_id.into(),
                     phase: event.phase,
                     character_id: character_id.into(),
-                    ability_instance_id: player.ability_instance.id.clone(),
+                    ability_instance_id: actor.ability_instance.id.clone(),
                     outcome,
                     causes,
                 }],
@@ -5222,15 +5234,31 @@ impl MathematicianAuditIndex {
     }
 
     fn for_step(&self, step: &PhaseStep, events: &[GameEvent]) -> MathematicianAudit {
-        self.for_window_start(mathematician_window_start(step, events))
+        self.for_window_start_excluding(
+            mathematician_window_start(step, events),
+            step.ability_use
+                .as_ref()
+                .map(|ability| &ability.ability_instance_id),
+        )
     }
 
     fn for_window_start(&self, start: usize) -> MathematicianAudit {
+        self.for_window_start_excluding(start, None)
+    }
+
+    fn for_window_start_excluding(
+        &self,
+        start: usize,
+        excluded_ability_instance_id: Option<&AbilityInstanceId>,
+    ) -> MathematicianAudit {
         let mut records = Vec::<AbnormalAbilityAuditRecord>::new();
         for indexed in self
             .records
             .iter()
             .filter(|record| record.event_index >= start)
+            .filter(|record| {
+                excluded_ability_instance_id != Some(&record.record.ability_instance_id)
+            })
         {
             if let Some(existing) = records
                 .iter_mut()
@@ -6709,6 +6737,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         &players,
         active_events,
         &mathematician_audit,
+        current_step.as_ref(),
     ));
     for impairment in active_impairments
         .iter()

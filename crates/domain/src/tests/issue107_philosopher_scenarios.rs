@@ -672,6 +672,64 @@ fn every_recurring_night_grant_is_scheduled_again_after_the_acquisition_night() 
 }
 
 #[test]
+fn granted_mathematician_counts_an_abnormal_original_mathematician_instance() {
+    let mut events = vec![setup_event("fangGu")];
+    append_acquisition(&mut events, "mathematician");
+
+    let original = loop {
+        let state = replay(&events);
+        let step = &state["value"]["currentStep"];
+        if step["character"] == "mathematician" && step["playerId"] == "player-6" {
+            break state;
+        }
+        append_default_current_step(&mut events);
+    };
+    let original_step = &original["value"]["currentStep"];
+    assert_eq!(
+        original_step["informationPrompt"]["activeReasons"],
+        json!([{ "type": "drunk" }])
+    );
+    let proposal = propose(
+        &events,
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": original_step["id"],
+            "expectedEventCount": events.len(),
+            "input": null,
+            "deliveredResult": { "kind": "number", "value": 1 }
+        }}),
+    );
+    assert_eq!(
+        proposal["ok"], true,
+        "false information proposal failed: {proposal}"
+    );
+    events.push(proposal["value"]["event"].clone());
+
+    let acquired = replay(&events);
+    assert_eq!(
+        acquired["value"]["currentStep"]["abilityUse"]["abilityInstanceId"],
+        "phase-2:player-1"
+    );
+    assert_eq!(
+        acquired["value"]["currentStep"]["informationPrompt"]["computedResult"],
+        json!({ "kind": "number", "value": 1 })
+    );
+    let records = acquired["value"]["currentStep"]["informationPrompt"]["mathematicianAudit"]
+        ["records"]
+        .as_array()
+        .expect("Mathematician audit records");
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0]["subjectPlayerId"], "player-6");
+    assert_eq!(records[0]["abilityInstanceId"], "setup:player-6");
+    assert!(acquired["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .is_some_and(|reminders| reminders.iter().any(|reminder| {
+            reminder["playerId"] == "player-6"
+                && reminder["characterId"] == "mathematician"
+                && reminder["tokenId"] == "abnormal"
+        })));
+}
+
+#[test]
 fn granted_snake_charmer_action_uses_the_canonical_no_swap_and_swap_paths() {
     let mut events = vec![setup_event("fangGu")];
     append_acquisition(&mut events, "snakeCharmer");
