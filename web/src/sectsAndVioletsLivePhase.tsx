@@ -287,6 +287,7 @@ export function SectsAndVioletsLiveProgress({
 
 export function SectsAndVioletsLiveGrimoire({
   players,
+  currentActor,
   phaseLabel,
   phaseRuntime = "00:00",
   currentStep,
@@ -323,6 +324,7 @@ export function SectsAndVioletsLiveGrimoire({
   theme,
 }: {
   players: LivePlayer[];
+  currentActor?: Player;
   phaseLabel: string;
   phaseRuntime?: string;
   currentStep: PhaseStep | null;
@@ -371,6 +373,9 @@ export function SectsAndVioletsLiveGrimoire({
   const actorId = handoff?.kind === "barber"
     ? handoff.actorPlayerId
     : handoff?.actorPlayerId ?? currentStep?.playerId;
+  const acquiredHandoffAbilityCharacterId = actorId === currentActor?.id
+    ? acquiredAbilityCharacterForStep(currentStep, currentActor)
+    : undefined;
   const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
@@ -607,8 +612,19 @@ export function SectsAndVioletsLiveGrimoire({
           />
         ) : handoff && !centerPrompt ? (
           <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
+            {acquiredHandoffAbilityCharacterId && currentActor ? (
+              <div className="issue107HandoffPresentation">
+                <AcquiredAbilityPresentation
+                  actor={currentActor}
+                  abilityCharacterId={acquiredHandoffAbilityCharacterId}
+                  theme={phaseTheme === "day" ? "snv-day" : "snv-night"}
+                  actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity issue107HandoffActorIdentity"
+                  abilityClassName="issue107AbilityResult interactive issue107HandoffAbilityResult"
+                />
+              </div>
+            ) : null}
             <header className="issue116SelectionHeader">
-              {informationTargetCount === 0 ? <h2>{handoffPanelTitle(handoff, handoff.complete)}</h2> : null}
+              {informationTargetCount === 0 && !acquiredHandoffAbilityCharacterId ? <h2>{handoffPanelTitle(handoff, handoff.complete)}</h2> : null}
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
               ) : !handoff.complete && handoff.kind === "demon" && handoff.selectionStage === "poison" ? (

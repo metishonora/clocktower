@@ -64,6 +64,11 @@
 .issue116SelectionPanel dl > div { display: flex; min-height: 46px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 12px; border-radius: 12px; background: rgba(255, 255, 255, .045); }
 .issue116SelectionPanel dt { color: #ad9bb5; font-size: .72rem; font-weight: 850; }
 .issue116SelectionPanel dd { margin: 0; font-size: .83rem; font-weight: 900; text-align: right; }
+.issue107HandoffPresentation { display: grid; gap: 10px; }
+.issue107HandoffPresentation .issue107HandoffActorIdentity { width: 100%; margin: 0 !important; box-sizing: border-box; }
+.issue107HandoffPresentation .issue107HandoffActorIdentity img { width: 58px; height: 58px; }
+.issue107HandoffPresentation .issue107HandoffAbilityResult { width: 100%; margin-top: 0; box-sizing: border-box; }
+.issue107HandoffPresentation + .issue116SelectionHeader:empty { display: none; }
 .issue116PrimaryAction { width: 100%; min-height: 54px; margin-top: auto; padding: 11px 14px; border: 1px solid #e0bc64; border-radius: 14px; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 12px 28px rgba(205, 143, 45, .26); font: inherit; font-weight: 900; cursor: pointer; }
 .issue116PrimaryAction:disabled { border-color: rgba(230, 209, 237, .17); color: #8d8191; background: rgba(255, 255, 255, .035); box-shadow: none; cursor: not-allowed; }
 .issue116PrimaryAction.issue116VoteCompleteAction { border-color: #176b64; color: #fff; background: linear-gradient(135deg, #278b80, #17635d); box-shadow: 0 12px 30px rgba(23, 107, 100, .34); }

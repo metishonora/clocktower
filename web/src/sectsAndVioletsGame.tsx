@@ -2306,6 +2306,7 @@ export function SectsAndVioletsGameSurface({
       ) : activeTab === "seating" ? production && seatingConfirmed && (replayState?.currentStep || replayState?.gameEnd) ? (
         <SectsAndVioletsLiveGrimoire
           players={livePlayers}
+          currentActor={liveActor}
           phaseLabel={replayState.gameEnd ? "게임 종료" : phaseLabel(effectivePlayPhase, replayState.currentStep)}
           phaseRuntime={phaseRuntime ?? "00:00"}
           currentStep={replayState.currentStep}

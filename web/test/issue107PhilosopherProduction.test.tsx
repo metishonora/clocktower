@@ -39,6 +39,7 @@ test("shows an out-of-play ability as the Philosopher's grimoire character", asy
 
 test("keeps Philosopher identity while presenting an out-of-play Snake Charmer grant after evil information", async () => {
   const game = philosopherSnakeCharmerGame();
+  const user = userEvent.setup();
   await proposeAndAppend(game, {
     type: "confirmStep",
     payload: {
@@ -94,6 +95,16 @@ test("keeps Philosopher identity while presenting an out-of-play Snake Charmer g
 
   const overview = within(app).getByRole("list", { name: "첫날 밤 순서" });
   expect(within(overview).getByText("철학자 · 뱀 조련사")).toBeTruthy();
+
+  await user.click(within(app).getByRole("button", { name: "대상 선택" }));
+  const handoff = await within(app).findByLabelText("현재 마도서 작업");
+  const handoffActor = within(handoff).getByRole("button", { name: "철학자 캐릭터 상세 열기" });
+  expect(within(handoffActor).getByRole("heading", { level: 3, name: "철학자" })).toBeTruthy();
+  expect(within(handoffActor).getByText("민지")).toBeTruthy();
+  const handoffAbility = within(handoff).getByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" });
+  expect(within(handoffAbility).getByText("획득한 능력")).toBeTruthy();
+  expect(within(handoffAbility).getByText(/매일 밤, 생존한 플레이어 1명을 선택합니다/)).toBeTruthy();
+  expect(within(handoff).queryByRole("heading", { level: 2, name: "뱀 조련사" })).toBeNull();
 });
 
 function philosopherGame(): GameFile {
