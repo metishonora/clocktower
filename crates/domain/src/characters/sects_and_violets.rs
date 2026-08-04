@@ -660,13 +660,35 @@ fn first_day_for_ability_instance(actor: &Player, events: &[GameEvent]) -> Optio
     if actor.ability_instance.source_event_id == "setup" {
         return Some("day".into());
     }
-    let (_, step_id, _) = transition_source(actor, events)?;
+    let step_id = ability_instance_source_step(actor, events)?;
     let step = SnvStepKey::parse(step_id)?;
     match step.phase() {
         SnvPhaseKey::FirstNight | SnvPhaseKey::Day(1) => Some("day".into()),
         SnvPhaseKey::Day(cycle) => Some(format!("day{cycle}")),
         SnvPhaseKey::Night(cycle) => Some(format!("day{}", cycle + 1)),
     }
+}
+
+fn ability_instance_source_step<'a>(actor: &Player, events: &'a [GameEvent]) -> Option<&'a str> {
+    if let Some((_, step_id, _)) = transition_source(actor, events) {
+        return Some(step_id);
+    }
+    events.iter().find_map(|event| match &event.kind {
+        GameEventKind::PhilosopherAbilityResolved { payload }
+            if event.id == actor.ability_instance.source_event_id
+                && payload.actor.owner_player_id == actor.id
+                && payload.selected_character_id.as_deref()
+                    == Some(actor.actual_character.as_str())
+                && matches!(
+                    &payload.outcome,
+                    PhilosopherAbilityOutcome::Acquired { granted_ability_instance_id }
+                        if granted_ability_instance_id == &actor.ability_instance.id
+                ) =>
+        {
+            Some(payload.step_id.as_str())
+        }
+        _ => None,
+    })
 }
 
 fn validate_day_action_payload(
@@ -688,18 +710,21 @@ fn validate_day_action_payload(
     if payload.character_id != expected_character {
         return Err(ErrorKind::InvalidDayActionActor.into_error());
     }
-    let actor = players
-        .iter()
-        .find(|player| player.id == payload.actor_player_id)
-        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
-    if !actor.alive || actor.actual_character != expected_character {
+    let actor = ability_actor_for_character(
+        players,
+        prior_events,
+        &payload.actor_player_id,
+        expected_character,
+    )
+    .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
+    if !actor.alive {
         return Err(ErrorKind::InvalidDayActionActor.into_error());
     }
-    if !day_action_is_available(actor, expected_character, &payload.day_id, prior_events) {
+    if !day_action_is_available(&actor, expected_character, &payload.day_id, prior_events) {
         return Err(ErrorKind::DayActionUnavailable.into_error());
     }
     let expected_reasons =
-        day_action_active_reasons(actor, expected_character, players, prior_events);
+        day_action_active_reasons(&actor, expected_character, players, prior_events);
     if payload.active_reasons != expected_reasons {
         return Err(ErrorKind::InvalidDayActionRecord.into_error());
     }
@@ -720,25 +745,25 @@ fn available_day_actions(
     let Ok(day_id) = step_prefix(&step.id) else {
         return vec![];
     };
-    players
-        .iter()
-        .filter(|player| {
-            player.alive
-                && matches!(
-                    player.actual_character.as_str(),
-                    "artist" | "savant" | "juggler"
-                )
-                && day_action_is_available(player, &player.actual_character, &day_id, events)
+    let mut actors = ["artist", "savant", "juggler"]
+        .into_iter()
+        .flat_map(|character| ability_actors_for_character(players, events, character))
+        .filter(|actor| {
+            actor.alive && day_action_is_available(actor, &actor.actual_character, &day_id, events)
         })
+        .collect::<Vec<_>>();
+    actors.sort_by_key(|actor| actor.seat);
+    actors
+        .into_iter()
         .map(|player| AvailableDayAction {
             active_reasons: day_action_active_reasons(
-                player,
+                &player,
                 &player.actual_character,
                 players,
                 events,
             ),
-            actor_player_id: player.id.clone(),
-            character_id: player.actual_character.clone(),
+            actor_player_id: player.id,
+            character_id: player.actual_character,
             day_id: day_id.clone(),
         })
         .collect()
@@ -885,6 +910,25 @@ fn madness_assignments(
                 )
             }),
     );
+    raw.extend(
+        philosopher_owned_ability_grants(players, events)
+            .into_iter()
+            .filter(|grant| grant.character_id == "mutant")
+            .map(|grant| {
+                (
+                    format!("mutant:{}:{}", grant.owner_player_id, grant.source_event_id),
+                    grant.owner_player_id.clone(),
+                    "mutant".to_string(),
+                    grant.owner_player_id,
+                    None,
+                )
+            }),
+    );
+    let active_mutant_grant_owners = philosopher_ability_grants(players, events, &ability_state)
+        .into_iter()
+        .filter(|grant| grant.character_id == "mutant")
+        .map(|grant| grant.owner_player_id)
+        .collect::<HashSet<_>>();
 
     let mut latest_cerenovus = HashMap::<String, (&GameEvent, &MadnessAssignedPayload)>::new();
     for event in events {
@@ -931,7 +975,9 @@ fn madness_assignments(
                     return None;
                 }
                 let source_effective = source.alive
-                    && source.actual_character == source_character_id
+                    && (source.actual_character == source_character_id
+                        || source_character_id == "mutant"
+                            && active_mutant_grant_owners.contains(&source.id))
                     && !impaired_players.contains(&source.id);
                 let latest_check = events.iter().rev().find_map(|event| match &event.kind {
                     GameEventKind::MadnessCheckRecorded { payload }
@@ -1503,7 +1549,7 @@ fn insert_acquired_ability_steps(
         steps.insert(insert_at, step);
     }
 
-    let grants = philosopher_ability_grants(players, events, &ability_state);
+    let grants = philosopher_owned_ability_grants(players, events);
     for grant in grants {
         let Some(source_event) = events
             .iter()
@@ -1514,13 +1560,7 @@ fn insert_acquired_ability_steps(
         let GameEventKind::PhilosopherAbilityResolved { payload } = &source_event.kind else {
             continue;
         };
-        if !payload.step_id.starts_with(&format!("{prefix}:")) {
-            continue;
-        }
-        let Some(player) = players
-            .iter()
-            .find(|player| player.id == grant.owner_player_id)
-        else {
+        let Some(player) = projected_grant_actor(players, &grant) else {
             continue;
         };
         let Some(character_id) = SnvCharacterId::parse(&grant.character_id) else {
@@ -1531,6 +1571,8 @@ fn insert_acquired_ability_steps(
             metadata.same_night_acquisition,
             SameNightAcquisitionPolicy::StartKnowingImmediately
         );
+        let acquired_this_phase =
+            SnvStepKey::parse(&payload.step_id).is_some_and(|step| step.is_in_phase(prefix));
         let source_rank = SnvCharacterId::Philosopher.metadata();
         let ordered_after_source = match phase {
             Phase::FirstNight => source_rank
@@ -1543,24 +1585,30 @@ fn insert_acquired_ability_steps(
                 .is_some_and(|(source, target)| target > source),
             _ => false,
         };
-        let should_run = start_knowing
-            || matches!(
-                metadata.same_night_acquisition,
-                SameNightAcquisitionPolicy::WakeIfOrderPending
-                    | SameNightAcquisitionPolicy::TriggerIfEligible
-            ) && ordered_after_source;
+        let should_run = if acquired_this_phase {
+            start_knowing
+                || matches!(
+                    metadata.same_night_acquisition,
+                    SameNightAcquisitionPolicy::WakeIfOrderPending
+                        | SameNightAcquisitionPolicy::TriggerIfEligible
+                ) && ordered_after_source
+        } else {
+            phase == Phase::Night && metadata.later_night_rank.is_some()
+        };
         if !should_run
             || !acquired_ability_is_available(
-                player,
+                &player,
                 &grant.character_id,
                 prefix,
                 &ability_state,
                 events,
             )
+            || metadata.once_per_ability_instance
+                && ability_instance_already_used(character_id, &player, events)
         {
             continue;
         }
-        let mut step = character_step(phase, prefix, &grant.character_id, player, players);
+        let mut step = character_step(phase, prefix, &grant.character_id, &player, players);
         step.id = format!(
             "{prefix}:ability:{}:{}:{}",
             grant.source_event_id, grant.owner_player_id, grant.character_id
@@ -1575,32 +1623,31 @@ fn insert_acquired_ability_steps(
             Phase::Night => metadata.later_night_rank,
             _ => None,
         };
-        let insert_at = target_rank
-            .and_then(|target_rank| {
-                steps.iter().position(|candidate| {
-                    SnvStepKey::parse(&candidate.id)
-                        .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
-                        || candidate
-                            .character
-                            .as_deref()
-                            .and_then(SnvCharacterId::parse)
-                            .and_then(|character| match phase {
-                                Phase::FirstNight => character.metadata().first_night_rank,
-                                Phase::Night => character.metadata().later_night_rank,
-                                _ => None,
-                            })
-                            .is_some_and(|rank| rank > target_rank)
-                })
+        let insert_at = (start_knowing && acquired_this_phase)
+            .then(|| {
+                steps
+                    .iter()
+                    .position(|candidate| candidate.id == payload.step_id)
+                    .map(|index| index + 1)
             })
+            .flatten()
             .or_else(|| {
-                start_knowing
-                    .then(|| {
-                        steps
-                            .iter()
-                            .position(|candidate| candidate.id == payload.step_id)
-                            .map(|index| index + 1)
+                target_rank.and_then(|target_rank| {
+                    steps.iter().position(|candidate| {
+                        SnvStepKey::parse(&candidate.id)
+                            .is_some_and(|key| key.semantic_step() == SnvSemanticStep::ToDay)
+                            || candidate
+                                .character
+                                .as_deref()
+                                .and_then(SnvCharacterId::parse)
+                                .and_then(|character| match phase {
+                                    Phase::FirstNight => character.metadata().first_night_rank,
+                                    Phase::Night => character.metadata().later_night_rank,
+                                    _ => None,
+                                })
+                                .is_some_and(|rank| rank > target_rank)
                     })
-                    .flatten()
+                })
             })
             .or_else(|| {
                 steps.iter().position(|candidate| {
@@ -2320,12 +2367,9 @@ fn automatic_seamstress_reminders(
     players: &[Player],
     events: &[GameEvent],
 ) -> Vec<AutomaticReminder> {
-    players
-        .iter()
-        .filter(|player| {
-            player.actual_character == "seamstress"
-                && ability_instance_already_used(SnvCharacterId::Seamstress, player, events)
-        })
+    ability_actors_for_character(players, events, "seamstress")
+        .into_iter()
+        .filter(|player| ability_instance_already_used(SnvCharacterId::Seamstress, player, events))
         .map(|player| AutomaticReminder {
             player_id: player.id.clone(),
             character_id: "seamstress".into(),
@@ -2341,9 +2385,9 @@ fn automatic_mathematician_reminders(
     events: &[GameEvent],
     audit_index: &MathematicianAuditIndex,
 ) -> Vec<AutomaticReminder> {
-    if !players
+    if !ability_actors_for_character(players, events, "mathematician")
         .iter()
-        .any(|player| player.alive && player.actual_character == "mathematician")
+        .any(|player| player.alive)
     {
         return vec![];
     }
@@ -3404,20 +3448,18 @@ fn apply_player_event(
         }
         GameEventKind::KlutzChoiceResolved { .. } => {}
         GameEventKind::SnakeCharmerActionResolved { payload } => {
-            let Some(actor) = players.iter().find(|player| {
-                player.id == payload.actor_player_id
-                    && player.alive
-                    && player.actual_character == "snakeCharmer"
-            }) else {
+            let Some(actor) = players
+                .iter()
+                .find(|player| player.id == payload.actor_player_id && player.alive)
+            else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
-            if !SnvStepKey::parse(&payload.step_id).is_some_and(|step| {
-                matches!(
-                    step.semantic_step(),
-                    SnvSemanticStep::SnakeCharmer { actor_id: Some(actor_id) }
-                        if actor_id == actor.id
-                )
-            }) {
+            if !player_owns_snake_charmer_step(
+                actor,
+                &payload.step_id,
+                players,
+                &events[..event_index],
+            ) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
             let actor_before = identity_state(actor);
@@ -3470,8 +3512,8 @@ fn apply_player_event(
                     player_id: payload.target_player_id.clone(),
                     before: target_before.clone(),
                     after: IdentityState {
-                        actual_character: "snakeCharmer".into(),
-                        shown_character: "snakeCharmer".into(),
+                        actual_character: actor_before.actual_character.clone(),
+                        shown_character: actor_before.shown_character.clone(),
                         alignment: actor_alignment,
                     },
                 },
@@ -3911,11 +3953,7 @@ fn philosopher_impairments(
     impairments
 }
 
-fn philosopher_ability_grants(
-    players: &[Player],
-    events: &[GameEvent],
-    ability_state: &SnvAbilityState,
-) -> Vec<AbilityGrant> {
+fn philosopher_owned_ability_grants(players: &[Player], events: &[GameEvent]) -> Vec<AbilityGrant> {
     events
         .iter()
         .filter_map(|event| {
@@ -3928,11 +3966,7 @@ fn philosopher_ability_grants(
             else {
                 return None;
             };
-            if !philosopher_source_is_active(
-                players,
-                &payload.actor,
-                &ability_state.active_impairments,
-            ) {
+            if philosopher_source_player(players, &payload.actor).is_none() {
                 return None;
             }
             Some(AbilityGrant {
@@ -3944,6 +3978,124 @@ fn philosopher_ability_grants(
             })
         })
         .collect()
+}
+
+fn philosopher_ability_grants(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<AbilityGrant> {
+    philosopher_owned_ability_grants(players, events)
+        .into_iter()
+        .filter(|grant| {
+            events.iter().any(|event| {
+                matches!(
+                    &event.kind,
+                    GameEventKind::PhilosopherAbilityResolved { payload }
+                        if event.id == grant.source_event_id
+                            && philosopher_source_is_active(
+                                players,
+                                &payload.actor,
+                                &ability_state.active_impairments,
+                            )
+                )
+            })
+        })
+        .collect()
+}
+
+fn projected_grant_actor(players: &[Player], grant: &AbilityGrant) -> Option<Player> {
+    let mut actor = players
+        .iter()
+        .find(|player| player.id == grant.owner_player_id)?
+        .clone();
+    actor.actual_character = grant.character_id.clone();
+    actor.ability_instance = AbilityInstance {
+        id: grant.ability_instance_id.clone(),
+        character_id: grant.character_id.clone(),
+        source_event_id: grant.source_event_id.clone(),
+    };
+    Some(actor)
+}
+
+fn ability_actors_for_character(
+    players: &[Player],
+    events: &[GameEvent],
+    character_id: &str,
+) -> Vec<Player> {
+    let mut actors = players
+        .iter()
+        .filter(|player| player.actual_character == character_id)
+        .cloned()
+        .collect::<Vec<_>>();
+    actors.extend(
+        philosopher_owned_ability_grants(players, events)
+            .into_iter()
+            .filter(|grant| grant.character_id == character_id)
+            .filter_map(|grant| projected_grant_actor(players, &grant)),
+    );
+    actors.sort_by_key(|actor| actor.seat);
+    actors
+}
+
+fn ability_actor_for_character(
+    players: &[Player],
+    events: &[GameEvent],
+    player_id: &str,
+    character_id: &str,
+) -> Option<Player> {
+    ability_actors_for_character(players, events, character_id)
+        .into_iter()
+        .find(|actor| actor.id == player_id)
+}
+
+fn player_owns_ability_for_step(
+    player: &Player,
+    step: &PhaseStep,
+    players: &[Player],
+    events: &[GameEvent],
+    character_id: &str,
+) -> bool {
+    let Some(ability_use) = step.ability_use.as_ref() else {
+        return false;
+    };
+    ability_use.owner_player_id == player.id
+        && ability_use.character_id == character_id
+        && ability_actor_for_character(players, events, &player.id, character_id)
+            .is_some_and(|actor| actor.ability_instance.id == ability_use.ability_instance_id)
+}
+
+fn player_owns_snake_charmer_step(
+    player: &Player,
+    step_id: &str,
+    players: &[Player],
+    events: &[GameEvent],
+) -> bool {
+    let Some(step) = SnvStepKey::parse(step_id) else {
+        return false;
+    };
+    if player.actual_character == "snakeCharmer"
+        && matches!(
+            step.semantic_step(),
+            SnvSemanticStep::SnakeCharmer { actor_id: Some(actor_id) }
+                if actor_id == player.id
+        )
+    {
+        return true;
+    }
+    philosopher_owned_ability_grants(players, events)
+        .into_iter()
+        .any(|grant| {
+            grant.owner_player_id == player.id
+                && grant.character_id == "snakeCharmer"
+                && step_id
+                    == format!(
+                        "{}:ability:{}:{}:snakeCharmer",
+                        step.phase_token(),
+                        grant.source_event_id,
+                        grant.owner_player_id
+                    )
+        })
 }
 
 struct SnvAbilityState {
@@ -4314,13 +4466,10 @@ fn record_death_triggers(
     event: &GameEvent,
 ) {
     let ability_state = SnvAbilityState::build(players, prior_events);
-    let mut record = |player_id: &str,
+    let mut record = |actor: &Player,
                       source_event: &GameEvent,
                       death_sequence: u8,
                       kind: DeathConsequenceKind| {
-        let Some(player) = players.iter().find(|player| player.id == player_id) else {
-            return;
-        };
         if triggers.iter().any(|trigger| {
             trigger.source_event_id == source_event.id
                 && trigger.death_sequence == death_sequence
@@ -4342,10 +4491,10 @@ fn record_death_triggers(
             kind,
             source_event_id: source_event.id.clone(),
             death_sequence,
-            actor_player_id: player.id.clone(),
-            source_ability_instance_id: player.ability_instance.id.clone(),
-            actor_impaired_at_trigger: ability_state.is_impaired(&player.id),
-            actor_alignment_at_trigger: player.alignment,
+            actor_player_id: actor.id.clone(),
+            source_ability_instance_id: actor.ability_instance.id.clone(),
+            actor_impaired_at_trigger: ability_state.is_impaired(&actor.id),
+            actor_alignment_at_trigger: actor.alignment,
             allowed_player_ids: match kind {
                 DeathConsequenceKind::Klutz => players
                     .iter()
@@ -4367,6 +4516,10 @@ fn record_death_triggers(
                 .collect(),
         });
     };
+    let death_ability_actors = ["sweetheart", "barber", "klutz"]
+        .into_iter()
+        .flat_map(|character| ability_actors_for_character(players, prior_events, character))
+        .collect::<Vec<_>>();
 
     let deaths = match &event.kind {
         GameEventKind::DeathConfirmed { payload } => vec![(payload.player_id.as_str(), 1)],
@@ -4394,48 +4547,37 @@ fn record_death_triggers(
         _ => vec![],
     };
     for (player_id, death_sequence) in deaths {
-        let Some(player) = players.iter().find(|player| player.id == player_id) else {
-            continue;
-        };
-        match player.actual_character.as_str() {
-            "sweetheart" => record(
-                player_id,
-                event,
-                death_sequence,
-                DeathConsequenceKind::Sweetheart,
-            ),
-            "barber" => record(
-                player_id,
-                event,
-                death_sequence,
-                DeathConsequenceKind::Barber,
-            ),
-            "klutz" if event.phase == Phase::Day => record(
-                player_id,
-                event,
-                death_sequence,
-                DeathConsequenceKind::Klutz,
-            ),
-            _ => {}
+        for actor in death_ability_actors
+            .iter()
+            .filter(|actor| actor.id == player_id)
+        {
+            match actor.actual_character.as_str() {
+                "sweetheart" => record(
+                    actor,
+                    event,
+                    death_sequence,
+                    DeathConsequenceKind::Sweetheart,
+                ),
+                "barber" => record(actor, event, death_sequence, DeathConsequenceKind::Barber),
+                "klutz" if event.phase == Phase::Day => {
+                    record(actor, event, death_sequence, DeathConsequenceKind::Klutz)
+                }
+                _ => {}
+            }
         }
     }
 
     if let GameEventKind::NightDeathsAnnounced { payload } = &event.kind {
         for player_id in &payload.player_ids {
-            let Some(player) = players
+            for actor in ability_actors_for_character(players, prior_events, "klutz")
                 .iter()
-                .find(|player| player.id == *player_id && player.actual_character == "klutz")
-            else {
-                continue;
-            };
-            if let Some((source_event, sequence)) = death_event_for_player(prior_events, &player.id)
+                .filter(|actor| actor.id == *player_id)
             {
-                record(
-                    &player.id,
-                    source_event,
-                    sequence,
-                    DeathConsequenceKind::Klutz,
-                );
+                if let Some((source_event, sequence)) =
+                    death_event_for_player(prior_events, &actor.id)
+                {
+                    record(actor, source_event, sequence, DeathConsequenceKind::Klutz);
+                }
             }
         }
     }
@@ -7845,12 +7987,15 @@ fn propose_day_action(
         return Err(ErrorKind::StaleCommand.into_error());
     }
     let character_id = day_action_character(&payload.record).to_string();
-    let actor = players
-        .iter()
-        .find(|player| player.id == payload.actor_player_id)
-        .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
+    let actor = ability_actor_for_character(
+        players,
+        &game_file.game.events,
+        &payload.actor_player_id,
+        &character_id,
+    )
+    .ok_or_else(|| ErrorKind::InvalidDayActionActor.into_error())?;
     let active_reasons =
-        day_action_active_reasons(actor, &character_id, players, &game_file.game.events);
+        day_action_active_reasons(&actor, &character_id, players, &game_file.game.events);
     let canonical = DayActionRecordedPayload {
         day_id: payload.day_id,
         actor_player_id: payload.actor_player_id,
@@ -8029,7 +8174,13 @@ fn propose_snake_charmer_action(
         .find(|player| {
             player.id == actor_player_id
                 && player.alive
-                && player.actual_character == "snakeCharmer"
+                && player_owns_ability_for_step(
+                    player,
+                    step,
+                    players,
+                    &game_file.game.events,
+                    "snakeCharmer",
+                )
         })
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
     let target_player_id = input
@@ -8070,8 +8221,8 @@ fn propose_snake_charmer_action(
                     player_id: target.id.clone(),
                     before: identity_state(target),
                     after: IdentityState {
-                        actual_character: "snakeCharmer".into(),
-                        shown_character: "snakeCharmer".into(),
+                        actual_character: actor.actual_character.clone(),
+                        shown_character: actor.shown_character.clone(),
                         alignment: actor.alignment,
                     },
                 },

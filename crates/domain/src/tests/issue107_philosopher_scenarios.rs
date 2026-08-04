@@ -1,6 +1,8 @@
 use crate::{propose_json, replay_json};
 use serde_json::{json, Value};
 
+use super::support::snv_demon_bluff_input;
+
 fn setup_event(demon: &str) -> Value {
     json!({
         "id": "setup-107",
@@ -77,6 +79,135 @@ fn append_acquisition(events: &mut Vec<Value>, character_id: &str) -> Value {
     let event = proposal["value"]["event"].clone();
     events.push(event.clone());
     event
+}
+
+fn append_default_current_step(events: &mut Vec<Value>) -> Value {
+    let state = replay(events);
+    assert_eq!(state["ok"], true, "replay failed: {state}");
+    let step = &state["value"]["currentStep"];
+    let step_id = step["id"].clone();
+    let command = if step_id == "firstNight:demonInfo" {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": snv_demon_bluff_input(step)
+        }})
+    } else if step["requiredInput"]["kind"] == "nomination" {
+        json!({ "type": "skipStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len()
+        }})
+    } else if step["requiredInput"]["kind"] == "executionDecision" {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": { "execute": false }
+        }})
+    } else if let Some(check) = step["informationPrompt"]["targetChecks"]
+        .as_array()
+        .and_then(|checks| checks.first())
+    {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": { "playerIds": check["targetPlayerIds"].clone() },
+            "deliveredResult": check["choices"][0]["result"].clone(),
+            "registrationJudgments": check["choices"][0]["registrationJudgments"].clone()
+        }})
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "number"
+    {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": null,
+            "deliveredResult": {
+                "kind": "number",
+                "value": step["informationPrompt"]["numberChoices"][0]["value"].clone()
+            }
+        }})
+    } else if step["informationPrompt"]["deliveryMode"] == "selectable"
+        && step["informationPrompt"]["computedResult"]["kind"] == "boolean"
+    {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": null,
+            "deliveredResult": {
+                "kind": "boolean",
+                "value": step["informationPrompt"]["booleanChoices"][0]["value"].clone()
+            }
+        }})
+    } else if matches!(
+        step["character"].as_str(),
+        Some("fangGu" | "vigormortis" | "noDashii" | "vortox")
+    ) {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": { "playerIds": ["player-2"] }
+        }})
+    } else if step["requiredInput"]["kind"] == "playerIds" {
+        let count = step["requiredInput"]["minSelections"]
+            .as_u64()
+            .expect("minimum selections") as usize;
+        let player_ids = step["requiredInput"]["allowedPlayerIds"]
+            .as_array()
+            .expect("allowed players")
+            .iter()
+            .take(count)
+            .cloned()
+            .collect::<Vec<_>>();
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": { "playerIds": player_ids }
+        }})
+    } else if step["requiredInput"]["kind"] == "madnessAssignment" {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": {
+                "playerIds": [step["requiredInput"]["allowedPlayerIds"][0].clone()],
+                "characterId": step["requiredInput"]["allowedCharacterIds"][0].clone()
+            }
+        }})
+    } else {
+        json!({ "type": "confirmStep", "payload": {
+            "stepId": step_id,
+            "expectedEventCount": events.len(),
+            "input": null
+        }})
+    };
+    let proposal = propose(events, command);
+    assert_eq!(
+        proposal["ok"], true,
+        "default proposal failed for step {step}: {proposal}"
+    );
+    events.push(proposal["value"]["event"].clone());
+    state
+}
+
+fn advance_to_later_night(events: &mut Vec<Value>) -> Value {
+    for _ in 0..20 {
+        let state = replay(events);
+        if state["value"]["phase"] == "night" {
+            return state;
+        }
+        append_default_current_step(events);
+    }
+    panic!("later Night was not reached: {}", replay(events));
+}
+
+fn advance_to_day(events: &mut Vec<Value>) -> Value {
+    for _ in 0..15 {
+        let state = replay(events);
+        if state["value"]["phase"] == "day" {
+            return state;
+        }
+        append_default_current_step(events);
+    }
+    panic!("Day was not reached: {}", replay(events));
 }
 
 fn has_reminder(state: &Value, player_id: &str, token_id: &str) -> bool {
@@ -293,4 +424,319 @@ fn poisoned_selection_consumes_the_use_as_no_effect_without_a_grant() {
         .is_some_and(Vec::is_empty));
     assert!(!has_reminder(&after, "player-1", "isThePhilosopher"));
     assert_ne!(after["value"]["currentStep"]["character"], "dreamer");
+}
+
+#[test]
+fn in_play_town_crier_grant_returns_on_the_following_night_with_its_grant_identity() {
+    let mut events = vec![setup_event("fangGu")];
+    events[0]["payload"]["players"][1]["actualCharacter"] = json!("townCrier");
+    events[0]["payload"]["players"][1]["shownCharacter"] = json!("townCrier");
+    let acquisition = append_acquisition(&mut events, "townCrier");
+    let grant_id = acquisition["payload"]["outcome"]["grantedAbilityInstanceId"]
+        .as_str()
+        .expect("grant id");
+
+    let later_night = advance_to_later_night(&mut events);
+    let granted_step = later_night["value"]["phaseOverview"]
+        .as_array()
+        .expect("Night overview")
+        .iter()
+        .find(|step| step["character"] == "townCrier" && step["playerId"] == "player-1");
+
+    assert!(granted_step.is_some(), "state={later_night}");
+    let granted_step_id = granted_step.unwrap()["id"].as_str().unwrap().to_string();
+    for _ in 0..10 {
+        let state = replay(&events);
+        if state["value"]["currentStep"]["id"] == granted_step_id {
+            assert_eq!(
+                state["value"]["currentStep"]["abilityUse"]["abilityInstanceId"],
+                grant_id
+            );
+            return;
+        }
+        append_default_current_step(&mut events);
+    }
+    panic!(
+        "granted Town Crier step was not reached: {}",
+        replay(&events)
+    );
+}
+
+#[test]
+fn granted_day_abilities_and_mutant_are_exposed_for_the_philosopher_owner() {
+    for character_id in ["artist", "savant", "juggler"] {
+        let mut events = vec![setup_event("fangGu")];
+        append_acquisition(&mut events, character_id);
+        let day = advance_to_day(&mut events);
+        assert!(
+            day["value"]["availableDayActions"]
+                .as_array()
+                .is_some_and(|actions| actions.iter().any(|action| {
+                    action["actorPlayerId"] == "player-1" && action["characterId"] == character_id
+                })),
+            "character={character_id}, state={day}"
+        );
+        let record = match character_id {
+            "artist" => json!({
+                "kind": "artist",
+                "question": "테스트 질문",
+                "answer": "yes",
+                "truthful": true
+            }),
+            "savant" => json!({
+                "kind": "savant",
+                "statements": [
+                    { "text": "참", "truthful": true },
+                    { "text": "거짓", "truthful": false }
+                ]
+            }),
+            "juggler" => json!({ "kind": "juggler", "correctCount": 1 }),
+            _ => unreachable!(),
+        };
+        let proposal = propose(
+            &events,
+            json!({ "type": "recordDayAction", "payload": {
+                "dayId": "day",
+                "expectedEventCount": events.len(),
+                "actorPlayerId": "player-1",
+                "record": record
+            }}),
+        );
+        assert_eq!(proposal["ok"], true, "character={character_id}, {proposal}");
+        events.push(proposal["value"]["event"].clone());
+        let replayed = replay(&events);
+        assert!(replayed["value"]["dayActionRecords"]
+            .as_array()
+            .is_some_and(|records| records.iter().any(|record| {
+                record["actorPlayerId"] == "player-1" && record["characterId"] == character_id
+            })));
+
+        if character_id == "juggler" {
+            let night = advance_to_later_night(&mut events);
+            assert!(night["value"]["phaseOverview"]
+                .as_array()
+                .is_some_and(|steps| steps.iter().any(|step| {
+                    step["character"] == "juggler" && step["playerId"] == "player-1"
+                })));
+        }
+    }
+
+    let mut mutant_events = vec![setup_event("fangGu")];
+    append_acquisition(&mut mutant_events, "mutant");
+    let mutant_day = advance_to_day(&mut mutant_events);
+    assert!(
+        mutant_day["value"]["madnessAssignments"]
+            .as_array()
+            .is_some_and(|assignments| assignments.iter().any(|assignment| {
+                assignment["sourcePlayerId"] == "player-1"
+                    && assignment["sourceCharacterId"] == "mutant"
+                    && assignment["sourceEffective"] == true
+            })),
+        "state={mutant_day}"
+    );
+}
+
+#[test]
+fn immediate_and_deferred_once_per_game_grants_keep_their_official_timing() {
+    let mut clockmaker_events = vec![setup_event("fangGu")];
+    let clockmaker_grant = append_acquisition(&mut clockmaker_events, "clockmaker");
+    let clockmaker = replay(&clockmaker_events);
+    assert_eq!(
+        clockmaker["value"]["currentStep"]["character"],
+        "clockmaker"
+    );
+    assert_eq!(clockmaker["value"]["currentStep"]["playerId"], "player-1");
+    assert_eq!(
+        clockmaker["value"]["currentStep"]["abilityUse"]["abilityInstanceId"],
+        clockmaker_grant["payload"]["outcome"]["grantedAbilityInstanceId"]
+    );
+
+    let mut seamstress_events = vec![setup_event("fangGu")];
+    append_acquisition(&mut seamstress_events, "seamstress");
+    for _ in 0..15 {
+        let state = replay(&seamstress_events);
+        if state["value"]["phase"] == "day" {
+            break;
+        }
+        let step = &state["value"]["currentStep"];
+        if step["character"] == "seamstress" && step["playerId"] == "player-1" {
+            let proposal = propose(
+                &seamstress_events,
+                json!({ "type": "skipStep", "payload": {
+                    "stepId": step["id"],
+                    "expectedEventCount": seamstress_events.len()
+                }}),
+            );
+            assert_eq!(proposal["ok"], true, "{proposal}");
+            seamstress_events.push(proposal["value"]["event"].clone());
+        } else {
+            append_default_current_step(&mut seamstress_events);
+        }
+    }
+    let seamstress_night = advance_to_later_night(&mut seamstress_events);
+    assert!(seamstress_night["value"]["phaseOverview"]
+        .as_array()
+        .is_some_and(|steps| steps
+            .iter()
+            .any(|step| { step["character"] == "seamstress" && step["playerId"] == "player-1" })));
+}
+
+#[test]
+fn every_recurring_night_grant_is_scheduled_again_after_the_acquisition_night() {
+    for character_id in [
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+    ] {
+        let mut events = vec![setup_event("fangGu")];
+        append_acquisition(&mut events, character_id);
+        let later_night = advance_to_later_night(&mut events);
+        assert!(
+            later_night["value"]["phaseOverview"]
+                .as_array()
+                .is_some_and(|steps| steps.iter().any(|step| {
+                    step["character"] == character_id && step["playerId"] == "player-1"
+                })),
+            "character={character_id}, state={later_night}"
+        );
+    }
+}
+
+#[test]
+fn granted_snake_charmer_action_uses_the_canonical_no_swap_and_swap_paths() {
+    let mut events = vec![setup_event("fangGu")];
+    append_acquisition(&mut events, "snakeCharmer");
+    advance_to_later_night(&mut events);
+    for _ in 0..10 {
+        let state = replay(&events);
+        let step = &state["value"]["currentStep"];
+        if step["character"] == "snakeCharmer" && step["playerId"] == "player-1" {
+            let no_swap = propose(
+                &events,
+                json!({ "type": "confirmStep", "payload": {
+                    "stepId": step["id"],
+                    "expectedEventCount": events.len(),
+                    "input": { "playerIds": ["player-2"] }
+                }}),
+            );
+            assert_eq!(no_swap["ok"], true, "{no_swap}");
+            assert_eq!(
+                no_swap["value"]["event"]["payload"]["outcome"],
+                json!({ "kind": "noSwap", "reason": "targetNotDemon" })
+            );
+            let mut no_swap_events = events.clone();
+            no_swap_events.push(no_swap["value"]["event"].clone());
+            assert_eq!(replay(&no_swap_events)["ok"], true);
+
+            let swap = propose(
+                &events,
+                json!({ "type": "confirmStep", "payload": {
+                    "stepId": step["id"],
+                    "expectedEventCount": events.len(),
+                    "input": { "playerIds": ["player-8"] }
+                }}),
+            );
+            assert_eq!(swap["ok"], true, "{swap}");
+            assert_eq!(swap["value"]["event"]["type"], "snakeCharmerActionResolved");
+            let mut swapped_events = events.clone();
+            swapped_events.push(swap["value"]["event"].clone());
+            let swapped = replay(&swapped_events);
+            assert_eq!(swapped["ok"], true, "{swapped}");
+            assert_eq!(swapped["value"]["players"][0]["actualCharacter"], "fangGu");
+            assert_eq!(swapped["value"]["players"][0]["alignment"], "evil");
+            assert_eq!(
+                swapped["value"]["players"][7]["actualCharacter"],
+                "philosopher"
+            );
+            assert_eq!(swapped["value"]["players"][7]["alignment"], "good");
+            return;
+        }
+        append_default_current_step(&mut events);
+    }
+    panic!(
+        "granted Snake Charmer step was not reached: {}",
+        replay(&events)
+    );
+}
+
+fn kill_philosopher_on_the_following_night(events: &mut Vec<Value>) -> Value {
+    advance_to_later_night(events);
+    for _ in 0..10 {
+        let state = replay(events);
+        let step = &state["value"]["currentStep"];
+        if matches!(
+            step["character"].as_str(),
+            Some("fangGu" | "vigormortis" | "noDashii" | "vortox")
+        ) {
+            let proposal = propose(
+                events,
+                json!({ "type": "confirmStep", "payload": {
+                    "stepId": step["id"],
+                    "expectedEventCount": events.len(),
+                    "input": { "playerIds": ["player-1"] }
+                }}),
+            );
+            assert_eq!(proposal["ok"], true, "Demon proposal failed: {proposal}");
+            events.push(proposal["value"]["event"].clone());
+            return replay(events);
+        }
+        append_default_current_step(events);
+    }
+    panic!("Demon step was not reached: {}", replay(events));
+}
+
+#[test]
+fn every_granted_death_ability_uses_the_existing_trigger_path() {
+    for (character_id, consequence_kind) in [
+        ("sweetheart", Some("sweetheart")),
+        ("barber", Some("barber")),
+        ("sage", None),
+    ] {
+        let mut events = vec![setup_event("fangGu")];
+        append_acquisition(&mut events, character_id);
+        let after_death = kill_philosopher_on_the_following_night(&mut events);
+        if let Some(kind) = consequence_kind {
+            assert!(
+                after_death["value"]["pendingDeathConsequences"]
+                    .as_array()
+                    .is_some_and(|pending| pending.iter().any(|trigger| {
+                        trigger["kind"] == kind && trigger["actorPlayerId"] == "player-1"
+                    })),
+                "character={character_id}, state={after_death}"
+            );
+        } else {
+            assert!(
+                after_death["value"]["phaseOverview"]
+                    .as_array()
+                    .is_some_and(|steps| steps.iter().any(|step| {
+                        step["character"] == "sage" && step["playerId"] == "player-1"
+                    })),
+                "state={after_death}"
+            );
+        }
+    }
+
+    let mut klutz_events = vec![setup_event("fangGu")];
+    append_acquisition(&mut klutz_events, "klutz");
+    kill_philosopher_on_the_following_night(&mut klutz_events);
+    for _ in 0..12 {
+        let state = replay(&klutz_events);
+        if state["value"]["currentStep"]["id"] == "day2:announceDeaths" {
+            append_default_current_step(&mut klutz_events);
+            break;
+        }
+        append_default_current_step(&mut klutz_events);
+    }
+    let after_announcement = replay(&klutz_events);
+    assert!(
+        after_announcement["value"]["pendingDeathConsequences"]
+            .as_array()
+            .is_some_and(|pending| pending.iter().any(|trigger| {
+                trigger["kind"] == "klutz" && trigger["actorPlayerId"] == "player-1"
+            })),
+        "state={after_announcement}"
+    );
 }
