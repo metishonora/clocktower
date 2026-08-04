@@ -98,13 +98,87 @@ test("keeps Philosopher identity while presenting an out-of-play Snake Charmer g
 
   await user.click(within(app).getByRole("button", { name: "대상 선택" }));
   const handoff = await within(app).findByLabelText("현재 마도서 작업");
-  const handoffActor = within(handoff).getByRole("button", { name: "철학자 캐릭터 상세 열기" });
-  expect(within(handoffActor).getByRole("heading", { level: 3, name: "철학자" })).toBeTruthy();
-  expect(within(handoffActor).getByText("민지")).toBeTruthy();
-  const handoffAbility = within(handoff).getByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" });
-  expect(within(handoffAbility).getByText("획득한 능력")).toBeTruthy();
-  expect(within(handoffAbility).getByText(/매일 밤, 생존한 플레이어 1명을 선택합니다/)).toBeTruthy();
-  expect(within(handoff).queryByRole("heading", { level: 2, name: "뱀 조련사" })).toBeNull();
+  const handoffHeading = within(handoff).getByRole("heading", {
+    level: 2,
+    name: "뱀 조련사 능력 대상 선택",
+  });
+  expect(handoffHeading.querySelector('img[src*="snakecharmer_g.webp"]')).toBeTruthy();
+  expect(within(handoff).queryByText("획득한 능력")).toBeNull();
+  expect(within(handoff).queryByText(/매일 밤, 생존한 플레이어 1명을 선택합니다/)).toBeNull();
+  expect(within(handoff).queryByRole("button", { name: "철학자 캐릭터 상세 열기" })).toBeNull();
+  expect(within(handoff).queryByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" })).toBeNull();
+});
+
+test("shows only the acquired ability icon during a targeted grimoire handoff", async () => {
+  const game = philosopherGame();
+  const user = userEvent.setup();
+  await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:philosopher",
+      input: { characterIds: ["dreamer"] },
+    },
+  });
+  for (const stepId of ["firstNight:minionInfo", "firstNight:demonInfo"]) {
+    await proposeAndAppend(game, {
+      type: "confirmStep",
+      payload: { stepId, input: null },
+    });
+  }
+  await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:snakeCharmer:player-4",
+      input: { playerIds: ["player-2"] },
+    },
+  });
+  await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:cerenovus",
+      input: { playerIds: ["player-2"], characterId: "artist" },
+    },
+  });
+  await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:clockmaker",
+      input: null,
+      deliveredResult: { kind: "number", value: 2 },
+    },
+  });
+  expect((await replayOrThrow(game)).currentStep).toMatchObject({
+    character: "dreamer",
+    playerId: "player-1",
+  });
+  game.ui = liveSessionForCharacters([
+    "philosopher",
+    "clockmaker",
+    "oracle",
+    "snakeCharmer",
+    "artist",
+    "barber",
+    "cerenovus",
+    "vortox",
+  ]);
+
+  render(
+    <SectsAndVioletsApp
+      coreAdapter={realWasmCore()}
+      storageDriver={new MemoryGameStorageDriver(game)}
+    />,
+  );
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "대상 선택" }));
+  const handoff = await within(app).findByLabelText("현재 마도서 작업");
+  const heading = within(handoff).getByRole("heading", {
+    level: 2,
+    name: "꿈꾸는 자 능력 한 명을 선택",
+  });
+  expect(heading.querySelector('img[src*="dreamer_g.webp"]')).toBeTruthy();
+  expect(within(handoff).queryByText("철학자")).toBeNull();
+  expect(within(handoff).queryByText("획득한 능력")).toBeNull();
+  expect(within(handoff).queryByText(/매일 밤, 당신과 이웃한 플레이어/)).toBeNull();
 });
 
 function philosopherGame(): GameFile {

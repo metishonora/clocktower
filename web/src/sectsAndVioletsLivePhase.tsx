@@ -376,6 +376,10 @@ export function SectsAndVioletsLiveGrimoire({
   const acquiredHandoffAbilityCharacterId = actorId === currentActor?.id
     ? acquiredAbilityCharacterForStep(currentStep, currentActor)
     : undefined;
+  const acquiredHandoffAbility = sectsAndVioletsCharacters.find(
+    (character) => character.id === acquiredHandoffAbilityCharacterId,
+  );
+  const acquiredHandoffAbilityAsset = sectsAndVioletsCharacterAsset(acquiredHandoffAbilityCharacterId);
   const targetVotes = Math.max(dayState?.executionVoteThreshold ?? 1, (dayState?.highestVoteCount ?? 0) + (dayState?.nominations.length ? 1 : 0));
   const isFirstVote = (dayState?.nominations.length ?? 0) === 0;
   const modeClass = handoff?.kind === "nomination"
@@ -612,26 +616,37 @@ export function SectsAndVioletsLiveGrimoire({
           />
         ) : handoff && !centerPrompt ? (
           <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
-            {acquiredHandoffAbilityCharacterId && currentActor ? (
-              <div className="issue107HandoffPresentation">
-                <AcquiredAbilityPresentation
-                  actor={currentActor}
-                  abilityCharacterId={acquiredHandoffAbilityCharacterId}
-                  theme={phaseTheme === "day" ? "snv-day" : "snv-night"}
-                  actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity issue107HandoffActorIdentity"
-                  abilityClassName="issue107AbilityResult interactive issue107HandoffAbilityResult"
-                />
-              </div>
-            ) : null}
             <header className="issue116SelectionHeader">
-              {informationTargetCount === 0 && !acquiredHandoffAbilityCharacterId ? <h2>{handoffPanelTitle(handoff, handoff.complete)}</h2> : null}
+              {informationTargetCount === 0 ? (
+                <h2
+                  className={acquiredHandoffAbilityCharacterId ? "issue107HandoffActionTitle" : undefined}
+                  aria-label={acquiredHandoffAbilityCharacterId
+                    ? `${acquiredHandoffAbility?.name ?? acquiredHandoffAbilityCharacterId} 능력 ${acquiredAbilityHandoffTitle(handoff, handoff.complete)}`
+                    : undefined}
+                >
+                  {acquiredHandoffAbilityAsset ? <img src={acquiredHandoffAbilityAsset.src} alt="" /> : null}
+                  {acquiredHandoffAbilityCharacterId
+                    ? acquiredAbilityHandoffTitle(handoff, handoff.complete)
+                    : handoffPanelTitle(handoff, handoff.complete)}
+                </h2>
+              ) : null}
               {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
                 <button type="button" disabled={operationBusy} onClick={onResetDaySelection}>{handoff.kind === "nomination" ? "지명 초기화 X" : "투표 초기화 X"}</button>
               ) : !handoff.complete && handoff.kind === "demon" && handoff.selectionStage === "poison" ? (
                 <button type="button" disabled={operationBusy} onClick={onResetAttackSelection}>공격 대상 다시 선택</button>
               ) : !handoff.complete && multipleTargetCount > 0 ? <button type="button" disabled={operationBusy || targetIds.length === 0} onClick={onResetDaySelection}>초기화</button> : null}
             </header>
-            {informationTargetCount > 0 ? <h2>{informationTargetCount === 1 ? "한 명을 선택" : "두 명 선택"}</h2> : null}
+            {informationTargetCount > 0 ? (
+              <h2
+                className={acquiredHandoffAbilityCharacterId ? "issue107HandoffActionTitle" : undefined}
+                aria-label={acquiredHandoffAbilityCharacterId
+                  ? `${acquiredHandoffAbility?.name ?? acquiredHandoffAbilityCharacterId} 능력 ${handoff.complete ? "선택 결과" : informationTargetCount === 1 ? "한 명을 선택" : "두 명 선택"}`
+                  : undefined}
+              >
+                {acquiredHandoffAbilityAsset ? <img src={acquiredHandoffAbilityAsset.src} alt="" /> : null}
+                {handoff.complete ? "선택 결과" : informationTargetCount === 1 ? "한 명을 선택" : "두 명 선택"}
+              </h2>
+            ) : null}
             {handoff.kind === "nomination" ? (
               <dl><div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div><div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div></dl>
             ) : handoff.kind === "vote" ? (
@@ -787,6 +802,19 @@ function handoffPanelTitle(handoff: LiveHandoff, complete: boolean) {
         : kind === "dreamer" ? "꿈꾸는 자"
           : kind === "seamstress" ? "재봉사" : "악마 공격";
   return complete ? `${task} 결과` : task;
+}
+
+function acquiredAbilityHandoffTitle(handoff: LiveHandoff, complete: boolean) {
+  if (complete) {
+    if (handoff.kind === "barber") return "교환 결과";
+    if (handoff.kind === "sweetheart") return "취함 결과";
+    return "선택 결과";
+  }
+  if (handoff.kind === "snakeCharmer") return "대상 선택";
+  if (handoff.kind === "sweetheart") return "취함 대상";
+  if (handoff.kind === "barber") return handoff.selectionStage === "chooser" ? "행동할 악마 선택" : "직업 교환";
+  if (handoff.kind === "klutz") return "선택 대상";
+  return handoffPanelTitle(handoff, false);
 }
 
 function characterKindLabel(kind: LivePlayer["characterKind"]) {
