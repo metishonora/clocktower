@@ -136,6 +136,31 @@ test("shows every information influence and accepts an obviously false Vortox nu
   expect(within(task).getByText("0 이상의 정수 · 진실 1 제외")).toBeTruthy();
 });
 
+test("shows impairment badges on an acquired information ability", () => {
+  const philosopher = {
+    ...actor,
+    actualCharacter: "philosopher",
+    shownCharacter: "philosopher",
+  };
+  const acquiredStep: PhaseStep = {
+    ...step,
+    abilityUse: {
+      ownerPlayerId: philosopher.id,
+      characterId: "clockmaker",
+      abilityInstanceId: "grant-clockmaker",
+    },
+    informationPrompt: {
+      ...step.informationPrompt!,
+      deliveryMode: "selectable",
+      activeReasons: [{ type: "drunk" }],
+    },
+  };
+  render(<SectsAndVioletsInformationTask step={acquiredStep} actor={philosopher} revealed={false} busy={false} onReveal={() => undefined} />);
+
+  const ability = screen.getByRole("button", { name: "시계공 캐릭터 상세 열기" });
+  expect(within(ability).getByText("취함").classList.contains("drunk")).toBe(true);
+});
+
 test("pulses the Vortox truth warning instead of revealing when confirmation is attempted", async () => {
   const onReveal = vi.fn();
   const influencedStep = {

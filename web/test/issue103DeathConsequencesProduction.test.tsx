@@ -58,6 +58,27 @@ test("an acquired death consequence keeps Philosopher as the actor and shows the
   expect(within(ability).getByText("사랑꾼")).toBeTruthy();
 });
 
+test("shows the exact impairment on an impaired death ability", () => {
+  const rolePlayers = consequencePlayers("sweetheart");
+  const props = {
+    pending: { ...pending("sweetheart"), actorImpairedAtTrigger: true },
+    players: rolePlayers,
+    activeImpairments: [{
+      kind: "drunk" as const,
+      playerId: "player-1",
+      sourceEventId: "philosopher-copy",
+      sourceCharacterId: "philosopher",
+      expires: "whileSourceAbilityActive" as const,
+    }],
+    operationBusy: false,
+    onResolve: vi.fn(),
+  };
+  render(<DeathConsequencePanel {...props} />);
+
+  const panel = screen.getByRole("group", { name: "사랑꾼 능력 처리" });
+  expect(within(panel).getByText("취함")).toBeTruthy();
+});
+
 test("hides the private phase overview while the Klutz choice is public", () => {
   const currentStep = {
     id: "day1:whisper", phase: "day" as const, stepType: "whisper" as const,

@@ -150,6 +150,29 @@ test("an acquired day action keeps Philosopher as the actor and owns its role in
   expect(within(ability).getByText("중독")).toBeTruthy();
 });
 
+test("shows an actor impairment on the Juggler day action without changing its record contract", async () => {
+  const user = userEvent.setup();
+  render(
+    <DayActionDock
+      players={players}
+      availableActions={[availableActions[2]]}
+      activeImpairments={[{
+        kind: "drunk",
+        playerId: "player-3",
+        sourceEventId: "philosopher-copy",
+        sourceCharacterId: "philosopher",
+        expires: "whileSourceAbilityActive",
+      }]}
+      phaseLabel="첫 낮"
+      busy={false}
+      onConfirm={vi.fn()}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
+  expect(within(screen.getByRole("dialog", { name: "곡예사 능력 사용" })).getByText("취함")).toBeTruthy();
+});
+
 function player(id: string, seat: number, name: string, character: string): Player {
   return {
     id,

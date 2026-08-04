@@ -87,6 +87,7 @@ import {
   acquiredAbilityCharacterForStep,
   AcquiredAbilityPresentation,
 } from "./features/phase-control/acquiredAbilityPresentation";
+import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
 import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
@@ -112,6 +113,7 @@ type FirstNightStep = {
   characterId?: string;
   support: "manual" | "automated";
   summary: string;
+  playerId?: string;
 };
 type InformationCheckpoint = {
   step: PhaseStep;
@@ -2565,6 +2567,7 @@ export function SectsAndVioletsGameSurface({
             <DeathConsequencePanel
               pending={pendingDeathConsequence}
               players={replayState.players}
+              activeImpairments={replayState.ruleState.activeImpairments}
               operationBusy={operationBusy}
               onResolve={(resolution) => void resolveDeathConsequence(resolution)}
               onChooseTarget={() => startLiveHandoff(pendingDeathConsequence.kind)}
@@ -2640,6 +2643,7 @@ export function SectsAndVioletsGameSurface({
               <PhilosopherAbilityTask
                 step={replayState.currentStep}
                 actor={liveActor}
+                activeImpairments={replayState.ruleState.activeImpairments}
                 value={selectedPhilosopherCharacterId}
                 busy={operationBusy}
                 onChange={setSelectedPhilosopherCharacterId}
@@ -2653,6 +2657,7 @@ export function SectsAndVioletsGameSurface({
                   actor={liveActor}
                   abilityCharacterId={currentFirstNightAcquiredAbilityCharacterId}
                   actorPlayerLabel={`${liveActor.seat}번 ${liveActor.name}`}
+                  abilityStatusNode={<PlayerImpairmentBadges activeImpairments={replayState?.ruleState.activeImpairments} playerId={liveActor.id} />}
                   actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity"
                   theme="snv-night"
                 /> : currentFirstNightAsset && currentFirstNightStep.characterId ? (
@@ -2662,7 +2667,10 @@ export function SectsAndVioletsGameSurface({
                     theme="snv-night"
                   >
                     <img src={currentFirstNightAsset.src} alt={`${currentFirstNightStep.name} 공식 캐릭터 아이콘`} />
-                    <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{currentFirstNightStep.name}</span>
+                    <span className="snvInformationRoleLine">
+                      <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{currentFirstNightStep.name}</span>
+                      <PlayerImpairmentBadges activeImpairments={replayState?.ruleState.activeImpairments} playerId={replayState?.currentStep?.playerId} />
+                    </span>
                   </CharacterDetailButton>
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
                 {currentFirstNightAcquiredAbilityCharacterId ? null : <p>{currentFirstNightStep.summary}</p>}
@@ -2727,7 +2735,10 @@ export function SectsAndVioletsGameSurface({
               {firstNightSteps.map((step, index) => (
                 <li key={step.id} className={phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).className}>
                   <span>{phaseStepPresentation(step.id, index, firstNightStepIndex, replayState?.phaseOverview, evilInformationCheckpoint?.stepId ?? informationCheckpoint?.step.id).label}</span>
-                  <strong>{step.name}</strong>
+                  <span className="snvPhaseOverviewAction">
+                    <strong>{step.name}</strong>
+                    <PlayerImpairmentBadges activeImpairments={replayState?.ruleState.activeImpairments} playerId={step.playerId} label={`${step.name} 행동자 상태`} />
+                  </span>
                 </li>
               ))}
             </ol>
@@ -2808,6 +2819,7 @@ export function SectsAndVioletsGameSurface({
           <DayActionDock
             players={replayState.players}
             availableActions={replayState.availableDayActions ?? []}
+            activeImpairments={replayState.ruleState.activeImpairments}
             phaseLabel={phaseLabel(effectivePlayPhase, replayState.currentStep)}
             busy={operationBusy}
             groupActive={activeFreeActionGroup === "day"}
@@ -3024,6 +3036,7 @@ function informationRevealLabel(characterId: string | undefined): string {
 function PhilosopherAbilityTask({
   step,
   actor,
+  activeImpairments,
   value,
   busy,
   onChange,
@@ -3032,6 +3045,7 @@ function PhilosopherAbilityTask({
 }: {
   step: PhaseStep;
   actor: Player;
+  activeImpairments?: ReplayState["ruleState"]["activeImpairments"];
   value: string;
   busy: boolean;
   onChange: (characterId: string) => void;
@@ -3045,7 +3059,13 @@ function PhilosopherAbilityTask({
     <p className="snvCurrentStepLabel">현재 할 일</p>
     <CharacterDetailButton details={sectsAndVioletsCharacterDetail("philosopher")} className="snvCurrentStepIdentity interactive issue107ActorIdentity" theme="snv-night">
       {asset ? <img src={asset.src} alt="철학자 공식 캐릭터 아이콘" /> : null}
-      <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{philosopher.name}</span><strong>{actor.seat}번 {actor.name}</strong></div>
+      <div>
+        <span className="snvInformationRoleLine">
+          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{philosopher.name}</span>
+          <PlayerImpairmentBadges activeImpairments={activeImpairments} playerId={actor.id} />
+        </span>
+        <strong>{actor.seat}번 {actor.name}</strong>
+      </div>
     </CharacterDetailButton>
     <p className="snvInformationAbility">{philosopher.ability}</p>
     <label className="issue107AbilitySelect">
@@ -3102,6 +3122,7 @@ function workflowStepFromCanonical(
     characterId: step.character,
     support: step.support ?? "automated",
     summary: known?.summary ?? character?.ability ?? "이 단계를 진행합니다.",
+    playerId: step.playerId,
   };
 }
 

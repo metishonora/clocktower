@@ -24,6 +24,7 @@ import {
   type PitHagDemonIntent,
 } from "./features/pitHag/PitHagSelectionPanel";
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
+import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -96,6 +97,10 @@ export function SectsAndVioletsLiveProgress({
   const actor = playerById(replayState.players, step?.playerId);
   const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor);
   const isDay = replayState.phase === "day";
+  const actorStatus = <PlayerImpairmentBadges
+    activeImpairments={replayState.ruleState.activeImpairments}
+    playerId={actor?.id}
+  />;
 
   return (
     <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "낮 진행" : "이후 밤 진행"}>
@@ -142,6 +147,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             /> : <CharacterDetailButton
@@ -150,7 +156,7 @@ export function SectsAndVioletsLiveProgress({
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt="" /> : null}
-              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{step.character === "evilTwin" ? "사악한 쌍둥이" : "마녀"}</span><strong>{actor.name}</strong></div>
+              <div><span className="snvInformationRoleLine"><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{step.character === "evilTwin" ? "사악한 쌍둥이" : "마녀"}</span>{actorStatus}</span><strong>{actor.name}</strong></div>
             </CharacterDetailButton>}
             {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={step.character === "evilTwin" ? onStartEvilTwin : onStartWitch}>대상 선택</button></div>
@@ -160,6 +166,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             /> : <CharacterDetailButton
@@ -168,7 +175,7 @@ export function SectsAndVioletsLiveProgress({
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset("cerenovus") ? <img src={sectsAndVioletsCharacterAsset("cerenovus")!.src} alt="세레노버스 공식 캐릭터 아이콘" /> : null}
-              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>세레노버스</span><strong>{actor.name}</strong></div>
+              <div><span className="snvInformationRoleLine"><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>세레노버스</span>{actorStatus}</span><strong>{actor.name}</strong></div>
             </CharacterDetailButton>}
             {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartCerenovus}>집착 지정</button></div>
@@ -178,6 +185,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             /> : <CharacterDetailButton
@@ -186,7 +194,7 @@ export function SectsAndVioletsLiveProgress({
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset("pitHag") ? <img src={sectsAndVioletsCharacterAsset("pitHag")!.src} alt="마귀할멈 공식 캐릭터 아이콘" /> : null}
-              <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>마귀할멈</span><strong>{actor.name}</strong></div>
+              <div><span className="snvInformationRoleLine"><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>마귀할멈</span>{actorStatus}</span><strong>{actor.name}</strong></div>
             </CharacterDetailButton>}
             {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHag}>← 선택</button></div>
@@ -201,6 +209,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             /> : <CharacterDetailButton
@@ -210,7 +219,7 @@ export function SectsAndVioletsLiveProgress({
             >
               {sectsAndVioletsCharacterAsset("snakeCharmer") ? <img src={sectsAndVioletsCharacterAsset("snakeCharmer")!.src} alt="뱀 조련사 공식 캐릭터 아이콘" /> : null}
               <div>
-                <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>뱀 조련사</span>
+                <span className="snvInformationRoleLine"><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>뱀 조련사</span>{actorStatus}</span>
                 <strong>{actor.name}</strong>
               </div>
             </CharacterDetailButton>}
@@ -222,6 +231,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityStatusNode={actorStatus}
               actorRoleName={actorRoleName}
               actorRoleNode={<h3>{actorRoleName}</h3>}
               actorIdentityClassName="issue116ActorRoleButton"
@@ -235,6 +245,7 @@ export function SectsAndVioletsLiveProgress({
                 {sectsAndVioletsCharacterAsset(actor.actualCharacter) ? <img src={sectsAndVioletsCharacterAsset(actor.actualCharacter)!.src} alt={`${actorRoleName} 공식 캐릭터 아이콘`} /> : null}
                 <h3>{actorRoleName}</h3>
               </CharacterDetailButton>
+              {actorStatus}
               <strong>{actor.name}</strong>
             </div>}
             {!acquiredAbilityCharacterId ? <p className="issue116AbilitySummary">{actorSummary}</p> : null}
@@ -256,6 +267,7 @@ export function SectsAndVioletsLiveProgress({
               acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
                 actor={actor}
                 abilityCharacterId={acquiredAbilityCharacterId}
+                abilityStatusNode={actorStatus}
                 actorRoleName={actorRoleName}
                 actorIdentityClassName="snvCurrentStepIdentity interactive"
                 theme={isDay ? "snv-day" : "snv-night"}
@@ -265,7 +277,7 @@ export function SectsAndVioletsLiveProgress({
                 theme={isDay ? "snv-day" : "snv-night"}
               >
                 {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt={`${actorRoleName} 공식 캐릭터 아이콘`} /> : null}
-                <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorRoleName}</span>
+                <span className="snvInformationRoleLine"><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorRoleName}</span>{actorStatus}</span>
               </CharacterDetailButton>
             ) : <h3>{stepLabel(step, actor ? [actor] : undefined)}</h3>}
             {actor && !acquiredAbilityCharacterId ? <p>{actor.name}</p> : null}
@@ -714,7 +726,14 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
       {overview.map((step) => (
         <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
           <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
-          <strong>{stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)}</strong>
+          <span className="snvPhaseOverviewAction">
+            <strong>{stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)}</strong>
+            <PlayerImpairmentBadges
+              activeImpairments={replayState.ruleState.activeImpairments}
+              playerId={step.playerId}
+              label={`${stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)} 행동자 상태`}
+            />
+          </span>
         </li>
       ))}
     </ol>

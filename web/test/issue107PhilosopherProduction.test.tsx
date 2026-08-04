@@ -181,6 +181,52 @@ test("shows only the acquired ability icon during a targeted grimoire handoff", 
   expect(within(handoff).queryByText(/매일 밤, 당신과 이웃한 플레이어/)).toBeNull();
 });
 
+test("shows the Philosopher drunkenness on the copied in-play role and its overview row", async () => {
+  const game = philosopherGame();
+  const user = userEvent.setup();
+  await proposeAndAppend(game, {
+    type: "confirmStep",
+    payload: {
+      stepId: "firstNight:philosopher",
+      input: { characterIds: ["snakeCharmer"] },
+    },
+  });
+  for (const stepId of ["firstNight:minionInfo", "firstNight:demonInfo"]) {
+    await proposeAndAppend(game, {
+      type: "confirmStep",
+      payload: { stepId, input: null },
+    });
+  }
+  expect((await replayOrThrow(game)).currentStep).toMatchObject({
+    character: "snakeCharmer",
+    playerId: "player-4",
+  });
+  game.ui = liveSessionForCharacters([
+    "philosopher",
+    "clockmaker",
+    "oracle",
+    "snakeCharmer",
+    "artist",
+    "barber",
+    "cerenovus",
+    "vortox",
+  ]);
+
+  render(
+    <SectsAndVioletsApp
+      coreAdapter={realWasmCore()}
+      storageDriver={new MemoryGameStorageDriver(game)}
+    />,
+  );
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const task = within(app).getByRole("button", { name: "뱀 조련사 캐릭터 상세 열기" }).closest("article")!;
+  expect(within(task).getByText("취함")).toBeTruthy();
+  const overview = within(app).getByRole("list", { name: "첫날 밤 순서" });
+  const originalSnakeCharmerRow = within(overview).getByText("뱀 조련사").closest("li");
+  expect(originalSnakeCharmerRow?.textContent).toContain("취함");
+  expect(within(overview).getByText("철학자 · 뱀 조련사").closest("li")?.textContent).not.toContain("취함");
+});
+
 function philosopherGame(): GameFile {
   const players: SetupPlayerInput[] = [
     setupPlayer(1, "민지", "philosopher"),

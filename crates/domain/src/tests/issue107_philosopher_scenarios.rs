@@ -23,6 +23,37 @@ fn setup_event(demon: &str) -> Value {
     })
 }
 
+fn setup_with_in_play_good_character(character_id: &str) -> Value {
+    let mut setup = setup_event("fangGu");
+    let fillers = [
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+    ]
+    .into_iter()
+    .filter(|candidate| *candidate != character_id)
+    .take(4)
+    .collect::<Vec<_>>();
+    for (index, assigned) in std::iter::once(character_id).chain(fillers).enumerate() {
+        setup["payload"]["players"][index + 1]["actualCharacter"] = json!(assigned);
+        setup["payload"]["players"][index + 1]["shownCharacter"] = json!(assigned);
+    }
+    setup
+}
+
 fn game(events: &[Value]) -> Value {
     json!({
         "schemaVersion": 3,
@@ -375,6 +406,41 @@ fn in_play_artist_grant_drinks_only_the_original_artist() {
     assert!(has_reminder(&after, "player-2", "drunk"));
     assert!(!has_reminder(&after, "player-1", "isThePhilosopher"));
     assert!(!has_reminder(&after, "player-1", "drunk"));
+}
+
+#[test]
+fn every_in_play_good_character_is_drunk_while_the_philosopher_grant_is_active() {
+    for character_id in [
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+    ] {
+        let mut events = vec![setup_with_in_play_good_character(character_id)];
+        let acquisition = append_acquisition(&mut events, character_id);
+        let state = replay(&events);
+        let source_event_id = acquisition["id"].as_str().expect("acquisition event id");
+        assert!(
+            has_impairment(&state, "player-2", source_event_id),
+            "character={character_id}, state={state}"
+        );
+        assert!(
+            has_reminder(&state, "player-2", "drunk"),
+            "character={character_id}, state={state}"
+        );
+    }
 }
 
 #[test]

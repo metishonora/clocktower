@@ -1,4 +1,4 @@
-import type { PendingDeathConsequence, Player } from "../../core/types";
+import type { ActiveImpairment, PendingDeathConsequence, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
@@ -7,6 +7,7 @@ import {
   AcquiredAbilityPresentation,
   isAcquiredAbility,
 } from "../phase-control/acquiredAbilityPresentation";
+import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
 import {
   deathConsequenceIsNoEffect,
   type DeathConsequenceResolution,
@@ -17,12 +18,14 @@ export type { DeathConsequenceResolution } from "./deathConsequencePolicy";
 export function DeathConsequencePanel({
   pending,
   players,
+  activeImpairments,
   operationBusy,
   onResolve,
   onChooseTarget = () => undefined,
 }: {
   pending: PendingDeathConsequence;
   players: Player[];
+  activeImpairments?: readonly ActiveImpairment[];
   operationBusy: boolean;
   onResolve: (resolution: DeathConsequenceResolution) => void;
   onChooseTarget?: () => void;
@@ -43,6 +46,7 @@ export function DeathConsequencePanel({
         actor={actor}
         abilityCharacterId={pending.kind}
         actorPlayerLabel={`${actor.seat}번 ${actor.name}`}
+        abilityStatusNode={<PlayerImpairmentBadges activeImpairments={activeImpairments} playerId={actor.id} />}
         actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
         theme={pending.stepId.startsWith("day") ? "snv-day" : "snv-night"}
       /> : <CharacterDetailButton
@@ -53,7 +57,10 @@ export function DeathConsequencePanel({
         {asset ? <img src={asset.src} alt={`${character?.name ?? pending.kind} 공식 캐릭터 아이콘`} /> : null}
         <div>
           <strong>{actor ? `${actor.seat}번 ${actor.name}` : "행동자 없음"}</strong>
-          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? pending.kind}</span>
+          <span className="snvInformationRoleLine">
+            <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? pending.kind}</span>
+            <PlayerImpairmentBadges activeImpairments={activeImpairments} playerId={actor?.id} />
+          </span>
         </div>
       </CharacterDetailButton>}
       {!acquiredAbility ? <p className="snvInformationAbility">{character?.ability}</p> : null}

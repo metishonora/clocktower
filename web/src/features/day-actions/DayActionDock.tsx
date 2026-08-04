@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type {
   ArtistAnswer,
+  ActiveImpairment,
   AvailableDayAction,
   ConfirmedDayActionRecord,
   DayActionRecordInput,
@@ -15,11 +16,13 @@ import {
   AcquiredAbilityPresentation,
   isAcquiredAbility,
 } from "../phase-control/acquiredAbilityPresentation";
+import { visibleImpairmentsForPlayer } from "../phase-control/ImpairmentBadges";
 import "./dayActionDock.css";
 
 export function DayActionDock({
   players,
   availableActions,
+  activeImpairments,
   phaseLabel,
   busy,
   groupActive = true,
@@ -29,6 +32,7 @@ export function DayActionDock({
 }: {
   players: Player[];
   availableActions: AvailableDayAction[];
+  activeImpairments?: readonly ActiveImpairment[];
   phaseLabel: string;
   busy: boolean;
   groupActive?: boolean;
@@ -52,6 +56,10 @@ export function DayActionDock({
   const informationInfluence = activeAction
     ? primaryInformationInfluence(activeAction.activeReasons)
     : undefined;
+  const actorImpairment = activePlayer
+    ? visibleImpairmentsForPlayer(activeImpairments, activePlayer.id)[0]
+    : undefined;
+  const displayedInfluence = informationInfluence ?? actorImpairment;
 
   return (
     <>
@@ -62,7 +70,7 @@ export function DayActionDock({
           role="dialog"
           aria-label={`${characterLabel(activeAction.characterId)} 능력 사용`}
         >
-          <DayActionHeader action={activeAction} player={activePlayer} phaseLabel={phaseLabel} influence={informationInfluence} />
+          <DayActionHeader action={activeAction} player={activePlayer} phaseLabel={phaseLabel} influence={displayedInfluence} />
           {activeAction.characterId === "artist" ? (
             <ArtistForm influence={informationInfluence} busy={busy} onComplete={(record) => onConfirm(activeAction, record)} />
           ) : activeAction.characterId === "savant" ? (

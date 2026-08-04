@@ -2,7 +2,7 @@
 
 ## Workflow checkpoint
 
-- Phase: production plan and initial Black-box Red tests
+- Phase: production implementation verified; awaiting acceptance
 - Rule refinement: complete
 - Prototype review: approved
 - Dependencies: #133, #137, and #108 complete
@@ -10,8 +10,7 @@
 - Open UI questions: none
 - Branch: `codex/issue-107-prototype`
 - Worktree: `/private/tmp/clocktower-issue-107`
-- Next action: implement the canonical Philosopher resolution event and replayed ability-grant
-  projection until the focused Red tests pass.
+- Next action: production acceptance on the issue test server.
 
 ## Stable rule contract
 
@@ -191,6 +190,27 @@
     are rejected by proposal and replay.
 12. Production UI matches the approved prototype at desktop, iPad portrait and mobile sizes and
     uses the existing develop token count/detail interaction.
+13. When an in-play Character is made drunk by a Philosopher grant, every live-play surface for
+    that original holder shows the standard `취함` badge: ordered Night action and overview,
+    information action, daytime action, or death-trigger action as applicable. The Philosopher's
+    acquired-ability row does not inherit the original holder's badge.
+
+### Duplicate-drunkenness display audit
+
+- Information path: Clockmaker, Dreamer, Mathematician, Flowergirl, Town Crier, Oracle,
+  Seamstress, Juggler Night result and Sage use canonical `activeReasons`.
+- Ordered action path: Snake Charmer and the Night overview use the acting Player's canonical
+  `activeImpairments`; acquired abilities use the same status slot without Character-specific
+  checks.
+- Day-action path: Artist, Savant and Juggler use the acting Player's canonical impairment in the
+  existing action header; Artist and Savant keep `activeReasons` for their information judgment.
+- Death-trigger path: Sweetheart, Barber and Klutz use the acting Player's canonical impairment
+  in the existing death-consequence card.
+- Mutant has no private action card or wake step; its canonical impairment and automatic reminder
+  remain visible through the standard Grimoire token interaction.
+- Philosopher uses the same actor-status slot while its selection step exists. Self-selection
+  consumes that step, so its resulting `취함` remains a Grimoire state rather than creating an
+  extra wake or action card.
 
 ## File-level implementation plan
 
@@ -241,4 +261,3 @@ The first implementation checkpoint intentionally contains only five public JSON
 They fail on current develop because Philosopher is still a manual no-input step and there is no
 typed resolution, grant, duplicate-drunk or self/no-effect projection. They do not call private
 reducers and therefore remain valid while implementation internals change.
-

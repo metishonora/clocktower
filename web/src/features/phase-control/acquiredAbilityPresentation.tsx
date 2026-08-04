@@ -43,6 +43,7 @@ export type AcquiredAbilityPresentationProps = {
   actorPlayerNode?: ReactNode;
   actorRoleNode?: ReactNode;
   abilityNameNode?: ReactNode;
+  abilityStatusNode?: ReactNode;
   actorIdentityClassName?: string;
   abilityClassName?: string;
   abilitySummary?: string;
@@ -64,6 +65,7 @@ export function AcquiredAbilityPresentation({
   actorPlayerNode,
   actorRoleNode,
   abilityNameNode,
+  abilityStatusNode,
   actorIdentityClassName = "snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity",
   abilityClassName = "issue107AbilityResult interactive",
   abilitySummary,
@@ -98,7 +100,7 @@ export function AcquiredAbilityPresentation({
       >
         <span>획득한 능력</span>
         {acquiredAsset ? <img src={acquiredAsset.src} alt={`${resolvedAbilityName} 공식 캐릭터 아이콘`} /> : null}
-        <div>{abilityNameNode ?? <strong>{resolvedAbilityName}</strong>}{resolvedAbilitySummary ? <p>{resolvedAbilitySummary}</p> : null}</div>
+        <div>{abilityNameNode ?? <strong>{resolvedAbilityName}</strong>}{abilityStatusNode}{resolvedAbilitySummary ? <p>{resolvedAbilitySummary}</p> : null}</div>
       </CharacterDetailButton>
     </>
   );
