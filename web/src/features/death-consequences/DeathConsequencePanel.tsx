@@ -4,6 +4,10 @@ import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
 import {
+  AcquiredAbilityPresentation,
+  isAcquiredAbility,
+} from "../phase-control/acquiredAbilityPresentation";
+import {
   deathConsequenceIsNoEffect,
   type DeathConsequenceResolution,
 } from "./deathConsequencePolicy";
@@ -27,6 +31,7 @@ export function DeathConsequencePanel({
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === pending.kind);
   const asset = sectsAndVioletsCharacterAsset(pending.kind);
   const noEffect = deathConsequenceIsNoEffect(pending);
+  const acquiredAbility = actor ? isAcquiredAbility(actor.actualCharacter, pending.kind) : false;
 
   return (
     <article
@@ -34,7 +39,13 @@ export function DeathConsequencePanel({
       role="group"
       aria-label={`${character?.name ?? pending.kind} 능력 처리`}
     >
-      <CharacterDetailButton
+      {acquiredAbility && actor ? <AcquiredAbilityPresentation
+        actor={actor}
+        abilityCharacterId={pending.kind}
+        actorPlayerLabel={`${actor.seat}번 ${actor.name}`}
+        actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
+        theme={pending.stepId.startsWith("day") ? "snv-day" : "snv-night"}
+      /> : <CharacterDetailButton
         details={sectsAndVioletsCharacterDetail(pending.kind)}
         className="snvCurrentStepIdentity interactive snvInformationIdentity"
         theme={pending.stepId.startsWith("day") ? "snv-day" : "snv-night"}
@@ -44,8 +55,8 @@ export function DeathConsequencePanel({
           <strong>{actor ? `${actor.seat}번 ${actor.name}` : "행동자 없음"}</strong>
           <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{character?.name ?? pending.kind}</span>
         </div>
-      </CharacterDetailButton>
-      <p className="snvInformationAbility">{character?.ability}</p>
+      </CharacterDetailButton>}
+      {!acquiredAbility ? <p className="snvInformationAbility">{character?.ability}</p> : null}
       <div className="snvStepActions">
         {noEffect ? (
           <button

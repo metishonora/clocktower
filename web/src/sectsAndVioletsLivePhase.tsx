@@ -15,6 +15,10 @@ import "./issue116PhaseHandoffPrototype.css";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
 import {
+  acquiredAbilityCharacterForStep,
+  AcquiredAbilityPresentation,
+} from "./features/phase-control/acquiredAbilityPresentation";
+import {
   PitHagArbitraryDeathsPanel,
   PitHagSelectionPanel,
   type PitHagDemonIntent,
@@ -90,6 +94,7 @@ export function SectsAndVioletsLiveProgress({
     pendingMadnessExecution?.targetPlayerId ?? dayState?.executionCandidate?.nomineeId,
   );
   const actor = playerById(replayState.players, step?.playerId);
+  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor);
   const isDay = replayState.phase === "day";
 
   return (
@@ -134,41 +139,56 @@ export function SectsAndVioletsLiveProgress({
           </article>
         ) : (step?.character === "evilTwin" || step?.character === "witch") && step.requiredInput.kind === "playerIds" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label={step.character === "evilTwin" ? "쌍둥이 지정" : "마녀 저주 지정"}>
-            <CharacterDetailButton
+            {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+              actor={actor}
+              abilityCharacterId={acquiredAbilityCharacterId}
+              actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            /> : <CharacterDetailButton
               details={sectsAndVioletsCharacterDetail(step.character)}
               className="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt="" /> : null}
               <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{step.character === "evilTwin" ? "사악한 쌍둥이" : "마녀"}</span><strong>{actor.name}</strong></div>
-            </CharacterDetailButton>
-            <p className="snvInformationAbility">{actorSummary}</p>
+            </CharacterDetailButton>}
+            {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={step.character === "evilTwin" ? onStartEvilTwin : onStartWitch}>대상 선택</button></div>
           </article>
         ) : step?.character === "cerenovus" && step.requiredInput.kind === "madnessAssignment" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="세레노버스 집착 지정">
-            <CharacterDetailButton
+            {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+              actor={actor}
+              abilityCharacterId={acquiredAbilityCharacterId}
+              actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            /> : <CharacterDetailButton
               details={sectsAndVioletsCharacterDetail("cerenovus")}
               className="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset("cerenovus") ? <img src={sectsAndVioletsCharacterAsset("cerenovus")!.src} alt="세레노버스 공식 캐릭터 아이콘" /> : null}
               <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>세레노버스</span><strong>{actor.name}</strong></div>
-            </CharacterDetailButton>
-            <p className="snvInformationAbility">{actorSummary}</p>
+            </CharacterDetailButton>}
+            {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartCerenovus}>집착 지정</button></div>
           </article>
         ) : step?.character === "pitHag" && step.requiredInput.kind === "characterTransformation" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="마귀할멈 직업 변경">
-            <CharacterDetailButton
+            {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+              actor={actor}
+              abilityCharacterId={acquiredAbilityCharacterId}
+              actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            /> : <CharacterDetailButton
               details={sectsAndVioletsCharacterDetail("pitHag")}
               className="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
             >
               {sectsAndVioletsCharacterAsset("pitHag") ? <img src={sectsAndVioletsCharacterAsset("pitHag")!.src} alt="마귀할멈 공식 캐릭터 아이콘" /> : null}
               <div><span className="snvCurrentStepRoleName" role="heading" aria-level={3}>마귀할멈</span><strong>{actor.name}</strong></div>
-            </CharacterDetailButton>
-            <p className="snvInformationAbility">{actorSummary}</p>
+            </CharacterDetailButton>}
+            {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartPitHag}>← 선택</button></div>
           </article>
         ) : step?.stepType === "pitHagArbitraryDeaths" ? (
@@ -178,7 +198,12 @@ export function SectsAndVioletsLiveProgress({
           </article>
         ) : step?.character === "snakeCharmer" && step.requiredInput.kind === "playerIds" && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="뱀 조련사 대상 선택">
-            <CharacterDetailButton
+            {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+              actor={actor}
+              abilityCharacterId={acquiredAbilityCharacterId}
+              actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
+              theme="snv-night"
+            /> : <CharacterDetailButton
               details={sectsAndVioletsCharacterDetail("snakeCharmer")}
               className="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
@@ -188,13 +213,20 @@ export function SectsAndVioletsLiveProgress({
                 <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>뱀 조련사</span>
                 <strong>{actor.name}</strong>
               </div>
-            </CharacterDetailButton>
-            <p className="snvInformationAbility">{actorSummary}</p>
+            </CharacterDetailButton>}
+            {!acquiredAbilityCharacterId ? <p className="snvInformationAbility">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartSnakeCharmer}>대상 선택</button></div>
           </article>
         ) : step && isDemonCharacter(step.character) && actor ? (
           <article className="snvCurrentStep issue116CurrentStep issue116DemonStep" role="group" aria-label="악마 공격">
-            <div className="issue116ActorIdentity">
+            {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+              actor={actor}
+              abilityCharacterId={acquiredAbilityCharacterId}
+              actorRoleName={actorRoleName}
+              actorRoleNode={<h3>{actorRoleName}</h3>}
+              actorIdentityClassName="issue116ActorRoleButton"
+              theme="snv-night"
+            /> : <div className="issue116ActorIdentity">
               <CharacterDetailButton
                 details={sectsAndVioletsCharacterDetail(actorCharacterId ?? actor.actualCharacter)}
                 className="issue116ActorRoleButton"
@@ -204,8 +236,8 @@ export function SectsAndVioletsLiveProgress({
                 <h3>{actorRoleName}</h3>
               </CharacterDetailButton>
               <strong>{actor.name}</strong>
-            </div>
-            <p className="issue116AbilitySummary">{actorSummary}</p>
+            </div>}
+            {!acquiredAbilityCharacterId ? <p className="issue116AbilitySummary">{actorSummary}</p> : null}
             <div className="snvStepActions"><button type="button" disabled={operationBusy} onClick={onStartDemonAttack}>← 공격</button></div>
           </article>
         ) : step?.stepType === "announcement" && step.id.endsWith(":announceDeaths") ? (
@@ -221,7 +253,13 @@ export function SectsAndVioletsLiveProgress({
         ) : step ? (
           <article className={`snvCurrentStep issue116CurrentStep${isDay ? " snvDayStep" : ""}`}>
             {actor && step.character ? (
-              <CharacterDetailButton
+              acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
+                actor={actor}
+                abilityCharacterId={acquiredAbilityCharacterId}
+                actorRoleName={actorRoleName}
+                actorIdentityClassName="snvCurrentStepIdentity interactive"
+                theme={isDay ? "snv-day" : "snv-night"}
+              /> : <CharacterDetailButton
                 details={sectsAndVioletsCharacterDetail(actorCharacterId ?? actor.actualCharacter)}
                 className="snvCurrentStepIdentity interactive"
                 theme={isDay ? "snv-day" : "snv-night"}
@@ -229,8 +267,8 @@ export function SectsAndVioletsLiveProgress({
                 {sectsAndVioletsCharacterAsset(step.character) ? <img src={sectsAndVioletsCharacterAsset(step.character)!.src} alt={`${actorRoleName} 공식 캐릭터 아이콘`} /> : null}
                 <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{actorRoleName}</span>
               </CharacterDetailButton>
-            ) : <h3>{stepLabel(step)}</h3>}
-            {actor ? <p>{actor.name}</p> : null}
+            ) : <h3>{stepLabel(step, actor ? [actor] : undefined)}</h3>}
+            {actor && !acquiredAbilityCharacterId ? <p>{actor.name}</p> : null}
             <div className="snvStepActions">
               {step.support === "manual" ? (
                 <>
@@ -645,7 +683,7 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
       {overview.map((step) => (
         <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
           <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
-          <strong>{stepLabel(step)}</strong>
+          <strong>{stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)}</strong>
         </li>
       ))}
     </ol>
@@ -670,7 +708,11 @@ function isNominationVotingStep(step: PhaseStep) {
   return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
 }
 
-function stepLabel(step: PhaseStep) {
+function stepLabel(
+  step: PhaseStep,
+  players: Player[] = [],
+  abilityGrants: NonNullable<ReplayState["ruleState"]["abilityGrants"]> = [],
+) {
   const suffix = step.id.split(":").at(-1);
   if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
   if (step.id.includes(":madnessExecution:")) return "집착 위반 처형 · 사망 확인";
@@ -681,6 +723,15 @@ function stepLabel(step: PhaseStep) {
   if (suffix === "discussion") return "낮 진행";
   if (suffix === "toNight") return "밤으로";
   if (suffix === "toDay") return "낮으로";
+  const actor = step.playerId ? players.find((player) => player.id === step.playerId) : undefined;
+  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor, abilityGrants);
+  if (acquiredAbilityCharacterId) {
+    const actorName = sectsAndVioletsCharacters.find((character) => character.id === actor?.actualCharacter)?.name
+      ?? actor?.actualCharacter;
+    const abilityName = sectsAndVioletsCharacters.find((character) => character.id === acquiredAbilityCharacterId)?.name
+      ?? acquiredAbilityCharacterId;
+    return `${actorName} · ${abilityName}`;
+  }
   return sectsAndVioletsCharacters.find((character) => character.id === step.character)?.name
     ?? step.character ?? suffix ?? step.id;
 }

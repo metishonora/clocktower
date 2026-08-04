@@ -11,6 +11,10 @@ import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
+import {
+  AcquiredAbilityPresentation,
+  isAcquiredAbility,
+} from "../phase-control/acquiredAbilityPresentation";
 import "./dayActionDock.css";
 
 export function DayActionDock({
@@ -111,8 +115,26 @@ function DayActionHeader({ action, player, phaseLabel, influence }: {
   influence?: InformationInfluence;
 }) {
   const label = characterLabel(action.characterId);
+  const actorLabel = characterLabel(player.actualCharacter);
   const asset = sectsAndVioletsCharacterAsset(action.characterId);
   const ability = sectsAndVioletsCharacters.find((character) => character.id === action.characterId)?.ability;
+  const acquiredAbility = isAcquiredAbility(player.actualCharacter, action.characterId);
+  if (acquiredAbility) {
+    return (
+      <header className="snvDayActionHeader">
+        <AcquiredAbilityPresentation
+          actor={player}
+          abilityCharacterId={action.characterId}
+          actorPlayerNode={<span>{phaseLabel} · {player.seat}번 {player.name}</span>}
+          actorRoleNode={<span className="snvDayActionRoleLine"><h2>{actorLabel}</h2></span>}
+          abilityNameNode={<span className="snvDayActionRoleLine"><strong>{label}</strong>{influence ? <em className={`snvInformationInfluenceBadge ${influence}`}>{informationInfluencePresentation[influence].badge}</em> : null}</span>}
+          actorIdentityClassName="snvDayActionIdentity"
+          abilityClassName="snvDayActionAcquiredResult issue107AbilityResult interactive"
+          theme="snv-day"
+        />
+      </header>
+    );
+  }
   return (
     <header className="snvDayActionHeader">
       <CharacterDetailButton

@@ -38,6 +38,26 @@ test.each([
   expect(onChooseTarget).toHaveBeenCalledTimes(1);
 });
 
+test("an acquired death consequence keeps Philosopher as the actor and shows the triggering ability separately", () => {
+  const philosopher = player("player-1", 1, "가람", "philosopher", "good", false);
+  render(
+    <DeathConsequencePanel
+      pending={pending("sweetheart")}
+      players={[philosopher]}
+      operationBusy={false}
+      onResolve={vi.fn()}
+      onChooseTarget={vi.fn()}
+    />,
+  );
+
+  const panel = screen.getByRole("group", { name: "사랑꾼 능력 처리" });
+  expect(within(panel).getByRole("button", { name: "철학자 캐릭터 상세 열기" })).toBeTruthy();
+  expect(within(panel).getByRole("heading", { level: 3, name: "철학자" })).toBeTruthy();
+  const ability = within(panel).getByRole("button", { name: "사랑꾼 캐릭터 상세 열기" });
+  expect(within(ability).getByText("획득한 능력")).toBeTruthy();
+  expect(within(ability).getByText("사랑꾼")).toBeTruthy();
+});
+
 test("hides the private phase overview while the Klutz choice is public", () => {
   const currentStep = {
     id: "day1:whisper", phase: "day" as const, stepType: "whisper" as const,

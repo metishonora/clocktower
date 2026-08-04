@@ -121,6 +121,35 @@ test("Vortox wins the influence priority and locks false Storyteller judgments",
   });
 });
 
+test("an acquired day action keeps Philosopher as the actor and owns its role in the ability card", async () => {
+  const user = userEvent.setup();
+  const philosopher = player("player-4", 4, "하린", "philosopher");
+  const artistAction: AvailableDayAction = {
+    actorPlayerId: philosopher.id,
+    characterId: "artist",
+    dayId: "day",
+    activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-9", poisonEventId: "poison-1" }],
+  };
+  render(
+    <DayActionDock
+      players={[philosopher]}
+      availableActions={[artistAction]}
+      phaseLabel="2일차 낮"
+      busy={false}
+      onConfirm={vi.fn()}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "화가 행동 열기, 4번 하린" }));
+  const panel = screen.getByRole("dialog", { name: "화가 능력 사용" });
+  expect(within(panel).getByRole("button", { name: "철학자 캐릭터 상세 열기" })).toBeTruthy();
+  expect(within(panel).getByRole("heading", { level: 2, name: "철학자" })).toBeTruthy();
+  const ability = within(panel).getByRole("button", { name: "화가 캐릭터 상세 열기" });
+  expect(within(ability).getByText("획득한 능력")).toBeTruthy();
+  expect(within(ability).getByText("화가")).toBeTruthy();
+  expect(within(ability).getByText("중독")).toBeTruthy();
+});
+
 function player(id: string, seat: number, name: string, character: string): Player {
   return {
     id,

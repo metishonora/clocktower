@@ -84,6 +84,10 @@ import {
   SectsAndVioletsInformationTask,
 } from "./features/phase-control/SectsAndVioletsInformationTask";
 import {
+  acquiredAbilityCharacterForStep,
+  AcquiredAbilityPresentation,
+} from "./features/phase-control/acquiredAbilityPresentation";
+import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
   removeLatestSectsAndVioletsPhaseCheckpoint,
@@ -301,14 +305,18 @@ export function SectsAndVioletsGameSurface({
     [selectedIds],
   );
   const canonicalSteps = useMemo(
-    () => replayState?.phaseOverview.map(workflowStepFromCanonical) ?? [],
-    [replayState?.phaseOverview],
+    () => replayState?.phaseOverview.map((step) => workflowStepFromCanonical(
+      step,
+      replayState.players,
+      replayState.ruleState.abilityGrants,
+    )) ?? [],
+    [replayState?.phaseOverview, replayState?.players, replayState?.ruleState.abilityGrants],
   );
   const firstNightSteps = coreAdapter && replayState?.phase === "firstNight"
     ? canonicalSteps
     : localFirstNightSteps;
   const currentFirstNightStep = coreAdapter && replayState?.currentStep
-    ? workflowStepFromCanonical(replayState.currentStep)
+    ? workflowStepFromCanonical(replayState.currentStep, replayState.players)
     : localFirstNightSteps[firstNightStepIndex];
   const effectivePlayPhase: PlayPhase = coreAdapter && replayState?.phase && replayState.phase !== "setup"
     ? replayState.phase === "firstNight" ? "firstNight" : replayState.phase === "day" ? "day" : "laterNight"
@@ -342,6 +350,10 @@ export function SectsAndVioletsGameSurface({
     };
   }), [philosopherDisplayByPlayerId, replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
+  const currentFirstNightAcquiredAbilityCharacterId = acquiredAbilityCharacterForStep(
+    replayState?.currentStep,
+    liveActor,
+  );
   const liveActorCharacter = characters.find((character) => character.id === liveActor?.actualCharacter);
   useEffect(() => {
     setSelectedPhilosopherCharacterId("");
@@ -2636,7 +2648,13 @@ export function SectsAndVioletsGameSurface({
             ) : effectivePlayPhase === "firstNight" && currentFirstNightStep && !isTransitionStep(currentFirstNightStep) ? (
               <article className="snvCurrentStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
-                {currentFirstNightAsset && currentFirstNightStep.characterId ? (
+                {currentFirstNightAcquiredAbilityCharacterId && liveActor ? <AcquiredAbilityPresentation
+                  actor={liveActor}
+                  abilityCharacterId={currentFirstNightAcquiredAbilityCharacterId}
+                  actorPlayerLabel={`${liveActor.seat}번 ${liveActor.name}`}
+                  actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity"
+                  theme="snv-night"
+                /> : currentFirstNightAsset && currentFirstNightStep.characterId ? (
                   <CharacterDetailButton
                     details={sectsAndVioletsCharacterDetail(currentFirstNightStep.characterId)}
                     className="snvCurrentStepIdentity interactive"
@@ -2646,7 +2664,7 @@ export function SectsAndVioletsGameSurface({
                     <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{currentFirstNightStep.name}</span>
                   </CharacterDetailButton>
                 ) : <div className="snvCurrentStepIdentity"><h3>{currentFirstNightStep.name}</h3></div>}
-                <p>{currentFirstNightStep.summary}</p>
+                {currentFirstNightAcquiredAbilityCharacterId ? null : <p>{currentFirstNightStep.summary}</p>}
                 <div className="snvStepActions">
                   {(replayState?.currentStep?.requiredInput.kind === "playerIds"
                     && ["snakeCharmer", "evilTwin", "witch"].includes(replayState.currentStep.character ?? ""))
@@ -3043,7 +3061,11 @@ function PhilosopherAbilityTask({
   </article>;
 }
 
-function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
+function workflowStepFromCanonical(
+  step: PhaseStep,
+  players: Player[] = [],
+  abilityGrants: NonNullable<ReplayState["ruleState"]["abilityGrants"]> = [],
+): FirstNightStep {
   const suffix = step.id.split(":").at(-1) ?? step.id;
   const known = firstNightOrder.find((candidate) => (
     candidate.id === suffix || (step.character !== undefined && candidate.characterId === step.character)
@@ -3065,9 +3087,17 @@ function workflowStepFromCanonical(step: PhaseStep): FirstNightStep {
     };
   }
   const character = characters.find((candidate) => candidate.id === step.character);
+  const actor = step.playerId ? players.find((player) => player.id === step.playerId) : undefined;
+  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor, abilityGrants);
+  const actorCharacter = actor
+    ? characters.find((candidate) => candidate.id === actor.actualCharacter)
+    : undefined;
+  const displayName = acquiredAbilityCharacterId
+    ? `${actorCharacter?.name ?? actor?.actualCharacter} · ${character?.name ?? acquiredAbilityCharacterId}`
+    : known?.name ?? character?.name ?? suffix;
   return {
     id: step.id,
-    name: known?.name ?? character?.name ?? suffix,
+    name: displayName,
     characterId: step.character,
     support: step.support ?? "automated",
     summary: known?.summary ?? character?.ability ?? "이 단계를 진행합니다.",
