@@ -315,9 +315,8 @@ export function SectsAndVioletsGameSurface({
     () => replayState?.phaseOverview.map((step) => workflowStepFromCanonical(
       step,
       replayState.players,
-      replayState.ruleState.abilityGrants,
     )) ?? [],
-    [replayState?.phaseOverview, replayState?.players, replayState?.ruleState.abilityGrants],
+    [replayState?.phaseOverview, replayState?.players],
   );
   const firstNightSteps = coreAdapter && replayState?.phase === "firstNight"
     ? canonicalSteps
@@ -338,7 +337,7 @@ export function SectsAndVioletsGameSurface({
     clock: phaseRuntimeClock,
   });
   const currentFirstNightAsset = sectsAndVioletsCharacterAsset(currentFirstNightStep?.characterId);
-  const philosopherDisplayByPlayerId = useMemo(() => {
+  const seatTokenCharacterByPlayerId = useMemo(() => {
     const display = new Map<string, string>();
     for (const grant of replayState?.ruleState.abilityGrants ?? []) {
       const selectedInPlay = replayState?.players.some((player) => player.actualCharacter === grant.characterId);
@@ -347,15 +346,15 @@ export function SectsAndVioletsGameSurface({
     return display;
   }, [replayState?.players, replayState?.ruleState.abilityGrants]);
   const livePlayers = useMemo<LivePlayer[]>(() => (replayState?.players ?? []).map((player) => {
-    const displayedCharacter = philosopherDisplayByPlayerId.get(player.id) ?? player.actualCharacter;
+    const displayedCharacter = seatTokenCharacterByPlayerId.get(player.id) ?? player.actualCharacter;
     const character = characters.find((candidate) => candidate.id === displayedCharacter);
     return {
       ...player,
-      actualCharacter: displayedCharacter,
+      seatCharacterId: displayedCharacter,
       characterName: character?.name ?? displayedCharacter,
       characterKind: character?.kind ?? "townsfolk",
     };
-  }), [philosopherDisplayByPlayerId, replayState?.players]);
+  }), [seatTokenCharacterByPlayerId, replayState?.players]);
   const liveActor = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId);
   const currentFirstNightAcquiredAbilityCharacterId = acquiredAbilityCharacterForStep(
     replayState?.currentStep,
@@ -498,7 +497,7 @@ export function SectsAndVioletsGameSurface({
   const informationStep = firstNightSteps.find((step) => step.id === informationStepId);
   const displayedCharacterForSeat = (seat: number) => {
     const player = replayState?.players.find((candidate) => candidate.seat === seat);
-    return player ? philosopherDisplayByPlayerId.get(player.id) ?? seatAssignments[seat] : seatAssignments[seat];
+    return player ? seatTokenCharacterByPlayerId.get(player.id) ?? seatAssignments[seat] : seatAssignments[seat];
   };
   const selectedSeatCharacterId = selectedSeat ? displayedCharacterForSeat(selectedSeat) : undefined;
   const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
@@ -2662,6 +2661,7 @@ export function SectsAndVioletsGameSurface({
                 {currentFirstNightAcquiredAbilityCharacterId && liveActor ? <AcquiredAbilityPresentation
                   actor={liveActor}
                   abilityCharacterId={currentFirstNightAcquiredAbilityCharacterId}
+                  abilityOrigin={replayState!.currentStep!.abilityOrigin!}
                   actorPlayerLabel={`${liveActor.seat}번 ${liveActor.name}`}
                   abilityStatusNode={<PlayerImpairmentBadges activeImpairments={replayState?.ruleState.activeImpairments} playerId={liveActor.id} />}
                   actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity"
@@ -3075,7 +3075,6 @@ function PhilosopherAbilityTask({
 function workflowStepFromCanonical(
   step: PhaseStep,
   players: Player[] = [],
-  abilityGrants: NonNullable<ReplayState["ruleState"]["abilityGrants"]> = [],
 ): FirstNightStep {
   const suffix = step.id.split(":").at(-1) ?? step.id;
   const known = firstNightOrder.find((candidate) => (
@@ -3099,7 +3098,7 @@ function workflowStepFromCanonical(
   }
   const character = characters.find((candidate) => candidate.id === step.character);
   const actor = step.playerId ? players.find((player) => player.id === step.playerId) : undefined;
-  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor, abilityGrants);
+  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor);
   const actorCharacter = actor
     ? characters.find((candidate) => candidate.id === actor.actualCharacter)
     : undefined;

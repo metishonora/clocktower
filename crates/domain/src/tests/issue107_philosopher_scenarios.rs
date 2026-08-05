@@ -347,6 +347,63 @@ fn philosopher_step_exposes_the_good_catalog_and_defers_without_spending() {
 }
 
 #[test]
+fn replay_exposes_identity_bound_and_acquired_ability_origins() {
+    let mut events = vec![setup_event("fangGu")];
+    let philosopher = philosopher_step(&events);
+    assert_eq!(
+        philosopher["abilityOrigin"],
+        json!({ "kind": "identityBound" })
+    );
+
+    let acquisition = append_acquisition(&mut events, "clockmaker");
+    let acquired = replay(&events);
+    assert_eq!(acquired["ok"], true, "replay failed: {acquired}");
+    assert_eq!(acquired["value"]["currentStep"]["character"], "clockmaker");
+    assert_eq!(
+        acquired["value"]["currentStep"]["abilityOrigin"],
+        json!({
+            "kind": "acquired",
+            "acquisitionEventId": acquisition["id"],
+            "source": acquisition["payload"]["actor"]
+        })
+    );
+}
+
+#[test]
+fn real_schema_v3_save_replays_an_exact_acquired_ability_context() {
+    let fixture = include_str!(
+        "../../../../fixtures/acceptance/sects-and-violets/issue-138-philosopher-clockmaker.json"
+    );
+    let state: Value = serde_json::from_str(&replay_json(fixture)).unwrap();
+    assert_eq!(state["ok"], true, "fixture replay failed: {state}");
+    assert_eq!(
+        state["value"]["players"][0]["actualCharacter"],
+        "philosopher"
+    );
+    assert_eq!(state["value"]["currentStep"]["character"], "clockmaker");
+    assert_eq!(
+        state["value"]["currentStep"]["abilityUse"],
+        json!({
+            "ownerPlayerId": "player-1",
+            "characterId": "clockmaker",
+            "abilityInstanceId": "phase-2:player-1"
+        })
+    );
+    assert_eq!(
+        state["value"]["currentStep"]["abilityOrigin"],
+        json!({
+            "kind": "acquired",
+            "acquisitionEventId": "phase-2",
+            "source": {
+                "ownerPlayerId": "player-1",
+                "characterId": "philosopher",
+                "abilityInstanceId": "setup:player-1"
+            }
+        })
+    );
+}
+
+#[test]
 fn out_of_play_dreamer_grant_keeps_identity_and_waits_for_its_first_night_order() {
     let mut events = vec![setup_event("vortox")];
     let base_ability_id = replay(&events)["value"]["players"][0]["abilityInstance"]["id"]
@@ -550,13 +607,20 @@ fn granted_day_abilities_and_mutant_are_exposed_for_the_philosopher_owner() {
         let mut events = vec![setup_event("fangGu")];
         append_acquisition(&mut events, character_id);
         let day = advance_to_day(&mut events);
-        assert!(
-            day["value"]["availableDayActions"]
-                .as_array()
-                .is_some_and(|actions| actions.iter().any(|action| {
+        let action = day["value"]["availableDayActions"]
+            .as_array()
+            .and_then(|actions| {
+                actions.iter().find(|action| {
                     action["actorPlayerId"] == "player-1" && action["characterId"] == character_id
-                })),
-            "character={character_id}, state={day}"
+                })
+            })
+            .unwrap_or_else(|| panic!("character={character_id}, state={day}"));
+        assert_eq!(action["abilityUse"]["characterId"], character_id);
+        assert_eq!(action["abilityUse"]["ownerPlayerId"], "player-1");
+        assert_eq!(action["abilityOrigin"]["kind"], "acquired");
+        assert_eq!(
+            action["abilityOrigin"]["source"]["characterId"],
+            "philosopher"
         );
         let record = match character_id {
             "artist" => json!({
@@ -819,6 +883,8 @@ fn acquired_barber_pending_consequence_owns_a_temporary_reminder() {
         "state={pending}"
     );
     let consequence = &pending["value"]["pendingDeathConsequences"][0];
+    assert_eq!(consequence["abilityUse"]["characterId"], "barber");
+    assert_eq!(consequence["abilityOrigin"]["kind"], "acquired");
     let resolved = propose(
         &events,
         json!({
@@ -989,14 +1055,16 @@ fn every_granted_death_ability_uses_the_existing_trigger_path() {
         append_acquisition(&mut events, character_id);
         let after_death = kill_philosopher_on_the_following_night(&mut events);
         if let Some(kind) = consequence_kind {
-            assert!(
-                after_death["value"]["pendingDeathConsequences"]
-                    .as_array()
-                    .is_some_and(|pending| pending.iter().any(|trigger| {
+            let trigger = after_death["value"]["pendingDeathConsequences"]
+                .as_array()
+                .and_then(|pending| {
+                    pending.iter().find(|trigger| {
                         trigger["kind"] == kind && trigger["actorPlayerId"] == "player-1"
-                    })),
-                "character={character_id}, state={after_death}"
-            );
+                    })
+                })
+                .unwrap_or_else(|| panic!("character={character_id}, state={after_death}"));
+            assert_eq!(trigger["abilityUse"]["characterId"], character_id);
+            assert_eq!(trigger["abilityOrigin"]["kind"], "acquired");
         } else {
             assert!(
                 after_death["value"]["phaseOverview"]
@@ -1029,4 +1097,10 @@ fn every_granted_death_ability_uses_the_existing_trigger_path() {
             })),
         "state={after_announcement}"
     );
+    let klutz = after_announcement["value"]["pendingDeathConsequences"]
+        .as_array()
+        .and_then(|pending| pending.iter().find(|trigger| trigger["kind"] == "klutz"))
+        .expect("acquired Klutz trigger");
+    assert_eq!(klutz["abilityUse"]["characterId"], "klutz");
+    assert_eq!(klutz["abilityOrigin"]["kind"], "acquired");
 }

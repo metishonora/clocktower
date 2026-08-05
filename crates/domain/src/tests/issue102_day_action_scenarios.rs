@@ -92,9 +92,24 @@ fn first_day_exposes_only_the_three_available_character_actions() {
     assert_eq!(
         state["value"]["availableDayActions"],
         json!([
-            { "actorPlayerId": "player-1", "characterId": "savant", "dayId": "day", "activeReasons": [] },
-            { "actorPlayerId": "player-2", "characterId": "artist", "dayId": "day", "activeReasons": [] },
-            { "actorPlayerId": "player-3", "characterId": "juggler", "dayId": "day", "activeReasons": [] }
+            {
+                "actorPlayerId": "player-1", "characterId": "savant", "dayId": "day",
+                "activeReasons": [],
+                "abilityUse": { "ownerPlayerId": "player-1", "characterId": "savant", "abilityInstanceId": "setup:player-1" },
+                "abilityOrigin": { "kind": "identityBound" }
+            },
+            {
+                "actorPlayerId": "player-2", "characterId": "artist", "dayId": "day",
+                "activeReasons": [],
+                "abilityUse": { "ownerPlayerId": "player-2", "characterId": "artist", "abilityInstanceId": "setup:player-2" },
+                "abilityOrigin": { "kind": "identityBound" }
+            },
+            {
+                "actorPlayerId": "player-3", "characterId": "juggler", "dayId": "day",
+                "activeReasons": [],
+                "abilityUse": { "ownerPlayerId": "player-3", "characterId": "juggler", "abilityInstanceId": "setup:player-3" },
+                "abilityOrigin": { "kind": "identityBound" }
+            }
         ])
     );
     assert!(state["value"].get("dayActionRecords").is_none());

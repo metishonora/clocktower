@@ -11,6 +11,12 @@ function pending(overrides: Partial<PendingDeathConsequence>): PendingDeathConse
     deathSequence: 1,
     actorPlayerId: "player-2",
     sourceAbilityInstanceId: "setup:player-2",
+    abilityUse: {
+      ownerPlayerId: "player-2",
+      characterId: "barber",
+      abilityInstanceId: "setup:player-2",
+    },
+    abilityOrigin: { kind: "identityBound" },
     actorImpairedAtTrigger: false,
     allowedPlayerIds: ["player-1", "player-2"],
     eligibleChooserPlayerIds: ["player-7"],

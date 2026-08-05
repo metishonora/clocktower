@@ -11,9 +11,9 @@ const players: Player[] = [
 ];
 
 const availableActions: AvailableDayAction[] = [
-  { actorPlayerId: "player-1", characterId: "savant", dayId: "day", activeReasons: [] },
-  { actorPlayerId: "player-2", characterId: "artist", dayId: "day", activeReasons: [] },
-  { actorPlayerId: "player-3", characterId: "juggler", dayId: "day", activeReasons: [] },
+  dayAction("player-1", "savant"),
+  dayAction("player-2", "artist"),
+  dayAction("player-3", "juggler"),
 ];
 
 test("Savant records two optional Storyteller-authored statements and their truth values", async () => {
@@ -129,6 +129,20 @@ test("an acquired day action keeps Philosopher as the actor and owns its role in
     characterId: "artist",
     dayId: "day",
     activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-9", poisonEventId: "poison-1" }],
+    abilityUse: {
+      ownerPlayerId: philosopher.id,
+      characterId: "artist",
+      abilityInstanceId: "grant-artist",
+    },
+    abilityOrigin: {
+      kind: "acquired",
+      acquisitionEventId: "acquisition-artist",
+      source: {
+        ownerPlayerId: philosopher.id,
+        characterId: "philosopher",
+        abilityInstanceId: "setup:player-4",
+      },
+    },
   };
   render(
     <DayActionDock
@@ -172,6 +186,24 @@ test("shows an actor impairment on the Juggler day action without changing its r
   await user.click(screen.getByRole("button", { name: "곡예사 행동 열기, 3번 서준" }));
   expect(within(screen.getByRole("dialog", { name: "곡예사 능력 사용" })).getByText("취함")).toBeTruthy();
 });
+
+function dayAction(
+  actorPlayerId: string,
+  characterId: AvailableDayAction["characterId"],
+): AvailableDayAction {
+  return {
+    actorPlayerId,
+    characterId,
+    dayId: "day",
+    activeReasons: [],
+    abilityUse: {
+      ownerPlayerId: actorPlayerId,
+      characterId,
+      abilityInstanceId: `setup:${actorPlayerId}`,
+    },
+    abilityOrigin: { kind: "identityBound" },
+  };
+}
 
 function player(id: string, seat: number, name: string, character: string): Player {
   return {

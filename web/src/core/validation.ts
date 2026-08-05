@@ -1,5 +1,7 @@
 import type {
   ActiveImpairment,
+  AbilityOrigin,
+  AbilityUseRef,
   ConfirmedInformation,
   CoreResult,
   DayActionRecordInput,
@@ -393,12 +395,17 @@ function isDayActionRecord(value: unknown): value is DayActionRecordInput {
 
 function isAvailableDayAction(value: unknown): boolean {
   return isRecord(value)
-    && hasExactKeys(value, ["actorPlayerId", "characterId", "dayId", "activeReasons"])
+    && hasExactKeys(value, [
+      "actorPlayerId", "characterId", "dayId", "activeReasons", "abilityUse", "abilityOrigin",
+    ])
     && typeof value.actorPlayerId === "string"
     && ["artist", "savant", "juggler"].includes(String(value.characterId))
     && typeof value.dayId === "string"
     && Array.isArray(value.activeReasons)
-    && value.activeReasons.every(isDeliveryReason);
+    && value.activeReasons.every(isDeliveryReason)
+    && isAbilityContext(value.abilityUse, value.abilityOrigin)
+    && value.abilityUse.ownerPlayerId === value.actorPlayerId
+    && value.abilityUse.characterId === value.characterId;
 }
 
 function isConfirmedDayActionRecord(value: unknown): boolean {
@@ -477,7 +484,7 @@ function isPendingDeathConsequence(value: unknown): boolean {
     && hasExactKeys(value, [
       "stepId", "kind", "sourceEventId", "deathSequence", "actorPlayerId",
       "sourceAbilityInstanceId", "actorImpairedAtTrigger", "allowedPlayerIds",
-      "eligibleChooserPlayerIds",
+      "eligibleChooserPlayerIds", "abilityUse", "abilityOrigin",
     ])
     && typeof value.stepId === "string"
     && ["sweetheart", "barber", "klutz"].includes(String(value.kind))
@@ -486,6 +493,10 @@ function isPendingDeathConsequence(value: unknown): boolean {
     && (value.deathSequence as number) > 0
     && typeof value.actorPlayerId === "string"
     && typeof value.sourceAbilityInstanceId === "string"
+    && isAbilityContext(value.abilityUse, value.abilityOrigin)
+    && value.abilityUse.ownerPlayerId === value.actorPlayerId
+    && value.abilityUse.characterId === value.kind
+    && value.abilityUse.abilityInstanceId === value.sourceAbilityInstanceId
     && typeof value.actorImpairedAtTrigger === "boolean"
     && Array.isArray(value.allowedPlayerIds)
     && value.allowedPlayerIds.every(isString)
@@ -630,7 +641,10 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     stepTypes.has(value.stepType as PhaseStep["stepType"]) &&
     isOptionalString(value.character) &&
     isOptionalString(value.playerId) &&
-    (value.abilityUse === undefined || isAbilityUseRef(value.abilityUse)) &&
+    ((value.abilityUse === undefined && value.abilityOrigin === undefined)
+      || (isAbilityContext(value.abilityUse, value.abilityOrigin)
+        && value.abilityUse.ownerPlayerId === value.playerId
+        && value.abilityUse.characterId === value.character)) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
     (value.support === undefined || value.support === "automated" || value.support === "manual") &&
@@ -640,12 +654,27 @@ function isPhaseStep(value: unknown): value is PhaseStep {
   );
 }
 
-function isAbilityUseRef(value: unknown): boolean {
+function isAbilityUseRef(value: unknown): value is AbilityUseRef {
   return isRecord(value) &&
     hasExactKeys(value, ["ownerPlayerId", "characterId", "abilityInstanceId"]) &&
     typeof value.ownerPlayerId === "string" &&
     typeof value.characterId === "string" &&
     typeof value.abilityInstanceId === "string";
+}
+
+function isAbilityOrigin(value: unknown): value is AbilityOrigin {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "identityBound") return hasExactKeys(value, ["kind"]);
+  return value.kind === "acquired"
+    && hasExactKeys(value, ["kind", "acquisitionEventId", "source"])
+    && typeof value.acquisitionEventId === "string"
+    && isAbilityUseRef(value.source);
+}
+
+function isAbilityContext(abilityUse: unknown, origin: unknown): abilityUse is AbilityUseRef {
+  if (!isAbilityUseRef(abilityUse) || !isAbilityOrigin(origin)) return false;
+  return origin.kind !== "acquired"
+    || (isRecord(origin.source) && origin.source.ownerPlayerId === abilityUse.ownerPlayerId);
 }
 
 function isPreActionReveal(value: unknown): boolean {

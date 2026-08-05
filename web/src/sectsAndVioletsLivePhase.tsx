@@ -36,6 +36,7 @@ export type LiveHandoff = {
 };
 
 export type LivePlayer = Player & {
+  seatCharacterId?: string;
   characterName: string;
   characterKind: "townsfolk" | "outsider" | "minion" | "demon";
 };
@@ -147,6 +148,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityOrigin={step.abilityOrigin!}
               abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
@@ -166,6 +168,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityOrigin={step.abilityOrigin!}
               abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
@@ -185,6 +188,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityOrigin={step.abilityOrigin!}
               abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
@@ -209,6 +213,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityOrigin={step.abilityOrigin!}
               abilityStatusNode={actorStatus}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"
               theme="snv-night"
@@ -231,6 +236,7 @@ export function SectsAndVioletsLiveProgress({
             {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
               actor={actor}
               abilityCharacterId={acquiredAbilityCharacterId}
+              abilityOrigin={step.abilityOrigin!}
               abilityStatusNode={actorStatus}
               actorRoleName={actorRoleName}
               actorRoleNode={<h3>{actorRoleName}</h3>}
@@ -267,6 +273,7 @@ export function SectsAndVioletsLiveProgress({
               acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
                 actor={actor}
                 abilityCharacterId={acquiredAbilityCharacterId}
+                abilityOrigin={step.abilityOrigin!}
                 abilityStatusNode={actorStatus}
                 actorRoleName={actorRoleName}
                 actorIdentityClassName="snvCurrentStepIdentity interactive"
@@ -404,9 +411,9 @@ export function SectsAndVioletsLiveGrimoire({
   const referenceTarget = playerById(players, referenceTargetId);
   const detailsPlayer = playerById(players, detailsPlayerId);
   const detailsCharacter = sectsAndVioletsCharacters.find(
-    (character) => character.id === detailsPlayer?.actualCharacter,
+    (character) => character.id === (detailsPlayer?.seatCharacterId ?? detailsPlayer?.actualCharacter),
   );
-  const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.actualCharacter);
+  const detailsAsset = sectsAndVioletsCharacterAsset(detailsPlayer?.seatCharacterId ?? detailsPlayer?.actualCharacter);
   const detailsDayActionRecords = detailsPlayer
     ? dayActionRecords.filter((record) => record.actorPlayerId === detailsPlayer.id)
     : [];
@@ -510,7 +517,7 @@ export function SectsAndVioletsLiveGrimoire({
                 : nominationSelectingNominator ? "지명 불가"
                   : ineligible ? "피지명 불가" : "피지명 가능"
               : undefined;
-            const asset = sectsAndVioletsCharacterAsset(player.actualCharacter);
+            const asset = sectsAndVioletsCharacterAsset(player.seatCharacterId ?? player.actualCharacter);
             const tokenCountLabel = playerTokenCount > 0 ? `토큰 ${playerTokenCount}개` : "토큰 없음";
             const actor = actorId === player.id;
             const targetSeat = selectionRole === "공격 대상" || selectionRole === "중독 대상" || selectionRole === "선택 대상" || selectionRole === "취함 대상" || selectionRole === "교환 대상" || selectionRole === "임의 사망";
@@ -683,7 +690,7 @@ export function SectsAndVioletsLiveGrimoire({
       {!handoff && detailsPlayer && detailsCharacter ? (
         <PlayerTokenDetailDialog
           player={{
-            characterId: detailsPlayer.actualCharacter,
+            characterId: detailsPlayer.seatCharacterId ?? detailsPlayer.actualCharacter,
             seat: detailsPlayer.seat,
             name: detailsPlayer.name,
             characterLabel: detailsPlayer.characterName,
@@ -710,11 +717,11 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
         <li key={step.id} className={step.status === "current" ? "current" : step.status === "interrupted" ? "interrupted" : ["complete", "manualComplete", "skipped", "notApplicable"].includes(step.status) ? "complete" : ""}>
           <span>{step.status === "current" ? "현재" : step.status === "interrupted" ? "중단" : ["complete", "manualComplete"].includes(step.status) ? "완료" : step.status === "notApplicable" ? "해당 없음" : step.status === "skipped" ? "종료" : "대기"}</span>
           <span className="snvPhaseOverviewAction">
-            <strong>{stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)}</strong>
+            <strong>{stepLabel(step, replayState.players)}</strong>
             <PlayerImpairmentBadges
               activeImpairments={replayState.ruleState.activeImpairments}
               playerId={step.playerId}
-              label={`${stepLabel(step, replayState.players, replayState.ruleState.abilityGrants)} 행동자 상태`}
+              label={`${stepLabel(step, replayState.players)} 행동자 상태`}
             />
           </span>
         </li>
@@ -744,7 +751,6 @@ function isNominationVotingStep(step: PhaseStep) {
 function stepLabel(
   step: PhaseStep,
   players: Player[] = [],
-  abilityGrants: NonNullable<ReplayState["ruleState"]["abilityGrants"]> = [],
 ) {
   const suffix = step.id.split(":").at(-1);
   if (step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote") return "지명 및 투표";
@@ -757,7 +763,7 @@ function stepLabel(
   if (suffix === "toNight") return "밤으로";
   if (suffix === "toDay") return "낮으로";
   const actor = step.playerId ? players.find((player) => player.id === step.playerId) : undefined;
-  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor, abilityGrants);
+  const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor);
   if (acquiredAbilityCharacterId) {
     const actorName = sectsAndVioletsCharacters.find((character) => character.id === actor?.actualCharacter)?.name
       ?? actor?.actualCharacter;
