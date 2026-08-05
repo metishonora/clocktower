@@ -95,6 +95,10 @@ export function SectsAndVioletsLiveProgress({
     replayState.players,
     pendingMadnessExecution?.targetPlayerId ?? dayState?.executionCandidate?.nomineeId,
   );
+  const candidateCharacterName = candidate
+    ? sectsAndVioletsCharacters.find((character) => character.id === candidate.actualCharacter)?.name
+      ?? candidate.actualCharacter
+    : undefined;
   const actor = playerById(replayState.players, step?.playerId);
   const acquiredAbilityCharacterId = acquiredAbilityCharacterForStep(step, actor);
   const isDay = replayState.phase === "day";
@@ -135,6 +139,7 @@ export function SectsAndVioletsLiveProgress({
             <div className="issue116ExecutionTarget">
               <span>{pendingMadnessExecution ? "집착 위반 처형" : "처형 대상"}</span>
               <strong>{candidate ? pendingMadnessExecution ? `${candidate.seat}번 ${candidate.name}` : candidate.name : "없음"}</strong>
+              {candidateCharacterName ? <small>{candidateCharacterName}</small> : null}
             </div>
             <button
               type="button"
@@ -324,6 +329,7 @@ export function SectsAndVioletsLiveGrimoire({
   characterId,
   pitHagDemonIntents = [],
   centerPrompt,
+  centerPromptClassName,
   handoffSupplement,
   handoffSupplementReady = true,
   operationBusy,
@@ -361,6 +367,7 @@ export function SectsAndVioletsLiveGrimoire({
   characterId?: string;
   pitHagDemonIntents?: PitHagDemonIntent[];
   centerPrompt?: ReactNode;
+  centerPromptClassName?: string;
   handoffSupplement?: ReactNode;
   handoffSupplementReady?: boolean;
   operationBusy: boolean;
@@ -567,7 +574,7 @@ export function SectsAndVioletsLiveGrimoire({
                   <span className="snvSeatPlayerName">{player.name}</span>
                   <small>{selectionRole ?? player.characterName}</small>
                 </button>
-                {!centerPrompt && (!handoff || handoff.complete) ? (
+                {!centerPrompt ? (
                   <PlayerTokenCountBadge
                     count={playerTokenCount}
                     position={desktopPositions[index]}
@@ -588,7 +595,7 @@ export function SectsAndVioletsLiveGrimoire({
             />
           ) : null}
           {centerPrompt ? (
-            <div className="snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter">
+            <div className={`snvGrimoireCenter live issue116PhaseClock snakeCharmerPromptCenter${centerPromptClassName ? ` ${centerPromptClassName}` : ""}`}>
               {centerPrompt}
             </div>
           ) : !handoff || handoff.kind === "demon" || handoff.kind === "vigormortisPoison" || handoff.kind === "snakeCharmer" || handoff.kind === "pitHag" || handoff.kind === "pitHagDeaths" || handoff.kind === "cerenovus" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff) || informationTargetCount > 0 ? (

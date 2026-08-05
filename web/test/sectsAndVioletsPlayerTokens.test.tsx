@@ -118,7 +118,7 @@ test("omits every token surface when a player has no tokens", async () => {
   expect(within(detail).queryByText(/토큰 없음|현재 토큰/)).toBeNull();
 });
 
-test("hides token affordances and keeps seat clicks in action selection mode", async () => {
+test("keeps token counts visible but keeps seat clicks in action selection mode", async () => {
   const user = userEvent.setup();
   const onSeatClick = vi.fn();
   renderGrimoire({
@@ -128,7 +128,7 @@ test("hides token affordances and keeps seat clicks in action selection mode", a
   });
 
   const grimoire = screen.getByLabelText("낮 마도서");
-  expect(within(grimoire).queryByText("+2")).toBeNull();
+  expect(within(grimoire).getByText("+2")).toBeTruthy();
   expect(within(grimoire).queryByLabelText(/토큰 \d+개/)).toBeNull();
 
   await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, 가람, 꿈꾸는 자/ }));

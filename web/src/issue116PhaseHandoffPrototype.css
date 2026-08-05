@@ -20,6 +20,7 @@
 .issue116ExecutionTarget { display: grid; min-width: min(560px, 70vw); min-height: 170px; padding: 30px; place-content: center; gap: 16px; border: 1px solid rgba(88, 55, 97, .16); border-radius: 24px; background: rgba(255, 255, 255, .42); }
 .issue116ExecutionTarget span { color: #6a4673; font-size: .78rem; font-weight: 900; letter-spacing: .08em; }
 .issue116ExecutionTarget strong { font: 2.3rem Georgia, serif; }
+.issue116ExecutionTarget small { color: #7b6680; font-size: .9rem; font-weight: 850; }
 .issue116ExecutionConfirm { min-height: 58px; border: 1px solid #724581; border-radius: 16px; color: #fff; background: #724581; font: inherit; font-weight: 900; cursor: pointer; }
 .issue116ExecutionConfirm.issue116NightTransitionAction { border-color: #4d3658; background: linear-gradient(135deg, #34213d, #17101d); box-shadow: 0 12px 30px rgba(20, 10, 25, .36); }
 .issue116DemonStep { justify-content: center; }

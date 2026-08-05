@@ -60,6 +60,8 @@
 .snvCatalogPreview article button { display: flex; box-sizing: border-box; min-height: 48px; padding: 7px 10px; align-items: center; gap: 7px; border: 1px solid rgba(235, 218, 240, .11); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .035); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
 .snvCatalogPreview article button img { width: 30px; height: 30px; flex: 0 0 auto; object-fit: contain; }
 .snvCatalogPreview article button.selected { border-color: rgba(214, 169, 226, .68); background: rgba(130, 80, 154, .36); }
+.snvCatalogPreview.rosterConfirmed article button.selected { border-color: #efd68d; color: #fff; background: linear-gradient(135deg, #76528b, #a47963); box-shadow: 0 0 0 2px rgba(239, 214, 141, .18); }
+.snvCatalogPreview.rosterConfirmed article button:not(.selected) { opacity: .58; }
 .snvCatalogPreview article button:disabled { color: #776b7d; cursor: not-allowed; }
 .snvCatalogPreview article button.selected:disabled { color: #fff; opacity: 1; }
 .snvRoleDetail { display: grid; box-sizing: border-box; height: 180px; padding: 18px 20px; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; border: 1px solid rgba(214, 169, 226, .3); border-radius: 20px; background: linear-gradient(135deg, rgba(130, 80, 154, .22), rgba(255, 255, 255, .035)); overflow: hidden; }
@@ -289,6 +291,7 @@
 .snvDayMode .snvControlCard > span, .snvDayMode .snvCatalogPreview h2, .snvDayMode .snvDistributionCard h2, .snvDayMode .snvDistributionCard span, .snvDayMode .snvSeatingSurface > header span, .snvDayMode .snvSeatingSurface > header > strong, .snvDayMode .snvStorageSurface article > span { color: #6e5973; }
 .snvDayMode .snvCatalogPreview article button, .snvDayMode .snvChoiceRow button { border-color: rgba(92, 57, 101, .14); color: #3f3043; background: rgba(255, 255, 255, .48); }
 .snvDayMode .snvCatalogPreview article button.selected, .snvDayMode .snvChoiceRow button[aria-pressed="true"] { border-color: rgba(130, 80, 154, .55); background: rgba(199, 166, 210, .46); }
+.snvDayMode .snvCatalogPreview.rosterConfirmed article button.selected { border-color: #b79245; color: #3f3043; background: linear-gradient(135deg, #f3e4b7, #dec5d8); box-shadow: 0 0 0 2px rgba(151, 111, 35, .14); }
 .snvDayMode .snvModifierNote { color: #684a70; background: rgba(130, 80, 154, .09); }
 .snvDayMode .snvRoleDetail { border-color: rgba(96, 60, 105, .22); background: linear-gradient(135deg, rgba(255, 252, 249, .94), rgba(226, 204, 233, .94)); }
 .snvDayMode .snvRoleDetail h2 { color: #38273d; }
