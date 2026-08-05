@@ -682,6 +682,37 @@ test("imports a replay-valid S&V checkpoint and restores its saved page", async 
   expect(targetStorage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
 });
 
+test.each([
+  {
+    caseId: "SET-01",
+    characterIds: ["clockmaker", "dreamer", "seamstress", "juggler", "mutant", "sweetheart", "pitHag", "fangGu"],
+    expectedDistribution: [4, 2, 1, 1],
+  },
+  {
+    caseId: "SET-02",
+    characterIds: ["flowergirl", "townCrier", "oracle", "savant", "artist", "sage", "evilTwin", "vigormortis"],
+    expectedDistribution: [6, 0, 1, 1],
+  },
+])("restores the actual eight-player distribution from $caseId", async ({ caseId, characterIds, expectedDistribution }) => {
+  const user = userEvent.setup();
+  const view = render(<SectsAndVioletsApp />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+
+  const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+  expect(input).not.toBeNull();
+  await user.upload(input!, new File([
+    JSON.stringify(setupImportGame(caseId, characterIds)),
+  ], `${caseId}.json`, { type: "application/json" }));
+
+  await user.click(await within(app).findByRole("button", { name: "직업" }));
+  expect(within(app).getByRole("button", { name: "8명" }).getAttribute("aria-pressed")).toBe("true");
+  const distribution = within(app).getByRole("region", { name: "인원 구성" });
+  for (const [index, kind] of ["마을 주민", "외부인", "하수인", "악마"].entries()) {
+    expect(within(distribution).getByLabelText(`인원 구성 ${kind} ${expectedDistribution[index]}명`)).toBeTruthy();
+  }
+});
+
 test("replaces autosave with a fresh baseline only after new-game confirmation", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const user = userEvent.setup();
@@ -1155,6 +1186,34 @@ function savedDayGame(players: SetupPlayerInput[]): GameFile {
           createdAt: "2026-07-23T00:01:00.000Z",
         },
       ],
+    },
+  };
+}
+
+function setupImportGame(caseId: string, characterIds: string[]): GameFile {
+  const players = characterIds.map((actualCharacter, index) => ({
+    id: `player-${index + 1}`,
+    seat: index + 1,
+    name: actualCharacter,
+    actualCharacter,
+    shownCharacter: actualCharacter,
+  }));
+  return {
+    schemaVersion: 3,
+    game: {
+      scriptId: "sectsAndViolets",
+      id: `acceptance-${caseId}`,
+      name: `S&V acceptance ${caseId}`,
+      createdAt: "2026-08-05T00:00:00.000Z",
+      updatedAt: "2026-08-05T00:00:00.000Z",
+      events: [{
+        id: `setup-${caseId}`,
+        type: "setupConfirmed",
+        phase: "setup",
+        payload: { players },
+        summary: "초기 설정 확정: 8명",
+        createdAt: "2026-08-05T00:00:00.000Z",
+      }],
     },
   };
 }

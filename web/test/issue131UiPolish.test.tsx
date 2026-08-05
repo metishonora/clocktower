@@ -22,6 +22,22 @@ test("uses the Korean character label in the phase overview", () => {
   expect(within(overview).queryByText("noDashii")).toBeNull();
 });
 
+test("labels the daytime discussion phase as 공개 토론", () => {
+  const currentStep: PhaseStep = {
+    id: "day2:discussion",
+    phase: "day",
+    stepType: "discussion",
+    requiredInput: { kind: "none", optional: false },
+    canSkip: false,
+    support: "manual",
+  };
+  renderProgress(replayState(currentStep));
+
+  const progress = screen.getByRole("region", { name: "공개 토론" });
+  expect(within(progress).getAllByText("공개 토론").length).toBeGreaterThan(0);
+  expect(within(progress).queryByText("낮 진행")).toBeNull();
+});
+
 test.each([
   ["일반 처형", undefined],
   ["집착 위반 처형", {

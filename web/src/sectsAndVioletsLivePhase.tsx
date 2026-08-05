@@ -108,7 +108,7 @@ export function SectsAndVioletsLiveProgress({
   />;
 
   return (
-    <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "낮 진행" : "이후 밤 진행"}>
+    <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "공개 토론" : "이후 밤 진행"}>
       <header className="snvFirstNightHeader">
         <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
         <div className="snvProgressPhaseHeader">
@@ -766,7 +766,7 @@ function stepLabel(
   if (step.stepType === "pitHagArbitraryDeaths") return "예측불허의 죽음";
   if (suffix === "announceDeaths") return "아침 사망 발표";
   if (suffix === "whisper") return "밀담";
-  if (suffix === "discussion") return "낮 진행";
+  if (suffix === "discussion") return "공개 토론";
   if (suffix === "toNight") return "밤으로";
   if (suffix === "toDay") return "낮으로";
   const actor = step.playerId ? players.find((player) => player.id === step.playerId) : undefined;

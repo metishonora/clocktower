@@ -931,6 +931,9 @@ export function SectsAndVioletsGameSurface({
     setPlayerCount(setup.playerCount);
     setDemon(setup.demon);
     setSelectedIds([...setup.selectedIds]);
+    setCanonicalDistribution(setup.rosterConfirmed
+      ? distributionForCharacterIds(setup.selectedIds)
+      : undefined);
     setSeatAssignments(structuredClone(setup.seatAssignments));
     setSeatAlignments(structuredClone(setup.seatAlignments));
     setSeatNames(structuredClone(setup.seatNames));
@@ -2612,7 +2615,7 @@ export function SectsAndVioletsGameSurface({
       ) : (
         <section
           className={`snvManualSurface snvFirstNightSurface snvTabPanel ${effectivePlayPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
-          aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "낮 진행" : "이후 밤 진행"}
+          aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "공개 토론" : "이후 밤 진행"}
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
@@ -2730,7 +2733,7 @@ export function SectsAndVioletsGameSurface({
             ) : effectivePlayPhase === "day" && !dayComplete ? (
               <article className="snvCurrentStep snvDayStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
-                <h3>낮 진행</h3>
+                <h3>공개 토론</h3>
                 <p>능력 사용, 지명, 투표와 처형을 진행합니다.</p>
                 <div className="snvStepActions">
                   <button type="button" onClick={() => setDayComplete(true)}>낮 종료</button>
@@ -2768,7 +2771,7 @@ export function SectsAndVioletsGameSurface({
             <ol className="snvPhaseOverview" aria-label="낮 순서">
               <li className={dayComplete ? "complete" : "current"}>
                 <span>{dayComplete ? "완료" : "현재"}</span>
-                <strong>낮 진행</strong>
+                <strong>공개 토론</strong>
               </li>
             </ol>
           ) : (
@@ -3107,7 +3110,7 @@ function workflowStepFromCanonical(
   if (suffix === "manual" && step.phase === "day") {
     return {
       id: step.id,
-      name: "낮 진행",
+      name: "공개 토론",
       support: step.support ?? "manual",
       summary: "능력 사용, 지명, 투표와 처형을 진행합니다.",
     };
@@ -3192,6 +3195,15 @@ function formatAutosaveTime(value: string | undefined) {
 function defaultAlignment(characterId: string): Alignment {
   const kind = characters.find((character) => character.id === characterId)?.kind;
   return kind === "minion" || kind === "demon" ? "evil" : "good";
+}
+
+function distributionForCharacterIds(characterIds: string[]): SetupDistribution {
+  return {
+    Townsfolk: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "townsfolk").length,
+    Outsider: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "outsider").length,
+    Minion: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "minion").length,
+    Demon: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "demon").length,
+  };
 }
 
 function evilInformationPlayersToWake(step: PhaseStep, players: Player[]) {
