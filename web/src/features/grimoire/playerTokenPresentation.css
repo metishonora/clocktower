@@ -113,6 +113,32 @@
 .playerPinnedTokenSource { color: #e5dbe8; font-size: .59rem; font-weight: 850; letter-spacing: .02em; }
 .playerPinnedToken strong { color: #fff; font: 900 .74rem/1 Georgia, serif; text-shadow: 0 1px 3px #000; }
 
+.playerInactiveToken {
+  border-color: #b6747b;
+  box-shadow: 0 10px 21px rgba(0, 0, 0, .52), inset 0 0 0 4px rgba(255, 97, 109, .12), inset 0 0 28px rgba(0, 0, 0, .78);
+}
+.playerInactiveToken > .playerPinnedTokenSource,
+.playerInactiveToken > img,
+.playerInactiveToken > strong { opacity: .48; }
+.playerInactiveTokenX {
+  position: absolute;
+  z-index: 4;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  overflow: hidden;
+  pointer-events: none;
+  clip-path: circle(50% at 50% 50%);
+  opacity: .68;
+}
+.playerInactiveTokenX path {
+  fill: none;
+  stroke: #ff616d;
+  stroke-width: 12;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .playerPinnedTokenArea.day {
   background: radial-gradient(circle at 28% 20%, rgba(255, 255, 255, .84), transparent 36%), linear-gradient(145deg, rgba(248, 239, 248, .92), rgba(226, 207, 232, .82));
   box-shadow: inset 0 0 0 1px rgba(101, 67, 111, .12), inset 0 14px 38px rgba(113, 76, 123, .08);
@@ -149,6 +175,10 @@
 .playerPinnedTokenArea.day .playerPinnedTokenFallback { color: #513c58; background: rgba(255, 255, 255, .42); }
 .playerPinnedTokenArea.day .playerPinnedTokenSource { color: #625368; }
 .playerPinnedTokenArea.day .playerPinnedToken strong { color: #382b3c; text-shadow: none; }
+.playerPinnedTokenArea.day .playerInactiveToken {
+  border-color: #b6747b;
+  box-shadow: 0 10px 21px rgba(76, 48, 84, .2), inset 0 0 0 4px rgba(255, 97, 109, .12), inset 0 0 22px rgba(111, 35, 45, .14);
+}
 
 .playerTokenDetailBackdrop.day { background: rgba(43, 32, 47, .5); }
 .playerTokenDetailBackdrop.day .playerTokenDetailDialog { border-left-color: rgba(88, 55, 97, .22); color: #35283a; background: #f8f1f7; box-shadow: -24px 0 70px rgba(73, 46, 80, .28); }

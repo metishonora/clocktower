@@ -215,6 +215,83 @@ fn sweetheart_drunk_no_dashii_stops_poisoning_neighbors() {
         .unwrap()
         .iter()
         .all(|impairment| impairment["sourceCharacterId"] != "noDashii"));
+    let inactive_no_dashii = state["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|reminder| reminder["characterId"] == "noDashii")
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_eq!(
+        inactive_no_dashii,
+        json!([
+            {
+                "playerId": "player-2",
+                "characterId": "noDashii",
+                "tokenId": "poisoned",
+                "label": "중독",
+                "description": "노 다시의 가장 가까운 주민 이웃이지만, 노 다시가 취하거나 중독되어 현재 효력이 없습니다.",
+                "sourceEventId": "setup-issue-133",
+                "inactiveReason": "노 다시가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+            },
+            {
+                "playerId": "player-5",
+                "characterId": "noDashii",
+                "tokenId": "poisoned",
+                "label": "중독",
+                "description": "노 다시의 가장 가까운 주민 이웃이지만, 노 다시가 취하거나 중독되어 현재 효력이 없습니다.",
+                "sourceEventId": "setup-issue-133",
+                "inactiveReason": "노 다시가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+            }
+        ]).as_array().unwrap().clone()
+    );
+
+    let undone = replay(&events[..events.len() - 1]);
+    assert!(undone["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|reminder| reminder["characterId"] != "noDashii"));
+    assert_eq!(
+        undone["value"]["ruleState"]["activeImpairments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|impairment| impairment["sourceCharacterId"] == "noDashii")
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn inactive_no_dashii_tokens_follow_the_current_nearest_townsfolk() {
+    let mut events = vec![setup_event("noDashii")];
+    apply_sweetheart_drunk(&mut events, "player-7");
+    let pit_hag = advance_until(&mut events, &["player-5"], |state| {
+        state["value"]["currentStep"]["id"] == "night2:pitHag:player-6"
+    });
+    let expected_event_count = events.len();
+    append(
+        &mut events,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": pit_hag["value"]["currentStep"]["id"],
+                "input": { "playerIds": ["player-2"], "characterIds": ["klutz"] },
+                "expectedEventCount": expected_event_count
+            }
+        }),
+    );
+
+    let state = replay(&events);
+    let inactive_targets = state["value"]["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|reminder| reminder["characterId"] == "noDashii")
+        .map(|reminder| reminder["playerId"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(inactive_targets, vec!["player-3", "player-5"]);
 }
 
 #[test]
@@ -230,11 +307,34 @@ fn sweetheart_drunk_vigormortis_stops_retaining_and_poisoning_from_an_existing_k
         .unwrap()
         .iter()
         .all(|impairment| impairment["sourceCharacterId"] != "vigormortis"));
-    assert!(state["value"]["ruleState"]["automaticReminders"]
+    let inactive_vigormortis = state["value"]["ruleState"]["automaticReminders"]
         .as_array()
         .unwrap()
         .iter()
-        .all(|reminder| reminder["tokenId"] != "hasAbility"));
+        .filter(|reminder| reminder["characterId"] == "vigormortis")
+        .map(|reminder| {
+            (
+                reminder["playerId"].as_str().unwrap(),
+                reminder["tokenId"].as_str().unwrap(),
+                reminder["inactiveReason"].as_str().unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        inactive_vigormortis,
+        vec![
+            (
+                "player-5",
+                "poisoned",
+                "비고르모르티스가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+            ),
+            (
+                "player-6",
+                "hasAbility",
+                "비고르모르티스가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+            ),
+        ]
+    );
     assert!(state["value"]["pendingVigormortisPoisonChoices"].is_null());
 }
 

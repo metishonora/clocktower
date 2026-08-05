@@ -1,0 +1,49 @@
+:root { background: #130a19; }
+body { margin: 0; }
+
+.issue135ReviewRoot {
+  min-height: 100dvh;
+  color: #f7f1f8;
+  background: #0c0610;
+}
+
+.issue135ReviewControls {
+  position: sticky;
+  z-index: 300;
+  top: 0;
+  display: flex;
+  min-height: 72px;
+  padding: 10px clamp(16px, 3vw, 44px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid rgba(227, 202, 235, .15);
+  background: rgba(12, 6, 16, .96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .26);
+  backdrop-filter: blur(16px);
+}
+
+.issue135ReviewControls > div:first-child { display: grid; max-width: 520px; gap: 4px; }
+.issue135ReviewControls > div:first-child span { color: #b987c4; font-size: .58rem; font-weight: 950; letter-spacing: .14em; }
+.issue135ReviewControls > div:first-child strong { color: #ded3e1; font-size: .75rem; line-height: 1.45; }
+.issue135ReviewControls > div:last-child { display: flex; padding: 4px; gap: 4px; border: 1px solid rgba(227, 202, 235, .14); border-radius: 13px; background: rgba(255, 255, 255, .035); }
+.issue135ReviewControls button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 9px; color: #bfaec4; background: transparent; font-size: .68rem; font-weight: 900; cursor: pointer; }
+.issue135ReviewControls button[aria-pressed="true"] { color: #241129; background: #e2c6e8; box-shadow: 0 6px 20px rgba(181, 121, 197, .22); }
+.issue135ReviewControls button:focus-visible { outline: 2px solid #f1cf75; outline-offset: 2px; }
+
+.issue135Prototype { min-height: calc(100dvh - 72px); }
+.issue135Prototype .issue121Grimoire { height: min(70dvh, 680px); }
+.issue135Prototype .issue121DetailBackdrop { top: 72px; }
+
+@media (max-width: 760px) {
+  .issue135ReviewControls { position: relative; display: grid; min-height: 0; padding: 12px; gap: 10px; }
+  .issue135ReviewControls > div:last-child { display: grid; grid-template-columns: 1fr 1fr; }
+  .issue135ReviewControls button { padding: 0 8px; }
+  .issue135Prototype { min-height: 100dvh; padding-top: 16px; }
+  .issue135Prototype .issue121Grimoire { height: 660px; }
+  .issue135Prototype .issue121DetailBackdrop { top: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue135ReviewControls { scroll-behavior: auto; }
+}

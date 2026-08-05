@@ -102,7 +102,7 @@ test("accepts only the canonical Philosopher resolution and grant references", (
   }));
 });
 
-test("accepts Philosopher grants and automatic reminder tokens in replay state", () => {
+test("accepts Philosopher grants and active or inactive automatic reminder tokens in replay state", () => {
   const replay = {
     schemaVersion: 3,
     scriptId: "sectsAndViolets",
@@ -127,6 +127,14 @@ test("accepts Philosopher grants and automatic reminder tokens in replay state",
         label: "정답",
         description: "첫 낮 공개 추측의 정답 수입니다.",
         count: 3,
+      }, {
+        playerId: "player-2",
+        characterId: "noDashii",
+        tokenId: "poisoned",
+        label: "중독",
+        description: "노 다시의 가장 가까운 주민 이웃이지만 현재 효력이 없습니다.",
+        sourceEventId: "setup-1",
+        inactiveReason: "노 다시가 취하거나 중독되어 능력이 일시적으로 무효입니다.",
       }],
     },
     warnings: [],
@@ -134,6 +142,11 @@ test("accepts Philosopher grants and automatic reminder tokens in replay state",
   };
 
   deepEqual<unknown>(parseReplayState(replay), replay);
+  const missingSource = structuredClone(replay);
+  delete (missingSource.ruleState.automaticReminders[1] as Partial<{
+    sourceEventId: string;
+  }>).sourceEventId;
+  throws(() => parseReplayState(missingSource), /코어 응답 형식/);
 });
 
 test("accepts canonical Vortox and impaired numeric constraints", () => {

@@ -40,6 +40,13 @@ const DevIssue107PhilosopherAbilityPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue135InactiveTokenPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue135InactiveTokenPrototype");
+      return { default: module.Issue135InactiveTokenPrototype };
+    })
+  : undefined;
+
 const showIssue120Prototype = Boolean(
   DevIssue120EventLogPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
@@ -65,9 +72,18 @@ const showIssue107Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-107-philosopher-ability",
 );
 
+const showIssue135Prototype = Boolean(
+  DevIssue135InactiveTokenPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-135-inactive-tokens",
+);
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue107Prototype && DevIssue107PhilosopherAbilityPrototype ? (
+    {showIssue135Prototype && DevIssue135InactiveTokenPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue135InactiveTokenPrototype />
+      </React.Suspense>
+    ) : showIssue107Prototype && DevIssue107PhilosopherAbilityPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue107PhilosopherAbilityPrototype />
       </React.Suspense>

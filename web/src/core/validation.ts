@@ -1169,13 +1169,16 @@ function isEvilTwinRelationship(value: unknown): boolean {
 
 function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
-    hasOnlyKeys(value, ["playerId", "characterId", "tokenId", "label", "description", "count"]) &&
+    hasOnlyKeys(value, ["playerId", "characterId", "tokenId", "label", "description", "count", "sourceEventId", "inactiveReason"]) &&
     typeof value.playerId === "string" &&
-    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "fangGu", "witch", "evilTwin", "seamstress", "artist", "juggler", "barber"].includes(String(value.characterId)) &&
+    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "noDashii", "fangGu", "witch", "evilTwin", "seamstress", "artist", "juggler", "barber"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
     typeof value.label === "string" &&
     typeof value.description === "string" &&
-    (value.count === undefined || (Number.isInteger(value.count) && Number(value.count) >= 0));
+    (value.count === undefined || (Number.isInteger(value.count) && Number(value.count) >= 0)) &&
+    (value.sourceEventId === undefined || typeof value.sourceEventId === "string") &&
+    (value.inactiveReason === undefined ||
+      (typeof value.inactiveReason === "string" && typeof value.sourceEventId === "string"));
 }
 
 function isActiveRuleEffect(value: unknown): boolean {
