@@ -1,10 +1,79 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
-import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
+import type { GameEvent, GameFile, RevealPayload, SetupPlayerInput } from "../src/core/types";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import { ProductionInformationRevealContent } from "../src/sectsAndVioletsGame";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+
+test.each([
+  ["clockmaker", "시계공", "악마와 하수인의 거리", "2칸"],
+  ["mathematician", "수학자", "비정상적으로 작동한 능력", "2개"],
+  ["flowergirl", "꽃팔이 소녀", "오늘 악마가…", "투표하지 않음"],
+  ["townCrier", "포고꾼", "오늘 하수인이…", "지목하지 않음"],
+  ["oracle", "예언자", "죽은 악한 플레이어", "2명"],
+  ["juggler", "곡예사", "맞힌 추측", "2개"],
+] as const)("uses the acquired %s reveal payload as the presentation authority", (characterId, characterName, label, value) => {
+  const revealPayload = characterId === "flowergirl" || characterId === "townCrier"
+    ? { kind: "booleanInformation" as const, characterId, value: false }
+    : { kind: "numericInformation" as const, characterId, value: 2 };
+  render(<ProductionInformationRevealContent payload={revealPayload} />);
+
+  expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.getByText(value)).toBeTruthy();
+  expect(screen.getByText(characterName)).toBeTruthy();
+});
+
+type AutomatedInformationRevealPayload = Extract<RevealPayload, {
+  kind: "dreamerInformation" | "seamstressInformation" | "sageInformation";
+}>;
+
+const targetedRevealCases: Array<[
+  string,
+  AutomatedInformationRevealPayload,
+  string,
+  string,
+]> = [
+  [
+    "dreamer",
+    { kind: "dreamerInformation", characterIds: ["artist", "juggler"] },
+    "꿈꾸는 자",
+    "이 자는…",
+  ],
+  [
+    "seamstress",
+    {
+      kind: "seamstressInformation",
+      targetPlayers: [
+        { playerId: "player-2", seat: 2, name: "현우" },
+        { playerId: "player-3", seat: 3, name: "서윤" },
+      ],
+      sameAlignment: true,
+    },
+    "재봉사",
+    "같은 진영",
+  ],
+  [
+    "sage",
+    {
+      kind: "sageInformation",
+      candidatePlayers: [
+        { playerId: "player-2", seat: 2, name: "현우" },
+        { playerId: "player-3", seat: 3, name: "서윤" },
+      ],
+    },
+    "현자",
+    "당신을 죽인 악마는…",
+  ],
+];
+
+test.each(targetedRevealCases)("keeps the acquired %s targeted reveal independent from the Philosopher step", (_characterId, revealPayload, characterName, detail) => {
+  render(<ProductionInformationRevealContent payload={revealPayload} />);
+
+  expect(screen.getByText(characterName)).toBeTruthy();
+  expect(screen.getByText(detail)).toBeTruthy();
+});
 
 test("shows an out-of-play ability as the Philosopher's grimoire character", async () => {
   const game = philosopherGame();

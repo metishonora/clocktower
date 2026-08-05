@@ -82,7 +82,7 @@ test("the same mounted game keeps the swapped and killed Snake Charmer eligible 
   await assignCerenovus(user, app);
   await revealCurrentInformation(user, app);
   const mathematicianTask = await within(app).findByRole("article", { name: "수학자 정보" });
-  expect(within(mathematicianTask).getByText("진실").nextElementSibling?.textContent).toContain("0명");
+  expect(within(mathematicianTask).getByText("진실").nextElementSibling?.textContent).toContain("0개");
   expect(within(mathematicianTask).getByText("비정상 작동 기록 없음")).toBeTruthy();
   expect(within(mathematicianTask).getByRole("group", { hidden: true, name: "계산 근거" }).hasAttribute("open")).toBe(false);
   await revealCurrentInformation(user, app);

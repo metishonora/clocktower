@@ -592,7 +592,7 @@ export type SetupInformationRevealPayload =
 
 export type NumericInformationRevealPayload = {
   kind: "numericInformation";
-  characterId: "chef" | "empath" | "clockmaker" | "oracle" | "juggler";
+  characterId: "chef" | "empath" | "clockmaker" | "mathematician" | "oracle" | "juggler";
   value: number;
 };
 

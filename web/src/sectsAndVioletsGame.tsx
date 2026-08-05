@@ -22,6 +22,11 @@ import type {
 } from "./core/types";
 import { proposalRevealPayload } from "./core/revealPayload";
 import {
+  automatedInformationCharacterId,
+  scalarInformationLabel,
+  scalarInformationValueLabel,
+} from "./core/informationPresentation.js";
+import {
   SectsAndVioletsLiveGrimoire,
   SectsAndVioletsLiveProgress,
   type LiveHandoff,
@@ -2874,13 +2879,13 @@ export function SectsAndVioletsGameSurface({
       ) : null}
       {informationCheckpoint && informationRevealOpen ? (
         <SectsAndVioletsReveal
-          dialogLabel={`${characters.find((character) => character.id === informationCheckpoint.step.character)?.name ?? informationCheckpoint.step.character} 정보 공개`}
+          dialogLabel={`${characters.find((character) => character.id === automatedInformationCharacterId(informationCheckpoint.revealPayload))?.name ?? automatedInformationCharacterId(informationCheckpoint.revealPayload)} 정보 공개`}
           className="snvProductionInformationReveal"
           closeLabel="확인했으면 눈을 감으세요"
           closeButtonRef={informationCloseRef}
           onClose={() => setInformationRevealOpen(false)}
         >
-          <ProductionInformationRevealContent checkpoint={informationCheckpoint} />
+          <ProductionInformationRevealContent payload={informationCheckpoint.revealPayload} />
         </SectsAndVioletsReveal>
       ) : null}
       {replayState?.pendingGameEnd ? (
@@ -2992,16 +2997,7 @@ function automatedInformationRevealPayload(
     : undefined;
 }
 
-function informationResultFromReveal(
-  payload: Extract<InformationCheckpoint["revealPayload"], { kind: "numericInformation" | "booleanInformation" }>,
-): InformationResult {
-  return payload.kind === "numericInformation"
-    ? { kind: "number", value: payload.value }
-    : { kind: "boolean", value: payload.value };
-}
-
-function ProductionInformationRevealContent({ checkpoint }: { checkpoint: InformationCheckpoint }) {
-  const payload = checkpoint.revealPayload;
+export function ProductionInformationRevealContent({ payload }: { payload: InformationCheckpoint["revealPayload"] }) {
   if (payload.kind === "dreamerInformation") {
     return <><span>꿈꾸는 자</span><p className="snvInformationRevealLabel">이 자는…</p><div className="snvTargetedRevealPair">{payload.characterIds.map((id, index) => <Fragment key={id}>{index ? <b>또는</b> : null}<RevealCharacterCard characterId={id} /></Fragment>)}</div></>;
   }
@@ -3011,12 +3007,13 @@ function ProductionInformationRevealContent({ checkpoint }: { checkpoint: Inform
   if (payload.kind === "sageInformation") {
     return <><span>현자</span><p className="snvInformationRevealLabel">당신을 죽인 악마는…</p><div className="snvTargetedRevealPair snvPlayerRevealPair">{payload.candidatePlayers.map((player, index) => <Fragment key={player.playerId}>{index ? <b>또는</b> : null}<div className="snvRevealPlayerCard"><span>{player.seat}</span><strong>{player.name}</strong></div></Fragment>)}</div></>;
   }
-  const asset = sectsAndVioletsCharacterAsset(checkpoint.step.character);
+  const characterId = automatedInformationCharacterId(payload);
+  const asset = sectsAndVioletsCharacterAsset(characterId);
   return <>
-    {asset?.src ? <img src={asset.src} alt={`${characters.find((character) => character.id === checkpoint.step.character)?.name ?? checkpoint.step.character} 공식 캐릭터 아이콘`} /> : null}
-    <span>{characters.find((character) => character.id === checkpoint.step.character)?.name}</span>
-    <p className="snvInformationRevealLabel">{informationRevealLabel(checkpoint.step.character)}</p>
-    <strong className="snvInformationRevealValue">{informationValueLabel(checkpoint.step.character ?? "", informationResultFromReveal(payload))}</strong>
+    {asset?.src ? <img src={asset.src} alt={`${characters.find((character) => character.id === characterId)?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}
+    <span>{characters.find((character) => character.id === characterId)?.name}</span>
+    <p className="snvInformationRevealLabel">{scalarInformationLabel(payload.characterId)}</p>
+    <strong className="snvInformationRevealValue">{scalarInformationValueLabel(payload.characterId, payload.value)}</strong>
   </>;
 }
 
@@ -3024,14 +3021,6 @@ function RevealCharacterCard({ characterId }: { characterId: string }) {
   const character = characters.find((candidate) => candidate.id === characterId);
   const asset = sectsAndVioletsCharacterAsset(characterId);
   return <div className="snvRevealCharacterCard">{asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}<strong>{character?.name ?? characterId}</strong></div>;
-}
-
-function informationRevealLabel(characterId: string | undefined): string {
-  if (characterId === "clockmaker") return "악마와 하수인의 거리";
-  if (characterId === "flowergirl") return "오늘 악마가…";
-  if (characterId === "townCrier") return "오늘 하수인이…";
-  if (characterId === "juggler") return "맞힌 추측";
-  return "죽은 악한 플레이어";
 }
 
 function PhilosopherAbilityTask({

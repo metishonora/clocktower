@@ -495,7 +495,8 @@ test("renders an explicit empty Mathematician audit without adding reveal copy",
   render(<SectsAndVioletsInformationTask step={mathStep} actor={mathActor} revealed={false} busy={false} onReveal={() => undefined} />);
 
   const task = screen.getByRole("article", { name: "수학자 정보" });
-  expect(within(task).getAllByText("0명")).toHaveLength(2);
+  expect(within(task).getByText("0개")).toBeTruthy();
+  expect(within(task).getByText("0명")).toBeTruthy();
   expect(within(task).getByText("비정상 작동 기록 없음")).toBeTruthy();
   expect(within(task).queryByText("0 이상의 정수 · 진실 0 제외")).toBeNull();
   expect(within(task).queryByRole("alert")).toBeNull();

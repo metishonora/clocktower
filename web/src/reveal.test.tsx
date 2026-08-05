@@ -67,12 +67,13 @@ test("role information Reveal renders the approved copy from narrow payloads", (
     { kind: "setupInformation", characterId: "washerwoman", candidatePlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], revealedCharacterId: "chef", zeroOutsiders: false },
     { kind: "setupInformation", characterId: "librarian", candidatePlayers: [], zeroOutsiders: true },
     { kind: "numericInformation", characterId: "chef", value: 1 },
+    { kind: "numericInformation", characterId: "mathematician", value: 2 },
     { kind: "numericInformation", characterId: "juggler", value: 3 },
     { kind: "fortuneTellerInformation", targetPlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], hasDemon: false },
     { kind: "characterInformation", characterId: "undertaker", targetPlayer: { playerId: "p3", seat: 3, name: "서연" }, revealedCharacterId: "librarian" },
   ];
   const html = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />)).join("\n");
-  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 주민입니다.", "외지인은 없습니다.", "서로 이웃한 악한 팀", "1쌍", "곡예사 정보", "맞힌 추측", "3개", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
+  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 주민입니다.", "외지인은 없습니다.", "서로 이웃한 악한 팀", "1쌍", "수학자 정보", "비정상적으로 작동한 능력", "2개", "곡예사 정보", "맞힌 추측", "3개", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
     equal(html.includes(copy), true, copy);
   }
 });

@@ -10,6 +10,7 @@ import type {
   Player,
   TargetCheck,
 } from "../../core/types";
+import { isScalarInformationCharacterId, scalarInformationValueLabel } from "../../core/informationPresentation.js";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
@@ -315,11 +316,14 @@ function GenericEditor({ step, choices, value, busy, onChange }: { step: PhaseSt
 
 export function informationValueLabel(characterId: string, result?: InformationResult): string {
   if (!result) return "-";
-  if (result.kind === "number") return `${result.value}${characterId === "clockmaker" ? "칸" : characterId === "juggler" ? "개" : "명"}`;
+  if (result.kind === "number") return isScalarInformationCharacterId(characterId)
+    ? scalarInformationValueLabel(characterId, result.value)
+    : `${result.value}명`;
   if (result.kind === "boolean") {
     if (characterId === "seamstress") return result.value ? "같은 진영" : "다른 진영";
-    if (characterId === "flowergirl") return result.value ? "투표함" : "투표하지 않음";
-    return result.value ? "지목함" : "지목하지 않음";
+    return isScalarInformationCharacterId(characterId)
+      ? scalarInformationValueLabel(characterId, result.value)
+      : result.value ? "예" : "아니요";
   }
   if (result.kind === "character") return characterName(result.characterId);
   if (result.kind === "player") return result.playerId;
