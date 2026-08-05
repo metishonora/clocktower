@@ -2288,7 +2288,7 @@ export function SectsAndVioletsGameSurface({
             </section>
           </div>
 
-          <section className="snvCatalogPreview" aria-label="직업 선택 패널">
+          <section className={`snvCatalogPreview${rosterConfirmed ? " rosterConfirmed" : ""}`} aria-label="직업 선택 패널">
             <div className="snvCatalogGroups">
               {kindOrder.map((kind) => (
                 <article key={kind}>
@@ -2373,6 +2373,12 @@ export function SectsAndVioletsGameSurface({
               onReveal={() => setBarberAbilityRevealOpen(true)}
             />
           ) : undefined}
+          centerPromptClassName={!replayState.gameEnd
+            && replayState.currentStep?.stepType !== "witchDeath"
+            && nextIdentityReveal?.payload.kind === "evilTwinPair"
+            && !identityRevealOpen
+            ? "evilTwinCenterPrompt"
+            : undefined}
           handoffSupplement={liveHandoff?.kind === "cerenovus" ? (
             <label className="snvMadnessCharacterChoice">
               집착할 캐릭터

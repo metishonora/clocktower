@@ -191,6 +191,22 @@ test("confirms the assigned production roster through the canonical S&V createGa
   );
 });
 
+test("visually distinguishes the roster after character selection is confirmed", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
+    await user.click(within(app).getByRole("button", { name: character }));
+  }
+  await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
+  await user.click(within(app).getByRole("button", { name: "직업" }));
+
+  const catalog = within(app).getByRole("region", { name: "직업 선택 패널" });
+  expect(catalog.classList.contains("rosterConfirmed")).toBe(true);
+  expect(within(catalog).getByRole("button", { name: "시계공" }).classList.contains("selected")).toBe(true);
+});
+
 test("does not expose a confirmed Grimoire until the canonical setup is durably saved", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const user = userEvent.setup();
