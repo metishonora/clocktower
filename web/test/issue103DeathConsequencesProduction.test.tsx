@@ -40,9 +40,26 @@ test.each([
 
 test("an acquired death consequence keeps Philosopher as the actor and shows the triggering ability separately", () => {
   const philosopher = player("player-1", 1, "가람", "philosopher", "good", false);
+  const acquiredSweetheart: PendingDeathConsequence = {
+    ...pending("sweetheart"),
+    abilityUse: {
+      ownerPlayerId: philosopher.id,
+      characterId: "sweetheart",
+      abilityInstanceId: "grant-sweetheart",
+    },
+    abilityOrigin: {
+      kind: "acquired",
+      acquisitionEventId: "acquisition-sweetheart",
+      source: {
+        ownerPlayerId: philosopher.id,
+        characterId: "philosopher",
+        abilityInstanceId: "setup:player-1",
+      },
+    },
+  };
   render(
     <DeathConsequencePanel
-      pending={pending("sweetheart")}
+      pending={acquiredSweetheart}
       players={[philosopher]}
       operationBusy={false}
       onResolve={vi.fn()}
@@ -238,6 +255,12 @@ function pending(kind: PendingDeathConsequence["kind"]): PendingDeathConsequence
     deathSequence: 1,
     actorPlayerId: "player-1",
     sourceAbilityInstanceId: "ability-1",
+    abilityUse: {
+      ownerPlayerId: "player-1",
+      characterId: kind,
+      abilityInstanceId: "ability-1",
+    },
+    abilityOrigin: { kind: "identityBound" },
     actorImpairedAtTrigger: false,
     allowedPlayerIds: kind === "klutz" ? ["player-2", "player-3"] : players.map((candidate) => candidate.id),
     eligibleChooserPlayerIds: ["player-3"],

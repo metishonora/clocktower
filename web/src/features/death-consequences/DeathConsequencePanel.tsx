@@ -34,7 +34,7 @@ export function DeathConsequencePanel({
   const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === pending.kind);
   const asset = sectsAndVioletsCharacterAsset(pending.kind);
   const noEffect = deathConsequenceIsNoEffect(pending);
-  const acquiredAbility = actor ? isAcquiredAbility(actor.actualCharacter, pending.kind) : false;
+  const acquiredAbility = isAcquiredAbility(pending.abilityOrigin);
 
   return (
     <article
@@ -45,6 +45,7 @@ export function DeathConsequencePanel({
       {acquiredAbility && actor ? <AcquiredAbilityPresentation
         actor={actor}
         abilityCharacterId={pending.kind}
+        abilityOrigin={pending.abilityOrigin}
         actorPlayerLabel={`${actor.seat}번 ${actor.name}`}
         abilityStatusNode={<PlayerImpairmentBadges activeImpairments={activeImpairments} playerId={actor.id} />}
         actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity"

@@ -93,6 +93,7 @@ export function SectsAndVioletsInformationTask({
       {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
         actor={actor}
         abilityCharacterId={acquiredAbilityCharacterId}
+        abilityOrigin={step.abilityOrigin!}
         abilityStatusNode={influences.length ? <span className="snvInformationInfluenceBadges" aria-label="정보 영향">{influences.map((activeInfluence) => <em key={activeInfluence} className={`snvInformationInfluenceBadge ${activeInfluence}`}>{informationInfluencePresentation[activeInfluence].badge}</em>)}</span> : null}
         actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity"
         abilityClassName="issue107AbilityResult interactive"

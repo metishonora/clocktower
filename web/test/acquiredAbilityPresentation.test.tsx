@@ -43,6 +43,15 @@ test("acquired identity presentation is data-driven for every non-self good Phil
         characterId,
         abilityInstanceId: `grant-${characterId}`,
       },
+      abilityOrigin: {
+        kind: "acquired",
+        acquisitionEventId: `acquisition-${characterId}`,
+        source: {
+          ownerPlayerId: actor.id,
+          characterId: "philosopher",
+          abilityInstanceId: "setup:player-1",
+        },
+      },
       requiredInput: { kind: "none", optional: false },
       canSkip: false,
     };
@@ -51,6 +60,7 @@ test("acquired identity presentation is data-driven for every non-self good Phil
       <AcquiredAbilityPresentation
         actor={actor}
         abilityCharacterId={acquiredAbilityCharacterForStep(step, actor)!}
+        abilityOrigin={step.abilityOrigin!}
       />,
     );
 
@@ -64,7 +74,7 @@ test("acquired identity presentation is data-driven for every non-self good Phil
 });
 
 test("self-selection is not presented as an acquired ability", () => {
-  expect(isAcquiredAbility("philosopher", "philosopher")).toBe(false);
+  expect(isAcquiredAbility({ kind: "identityBound" })).toBe(false);
   const selfStep: PhaseStep = {
     id: "firstNight:philosopher",
     phase: "firstNight",
@@ -76,11 +86,16 @@ test("self-selection is not presented as an acquired ability", () => {
       characterId: "philosopher",
       abilityInstanceId: "self-selection",
     },
+    abilityOrigin: { kind: "identityBound" },
     requiredInput: { kind: "none", optional: false },
     canSkip: false,
   };
   expect(acquiredAbilityCharacterForStep(selfStep, actor)).toBeUndefined();
   expect(renderToStaticMarkup(
-    <AcquiredAbilityPresentation actor={actor} abilityCharacterId="philosopher" />,
+    <AcquiredAbilityPresentation
+      actor={actor}
+      abilityCharacterId="philosopher"
+      abilityOrigin={selfStep.abilityOrigin!}
+    />,
   )).toBe("");
 });

@@ -75,6 +75,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                     character: Some("fortuneTeller".into()),
                     player_id: actor,
                     ability_use: None,
+                    ability_origin: None,
                     required_input: RequiredInput {
                         kind: RequiredInputKind::PlayerIds,
                         target: Some(InputTarget::Player),
@@ -170,6 +171,7 @@ pub(crate) fn night_steps(
                     character: Some("fortuneTeller".into()),
                     player_id: actor,
                     ability_use: None,
+                    ability_origin: None,
                     required_input: RequiredInput {
                         kind: RequiredInputKind::PlayerIds,
                         target: Some(InputTarget::Player),
@@ -264,6 +266,7 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
         character: Some(character.into()),
         player_id: Some(player_id),
         ability_use: None,
+        ability_origin: None,
         required_input: crate::characters::character_required_input(character),
         can_skip: true,
         support: crate::model::PhaseStepSupport::Automated,

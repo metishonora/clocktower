@@ -126,13 +126,14 @@ function DayActionHeader({ action, player, phaseLabel, influence }: {
   const actorLabel = characterLabel(player.actualCharacter);
   const asset = sectsAndVioletsCharacterAsset(action.characterId);
   const ability = sectsAndVioletsCharacters.find((character) => character.id === action.characterId)?.ability;
-  const acquiredAbility = isAcquiredAbility(player.actualCharacter, action.characterId);
+  const acquiredAbility = isAcquiredAbility(action.abilityOrigin);
   if (acquiredAbility) {
     return (
       <header className="snvDayActionHeader">
         <AcquiredAbilityPresentation
           actor={player}
           abilityCharacterId={action.characterId}
+          abilityOrigin={action.abilityOrigin}
           actorPlayerNode={<span>{phaseLabel} · {player.seat}번 {player.name}</span>}
           actorRoleNode={<span className="snvDayActionRoleLine"><h2>{actorLabel}</h2></span>}
           abilityNameNode={<span className="snvDayActionRoleLine"><strong>{label}</strong>{influence ? <em className={`snvInformationInfluenceBadge ${influence}`}>{informationInfluencePresentation[influence].badge}</em> : null}</span>}

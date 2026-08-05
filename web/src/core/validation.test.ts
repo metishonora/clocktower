@@ -60,6 +60,17 @@ test("accepts the S&V manual phase support and replayable outcomes", () => {
   };
 
   deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const mismatchedAbilityContext = structuredClone(replay) as unknown as {
+    currentStep: Record<string, unknown>;
+  };
+  mismatchedAbilityContext.currentStep.abilityUse = {
+    ownerPlayerId: "player-1",
+    characterId: "dreamer",
+    abilityInstanceId: "setup:player-1",
+  };
+  mismatchedAbilityContext.currentStep.abilityOrigin = { kind: "identityBound" };
+  throws(() => parseReplayState(mismatchedAbilityContext), /코어 응답/);
 });
 
 test("accepts only the canonical Philosopher resolution and grant references", () => {
@@ -262,6 +273,7 @@ test("accepts the Snake Charmer swap event, identity history, impairment, and pe
     ],
   };
   deepEqual<unknown>(parseReplayState(replay), replay);
+
   const madnessReveal: unknown = {
     ...structuredClone(replay),
     pendingIdentityReveals: [{
@@ -474,12 +486,22 @@ test("accepts a pending healthy Barber with no living Demon as an empty chooser 
       deathSequence: 1,
       actorPlayerId: "player-2",
       sourceAbilityInstanceId: "setup:player-2",
+      abilityUse: {
+        ownerPlayerId: "player-2",
+        characterId: "barber",
+        abilityInstanceId: "setup:player-2",
+      },
+      abilityOrigin: { kind: "identityBound" },
       actorImpairedAtTrigger: false,
       allowedPlayerIds: [],
       eligibleChooserPlayerIds: [],
     }],
   };
   deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const mismatchedInstance = structuredClone(replay);
+  mismatchedInstance.pendingDeathConsequences[0].abilityUse.abilityInstanceId = "other-instance";
+  throws(() => parseReplayState(mismatchedInstance), /코어 응답/);
 });
 
 test("accepts Pit-Hag transformation and arbitrary death audit events", () => {
@@ -865,7 +887,18 @@ test("validates daytime free-action replay projections at the WASM boundary", ()
     warnings: [],
     ruleState: { unannouncedNightDeathPlayerIds: [] },
     gameEnd: null,
-    availableDayActions: [{ actorPlayerId: "player-1", characterId: "juggler", dayId: "day", activeReasons: [] }],
+    availableDayActions: [{
+      actorPlayerId: "player-1",
+      characterId: "juggler",
+      dayId: "day",
+      activeReasons: [],
+      abilityUse: {
+        ownerPlayerId: "player-1",
+        characterId: "juggler",
+        abilityInstanceId: "setup:player-1",
+      },
+      abilityOrigin: { kind: "identityBound" },
+    }],
     dayActionRecords: [{
       eventId: "day-action-6",
       actorPlayerId: "player-1",
@@ -880,6 +913,24 @@ test("validates daytime free-action replay projections at the WASM boundary", ()
   const invalid = structuredClone(state);
   invalid.availableDayActions[0].characterId = "clockmaker";
   throws(() => parseReplayState(invalid), /코어 응답/);
+
+  const mismatchedOwner = structuredClone(state);
+  mismatchedOwner.availableDayActions[0].abilityUse.ownerPlayerId = "player-2";
+  throws(() => parseReplayState(mismatchedOwner), /코어 응답/);
+
+  const mismatchedAcquisitionSource = structuredClone(state) as unknown as {
+    availableDayActions: Array<{ abilityOrigin: unknown }>;
+  };
+  mismatchedAcquisitionSource.availableDayActions[0].abilityOrigin = {
+    kind: "acquired",
+    acquisitionEventId: "phase-2",
+    source: {
+      ownerPlayerId: "player-2",
+      characterId: "philosopher",
+      abilityInstanceId: "setup:player-2",
+    },
+  };
+  throws(() => parseReplayState(mismatchedAcquisitionSource), /코어 응답/);
 });
 
 function schemaV2Fixture(): {

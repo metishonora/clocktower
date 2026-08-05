@@ -1,0 +1,40 @@
+name: Validate Clocktower
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Set up WebAssembly target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1 --locked
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test Rust workspace
+        run: cargo test --workspace
+      - name: Test web app
+        run: pnpm --dir web test
+      - name: Build web app
+        run: pnpm --dir web build

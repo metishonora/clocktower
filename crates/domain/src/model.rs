@@ -442,6 +442,8 @@ pub(crate) struct PhaseStep {
     pub(crate) player_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_origin: Option<AbilityOrigin>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
     pub(crate) support: PhaseStepSupport,
@@ -563,6 +565,10 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_origin: Option<AbilityOrigin>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
     pub(crate) support: PhaseStepSupport,
@@ -697,6 +703,33 @@ pub(crate) struct AbilityUseRef {
     pub(crate) owner_player_id: String,
     pub(crate) character_id: String,
     pub(crate) ability_instance_id: AbilityInstanceId,
+}
+
+/// Replay-derived provenance for an acting ability. This is deliberately not
+/// part of persisted events: old schema-v3 files keep their existing shape,
+/// while projections no longer need to infer ownership from character IDs.
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum AbilityOrigin {
+    IdentityBound,
+    Acquired {
+        acquisition_event_id: String,
+        source: AbilityUseRef,
+    },
+}
+
+/// A rule-layer view of an ability owner. `identity` always remains the
+/// canonical player identity; `ability` and `origin` describe what is acting.
+#[derive(Debug, Clone)]
+pub(crate) struct AbilityActor<'a> {
+    pub(crate) identity: &'a Player,
+    pub(crate) ability: AbilityUseRef,
+    pub(crate) origin: AbilityOrigin,
+    pub(crate) source_event_id: String,
 }
 
 /// A healthy Philosopher acquisition projected from the confirmed event

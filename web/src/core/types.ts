@@ -346,6 +346,8 @@ export type AvailableDayAction = {
   characterId: "artist" | "savant" | "juggler";
   dayId: string;
   activeReasons: DeliveryReason[];
+  abilityUse: AbilityUseRef;
+  abilityOrigin: AbilityOrigin;
 };
 
 export type ConfirmedDayActionRecord = {
@@ -390,6 +392,8 @@ export type PendingDeathConsequence = {
   deathSequence: number;
   actorPlayerId: string;
   sourceAbilityInstanceId: string;
+  abilityUse: AbilityUseRef;
+  abilityOrigin: AbilityOrigin;
   actorImpairedAtTrigger: boolean;
   allowedPlayerIds: string[];
   eligibleChooserPlayerIds: string[];
@@ -521,6 +525,14 @@ export type AbilityUseRef = {
   characterId: string;
   abilityInstanceId: string;
 };
+
+export type AbilityOrigin =
+  | { kind: "identityBound" }
+  | {
+      kind: "acquired";
+      acquisitionEventId: string;
+      source: AbilityUseRef;
+    };
 
 export type AbilityGrant = {
   ownerPlayerId: string;
@@ -1142,6 +1154,7 @@ export type PhaseStep = {
   character?: string;
   playerId?: string;
   abilityUse?: AbilityUseRef;
+  abilityOrigin?: AbilityOrigin;
   requiredInput: RequiredInput;
   canSkip: boolean;
   support?: "automated" | "manual";

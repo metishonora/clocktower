@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::model::{
-    AbilityGrant, AbilityInstanceId, AbilityUseRef, Alignment, ConfirmedInformation, CoreWarning,
-    DayState, DeliveryReason, InformationResult, Phase, PhaseOverviewItem, PhaseStep, Player,
-    PlayerIdentityTransition, PlayerTransition, RegistrationJudgment, ScriptTokenRef, StepInput,
-    SystemTokenId,
+    AbilityGrant, AbilityInstanceId, AbilityOrigin, AbilityUseRef, Alignment, ConfirmedInformation,
+    CoreWarning, DayState, DeliveryReason, InformationResult, Phase, PhaseOverviewItem, PhaseStep,
+    Player, PlayerIdentityTransition, PlayerTransition, RegistrationJudgment, ScriptTokenRef,
+    StepInput, SystemTokenId,
 };
 
 pub(crate) struct GameFile {
@@ -380,6 +380,8 @@ pub(crate) struct PendingDeathConsequence {
     pub(crate) death_sequence: u8,
     pub(crate) actor_player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_origin: AbilityOrigin,
     pub(crate) actor_impaired_at_trigger: bool,
     #[serde(skip_serializing)]
     pub(crate) actor_alignment_at_trigger: Alignment,
@@ -441,6 +443,8 @@ pub(crate) struct AvailableDayAction {
     pub(crate) character_id: String,
     pub(crate) day_id: String,
     pub(crate) active_reasons: Vec<DeliveryReason>,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_origin: AbilityOrigin,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]

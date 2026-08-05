@@ -1,42 +1,44 @@
 import type { ReactNode } from "react";
-import type { AbilityGrant, PhaseStep, Player } from "../../core/types";
+import type { AbilityOrigin, AbilityUseRef, PhaseStep, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
 import "./sectsAndVioletsInformationTask.css";
 
-/**
- * Returns true when the ability being presented belongs to a different
- * character than the actor's actual identity.  This is intentionally based
- * on the two ids only: a Philosopher grant is not a special-case character
- * presentation and the same rule applies to every acquired ability.
- */
-export function isAcquiredAbility(
-  actorCharacterId: string | undefined,
-  abilityCharacterId: string | undefined,
-): abilityCharacterId is string {
-  return Boolean(actorCharacterId && abilityCharacterId && actorCharacterId !== abilityCharacterId);
+export type AbilityContext = {
+  owner: Pick<Player, "id" | "actualCharacter">;
+  abilityUse: AbilityUseRef;
+  origin: AbilityOrigin;
+};
+
+export function isAcquiredAbility(origin: AbilityOrigin | undefined): origin is Extract<AbilityOrigin, { kind: "acquired" }> {
+  return origin?.kind === "acquired";
+}
+
+export function abilityContextForStep(
+  step: Pick<PhaseStep, "abilityUse" | "abilityOrigin"> | null | undefined,
+  actor: Pick<Player, "id" | "actualCharacter"> | null | undefined,
+): AbilityContext | undefined {
+  if (!step?.abilityUse || !step.abilityOrigin || !actor) return undefined;
+  if (step.abilityUse.ownerPlayerId !== actor.id) return undefined;
+  if (step.abilityOrigin.kind === "acquired" && step.abilityOrigin.source.ownerPlayerId !== actor.id) return undefined;
+  return { owner: actor, abilityUse: step.abilityUse, origin: step.abilityOrigin };
 }
 
 /** Resolve the acquired ability represented by a canonical phase step. */
 export function acquiredAbilityCharacterForStep(
-  step: { abilityUse?: PhaseStep["abilityUse"]; character?: string } | null | undefined,
+  step: Pick<PhaseStep, "abilityUse" | "abilityOrigin"> | null | undefined,
   actor: Pick<Player, "id" | "actualCharacter"> | null | undefined,
-  abilityGrants: readonly Pick<AbilityGrant, "ownerPlayerId" | "characterId">[] = [],
 ): string | undefined {
-  const projectedGrant = step?.character && actor
-    ? abilityGrants.find((grant) => (
-        grant.ownerPlayerId === actor.id && grant.characterId === step.character
-      ))
-    : undefined;
-  const abilityCharacterId = step?.abilityUse?.characterId ?? projectedGrant?.characterId;
-  return isAcquiredAbility(actor?.actualCharacter, abilityCharacterId) ? abilityCharacterId : undefined;
+  const context = abilityContextForStep(step, actor);
+  return isAcquiredAbility(context?.origin) ? context.abilityUse.characterId : undefined;
 }
 
 export type AcquiredAbilityPresentationProps = {
   actor: Player;
   abilityCharacterId: string;
+  abilityOrigin: AbilityOrigin;
   theme?: "light" | "snv-day" | "snv-night";
   actorRoleName?: string;
   actorPlayerLabel?: string;
@@ -49,6 +51,79 @@ export type AcquiredAbilityPresentationProps = {
   abilitySummary?: string;
 };
 
+type AbilityOwnerIdentityProps = Pick<
+  AcquiredAbilityPresentationProps,
+  | "actor"
+  | "theme"
+  | "actorRoleName"
+  | "actorPlayerLabel"
+  | "actorPlayerNode"
+  | "actorRoleNode"
+  | "actorIdentityClassName"
+>;
+
+export function AbilityOwnerIdentity({
+  actor,
+  theme = "snv-night",
+  actorRoleName,
+  actorPlayerLabel,
+  actorPlayerNode,
+  actorRoleNode,
+  actorIdentityClassName = "snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity",
+}: AbilityOwnerIdentityProps) {
+  const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === actor.actualCharacter);
+  const asset = sectsAndVioletsCharacterAsset(actor.actualCharacter);
+  const roleName = actorRoleName ?? character?.name ?? actor.actualCharacter;
+  return (
+    <CharacterDetailButton
+      details={sectsAndVioletsCharacterDetail(actor.actualCharacter)}
+      className={actorIdentityClassName}
+      theme={theme}
+    >
+      {asset ? <img src={asset.src} alt={`${roleName} 공식 캐릭터 아이콘`} /> : null}
+      <div>
+        {actorRoleNode ?? <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{roleName}</span>}
+        {actorPlayerNode ?? <strong>{actorPlayerLabel ?? actor.name}</strong>}
+      </div>
+    </CharacterDetailButton>
+  );
+}
+
+type ActingAbilityIdentityProps = Pick<
+  AcquiredAbilityPresentationProps,
+  | "abilityCharacterId"
+  | "theme"
+  | "abilityNameNode"
+  | "abilityStatusNode"
+  | "abilityClassName"
+  | "abilitySummary"
+>;
+
+export function ActingAbilityIdentity({
+  abilityCharacterId,
+  theme = "snv-night",
+  abilityNameNode,
+  abilityStatusNode,
+  abilityClassName = "issue107AbilityResult interactive",
+  abilitySummary,
+}: ActingAbilityIdentityProps) {
+  const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === abilityCharacterId);
+  const asset = sectsAndVioletsCharacterAsset(abilityCharacterId);
+  const name = character?.name ?? abilityCharacterId;
+  const summary = abilitySummary ?? character?.ability;
+  return (
+    <CharacterDetailButton
+      details={sectsAndVioletsCharacterDetail(abilityCharacterId)}
+      className={abilityClassName}
+      theme={theme}
+    >
+      <span>획득한 능력</span>
+      {asset ? <img src={asset.src} alt={`${name} 공식 캐릭터 아이콘`} /> : null}
+      <div>{abilityNameNode ?? <strong>{name}</strong>}{abilityStatusNode}{summary ? <p>{summary}</p> : null}</div>
+    </CharacterDetailButton>
+  );
+}
+
 /**
  * Shared acquired-ability identity presentation.
  *
@@ -59,6 +134,7 @@ export type AcquiredAbilityPresentationProps = {
 export function AcquiredAbilityPresentation({
   actor,
   abilityCharacterId,
+  abilityOrigin,
   theme = "snv-night",
   actorRoleName,
   actorPlayerLabel,
@@ -70,38 +146,27 @@ export function AcquiredAbilityPresentation({
   abilityClassName = "issue107AbilityResult interactive",
   abilitySummary,
 }: AcquiredAbilityPresentationProps) {
-  if (!isAcquiredAbility(actor.actualCharacter, abilityCharacterId)) return null;
-
-  const actorCharacter = sectsAndVioletsCharacters.find((candidate) => candidate.id === actor.actualCharacter);
-  const acquiredCharacter = sectsAndVioletsCharacters.find((candidate) => candidate.id === abilityCharacterId);
-  const actorAsset = sectsAndVioletsCharacterAsset(actor.actualCharacter);
-  const acquiredAsset = sectsAndVioletsCharacterAsset(abilityCharacterId);
-  const resolvedActorRoleName = actorRoleName ?? actorCharacter?.name ?? actor.actualCharacter;
-  const resolvedAbilityName = acquiredCharacter?.name ?? abilityCharacterId;
-  const resolvedAbilitySummary = abilitySummary ?? acquiredCharacter?.ability;
+  if (!isAcquiredAbility(abilityOrigin)) return null;
 
   return (
     <>
-      <CharacterDetailButton
-        details={sectsAndVioletsCharacterDetail(actor.actualCharacter)}
-        className={actorIdentityClassName}
+      <AbilityOwnerIdentity
+        actor={actor}
         theme={theme}
-      >
-        {actorAsset ? <img src={actorAsset.src} alt={`${resolvedActorRoleName} 공식 캐릭터 아이콘`} /> : null}
-        <div>
-          {actorRoleNode ?? <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{resolvedActorRoleName}</span>}
-          {actorPlayerNode ?? <strong>{actorPlayerLabel ?? actor.name}</strong>}
-        </div>
-      </CharacterDetailButton>
-      <CharacterDetailButton
-        details={sectsAndVioletsCharacterDetail(abilityCharacterId)}
-        className={abilityClassName}
+        actorRoleName={actorRoleName}
+        actorPlayerLabel={actorPlayerLabel}
+        actorPlayerNode={actorPlayerNode}
+        actorRoleNode={actorRoleNode}
+        actorIdentityClassName={actorIdentityClassName}
+      />
+      <ActingAbilityIdentity
+        abilityCharacterId={abilityCharacterId}
         theme={theme}
-      >
-        <span>획득한 능력</span>
-        {acquiredAsset ? <img src={acquiredAsset.src} alt={`${resolvedAbilityName} 공식 캐릭터 아이콘`} /> : null}
-        <div>{abilityNameNode ?? <strong>{resolvedAbilityName}</strong>}{abilityStatusNode}{resolvedAbilitySummary ? <p>{resolvedAbilitySummary}</p> : null}</div>
-      </CharacterDetailButton>
+        abilityNameNode={abilityNameNode}
+        abilityStatusNode={abilityStatusNode}
+        abilityClassName={abilityClassName}
+        abilitySummary={abilitySummary}
+      />
     </>
   );
 }
