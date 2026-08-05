@@ -282,7 +282,7 @@ function ProgressSurface({
   onEndNominations: () => void;
 }) {
   const isDay = scenario === "day";
-  const regionLabel = isDay ? "낮 진행" : "이후 밤 진행";
+  const regionLabel = isDay ? "공개 토론" : "이후 밤 진행";
   return (
     <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={regionLabel}>
       <header className="snvFirstNightHeader">
