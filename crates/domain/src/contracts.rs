@@ -573,6 +573,10 @@ pub(crate) struct AutomaticReminder {
     pub(crate) description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) count: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) source_event_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) inactive_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

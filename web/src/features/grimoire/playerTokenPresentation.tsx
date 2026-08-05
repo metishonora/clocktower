@@ -14,6 +14,7 @@ export type PlayerTokenPresentation = Readonly<{
   visualKind: PlayerTokenVisualKind;
   description?: string;
   count?: number;
+  inactiveReason?: string;
 }>;
 
 export type PlayerTokensByPlayerId = Readonly<Record<string, readonly PlayerTokenPresentation[]>>;
@@ -76,9 +77,19 @@ export function PlayerTokenList({
   return (
     <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
       <ul aria-label={`부착된 토큰 ${visibleTokenCount}개`}>
-        {tokens.map((token) => token.count === undefined ? (
-          <li aria-label={`${token.label} · 출처 ${token.sourceLabel}`} key={token.instanceId}>
-              <div className={`playerPinnedToken ${token.visualKind}`} title={token.description}>
+        {tokens.map((token) => {
+          const statusLabel = token.inactiveReason
+            ? ` · 현재 효력 없음 · ${token.inactiveReason}`
+            : "";
+          const title = token.inactiveReason
+            ? [token.inactiveReason, token.description].filter(Boolean).join(" · ")
+            : token.description;
+          return token.count === undefined ? (
+            <li aria-label={`${token.label} · 출처 ${token.sourceLabel}${statusLabel}`} key={token.instanceId}>
+              <div
+                className={`playerPinnedToken ${token.visualKind}${token.inactiveReason ? " playerInactiveToken" : ""}`}
+                title={title}
+              >
                 <span className="playerPinnedTokenSource">{token.sourceLabel}</span>
                 {token.sourceIconSrc ? (
                   <img src={token.sourceIconSrc} alt={`${token.sourceLabel} 출처`} />
@@ -88,41 +99,51 @@ export function PlayerTokenList({
                   </span>
                 )}
                 <strong>{token.label}</strong>
+                {token.inactiveReason ? <InactiveTokenX /> : null}
               </div>
             </li>
-        ) : (
-          <li
-            className="playerCountedTokenItem"
-            aria-label={`${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
-            key={token.instanceId}
-          >
-            {Array.from({ length: Math.max(1, token.count) }, (_, index) => {
-              const visibleCount = Math.max(1, token.count ?? 0);
-              const isTopToken = index === visibleCount - 1;
-              return (
-                <div
-                  className={`playerPinnedToken ${token.visualKind} playerCountedToken${token.count === 0 ? " zeroCount" : ""}`}
-                  aria-hidden={isTopToken ? undefined : true}
-                  key={index}
-                  style={{
-                    "--counted-token-index": index,
-                    "--counted-token-angle": `${(index - (visibleCount - 1) / 2) * 2}deg`,
-                  } as CSSProperties}
-                >
-                  {isTopToken ? (
-                    <>
-                      <span className="playerPinnedTokenSource">{token.sourceLabel}</span>
-                      {token.sourceIconSrc ? <img src={token.sourceIconSrc} alt={`${token.sourceLabel} 출처`} /> : null}
-                      <strong>{token.label} • {token.count}개</strong>
-                    </>
-                  ) : null}
-                </div>
-              );
-            })}
-          </li>
-        ))}
+          ) : (
+            <li
+              className="playerCountedTokenItem"
+              aria-label={`${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
+              key={token.instanceId}
+            >
+              {Array.from({ length: Math.max(1, token.count) }, (_, index) => {
+                const visibleCount = Math.max(1, token.count ?? 0);
+                const isTopToken = index === visibleCount - 1;
+                return (
+                  <div
+                    className={`playerPinnedToken ${token.visualKind} playerCountedToken${token.count === 0 ? " zeroCount" : ""}`}
+                    aria-hidden={isTopToken ? undefined : true}
+                    key={index}
+                    style={{
+                      "--counted-token-index": index,
+                      "--counted-token-angle": `${(index - (visibleCount - 1) / 2) * 2}deg`,
+                    } as CSSProperties}
+                  >
+                    {isTopToken ? (
+                      <>
+                        <span className="playerPinnedTokenSource">{token.sourceLabel}</span>
+                        {token.sourceIconSrc ? <img src={token.sourceIconSrc} alt={`${token.sourceLabel} 출처`} /> : null}
+                        <strong>{token.label} • {token.count}개</strong>
+                      </>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </li>
+          );
+        })}
       </ul>
     </section>
+  );
+}
+
+function InactiveTokenX() {
+  return (
+    <svg className="playerInactiveTokenX" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M2 2 98 98M98 2 2 98" />
+    </svg>
   );
 }
 

@@ -479,6 +479,8 @@ export type RuleState = {
     label: string;
     description: string;
     count?: number;
+    sourceEventId?: string;
+    inactiveReason?: string;
   }>;
   activeWitchCurse?: ActiveWitchCurse;
   evilTwinRelationships?: EvilTwinRelationship[];

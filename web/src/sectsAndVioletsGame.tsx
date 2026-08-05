@@ -470,13 +470,20 @@ export function SectsAndVioletsGameSurface({
       if (reminder.tokenId === "drunk" && replayState?.ruleState.activeImpairments?.some((impairment) => impairment.playerId === reminder.playerId && impairment.sourceCharacterId === reminder.characterId)) continue;
       const source = characters.find((character) => character.id === reminder.characterId);
       (result[reminder.playerId] ??= []).push({
-        instanceId: `canonical-${reminder.characterId}-${reminder.tokenId}-${reminder.playerId}`,
+        instanceId: reminder.sourceEventId
+          ? `canonical-${reminder.sourceEventId}-${reminder.tokenId}-${reminder.playerId}`
+          : `canonical-${reminder.characterId}-${reminder.tokenId}-${reminder.playerId}`,
         label: reminder.label,
         sourceLabel: source?.name ?? reminder.characterId,
         sourceIconSrc: sectsAndVioletsCharacterAsset(reminder.characterId)?.src,
-        visualKind: reminder.tokenId === "isThePhilosopher" ? "assignment" : reminder.tokenId === "drunk" ? "impairment" : "usage",
+        visualKind: reminder.tokenId === "isThePhilosopher"
+          ? "assignment"
+          : reminder.tokenId === "drunk" || reminder.tokenId === "poisoned"
+            ? "impairment"
+            : "usage",
         description: reminder.description,
         count: reminder.count,
+        inactiveReason: reminder.inactiveReason,
       });
     }
     for (const assignment of effectiveMadnessAssignments) {
@@ -490,6 +497,9 @@ export function SectsAndVioletsGameSurface({
         sourceIconSrc: sectsAndVioletsCharacterAsset(assignment.sourceCharacterId)?.src,
         visualKind: assignment.status === "violated" ? "impairment" : "usage",
         description: `${status}${assignment.sourceEffective ? "" : " · 능력 효력 없음"}`,
+        inactiveReason: assignment.sourceCharacterId === "cerenovus" && !assignment.sourceEffective
+          ? "세레노버스가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+          : undefined,
       });
     }
     return result;

@@ -1017,11 +1017,13 @@ fn madness_assignments(
                 if !source.alive || !target.alive {
                     return None;
                 }
-                let source_effective = source.alive
-                    && (source.actual_character == source_character_id
-                        || source_character_id == "mutant"
-                            && active_mutant_grant_owners.contains(&source.id))
-                    && !impaired_players.contains(&source.id);
+                let source_has_ability = source.actual_character == source_character_id
+                    || source_character_id == "mutant"
+                        && active_mutant_grant_owners.contains(&source.id);
+                if !source_has_ability {
+                    return None;
+                }
+                let source_effective = !impaired_players.contains(&source.id);
                 let latest_check = events.iter().rev().find_map(|event| match &event.kind {
                     GameEventKind::MadnessCheckRecorded { payload }
                         if payload.assignment_id == assignment_id =>
@@ -2408,6 +2410,8 @@ fn automatic_information_reminders(
             label: if triggered { true_label } else { false_label }.into(),
             description: description.into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         });
     }
     Ok(reminders)
@@ -2432,6 +2436,8 @@ fn automatic_vigormortis_reminders(
             label: "능력 있음".into(),
             description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.".into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         })
         .collect()
 }
@@ -2455,6 +2461,8 @@ fn automatic_fang_gu_reminder(events: &[GameEvent]) -> Vec<AutomaticReminder> {
                     label: "한 번".into(),
                     description: "첫 외지인 이동이 사용되었습니다.".into(),
                     count: None,
+                    source_event_id: None,
+                    inactive_reason: None,
                 }),
                 _ => None,
             },
@@ -2479,6 +2487,8 @@ fn automatic_seamstress_reminders(
             label: "능력 없음".into(),
             description: "재봉사 능력을 이미 사용했습니다.".into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         })
         .collect()
 }
@@ -2519,6 +2529,8 @@ fn automatic_artist_reminders(
             label: "능력 없음".into(),
             description: "화가 능력을 이미 사용했습니다.".into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         })
         .collect()
 }
@@ -2587,6 +2599,8 @@ fn automatic_juggler_reminders(
                 label: "정답".into(),
                 description: "첫 낮 공개 추측의 정답 수입니다.".into(),
                 count: Some(correct_count),
+                source_event_id: None,
+                inactive_reason: None,
             })
         })
         .collect()
@@ -2605,6 +2619,8 @@ fn automatic_barber_reminders(
             label: "오늘 밤 이발".into(),
             description: "오늘 밤 악마가 두 플레이어의 캐릭터를 교환할 수 있습니다.".into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         })
         .collect()
 }
@@ -2640,6 +2656,8 @@ fn automatic_mathematician_reminders(
             description: "새벽 이후 다른 캐릭터의 영향으로 능력이 비정상적으로 작동했습니다."
                 .into(),
             count: None,
+            source_event_id: None,
+            inactive_reason: None,
         })
         .collect()
 }
@@ -4076,18 +4094,6 @@ fn base_snv_impairments(events: &[GameEvent]) -> Vec<ActiveImpairment> {
     impairments
 }
 
-fn source_ability_functions_from_base(
-    player: &Player,
-    expected_character: &str,
-    base_impairments: &[ActiveImpairment],
-) -> bool {
-    player.alive
-        && player.actual_character == expected_character
-        && !base_impairments
-            .iter()
-            .any(|impairment| impairment.player_id == player.id)
-}
-
 fn philosopher_actor(player: &Player) -> AbilityUseRef {
     AbilityUseRef {
         owner_player_id: player.id.clone(),
@@ -4405,6 +4411,7 @@ struct SnvAbilityState {
     active_impairments: Vec<ActiveImpairment>,
     retained_minion_player_ids: HashSet<String>,
     pending_vigormortis_poison_choices: Vec<PendingVigormortisPoisonChoice>,
+    inactive_reminders: Vec<AutomaticReminder>,
 }
 
 impl SnvAbilityState {
@@ -4413,10 +4420,12 @@ impl SnvAbilityState {
         let mut active_impairments = base_impairments.clone();
         let mut retained_minion_player_ids = HashSet::new();
         let mut pending_vigormortis_poison_choices = Vec::new();
+        let mut inactive_reminders = Vec::new();
 
-        for no_dashii in players.iter().filter(|player| {
-            source_ability_functions_from_base(player, "noDashii", &base_impairments)
-        }) {
+        for no_dashii in players
+            .iter()
+            .filter(|player| player.alive && player.actual_character == "noDashii")
+        {
             let source_event_id = if no_dashii.ability_instance.source_event_id == "setup" {
                 events
                     .first()
@@ -4424,14 +4433,33 @@ impl SnvAbilityState {
             } else {
                 no_dashii.ability_instance.source_event_id.clone()
             };
+            let source_impaired = base_impairments
+                .iter()
+                .any(|impairment| impairment.player_id == no_dashii.id);
             for player_id in nearest_townsfolk_neighbors(players, &no_dashii.id) {
-                active_impairments.push(ActiveImpairment {
-                    kind: ImpairmentKind::Poisoned,
-                    player_id,
-                    source_event_id: source_event_id.clone(),
-                    source_character_id: "noDashii".into(),
-                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
-                });
+                if source_impaired {
+                    inactive_reminders.push(AutomaticReminder {
+                        player_id,
+                        character_id: "noDashii".into(),
+                        token_id: "poisoned".into(),
+                        label: "중독".into(),
+                        description: "노 다시의 가장 가까운 주민 이웃이지만, 노 다시가 취하거나 중독되어 현재 효력이 없습니다.".into(),
+                        count: None,
+                        source_event_id: Some(source_event_id.clone()),
+                        inactive_reason: Some(
+                            "노 다시가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+                                .into(),
+                        ),
+                    });
+                } else {
+                    active_impairments.push(ActiveImpairment {
+                        kind: ImpairmentKind::Poisoned,
+                        player_id,
+                        source_event_id: source_event_id.clone(),
+                        source_character_id: "noDashii".into(),
+                        expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                    });
+                }
             }
         }
 
@@ -4452,11 +4480,15 @@ impl SnvAbilityState {
             };
             let Some(vigormortis) = players.iter().find(|player| {
                 player.id == payload.actor_player_id
-                    && source_ability_functions_from_base(player, "vigormortis", &base_impairments)
+                    && player.alive
+                    && player.actual_character == "vigormortis"
                     && player.ability_instance.id == effect.source_ability_instance_id
             }) else {
                 continue;
             };
+            let source_impaired = base_impairments
+                .iter()
+                .any(|impairment| impairment.player_id == vigormortis.id);
             let Some(minion) = players.iter().find(|player| {
                 player.id == effect.minion_player_id
                     && !player.alive
@@ -4481,14 +4513,31 @@ impl SnvAbilityState {
                 .as_ref()
                 .is_some_and(|target| allowed_player_ids.contains(target))
             {
-                active_impairments.push(ActiveImpairment {
-                    kind: ImpairmentKind::Poisoned,
-                    player_id: current_target.expect("checked target"),
-                    source_event_id: source_event.id.clone(),
-                    source_character_id: "vigormortis".into(),
-                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
-                });
-            } else if !allowed_player_ids.is_empty() {
+                let player_id = current_target.expect("checked target");
+                if source_impaired {
+                    inactive_reminders.push(AutomaticReminder {
+                        player_id,
+                        character_id: "vigormortis".into(),
+                        token_id: "poisoned".into(),
+                        label: "중독".into(),
+                        description: "비고르모르티스가 죽인 하수인의 가장 가까운 주민 이웃이지만, 현재 중독 효력이 없습니다.".into(),
+                        count: None,
+                        source_event_id: Some(source_event.id.clone()),
+                        inactive_reason: Some(
+                            "비고르모르티스가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+                                .into(),
+                        ),
+                    });
+                } else {
+                    active_impairments.push(ActiveImpairment {
+                        kind: ImpairmentKind::Poisoned,
+                        player_id,
+                        source_event_id: source_event.id.clone(),
+                        source_character_id: "vigormortis".into(),
+                        expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                    });
+                }
+            } else if !source_impaired && !allowed_player_ids.is_empty() {
                 let reason = match current_target.as_deref() {
                     None => VigormortisPoisonInvalidReason::NoCurrentTarget,
                     Some(target)
@@ -4516,8 +4565,73 @@ impl SnvAbilityState {
                 .iter()
                 .position(|event| event.id == minion.ability_instance.source_event_id);
             if source_event_index >= acquisition_index.map_or(0, |index| index + 1) {
-                retained_minion_player_ids.insert(minion.id.clone());
+                if source_impaired {
+                    inactive_reminders.push(AutomaticReminder {
+                        player_id: minion.id.clone(),
+                        character_id: "vigormortis".into(),
+                        token_id: "hasAbility".into(),
+                        label: "능력 있음".into(),
+                        description:
+                            "비고르모르티스에게 죽은 하수인의 능력 유지가 현재 무효입니다.".into(),
+                        count: None,
+                        source_event_id: Some(source_event.id.clone()),
+                        inactive_reason: Some(
+                            "비고르모르티스가 취하거나 중독되어 능력이 일시적으로 무효입니다."
+                                .into(),
+                        ),
+                    });
+                } else {
+                    retained_minion_player_ids.insert(minion.id.clone());
+                }
             }
+        }
+
+        for grant in philosopher_owned_ability_grants(players, events) {
+            let source_is_temporarily_impaired = players.iter().any(|player| {
+                player.id == grant.owner_player_id
+                    && player.alive
+                    && player.actual_character == "philosopher"
+                    && player.ability_instance.id == grant.source_ability_instance_id
+                    && active_impairments
+                        .iter()
+                        .any(|impairment| impairment.player_id == player.id)
+            });
+            if !source_is_temporarily_impaired {
+                continue;
+            }
+            let (player_id, token_id, label, description) = players
+                .iter()
+                .find(|player| player.actual_character == grant.character_id)
+                .map_or_else(
+                    || {
+                        (
+                            grant.owner_player_id.clone(),
+                            "isThePhilosopher",
+                            "철학자임",
+                            "철학자가 이 캐릭터의 능력을 가지지만 현재 효력이 없습니다.",
+                        )
+                    },
+                    |holder| {
+                        (
+                            holder.id.clone(),
+                            "drunk",
+                            "취함",
+                            "철학자가 이 캐릭터의 능력을 가져 발생한 취함이 현재 무효입니다.",
+                        )
+                    },
+                );
+            inactive_reminders.push(AutomaticReminder {
+                player_id,
+                character_id: "philosopher".into(),
+                token_id: token_id.into(),
+                label: label.into(),
+                description: description.into(),
+                count: None,
+                source_event_id: Some(grant.source_event_id),
+                inactive_reason: Some(
+                    "철학자가 취하거나 중독되어 능력이 일시적으로 무효입니다.".into(),
+                ),
+            });
         }
 
         active_impairments.extend(philosopher_impairments(
@@ -4530,6 +4644,7 @@ impl SnvAbilityState {
             active_impairments,
             retained_minion_player_ids,
             pending_vigormortis_poison_choices,
+            inactive_reminders,
         }
     }
 
@@ -7075,6 +7190,12 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         &mathematician_audit,
         current_step.as_ref(),
     ));
+    automatic_reminders.extend(ability_state.inactive_reminders.clone());
+    automatic_reminders.extend(inactive_evil_twin_reminders(
+        &players,
+        active_events,
+        &ability_state,
+    ));
     for impairment in active_impairments
         .iter()
         .filter(|impairment| impairment.source_character_id == "philosopher")
@@ -7086,6 +7207,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             label: "취함".into(),
             description: "철학자의 능력으로 취했습니다.".into(),
             count: None,
+            source_event_id: Some(impairment.source_event_id.clone()),
+            inactive_reason: None,
         });
     }
     for grant in &ability_grants {
@@ -7100,6 +7223,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
                 label: "철학자임".into(),
                 description: "철학자가 이 캐릭터의 능력을 가집니다.".into(),
                 count: None,
+                source_event_id: Some(grant.source_event_id.clone()),
+                inactive_reason: None,
             });
         }
     }
@@ -7111,6 +7236,9 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             label: "저주".into(),
             description: "다음 낮 지명하면 사망합니다.".into(),
             count: None,
+            source_event_id: Some(curse.source_event_id.clone()),
+            inactive_reason: (!curse.effective)
+                .then(|| "마녀가 취하거나 중독되어 능력이 일시적으로 무효입니다.".into()),
         });
     }
     for relationship in &evil_twin_relationships {
@@ -7121,6 +7249,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             label: "쌍둥이".into(),
             description: "사악한 쌍둥이와 연결되어 있습니다.".into(),
             count: None,
+            source_event_id: Some(relationship.source_event_id.clone()),
+            inactive_reason: None,
         });
     }
     let rule_state = RuleState {
@@ -8219,20 +8349,22 @@ fn active_witch_curse(
         {
             return None;
         }
-        let actor = players.iter().find(|player| {
-            player.id == payload.actor_player_id
-                && player.ability_instance.id == payload.source_ability_instance_id
-        })?;
-        if !payload.effective || !ability_state.ability_functions(actor, "witch") {
+        if !payload.effective {
             return None;
         }
+        let actor = players.iter().find(|player| {
+            player.id == payload.actor_player_id
+                && player.alive
+                && player.actual_character == "witch"
+                && player.ability_instance.id == payload.source_ability_instance_id
+        })?;
         Some(ActiveWitchCurse {
             source_event_id: event.id.clone(),
             source_player_id: actor.id.clone(),
             source_ability_instance_id: actor.ability_instance.id.clone(),
             target_player_id: payload.target_player_id.clone(),
             applies_to_day,
-            effective: true,
+            effective: !ability_state.is_impaired(&actor.id),
         })
     })
 }
@@ -8269,6 +8401,49 @@ fn active_evil_twin_relationships(
                 ability_owner_player_id: actor.id.clone(),
                 twin_player_id: twin.id.clone(),
                 source_ability_instance_id: actor.ability_instance.id.clone(),
+            })
+        })
+        .collect()
+}
+
+fn inactive_evil_twin_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<AutomaticReminder> {
+    let mut latest =
+        HashMap::<AbilityInstanceId, (&GameEvent, &EvilTwinPairAssignedPayload)>::new();
+    for event in events {
+        if let GameEventKind::EvilTwinPairAssigned { payload } = &event.kind {
+            latest.insert(payload.source_ability_instance_id.clone(), (event, payload));
+        }
+    }
+    latest
+        .into_values()
+        .filter_map(|(event, payload)| {
+            let actor = players.iter().find(|player| {
+                player.id == payload.actor_player_id
+                    && player.actual_character == "evilTwin"
+                    && player.ability_instance.id == payload.source_ability_instance_id
+                    && player.alive
+            })?;
+            let twin = players
+                .iter()
+                .find(|player| player.id == payload.twin_player_id)?;
+            (actor.alignment != twin.alignment && ability_state.is_impaired(&actor.id)).then(|| {
+                AutomaticReminder {
+                    player_id: twin.id.clone(),
+                    character_id: "evilTwin".into(),
+                    token_id: "twin".into(),
+                    label: "쌍둥이".into(),
+                    description: "사악한 쌍둥이와 연결되어 있지만 현재 능력 효력이 없습니다."
+                        .into(),
+                    count: None,
+                    source_event_id: Some(event.id.clone()),
+                    inactive_reason: Some(
+                        "사악한 쌍둥이가 취하거나 중독되어 능력이 일시적으로 무효입니다.".into(),
+                    ),
+                }
             })
         })
         .collect()
