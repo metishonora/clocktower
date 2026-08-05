@@ -8,6 +8,7 @@
     "prototype:phase-control": "pnpm --dir web prototype:phase-control",
     "prototype:reveal-followup": "pnpm --dir web prototype:reveal-followup",
     "prototype:first-night-suggestion": "pnpm --dir web prototype:first-night-suggestion",
+    "generate:acceptance:snv": "pnpm build:wasm && node scripts/generate-sects-and-violets-acceptance-fixtures.mjs",
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
     "test:web": "pnpm --dir web test"

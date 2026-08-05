@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-snake-charmer-vigormortis-swap",
+    "name": "Sects & Violets 인수 테스트 · snake-charmer-vigormortis-swap",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-snake-charmer-vigormortis-swap",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "뱀 조련사",
+              "actualCharacter": "snakeCharmer",
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "clockmaker",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "dreamer",
+              "actualCharacter": "dreamer",
+              "shownCharacter": "dreamer"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "seamstress",
+              "actualCharacter": "seamstress",
+              "shownCharacter": "seamstress"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "mathematician",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "pitHag",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "비고르모르티스",
+              "actualCharacter": "vigormortis",
+              "shownCharacter": "vigormortis"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 7번 비고르모르티스(비고르모르티스) · 하수인: 6번 pitHag(마귀할멈)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "flowergirl",
+              "townCrier",
+              "oracle"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "flowergirl",
+                "townCrier",
+                "oracle"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "flowergirl",
+                "townCrier",
+                "oracle"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 pitHag(마귀할멈) · 블러프: 꽃팔이 소녀, 포고꾼, 예언자",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

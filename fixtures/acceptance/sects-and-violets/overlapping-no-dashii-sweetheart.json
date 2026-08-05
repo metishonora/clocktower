@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-overlapping-no-dashii-sweetheart",
+    "name": "Sects & Violets 인수 테스트 · overlapping-no-dashii-sweetheart",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-overlapping-no-dashii-sweetheart",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "clockmaker",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "sweetheart",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "barber",
+              "actualCharacter": "barber",
+              "shownCharacter": "barber"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "savant",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "pitHag",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "noDashii",
+              "actualCharacter": "noDashii",
+              "shownCharacter": "noDashii"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 7번 noDashii(노 다시) · 하수인: 6번 pitHag(마귀할멈)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "dreamer",
+              "snakeCharmer",
+              "mathematician"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "snakeCharmer",
+                "mathematician"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "snakeCharmer",
+                "mathematician"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 pitHag(마귀할멈) · 블러프: 꿈꾸는 자, 뱀 조련사, 수학자",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-1",
+              "characterId": "clockmaker"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "discretionary",
+              "reasons": [
+                {
+                  "type": "poisoned",
+                  "poisonerPlayerId": "player-7",
+                  "poisonEventId": "setup-overlapping-no-dashii-sweetheart"
+                }
+              ]
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "1번 clockmaker(시계공)가 악마와 하수인의 거리 1칸을 확인했습니다. (실제 1칸 · 중독)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-5",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-8",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-9",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "execution-10",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-11",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "pit-hag-12",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night:pitHag:player-6",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-6",
+          "characterId": "pitHag",
+          "outcome": {
+            "kind": "noChange",
+            "reason": "characterAlreadyInPlay"
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 선택 확정 · 변경 없음",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-13",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:demon:player-7",
+          "actorPlayerId": "player-7",
+          "actorCharacterId": "noDashii",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-2",
+            "outcome": {
+              "kind": "deaths",
+              "deaths": [
+                {
+                  "playerId": "player-2",
+                  "cause": {
+                    "kind": "demonAttack",
+                    "actorPlayerId": "player-7",
+                    "actorCharacterId": "noDashii",
+                    "targetPlayerId": "player-2"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "7번 noDashii(noDashii) → 2번 sweetheart 공격 · 사망",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "sweetheart-consequence-14",
+        "type": "sweetheartConsequenceResolved",
+        "payload": {
+          "stepId": "night:sweetheart",
+          "trigger": {
+            "sourceEventId": "phase-13",
+            "deathSequence": 1,
+            "playerId": "player-2",
+            "sourceAbilityInstanceId": "setup:player-2"
+          },
+          "targetPlayerId": "player-1",
+          "outcome": {
+            "kind": "drunkApplied",
+            "impairment": {
+              "kind": "drunk",
+              "playerId": "player-1",
+              "sourceEventId": "sweetheart-consequence-14",
+              "sourceCharacterId": "sweetheart",
+              "expires": "never"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "사랑꾼 취함 적용",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

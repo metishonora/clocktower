@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-philosopher-mathematician-duplicate",
+    "name": "Sects & Violets 인수 테스트 · philosopher-mathematician-duplicate",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-philosopher-mathematician-duplicate",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "philosopher",
+              "actualCharacter": "philosopher",
+              "shownCharacter": "philosopher"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "artist",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "clockmaker",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "snakeCharmer",
+              "actualCharacter": "snakeCharmer",
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "mathematician",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "cerenovus",
+              "actualCharacter": "cerenovus",
+              "shownCharacter": "cerenovus"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "fangGu",
+              "actualCharacter": "fangGu",
+              "shownCharacter": "fangGu"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 8명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "philosopherAbilityResolved",
+        "payload": {
+          "stepId": "firstNight:philosopher",
+          "actor": {
+            "ownerPlayerId": "player-1",
+            "characterId": "philosopher",
+            "abilityInstanceId": "setup:player-1"
+          },
+          "selectedCharacterId": "mathematician",
+          "outcome": {
+            "kind": "acquired",
+            "grantedAbilityInstanceId": "phase-2:player-1"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "철학자 능력 획득: mathematician",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 8번 fangGu(팡 구) · 하수인: 7번 cerenovus(세레노버스)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "dreamer",
+              "flowergirl",
+              "townCrier"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "flowergirl",
+                "townCrier"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "flowergirl",
+                "townCrier"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 7번 cerenovus(세레노버스) · 블러프: 꿈꾸는 자, 꽃팔이 소녀, 포고꾼",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "snake-charmer-5",
+        "type": "snakeCharmerActionResolved",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:player-5",
+          "actorPlayerId": "player-5",
+          "targetPlayerId": "player-1",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "뱀 조련사 선택 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "madness-assignment-6",
+        "type": "madnessAssigned",
+        "payload": {
+          "stepId": "firstNight:cerenovus",
+          "sourcePlayerId": "player-7",
+          "targetPlayerId": "player-1",
+          "requiredCharacterId": "clockmaker"
+        },
+        "phase": "firstNight",
+        "summary": "세레노버스 집착 지정: 1번 philosopher · clockmaker",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-3",
+              "characterId": "clockmaker"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "3번 clockmaker(시계공)가 악마와 하수인의 거리 1칸을 확인했습니다.",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

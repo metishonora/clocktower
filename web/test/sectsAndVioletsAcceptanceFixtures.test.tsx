@@ -27,7 +27,7 @@ type AcceptanceManifest = {
 
 const fixtureRoot = resolve(process.cwd(), "../fixtures/acceptance/sects-and-violets");
 const manifest = JSON.parse(
-  readFileSync(resolve(fixtureRoot, "manifest.json"), "utf8"),
+  readFileSync(resolve(fixtureRoot, "issue-96-manifest.json"), "utf8"),
 ) as AcceptanceManifest;
 
 describe("Sects & Violets issue 96 acceptance fixtures", () => {

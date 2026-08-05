@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-setup-vigormortis-no-outsider",
+    "name": "Sects & Violets 인수 테스트 · setup-vigormortis-no-outsider",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-setup-vigormortis-no-outsider",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "flowergirl",
+              "actualCharacter": "flowergirl",
+              "shownCharacter": "flowergirl"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "townCrier",
+              "actualCharacter": "townCrier",
+              "shownCharacter": "townCrier"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "savant",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "artist",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "sage",
+              "actualCharacter": "sage",
+              "shownCharacter": "sage"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "evilTwin",
+              "actualCharacter": "evilTwin",
+              "shownCharacter": "evilTwin"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "vigormortis",
+              "actualCharacter": "vigormortis",
+              "shownCharacter": "vigormortis"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 8명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}
