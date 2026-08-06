@@ -146,7 +146,7 @@ function buildPlayerRedaction(players: SetupPlayer[]): PlayerRedaction {
 }
 
 function sanitizeValue(value: unknown, redaction: PlayerRedaction): unknown {
-  if (typeof value === "string") return replaceKnownNames(value, redaction.nameReplacements);
+  if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map((item) => sanitizeValue(item, redaction));
   if (!isRecord(value)) return value;
 
@@ -159,6 +159,10 @@ function sanitizeValue(value: unknown, redaction: PlayerRedaction): unknown {
     }
     if (key === "name") {
       sanitized.name = redactedName(value, nestedValue, redaction);
+      continue;
+    }
+    if (key === "summary" && typeof nestedValue === "string") {
+      sanitized.summary = replaceKnownNames(nestedValue, redaction.nameReplacements);
       continue;
     }
     sanitized[key] = sanitizeValue(nestedValue, redaction);

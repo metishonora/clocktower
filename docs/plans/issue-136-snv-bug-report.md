@@ -52,10 +52,12 @@ The human-readable message has four sections:
    reconstruct the canonical stream. Event timestamps may be omitted because list order is
    canonical; cross-event IDs must be preserved.
 
-Redaction happens before formatting. Every known setup name is replaced in nested payload strings
-and summaries. Fields named `name` use the seat label when the player can be identified and a
-generic redacted marker otherwise. Fields named `notes` are omitted and represented by an explicit
-`notesOmitted` marker so a reconstruction does not mistake missing notes for captured empty notes.
+Redaction happens before formatting. Fields named `name` use the seat label when the player can be
+identified and a generic redacted marker otherwise. Fields named `notes` are omitted and represented
+by an explicit `notesOmitted` marker so a reconstruction does not mistake missing notes for captured
+empty notes. Known setup names are replaced in the optional symptom and fields named `summary`.
+Other strings are preserved because they may be event IDs, cross-event references, character IDs,
+step IDs, discriminants, or other schema values—even when their text happens to equal a player name.
 
 ## Acceptance criteria
 
@@ -65,8 +67,9 @@ generic redacted marker otherwise. Fields named `notes` are omitted and represen
    previews the exact outgoing report.
 3. The default report contains enough structured setup and canonical event information for Codex
    to reconstruct a valid fixture without inventing causal decisions that existed in the stream.
-4. No original player name or note remains anywhere in the default report, including summaries and
-   nested information payloads.
+4. No original player name or note remains in privacy-bearing `name`, `notes`, `summary`, or symptom
+   fields. Machine identifiers and schema values remain exact even when their text equals a player
+   name.
 5. Email handoff occurs only after an explicit user action. Cancel leaves the report draft and game
    untouched according to the approved dialog behavior.
 6. Unsupported mail composition preserves the report and exposes copy/download recovery. An
