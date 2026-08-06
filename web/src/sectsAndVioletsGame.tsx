@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { CanonicalSessionController } from "./core/canonicalSessionController";
@@ -101,6 +101,13 @@ import {
 } from "./sectsAndVioletsSession";
 import { DayActionDock } from "./features/day-actions/DayActionDock";
 import { MadnessActionDock } from "./features/madness/MadnessActionDock";
+import { SectsAndVioletsBugReportDialog } from "./features/bug-report/SectsAndVioletsBugReportDialog";
+import {
+  DEFAULT_BUG_REPORT_EMAIL,
+  currentBugReportEnvironment,
+  type BugReportDelivery,
+} from "./bugReportDelivery";
+import type { SectsAndVioletsBugReportEnvironment } from "./sectsAndVioletsBugReport";
 import {
   sectsAndVioletsCharacters as characters,
   type SectsAndVioletsCharacter as CatalogCharacter,
@@ -177,6 +184,8 @@ export type SectsAndVioletsFoundationPrototypeProps = {
   production?: boolean;
   phaseRuntimeClock?: RuntimeClock;
   choiceTokenSource?: ChoiceTokenSource;
+  bugReportEmail?: string;
+  bugReportDelivery?: BugReportDelivery;
 };
 
 export function SectsAndVioletsFoundationPrototype() {
@@ -189,6 +198,8 @@ export function SectsAndVioletsGameSurface({
   production = false,
   phaseRuntimeClock = browserRuntimeClock,
   choiceTokenSource = browserCryptoChoiceToken,
+  bugReportEmail = DEFAULT_BUG_REPORT_EMAIL,
+  bugReportDelivery,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const canonicalSession = useMemo(
     () => coreAdapter ? new CanonicalSessionController(coreAdapter) : undefined,
@@ -251,6 +262,10 @@ export function SectsAndVioletsGameSurface({
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
   const [barberAbilityRevealOpen, setBarberAbilityRevealOpen] = useState(false);
+  const [bugReportSnapshot, setBugReportSnapshot] = useState<{
+    gameFile: GameFile;
+    environment: SectsAndVioletsBugReportEnvironment;
+  }>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
@@ -269,6 +284,7 @@ export function SectsAndVioletsGameSurface({
   const errorDialogRef = useRef<HTMLElement>(null);
   const errorConfirmRef = useRef<HTMLButtonElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const bugReportTriggerRef = useRef<HTMLButtonElement>(null);
 
   const localDistribution = useMemo(() => {
     const base = baseDistribution[playerCount];
@@ -992,6 +1008,19 @@ export function SectsAndVioletsGameSurface({
     setUndoCheckpoint(undefined);
     window.setTimeout(() => undoTriggerRef.current?.focus(), 0);
   };
+
+  const closeBugReport = useCallback(() => {
+    setBugReportSnapshot(undefined);
+    window.setTimeout(() => bugReportTriggerRef.current?.focus(), 0);
+  }, []);
+
+  function openBugReport() {
+    const capturedAt = new Date().toISOString();
+    setBugReportSnapshot({
+      gameFile: withSectsAndVioletsSession(gameFile, currentSessionState(capturedAt)),
+      environment: currentBugReportEnvironment(),
+    });
+  }
 
   const startNewGame = () => {
     setNewGameConfirmOpen(false);
@@ -2230,6 +2259,7 @@ export function SectsAndVioletsGameSurface({
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
         <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" disabled={storageLoading} onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
         <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
+        {production ? <button ref={bugReportTriggerRef} type="button" className="snvBugReportTrigger" onClick={openBugReport}>버그 제보</button> : null}
       </nav>
       {autosaveStatus !== "idle" ? (
         <p className={`snvAutosaveStatus ${autosaveStatus}`} role="status" aria-live="polite">
@@ -2967,6 +2997,15 @@ export function SectsAndVioletsGameSurface({
             <footer><button ref={errorConfirmRef} type="button" onClick={() => setOperationError(undefined)}>확인</button></footer>
           </section>
         </div>
+      ) : null}
+      {bugReportSnapshot ? (
+        <SectsAndVioletsBugReportDialog
+          gameFile={bugReportSnapshot.gameFile}
+          environment={bugReportSnapshot.environment}
+          recipient={bugReportEmail}
+          delivery={bugReportDelivery}
+          onClose={closeBugReport}
+        />
       ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
         nextIdentityReveal.payload.kind === "evilTwinPair" ? (
