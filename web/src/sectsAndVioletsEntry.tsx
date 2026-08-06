@@ -47,6 +47,13 @@ const DevIssue135InactiveTokenPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue136BugReportPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue136BugReportPrototype");
+      return { default: module.Issue136BugReportPrototype };
+    })
+  : undefined;
+
 const showIssue120Prototype = Boolean(
   DevIssue120EventLogPrototype &&
   new URLSearchParams(window.location.search).get("prototype") === "issue-120-event-log",
@@ -77,9 +84,18 @@ const showIssue135Prototype = Boolean(
   new URLSearchParams(window.location.search).get("prototype") === "issue-135-inactive-tokens",
 );
 
+const showIssue136Prototype = Boolean(
+  DevIssue136BugReportPrototype &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-136-bug-report",
+);
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {showIssue135Prototype && DevIssue135InactiveTokenPrototype ? (
+    {showIssue136Prototype && DevIssue136BugReportPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue136BugReportPrototype />
+      </React.Suspense>
+    ) : showIssue135Prototype && DevIssue135InactiveTokenPrototype ? (
       <React.Suspense fallback={null}>
         <DevIssue135InactiveTokenPrototype />
       </React.Suspense>

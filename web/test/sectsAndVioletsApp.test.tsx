@@ -166,6 +166,71 @@ test("uses the approved setup, Grimoire, and progression shell on the production
   }));
 });
 
+test("opens the approved optional S&V bug report without focusing the description", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const utilities = within(app).getByRole("navigation", { name: "게임 데이터" });
+
+  await user.click(within(utilities).getByRole("button", { name: "버그 제보" }));
+
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+  const description = within(dialog).getByRole("textbox", { name: "무슨 문제가 있었나요?" });
+  const close = within(dialog).getByRole("button", { name: "버그 제보 닫기" });
+  const preview = within(dialog).getByText("전송 내용 미리보기").closest("details");
+  expect(within(dialog).queryByText("필수")).toBeNull();
+  expect(within(dialog).queryByText("어떻게 되어야 했나요?")).toBeNull();
+  expect(preview?.open).toBe(false);
+  await waitFor(() => expect(document.activeElement).toBe(close));
+  expect(document.activeElement).not.toBe(description);
+
+  await user.click(close);
+  await waitFor(() => expect(document.activeElement).toBe(
+    within(utilities).getByRole("button", { name: "버그 제보" }),
+  ));
+});
+
+test("copies the exact report and opens the configured email handoff", async () => {
+  const user = userEvent.setup();
+  const delivery = {
+    openEmail: vi.fn(),
+    copyReport: vi.fn(async () => undefined),
+    downloadReport: vi.fn(),
+  };
+  render(<SectsAndVioletsApp bugReportDelivery={delivery} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "버그 제보" }));
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+  await user.type(
+    within(dialog).getByRole("textbox", { name: "무슨 문제가 있었나요?" }),
+    "진행 버튼이 비활성화되었습니다.",
+  );
+
+  await user.click(within(dialog).getByRole("button", { name: "보고서 복사" }));
+  await waitFor(() => expect(delivery.copyReport).toHaveBeenCalledWith(
+    expect.stringContaining("진행 버튼이 비활성화되었습니다."),
+  ));
+  expect(within(dialog).getByRole("status").textContent).toContain("클립보드에 복사했습니다");
+
+  await user.click(within(dialog).getByRole("button", { name: "이메일 작성" }));
+  expect(delivery.openEmail).toHaveBeenCalledWith(expect.stringMatching(
+    /^mailto:metishonora%40icloud\.com\?subject=.*&body=/,
+  ));
+});
+
+test("keeps copy and file recovery when an email recipient is unavailable", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp bugReportEmail="" />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "버그 제보" }));
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+
+  expect(within(dialog).getByText("제보 이메일 주소가 설정되지 않았습니다.")).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "보고서 복사" })).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "파일 저장" })).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: "이메일 작성" })).toBeNull();
+});
+
 test("confirms the assigned production roster through the canonical S&V createGame command", async () => {
   const user = userEvent.setup();
   render(<SectsAndVioletsApp />);
