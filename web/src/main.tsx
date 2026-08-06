@@ -153,6 +153,13 @@ const DevIssue101SnakeCharmerPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue148TroubleBrewingAdaptationPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue148TroubleBrewingAdaptationPrototype");
+      return { default: module.Issue148TroubleBrewingAdaptationPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -162,6 +169,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue148TroubleBrewingAdaptationPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-148-tb-adaptation"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue148TroubleBrewingAdaptationPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue101SnakeCharmerPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-101-snake-charmer"
