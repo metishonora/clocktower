@@ -998,6 +998,14 @@ test("validates win warnings and the canonical game-ended contract", () => {
     createdAt: "2026-07-16T00:00:00.000Z",
   };
   equal(parseGameEvent(event).type, "gameEnded");
+  const rulesOwnedEvent = {
+    ...event,
+    payload: {
+      ...event.payload,
+      source: { kind: "saintExecution", sourceEventId: "saint-death-11" },
+    },
+  };
+  equal(parseGameEvent(rulesOwnedEvent).type, "gameEnded");
 
   const replay = {
     schemaVersion: 3,
@@ -1017,6 +1025,17 @@ test("validates win warnings and the canonical game-ended contract", () => {
     gameEnd: { eventId: "game-ended-12", winningTeam: "evil" },
   };
   deepEqual<unknown>(parseReplayState(replay), replay);
+  const rulesOwnedReplay = {
+    ...structuredClone(replay),
+    gameEnd: {
+      eventId: "game-ended-12",
+      winningTeam: "evil",
+      sourceEventId: "saint-death-11",
+      cause: "saintExecution",
+      reasonKo: "성자 처형 사망",
+    },
+  };
+  deepEqual<unknown>(parseReplayState(rulesOwnedReplay), rulesOwnedReplay);
 
   const malformedEvent = structuredClone(event);
   malformedEvent.payload.winningTeam = "neither";

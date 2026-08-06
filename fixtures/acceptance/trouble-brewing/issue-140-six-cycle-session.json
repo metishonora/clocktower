@@ -1,0 +1,1476 @@
+{
+  "game": {
+    "createdAt": "2026-08-06T00:00:00.000Z",
+    "events": [
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "tb-setup-long-session",
+        "payload": {
+          "players": [
+            {
+              "actualCharacter": "washerwoman",
+              "id": "player-1",
+              "name": "Washer",
+              "seat": 1,
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "actualCharacter": "chef",
+              "id": "player-2",
+              "name": "Chef",
+              "seat": 2,
+              "shownCharacter": "chef"
+            },
+            {
+              "actualCharacter": "empath",
+              "id": "player-3",
+              "name": "Empath",
+              "seat": 3,
+              "shownCharacter": "empath"
+            },
+            {
+              "actualCharacter": "monk",
+              "id": "player-4",
+              "name": "Monk",
+              "seat": 4,
+              "shownCharacter": "monk"
+            },
+            {
+              "actualCharacter": "fortuneTeller",
+              "id": "player-5",
+              "name": "Fortune Teller",
+              "seat": 5,
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "actualCharacter": "saint",
+              "id": "player-6",
+              "name": "Saint",
+              "seat": 6,
+              "shownCharacter": "saint"
+            },
+            {
+              "actualCharacter": "recluse",
+              "id": "player-7",
+              "name": "Recluse",
+              "seat": 7,
+              "shownCharacter": "recluse"
+            },
+            {
+              "actualCharacter": "poisoner",
+              "id": "player-8",
+              "name": "Poisoner",
+              "seat": 8,
+              "shownCharacter": "poisoner"
+            },
+            {
+              "actualCharacter": "imp",
+              "id": "player-9",
+              "name": "Imp",
+              "seat": 9,
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "Issue 140 TB long session setup",
+        "type": "setupConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-2",
+        "payload": {
+          "information": {
+            "computedResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-9"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-8"
+              ]
+            },
+            "deliveredResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-9"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-8"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:minionInfo"
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 9번 Imp(임프) · 하수인: 8번 Poisoner(독살범)",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-3",
+        "payload": {
+          "information": {
+            "computedResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-9"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-8"
+              ]
+            },
+            "deliveredResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-9"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-8"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": {
+            "characterIds": []
+          },
+          "stepId": "firstNight:demonInfo"
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 8번 Poisoner(독살범) · 블러프: 없음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-4",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "applied": true,
+            "kind": "poison",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "firstNight:poisoner"
+        },
+        "phase": "firstNight",
+        "summary": "8번 Poisoner(독살범) → 1번 Washer(세탁부) · 중독 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-5",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "washerwoman",
+              "playerId": "player-1"
+            },
+            "deliveredResult": {
+              "characterId": "washerwoman",
+              "kind": "setupInfo",
+              "playerIds": [
+                "player-1",
+                "player-2"
+              ],
+              "zeroOutsiders": false
+            },
+            "deliveryContext": {
+              "reasons": [
+                {
+                  "poisonEventId": "phase-step-4",
+                  "poisonerPlayerId": "player-8",
+                  "type": "poisoned"
+                }
+              ],
+              "type": "discretionary"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "characterId": "washerwoman",
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "firstNight:washerwoman"
+        },
+        "phase": "firstNight",
+        "summary": "1번 Washer(세탁부)가 1번 Washer(세탁부), 2번 Chef(요리사) 중 한 명을 세탁부로 확인했습니다. (중독)",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-6",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "chef",
+              "playerId": "player-2"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:chef"
+        },
+        "phase": "firstNight",
+        "summary": "2번 Chef(요리사)가 서로 이웃한 악한 팀 1쌍을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-7",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:empath"
+        },
+        "phase": "firstNight",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-8",
+        "payload": {
+          "playerId": "player-1",
+          "registrationJudgments": [],
+          "stepId": "firstNight:fortuneTellerRedHerring"
+        },
+        "phase": "firstNight",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부)를 레드 헤링으로 지정했습니다.",
+        "type": "redHerringAssigned"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-9",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "firstNight:fortuneTeller"
+        },
+        "phase": "firstNight",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-10",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:toDay"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-11",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-12",
+        "payload": {
+          "input": null,
+          "stepId": "day:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-13",
+        "payload": {
+          "input": null,
+          "stepId": "day:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-started-14",
+        "payload": {
+          "nominatorId": "player-1",
+          "nomineeId": "player-7",
+          "registrationJudgments": [],
+          "stepId": "day:nomination:1",
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 1번 Washer(세탁부) → 7번 Recluse(은둔자)",
+        "type": "nominationStarted"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-vote-15",
+        "payload": {
+          "ghostVoteSpentPlayerIds": [],
+          "nominationEventId": "nomination-started-14",
+          "stepId": "day:nomination:1:vote",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-5",
+            "player-6",
+            "player-7",
+            "player-8",
+            "player-9"
+          ]
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 1번 Washer(세탁부) → 7번 Recluse(은둔자), 9표",
+        "type": "nominationVoteConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-16",
+        "payload": {
+          "stepId": "day:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-17",
+        "payload": {
+          "input": {
+            "execute": true,
+            "playerId": "player-7"
+          },
+          "stepId": "day:execution"
+        },
+        "phase": "day",
+        "summary": "처형 확정: 7번 Recluse(은둔자)",
+        "type": "executionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-death-18",
+        "payload": {
+          "playerId": "player-7",
+          "stepId": "day:executionDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 7번 Recluse(은둔자)",
+        "type": "deathConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-19",
+        "payload": {
+          "input": null,
+          "stepId": "day:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-20",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "applied": true,
+            "kind": "poison",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night:poisoner"
+        },
+        "phase": "night",
+        "summary": "8번 Poisoner(독살범) → 1번 Washer(세탁부) · 중독 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-21",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "resolution": {
+            "applied": true,
+            "kind": "monkProtection",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night:monk"
+        },
+        "phase": "night",
+        "summary": "4번 Monk(수도사) → 1번 Washer(세탁부) · 수도사 보호 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-22",
+        "payload": {
+          "actorPlayerId": "player-9",
+          "resolution": {
+            "kind": "impAttack",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night:imp"
+        },
+        "phase": "night",
+        "summary": "9번 Imp(임프) → 7번 Recluse(은둔자) 공격 · 사망 없음 (이미 사망)",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-23",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night:empath"
+        },
+        "phase": "night",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-24",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "night:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-25",
+        "payload": {
+          "input": null,
+          "stepId": "night:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-26",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day2:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-27",
+        "payload": {
+          "input": null,
+          "stepId": "day2:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-28",
+        "payload": {
+          "input": null,
+          "stepId": "day2:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-29",
+        "payload": {
+          "stepId": "day2:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-30",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day2:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-31",
+        "payload": {
+          "input": null,
+          "stepId": "day2:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-32",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "applied": true,
+            "kind": "poison",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night2:poisoner"
+        },
+        "phase": "night",
+        "summary": "8번 Poisoner(독살범) → 1번 Washer(세탁부) · 중독 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-33",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "resolution": {
+            "applied": true,
+            "kind": "monkProtection",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night2:monk"
+        },
+        "phase": "night",
+        "summary": "4번 Monk(수도사) → 1번 Washer(세탁부) · 수도사 보호 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-34",
+        "payload": {
+          "actorPlayerId": "player-9",
+          "resolution": {
+            "kind": "impAttack",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "death",
+              "playerId": "player-9"
+            },
+            "targetPlayerId": "player-9"
+          },
+          "stepId": "night2:imp"
+        },
+        "phase": "night",
+        "summary": "9번 Imp(임프) → 9번 Imp(임프) 공격 · 사망",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "demon-succession-35",
+        "payload": {
+          "deathCause": "impSelfKill",
+          "newCharacter": "imp",
+          "previousImpPlayerId": "player-9",
+          "source": "impSelfKill",
+          "successorPlayerId": "player-8",
+          "successorPreviousActualCharacter": "poisoner",
+          "triggerImpDeathEventId": "phase-step-34"
+        },
+        "phase": "night",
+        "summary": "악마 승계 확정: 8번 Poisoner(독살범) · 새 캐릭터 임프",
+        "type": "demonSuccessionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-36",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night2:empath"
+        },
+        "phase": "night",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-37",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "night2:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-38",
+        "payload": {
+          "input": null,
+          "stepId": "night2:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night2:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-39",
+        "payload": {
+          "playerIds": [
+            "player-9"
+          ],
+          "stepId": "day3:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 9번 Imp(임프)",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-40",
+        "payload": {
+          "input": null,
+          "stepId": "day3:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-41",
+        "payload": {
+          "input": null,
+          "stepId": "day3:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-42",
+        "payload": {
+          "stepId": "day3:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-43",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day3:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-44",
+        "payload": {
+          "input": null,
+          "stepId": "day3:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-45",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "resolution": {
+            "applied": true,
+            "kind": "monkProtection",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night3:monk"
+        },
+        "phase": "night",
+        "summary": "4번 Monk(수도사) → 1번 Washer(세탁부) · 수도사 보호 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-46",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "impAttack",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night3:imp"
+        },
+        "phase": "night",
+        "summary": "8번 Poisoner(임프) → 7번 Recluse(은둔자) 공격 · 사망 없음 (이미 사망)",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-47",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night3:empath"
+        },
+        "phase": "night",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-48",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "night3:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-49",
+        "payload": {
+          "input": null,
+          "stepId": "night3:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night3:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-50",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day4:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-51",
+        "payload": {
+          "input": null,
+          "stepId": "day4:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day4:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-52",
+        "payload": {
+          "input": null,
+          "stepId": "day4:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day4:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-53",
+        "payload": {
+          "stepId": "day4:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-54",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day4:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-55",
+        "payload": {
+          "input": null,
+          "stepId": "day4:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day4:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-56",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "resolution": {
+            "applied": true,
+            "kind": "monkProtection",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night4:monk"
+        },
+        "phase": "night",
+        "summary": "4번 Monk(수도사) → 1번 Washer(세탁부) · 수도사 보호 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-57",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "impAttack",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night4:imp"
+        },
+        "phase": "night",
+        "summary": "8번 Poisoner(임프) → 7번 Recluse(은둔자) 공격 · 사망 없음 (이미 사망)",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-58",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night4:empath"
+        },
+        "phase": "night",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-59",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "night4:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-60",
+        "payload": {
+          "input": null,
+          "stepId": "night4:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night4:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-61",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day5:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-62",
+        "payload": {
+          "input": null,
+          "stepId": "day5:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day5:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-63",
+        "payload": {
+          "input": null,
+          "stepId": "day5:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day5:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-64",
+        "payload": {
+          "stepId": "day5:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-65",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day5:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-66",
+        "payload": {
+          "input": null,
+          "stepId": "day5:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day5:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-67",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "resolution": {
+            "applied": true,
+            "kind": "monkProtection",
+            "targetPlayerId": "player-1"
+          },
+          "stepId": "night5:monk"
+        },
+        "phase": "night",
+        "summary": "4번 Monk(수도사) → 1번 Washer(세탁부) · 수도사 보호 적용",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-68",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "resolution": {
+            "kind": "impAttack",
+            "mayorContext": {
+              "kind": "notApplicable"
+            },
+            "outcome": {
+              "kind": "noDeath",
+              "reason": "alreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night5:imp"
+        },
+        "phase": "night",
+        "summary": "8번 Poisoner(임프) → 7번 Recluse(은둔자) 공격 · 사망 없음 (이미 사망)",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-69",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "empath",
+              "playerId": "player-3"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night5:empath"
+        },
+        "phase": "night",
+        "summary": "3번 Empath(초공감자)가 살아있는 양옆 이웃 중 악한 팀 0명을 확인했습니다.",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-70",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "fortuneTeller",
+              "playerId": "player-5"
+            },
+            "computedResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ]
+          },
+          "stepId": "night5:fortuneTeller"
+        },
+        "phase": "night",
+        "summary": "5번 Fortune Teller(점쟁이)가 1번 Washer(세탁부), 2번 Chef(요리사)를 확인: 악마 있음",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-71",
+        "payload": {
+          "input": null,
+          "stepId": "night5:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night5:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-72",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day6:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 사망 발표: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-73",
+        "payload": {
+          "input": null,
+          "stepId": "day6:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day6:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "phase-step-74",
+        "payload": {
+          "input": null,
+          "stepId": "day6:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day6:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-started-75",
+        "payload": {
+          "nominatorId": "player-1",
+          "nomineeId": "player-6",
+          "registrationJudgments": [],
+          "stepId": "day6:nomination:1",
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 1번 Washer(세탁부) → 6번 Saint(성자)",
+        "type": "nominationStarted"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-vote-76",
+        "payload": {
+          "ghostVoteSpentPlayerIds": [],
+          "nominationEventId": "nomination-started-75",
+          "stepId": "day6:nomination:1:vote",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-5",
+            "player-6",
+            "player-8"
+          ]
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 1번 Washer(세탁부) → 6번 Saint(성자), 7표",
+        "type": "nominationVoteConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "nomination-closed-77",
+        "payload": {
+          "stepId": "day6:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-78",
+        "payload": {
+          "input": {
+            "execute": true,
+            "playerId": "player-6"
+          },
+          "stepId": "day6:execution"
+        },
+        "phase": "day",
+        "summary": "처형 확정: 6번 Saint(성자)",
+        "type": "executionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "execution-death-79",
+        "payload": {
+          "playerId": "player-6",
+          "stepId": "day6:executionDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 6번 Saint(성자)",
+        "type": "deathConfirmed"
+      },
+      {
+        "createdAt": "2026-08-06T00:00:00.000Z",
+        "id": "game-ended-80",
+        "payload": {
+          "source": {
+            "kind": "saintExecution",
+            "sourceEventId": "execution-death-79"
+          },
+          "winningTeam": "evil"
+        },
+        "phase": "day",
+        "summary": "게임 종료 · 악한 팀 승리",
+        "type": "gameEnded"
+      }
+    ],
+    "id": "game-issue-140",
+    "name": "Issue 140 TB long session",
+    "scriptId": "troubleBrewing",
+    "updatedAt": "2026-08-06T00:00:00.000Z"
+  },
+  "schemaVersion": 3
+}

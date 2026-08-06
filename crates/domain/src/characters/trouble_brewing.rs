@@ -1,3 +1,5 @@
+pub(crate) mod step_key;
+
 use crate::contracts::{
     ActiveRuleEffect, ButlerVoteState, GameEvent, GameEventKind, ImpAttackOutcome,
     ImpNoDeathReason, ImpPreventionReason, MayorAttackContext, NightActionResolution,
@@ -11,6 +13,179 @@ use crate::model::{
     SetupInfoRegistrationOption, SpyReminderToken, StepInput, StepInputFields, StepType,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub(crate) enum TbCharacterId {
+    Washerwoman,
+    Librarian,
+    Investigator,
+    Chef,
+    Empath,
+    FortuneTeller,
+    Undertaker,
+    Monk,
+    Ravenkeeper,
+    Virgin,
+    Slayer,
+    Soldier,
+    Mayor,
+    Butler,
+    Drunk,
+    Recluse,
+    Saint,
+    Poisoner,
+    Spy,
+    ScarletWoman,
+    Baron,
+    Imp,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) enum TbActivityRequirement {
+    Always,
+    Alive,
+    Triggered,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct TbCharacterMetadata {
+    kind: CharacterKind,
+    first_night_order: Option<u8>,
+    night_order: Option<u8>,
+    activity: TbActivityRequirement,
+    automated: bool,
+}
+
+impl TbCharacterId {
+    pub(crate) const ALL: [Self; 22] = [
+        Self::Washerwoman,
+        Self::Librarian,
+        Self::Investigator,
+        Self::Chef,
+        Self::Empath,
+        Self::FortuneTeller,
+        Self::Undertaker,
+        Self::Monk,
+        Self::Ravenkeeper,
+        Self::Virgin,
+        Self::Slayer,
+        Self::Soldier,
+        Self::Mayor,
+        Self::Butler,
+        Self::Drunk,
+        Self::Recluse,
+        Self::Saint,
+        Self::Poisoner,
+        Self::Spy,
+        Self::ScarletWoman,
+        Self::Baron,
+        Self::Imp,
+    ];
+
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        Some(match value {
+            "washerwoman" => Self::Washerwoman,
+            "librarian" => Self::Librarian,
+            "investigator" => Self::Investigator,
+            "chef" => Self::Chef,
+            "empath" => Self::Empath,
+            "fortuneTeller" => Self::FortuneTeller,
+            "undertaker" => Self::Undertaker,
+            "monk" => Self::Monk,
+            "ravenkeeper" => Self::Ravenkeeper,
+            "virgin" => Self::Virgin,
+            "slayer" => Self::Slayer,
+            "soldier" => Self::Soldier,
+            "mayor" => Self::Mayor,
+            "butler" => Self::Butler,
+            "drunk" => Self::Drunk,
+            "recluse" => Self::Recluse,
+            "saint" => Self::Saint,
+            "poisoner" => Self::Poisoner,
+            "spy" => Self::Spy,
+            "scarletWoman" => Self::ScarletWoman,
+            "baron" => Self::Baron,
+            "imp" => Self::Imp,
+            _ => return None,
+        })
+    }
+
+    pub(crate) const fn as_str(self) -> &'static str {
+        match self {
+            Self::Washerwoman => "washerwoman",
+            Self::Librarian => "librarian",
+            Self::Investigator => "investigator",
+            Self::Chef => "chef",
+            Self::Empath => "empath",
+            Self::FortuneTeller => "fortuneTeller",
+            Self::Undertaker => "undertaker",
+            Self::Monk => "monk",
+            Self::Ravenkeeper => "ravenkeeper",
+            Self::Virgin => "virgin",
+            Self::Slayer => "slayer",
+            Self::Soldier => "soldier",
+            Self::Mayor => "mayor",
+            Self::Butler => "butler",
+            Self::Drunk => "drunk",
+            Self::Recluse => "recluse",
+            Self::Saint => "saint",
+            Self::Poisoner => "poisoner",
+            Self::Spy => "spy",
+            Self::ScarletWoman => "scarletWoman",
+            Self::Baron => "baron",
+            Self::Imp => "imp",
+        }
+    }
+
+    const fn metadata(self) -> TbCharacterMetadata {
+        use TbActivityRequirement::{Alive, Always, Triggered};
+        use TbCharacterId::*;
+        let kind = match self {
+            Washerwoman | Librarian | Investigator | Chef | Empath | FortuneTeller | Undertaker
+            | Monk | Ravenkeeper | Virgin | Slayer | Soldier | Mayor => CharacterKind::Townsfolk,
+            Butler | Drunk | Recluse | Saint => CharacterKind::Outsider,
+            Poisoner | Spy | ScarletWoman | Baron => CharacterKind::Minion,
+            Imp => CharacterKind::Demon,
+        };
+        let first_night_order = match self {
+            Poisoner => Some(1),
+            Washerwoman => Some(2),
+            Librarian => Some(3),
+            Investigator => Some(4),
+            Chef => Some(5),
+            Empath => Some(6),
+            FortuneTeller => Some(7),
+            Butler => Some(8),
+            Spy => Some(9),
+            _ => None,
+        };
+        let night_order = match self {
+            Poisoner => Some(1),
+            Monk => Some(2),
+            Imp => Some(3),
+            Ravenkeeper => Some(4),
+            Empath => Some(5),
+            FortuneTeller => Some(6),
+            Undertaker => Some(7),
+            Butler => Some(8),
+            Spy => Some(9),
+            _ => None,
+        };
+        let activity = match self {
+            Baron | Drunk | Recluse | Saint | Soldier => Always,
+            Ravenkeeper | Undertaker | Virgin | Slayer | ScarletWoman => Triggered,
+            _ => Alive,
+        };
+        let automated = !matches!(self, Baron | Drunk | Recluse | Saint | Soldier);
+        TbCharacterMetadata {
+            kind,
+            first_night_order,
+            night_order,
+            activity,
+            automated,
+        }
+    }
+}
 
 pub(crate) fn demon_dead_without_successor(players: &[Player], succession_pending: bool) -> bool {
     !succession_pending
@@ -32,7 +207,10 @@ pub(crate) fn mayor_win_eligible(
 }
 
 pub(crate) fn character_can_target_self(character: &str) -> bool {
-    !matches!(character, "monk" | "butler")
+    !matches!(
+        TbCharacterId::parse(character),
+        Some(TbCharacterId::Monk | TbCharacterId::Butler)
+    )
 }
 
 pub(crate) fn butler_vote_state(
@@ -48,14 +226,16 @@ pub(crate) fn butler_vote_state(
         matches!(
             &event.kind,
             GameEventKind::PhaseStepConfirmed { payload }
-                if payload.step_id.ends_with(":toDay")
+                if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToDay)
         )
     });
     let last_to_night = events.iter().rposition(|event| {
         matches!(
             &event.kind,
             GameEventKind::PhaseStepConfirmed { payload }
-                if payload.step_id.ends_with(":toNight")
+                if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToNight)
         )
     });
     let current_day_boundary =
@@ -64,7 +244,10 @@ pub(crate) fn butler_vote_state(
         let GameEventKind::PhaseStepConfirmed { payload: to_day } = &events[boundary].kind else {
             unreachable!()
         };
-        let prefix = to_day.step_id.rsplit_once(':').map(|(prefix, _)| prefix)?;
+        let prefix = step_key::TbStepKey::parse(&to_day.step_id, events[boundary].phase)
+            .ok()?
+            .phase
+            .prefix();
         let butler_step_id = format!("{prefix}:butler");
         events[..boundary]
             .iter()
@@ -429,30 +612,6 @@ pub(crate) fn slayer_registration(
     }
 }
 
-const FIRST_NIGHT_ORDER: &[&str] = &[
-    "poisoner",
-    "washerwoman",
-    "librarian",
-    "investigator",
-    "chef",
-    "empath",
-    "fortuneTeller",
-    "butler",
-    "spy",
-];
-
-const NIGHT_ORDER: &[&str] = &[
-    "poisoner",
-    "monk",
-    "imp",
-    "ravenkeeper",
-    "empath",
-    "fortuneTeller",
-    "undertaker",
-    "butler",
-    "spy",
-];
-
 const TOWNSFOLK: &[&str] = &[
     "washerwoman",
     "librarian",
@@ -475,12 +634,26 @@ const MINIONS: &[&str] = &["poisoner", "spy", "scarletWoman", "baron"];
 
 const DEMONS: &[&str] = &["imp"];
 
-pub(crate) fn first_night_order() -> &'static [&'static str] {
-    FIRST_NIGHT_ORDER
+pub(crate) fn first_night_order() -> Vec<&'static str> {
+    let mut ids = TbCharacterId::ALL
+        .into_iter()
+        .filter_map(|id| {
+            id.metadata()
+                .first_night_order
+                .map(|order| (order, id.as_str()))
+        })
+        .collect::<Vec<_>>();
+    ids.sort_by_key(|(order, _)| *order);
+    ids.into_iter().map(|(_, id)| id).collect()
 }
 
-pub(crate) fn night_order() -> &'static [&'static str] {
-    NIGHT_ORDER
+pub(crate) fn night_order() -> Vec<&'static str> {
+    let mut ids = TbCharacterId::ALL
+        .into_iter()
+        .filter_map(|id| id.metadata().night_order.map(|order| (order, id.as_str())))
+        .collect::<Vec<_>>();
+    ids.sort_by_key(|(order, _)| *order);
+    ids.into_iter().map(|(_, id)| id).collect()
 }
 
 pub(crate) fn has_actual_outsider(players: &[Player]) -> bool {
@@ -509,7 +682,8 @@ pub(crate) fn phase_input_suggestion_pool(
     players: &[Player],
     impaired: bool,
 ) -> Vec<StepInput> {
-    if step.id.ends_with(":demonInfo")
+    if step_key::TbStepKey::parse(&step.id, step.phase)
+        .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::DemonInfo)
         && step.required_input.kind == RequiredInputKind::CharacterIds
     {
         let legal = legal_demon_bluff_character_ids(players);
@@ -779,7 +953,9 @@ pub(crate) fn computed_information_result(
             })
             .map(|player| player.id.clone())
             .collect();
-        let bluff_character_ids = if step.id.ends_with(":demonInfo") {
+        let bluff_character_ids = if step_key::TbStepKey::parse(&step.id, step.phase)
+            .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::DemonInfo)
+        {
             input
                 .as_ref()
                 .and_then(|value| value.character_ids.clone())
@@ -1055,19 +1231,23 @@ pub(crate) fn character_steps(
                 return None;
             }
 
+            let metadata = TbCharacterId::parse(character)?.metadata();
+            let actor = waking_characters.get(character)?;
             Some(PhaseStep {
                 id: format!("{id_prefix}:{character}"),
                 phase,
                 step_type: StepType::Character,
                 character: Some((*character).to_string()),
-                player_id: waking_characters
-                    .get(character)
-                    .map(|player| player.id.clone()),
+                player_id: Some(actor.id.clone()),
                 ability_use: None,
                 ability_origin: None,
                 required_input: character_required_input(character),
-                can_skip: true,
-                support: crate::model::PhaseStepSupport::Automated,
+                can_skip: metadata.activity != TbActivityRequirement::Always,
+                support: if metadata.automated {
+                    crate::model::PhaseStepSupport::Automated
+                } else {
+                    crate::model::PhaseStepSupport::Manual
+                },
                 information_prompt: None,
                 pre_action_reveal: None,
             })
@@ -1084,7 +1264,12 @@ pub(crate) fn target_information_checks(
         return Vec::new();
     }
     use crate::model::{TargetInformationCheck, TargetInformationChoice};
-    let last_to_night = events.iter().rposition(|event| matches!(&event.kind, crate::contracts::GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")));
+    let last_to_night = events.iter().rposition(|event| {
+        matches!(&event.kind,
+        crate::contracts::GameEventKind::PhaseStepConfirmed { payload }
+            if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToNight))
+    });
     let impaired = step.player_id.as_ref().is_some_and(|actor| {
         players.iter().any(|p| p.id == *actor && p.actual_character == "drunk")
             || events.iter().enumerate().rev().any(|(index, e)| matches!(&e.kind, crate::contracts::GameEventKind::NightActionResolved { payload }
@@ -1223,16 +1408,9 @@ pub(crate) fn target_information_checks(
             })
             .collect(),
         Some("undertaker") => {
-            let cycle = if step.id.starts_with("night:") {
-                1
-            } else {
-                step.id
-                    .trim_start_matches("night")
-                    .split(':')
-                    .next()
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(1)
-            };
+            let cycle = step_key::TbStepKey::parse(&step.id, step.phase)
+                .map(|key| key.phase.cycle())
+                .unwrap_or(1);
             crate::night::previous_executed_death(events, cycle)
                 .and_then(|id| {
                     players.iter().find(|p| p.id == id).map(|p| {
@@ -1309,31 +1487,38 @@ pub(crate) fn target_information_checks(
 }
 
 pub(crate) fn character_required_input(character: &str) -> RequiredInput {
+    let Some(character) = TbCharacterId::parse(character) else {
+        return required_none();
+    };
     match character {
-        "poisoner" | "monk" | "imp" | "ravenkeeper" | "butler" => required_players(1, 1),
-        "washerwoman" => required_setup_info(
+        TbCharacterId::Poisoner
+        | TbCharacterId::Monk
+        | TbCharacterId::Imp
+        | TbCharacterId::Ravenkeeper
+        | TbCharacterId::Butler => required_players(1, 1),
+        TbCharacterId::Washerwoman => required_setup_info(
             SetupInfoKind::Washerwoman,
             CharacterKind::Townsfolk,
             2,
             2,
             false,
         ),
-        "librarian" => required_setup_info(
+        TbCharacterId::Librarian => required_setup_info(
             SetupInfoKind::Librarian,
             CharacterKind::Outsider,
             0,
             2,
             true,
         ),
-        "investigator" => required_setup_info(
+        TbCharacterId::Investigator => required_setup_info(
             SetupInfoKind::Investigator,
             CharacterKind::Minion,
             2,
             2,
             false,
         ),
-        "fortuneTeller" => required_players(2, 2),
-        "chef" | "empath" => RequiredInput {
+        TbCharacterId::FortuneTeller => required_players(2, 2),
+        TbCharacterId::Chef | TbCharacterId::Empath => RequiredInput {
             kind: RequiredInputKind::Number,
             target: Some(InputTarget::Number),
             min_selections: Some(0),
@@ -1353,22 +1538,22 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             demon_succession: None,
             optional: true,
         },
-        _ => required_none(),
+        TbCharacterId::Undertaker
+        | TbCharacterId::Virgin
+        | TbCharacterId::Slayer
+        | TbCharacterId::Soldier
+        | TbCharacterId::Mayor
+        | TbCharacterId::Drunk
+        | TbCharacterId::Recluse
+        | TbCharacterId::Saint
+        | TbCharacterId::Spy
+        | TbCharacterId::ScarletWoman
+        | TbCharacterId::Baron => required_none(),
     }
 }
 
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
-    if TOWNSFOLK.contains(&character) {
-        Some(CharacterKind::Townsfolk)
-    } else if OUTSIDERS.contains(&character) {
-        Some(CharacterKind::Outsider)
-    } else if MINIONS.contains(&character) {
-        Some(CharacterKind::Minion)
-    } else if DEMONS.contains(&character) {
-        Some(CharacterKind::Demon)
-    } else {
-        None
-    }
+    TbCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
 pub(crate) fn is_townsfolk(character: &str) -> bool {
@@ -1473,5 +1658,69 @@ fn required_setup_info(
         mayor_decision: None,
         demon_succession: None,
         optional: false,
+    }
+}
+
+#[cfg(test)]
+mod catalog_tests {
+    use super::*;
+
+    #[test]
+    fn typed_catalog_is_exhaustive_unique_and_round_trips_all_twenty_two_ids() {
+        let ids = TbCharacterId::ALL
+            .into_iter()
+            .map(TbCharacterId::as_str)
+            .collect::<HashSet<_>>();
+        assert_eq!(ids.len(), 22);
+        for id in TbCharacterId::ALL {
+            assert_eq!(TbCharacterId::parse(id.as_str()), Some(id));
+        }
+        assert_eq!(TbCharacterId::parse("unknown"), None);
+    }
+
+    #[test]
+    fn typed_catalog_owns_kind_and_wake_order_metadata() {
+        let count = |kind| {
+            TbCharacterId::ALL
+                .into_iter()
+                .filter(|id| id.metadata().kind == kind)
+                .count()
+        };
+        assert_eq!(count(CharacterKind::Townsfolk), 13);
+        assert_eq!(count(CharacterKind::Outsider), 4);
+        assert_eq!(count(CharacterKind::Minion), 4);
+        assert_eq!(count(CharacterKind::Demon), 1);
+        assert_eq!(
+            first_night_order(),
+            [
+                "poisoner",
+                "washerwoman",
+                "librarian",
+                "investigator",
+                "chef",
+                "empath",
+                "fortuneTeller",
+                "butler",
+                "spy"
+            ]
+        );
+        assert_eq!(
+            night_order(),
+            [
+                "poisoner",
+                "monk",
+                "imp",
+                "ravenkeeper",
+                "empath",
+                "fortuneTeller",
+                "undertaker",
+                "butler",
+                "spy"
+            ]
+        );
+        assert!(TbCharacterId::ALL.into_iter().all(|id| {
+            let metadata = id.metadata();
+            metadata.automated || metadata.activity != TbActivityRequirement::Alive
+        }));
     }
 }

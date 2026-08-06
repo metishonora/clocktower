@@ -33,6 +33,7 @@
     "src/core/validation.test.ts",
     "src/core/latestJsonRequestCache.test.ts",
     "src/core/canonicalStream.test.ts",
+    "src/core/canonicalUndo.test.ts",
     "src/core/canonicalSessionController.test.ts",
     "src/core/wireDiscriminators.test.ts",
     "src/core/revealPayload.ts",

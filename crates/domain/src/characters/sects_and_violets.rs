@@ -5228,6 +5228,8 @@ fn game_end_source(pending: &PendingGameEnd) -> GameEndSource {
     match pending.cause {
         GameEndCause::DemonAbsent => GameEndSource::DemonAbsent { source_event_id },
         GameEndCause::TwoLivingPlayers => GameEndSource::TwoLivingPlayers { source_event_id },
+        GameEndCause::SaintExecution => GameEndSource::SaintExecution { source_event_id },
+        GameEndCause::MayorNoExecution => GameEndSource::MayorNoExecution { source_event_id },
         GameEndCause::KlutzChoice => GameEndSource::KlutzChoice { source_event_id },
         GameEndCause::EvilTwinExecution => GameEndSource::EvilTwinExecution { source_event_id },
         GameEndCause::VortoxNoExecution => GameEndSource::VortoxNoExecution { source_event_id },

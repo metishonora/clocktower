@@ -24,6 +24,10 @@ import {
   type GameStorageDriver,
 } from "./gameStorage.js";
 import { proposalRevealPayload } from "./core/revealPayload.js";
+import {
+  latestCanonicalUndoUnit,
+  removeLatestCanonicalUndoUnit,
+} from "./core/canonicalUndo.js";
 import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
@@ -167,8 +171,12 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   const transitionBusy = busy || undoReplayPending;
   const replayCaughtUp = replayState?.eventCount === gameFile.game.events.length;
   const latestEvent = gameFile.game.events.at(-1);
-  const latestLiveUndoEvent = latestEvent && latestEvent.type !== "setupConfirmed"
-    ? { id: latestEvent.id, summary: latestEvent.summary }
+  const latestUndoUnit = latestCanonicalUndoUnit(gameFile);
+  const latestLiveUndoEvent = latestUndoUnit
+    ? {
+        ...latestUndoUnit,
+        events: gameFile.game.events.filter((event) => latestUndoUnit.eventIds.includes(event.id)),
+      }
     : undefined;
   const canUndoLatestLiveEvent = Boolean(latestLiveUndoEvent) && !transitionBusy && replayCaughtUp;
   const canRecoverConfirmedSetup =
@@ -475,21 +483,24 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
 
   function removeLatestEvent(expectedEventId: string, expectedType: "live" | "setup"): boolean {
     const currentLatestEvent = gameFile.game.events.at(-1);
+    const currentUndoUnit = expectedType === "live" ? latestCanonicalUndoUnit(gameFile) : undefined;
     const typeMatches = expectedType === "setup"
       ? currentLatestEvent?.type === "setupConfirmed" && gameFile.game.events.length === 1
-      : currentLatestEvent?.type !== "setupConfirmed";
+      : currentUndoUnit !== undefined;
+    const currentTargetId = expectedType === "setup" ? currentLatestEvent?.id : currentUndoUnit?.id;
     if (
       transitionBusy ||
       !replayCaughtUp ||
       !currentLatestEvent ||
-      currentLatestEvent.id !== expectedEventId ||
+      currentTargetId !== expectedEventId ||
       !typeMatches
     ) {
       setLoadError("최근 행동이 변경되어 되돌리지 않았습니다.");
       return false;
     }
 
-    const nextEventCount = gameFile.game.events.length - 1;
+    const removedEventCount = expectedType === "live" ? currentUndoUnit!.eventIds.length : 1;
+    const nextEventCount = gameFile.game.events.length - removedEventCount;
     undoReplayTargetEventCount.current = nextEventCount;
     setUndoReplayPending(true);
     setStorageWriteError(undefined);
@@ -497,14 +508,15 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
     setGameFile((current) => {
+      if (expectedType === "live") {
+        return removeLatestCanonicalUndoUnit(current, expectedEventId)?.gameFile ?? current;
+      }
       const nextGame = {
         ...current.game,
         updatedAt: new Date().toISOString(),
         events: current.game.events.slice(0, -1),
       };
-      return expectedType === "setup"
-        ? { schemaVersion: 3, game: nextGame }
-        : { ...current, game: nextGame };
+      return { schemaVersion: 3, game: nextGame };
     });
     return true;
   }

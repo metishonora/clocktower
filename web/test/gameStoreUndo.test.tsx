@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import type { CoreAdapter } from "../src/core/coreAdapter";
-import type { CoreResult, GameFile, ReplayState } from "../src/core/types";
+import type { CoreResult, GameEvent, GameFile, ReplayState } from "../src/core/types";
 import { useGameStore } from "../src/gameStore";
 import {
   MemoryGameStorageDriver,
@@ -59,6 +59,8 @@ test("store exposes a guarded latest live event without treating setup recovery 
 
   await waitFor(() => expect(result.current.latestLiveUndoEvent).toEqual({
     id: latestEvent.id,
+    eventIds: [latestEvent.id],
+    events: [latestEvent],
     summary: latestEvent.summary,
   }));
   expect(result.current.canUndoLatestLiveEvent).toBe(true);
@@ -91,6 +93,50 @@ test("store keeps eligible Undo visible but disabled until replay catches up", a
   await waitFor(() => expect(result.current.latestLiveUndoEvent?.id).toBe(latestEvent.id));
   expect(result.current.canUndoLatestLiveEvent).toBe(false);
   expect(result.current.canRecoverConfirmedSetup).toBe(false);
+});
+
+test("TB generic Undo removes a nomination and its linked vote as one action", async () => {
+  const storedGame = gameFile();
+  const nomination = {
+    id: "nomination",
+    type: "nominationStarted",
+    phase: "day",
+    payload: {
+      stepId: "day:nomination:1",
+      nominatorId: "player-1",
+      nomineeId: "player-2",
+      virginResolution: { kind: "notApplicable" },
+      registrationJudgments: [],
+    },
+    summary: "지명",
+    createdAt: "2026-08-06T00:00:00.000Z",
+  } as GameEvent;
+  const vote = {
+    id: "vote",
+    type: "nominationVoteConfirmed",
+    phase: "day",
+    payload: {
+      stepId: "day:nomination:1:vote",
+      nominationEventId: nomination.id,
+      voterIds: [],
+      ghostVoteSpentPlayerIds: [],
+    },
+    summary: "투표",
+    createdAt: "2026-08-06T00:00:01.000Z",
+  } as GameEvent;
+  storedGame.game.events.push(nomination, vote);
+  const core = coreForReplay(vi.fn(async (candidate) => replayValue(candidate)));
+  const { result } = renderHook(() => useGameStore({
+    scriptId: "troubleBrewing",
+    core,
+    storage: new MemoryGameStorageDriver(storedGame),
+  }));
+
+  await waitFor(() => expect(result.current.canUndoLatestLiveEvent).toBe(true));
+  expect(result.current.latestLiveUndoEvent?.eventIds).toEqual(["nomination", "vote"]);
+  act(() => expect(result.current.undoLatestLiveEvent("nomination")).toBe(true));
+  await waitFor(() => expect(result.current.busy).toBe(false));
+  expect(result.current.gameFile.game.events.map(({ id }) => id)).toEqual(["event-setup"]);
 });
 
 test("store keeps the latest Undo target visible but disables it while a command is unresolved", async () => {

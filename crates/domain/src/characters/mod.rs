@@ -10,13 +10,11 @@ pub(crate) use sects_and_violets::{
     reset_phase_step_build_count as reset_snv_phase_step_build_count,
     reset_replay_player_pass_count as reset_snv_replay_player_pass_count,
 };
-pub(crate) use sects_and_violets::{
-    propose_phase_command as propose_snv_phase_command, replay as replay_snv,
-};
-
 // This explicit list is the current script-rule seam used by the shared engine. Keep private
 // helpers inside the script module and add S&V behavior through `ScriptRules`, not another
 // wildcard export or script checks scattered through callers.
+pub(crate) use trouble_brewing::step_key::{TbPhaseKey, TbSemanticStep, TbStepKey};
+pub(crate) use trouble_brewing::TbCharacterId;
 pub(crate) use trouble_brewing::{
     butler_vote_state, character_can_target_self, character_kind, character_required_input,
     character_steps, computed_information_result, demon_dead_without_successor, first_night_order,
@@ -31,7 +29,10 @@ pub(crate) use trouble_brewing::{
 };
 
 use crate::{
-    contracts::{Command, GameEvent, GameEventKind, ScriptId, SetupDistribution},
+    contracts::{
+        Command, GameEvent, GameEventKind, GameFile, Proposal, ReplayState, ScriptId,
+        SetupDistribution,
+    },
     error::{CoreError, ErrorKind},
     model::CharacterKind,
 };
@@ -50,6 +51,31 @@ pub(crate) fn rules(script_id: ScriptId) -> ScriptRules {
 }
 
 impl ScriptRules {
+    pub(crate) fn replay(self, game_file: GameFile) -> Result<ReplayState, CoreError> {
+        match self {
+            Self::TroubleBrewing => crate::replay::replay_trouble_brewing(game_file),
+            Self::SectsAndViolets => sects_and_violets::replay(game_file),
+        }
+    }
+
+    pub(crate) fn propose(
+        self,
+        game_file: &GameFile,
+        command: Command,
+    ) -> Result<Proposal, CoreError> {
+        match (self, command) {
+            (_, Command::CreateGame { payload }) => {
+                crate::proposal::propose_create_game(game_file, payload)
+            }
+            (Self::TroubleBrewing, command) => {
+                crate::proposal::propose_trouble_brewing(game_file, command)
+            }
+            (Self::SectsAndViolets, command) => {
+                sects_and_violets::propose_phase_command(game_file, command)
+            }
+        }
+    }
+
     pub(crate) fn validate_replay_events(self, events: &[GameEvent]) -> Result<(), CoreError> {
         match self {
             Self::TroubleBrewing => Ok(()),

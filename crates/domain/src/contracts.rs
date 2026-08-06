@@ -411,6 +411,8 @@ pub(crate) struct PendingGameEnd {
 pub(crate) enum GameEndCause {
     DemonAbsent,
     TwoLivingPlayers,
+    SaintExecution,
+    MayorNoExecution,
     KlutzChoice,
     EvilTwinExecution,
     VortoxNoExecution,
@@ -1148,6 +1150,8 @@ pub(crate) struct GameEndedPayload {
 pub(crate) enum GameEndSource {
     DemonAbsent { source_event_id: String },
     TwoLivingPlayers { source_event_id: String },
+    SaintExecution { source_event_id: String },
+    MayorNoExecution { source_event_id: String },
     KlutzChoice { source_event_id: String },
     WitchCurseDeath { source_event_id: String },
     EvilTwinExecution { source_event_id: String },
