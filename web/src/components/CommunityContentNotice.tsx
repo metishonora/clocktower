@@ -1,4 +1,5 @@
 import { communityContentLogoUrl } from "../characterAssets";
+import "./communityContentNotice.css";
 
 export function CommunityContentNotice() {
   return (

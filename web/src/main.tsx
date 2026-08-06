@@ -31,7 +31,6 @@ import {
   type RuntimeClock,
 } from "./features/phase-control/phaseRuntime";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
-import { CommunityContentNotice } from "./components/CommunityContentNotice";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import "./styles.css";
 
@@ -576,7 +575,6 @@ export function ClocktowerApp({
                     : undefined
                 }
               />
-              {!activeSpyRevealPayload ? <CommunityContentNotice /> : null}
             </section>
 
             {activeSpyRevealPayload ? (
@@ -678,7 +676,6 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!gameStore.setupConfirmed ? <CommunityContentNotice /> : null}
       {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}
