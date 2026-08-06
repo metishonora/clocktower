@@ -31,8 +31,9 @@ session, persistence path, or production route.
 - Keep Player-name inputs accessible by seat-specific labels, but omit a redundant visible `이름`
   caption to match the shared S&V seat inspector.
 - After confirmation, match the S&V Player-detail hierarchy: role identity, seat and Player name,
-  alignment, close action, Character ability, and current status. For Drunk, show Actual and Shown
-  identities as two explicit adjacent cards before the ability summary.
+  alignment, close action, and Character ability. Omit the redundant alive status. For Drunk, show
+  Actual and Shown identities as two explicit adjacent cards before the ability summary, and keep the
+  primary Actual Drunk identity visually larger than its Shown Character token on the seat.
 - Keep ordinary roles unique. `무작위 배치` only shuffles the approved roster among seats; it never
   generates a random roster.
 - Use the shared rectangular perimeter, fixed-size seat tokens, role-first and seat-first assignment,

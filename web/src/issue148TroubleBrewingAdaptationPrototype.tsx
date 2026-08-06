@@ -585,10 +585,6 @@ function TroubleBrewingGrimoire({
                   <span>캐릭터 능력</span>
                   <p>{selectedCharacter.abilitySummary}</p>
                 </section>
-                <section className="issue148PlayerStatuses" aria-label="현재 상태">
-                  <span>현재 상태</span>
-                  <div><strong>생존</strong></div>
-                </section>
               </div>
             </> : <span>좌석을 선택하세요</span>}
           </aside>

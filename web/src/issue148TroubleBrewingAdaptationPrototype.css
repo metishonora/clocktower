@@ -260,6 +260,18 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
+  width: 52px;
+  height: 52px;
+  margin: -3px auto -2px;
+  transform: translateX(-3px);
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > small {
+  font-size: .66rem;
+  font-weight: 900;
+}
+
 .issue148ShownCharacterToken {
   position: absolute;
   z-index: 3;
@@ -457,8 +469,7 @@
 }
 
 .issue148DrunkIdentities article > span,
-.issue148CharacterAbility > span,
-.issue148PlayerStatuses > span {
+.issue148CharacterAbility > span {
   color: #bcae8d;
   font-size: .6rem;
   font-weight: 900;
@@ -492,26 +503,6 @@
   color: #d4d5c8;
   font-size: .76rem;
   line-height: 1.65;
-}
-
-.issue148PlayerStatuses {
-  display: grid;
-  gap: 8px;
-}
-
-.issue148PlayerStatuses div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.issue148PlayerStatuses strong {
-  padding: 7px 9px;
-  border: 1px solid rgba(210, 173, 100, .24);
-  border-radius: 999px;
-  color: #e9d8af;
-  background: rgba(255, 255, 255, .045);
-  font-size: .68rem;
 }
 
 .issue148PlayHeader > div {
@@ -683,8 +674,7 @@
 .issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerHeaderRole strong,
 .issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader > div:nth-child(2) > span,
 .issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article > span,
-.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility > span,
-.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerStatuses > span {
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility > span {
   color: #627057;
 }
 
@@ -711,12 +701,6 @@
 .issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities strong,
 .issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility p {
   color: #38483d;
-}
-
-.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerStatuses strong {
-  border-color: rgba(76, 100, 65, .2);
-  color: #405242;
-  background: rgba(255, 255, 255, .5);
 }
 
 .issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask {
@@ -802,6 +786,11 @@
 
   .issue148SeatInspector.snvSeatingTray.mobileOpen {
     background: #10271d;
+  }
+
+  .issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
+    width: 44px;
+    height: 44px;
   }
 
   .issue148DrunkEditor label,

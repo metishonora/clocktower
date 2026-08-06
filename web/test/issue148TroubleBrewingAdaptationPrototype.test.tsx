@@ -114,8 +114,8 @@ test("shows the confirmed Drunk in an S&V-aligned player detail panel", async ()
   expect(within(details).getByRole("button", { name: "플레이어 상세 닫기" })).toBeTruthy();
   expect(within(details).getByRole("heading", { name: "지우" })).toBeTruthy();
   expect(within(details).getByText("캐릭터 능력")).toBeTruthy();
-  expect(within(details).getByText("현재 상태")).toBeTruthy();
-  expect(within(details).getByText("생존")).toBeTruthy();
+  expect(within(details).queryByText("현재 상태")).toBeNull();
+  expect(within(details).queryByText("생존")).toBeNull();
   const identities = within(details).getByRole("region", { name: "주정뱅이 아이덴티티" });
   expect(within(identities).getByText("실제 직업")).toBeTruthy();
   expect(within(identities).getByText("주정뱅이")).toBeTruthy();
@@ -176,4 +176,5 @@ test("keeps the prototype on script-neutral shared presentation contracts", () =
   expect(source).not.toMatch(/sectsAndViolets/);
   expect(styles).toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*top:\s*3px;[^}]*right:\s*2px;/s);
   expect(styles).not.toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*bottom:\s*-\d+px;/s);
+  expect(styles).toMatch(/button\.character-drunk\s*>\s*img\s*\{[^}]*width:\s*52px;[^}]*height:\s*52px;/s);
 });
