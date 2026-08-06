@@ -107,7 +107,10 @@ import {
   currentBugReportEnvironment,
   type BugReportDelivery,
 } from "./bugReportDelivery";
-import type { SectsAndVioletsBugReportEnvironment } from "./sectsAndVioletsBugReport";
+import type {
+  SectsAndVioletsBugReportContextInput,
+  SectsAndVioletsBugReportEnvironment,
+} from "./sectsAndVioletsBugReport";
 import {
   sectsAndVioletsCharacters as characters,
   type SectsAndVioletsCharacter as CatalogCharacter,
@@ -265,6 +268,7 @@ export function SectsAndVioletsGameSurface({
   const [bugReportSnapshot, setBugReportSnapshot] = useState<{
     gameFile: GameFile;
     environment: SectsAndVioletsBugReportEnvironment;
+    reproductionContext: SectsAndVioletsBugReportContextInput;
   }>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
@@ -1019,6 +1023,12 @@ export function SectsAndVioletsGameSurface({
     setBugReportSnapshot({
       gameFile: withSectsAndVioletsSession(gameFile, currentSessionState(capturedAt)),
       environment: currentBugReportEnvironment(),
+      reproductionContext: {
+        activeTab,
+        replayPhase: replayState?.phase ?? null,
+        currentStepId: replayState?.currentStep?.id ?? null,
+        currentStepType: replayState?.currentStep?.stepType ?? null,
+      },
     });
   }
 
@@ -3002,6 +3012,7 @@ export function SectsAndVioletsGameSurface({
         <SectsAndVioletsBugReportDialog
           gameFile={bugReportSnapshot.gameFile}
           environment={bugReportSnapshot.environment}
+          reproductionContext={bugReportSnapshot.reproductionContext}
           recipient={bugReportEmail}
           delivery={bugReportDelivery}
           onClose={closeBugReport}

@@ -181,6 +181,7 @@ test("opens the approved optional S&V bug report without focusing the descriptio
   const preview = within(dialog).getByText("전송 내용 미리보기").closest("details");
   expect(within(dialog).queryByText("필수")).toBeNull();
   expect(within(dialog).queryByText("어떻게 되어야 했나요?")).toBeNull();
+  expect(within(dialog).getByText(/확정 이벤트와 이벤트 시간/)).toBeTruthy();
   expect(preview?.open).toBe(false);
   await waitFor(() => expect(document.activeElement).toBe(close));
   expect(document.activeElement).not.toBe(description);
@@ -214,6 +215,12 @@ test("opens the configured email handoff without a copy action for a short repor
   expect(delivery.openEmail).toHaveBeenCalledWith(expect.stringMatching(
     /^mailto:metishonora%40icloud\.com\?subject=.*&body=/,
   ));
+  const mailto = delivery.openEmail.mock.calls[0][0];
+  const body = decodeURIComponent(mailto.split("&body=")[1]);
+  expect(body).toContain("reportSchemaVersion: 2");
+  expect(body).toContain("[재현 Fixture]");
+  expect(body).toContain('"activeTab": "roles"');
+  expect(body).toContain('"replayPhase": "setup"');
 });
 
 test("keeps copy and file recovery when an email recipient is unavailable", async () => {
@@ -262,6 +269,12 @@ test("downloads oversized reports as JSON and opens a metadata-only email", asyn
       pageUrl: "https://example.test/clocktower/sects-and-violets/",
       userAgent: "Test Browser",
       viewport: { width: 390, height: 650 },
+    }}
+    reproductionContext={{
+      activeTab: "play",
+      replayPhase: "setup",
+      currentStepId: null,
+      currentStepType: null,
     }}
     recipient="metishonora@icloud.com"
     delivery={delivery}

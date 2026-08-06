@@ -42,10 +42,18 @@ const gameFile: GameFile = {
   },
 };
 
+const reproductionContext = {
+  activeTab: "play",
+  replayPhase: "day",
+  currentStepId: "day1:discussion",
+  currentStepType: "discussion",
+} as const;
+
 test("builds an AI-reconstructable S&V report without player names or notes", () => {
   const report = buildSectsAndVioletsBugReport({
     gameFile,
     symptom: "두 번째 밤에 잘못된 정보가 표시되었습니다.",
+    reproductionContext,
     environment: {
       appVersion: "0.0.0-test",
       buildCommit: "abc1234",
@@ -63,12 +71,16 @@ test("builds an AI-reconstructable S&V report without player names or notes", ()
   assert.match(report.body, /2번 플레이어/);
   assert.match(report.body, /"id": "event-notes"/);
   assert.match(report.body, /"playerId": "player-1"/);
-  assert.match(report.body, /"notesOmitted": true/);
+  assert.match(report.body, /"notes": ""/);
   assert.equal(/Alice|Bob|private storyteller note|Private game name/.test(report.body), false);
-  assert.equal(/createdAt/.test(report.body), false);
+  assert.equal(/createdAt/.test(report.body), true);
+  assert.equal(report.fixture.game.name, "Redacted bug report");
+  assert.deepEqual(reportJsonSection(report.body, "재현 Fixture"), report.fixture);
+  assert.deepEqual(reportJsonSection(report.body, "재현 컨텍스트"), report.reproductionContext);
   const attachment = JSON.parse(report.attachmentJson);
   assert.equal(attachment.reportType, "clocktower.snv.bug-report");
-  assert.equal(attachment.game.events[1].payload.notesOmitted, true);
+  assert.equal(attachment.reportSchemaVersion, 2);
+  assert.equal(attachment.fixture.game.events[1].payload.notes, "");
   assert.equal(/Alice|Bob|private storyteller note|Private game name/.test(report.attachmentJson), false);
 });
 
@@ -76,6 +88,7 @@ test("builds the report when the optional problem description is empty", () => {
   const report = buildSectsAndVioletsBugReport({
     gameFile,
     symptom: "",
+    reproductionContext,
     environment: {
       appVersion: "0.0.0-test",
       buildCommit: "abc1234",
@@ -94,6 +107,7 @@ test("includes the original GameFile only after explicit opt-in", () => {
     gameFile,
     symptom: "저장 파일을 불러올 수 없습니다.",
     includeOriginalGameFile: true,
+    reproductionContext,
     environment: {
       appVersion: "0.0.0-test",
       buildCommit: "abc1234",
@@ -256,6 +270,7 @@ test("redacts colliding player names without changing event schema identifiers o
   const report = buildSectsAndVioletsBugReport({
     gameFile: collisionGameFile,
     symptom: "clockmaker 이후 sweetheart, pitHag, noDashii 흐름이 이상합니다.",
+    reproductionContext,
     environment: {
       appVersion: "collision-test",
       buildCommit: "collision-commit",
@@ -264,8 +279,9 @@ test("redacts colliding player names without changing event schema identifiers o
       viewport: { width: 390, height: 844 },
     },
   });
-  const setup = reportJsonSection(report.body, "게임 구성");
-  const events = reportJsonSection(report.body, "확정 이벤트");
+  const fixture = reportJsonSection(report.body, "재현 Fixture");
+  const events = fixture.game.events;
+  const setup = events[0].payload;
 
   assert.deepEqual(
     setup.players.map((player: { actualCharacter: string }) => player.actualCharacter),
@@ -301,10 +317,10 @@ test("redacts colliding player names without changing event schema identifiers o
   assert.equal(events[5].id, "noDashii");
   assert.equal(events[5].payload.actorCharacterId, "noDashii");
   assert.equal(events[5].payload.resolution.kind, "demonAttack");
-  assert.equal(events[6].payload.notes, undefined);
-  assert.equal(events[6].payload.notesOmitted, true);
-  for (const event of events) {
-    assert.equal(event.createdAt, undefined);
+  assert.equal(events[6].payload.notes, "");
+  assert.equal(events[6].payload.notesOmitted, undefined);
+  for (const [index, event] of events.entries()) {
+    assert.equal(event.createdAt, collisionGameFile.game.events[index].createdAt);
     for (const name of collisionNames) assert.equal(event.summary.includes(name), false);
   }
   assert.deepEqual(
@@ -315,9 +331,12 @@ test("redacts colliding player names without changing event schema identifiers o
   assert.match(attachment.userReport.symptom, /1번 플레이어/);
   assert.equal(attachment.userReport.symptom.includes("clockmaker 이후"), false);
   assert.equal(report.attachmentJson.includes("clockmaker suspects sweetheart"), false);
+  assert.deepEqual(attachment.fixture, report.fixture);
+  assert.equal(report.body.includes("[게임 구성]"), false);
+  assert.equal(report.body.includes("[확정 이벤트]"), false);
 });
 
-function reportJsonSection(body: string, section: "게임 구성" | "확정 이벤트") {
+function reportJsonSection(body: string, section: "재현 Fixture" | "재현 컨텍스트") {
   const marker = `[${section}]\n\`\`\`json\n`;
   const start = body.indexOf(marker);
   assert.notEqual(start, -1, `${section} JSON section should exist`);

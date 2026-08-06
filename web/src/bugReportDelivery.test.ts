@@ -29,8 +29,26 @@ test("builds a metadata-only mailto for a downloaded oversized report", () => {
     subject: "[Clocktower S&V] 버그 제보",
     body: "전체 이벤트 내용",
     attachmentJson: "{}",
+    fixture: {
+      schemaVersion: 3,
+      game: {
+        scriptId: "sectsAndViolets",
+        id: "game-136",
+        name: "Redacted bug report",
+        createdAt: "2026-08-06T00:00:00.000Z",
+        updatedAt: "2026-08-06T00:10:00.000Z",
+        events: [],
+      },
+    },
+    reproductionContext: {
+      activeTab: "play",
+      replayPhase: "day",
+      currentStepId: "day1:discussion",
+      currentStepType: "discussion",
+      eventCount: 12,
+    },
     metadata: {
-      reportSchemaVersion: 1,
+      reportSchemaVersion: 2,
       schemaVersion: 3,
       scriptId: "sectsAndViolets",
       appVersion: "test-version",

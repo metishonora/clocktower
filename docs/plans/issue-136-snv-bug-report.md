@@ -7,10 +7,10 @@
   `저장 / 불러오기` entry.
 - Generate an AI-reconstructable report instead of requiring a GitHub account or a public issue.
 - Open the user's mail composer with the report in the message body; never submit data silently.
-- The default report contains the S&V setup, ordered canonical event details, the user's optional
-  problem description, and agreed environment metadata.
-- Replace player names with seat-based labels and omit notes before preview, copy, download, or
-  mail composition.
+- The default report contains a directly importable, schema-v3 S&V reproduction fixture, the
+  user's optional problem description, agreed environment metadata, and minimal replay context.
+- Replace the game name with a fixed redacted value, replace player names with seat-based labels,
+  and empty note values before preview, copy, download, or mail composition.
 - Show the exact report before handoff. The user can cancel without changing game state.
 - Keep the dialog header to the `버그 제보` title and close button. Do not show an eyebrow or
   introductory paragraph.
@@ -42,22 +42,24 @@
 
 ## Diagnostic contract
 
-The human-readable message has four sections:
+The human-readable message has five sections:
 
 1. User report: optional problem description.
 2. Environment: report schema, GameFile schema, script, page URL, user agent, viewport and build
    identity when available.
-3. Setup: stable player IDs, seat labels, actual characters and shown characters.
-4. Ordered events: event IDs, types, phases, redacted summaries and complete payloads required to
-   reconstruct the canonical stream. Event timestamps may be omitted because list order is
-   canonical; cross-event IDs must be preserved.
+3. Privacy handling: fixed game name, seat-based player names, and removed Storyteller notes.
+4. Reproduction context: active tab, replay phase, current step ID/type, and event count only.
+5. Reproduction fixture: a complete schema-v3 GameFile with no `ui`, containing canonical game
+   metadata and ordered events including their timestamps.
 
 Redaction happens before formatting. Fields named `name` use the seat label when the player can be
-identified and a generic redacted marker otherwise. Fields named `notes` are omitted and represented
-by an explicit `notesOmitted` marker so a reconstruction does not mistake missing notes for captured
-empty notes. Known setup names are replaced in the optional symptom and fields named `summary`.
+identified and a generic redacted marker otherwise. The fixture game name is `Redacted bug report`,
+and fields named `notes` use the schema-valid empty string. The report separately states that notes
+were removed. Known setup names are replaced in the optional symptom and fields named `summary`.
 Other strings are preserved because they may be event IDs, cross-event references, character IDs,
 step IDs, discriminants, or other schema values—even when their text happens to equal a player name.
+The report contract is `reportSchemaVersion: 2`; `[게임 구성]` and `[확정 이벤트]` are not duplicated
+outside `[재현 Fixture]`.
 
 ## Acceptance criteria
 
@@ -65,8 +67,8 @@ step IDs, discriminants, or other schema values—even when their text happens t
    state.
 2. The dialog accepts an optional problem description, explains included and excluded data, and
    previews the exact outgoing report.
-3. The default report contains enough structured setup and canonical event information for Codex
-   to reconstruct a valid fixture without inventing causal decisions that existed in the stream.
+3. The default report's structured fixture passes S&V GameFile import and canonical replay without
+   Codex inventing fields, timestamps, or causal decisions that existed in the stream.
 4. No original player name or note remains in privacy-bearing `name`, `notes`, `summary`, or symptom
    fields. Machine identifiers and schema values remain exact even when their text equals a player
    name.

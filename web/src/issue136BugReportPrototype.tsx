@@ -11,20 +11,23 @@ const previewReport = `# Clocktower S&V 버그 제보
 2일차 밤에 꿈꾸는 자 정보를 확인한 뒤 진행 버튼이 비활성화되었습니다.
 
 [환경]
-reportSchemaVersion: 1
+reportSchemaVersion: 2
 schemaVersion: 3
 scriptId: sectsAndViolets
 viewport: 1024x1366
 
-[게임 구성]
-1번 플레이어: philosopher
-2번 플레이어: fangGu
-3번 플레이어: dreamer
+[개인정보 처리]
+게임 이름 및 플레이어 이름 대체됨 · Storyteller 메모 제거됨
 
-[확정 이벤트]
-01 setupConfirmed · 7명
-02 phaseStepConfirmed · firstNight:dreamer
-03 phaseStepConfirmed · firstNight:toDay`;
+[재현 컨텍스트]
+\`\`\`json
+{"activeTab":"play","replayPhase":"night","currentStepId":"night2:dreamer","currentStepType":"character","eventCount":6}
+\`\`\`
+
+[재현 Fixture]
+\`\`\`json
+{"schemaVersion":3,"game":{"scriptId":"sectsAndViolets","id":"game-136","name":"Redacted bug report","createdAt":"2026-08-06T10:00:00.000Z","updatedAt":"2026-08-06T10:30:00.000Z","events":[{"id":"event-1","type":"setupConfirmed","phase":"setup","payload":{"players":[{"id":"player-1","seat":1,"name":"1번 플레이어","actualCharacter":"philosopher"}]},"summary":"초기 설정 확정","createdAt":"2026-08-06T10:00:00.000Z"}]}}
+\`\`\``;
 
 const events = [
   "초기 설정 확정: 7명",
@@ -152,7 +155,7 @@ function BugReportDialog({
           </label>
 
           <section className="issue136PrivacySummary" aria-label="제보 데이터 안내">
-            <div><span aria-hidden="true">✓</span><p><strong>포함</strong> 좌석·직업·진영, 확정 이벤트, 앱·기기 정보</p></div>
+            <div><span aria-hidden="true">✓</span><p><strong>포함</strong> 좌석·직업·진영, 확정 이벤트와 이벤트 시간, 앱·기기 정보</p></div>
             <div><span aria-hidden="true">−</span><p><strong>제외</strong> 플레이어 이름과 Storyteller 메모</p></div>
           </section>
 

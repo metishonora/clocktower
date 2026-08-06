@@ -10,6 +10,7 @@ import {
 } from "../../bugReportDelivery.js";
 import {
   buildSectsAndVioletsBugReport,
+  type SectsAndVioletsBugReportContextInput,
   type SectsAndVioletsBugReportEnvironment,
 } from "../../sectsAndVioletsBugReport.js";
 import "./sectsAndVioletsBugReport.css";
@@ -19,12 +20,14 @@ type DeliveryFeedback = "copied" | "copyFailed" | "downloaded" | "downloadFailed
 export function SectsAndVioletsBugReportDialog({
   gameFile,
   environment,
+  reproductionContext,
   recipient,
   delivery = browserBugReportDelivery,
   onClose,
 }: {
   gameFile: GameFile;
   environment: SectsAndVioletsBugReportEnvironment;
+  reproductionContext: SectsAndVioletsBugReportContextInput;
   recipient: string;
   delivery?: BugReportDelivery;
   onClose: () => void;
@@ -38,8 +41,9 @@ export function SectsAndVioletsBugReportDialog({
     gameFile,
     symptom,
     environment,
+    reproductionContext,
     includeOriginalGameFile: includeOriginal,
-  }), [environment, gameFile, includeOriginal, symptom]);
+  }), [environment, gameFile, includeOriginal, reproductionContext, symptom]);
   const mailtoUrl = useMemo(() => bugReportMailto(recipient, report), [recipient, report]);
   const metadataMailtoUrl = useMemo(
     () => bugReportMetadataMailto(recipient, report),
@@ -130,7 +134,7 @@ export function SectsAndVioletsBugReportDialog({
           </label>
 
           <section className="snvBugReportPrivacy" aria-label="제보 데이터 안내">
-            <div><span aria-hidden="true">✓</span><p><strong>포함</strong> 좌석·직업·진영, 확정 이벤트, 앱·기기 정보</p></div>
+            <div><span aria-hidden="true">✓</span><p><strong>포함</strong> 좌석·직업·진영, 확정 이벤트와 이벤트 시간, 앱·기기 정보</p></div>
             <div><span aria-hidden="true">−</span><p><strong>제외</strong> 플레이어 이름과 Storyteller 메모</p></div>
           </section>
 

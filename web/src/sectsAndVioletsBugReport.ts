@@ -1,4 +1,9 @@
-import type { GameFile } from "./core/types.js";
+import type {
+  GameFile,
+  Phase,
+  SectsAndVioletsTab,
+  StepType,
+} from "./core/types.js";
 
 export type SectsAndVioletsBugReportEnvironment = {
   appVersion: string;
@@ -12,6 +17,7 @@ export type SectsAndVioletsBugReportInput = {
   gameFile: GameFile;
   symptom: string;
   environment: SectsAndVioletsBugReportEnvironment;
+  reproductionContext: SectsAndVioletsBugReportContextInput;
   includeOriginalGameFile?: boolean;
 };
 
@@ -20,10 +26,23 @@ export type SectsAndVioletsBugReport = {
   body: string;
   attachmentJson: string;
   metadata: SectsAndVioletsBugReportMetadata;
+  fixture: GameFile;
+  reproductionContext: SectsAndVioletsBugReportContext;
+};
+
+export type SectsAndVioletsBugReportContextInput = {
+  activeTab: SectsAndVioletsTab;
+  replayPhase: Phase | null;
+  currentStepId: string | null;
+  currentStepType: StepType | null;
+};
+
+export type SectsAndVioletsBugReportContext = SectsAndVioletsBugReportContextInput & {
+  eventCount: number;
 };
 
 export type SectsAndVioletsBugReportMetadata = {
-  reportSchemaVersion: 1;
+  reportSchemaVersion: 2;
   schemaVersion: GameFile["schemaVersion"];
   scriptId: GameFile["game"]["scriptId"];
   appVersion: string;
@@ -40,17 +59,27 @@ export function buildSectsAndVioletsBugReport(
 ): SectsAndVioletsBugReport {
   const players = setupPlayers(input.gameFile);
   const redaction = buildPlayerRedaction(players);
-  const setup = players.map((player) => ({
-    id: player.id,
-    seat: player.seat,
-    name: seatLabel(player.seat),
-    actualCharacter: player.actualCharacter,
-    ...(player.shownCharacter ? { shownCharacter: player.shownCharacter } : {}),
-  }));
-  const events = input.gameFile.game.events.map((event) => sanitizeValue(event, redaction));
+  const events = input.gameFile.game.events.map(
+    (event) => sanitizeValue(event, redaction),
+  ) as GameFile["game"]["events"];
   const symptom = replaceKnownNames(input.symptom.trim(), redaction.nameReplacements);
+  const fixture: GameFile = {
+    schemaVersion: 3,
+    game: {
+      scriptId: input.gameFile.game.scriptId,
+      id: input.gameFile.game.id,
+      name: "Redacted bug report",
+      createdAt: input.gameFile.game.createdAt,
+      updatedAt: input.gameFile.game.updatedAt,
+      events,
+    },
+  };
+  const reproductionContext: SectsAndVioletsBugReportContext = {
+    ...input.reproductionContext,
+    eventCount: events.length,
+  };
   const metadata: SectsAndVioletsBugReportMetadata = {
-    reportSchemaVersion: 1,
+    reportSchemaVersion: 2,
     schemaVersion: input.gameFile.schemaVersion,
     scriptId: input.gameFile.game.scriptId,
     appVersion: input.environment.appVersion,
@@ -66,43 +95,46 @@ export function buildSectsAndVioletsBugReport(
     reportType: "clocktower.snv.bug-report",
     userReport: { symptom: symptom || null },
     environment: input.environment,
-    game: {
-      schemaVersion: metadata.schemaVersion,
-      scriptId: metadata.scriptId,
-      updatedAt: metadata.gameUpdatedAt,
-      setup: { players: setup },
-      events,
+    redaction: {
+      gameName: "replaced",
+      playerNames: "seatLabels",
+      storytellerNotes: "removed",
     },
+    reproductionContext,
+    fixture,
     ...(input.includeOriginalGameFile ? { originalGameFile: input.gameFile } : {}),
   };
 
   const sections = [
-      "# Clocktower S&V 버그 제보",
-      "",
-      "[사용자 제보]",
-      "문제 설명:",
-      symptom || "(작성하지 않음)",
-      "",
-      "[환경]",
-      `reportSchemaVersion: ${metadata.reportSchemaVersion}`,
-      `schemaVersion: ${metadata.schemaVersion}`,
-      `scriptId: ${metadata.scriptId}`,
-      `appVersion: ${metadata.appVersion}`,
-      `buildCommit: ${metadata.buildCommit}`,
-      `pageUrl: ${metadata.pageUrl}`,
-      `userAgent: ${metadata.userAgent}`,
-      `viewport: ${metadata.viewport}`,
-      `gameUpdatedAt: ${metadata.gameUpdatedAt}`,
-      "",
-      "[게임 구성]",
-      "```json",
-      JSON.stringify({ players: setup }, null, 2),
-      "```",
-      "",
-      "[확정 이벤트]",
-      "```json",
-      JSON.stringify(events, null, 2),
-      "```",
+    "# Clocktower S&V 버그 제보",
+    "",
+    "[사용자 제보]",
+    "문제 설명:",
+    symptom || "(작성하지 않음)",
+    "",
+    "[환경]",
+    `reportSchemaVersion: ${metadata.reportSchemaVersion}`,
+    `schemaVersion: ${metadata.schemaVersion}`,
+    `scriptId: ${metadata.scriptId}`,
+    `appVersion: ${metadata.appVersion}`,
+    `buildCommit: ${metadata.buildCommit}`,
+    `pageUrl: ${metadata.pageUrl}`,
+    `userAgent: ${metadata.userAgent}`,
+    `viewport: ${metadata.viewport}`,
+    `gameUpdatedAt: ${metadata.gameUpdatedAt}`,
+    "",
+    "[개인정보 처리]",
+    "게임 이름 및 플레이어 이름 대체됨 · Storyteller 메모 제거됨",
+    "",
+    "[재현 컨텍스트]",
+    "```json",
+    JSON.stringify(reproductionContext, null, 2),
+    "```",
+    "",
+    "[재현 Fixture]",
+    "```json",
+    JSON.stringify(fixture, null, 2),
+    "```",
   ];
   if (input.includeOriginalGameFile) {
     sections.push(
@@ -119,6 +151,8 @@ export function buildSectsAndVioletsBugReport(
     body: sections.join("\n"),
     attachmentJson: JSON.stringify(attachment, null, 2),
     metadata,
+    fixture,
+    reproductionContext,
   };
 }
 
@@ -152,9 +186,8 @@ function sanitizeValue(value: unknown, redaction: PlayerRedaction): unknown {
 
   const sanitized: Record<string, unknown> = {};
   for (const [key, nestedValue] of Object.entries(value)) {
-    if (key === "createdAt") continue;
     if (key === "notes") {
-      sanitized.notesOmitted = true;
+      sanitized.notes = "";
       continue;
     }
     if (key === "name") {
