@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "./sectsAndVioletsFoundationPrototype.css";
+import "./shared-ui/styles/productionShell.css";
 import "./issue136BugReportPrototype.css";
 
 type ReviewState = "ready" | "oversized" | "copied";

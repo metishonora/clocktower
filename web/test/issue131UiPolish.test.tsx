@@ -10,7 +10,7 @@ import {
   type LivePlayer,
 } from "../src/sectsAndVioletsLivePhase";
 
-const setupCss = readFileSync(resolve("src/sectsAndVioletsFoundationPrototype.css"), "utf8");
+const setupCss = readFileSync(resolve("src/shared-ui/styles/productionShell.css"), "utf8");
 const evilTwinCss = readFileSync(resolve("src/features/evil-twin/evilTwinReveal.css"), "utf8");
 
 test("uses the Korean character label in the phase overview", () => {
@@ -110,7 +110,7 @@ test("gives the Evil Twin center prompt a dedicated safe layer and compact width
   expect(prompt?.classList.contains("evilTwinCenterPrompt")).toBe(true);
   expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*z-index:\s*7/s);
   expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*width:\s*min\(220px, 40%\)/s);
-  expect(setupCss).toMatch(/\.snvCatalogPreview\.rosterConfirmed article button\.selected/);
+  expect(setupCss).toMatch(/:is\(\.snvCatalogPreview, \.roleCatalog\)\.rosterConfirmed article button\.selected/);
 });
 
 function renderProgress(state: ReplayState) {
