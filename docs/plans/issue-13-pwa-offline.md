@@ -29,8 +29,9 @@ must remain visible without a network connection.
 8. Existing integration coverage continues to cover latest-game load, current-step confirmation,
    voting, and Reveal/return. A build smoke check additionally verifies the deployable PWA shell and
    its offline precache contract.
-9. A manually triggered GitHub Pages workflow builds and deploys `web/dist` but does not change
-   repository visibility or add authentication. Merging to `main` alone must not publish the app.
+9. The GitHub Pages workflow builds and deploys `web/dist` whenever `main` is updated, while retaining
+   a manual trigger for recovery and explicit redeployment. It does not change repository visibility or
+   add authentication.
 
 ## Test-first seams
 
