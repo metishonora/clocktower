@@ -1,5 +1,6 @@
 import { Status, Warnings } from "../../components/CoreFeedback";
 import type { CoreResult, CoreWarning, GameEvent, Proposal, ReplayState } from "../../core/types";
+import type { LiveUndoTarget } from "../../core/canonicalUndo";
 
 export function EventLog({
   events,
@@ -16,9 +17,9 @@ export function EventLog({
   proposalResult?: CoreResult<Proposal>;
   loadError?: string;
   warnings: CoreWarning[];
-  latestUndoEvent?: Pick<GameEvent, "id" | "summary">;
+  latestUndoEvent?: LiveUndoTarget;
   undoDisabled?: boolean;
-  onRequestUndo?: (event: Pick<GameEvent, "id" | "summary">, trigger: HTMLButtonElement) => void;
+  onRequestUndo?: (event: LiveUndoTarget, trigger: HTMLButtonElement) => void;
 }) {
   const errorCount =
     Number(Boolean(loadError)) +

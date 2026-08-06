@@ -32,6 +32,17 @@ fn replay_surfaces_demon_death_and_two_living_without_auto_ending() {
         "messageKo": "생존자 2명: 악 승리 확인 필요",
         "winningTeam": "evil"
     })));
+    let ended = propose(
+        &game,
+        json!({
+            "type": "endGame",
+            "payload": { "winningTeam": "good", "expectedEventCount": 4 }
+        }),
+    );
+    assert_eq!(
+        ended["value"]["event"]["payload"]["source"],
+        json!({ "kind": "demonAbsent", "sourceEventId": "death-player-5" })
+    );
 }
 
 #[test]
@@ -169,7 +180,8 @@ fn healthy_actual_mayor_with_three_alive_and_no_execution_surfaces_good_win() {
         phase_event("phaseStepSkipped", "day:nomination:1"),
         no_execution_event("day:execution"),
     ];
-    let actual = replay(&game_with_events(Value::Array(events)));
+    let game = game_with_events(Value::Array(events));
+    let actual = replay(&game);
     assert_eq!(actual["ok"], true, "Mayor replay failed as {actual}");
     assert!(actual["value"]["warnings"]
         .as_array()
@@ -180,6 +192,23 @@ fn healthy_actual_mayor_with_three_alive_and_no_execution_surfaces_good_win() {
             "messageKo": "시장 무처형 조건: 선 승리 확인 필요",
             "winningTeam": "good"
         })));
+    let expected_event_count = game["game"]["events"].as_array().unwrap().len();
+    let ended = propose(
+        &game,
+        json!({
+            "type": "endGame",
+            "payload": { "winningTeam": "good", "expectedEventCount": expected_event_count }
+        }),
+    );
+    assert_eq!(
+        ended["value"]["event"]["payload"]["source"],
+        json!({ "kind": "mayorNoExecution", "sourceEventId": "evt-day:execution" })
+    );
+    let ended_replay = replay(&with_event(&game, ended["value"]["event"].clone()));
+    assert_eq!(
+        ended_replay["value"]["gameEnd"]["cause"],
+        "mayorNoExecution"
+    );
 }
 
 #[test]

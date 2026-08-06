@@ -335,7 +335,7 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.source !== undefined && !(
           isRecord(payload.source) &&
           hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
-          (["demonAbsent", "twoLivingPlayers", "klutzChoice", "witchCurseDeath", "evilTwinExecution", "vortoxNoExecution"]
+          (["demonAbsent", "twoLivingPlayers", "saintExecution", "mayorNoExecution", "klutzChoice", "witchCurseDeath", "evilTwinExecution", "vortoxNoExecution"]
             .includes(String(payload.source.kind))) &&
           typeof payload.source.sourceEventId === "string"
         ))
@@ -505,7 +505,7 @@ function isPendingDeathConsequence(value: unknown): boolean {
 }
 
 function isGameEndCause(value: unknown): boolean {
-  return ["demonAbsent", "twoLivingPlayers", "klutzChoice", "evilTwinExecution", "vortoxNoExecution"]
+  return ["demonAbsent", "twoLivingPlayers", "saintExecution", "mayorNoExecution", "klutzChoice", "evilTwinExecution", "vortoxNoExecution"]
     .includes(String(value));
 }
 

@@ -93,6 +93,7 @@ import {
   AcquiredAbilityPresentation,
 } from "./features/phase-control/acquiredAbilityPresentation";
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
+import { inferCanonicalUndoUnits } from "./core/canonicalUndo";
 import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
@@ -1621,32 +1622,19 @@ export function SectsAndVioletsGameSurface({
       summary: event.summary,
       activeTab: checkpointKind === "setup" ? "seating" : activeTab,
     };
-    const linkedNominationId = event.type === "nominationVoteConfirmed"
-      ? event.payload.nominationEventId
-      : undefined;
-    const gameEndSourceId = event.type === "gameEnded" ? event.payload.source?.sourceEventId : undefined;
+    const canonicalUnits = inferCanonicalUndoUnits(nextGameFile.game.events);
     setPhaseCheckpoints((current) => {
-      if (gameEndSourceId) {
-        const sourceIndex = current.findIndex((candidate) =>
-          (candidate.eventIds ?? [candidate.id]).includes(gameEndSourceId));
-        if (sourceIndex >= 0) {
-          const source = current[sourceIndex];
-          return [...current.slice(0, sourceIndex), {
-            ...checkpoint,
-            id: source.id,
-            eventIds: [
-              ...current.slice(sourceIndex).flatMap((candidate) => candidate.eventIds ?? [candidate.id]),
-              event.id,
-            ],
-          }];
-        }
-      }
-      return linkedNominationId && current.at(-1)?.id === linkedNominationId
-      ? [...current.slice(0, -1), {
+      const canonical = canonicalUnits.at(-1);
+      if (canonical && canonical.eventIds.length > 1 && canonical.eventIds.includes(event.id)) {
+        const groupedIds = new Set(canonical.eventIds);
+        return [...current.filter((candidate) =>
+          !(candidate.eventIds ?? [candidate.id]).some((id) => groupedIds.has(id))), {
           ...checkpoint,
-          eventIds: [...(current.at(-1)?.eventIds ?? [linkedNominationId]), event.id],
-        }]
-      : [...current, checkpoint];
+          id: canonical.id,
+          eventIds: canonical.eventIds,
+        }];
+      }
+      return [...current, checkpoint];
     });
     setInformationStepId(undefined);
     setDayComplete(false);

@@ -685,7 +685,7 @@ export function ClocktowerApp({
       /> : null}
       {!activeSpyRevealPayload && liveUndoDialogEvent ? (
         <LiveUndoDialog
-          event={liveUndoDialogEvent}
+          events={liveUndoDialogEvent.events}
           onCancel={closeLiveUndoDialog}
           onConfirm={confirmLiveUndo}
         />

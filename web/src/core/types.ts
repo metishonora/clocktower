@@ -402,6 +402,8 @@ export type PendingDeathConsequence = {
 export type GameEndCause =
   | "demonAbsent"
   | "twoLivingPlayers"
+  | "saintExecution"
+  | "mayorNoExecution"
   | "klutzChoice"
   | "evilTwinExecution"
   | "vortoxNoExecution";
@@ -974,7 +976,7 @@ export type GameEvent = EventCommon &
         type: "gameEnded";
         payload: {
           winningTeam: "good" | "evil";
-          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
+          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "saintExecution" | "mayorNoExecution" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
         };
       }
   );

@@ -5,6 +5,7 @@ import type {
   SectsAndVioletsSetupSession,
   SectsAndVioletsTab,
 } from "./core/types.js";
+import { inferCanonicalUndoUnits } from "./core/canonicalUndo.js";
 
 const tabs: SectsAndVioletsTab[] = ["roles", "seating", "play", "storage"];
 const demons: SectsAndVioletsSetupSession["demon"][] = [
@@ -107,42 +108,19 @@ export function inferSectsAndVioletsCheckpoints(
   gameFile: GameFile,
   activeTab: SectsAndVioletsTab,
 ): SectsAndVioletsPhaseCheckpoint[] {
-  return gameFile.game.events.reduce<SectsAndVioletsPhaseCheckpoint[]>((checkpoints, event, index) => {
-    const checkpoint: SectsAndVioletsPhaseCheckpoint = {
-      id: event.id,
-      eventIds: [event.id],
-      kind: event.type === "setupConfirmed" && index === 0 ? "setup" : "phase",
-      eventCount: index + 1,
-      summary: event.summary,
-      activeTab: event.type === "setupConfirmed" && index === 0 ? "seating" : activeTab,
+  return inferCanonicalUndoUnits(gameFile.game.events).map((unit) => {
+    const firstIndex = gameFile.game.events.findIndex((event) => event.id === unit.eventIds[0]);
+    const lastIndex = gameFile.game.events.findIndex((event) => event.id === unit.eventIds.at(-1));
+    const isSetup = firstIndex === 0 && gameFile.game.events[0]?.type === "setupConfirmed";
+    return {
+      id: unit.id,
+      eventIds: unit.eventIds,
+      kind: isSetup ? "setup" : "phase",
+      eventCount: lastIndex + 1,
+      summary: unit.summary,
+      activeTab: isSetup ? "seating" : activeTab,
     };
-    const nominationEventId = event.type === "nominationVoteConfirmed"
-      ? event.payload.nominationEventId
-      : undefined;
-    if (nominationEventId && checkpoints.at(-1)?.id === nominationEventId) {
-      const nomination = checkpoints.pop()!;
-      checkpoint.eventIds = [...(nomination.eventIds ?? [nomination.id]), event.id];
-    }
-    if (event.type === "gameEnded" && event.payload.source) {
-      const sourceIndex = checkpoints.findIndex((candidate) =>
-        (candidate.eventIds ?? [candidate.id]).includes(event.payload.source!.sourceEventId));
-      if (sourceIndex >= 0) {
-        const groupedEventIds = checkpoints
-          .slice(sourceIndex)
-          .flatMap((candidate) => candidate.eventIds ?? [candidate.id]);
-        const sourceCheckpoint = checkpoints[sourceIndex];
-        checkpoints.splice(sourceIndex);
-        checkpoints.push({
-          ...checkpoint,
-          id: sourceCheckpoint.id,
-          eventIds: [...groupedEventIds, event.id],
-        });
-        return checkpoints;
-      }
-    }
-    checkpoints.push(checkpoint);
-    return checkpoints;
-  }, []);
+  });
 }
 
 export function parseSectsAndVioletsSessionState(

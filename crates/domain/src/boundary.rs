@@ -163,12 +163,34 @@ fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
                 require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
             }
             GameEventKind::GameEnded { payload } => {
-                if let Some(crate::contracts::GameEndSource::KlutzChoice { source_event_id }) =
-                    &payload.source
-                {
-                    require_prior(source_event_id, |kind| {
-                        matches!(kind, GameEventKind::KlutzChoiceResolved { .. })
-                    })?;
+                if let Some(source) = &payload.source {
+                    use crate::contracts::GameEndSource;
+                    match source {
+                        GameEndSource::DemonAbsent { source_event_id }
+                        | GameEndSource::TwoLivingPlayers { source_event_id } => {
+                            require_prior(source_event_id, is_death_source_event)?;
+                        }
+                        GameEndSource::SaintExecution { source_event_id } => {
+                            require_prior(source_event_id, |kind| {
+                                matches!(kind, GameEventKind::DeathConfirmed { .. })
+                            })?;
+                        }
+                        GameEndSource::MayorNoExecution { source_event_id }
+                        | GameEndSource::VortoxNoExecution { source_event_id } => {
+                            require_prior(source_event_id, |kind| {
+                                matches!(kind, GameEventKind::NoExecutionConfirmed { .. })
+                            })?;
+                        }
+                        GameEndSource::KlutzChoice { source_event_id } => {
+                            require_prior(source_event_id, |kind| {
+                                matches!(kind, GameEventKind::KlutzChoiceResolved { .. })
+                            })?;
+                        }
+                        GameEndSource::WitchCurseDeath { source_event_id }
+                        | GameEndSource::EvilTwinExecution { source_event_id } => {
+                            require_prior(source_event_id, is_death_source_event)?;
+                        }
+                    }
                 }
             }
             _ => {}
