@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
-import "./sectsAndVioletsFoundationPrototype.css";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { ProductionApplicationShell } from "./shared-ui/ProductionApplicationShell";
 import type { CoreAdapter } from "./core/coreAdapter";
 import {
   CanonicalSessionController,
@@ -34,10 +34,6 @@ import {
   type LiveHandoff,
   type LivePlayer,
 } from "./sectsAndVioletsLivePhase";
-import {
-  grimoireHeights,
-  rectangularSeatPositions,
-} from "./sectsAndVioletsGrimoireLayout";
 export { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import {
   exportGameFileJson,
@@ -122,10 +118,17 @@ import {
   type SectsAndVioletsCharacter as CatalogCharacter,
   type SectsAndVioletsCharacterKind as CharacterKind,
 } from "./sectsAndVioletsCharacters";
+import { SectsAndVioletsSetupPresentation } from "./features/setup/SectsAndVioletsSetupPresentation";
+import { SectsAndVioletsAssignment } from "./features/grimoire/SectsAndVioletsAssignment";
+import {
+  sectsAndVioletsBaseDistribution as baseDistribution,
+  sectsAndVioletsDemonChoices as demonChoices,
+  sectsAndVioletsKindOrder as kindOrder,
+  type SectsAndVioletsDemonChoice as DemonChoice,
+} from "./features/setup/sectsAndVioletsSetupAdapter";
 
-type DemonChoice = "fangGu" | "vigormortis" | "noDashii" | "vortox";
 type Alignment = "good" | "evil";
-type PrototypeTab = "roles" | "seating" | "play" | "storage";
+type ApplicationTab = "roles" | "seating" | "play" | "storage";
 type TabMotion = "tabForward" | "tabBackward" | "";
 type PlayPhase = "firstNight" | "day" | "laterNight";
 type FirstNightStep = {
@@ -150,15 +153,6 @@ type EvilInformationCheckpoint = {
   payload: EvilInformationRevealPayload;
 };
 
-const kindLabels: Record<CharacterKind, string> = {
-  townsfolk: "마을 주민",
-  outsider: "외부인",
-  minion: "하수인",
-  demon: "악마",
-};
-
-const kindOrder: CharacterKind[] = ["townsfolk", "outsider", "minion", "demon"];
-
 const firstNightOrder: FirstNightStep[] = [
   { id: "philosopher", name: "철학자", characterId: "philosopher", support: "manual", summary: "철학자의 선택과 능력 획득을 마도서에서 처리합니다." },
   { id: "minionInfo", name: "하수인 정보", support: "automated", summary: "하수인에게 악마와 다른 하수인을 알려줍니다." },
@@ -173,21 +167,7 @@ const firstNightOrder: FirstNightStep[] = [
   { id: "mathematician", name: "수학자", characterId: "mathematician", support: "automated", summary: "비정상적으로 작동한 능력의 수를 알려줍니다." },
 ];
 
-const demonChoices = characters.filter((character) => character.kind === "demon") as Array<CatalogCharacter & { id: DemonChoice }>;
-
-const baseDistribution: Record<number, [number, number, number, number]> = {
-  7: [5, 0, 1, 1],
-  8: [5, 1, 1, 1],
-  9: [5, 2, 1, 1],
-  10: [7, 0, 2, 1],
-  11: [7, 1, 2, 1],
-  12: [7, 2, 2, 1],
-  13: [9, 0, 3, 1],
-  14: [9, 1, 3, 1],
-  15: [9, 2, 3, 1],
-};
-
-export type SectsAndVioletsFoundationPrototypeProps = {
+export type SectsAndVioletsGameSurfaceProps = {
   coreAdapter?: CoreAdapter;
   storageDriver?: CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>;
   production?: boolean;
@@ -199,14 +179,10 @@ export type SectsAndVioletsFoundationPrototypeProps = {
 
 export type SnvSetupDraft = SectsAndVioletsSetupSession | null;
 export type SnvPresentation = {
-  activeTab?: PrototypeTab;
+  activeTab?: ApplicationTab;
   phaseCheckpoints?: SectsAndVioletsPhaseCheckpoint[];
 };
 type SnvWebSessionSnapshot = WebSessionSnapshot<SnvSetupDraft, SnvPresentation>;
-
-export function SectsAndVioletsFoundationPrototype() {
-  return <SectsAndVioletsGameSurface />;
-}
 
 export function SectsAndVioletsGameSurface({
   coreAdapter,
@@ -216,12 +192,12 @@ export function SectsAndVioletsGameSurface({
   choiceTokenSource = browserCryptoChoiceToken,
   bugReportEmail = DEFAULT_BUG_REPORT_EMAIL,
   bugReportDelivery,
-}: SectsAndVioletsFoundationPrototypeProps = {}) {
+}: SectsAndVioletsGameSurfaceProps = {}) {
   const canonicalSession = useMemo(
     () => coreAdapter ? new CanonicalSessionController(SECTS_AND_VIOLETS, coreAdapter) : undefined,
     [coreAdapter],
   );
-  const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
+  const [activeTab, setActiveTab] = useState<ApplicationTab>("roles");
   const [tabMotion, setTabMotion] = useState<TabMotion>("");
   const [rosterConfirmed, setRosterConfirmed] = useState(false);
   const [seatingConfirmed, setSeatingConfirmed] = useState(false);
@@ -335,9 +311,6 @@ export function SectsAndVioletsGameSurface({
   const selectedByKind = Object.fromEntries(kindOrder.map((kind) => [kind, selectedIds.filter((id) => characters.find((character) => character.id === id)?.kind === kind).length])) as Record<CharacterKind, number>;
   const remaining = playerCount - selectedIds.length;
   const rosterComplete = remaining === 0 && kindOrder.every((kind) => selectedByKind[kind] === requiredByKind[kind]);
-  const activeCharacter = characters.find((character) => character.id === activeCharacterId) ?? characters[0];
-  const activeCharacterAsset = sectsAndVioletsCharacterAsset(activeCharacter.id);
-  const selectedDemon = demonChoices.find((choice) => choice.id === demon) ?? demonChoices[0];
   const assignedCount = Object.keys(seatAssignments).length;
   const seatingComplete = assignedCount === playerCount;
   const localFirstNightSteps = useMemo(
@@ -542,18 +515,6 @@ export function SectsAndVioletsGameSurface({
     const player = replayState?.players.find((candidate) => candidate.seat === seat);
     return player ? seatTokenCharacterByPlayerId.get(player.id) ?? seatAssignments[seat] : seatAssignments[seat];
   };
-  const selectedSeatCharacterId = selectedSeat ? displayedCharacterForSeat(selectedSeat) : undefined;
-  const selectedSeatCharacter = characters.find((character) => character.id === selectedSeatCharacterId);
-  const selectedSeatAsset = sectsAndVioletsCharacterAsset(selectedSeatCharacterId);
-  const selectedCanonicalPlayer = selectedSeat ? replayState?.players.find((player) => player.seat === selectedSeat) : undefined;
-  const selectedSeatTokens = selectedCanonicalPlayer ? canonicalTokensByPlayerId[selectedCanonicalPlayer.id] ?? [] : [];
-  const desktopSeatPositions = rectangularSeatPositions(playerCount, false);
-  const mobileSeatPositions = rectangularSeatPositions(playerCount, true);
-  const heights = grimoireHeights(playerCount);
-  const grimoireSizeStyle = {
-    "--grimoire-height": `${heights.desktop}px`,
-    "--mobile-grimoire-height": `${heights.mobile}px`,
-  } as CSSProperties;
   const latestUndoCheckpoint = [...phaseCheckpoints].reverse().find(
     (checkpoint) => checkpoint.kind === "phase",
   );
@@ -829,8 +790,8 @@ export function SectsAndVioletsGameSurface({
     };
   }, [coreAdapter, demon, playerCount, rosterConfirmed]);
 
-  const navigateToTab = (nextTab: PrototypeTab) => {
-    const tabOrder: PrototypeTab[] = ["roles", "seating", "play", "storage"];
+  const navigateToTab = (nextTab: ApplicationTab) => {
+    const tabOrder: ApplicationTab[] = ["roles", "seating", "play", "storage"];
     setTabMotion(tabOrder.indexOf(nextTab) >= tabOrder.indexOf(activeTab) ? "tabForward" : "tabBackward");
     setActiveTab(nextTab);
   };
@@ -949,7 +910,7 @@ export function SectsAndVioletsGameSurface({
       seatingConfirmed: canonicalPlayers.length > 0,
     } satisfies SectsAndVioletsSetupSession;
     const setup = storedSession.setupDraft ?? fallbackSetup;
-    const fallbackTab: PrototypeTab = replayed.gameEnd ? "seating" : replayed.eventCount > 1
+    const fallbackTab: ApplicationTab = replayed.gameEnd ? "seating" : replayed.eventCount > 1
       ? "play"
       : replayed.eventCount === 1
         ? "seating"
@@ -2195,61 +2156,100 @@ export function SectsAndVioletsGameSurface({
   };
 
   return (
-    <main className={`snvFoundationPrototype ${tabMotion} ${effectivePlayPhase === "day" ? "snvDayMode" : "snvNightMode"}`} aria-label={production ? "Sects & Violets 게임" : "Sects & Violets 기반 화면 프로토타입"}>
-      {production ? <a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a> : null}
-      {production ? <input ref={importInputRef} hidden type="file" accept=".json,application/json" onChange={(event) => void importCheckpoint(event)} /> : null}
-      <header className="snvPrototypeHeader">
-        <div>
-          <span className="snvEyebrow">{production ? "STORYTELLER CONSOLE" : "ISSUE 97 · REVIEW PROTOTYPE"}</span>
-          <h1>Sects &amp; Violets</h1>
-          <p>7–15명</p>
-        </div>
-        <div className="snvPhaseActions" aria-label="현재 페이즈와 되돌리기">
-          {latestUndoCheckpoint ? (
-            <button
-              ref={undoTriggerRef}
-              type="button"
-              className="snvGlobalUndo"
-              aria-label={`최근 행동 되돌리기: ${latestUndoCheckpoint.summary}`}
-              aria-haspopup="dialog"
-              disabled={operationBusy}
-              onClick={() => setUndoCheckpoint(latestUndoCheckpoint)}
-            >
-              <svg viewBox="0 0 32 32" aria-hidden="true">
-                <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
-                <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
-              </svg>
-              <span className="snvIconTooltip" role="tooltip">최근 행동 되돌리기</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="snvGlobalUndo empty"
-              data-visual-state="muted"
-              aria-hidden="true"
-              tabIndex={-1}
-              disabled
-            >
-              <svg viewBox="0 0 32 32" aria-hidden="true">
-                <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
-                <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
-              </svg>
-            </button>
-          )}
-          <span
-            className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`}
-            role="img"
-            aria-label={effectivePlayPhase === "day" ? "낮" : "밤"}
-          >{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
-        </div>
-      </header>
-
-      <nav className="snvUtilityTabs" aria-label="게임 데이터">
-        <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" disabled={storageLoading} onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
-        <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
-        {production ? <button ref={bugReportTriggerRef} type="button" className="snvBugReportTrigger" onClick={openBugReport}>버그 제보</button> : null}
-      </nav>
-      {autosaveStatus !== "idle" ? (
+    <ProductionApplicationShell
+      ariaLabel={production ? "Sects & Violets 게임" : "Sects & Violets 기반 화면 프로토타입"}
+      theme={effectivePlayPhase === "day" ? "day" : "night"}
+      motion={tabMotion === "tabForward" ? "forward" : tabMotion === "tabBackward" ? "backward" : "none"}
+      className={`${tabMotion} ${effectivePlayPhase === "day" ? "snvDayMode" : "snvNightMode"}`}
+      classes={{
+        root: "snvFoundationPrototype",
+        header: "snvPrototypeHeader",
+        eyebrow: "snvEyebrow",
+        headerActions: "snvPhaseActions",
+        utilities: "snvUtilityTabs",
+        stages: "snvSurfaceTabs",
+      }}
+      leading={production ? <a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a> : null}
+      hiddenInputs={production ? <input ref={importInputRef} hidden type="file" accept=".json,application/json" onChange={(event) => void importCheckpoint(event)} /> : null}
+      eyebrow={production ? "STORYTELLER CONSOLE" : "ISSUE 97 · REVIEW PROTOTYPE"}
+      title="Sects & Violets"
+      subtitle="7–15명"
+      headerActionsAriaLabel="현재 페이즈와 되돌리기"
+      headerActions={<>
+        {latestUndoCheckpoint ? (
+          <button
+            ref={undoTriggerRef}
+            type="button"
+            className="snvGlobalUndo"
+            aria-label={`최근 행동 되돌리기: ${latestUndoCheckpoint.summary}`}
+            aria-haspopup="dialog"
+            disabled={operationBusy}
+            onClick={() => setUndoCheckpoint(latestUndoCheckpoint)}
+          >
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+              <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+            </svg>
+            <span className="snvIconTooltip" role="tooltip">최근 행동 되돌리기</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="snvGlobalUndo empty"
+            data-visual-state="muted"
+            aria-hidden="true"
+            tabIndex={-1}
+            disabled
+          >
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+              <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+            </svg>
+          </button>
+        )}
+        <span
+          className={`snvPhaseMark ${effectivePlayPhase === "day" ? "snvSunMark" : "snvMoonMark"}`}
+          role="img"
+          aria-label={effectivePlayPhase === "day" ? "낮" : "밤"}
+        >{effectivePlayPhase === "day" ? "☀" : "☾"}</span>
+      </>}
+      utilities={[
+        {
+          id: "new-game",
+          label: "새 게임",
+          className: "snvNewGameTab",
+          disabled: storageLoading,
+          buttonRef: newGameTriggerRef,
+          onSelect: () => setNewGameConfirmOpen(true),
+        },
+        {
+          id: "storage",
+          label: "저장 / 불러오기",
+          className: `snvStorageTab ${activeTab === "storage" ? "active" : ""}`,
+          active: activeTab === "storage",
+          onSelect: () => navigateToTab("storage"),
+        },
+        ...(production ? [{
+          id: "bug-report",
+          label: "버그 제보",
+          className: "snvBugReportTrigger",
+          buttonRef: bugReportTriggerRef,
+          onSelect: openBugReport,
+        }] : []),
+      ]}
+      stages={[
+        { id: "roles", label: "직업", active: activeTab === "roles", className: activeTab === "roles" ? "active" : "" },
+        { id: "seating", label: "마도서", active: activeTab === "seating", className: activeTab === "seating" ? "active" : "", disabled: !rosterConfirmed },
+        {
+          id: "play",
+          label: liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행",
+          active: activeTab === "play",
+          className: activeTab === "play" ? "active" : "",
+          disabled: (production && !seatingConfirmed) || Boolean(liveHandoff && !liveHandoff.complete) || Boolean(nextIdentityReveal),
+        },
+      ]}
+      onNavigate={(destination) => navigateToTab(destination as ApplicationTab)}
+      autosaveStatus={autosaveStatus !== "idle" ? (
         <p className={`snvAutosaveStatus ${autosaveStatus}`} role="status" aria-live="polite">
           {autosaveStatus === "saving"
             ? "자동 저장 중…"
@@ -2257,20 +2257,8 @@ export function SectsAndVioletsGameSurface({
               ? "자동 저장 실패"
               : `자동 저장 완료 ${formatAutosaveTime(lastSavedAt)}`}
         </p>
-      ) : null}
-
-      <nav className="snvSurfaceTabs" aria-label="작업 단계">
-        <button type="button" className={activeTab === "roles" ? "active" : ""} aria-current={activeTab === "roles" ? "page" : undefined} onClick={() => navigateToTab("roles")}>직업</button>
-        <button type="button" className={activeTab === "seating" ? "active" : ""} aria-current={activeTab === "seating" ? "page" : undefined} disabled={!rosterConfirmed} onClick={() => navigateToTab("seating")}>마도서</button>
-        <button
-          type="button"
-          className={activeTab === "play" ? "active" : ""}
-          aria-current={activeTab === "play" ? "page" : undefined}
-          disabled={(production && !seatingConfirmed) || Boolean(liveHandoff && !liveHandoff.complete) || Boolean(nextIdentityReveal)}
-          onClick={() => navigateToTab("play")}
-        >{liveHandoff && !liveHandoff.complete ? "마도서 작업을 완료하세요" : "진행"}</button>
-      </nav>
-      {warningVisible ? (
+      ) : undefined}
+      warning={warningVisible ? (
         <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
           <span aria-hidden="true">!</span>
           <div>
@@ -2279,68 +2267,30 @@ export function SectsAndVioletsGameSurface({
           </div>
           <button type="button" aria-label="경고 닫기" onClick={() => setDismissedWarningKey(warningKey)}>×</button>
         </aside>
-      ) : null}
+      ) : undefined}
+    >
       {activeTab === "roles" ? (
-        <section className="snvSetupSurface snvTabPanel" aria-label="S&V 설정 검토">
-          <div className="snvSetupControls">
-            <section className="snvControlCard">
-              <span>플레이어</span>
-              <div className="snvChoiceRow">
-                {Object.keys(baseDistribution).map((count) => (
-                  <button key={count} type="button" aria-pressed={playerCount === Number(count)} disabled={storageLoading || rosterConfirmed} onClick={() => choosePlayerCount(Number(count))}>{count}명</button>
-                ))}
-              </div>
-            </section>
-            <section className="snvControlCard">
-              <span>악마 선택</span>
-              <div className="snvChoiceRow">
-                {demonChoices.map((choice) => (
-                  <button key={choice.id} type="button" aria-pressed={demon === choice.id} disabled={storageLoading || rosterConfirmed} onClick={() => chooseDemon(choice.id)}>{choice.name}</button>
-                ))}
-              </div>
-            </section>
-            <section className="snvDistributionFlow" aria-label="인원 구성">
-              <DistributionValues values={distribution.final} />
-              <p className="snvModifierNote">
-                {distribution.delta[0] === 0 && distribution.delta[1] === 0
-                  ? `${selectedDemon.name} · 인원 보정 없음`
-                  : `${selectedDemon.name} 보정 · 마을 주민 ${signed(distribution.delta[0])} · 외부인 ${signed(distribution.delta[1])}`}
-              </p>
-            </section>
-          </div>
-
-          <section className={`snvCatalogPreview${rosterConfirmed ? " rosterConfirmed" : ""}`} aria-label="직업 선택 패널">
-            <div className="snvCatalogGroups">
-              {kindOrder.map((kind) => (
-                <article key={kind}>
-                  <h2>{kindLabels[kind]} · {selectedByKind[kind]}/{requiredByKind[kind]}</h2>
-                  <div>{characters.filter((character) => character.kind === kind).map((character) => {
-                    const selected = selectedIds.includes(character.id);
-                    const demonLocked = kind === "demon";
-                    const capacityReached = !selected && selectedByKind[kind] >= requiredByKind[kind];
-                    const ariaLabel = demonLocked
-                      ? character.id === demon ? `${character.name} 고정됨` : `${character.name} 악마 선택에서 변경`
-                      : character.name;
-                    return (
-                      <button
-                        key={character.id}
-                        type="button"
-                        className={selected ? "selected" : ""}
-                        aria-label={ariaLabel}
-                        aria-pressed={selected}
-                        disabled={storageLoading || demonLocked || capacityReached}
-                        onClick={() => toggleCharacter(character)}
-                      >
-                        {sectsAndVioletsCharacterAsset(character.id) ? <img src={sectsAndVioletsCharacterAsset(character.id)?.src} alt="" /> : null}
-                        <span>{character.name}</span>
-                      </button>
-                    );
-                  })}</div>
-                </article>
-              ))}
-            </div>
-          </section>
-        </section>
+        <SectsAndVioletsSetupPresentation
+          playerCount={playerCount}
+          demon={demon}
+          selectedIds={selectedIds}
+          activeCharacterId={activeCharacterId}
+          selectedByKind={selectedByKind}
+          requiredByKind={requiredByKind}
+          distribution={distribution}
+          storageLoading={storageLoading}
+          rosterConfirmed={rosterConfirmed}
+          rosterComplete={rosterComplete}
+          theme={effectivePlayPhase === "day" ? "snv-day" : "snv-night"}
+          onPlayerCountSelect={choosePlayerCount}
+          onDemonSelect={chooseDemon}
+          onCharacterSelect={toggleCharacter}
+          onConfirmRoster={() => {
+            setRosterConfirmed(true);
+            navigateToTab("seating");
+            markAutosaveNeeded();
+          }}
+        />
       ) : activeTab === "seating" ? production && seatingConfirmed && (replayState?.currentStep || replayState?.gameEnd) ? (
         <SectsAndVioletsLiveGrimoire
           players={livePlayers}
@@ -2434,161 +2384,41 @@ export function SectsAndVioletsGameSurface({
           theme={effectivePlayPhase === "day" ? "day" : "night"}
         />
       ) : (
-        <section className={`snvSeatingSurface snvTabPanel ${!seatingConfirmed ? "assignmentStarted" : ""}`} aria-label="그리모어 배치 단계">
-          <div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
-            {seatingConfirmed ? (
-              <>
-                <button ref={returnTriggerRef} type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={() => setReturnConfirmOpen(true)}><span aria-hidden="true">←</span></button>
-                {currentFirstNightStep?.characterId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
-              </>
-            ) : (
-              <>
-              <button type="button" className="snvToolbarBack" aria-label="직업 선택으로 돌아가기" onClick={() => navigateToTab("roles")}><span aria-hidden="true">←</span></button>
-              <button type="button" onClick={randomizeSeating}>무작위 배치</button>
-              <button type="button" onClick={resetSeating}>배치 초기화</button>
-              </>
-            )}
-          </div>
-          <div className="snvSeatingWorkspace stable" style={grimoireSizeStyle}>
-            <div className="snvGrimoireDraft rectangular" aria-label={`${playerCount}자리 그리모어`} style={grimoireSizeStyle}>
-              {Array.from({ length: playerCount }, (_, index) => {
-                const seat = index + 1;
-                const assignedCharacterId = seatAssignments[seat];
-                const characterId = seatingConfirmed ? displayedCharacterForSeat(seat) : assignedCharacterId;
-                const character = characters.find((candidate) => candidate.id === characterId);
-                const asset = sectsAndVioletsCharacterAsset(characterId);
-                const playerName = seatNames[seat]?.trim() || `플레이어 ${seat}`;
-                const desktopPosition = desktopSeatPositions[index];
-                const mobilePosition = mobileSeatPositions[index];
-                const canonicalActorSeat = replayState?.players.find((player) => player.id === replayState.currentStep?.playerId)?.seat;
-                const canonicalPlayer = replayState?.players.find((player) => player.seat === seat);
-                const tokenCount = canonicalPlayer ? canonicalTokensByPlayerId[canonicalPlayer.id]?.length ?? 0 : 0;
-                const isCurrentActor = Boolean(
-                  seatingConfirmed && characterId && (
-                    canonicalActorSeat ? canonicalActorSeat === seat : currentFirstNightStep?.characterId === characterId
-                  ),
-                );
-                return <Fragment key={seat}>
-                  <button
-                    type="button"
-                    className={`fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "snvCurrentActorSeat " : ""}${character ? `assigned alignment-${seatAlignments[seat] ?? defaultAlignment(character.id)} kind-${character.kind}` : "unassigned"}`}
-                    aria-label={`${seat}번 좌석, ${playerName}, ${character?.name ?? "미할당"}${isCurrentActor ? ", 현재 행동자" : ""}`}
-                    aria-pressed={selectedSeat === seat}
-                    style={{
-                      "--seat-x": `${desktopPosition.x}%`,
-                      "--seat-y": `${desktopPosition.y}%`,
-                      "--mobile-seat-x": `${mobilePosition.x}%`,
-                      "--mobile-seat-y": `${mobilePosition.y}%`,
-                    } as CSSProperties}
-                    onClick={() => chooseSeat(seat)}
-                  >
-                    <span className="snvSeatNumber">{seat}</span>
-                    {asset ? <img src={asset.src} alt="" /> : null}
-                    <span className="snvSeatPlayerName">{playerName}</span>
-                    <small>{character?.name ?? "미할당"}</small>
-                  </button>
-                  {seatingConfirmed && tokenCount > 0 ? <PlayerTokenCountBadge count={tokenCount} position={desktopPosition} mobilePosition={mobilePosition} theme={effectivePlayPhase === "day" ? "day" : "night"} /> : null}
-                </Fragment>;
-              })}
-              <div className={`snvGrimoireCenter ${seatingConfirmed ? "live" : ""}`}>
-                <strong>{seatingConfirmed ? phaseLabel(effectivePlayPhase, replayState?.currentStep) : `${assignedCount}/${playerCount}`}</strong>
-                <span>{seatingConfirmed ? "00:00" : "배치"}</span>
-                {seatingConfirmed ? <button type="button" aria-label="진행으로 이동" onClick={() => navigateToTab("play")}>진행 →</button> : null}
-              </div>
-            </div>
-            {selectedSeat ? (
-              <button
-                type="button"
-                className="snvMobileSeatPanelBackdrop"
-                aria-label="좌석 설정 패널 닫기 배경"
-                onClick={() => { setSelectedSeat(undefined); setPendingCharacterId(undefined); }}
-              />
-            ) : null}
-            {seatingConfirmed ? (
-              <aside className={`snvLiveSeatDetails transitionIn ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="좌석 상세 정보">
-                {selectedSeat && selectedSeatCharacter ? (
-                  <>
-                    <header>
-                      <span>{selectedSeat}번 좌석</span>
-                      <h2>{seatNames[selectedSeat]?.trim() || `플레이어 ${selectedSeat}`}</h2>
-                    </header>
-                    <CharacterDetailButton
-                      details={sectsAndVioletsCharacterDetail(selectedSeatCharacter.id)}
-                      className="snvLiveIdentity"
-                      theme={effectivePlayPhase === "day" ? "snv-day" : "snv-night"}
-                    >
-                      {selectedSeatAsset ? <img src={selectedSeatAsset.src} alt={`${selectedSeatCharacter.name} 공식 캐릭터 아이콘`} /> : null}
-                      <div>
-                        <span className={`snvAlignmentIcon alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)}`} aria-label={`${(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악한" : "선한"} 진영`}>
-                          {(seatAlignments[selectedSeat] ?? defaultAlignment(selectedSeatCharacter.id)) === "evil" ? "악" : "선"}
-                        </span>
-                        <strong>{selectedSeatCharacter.name}</strong>
-                      </div>
-                    </CharacterDetailButton>
-                    <div className="snvLiveStatuses" aria-label="현재 상태">
-                      <span>생존</span>
-                      {selectedSeatTokens.map((token) => <span key={token.instanceId}>{token.label}</span>)}
-                    </div>
-                  </>
-                ) : <span>좌석을 선택하세요</span>}
-              </aside>
-            ) : (
-            <>
-            <aside className={`snvSeatingTray contentHeight ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 직업">
-              {selectedSeat ? (
-                <div className="snvSeatInspector fixed compactTwoRow" aria-label="좌석 편집기">
-                    <div className="snvSeatInspectorHeader" aria-label="좌석 편집기 머리글">
-                      <span>{selectedSeat}번 좌석</span>
-                      <strong>{characters.find((character) => character.id === seatAssignments[selectedSeat])?.name ?? "미할당"}</strong>
-                      <span
-                        className={`snvAlignmentIcon ${seatAssignments[selectedSeat] ? `alignment-${seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])}` : "unassigned"}`}
-                        aria-label={seatAssignments[selectedSeat] ? `${(seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "악한" : "선한"} 진영` : "진영 미정"}
-                      >{seatAssignments[selectedSeat] ? ((seatAlignments[selectedSeat] ?? defaultAlignment(seatAssignments[selectedSeat])) === "evil" ? "악" : "선") : "-"}</span>
-                    </div>
-                    <input
-                      type="text"
-                      aria-label={`${selectedSeat}번 좌석 이름`}
-                      placeholder="플레이어 이름"
-                      value={seatNames[selectedSeat] ?? ""}
-                      onChange={(event) => {
-                        setSeatNames((current) => ({ ...current, [selectedSeat]: event.target.value }));
-                        scheduleTextAutosave();
-                      }}
-                      onBlur={flushTextAutosave}
-                    />
-                </div>
-              ) : null}
-              <div className="snvSelectedRosterTray">
-                {selectedIds.map((id) => {
-                  const character = characters.find((candidate) => candidate.id === id)!;
-                  const asset = sectsAndVioletsCharacterAsset(id);
-                  const assignedSeat = Object.entries(seatAssignments).find(([, characterId]) => characterId === id)?.[0];
-                  const selectedForSeat = Boolean(selectedSeat && seatAssignments[selectedSeat] === id);
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={`${assignedSeat ? "assigned " : ""}${selectedForSeat ? "selectedForSeat " : ""}compact`}
-                      aria-label={assignedSeat ? `${character.name}, ${assignedSeat}번 배치됨` : `${character.name} 배치`}
-                      aria-pressed={selectedForSeat || pendingCharacterId === id}
-                      onClick={() => chooseCharacterForSeating(id)}
-                    >
-                      {asset ? <img className="compactIcon" src={asset.src} alt="" /> : null}
-                      <span>{character.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-            </>
-            )}
-          </div>
-          <div className={`snvSeatingActions ${seatingConfirmed ? "placeholder" : ""}`}>
-            {!seatingConfirmed ? (
-              <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete || operationBusy} onClick={() => void confirmSeating()}>{operationBusy ? "확정 중" : "배치 확정"}</button>
-            ) : null}
-          </div>
-        </section>
+        <SectsAndVioletsAssignment
+          seatingConfirmed={seatingConfirmed}
+          playerCount={playerCount}
+          selectedSeat={selectedSeat}
+          pendingCharacterId={pendingCharacterId}
+          seatAssignments={seatAssignments}
+          seatAlignments={seatAlignments}
+          seatNames={seatNames}
+          selectedIds={selectedIds}
+          assignedCount={assignedCount}
+          seatingComplete={seatingComplete}
+          operationBusy={operationBusy}
+          phaseLabel={phaseLabel(effectivePlayPhase, replayState?.currentStep)}
+          phaseTheme={effectivePlayPhase === "day" ? "day" : "night"}
+          canonicalPlayers={replayState?.players ?? []}
+          tokensByPlayerId={canonicalTokensByPlayerId}
+          currentActorSeat={replayState?.players.find((player) => player.id === replayState.currentStep?.playerId)?.seat}
+          currentActorCharacterId={currentFirstNightStep?.characterId}
+          characterIdForSeat={displayedCharacterForSeat}
+          returnButtonRef={returnTriggerRef}
+          onReturnToSetup={() => setReturnConfirmOpen(true)}
+          onGoToRoles={() => navigateToTab("roles")}
+          onRandomize={randomizeSeating}
+          onReset={resetSeating}
+          onSeatSelect={chooseSeat}
+          onCloseSeatPanel={() => { setSelectedSeat(undefined); setPendingCharacterId(undefined); }}
+          onSeatNameChange={(seat, name) => {
+            setSeatNames((current) => ({ ...current, [seat]: name }));
+            scheduleTextAutosave();
+          }}
+          onSeatNameBlur={flushTextAutosave}
+          onCharacterSelect={chooseCharacterForSeating}
+          onGoToProgress={() => navigateToTab("play")}
+          onConfirm={() => void confirmSeating()}
+        />
       ) : activeTab === "play" && replayState?.gameEnd ? (
         <section className="snvEndedPlaySurface snvTabPanel" aria-label="종료된 게임">
           <span aria-hidden="true">{replayState.gameEnd.winningTeam === "good" ? "선" : "악"}</span>
@@ -2830,27 +2660,6 @@ export function SectsAndVioletsGameSurface({
           </section>
         </section>
       )}
-      {activeTab === "roles" ? (
-        <aside className="snvRoleDetail fixed floatingAction" aria-label="직업 설명">
-          <CharacterDetailButton
-            details={sectsAndVioletsCharacterDetail(activeCharacter.id)}
-            className="snvRoleDetailIdentity"
-            theme={effectivePlayPhase === "day" ? "snv-day" : "snv-night"}
-          >
-            {activeCharacterAsset ? <img className="snvRoleDetailIcon" src={activeCharacterAsset.src} alt={`${activeCharacter.name} 공식 캐릭터 아이콘`} /> : null}
-            <div className="snvRoleDetailCopy">
-              <div><span>{kindLabels[activeCharacter.kind]}</span></div>
-              <h2>{activeCharacter.name}</h2>
-              <p>{activeCharacter.ability}</p>
-            </div>
-          </CharacterDetailButton>
-          <div className="snvRoleDetailActions">
-            <button type="button" className="snvConfirmRoster snvStageForward prominent" disabled={storageLoading || !rosterComplete} onClick={() => { setRosterConfirmed(true); navigateToTab("seating"); markAutosaveNeeded(); }}>
-              <span>직업 선택 확정</span><small aria-hidden="true">마도서 →</small>
-            </button>
-          </div>
-        </aside>
-      ) : null}
       {production
         && replayState?.phase === "day"
         && (activeTab === "seating" || activeTab === "play")
@@ -3022,7 +2831,7 @@ export function SectsAndVioletsGameSurface({
             : current);
         }} />
       ) : null}
-    </main>
+    </ProductionApplicationShell>
   );
 }
 
@@ -3255,21 +3064,4 @@ function evilInformationPlayersToWake(step: PhaseStep, players: Player[]) {
   return players
     .filter((player) => characters.find((character) => character.id === player.actualCharacter)?.kind === kind)
     .map(({ seat, name }) => ({ seat, name }));
-}
-
-function DistributionValues({ values }: { values: [number, number, number, number] }) {
-  return (
-    <div className="snvDistributionCard emphasized">
-      <h2>인원 구성</h2>
-      <div className="snvDistributionValues">
-        {values.map((value, index) => (
-          <div key={kindOrder[index]} aria-label={`인원 구성 ${kindLabels[kindOrder[index]]} ${value}명`}><strong>{value}</strong><span>{kindLabels[kindOrder[index]]}</span></div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function signed(value: number) {
-  return value > 0 ? `+${value}` : `${value}`;
 }

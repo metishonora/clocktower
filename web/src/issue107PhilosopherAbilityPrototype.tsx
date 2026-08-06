@@ -7,7 +7,7 @@ import {
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
-import "./sectsAndVioletsFoundationPrototype.css";
+import "./shared-ui/styles/productionShell.css";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue107PhilosopherAbilityPrototype.css";
 

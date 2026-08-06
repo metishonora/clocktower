@@ -8,8 +8,8 @@ import {
   inwardSelfNominationPath,
   rectangularSeatPositions,
 } from "./sectsAndVioletsGrimoireLayout";
-import "./sectsAndVioletsFoundationPrototype.css";
-import "./issue116PhaseHandoffPrototype.css";
+import "./shared-ui/styles/productionShell.css";
+import "./shared-ui/styles/playPresentation.css";
 
 type Scenario = "day" | "night" | "unsupported";
 type ActiveTab = "play" | "grimoire";

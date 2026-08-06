@@ -11,7 +11,7 @@ import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
-import "./issue116PhaseHandoffPrototype.css";
+import { PlayPresentation } from "./shared-ui/PlayPresentation";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
 import {
@@ -108,8 +108,12 @@ export function SectsAndVioletsLiveProgress({
   />;
 
   return (
-    <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "공개 토론" : "이후 밤 진행"}>
-      <header className="snvFirstNightHeader">
+    <PlayPresentation
+      className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`}
+      ariaLabel={isDay ? "공개 토론" : "이후 밤 진행"}
+      headerClassName="snvFirstNightHeader"
+      primaryClassName="snvFirstNightPrimary"
+      phaseHeader={<>
         <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
         <div className="snvProgressPhaseHeader">
           <h2>{phaseLabel}</h2>
@@ -120,9 +124,8 @@ export function SectsAndVioletsLiveProgress({
             {phaseRuntime}
           </time>
         </div>
-      </header>
-      <div className="snvFirstNightPrimary">
-        {priorityPanel ?? (step?.requiredInput.kind === "nomination" ? (
+      </>}
+      currentTask={priorityPanel ?? (step?.requiredInput.kind === "nomination" ? (
           <article className="snvCurrentStep issue116CurrentStep">
             <h3>지명 및 투표</h3>
             <div className="issue116CandidateSummary" aria-label="현재 최고 득표">
@@ -303,9 +306,8 @@ export function SectsAndVioletsLiveProgress({
             </div>
           </article>
         ) : null)}
-      </div>
-      {priorityPanelPlayerSafe ? null : <PhaseOverview replayState={replayState} />}
-    </section>
+      phaseOrder={priorityPanelPlayerSafe ? null : <PhaseOverview replayState={replayState} />}
+    />
   );
 }
 
