@@ -163,61 +163,6 @@ select:focus-visible {
   align-self: start;
 }
 
-.communityContentNotice {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 14px;
-  margin: 0 14px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
-  padding: 10px 14px;
-}
-
-.communityContentNotice > img {
-  width: 112px;
-  height: 50px;
-  object-fit: contain;
-}
-
-.communityContentNotice > div {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  gap: 2px;
-}
-
-.communityContentNotice strong,
-.communityContentNotice span {
-  overflow-wrap: anywhere;
-}
-
-.communityContentNotice span {
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 750;
-}
-
-.communityContentNotice a {
-  color: var(--primary-dark);
-  font-size: 0.78rem;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.confirmedShell > .grimoire > .communityContentNotice {
-  position: static;
-  margin: 14px -16px -16px;
-  border: 0;
-  border-top: 1px solid var(--line);
-  border-radius: 0 0 8px 8px;
-  background: rgba(238, 232, 220, 0.42);
-  box-shadow: none;
-  padding: 10px 16px;
-}
-
 @media (min-width: 901px) {
   .shell {
     min-height: calc(100vh - 82px);
@@ -228,29 +173,6 @@ select:focus-visible {
     min-height: calc(100vh - 88px);
   }
 
-  .clocktowerApp > .communityContentNotice {
-    position: fixed;
-    right: 14px;
-    bottom: 10px;
-    left: 14px;
-    z-index: 40;
-    margin: 0;
-    gap: 10px;
-    padding: 6px 12px;
-  }
-
-  .clocktowerApp > .communityContentNotice > img {
-    width: 88px;
-    height: 38px;
-  }
-
-  .clocktowerApp > .communityContentNotice strong {
-    font-size: 0.82rem;
-  }
-
-  .clocktowerApp > .communityContentNotice span {
-    font-size: 0.68rem;
-  }
 }
 
 .sectionHeader {
@@ -4167,12 +4089,6 @@ select {
     grid-template-columns: 1fr;
   }
 
-  .communityContentNotice {
-    margin-right: 10px;
-    margin-bottom: 14px;
-    margin-left: 10px;
-  }
-
   .draftGrimoire {
     position: static;
   }
@@ -4214,10 +4130,6 @@ select {
 
   .panel {
     padding: 12px;
-  }
-
-  .confirmedShell > .grimoire > .communityContentNotice {
-    margin: 14px -12px -12px;
   }
 
   .sectionHeader {
@@ -4288,15 +4200,6 @@ select {
   .setupCounts,
   .characterCards {
     grid-template-columns: 1fr;
-  }
-
-  .communityContentNotice {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .communityContentNotice > div {
-    min-width: 180px;
   }
 
   .phasePrototypeMode,
