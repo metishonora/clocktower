@@ -469,6 +469,9 @@ function TroubleBrewingGrimoire({
   const currentActorSeat = Number(Object.entries(seatAssignments).find(([, id]) => id === "poisoner")?.[0]) || undefined;
   const selectedCharacterId = selectedSeat ? seatAssignments[selectedSeat] : undefined;
   const selectedCharacter = selectedCharacterId ? character(selectedCharacterId) : undefined;
+  const selectedShownCharacter = selectedCharacter?.id === "drunk" && drunkShownCharacterId
+    ? character(drunkShownCharacterId)
+    : undefined;
 
   return (
     <GrimoirePresentation
@@ -541,14 +544,52 @@ function TroubleBrewingGrimoire({
       inspector={<>
         {selectedSeat ? <button type="button" className="snvMobileSeatPanelBackdrop" aria-label="좌석 편집 패널 닫기 배경" onClick={onCloseInspector} /> : null}
         {seatingConfirmed ? (
-          <aside className={`snvLiveSeatDetails transitionIn ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="선택한 좌석 검토">
+          <aside className={`snvLiveSeatDetails issue148PlayerDetails transitionIn ${selectedSeat ? "mobileOpen" : "mobileCollapsed"}`} aria-label="좌석 상세 정보">
             {selectedSeat && selectedCharacter ? <>
-              <header><span>{selectedSeat}번 좌석</span><h2>{seatNames[selectedSeat]}</h2></header>
-              <div className="snvLiveIdentity issue148LiveIdentity">
-                {characterAsset(selectedCharacter.id) ? <img src={characterAsset(selectedCharacter.id)?.src} alt="" /> : null}
-                <div><span className={`snvAlignmentIcon alignment-${alignmentFor(selectedCharacter)}`}>{alignmentFor(selectedCharacter) === "evil" ? "악" : "선"}</span><strong>{selectedCharacter.label}</strong></div>
+              <header className="issue148PlayerDetailsHeader">
+                <div className="issue148PlayerHeaderRole">
+                  {characterAsset(selectedCharacter.id) ? <img src={characterAsset(selectedCharacter.id)?.src} alt="" /> : null}
+                  <strong>{selectedCharacter.label}</strong>
+                </div>
+                <div>
+                  <span>{selectedSeat}번 좌석 · {kindLabels[selectedCharacter.kind]}</span>
+                  <h2>{seatNames[selectedSeat]}</h2>
+                </div>
+                <span
+                  className={`snvAlignmentIcon alignment-${alignmentFor(selectedCharacter)} issue148PlayerAlignment`}
+                  role="img"
+                  aria-label={`현재 진영 · ${alignmentFor(selectedCharacter) === "evil" ? "악" : "선"}`}
+                >{alignmentFor(selectedCharacter) === "evil" ? "악" : "선"}</span>
+                <button type="button" className="issue148PlayerDetailsClose" aria-label="플레이어 상세 닫기" onClick={onCloseInspector}>×</button>
+              </header>
+              <div className="issue148PlayerDetailsBody">
+                {selectedCharacter.id === "drunk" && selectedShownCharacter ? (
+                  <section className="issue148DrunkIdentities" aria-label="주정뱅이 아이덴티티">
+                    <article>
+                      <span>실제 직업</span>
+                      <div>
+                        {characterAsset(selectedCharacter.id) ? <img src={characterAsset(selectedCharacter.id)?.src} alt="" /> : null}
+                        <strong>{selectedCharacter.label}</strong>
+                      </div>
+                    </article>
+                    <article className="shown">
+                      <span>보여준 직업</span>
+                      <div>
+                        {characterAsset(selectedShownCharacter.id) ? <img src={characterAsset(selectedShownCharacter.id)?.src} alt="" /> : null}
+                        <strong>{selectedShownCharacter.label}</strong>
+                      </div>
+                    </article>
+                  </section>
+                ) : null}
+                <section className="issue148CharacterAbility" aria-label="캐릭터 정보">
+                  <span>캐릭터 능력</span>
+                  <p>{selectedCharacter.abilitySummary}</p>
+                </section>
+                <section className="issue148PlayerStatuses" aria-label="현재 상태">
+                  <span>현재 상태</span>
+                  <div><strong>생존</strong></div>
+                </section>
               </div>
-              {selectedCharacter.id === "drunk" ? <div className="issue148DrunkReview"><span>보여준 직업</span><strong>{character(drunkShownCharacterId).label}</strong></div> : null}
             </> : <span>좌석을 선택하세요</span>}
           </aside>
         ) : (

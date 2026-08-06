@@ -25,9 +25,14 @@ session, persistence path, or production route.
 - Select Drunk as an Actual Outsider in Setup, then require its Shown Townsfolk in the Grimoire seat
   inspector. Show both identities to the Storyteller. The Shown Character does not reserve or consume
   an Actual Character slot, so the same Townsfolk may also exist in the Actual roster. Keep the editor
-  to one `보여준 직업` selector and render the result as an attached Character token on the Drunk seat.
+  to one `보여준 직업` selector and render the result as a small Character token in the upper-right
+  corner inside the Drunk seat. The outside/inward badge position remains reserved for the shared
+  `+N` attached-token count.
 - Keep Player-name inputs accessible by seat-specific labels, but omit a redundant visible `이름`
   caption to match the shared S&V seat inspector.
+- After confirmation, match the S&V Player-detail hierarchy: role identity, seat and Player name,
+  alignment, close action, Character ability, and current status. For Drunk, show Actual and Shown
+  identities as two explicit adjacent cards before the ability summary.
 - Keep ordinary roles unique. `무작위 배치` only shuffles the approved roster among seats; it never
   generates a random roster.
 - Use the shared rectangular perimeter, fixed-size seat tokens, role-first and seat-first assignment,
@@ -45,6 +50,8 @@ session, persistence path, or production route.
 - Reviewing only 5, 7, and 15 Players: it leaves the six-Player composition unapproved.
 - Choosing the Drunk Shown Character in the role catalog or counting it as another Actual role:
   the choice belongs to the assigned Player and must not distort the effective distribution.
+- Overlaying the Shown Character on the large Actual-role icon in Player details: it obscures the
+  Actual identity and makes the relationship ambiguous at small mobile sizes.
 - Random roster generation: Issue #148 requires seat assignment only and the product remains a
   manual-roster Storyteller tool.
 - Restoring free-position or legacy layout controls: the shared rectangular perimeter is the approved

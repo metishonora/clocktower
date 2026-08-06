@@ -93,6 +93,39 @@ test("requires the Drunk Shown Character in the shared Grimoire assignment flow"
   expect(within(grimoire).queryByRole("button", { name: /미할당/ })).toBeNull();
 });
 
+test("shows the confirmed Drunk in an S&V-aligned player detail panel", async () => {
+  const user = userEvent.setup();
+  render(<Issue148TroubleBrewingAdaptationPrototype />);
+  const reviewTools = screen.getByRole("region", { name: "프로토타입 검토 도구" });
+  await user.click(within(reviewTools).getByRole("button", { name: "마도서 편집 시료" }));
+
+  const grimoire = screen.getByRole("region", { name: "Trouble Brewing 마도서 배치" });
+  await user.click(within(grimoire).getByRole("button", { name: /번 좌석.*실제 주정뱅이/ }));
+  await user.selectOptions(
+    within(grimoire).getByRole("combobox", { name: "보여준 직업" }),
+    "fortuneTeller",
+  );
+  await user.click(within(grimoire).getByRole("button", { name: "배치 확정" }));
+  await user.click(within(grimoire).getByRole("button", { name: /번 좌석.*실제 주정뱅이.*표시 점쟁이/ }));
+
+  const details = within(grimoire).getByRole("complementary", { name: "좌석 상세 정보" });
+  expect(within(details).getByText(/번 좌석 · 외지인/)).toBeTruthy();
+  expect(within(details).getByRole("img", { name: "현재 진영 · 선" })).toBeTruthy();
+  expect(within(details).getByRole("button", { name: "플레이어 상세 닫기" })).toBeTruthy();
+  expect(within(details).getByRole("heading", { name: "지우" })).toBeTruthy();
+  expect(within(details).getByText("캐릭터 능력")).toBeTruthy();
+  expect(within(details).getByText("현재 상태")).toBeTruthy();
+  expect(within(details).getByText("생존")).toBeTruthy();
+  const identities = within(details).getByRole("region", { name: "주정뱅이 아이덴티티" });
+  expect(within(identities).getByText("실제 직업")).toBeTruthy();
+  expect(within(identities).getByText("주정뱅이")).toBeTruthy();
+  expect(within(identities).getByText("보여준 직업")).toBeTruthy();
+  expect(within(identities).getByText("점쟁이")).toBeTruthy();
+
+  await user.click(within(details).getByRole("button", { name: "플레이어 상세 닫기" }));
+  expect(details.classList.contains("mobileCollapsed")).toBe(true);
+});
+
 test("shows confirmed review surfaces and the approved first Play transition", async () => {
   const user = userEvent.setup();
   render(<Issue148TroubleBrewingAdaptationPrototype />);
@@ -135,9 +168,12 @@ test("shows confirmed review surfaces and the approved first Play transition", a
 
 test("keeps the prototype on script-neutral shared presentation contracts", () => {
   const source = readFileSync(resolve("src/issue148TroubleBrewingAdaptationPrototype.tsx"), "utf8");
+  const styles = readFileSync(resolve("src/issue148TroubleBrewingAdaptationPrototype.css"), "utf8");
   expect(source).toMatch(/shared-ui\/ProductionApplicationShell/);
   expect(source).toMatch(/shared-ui\/SetupPresentation/);
   expect(source).toMatch(/shared-ui\/GrimoirePresentation/);
   expect(source).toMatch(/shared-ui\/PlayPresentation/);
   expect(source).not.toMatch(/sectsAndViolets/);
+  expect(styles).toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*top:\s*3px;[^}]*right:\s*2px;/s);
+  expect(styles).not.toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*bottom:\s*-\d+px;/s);
 });

@@ -260,26 +260,22 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
-.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk {
-  overflow: visible;
-}
-
 .issue148ShownCharacterToken {
   position: absolute;
   z-index: 3;
-  right: -12px;
-  bottom: -17px;
+  top: 3px;
+  right: 2px;
   display: grid;
   box-sizing: border-box;
-  width: 38px;
-  height: 38px;
-  padding: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 2px;
   place-items: center;
-  border: 2px solid #72c6e7;
+  border: 1px solid #72c6e7;
   border-radius: 50%;
   color: #fff8e8;
   background: #173f4c;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .16);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .48), 0 0 0 2px rgba(114, 198, 231, .14);
   font-size: .78rem;
   font-weight: 900;
   pointer-events: none;
@@ -291,8 +287,8 @@
 }
 
 .issue148TroubleBrewingShell .issue148GrimoireBoard > button .issue148ShownCharacterToken img {
-  width: 28px;
-  height: 28px;
+  width: 16px;
+  height: 16px;
   margin: 0;
   object-fit: contain;
 }
@@ -346,20 +342,6 @@
   background: rgba(110, 74, 139, .16);
 }
 
-.issue148DrunkReview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.issue148DrunkReview span,
-.issue148DrunkReview strong {
-  color: #eadcf2;
-  font-size: .64rem;
-  font-weight: 850;
-}
-
 .issue148DrunkEditor label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -370,23 +352,166 @@
   font-weight: 850;
 }
 
-.issue148LiveIdentity {
+.issue148PlayerDetails {
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+  padding: 0;
+  align-content: start;
+  gap: 0;
 }
 
-.issue148LiveIdentity > img {
-  width: 68px;
-  height: 68px;
+.issue148TroubleBrewingShell .issue148PlayerDetails {
+  background: #201426;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, .58);
+}
+
+.issue148PlayerDetailsHeader {
+  display: grid;
+  padding: 18px;
+  grid-template-columns: 54px minmax(0, 1fr) 32px 38px;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(215, 193, 150, .14);
+}
+
+.issue148PlayerHeaderRole {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.issue148PlayerHeaderRole img {
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 
-.issue148LiveIdentity > div {
+.issue148PlayerHeaderRole strong {
+  color: #d7c18f;
+  font-size: .58rem;
+}
+
+.issue148PlayerDetailsHeader > div:nth-child(2) {
+  min-width: 0;
+}
+
+.issue148PlayerDetailsHeader > div:nth-child(2) > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 850;
+}
+
+.issue148PlayerDetailsHeader h2 {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #fff8e8;
+  font: 1.45rem Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue148PlayerAlignment {
+  justify-self: end;
+}
+
+.issue148PlayerDetailsClose {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(215, 193, 150, .22);
+  border-radius: 50%;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .04);
+  font-family: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.issue148PlayerDetailsBody {
+  display: grid;
+  padding: 18px;
+  gap: 22px;
+}
+
+.issue148DrunkIdentities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.issue148DrunkIdentities article {
+  display: grid;
+  min-width: 0;
+  padding: 10px;
+  gap: 7px;
+  border: 1px solid rgba(182, 151, 237, .28);
+  border-radius: 14px;
+  background: rgba(115, 82, 151, .13);
+}
+
+.issue148DrunkIdentities article.shown {
+  border-color: rgba(90, 177, 213, .34);
+  background: rgba(43, 123, 151, .13);
+}
+
+.issue148DrunkIdentities article > span,
+.issue148CharacterAbility > span,
+.issue148PlayerStatuses > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.issue148DrunkIdentities article > div {
   display: flex;
   align-items: center;
+  gap: 7px;
+}
+
+.issue148DrunkIdentities img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.issue148DrunkIdentities strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f6edda;
+  font-size: .72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue148CharacterAbility p {
+  margin: 9px 0 0;
+  color: #d4d5c8;
+  font-size: .76rem;
+  line-height: 1.65;
+}
+
+.issue148PlayerStatuses {
+  display: grid;
   gap: 8px;
+}
+
+.issue148PlayerStatuses div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.issue148PlayerStatuses strong {
+  padding: 7px 9px;
+  border: 1px solid rgba(210, 173, 100, .24);
+  border-radius: 999px;
+  color: #e9d8af;
+  background: rgba(255, 255, 255, .045);
+  font-size: .68rem;
 }
 
 .issue148PlayHeader > div {
@@ -543,6 +668,55 @@
 
 .issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard > button small {
   color: #58645b;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetails {
+  border-color: rgba(76, 100, 65, .18);
+  color: #243329;
+  background: #fbf6df;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader {
+  border-bottom-color: rgba(76, 100, 65, .14);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerHeaderRole strong,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader > div:nth-child(2) > span,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article > span,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility > span,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerStatuses > span {
+  color: #627057;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader h2 {
+  color: #203126;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsClose {
+  border-color: rgba(76, 100, 65, .24);
+  color: #294034;
+  background: rgba(255, 255, 255, .5);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article {
+  border-color: rgba(121, 89, 154, .22);
+  background: rgba(206, 192, 219, .34);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article.shown {
+  border-color: rgba(45, 126, 157, .24);
+  background: rgba(182, 216, 222, .4);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities strong,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility p {
+  color: #38483d;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerStatuses strong {
+  border-color: rgba(76, 100, 65, .2);
+  color: #405242;
+  background: rgba(255, 255, 255, .5);
 }
 
 .issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask {
