@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-sweetheart-barber-follow-up-order",
+    "name": "Sects & Violets 인수 테스트 · sweetheart-barber-follow-up-order",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-sweetheart-barber-follow-up-order",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "sweetheart",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "barber",
+              "actualCharacter": "barber",
+              "shownCharacter": "barber"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "klutz",
+              "actualCharacter": "klutz",
+              "shownCharacter": "klutz"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "townCrier",
+              "actualCharacter": "townCrier",
+              "shownCharacter": "townCrier"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "pitHag",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "witch",
+              "actualCharacter": "witch",
+              "shownCharacter": "witch"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "noDashii",
+              "actualCharacter": "noDashii",
+              "shownCharacter": "noDashii"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 8명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 8번 noDashii(노 다시) · 하수인: 6번 pitHag(마귀할멈), 7번 witch(마녀)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "clockmaker",
+              "dreamer",
+              "snakeCharmer"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 pitHag(마귀할멈), 7번 witch(마녀) · 블러프: 시계공, 꿈꾸는 자, 뱀 조련사",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "firstNight:witch",
+          "actorPlayerId": "player-7",
+          "targetPlayerId": "player-1",
+          "sourceAbilityInstanceId": "setup:player-7",
+          "effective": true
+        },
+        "phase": "firstNight",
+        "summary": "마녀 저주 지정: 1번 sweetheart",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-5",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-8",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-9",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "execution-10",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-11",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-12",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "night:witch",
+          "actorPlayerId": "player-7",
+          "targetPlayerId": "player-1",
+          "sourceAbilityInstanceId": "setup:player-7",
+          "effective": true
+        },
+        "phase": "night",
+        "summary": "마녀 저주 지정: 1번 sweetheart",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "pit-hag-13",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night:pitHag:player-6",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-5",
+          "characterId": "vortox",
+          "outcome": {
+            "kind": "changed",
+            "identityTransition": {
+              "playerId": "player-5",
+              "before": {
+                "actualCharacter": "oracle",
+                "shownCharacter": "oracle",
+                "alignment": "good"
+              },
+              "after": {
+                "actualCharacter": "vortox",
+                "shownCharacter": "vortox",
+                "alignment": "good"
+              }
+            },
+            "createdDemon": true
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-14",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:demon:player-8",
+          "actorPlayerId": "player-8",
+          "actorCharacterId": "noDashii",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-4",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "pitHagCreatedDemon"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "8번 noDashii(noDashii) → 4번 townCrier 공격 · 사망 대상 후보 기록",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-15",
+        "type": "nightActionResolved",
+        "payload": {
+          "stepId": "night:demon:player-5",
+          "actorPlayerId": "player-5",
+          "actorCharacterId": "vortox",
+          "resolution": {
+            "kind": "demonAttack",
+            "targetPlayerId": "player-4",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "pitHagCreatedDemon"
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "5번 oracle(vortox) → 4번 townCrier 공격 · 사망 대상 후보 기록",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-16",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "night:townCrier",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-4",
+              "characterId": "townCrier"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "boolean",
+              "value": false
+            },
+            "deliveredResult": {
+              "kind": "boolean",
+              "value": true
+            },
+            "deliveryContext": {
+              "type": "discretionary",
+              "reasons": [
+                {
+                  "type": "poisoned",
+                  "poisonerPlayerId": "player-8",
+                  "poisonEventId": "setup-sweetheart-barber-follow-up-order"
+                },
+                {
+                  "type": "vortox",
+                  "demonPlayerId": "player-5"
+                }
+              ]
+            }
+          }
+        },
+        "phase": "night",
+        "summary": "4번 townCrier(포고꾼)가 오늘 하수인의 지목을 확인했습니다: 지목함 (실제 지목하지 않음 · 중독, 보르톡스)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-17",
+        "type": "pitHagArbitraryDeathsConfirmed",
+        "payload": {
+          "stepId": "night:pitHagArbitraryDeaths",
+          "sourceTransformationEventId": "pit-hag-13",
+          "deaths": [
+            {
+              "playerId": "player-1",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-6",
+                "sourceTransformationEventId": "pit-hag-13"
+              }
+            },
+            {
+              "playerId": "player-2",
+              "cause": {
+                "kind": "pitHagArbitraryDeath",
+                "actorPlayerId": "player-6",
+                "sourceTransformationEventId": "pit-hag-13"
+              }
+            }
+          ]
+        },
+        "phase": "night",
+        "summary": "마귀할멈 임의 사망 확정 · 2명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-cerenovus-madness-assignment",
+    "name": "Sects & Violets 인수 테스트 · cerenovus-madness-assignment",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-cerenovus-madness-assignment",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "민지",
+              "actualCharacter": "mutant",
+              "shownCharacter": "mutant"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "현우",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "dreamer",
+              "actualCharacter": "dreamer",
+              "shownCharacter": "dreamer"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "seamstress",
+              "actualCharacter": "seamstress",
+              "shownCharacter": "seamstress"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "savant",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "witch",
+              "actualCharacter": "witch",
+              "shownCharacter": "witch"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "하린",
+              "actualCharacter": "cerenovus",
+              "shownCharacter": "cerenovus"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "vortox",
+              "actualCharacter": "vortox",
+              "shownCharacter": "vortox"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 8명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 8번 vortox(보르톡스) · 하수인: 6번 witch(마녀), 7번 하린(세레노버스)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "clockmaker",
+              "snakeCharmer",
+              "mathematician"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "snakeCharmer",
+                "mathematician"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-8"
+              ],
+              "minionPlayerIds": [
+                "player-6",
+                "player-7"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "snakeCharmer",
+                "mathematician"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 witch(마녀), 7번 하린(세레노버스) · 블러프: 시계공, 뱀 조련사, 수학자",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "witchCurseAssigned",
+        "payload": {
+          "stepId": "firstNight:witch",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-1",
+          "sourceAbilityInstanceId": "setup:player-6",
+          "effective": true
+        },
+        "phase": "firstNight",
+        "summary": "마녀 저주 지정: 1번 민지",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}
