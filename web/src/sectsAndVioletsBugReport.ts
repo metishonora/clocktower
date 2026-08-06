@@ -18,6 +18,21 @@ export type SectsAndVioletsBugReportInput = {
 export type SectsAndVioletsBugReport = {
   subject: string;
   body: string;
+  attachmentJson: string;
+  metadata: SectsAndVioletsBugReportMetadata;
+};
+
+export type SectsAndVioletsBugReportMetadata = {
+  reportSchemaVersion: 1;
+  schemaVersion: GameFile["schemaVersion"];
+  scriptId: GameFile["game"]["scriptId"];
+  appVersion: string;
+  buildCommit: string;
+  pageUrl: string;
+  userAgent: string;
+  viewport: string;
+  gameUpdatedAt: string;
+  eventCount: number;
 };
 
 export function buildSectsAndVioletsBugReport(
@@ -34,6 +49,32 @@ export function buildSectsAndVioletsBugReport(
   }));
   const events = input.gameFile.game.events.map((event) => sanitizeValue(event, redaction));
   const symptom = replaceKnownNames(input.symptom.trim(), redaction.nameReplacements);
+  const metadata: SectsAndVioletsBugReportMetadata = {
+    reportSchemaVersion: 1,
+    schemaVersion: input.gameFile.schemaVersion,
+    scriptId: input.gameFile.game.scriptId,
+    appVersion: input.environment.appVersion,
+    buildCommit: input.environment.buildCommit,
+    pageUrl: input.environment.pageUrl,
+    userAgent: input.environment.userAgent,
+    viewport: `${input.environment.viewport.width}x${input.environment.viewport.height}`,
+    gameUpdatedAt: input.gameFile.game.updatedAt,
+    eventCount: input.gameFile.game.events.length,
+  };
+  const attachment = {
+    reportSchemaVersion: metadata.reportSchemaVersion,
+    reportType: "clocktower.snv.bug-report",
+    userReport: { symptom: symptom || null },
+    environment: input.environment,
+    game: {
+      schemaVersion: metadata.schemaVersion,
+      scriptId: metadata.scriptId,
+      updatedAt: metadata.gameUpdatedAt,
+      setup: { players: setup },
+      events,
+    },
+    ...(input.includeOriginalGameFile ? { originalGameFile: input.gameFile } : {}),
+  };
 
   const sections = [
       "# Clocktower S&V 버그 제보",
@@ -43,15 +84,15 @@ export function buildSectsAndVioletsBugReport(
       symptom || "(작성하지 않음)",
       "",
       "[환경]",
-      "reportSchemaVersion: 1",
-      `schemaVersion: ${input.gameFile.schemaVersion}`,
-      `scriptId: ${input.gameFile.game.scriptId}`,
-      `appVersion: ${input.environment.appVersion}`,
-      `buildCommit: ${input.environment.buildCommit}`,
-      `pageUrl: ${input.environment.pageUrl}`,
-      `userAgent: ${input.environment.userAgent}`,
-      `viewport: ${input.environment.viewport.width}x${input.environment.viewport.height}`,
-      `gameUpdatedAt: ${input.gameFile.game.updatedAt}`,
+      `reportSchemaVersion: ${metadata.reportSchemaVersion}`,
+      `schemaVersion: ${metadata.schemaVersion}`,
+      `scriptId: ${metadata.scriptId}`,
+      `appVersion: ${metadata.appVersion}`,
+      `buildCommit: ${metadata.buildCommit}`,
+      `pageUrl: ${metadata.pageUrl}`,
+      `userAgent: ${metadata.userAgent}`,
+      `viewport: ${metadata.viewport}`,
+      `gameUpdatedAt: ${metadata.gameUpdatedAt}`,
       "",
       "[게임 구성]",
       "```json",
@@ -76,6 +117,8 @@ export function buildSectsAndVioletsBugReport(
   return {
     subject: "[Clocktower S&V] 버그 제보",
     body: sections.join("\n"),
+    attachmentJson: JSON.stringify(attachment, null, 2),
+    metadata,
   };
 }
 

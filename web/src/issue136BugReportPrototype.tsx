@@ -159,7 +159,7 @@ function BugReportDialog({
           </section>
 
           <details className="issue136Preview">
-            <summary><span>전송 내용 미리보기</span><small>이름 제거됨 · {events.length} events</small></summary>
+            <summary><span>{state === "oversized" ? "보고서 파일 미리보기" : "전송 내용 미리보기"}</span><small>이름 제거됨 · {events.length} events</small></summary>
             <pre>{previewReport}</pre>
           </details>
 
@@ -170,16 +170,14 @@ function BugReportDialog({
           </details>
 
           {state === "oversized" ? (
-            <div className="issue136Recovery" role="status"><strong>이메일 본문으로 보내기에는 보고서가 깁니다.</strong><p>내용은 그대로 유지했습니다. 보고서를 복사하거나 파일로 저장해 첨부하세요.</p></div>
+            <div className="issue136Recovery" role="status"><strong>이메일 본문으로 보내기에는 보고서가 깁니다.</strong><p>보고서 파일을 저장한 뒤, 메일로 전송 부탁드립니다.</p></div>
           ) : state === "copied" ? (
             <div className="issue136Copied" role="status">보고서를 클립보드에 복사했습니다.</div>
           ) : null}
         </div>
         <footer>
           <button type="button" onClick={onClose}>취소</button>
-          {state === "oversized" ? <button type="button">파일 저장</button> : null}
-          <button type="button" onClick={() => onStateChange("copied")}>보고서 복사</button>
-          {state !== "oversized" ? <button type="button" className="primary">이메일 작성</button> : null}
+          {state === "oversized" ? <><button type="button">보고서 파일 저장</button><button type="button" className="primary">메일 전송</button></> : <><button type="button" onClick={() => onStateChange("copied")}>보고서 복사</button><button type="button" className="primary">이메일 작성</button></>}
         </footer>
       </section>
     </div>

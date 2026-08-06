@@ -18,12 +18,14 @@
   and do not mark the description as required.
 - Move initial focus to the close button so opening the dialog does not summon a mobile keyboard.
 - Keep the header and actions visible while the middle dialog body scrolls independently.
-- Offer report copy and download recovery when mail composition is unavailable or the generated
-  `mailto:` payload is too large.
+- Offer report copy and download recovery when mail composition is unavailable.
+- When the full `mailto:` payload is too large, offer `보고서 파일 저장` as a valid redacted JSON
+  attachment and `메일 전송` with metadata only. The user attaches the saved JSON in their mail app.
 - Original GameFile JSON is excluded by default. It may only be exposed as an explicit optional
   diagnostic for serialization, import, or persistence bugs, with a separate privacy warning.
-- Keep the preview collapsed initially, keep `보고서 복사` visible at all times, and use the
-  approved disclosure copy for optional original JSON.
+- Keep the preview collapsed initially and keep `보고서 복사` visible in the normal mail flow.
+  Replace it with the JSON save action in the oversized flow, and use the approved disclosure copy
+  for optional original JSON.
 - Send the production email handoff to `metishonora@icloud.com`, with a build-time override kept
   available for operational changes.
 
@@ -67,8 +69,8 @@ generic redacted marker otherwise. Fields named `notes` are omitted and represen
    nested information payloads.
 5. Email handoff occurs only after an explicit user action. Cancel leaves the report draft and game
    untouched according to the approved dialog behavior.
-6. Unsupported mail composition and oversized payloads preserve the report and expose copy and
-   download recovery.
+6. Unsupported mail composition preserves the report and exposes copy/download recovery. An
+   oversized payload exposes a JSON report download and a metadata-only mail handoff.
 7. The feature remains usable at mobile, iPad and desktop target widths. Opening focuses the close
    button, a long middle section scrolls between fixed header/actions, and closing returns focus to
    the trigger.

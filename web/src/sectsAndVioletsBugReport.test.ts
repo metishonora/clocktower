@@ -66,6 +66,10 @@ test("builds an AI-reconstructable S&V report without player names or notes", ()
   assert.match(report.body, /"notesOmitted": true/);
   assert.equal(/Alice|Bob|private storyteller note|Private game name/.test(report.body), false);
   assert.equal(/createdAt/.test(report.body), false);
+  const attachment = JSON.parse(report.attachmentJson);
+  assert.equal(attachment.reportType, "clocktower.snv.bug-report");
+  assert.equal(attachment.game.events[1].payload.notesOmitted, true);
+  assert.equal(/Alice|Bob|private storyteller note|Private game name/.test(report.attachmentJson), false);
 });
 
 test("builds the report when the optional problem description is empty", () => {
@@ -102,4 +106,6 @@ test("includes the original GameFile only after explicit opt-in", () => {
   assert.match(report.body, /원본 GameFile JSON/);
   assert.match(report.body, /Private game name/);
   assert.match(report.body, /private storyteller note/);
+  const attachment = JSON.parse(report.attachmentJson);
+  assert.equal(attachment.originalGameFile.game.name, "Private game name");
 });

@@ -4,6 +4,7 @@ import {
   browserBugReportDelivery,
   bugReportEmailAvailability,
   bugReportMailto,
+  bugReportMetadataMailto,
   type BugReportDelivery,
   type BugReportEmailAvailability,
 } from "../../bugReportDelivery.js";
@@ -40,6 +41,10 @@ export function SectsAndVioletsBugReportDialog({
     includeOriginalGameFile: includeOriginal,
   }), [environment, gameFile, includeOriginal, symptom]);
   const mailtoUrl = useMemo(() => bugReportMailto(recipient, report), [recipient, report]);
+  const metadataMailtoUrl = useMemo(
+    () => bugReportMetadataMailto(recipient, report),
+    [recipient, report],
+  );
   const emailAvailability = bugReportEmailAvailability(recipient, mailtoUrl);
   const recoveryReason = feedback === "emailFailed" ? "emailFailed" : emailAvailability;
   const needsRecovery = recoveryReason !== "ready";
@@ -82,9 +87,9 @@ export function SectsAndVioletsBugReportDialog({
   }
 
   function openEmail() {
-    if (emailAvailability !== "ready") return;
+    if (recoveryReason !== "ready" && recoveryReason !== "oversized") return;
     try {
-      delivery.openEmail(mailtoUrl);
+      delivery.openEmail(recoveryReason === "oversized" ? metadataMailtoUrl : mailtoUrl);
     } catch {
       setFeedback("emailFailed");
     }
@@ -102,8 +107,8 @@ export function SectsAndVioletsBugReportDialog({
   function downloadReport() {
     try {
       delivery.downloadReport(
-        report.body,
-        `clocktower-snv-bug-report-${new Date().toISOString()}.txt`,
+        report.attachmentJson,
+        `clocktower-snv-bug-report-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
       );
       setFeedback("downloaded");
     } catch {
@@ -130,8 +135,8 @@ export function SectsAndVioletsBugReportDialog({
           </section>
 
           <details className="snvBugReportPreview">
-            <summary><span>전송 내용 미리보기</span><small>{includeOriginal ? "원본 포함" : "이름 제거됨"} · {gameFile.game.events.length} events</small></summary>
-            <pre>{report.body}</pre>
+            <summary><span>{recoveryReason === "oversized" ? "보고서 파일 미리보기" : "전송 내용 미리보기"}</span><small>{includeOriginal ? "원본 포함" : "이름 제거됨"} · {gameFile.game.events.length} events</small></summary>
+            <pre>{recoveryReason === "oversized" ? report.attachmentJson : report.body}</pre>
           </details>
 
           <details className="snvBugReportOriginal">
@@ -148,9 +153,18 @@ export function SectsAndVioletsBugReportDialog({
         </div>
         <footer>
           <button type="button" onClick={onClose}>취소</button>
-          {needsRecovery ? <button type="button" onClick={downloadReport}>파일 저장</button> : null}
-          <button type="button" onClick={() => void copyReport()}>보고서 복사</button>
-          {!needsRecovery ? <button type="button" className="primary" onClick={openEmail}>이메일 작성</button> : null}
+          {recoveryReason === "oversized" ? (
+            <>
+              <button type="button" onClick={downloadReport}>보고서 파일 저장</button>
+              <button type="button" className="primary" onClick={openEmail}>메일 전송</button>
+            </>
+          ) : (
+            <>
+              {needsRecovery ? <button type="button" onClick={downloadReport}>파일 저장</button> : null}
+              <button type="button" onClick={() => void copyReport()}>보고서 복사</button>
+              {!needsRecovery ? <button type="button" className="primary" onClick={openEmail}>이메일 작성</button> : null}
+            </>
+          )}
         </footer>
       </section>
     </div>
@@ -166,7 +180,9 @@ function RecoveryNotice({ reason }: { reason: BugReportEmailAvailability | "emai
   return (
     <div className="snvBugReportRecovery" role="status">
       <strong>{title}</strong>
-      <p>내용은 그대로 유지했습니다. 보고서를 복사하거나 파일로 저장해 첨부하세요.</p>
+      <p>{reason === "oversized"
+        ? "보고서 파일을 저장한 뒤, 메일로 전송 부탁드립니다."
+        : "내용은 그대로 유지했습니다. 보고서를 복사하거나 파일로 저장해 첨부하세요."}</p>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import type { GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
+import { SectsAndVioletsBugReportDialog } from "../src/features/bug-report/SectsAndVioletsBugReportDialog";
 
 const core = vi.hoisted(() => ({
   replay: vi.fn(async (gameFile: GameFile) => {
@@ -229,6 +230,64 @@ test("keeps copy and file recovery when an email recipient is unavailable", asyn
   expect(within(dialog).getByRole("button", { name: "보고서 복사" })).toBeTruthy();
   expect(within(dialog).getByRole("button", { name: "파일 저장" })).toBeTruthy();
   expect(within(dialog).queryByRole("button", { name: "이메일 작성" })).toBeNull();
+});
+
+test("downloads oversized reports as JSON and opens a metadata-only email", async () => {
+  const user = userEvent.setup();
+  const delivery = {
+    openEmail: vi.fn(),
+    copyReport: vi.fn(async () => undefined),
+    downloadReport: vi.fn(),
+  };
+  const oversizedGameFile: GameFile = {
+    schemaVersion: 3,
+    game: {
+      id: "oversized-game",
+      name: "oversized-game",
+      scriptId: "sectsAndViolets",
+      createdAt: "2026-08-06T00:00:00.000Z",
+      updatedAt: "2026-08-06T00:10:00.000Z",
+      events: [{
+        id: "event-1",
+        type: "smokeConfirmed",
+        phase: "setup",
+        summary: "긴 이벤트 ".repeat(4_000),
+        createdAt: "2026-08-06T00:10:00.000Z",
+        payload: { source: "test" },
+      }],
+    },
+  };
+  render(<SectsAndVioletsBugReportDialog
+    gameFile={oversizedGameFile}
+    environment={{
+      appVersion: "test-version",
+      buildCommit: "test-commit",
+      pageUrl: "https://example.test/clocktower/sects-and-violets/",
+      userAgent: "Test Browser",
+      viewport: { width: 390, height: 650 },
+    }}
+    recipient="metishonora@icloud.com"
+    delivery={delivery}
+    onClose={vi.fn()}
+  />);
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+
+  expect(within(dialog).getByText("보고서 파일을 저장한 뒤, 메일로 전송 부탁드립니다.")).toBeTruthy();
+  expect(within(dialog).getByText("보고서 파일 미리보기")).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: "보고서 복사" })).toBeNull();
+  await user.click(within(dialog).getByRole("button", { name: "보고서 파일 저장" }));
+  expect(delivery.downloadReport).toHaveBeenCalledWith(
+    expect.stringMatching(/^\{[\s\S]*\}$/),
+    expect.stringMatching(/\.json$/),
+  );
+  expect(() => JSON.parse(delivery.downloadReport.mock.calls[0][0])).not.toThrow();
+
+  await user.click(within(dialog).getByRole("button", { name: "메일 전송" }));
+  const mailto = delivery.openEmail.mock.calls[0][0];
+  const metadataBody = decodeURIComponent(mailto.split("&body=")[1]);
+  expect(metadataBody).toContain("eventCount: 1");
+  expect(metadataBody).toContain("buildCommit: test-commit");
+  expect(metadataBody).not.toContain("긴 이벤트");
 });
 
 test("confirms the assigned production roster through the canonical S&V createGame command", async () => {

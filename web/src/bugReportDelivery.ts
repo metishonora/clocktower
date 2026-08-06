@@ -14,8 +14,35 @@ export type BugReportDelivery = {
   downloadReport(report: string, filename: string): void;
 };
 
-export function bugReportMailto(recipient: string, report: SectsAndVioletsBugReport) {
+export function bugReportMailto(
+  recipient: string,
+  report: Pick<SectsAndVioletsBugReport, "subject" | "body">,
+) {
   return `mailto:${encodeURIComponent(recipient.trim())}?subject=${encodeURIComponent(report.subject)}&body=${encodeURIComponent(report.body)}`;
+}
+
+export function bugReportMetadataMailto(
+  recipient: string,
+  report: SectsAndVioletsBugReport,
+) {
+  const metadata = report.metadata;
+  const body = [
+    "# Clocktower S&V 버그 제보",
+    "",
+    "저장한 JSON 보고서 파일을 이 메일에 첨부해 주세요.",
+    "",
+    "[메타데이터]",
+    `reportSchemaVersion: ${metadata.reportSchemaVersion}`,
+    `schemaVersion: ${metadata.schemaVersion}`,
+    `scriptId: ${metadata.scriptId}`,
+    `appVersion: ${metadata.appVersion}`,
+    `buildCommit: ${metadata.buildCommit}`,
+    `pageUrl: ${metadata.pageUrl}`,
+    `viewport: ${metadata.viewport}`,
+    `gameUpdatedAt: ${metadata.gameUpdatedAt}`,
+    `eventCount: ${metadata.eventCount}`,
+  ].join("\n");
+  return `mailto:${encodeURIComponent(recipient.trim())}?subject=${encodeURIComponent(report.subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export function bugReportEmailAvailability(
