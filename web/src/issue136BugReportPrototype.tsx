@@ -95,18 +95,16 @@ export function Issue136BugReportPrototype() {
         </article>
       </section>
 
-      {dialogOpen ? <BugReportDialog state={reviewState} onStateChange={setReviewState} onClose={closeDialog} /> : null}
+      {dialogOpen ? <BugReportDialog state={reviewState} onClose={closeDialog} /> : null}
     </main>
   );
 }
 
 function BugReportDialog({
   state,
-  onStateChange,
   onClose,
 }: {
   state: ReviewState;
-  onStateChange: (state: ReviewState) => void;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -177,7 +175,7 @@ function BugReportDialog({
         </div>
         <footer>
           <button type="button" onClick={onClose}>취소</button>
-          {state === "oversized" ? <><button type="button">보고서 파일 저장</button><button type="button" className="primary">메일 전송</button></> : <><button type="button" onClick={() => onStateChange("copied")}>보고서 복사</button><button type="button" className="primary">이메일 작성</button></>}
+          {state === "oversized" ? <><button type="button">보고서 파일 저장</button><button type="button" className="primary">메일 전송</button></> : <button type="button" className="primary">이메일 작성</button>}
         </footer>
       </section>
     </div>

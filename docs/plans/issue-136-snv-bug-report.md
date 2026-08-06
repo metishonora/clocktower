@@ -23,9 +23,9 @@
   attachment and `메일 전송` with metadata only. The user attaches the saved JSON in their mail app.
 - Original GameFile JSON is excluded by default. It may only be exposed as an explicit optional
   diagnostic for serialization, import, or persistence bugs, with a separate privacy warning.
-- Keep the preview collapsed initially and keep `보고서 복사` visible in the normal mail flow.
-  Replace it with the JSON save action in the oversized flow, and use the approved disclosure copy
-  for optional original JSON.
+- Keep the preview collapsed initially. Hide `보고서 복사` in the normal short-mail flow and show
+  it only when mail composition needs recovery. Use the JSON save action in the oversized flow and
+  the approved disclosure copy for optional original JSON.
 - Send the production email handoff to `metishonora@icloud.com`, with a build-time override kept
   available for operational changes.
 

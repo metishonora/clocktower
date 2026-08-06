@@ -159,11 +159,12 @@ export function SectsAndVioletsBugReportDialog({
               <button type="button" className="primary" onClick={openEmail}>메일 전송</button>
             </>
           ) : (
-            <>
-              {needsRecovery ? <button type="button" onClick={downloadReport}>파일 저장</button> : null}
-              <button type="button" onClick={() => void copyReport()}>보고서 복사</button>
-              {!needsRecovery ? <button type="button" className="primary" onClick={openEmail}>이메일 작성</button> : null}
-            </>
+            needsRecovery ? (
+              <>
+                <button type="button" onClick={downloadReport}>파일 저장</button>
+                <button type="button" onClick={() => void copyReport()}>보고서 복사</button>
+              </>
+            ) : <button type="button" className="primary" onClick={openEmail}>이메일 작성</button>
           )}
         </footer>
       </section>

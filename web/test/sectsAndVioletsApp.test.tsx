@@ -191,7 +191,7 @@ test("opens the approved optional S&V bug report without focusing the descriptio
   ));
 });
 
-test("copies the exact report and opens the configured email handoff", async () => {
+test("opens the configured email handoff without a copy action for a short report", async () => {
   const user = userEvent.setup();
   const delivery = {
     openEmail: vi.fn(),
@@ -207,11 +207,8 @@ test("copies the exact report and opens the configured email handoff", async () 
     "진행 버튼이 비활성화되었습니다.",
   );
 
-  await user.click(within(dialog).getByRole("button", { name: "보고서 복사" }));
-  await waitFor(() => expect(delivery.copyReport).toHaveBeenCalledWith(
-    expect.stringContaining("진행 버튼이 비활성화되었습니다."),
-  ));
-  expect(within(dialog).getByRole("status").textContent).toContain("클립보드에 복사했습니다");
+  expect(within(dialog).queryByRole("button", { name: "보고서 복사" })).toBeNull();
+  expect(delivery.copyReport).not.toHaveBeenCalled();
 
   await user.click(within(dialog).getByRole("button", { name: "이메일 작성" }));
   expect(delivery.openEmail).toHaveBeenCalledWith(expect.stringMatching(
