@@ -3,7 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { Command, GameEvent, GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
-import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import type { SnvPresentation, SnvSetupDraft } from "../src/sectsAndVioletsGame";
+import type { WebSessionSnapshot } from "../src/webSessionStorage";
+import { MemoryWebSessionStorageDriver } from "./clocktowerAppHarness";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost vote", async () => {
@@ -15,7 +17,7 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
     ghostVoteUsed: false,
   });
 
-  const storage = new MemoryGameStorageDriver(game);
+  const storage = snvStorage(game, "play");
   const user = userEvent.setup();
   render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
@@ -44,8 +46,8 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
   expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
 
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
-  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
-  const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
+  await waitFor(() => expect(storage.latestCanonical()?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
+  const afterVote = await replayOrThrow(storage.latestCanonical()!);
   expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
 
   await user.click(await within(app).findByRole("button", { name: "투표 완료 →" }));
@@ -67,7 +69,7 @@ test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost
 
 test("the same mounted game keeps the swapped and killed Snake Charmer eligible for a later ghost vote", async () => {
   const game = await gameAtStep("firstNight:philosopher");
-  const storage = new MemoryGameStorageDriver(game);
+  const storage = snvStorage(game, "play");
   const user = userEvent.setup();
   render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
@@ -155,8 +157,8 @@ async function completeDemonInformation(user: ReturnType<typeof userEvent.setup>
   expect(within(app).getByText("1표")).toBeTruthy();
   expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
   await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
-  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
-  const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
+  await waitFor(() => expect(storage.latestCanonical()?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
+  const afterVote = await replayOrThrow(storage.latestCanonical()!);
   expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
 }, 15_000);
 
@@ -195,7 +197,6 @@ async function gameAtStep(targetStepId: string): Promise<GameFile> {
   }
 
   expect((await replayOrThrow(game)).currentStep?.id).toBe(targetStepId);
-  game.ui = liveSession(players, game.game.events);
   return game;
 }
 
@@ -338,32 +339,14 @@ function setupPlayers(): SetupPlayerInput[] {
   }));
 }
 
-function liveSession(players: SetupPlayerInput[], events: GameEvent[]): NonNullable<GameFile["ui"]> {
-  return {
-    sectsAndVioletsSession: {
-      version: 1,
-      activeTab: "play",
-      savedAt: "2026-07-24T15:21:44.000Z",
-      setup: {
-        playerCount: players.length,
-        demon: "noDashii",
-        selectedIds: players.map((player) => player.actualCharacter),
-        seatAssignments: Object.fromEntries(players.map((player) => [player.seat, player.actualCharacter])),
-        seatAlignments: Object.fromEntries(players.map((player) => [
-          player.seat,
-          ["noDashii", "cerenovus", "pitHag"].includes(player.actualCharacter) ? "evil" : "good",
-        ])),
-        seatNames: Object.fromEntries(players.map((player) => [player.seat, player.name])),
-        rosterConfirmed: true,
-        seatingConfirmed: true,
-      },
-      phaseCheckpoints: events.map((event, index) => ({
-        id: event.id,
-        kind: index === 0 ? "setup" : "phase",
-        eventCount: index + 1,
-        summary: event.summary,
-        activeTab: index === 0 ? "seating" : "play",
-      })),
-    },
+function snvStorage(game: GameFile, activeTab: SnvPresentation["activeTab"]) {
+  const snapshot: WebSessionSnapshot<SnvSetupDraft, SnvPresentation> = {
+    version: 1,
+    scriptId: "sectsAndViolets",
+    savedAt: "2026-07-24T15:21:44.000Z",
+    canonical: game,
+    setupDraft: null,
+    presentation: { activeTab },
   };
+  return new MemoryWebSessionStorageDriver(snapshot);
 }

@@ -4,7 +4,7 @@ import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
 import type { Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
-import type { GameStorageDriver } from "./gameStorage";
+import type { GameStoreDependencies } from "./gameStore";
 import { PhaseControlPrototype } from "./phaseControlPrototype";
 import { OngoingNightPrototype } from "./ongoingNightPrototype";
 import { DayVotingPrototype } from "./dayVotingPrototype";
@@ -156,7 +156,7 @@ const DevIssue101SnakeCharmerPrototype = import.meta.env.DEV
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
-  storageDriver: GameStorageDriver;
+  storageDriver: GameStoreDependencies["storage"];
   choiceTokenSource?: ChoiceTokenSource;
   phaseRuntimeClock?: RuntimeClock;
 };

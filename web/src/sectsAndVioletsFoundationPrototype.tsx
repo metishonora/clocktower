@@ -1,5 +1,6 @@
 import type { CoreAdapter } from "./core/coreAdapter";
-import type { GameStorageDriver } from "./gameStorage";
+import type { CompatibleWebSessionStorage } from "./webSessionStorage";
+import type { SnvPresentation, SnvSetupDraft } from "./sectsAndVioletsGame";
 import {
   SectsAndVioletsGameSurface,
   SectsAndVioletsFoundationPrototype,
@@ -14,7 +15,7 @@ export function SectsAndVioletsFoundation({
   storageDriver,
 }: {
   coreAdapter?: CoreAdapter;
-  storageDriver?: GameStorageDriver;
+  storageDriver?: CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>;
 } = {}) {
   return (
     <SectsAndVioletsGameSurface

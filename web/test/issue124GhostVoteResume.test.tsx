@@ -4,11 +4,21 @@ import { expect, test, vi } from "vitest";
 import type { CoreAdapter } from "../src/core/coreAdapter";
 import type { GameEvent, GameFile, Player, ReplayState, SetupPlayerInput } from "../src/core/types";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
-import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import type { SnvPresentation, SnvSetupDraft } from "../src/sectsAndVioletsGame";
+import type { WebSessionSnapshot } from "../src/webSessionStorage";
+import { MemoryWebSessionStorageDriver } from "./clocktowerAppHarness";
 
 test("resumes a saved nomination vote with an unused dead-player ghost vote selectable", async () => {
   const game = savedVoteGame();
   const replay = voteReplayState();
+  const snapshot: WebSessionSnapshot<SnvSetupDraft, SnvPresentation> = {
+    version: 1,
+    scriptId: "sectsAndViolets",
+    savedAt: "2026-07-24T00:01:00.000Z",
+    canonical: game,
+    setupDraft: null,
+    presentation: { activeTab: "seating" },
+  };
   const core = {
     replay: vi.fn(async () => ({ ok: true as const, value: replay })),
     propose: vi.fn(),
@@ -26,7 +36,7 @@ test("resumes a saved nomination vote with an unused dead-player ghost vote sele
   render(
     <SectsAndVioletsApp
       coreAdapter={core}
-      storageDriver={new MemoryGameStorageDriver(game)}
+      storageDriver={new MemoryWebSessionStorageDriver(snapshot)}
     />,
   );
 
@@ -81,27 +91,6 @@ function savedVoteGame(): GameFile {
       createdAt: "2026-07-24T00:00:00.000Z",
       updatedAt: "2026-07-24T00:01:00.000Z",
       events: [setup, nomination],
-    },
-    ui: {
-      sectsAndVioletsSession: {
-        version: 1,
-        activeTab: "seating",
-        savedAt: "2026-07-24T00:01:00.000Z",
-        setup: {
-          playerCount: players.length,
-          demon: "fangGu",
-          selectedIds: players.map((player) => player.actualCharacter),
-          seatAssignments: Object.fromEntries(players.map((player) => [player.seat, player.actualCharacter])),
-          seatAlignments: Object.fromEntries(players.map((player, index) => [player.seat, index >= 5 ? "evil" : "good"])),
-          seatNames: Object.fromEntries(players.map((player) => [player.seat, player.name])),
-          rosterConfirmed: true,
-          seatingConfirmed: true,
-        },
-        phaseCheckpoints: [
-          { id: setup.id, kind: "setup", eventCount: 1, summary: setup.summary, activeTab: "seating" },
-          { id: nomination.id, kind: "phase", eventCount: 2, summary: nomination.summary, activeTab: "seating" },
-        ],
-      },
     },
   };
 }

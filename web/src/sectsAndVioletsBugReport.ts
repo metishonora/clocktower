@@ -1,9 +1,9 @@
 import type {
   GameFile,
   Phase,
-  SectsAndVioletsTab,
   StepType,
 } from "./core/types.js";
+import type { SectsAndVioletsTab } from "./sectsAndVioletsSession.js";
 
 export type SectsAndVioletsBugReportEnvironment = {
   appVersion: string;

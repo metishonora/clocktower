@@ -2,12 +2,21 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { GameFile, SetupPlayerInput } from "../src/core/types";
-import type { GameStorageDriver } from "../src/gameStorage";
-import { SectsAndVioletsGameSurface } from "../src/sectsAndVioletsGame";
+import { SectsAndVioletsGameSurface, type SnvPresentation, type SnvSetupDraft } from "../src/sectsAndVioletsGame";
+import type { WebSessionSnapshot } from "../src/webSessionStorage";
+import { MemoryWebSessionStorageDriver } from "./clocktowerAppHarness";
 import { realWasmCore } from "./realWasmCoreHarness";
 
 test("issue #134 confirms once, reopens safely, and continues through S&V Minion and Demon Reveal", async () => {
-  const storage = new MemoryStorage(seedGame());
+  const snapshot: WebSessionSnapshot<SnvSetupDraft, SnvPresentation> = {
+    version: 1,
+    scriptId: "sectsAndViolets",
+    savedAt: "2026-07-31T00:00:00.000Z",
+    canonical: seedGame(),
+    setupDraft: null,
+    presentation: { activeTab: "play" },
+  };
+  const storage = new MemoryWebSessionStorageDriver(snapshot);
   const user = userEvent.setup();
   render(
     <SectsAndVioletsGameSurface
@@ -25,7 +34,7 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   );
   expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(true);
   await user.click(within(app).getByRole("button", { name: "정보 공개" }));
-  await waitFor(() => expect(storage.latest.game.events).toHaveLength(2));
+  await waitFor(() => expect(storage.latestCanonical()?.game.events).toHaveLength(2));
   let dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
   expect(within(dialog).getByRole("heading", { name: "당신은 하수인입니다" })).toBeTruthy();
   expect(within(dialog).getByRole("heading", { name: "악마는" })).toBeTruthy();
@@ -33,12 +42,12 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   expect(within(dialog).queryByText("Minion Eight")).toBeNull();
   expect(within(dialog).queryByText("Minion Nine")).toBeNull();
   await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
-  expect(storage.latest.game.events).toHaveLength(2);
+  expect(storage.latestCanonical()?.game.events).toHaveLength(2);
 
   await user.click(within(app).getByRole("button", { name: "정보 공개" }));
   dialog = screen.getByRole("dialog", { name: "하수인 정보 공개" });
   await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
-  expect(storage.latest.game.events).toHaveLength(2);
+  expect(storage.latestCanonical()?.game.events).toHaveLength(2);
   await user.click(within(app).getByRole("button", { name: "다음으로" }));
 
   expect(await within(app).findByRole("heading", { name: "악마 정보" })).toBeTruthy();
@@ -52,7 +61,7 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   await waitFor(() => expect(within(app).getAllByText("선택됨")).toHaveLength(3));
   expect(within(app).getByRole("button", { name: "정보 공개" }).hasAttribute("disabled")).toBe(false);
   await user.click(within(app).getByRole("button", { name: "정보 공개" }));
-  await waitFor(() => expect(storage.latest.game.events).toHaveLength(3));
+  await waitFor(() => expect(storage.latestCanonical()?.game.events).toHaveLength(3));
 
   dialog = screen.getByRole("dialog", { name: "악마 정보 공개" });
   expect(within(dialog).getByRole("heading", { name: "당신은 악마입니다" })).toBeTruthy();
@@ -62,22 +71,10 @@ test("issue #134 confirms once, reopens safely, and continues through S&V Minion
   expect(within(dialog).getByText("Minion Nine")).toBeTruthy();
   expect(dialog.textContent).not.toContain("마녀");
   expect(dialog.textContent).not.toContain("세레노버스");
-  expect(storage.latest.game.events).toHaveLength(3);
+  expect(storage.latestCanonical()?.game.events).toHaveLength(3);
   await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(within(app).getByRole("button", { name: "다음으로" }).hasAttribute("disabled")).toBe(false);
 });
-
-class MemoryStorage implements GameStorageDriver {
-  constructor(public latest: GameFile) {}
-
-  async loadLatestGame() {
-    return structuredClone(this.latest);
-  }
-
-  async saveLatestGame(gameFile: GameFile) {
-    this.latest = structuredClone(gameFile);
-  }
-}
 
 function seedGame(): GameFile {
   const players: SetupPlayerInput[] = [
@@ -92,7 +89,6 @@ function seedGame(): GameFile {
     ["cerenovus", "Minion Nine"],
     ["vortox", "Demon Ten"],
   ].map(([actualCharacter, name], index) => ({ seat: index + 1, name, actualCharacter }));
-  const selectedIds = players.map(({ actualCharacter }) => actualCharacter);
   return {
     schemaVersion: 3,
     game: {
@@ -109,31 +105,6 @@ function seedGame(): GameFile {
         summary: "초기 설정 확정: 10명",
         createdAt: "2026-07-31T00:00:00.000Z",
       }],
-    },
-    ui: {
-      sectsAndVioletsSession: {
-        version: 1,
-        activeTab: "play",
-        savedAt: "2026-07-31T00:00:00.000Z",
-        setup: {
-          playerCount: 10,
-          demon: "vortox",
-          selectedIds,
-          seatAssignments: Object.fromEntries(players.map(({ seat, actualCharacter }) => [seat, actualCharacter])),
-          seatAlignments: Object.fromEntries(players.map(({ seat }, index) => [seat, index >= 7 ? "evil" : "good"])),
-          seatNames: Object.fromEntries(players.map(({ seat, name }) => [seat, name])),
-          rosterConfirmed: true,
-          seatingConfirmed: true,
-        },
-        phaseCheckpoints: [{
-          id: "setup-134-web",
-          eventIds: ["setup-134-web"],
-          kind: "setup",
-          eventCount: 1,
-          summary: "초기 설정 확정: 10명",
-          activeTab: "seating",
-        }],
-      },
     },
   };
 }

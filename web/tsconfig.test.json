@@ -26,6 +26,8 @@
     "src/characterRules.test.ts",
     "src/gameStorage.ts",
     "src/gameStorage.test.ts",
+    "src/webSessionStorage.ts",
+    "src/webSessionStorage.test.ts",
     "src/sectsAndVioletsBugReport.ts",
     "src/sectsAndVioletsBugReport.test.ts",
     "src/bugReportDelivery.ts",
