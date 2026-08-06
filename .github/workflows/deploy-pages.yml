@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build static PWA
+        env:
+          VITE_BUILD_COMMIT: ${{ github.sha }}
+          VITE_BUG_REPORT_EMAIL: metishonora@icloud.com
         run: pnpm --dir web build
       - name: Verify PWA build contract
         run: pnpm --dir web verify:pwa

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ScriptId } from "../../core/scripts";
+import { CommunityContentNotice } from "../../components/CommunityContentNotice";
 import "./scriptLanding.css";
 
 const scripts = {
@@ -69,7 +70,7 @@ export function ScriptLanding({
 
   if (!selectedScript) {
     return (
-      <main className="scriptLandingPage">
+      <main className="scriptLandingPage scriptLandingSelectionSurface">
         <section className="scriptLandingChoices" aria-label="스크립트 선택">
           <h1 className="visuallyHidden">스크립트 선택</h1>
           {(Object.keys(scripts) as ScriptId[]).map((scriptId) => {
@@ -87,6 +88,7 @@ export function ScriptLanding({
             );
           })}
         </section>
+        <CommunityContentNotice />
       </main>
     );
   }

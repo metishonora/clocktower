@@ -9,7 +9,7 @@ test("keeps nomination and voting in one Grimoire visit before returning to the 
   render(<Issue116PhaseHandoffPrototype />);
 
   const prototype = screen.getByRole("main", { name: "이슈 116 낮과 이후 밤 프로토타입" });
-  const progress = within(prototype).getByRole("region", { name: "낮 진행" });
+  const progress = within(prototype).getByRole("region", { name: "공개 토론" });
   expect(within(progress).getByRole("heading", { name: "지명 및 투표" })).toBeTruthy();
   expect(within(progress).getByText("후보 없음")).toBeTruthy();
   expect(within(progress).getByText("0표")).toBeTruthy();
@@ -57,7 +57,7 @@ test("keeps nomination and voting in one Grimoire visit before returning to the 
   expect(voteComplete.classList.contains("issue116VoteCompleteAction")).toBe(true);
   await user.click(voteComplete);
 
-  const resumedProgress = within(prototype).getByRole("region", { name: "낮 진행" });
+  const resumedProgress = within(prototype).getByRole("region", { name: "공개 토론" });
   expect(within(resumedProgress).getByText("4번 도윤")).toBeTruthy();
   expect(within(resumedProgress).getByText("5표")).toBeTruthy();
   expect(within(resumedProgress).getByRole("button", { name: "← 지명하기" })).toBeTruthy();
@@ -87,7 +87,7 @@ test("separates clearing the current selection from cancelling nomination and vo
   expect(within(grimoire).getByText("1번 민지 → 4번 도윤")).toBeTruthy();
 
   await user.click(within(grimoire).getByRole("button", { name: "투표 취소 →" }));
-  expect(within(prototype).getByRole("region", { name: "낮 진행" })).toBeTruthy();
+  expect(within(prototype).getByRole("region", { name: "공개 토론" })).toBeTruthy();
   await user.click(within(prototype).getByRole("button", { name: "← 지명하기" }));
   grimoire = within(prototype).getByRole("region", { name: "낮 마도서" });
   expect(within(grimoire).getAllByText("미선택")).toHaveLength(2);
@@ -95,7 +95,7 @@ test("separates clearing the current selection from cancelling nomination and vo
   await user.click(within(grimoire).getByRole("button", { name: /2번 좌석/ }));
   await user.click(within(grimoire).getByRole("button", { name: /3번 좌석/ }));
   await user.click(within(grimoire).getByRole("button", { name: "돌아가기 →" }));
-  expect(within(prototype).getByRole("region", { name: "낮 진행" })).toBeTruthy();
+  expect(within(prototype).getByRole("region", { name: "공개 토론" })).toBeTruthy();
   await user.click(within(prototype).getByRole("button", { name: "← 지명하기" }));
   expect(within(prototype).getAllByText("미선택")).toHaveLength(2);
 });
@@ -220,7 +220,7 @@ test("updates the highest vote count even when no execution candidate is created
   const prototype = screen.getByRole("main", { name: "이슈 116 낮과 이후 밤 프로토타입" });
 
   await completeNominationAndVote(user, prototype, 1, 4, [1, 2]);
-  const progress = within(prototype).getByRole("region", { name: "낮 진행" });
+  const progress = within(prototype).getByRole("region", { name: "공개 토론" });
   expect(within(progress).getByText("후보 없음")).toBeTruthy();
   expect(within(progress).getByText("2표")).toBeTruthy();
 });

@@ -4,6 +4,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
 import type { GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
+import { SectsAndVioletsBugReportDialog } from "../src/features/bug-report/SectsAndVioletsBugReportDialog";
 
 const core = vi.hoisted(() => ({
   replay: vi.fn(async (gameFile: GameFile) => {
@@ -164,6 +165,139 @@ test("uses the approved setup, Grimoire, and progression shell on the production
     playerCount: 7,
     actualCharacters: ["fangGu"],
   }));
+});
+
+test("opens the approved optional S&V bug report without focusing the description", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  const utilities = within(app).getByRole("navigation", { name: "게임 데이터" });
+
+  await user.click(within(utilities).getByRole("button", { name: "버그 제보" }));
+
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+  const description = within(dialog).getByRole("textbox", { name: "무슨 문제가 있었나요?" });
+  const close = within(dialog).getByRole("button", { name: "버그 제보 닫기" });
+  const preview = within(dialog).getByText("전송 내용 미리보기").closest("details");
+  expect(within(dialog).queryByText("필수")).toBeNull();
+  expect(within(dialog).queryByText("어떻게 되어야 했나요?")).toBeNull();
+  expect(within(dialog).getByText(/확정 이벤트와 이벤트 시간/)).toBeTruthy();
+  expect(preview?.open).toBe(false);
+  await waitFor(() => expect(document.activeElement).toBe(close));
+  expect(document.activeElement).not.toBe(description);
+
+  await user.click(close);
+  await waitFor(() => expect(document.activeElement).toBe(
+    within(utilities).getByRole("button", { name: "버그 제보" }),
+  ));
+});
+
+test("opens the configured email handoff without a copy action for a short report", async () => {
+  const user = userEvent.setup();
+  const delivery = {
+    openEmail: vi.fn(),
+    copyReport: vi.fn(async () => undefined),
+    downloadReport: vi.fn(),
+  };
+  render(<SectsAndVioletsApp bugReportDelivery={delivery} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "버그 제보" }));
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+  await user.type(
+    within(dialog).getByRole("textbox", { name: "무슨 문제가 있었나요?" }),
+    "진행 버튼이 비활성화되었습니다.",
+  );
+
+  expect(within(dialog).queryByRole("button", { name: "보고서 복사" })).toBeNull();
+  expect(delivery.copyReport).not.toHaveBeenCalled();
+
+  await user.click(within(dialog).getByRole("button", { name: "이메일 작성" }));
+  expect(delivery.openEmail).toHaveBeenCalledWith(expect.stringMatching(
+    /^mailto:metishonora%40icloud\.com\?subject=.*&body=/,
+  ));
+  const mailto = delivery.openEmail.mock.calls[0][0];
+  const body = decodeURIComponent(mailto.split("&body=")[1]);
+  expect(body).toContain("reportSchemaVersion: 2");
+  expect(body).toContain("[재현 Fixture]");
+  expect(body).toContain('"activeTab": "roles"');
+  expect(body).toContain('"replayPhase": "setup"');
+});
+
+test("keeps copy and file recovery when an email recipient is unavailable", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp bugReportEmail="" />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "버그 제보" }));
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+
+  expect(within(dialog).getByText("제보 이메일 주소가 설정되지 않았습니다.")).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "보고서 복사" })).toBeTruthy();
+  expect(within(dialog).getByRole("button", { name: "파일 저장" })).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: "이메일 작성" })).toBeNull();
+});
+
+test("downloads oversized reports as JSON and opens a metadata-only email", async () => {
+  const user = userEvent.setup();
+  const delivery = {
+    openEmail: vi.fn(),
+    copyReport: vi.fn(async () => undefined),
+    downloadReport: vi.fn(),
+  };
+  const oversizedGameFile: GameFile = {
+    schemaVersion: 3,
+    game: {
+      id: "oversized-game",
+      name: "oversized-game",
+      scriptId: "sectsAndViolets",
+      createdAt: "2026-08-06T00:00:00.000Z",
+      updatedAt: "2026-08-06T00:10:00.000Z",
+      events: [{
+        id: "event-1",
+        type: "smokeConfirmed",
+        phase: "setup",
+        summary: "긴 이벤트 ".repeat(4_000),
+        createdAt: "2026-08-06T00:10:00.000Z",
+        payload: { source: "test" },
+      }],
+    },
+  };
+  render(<SectsAndVioletsBugReportDialog
+    gameFile={oversizedGameFile}
+    environment={{
+      appVersion: "test-version",
+      buildCommit: "test-commit",
+      pageUrl: "https://example.test/clocktower/sects-and-violets/",
+      userAgent: "Test Browser",
+      viewport: { width: 390, height: 650 },
+    }}
+    reproductionContext={{
+      activeTab: "play",
+      replayPhase: "setup",
+      currentStepId: null,
+      currentStepType: null,
+    }}
+    recipient="metishonora@icloud.com"
+    delivery={delivery}
+    onClose={vi.fn()}
+  />);
+  const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+
+  expect(within(dialog).getByText("보고서 파일을 저장한 뒤, 메일로 전송 부탁드립니다.")).toBeTruthy();
+  expect(within(dialog).getByText("보고서 파일 미리보기")).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: "보고서 복사" })).toBeNull();
+  await user.click(within(dialog).getByRole("button", { name: "보고서 파일 저장" }));
+  expect(delivery.downloadReport).toHaveBeenCalledWith(
+    expect.stringMatching(/^\{[\s\S]*\}$/),
+    expect.stringMatching(/\.json$/),
+  );
+  expect(() => JSON.parse(delivery.downloadReport.mock.calls[0][0])).not.toThrow();
+
+  await user.click(within(dialog).getByRole("button", { name: "메일 전송" }));
+  const mailto = delivery.openEmail.mock.calls[0][0];
+  const metadataBody = decodeURIComponent(mailto.split("&body=")[1]);
+  expect(metadataBody).toContain("eventCount: 1");
+  expect(metadataBody).toContain("buildCommit: test-commit");
+  expect(metadataBody).not.toContain("긴 이벤트");
 });
 
 test("confirms the assigned production roster through the canonical S&V createGame command", async () => {
@@ -682,6 +816,37 @@ test("imports a replay-valid S&V checkpoint and restores its saved page", async 
   expect(targetStorage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
 });
 
+test.each([
+  {
+    caseId: "SET-01",
+    characterIds: ["clockmaker", "dreamer", "seamstress", "juggler", "mutant", "sweetheart", "pitHag", "fangGu"],
+    expectedDistribution: [4, 2, 1, 1],
+  },
+  {
+    caseId: "SET-02",
+    characterIds: ["flowergirl", "townCrier", "oracle", "savant", "artist", "sage", "evilTwin", "vigormortis"],
+    expectedDistribution: [6, 0, 1, 1],
+  },
+])("restores the actual eight-player distribution from $caseId", async ({ caseId, characterIds, expectedDistribution }) => {
+  const user = userEvent.setup();
+  const view = render(<SectsAndVioletsApp />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
+
+  const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+  expect(input).not.toBeNull();
+  await user.upload(input!, new File([
+    JSON.stringify(setupImportGame(caseId, characterIds)),
+  ], `${caseId}.json`, { type: "application/json" }));
+
+  await user.click(await within(app).findByRole("button", { name: "직업" }));
+  expect(within(app).getByRole("button", { name: "8명" }).getAttribute("aria-pressed")).toBe("true");
+  const distribution = within(app).getByRole("region", { name: "인원 구성" });
+  for (const [index, kind] of ["마을 주민", "외부인", "하수인", "악마"].entries()) {
+    expect(within(distribution).getByLabelText(`인원 구성 ${kind} ${expectedDistribution[index]}명`)).toBeTruthy();
+  }
+});
+
 test("replaces autosave with a fresh baseline only after new-game confirmation", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const user = userEvent.setup();
@@ -1155,6 +1320,34 @@ function savedDayGame(players: SetupPlayerInput[]): GameFile {
           createdAt: "2026-07-23T00:01:00.000Z",
         },
       ],
+    },
+  };
+}
+
+function setupImportGame(caseId: string, characterIds: string[]): GameFile {
+  const players = characterIds.map((actualCharacter, index) => ({
+    id: `player-${index + 1}`,
+    seat: index + 1,
+    name: actualCharacter,
+    actualCharacter,
+    shownCharacter: actualCharacter,
+  }));
+  return {
+    schemaVersion: 3,
+    game: {
+      scriptId: "sectsAndViolets",
+      id: `acceptance-${caseId}`,
+      name: `S&V acceptance ${caseId}`,
+      createdAt: "2026-08-05T00:00:00.000Z",
+      updatedAt: "2026-08-05T00:00:00.000Z",
+      events: [{
+        id: `setup-${caseId}`,
+        type: "setupConfirmed",
+        phase: "setup",
+        payload: { players },
+        summary: "초기 설정 확정: 8명",
+        createdAt: "2026-08-05T00:00:00.000Z",
+      }],
     },
   };
 }

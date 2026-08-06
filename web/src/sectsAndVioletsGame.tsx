@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { CanonicalSessionController } from "./core/canonicalSessionController";
@@ -101,6 +101,16 @@ import {
 } from "./sectsAndVioletsSession";
 import { DayActionDock } from "./features/day-actions/DayActionDock";
 import { MadnessActionDock } from "./features/madness/MadnessActionDock";
+import { SectsAndVioletsBugReportDialog } from "./features/bug-report/SectsAndVioletsBugReportDialog";
+import {
+  DEFAULT_BUG_REPORT_EMAIL,
+  currentBugReportEnvironment,
+  type BugReportDelivery,
+} from "./bugReportDelivery";
+import type {
+  SectsAndVioletsBugReportContextInput,
+  SectsAndVioletsBugReportEnvironment,
+} from "./sectsAndVioletsBugReport";
 import {
   sectsAndVioletsCharacters as characters,
   type SectsAndVioletsCharacter as CatalogCharacter,
@@ -177,6 +187,8 @@ export type SectsAndVioletsFoundationPrototypeProps = {
   production?: boolean;
   phaseRuntimeClock?: RuntimeClock;
   choiceTokenSource?: ChoiceTokenSource;
+  bugReportEmail?: string;
+  bugReportDelivery?: BugReportDelivery;
 };
 
 export function SectsAndVioletsFoundationPrototype() {
@@ -189,6 +201,8 @@ export function SectsAndVioletsGameSurface({
   production = false,
   phaseRuntimeClock = browserRuntimeClock,
   choiceTokenSource = browserCryptoChoiceToken,
+  bugReportEmail = DEFAULT_BUG_REPORT_EMAIL,
+  bugReportDelivery,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const canonicalSession = useMemo(
     () => coreAdapter ? new CanonicalSessionController(coreAdapter) : undefined,
@@ -251,6 +265,11 @@ export function SectsAndVioletsGameSurface({
   const [acknowledgedIdentityRevealKeys, setAcknowledgedIdentityRevealKeys] = useState<string[]>([]);
   const [openedIdentityRevealKey, setOpenedIdentityRevealKey] = useState<string>();
   const [barberAbilityRevealOpen, setBarberAbilityRevealOpen] = useState(false);
+  const [bugReportSnapshot, setBugReportSnapshot] = useState<{
+    gameFile: GameFile;
+    environment: SectsAndVioletsBugReportEnvironment;
+    reproductionContext: SectsAndVioletsBugReportContextInput;
+  }>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
   const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
   const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
@@ -269,6 +288,7 @@ export function SectsAndVioletsGameSurface({
   const errorDialogRef = useRef<HTMLElement>(null);
   const errorConfirmRef = useRef<HTMLButtonElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const bugReportTriggerRef = useRef<HTMLButtonElement>(null);
 
   const localDistribution = useMemo(() => {
     const base = baseDistribution[playerCount];
@@ -931,6 +951,9 @@ export function SectsAndVioletsGameSurface({
     setPlayerCount(setup.playerCount);
     setDemon(setup.demon);
     setSelectedIds([...setup.selectedIds]);
+    setCanonicalDistribution(setup.rosterConfirmed
+      ? distributionForCharacterIds(setup.selectedIds)
+      : undefined);
     setSeatAssignments(structuredClone(setup.seatAssignments));
     setSeatAlignments(structuredClone(setup.seatAlignments));
     setSeatNames(structuredClone(setup.seatNames));
@@ -989,6 +1012,25 @@ export function SectsAndVioletsGameSurface({
     setUndoCheckpoint(undefined);
     window.setTimeout(() => undoTriggerRef.current?.focus(), 0);
   };
+
+  const closeBugReport = useCallback(() => {
+    setBugReportSnapshot(undefined);
+    window.setTimeout(() => bugReportTriggerRef.current?.focus(), 0);
+  }, []);
+
+  function openBugReport() {
+    const capturedAt = new Date().toISOString();
+    setBugReportSnapshot({
+      gameFile: withSectsAndVioletsSession(gameFile, currentSessionState(capturedAt)),
+      environment: currentBugReportEnvironment(),
+      reproductionContext: {
+        activeTab,
+        replayPhase: replayState?.phase ?? null,
+        currentStepId: replayState?.currentStep?.id ?? null,
+        currentStepType: replayState?.currentStep?.stepType ?? null,
+      },
+    });
+  }
 
   const startNewGame = () => {
     setNewGameConfirmOpen(false);
@@ -2227,6 +2269,7 @@ export function SectsAndVioletsGameSurface({
       <nav className="snvUtilityTabs" aria-label="게임 데이터">
         <button ref={newGameTriggerRef} type="button" className="snvNewGameTab" disabled={storageLoading} onClick={() => setNewGameConfirmOpen(true)}>새 게임</button>
         <button type="button" className={`snvStorageTab ${activeTab === "storage" ? "active" : ""}`} aria-current={activeTab === "storage" ? "page" : undefined} onClick={() => navigateToTab("storage")}>저장 / 불러오기</button>
+        {production ? <button ref={bugReportTriggerRef} type="button" className="snvBugReportTrigger" onClick={openBugReport}>버그 제보</button> : null}
       </nav>
       {autosaveStatus !== "idle" ? (
         <p className={`snvAutosaveStatus ${autosaveStatus}`} role="status" aria-live="polite">
@@ -2612,7 +2655,7 @@ export function SectsAndVioletsGameSurface({
       ) : (
         <section
           className={`snvManualSurface snvFirstNightSurface snvTabPanel ${effectivePlayPhase === "day" ? "snvDaySurface" : "snvNightSurface"}`}
-          aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "낮 진행" : "이후 밤 진행"}
+          aria-label={effectivePlayPhase === "firstNight" ? "첫날 밤 진행" : effectivePlayPhase === "day" ? "공개 토론" : "이후 밤 진행"}
         >
           <header className="snvFirstNightHeader">
             <button type="button" aria-label="마도서로 이동" onClick={() => navigateToTab("seating")}>← 마도서</button>
@@ -2730,7 +2773,7 @@ export function SectsAndVioletsGameSurface({
             ) : effectivePlayPhase === "day" && !dayComplete ? (
               <article className="snvCurrentStep snvDayStep">
                 <p className="snvCurrentStepLabel">현재 할 일</p>
-                <h3>낮 진행</h3>
+                <h3>공개 토론</h3>
                 <p>능력 사용, 지명, 투표와 처형을 진행합니다.</p>
                 <div className="snvStepActions">
                   <button type="button" onClick={() => setDayComplete(true)}>낮 종료</button>
@@ -2768,7 +2811,7 @@ export function SectsAndVioletsGameSurface({
             <ol className="snvPhaseOverview" aria-label="낮 순서">
               <li className={dayComplete ? "complete" : "current"}>
                 <span>{dayComplete ? "완료" : "현재"}</span>
-                <strong>낮 진행</strong>
+                <strong>공개 토론</strong>
               </li>
             </ol>
           ) : (
@@ -2965,6 +3008,16 @@ export function SectsAndVioletsGameSurface({
           </section>
         </div>
       ) : null}
+      {bugReportSnapshot ? (
+        <SectsAndVioletsBugReportDialog
+          gameFile={bugReportSnapshot.gameFile}
+          environment={bugReportSnapshot.environment}
+          reproductionContext={bugReportSnapshot.reproductionContext}
+          recipient={bugReportEmail}
+          delivery={bugReportDelivery}
+          onClose={closeBugReport}
+        />
+      ) : null}
       {nextIdentityReveal && identityRevealOpen ? (
         nextIdentityReveal.payload.kind === "evilTwinPair" ? (
           <EvilTwinReveal
@@ -3107,7 +3160,7 @@ function workflowStepFromCanonical(
   if (suffix === "manual" && step.phase === "day") {
     return {
       id: step.id,
-      name: "낮 진행",
+      name: "공개 토론",
       support: step.support ?? "manual",
       summary: "능력 사용, 지명, 투표와 처형을 진행합니다.",
     };
@@ -3192,6 +3245,15 @@ function formatAutosaveTime(value: string | undefined) {
 function defaultAlignment(characterId: string): Alignment {
   const kind = characters.find((character) => character.id === characterId)?.kind;
   return kind === "minion" || kind === "demon" ? "evil" : "good";
+}
+
+function distributionForCharacterIds(characterIds: string[]): SetupDistribution {
+  return {
+    Townsfolk: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "townsfolk").length,
+    Outsider: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "outsider").length,
+    Minion: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "minion").length,
+    Demon: characterIds.filter((id) => characters.find((character) => character.id === id)?.kind === "demon").length,
+  };
 }
 
 function evilInformationPlayersToWake(step: PhaseStep, players: Player[]) {
