@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-vortox-mathematician-false-number",
+    "name": "Sects & Violets 인수 테스트 · vortox-mathematician-false-number",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-vortox-mathematician-false-number",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "mathematician",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "evilTwin",
+              "actualCharacter": "evilTwin",
+              "shownCharacter": "evilTwin"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "clockmaker",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "cerenovus",
+              "actualCharacter": "cerenovus",
+              "shownCharacter": "cerenovus"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "vortox",
+              "actualCharacter": "vortox",
+              "shownCharacter": "vortox"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "pitHag",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "savant",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 8명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "minionPlayerIds": [
+                "player-2",
+                "player-4",
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "minionPlayerIds": [
+                "player-2",
+                "player-4",
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 5번 vortox(보르톡스) · 하수인: 2번 evilTwin(사악한 쌍둥이), 4번 cerenovus(세레노버스), 6번 pitHag(마귀할멈)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "dreamer",
+              "snakeCharmer",
+              "flowergirl"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "minionPlayerIds": [
+                "player-2",
+                "player-4",
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "snakeCharmer",
+                "flowergirl"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "minionPlayerIds": [
+                "player-2",
+                "player-4",
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "dreamer",
+                "snakeCharmer",
+                "flowergirl"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 2번 evilTwin(사악한 쌍둥이), 4번 cerenovus(세레노버스), 6번 pitHag(마귀할멈) · 블러프: 꿈꾸는 자, 뱀 조련사, 꽃팔이 소녀",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "evilTwinPairAssigned",
+        "payload": {
+          "stepId": "firstNight:evilTwin",
+          "actorPlayerId": "player-2",
+          "twinPlayerId": "player-1",
+          "sourceAbilityInstanceId": "setup:player-2",
+          "actorAlignment": "evil",
+          "twinAlignment": "good"
+        },
+        "phase": "firstNight",
+        "summary": "쌍둥이 지정: 2번 evilTwin · 1번 mathematician",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "madness-assignment-5",
+        "type": "madnessAssigned",
+        "payload": {
+          "stepId": "firstNight:cerenovus",
+          "sourcePlayerId": "player-4",
+          "targetPlayerId": "player-1",
+          "requiredCharacterId": "clockmaker"
+        },
+        "phase": "firstNight",
+        "summary": "세레노버스 집착 지정: 1번 mathematician · clockmaker",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker",
+          "input": null,
+          "information": {
+            "actor": {
+              "playerId": "player-3",
+              "characterId": "clockmaker"
+            },
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 2
+            },
+            "deliveryContext": {
+              "type": "discretionary",
+              "reasons": [
+                {
+                  "type": "vortox",
+                  "demonPlayerId": "player-5"
+                }
+              ]
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "3번 clockmaker(시계공)가 악마와 하수인의 거리 2칸을 확인했습니다. (실제 1칸 · 보르톡스)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

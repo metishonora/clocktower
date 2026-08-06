@@ -2,6 +2,38 @@ use super::support::*;
 use crate::*;
 use serde_json::{json, Value};
 
+use crate::contracts::{Command, GameEventKind};
+
+#[test]
+fn rust_and_typescript_wire_discriminators_stay_in_lockstep() {
+    let typescript = include_str!("../../../../web/src/core/wireDiscriminators.ts");
+    assert_eq!(
+        typescript_discriminators(typescript, "commandDiscriminators"),
+        Command::DISCRIMINATORS,
+    );
+    assert_eq!(
+        typescript_discriminators(typescript, "eventDiscriminators"),
+        GameEventKind::DISCRIMINATORS,
+    );
+}
+
+fn typescript_discriminators<'a>(source: &'a str, name: &str) -> Vec<&'a str> {
+    let declaration = format!("export const {name} = [");
+    let block = source
+        .split_once(&declaration)
+        .expect("TypeScript discriminator declaration")
+        .1
+        .split_once("] as const;")
+        .expect("TypeScript discriminator terminator")
+        .0;
+    block
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix('"'))
+        .filter_map(|line| line.strip_suffix(","))
+        .filter_map(|line| line.strip_suffix('"'))
+        .collect()
+}
+
 #[test]
 fn replay_empty_game_file_returns_core_result() {
     let actual: Value = serde_json::from_str(&replay_json(EMPTY_GAME)).unwrap();
@@ -12,6 +44,7 @@ fn replay_empty_game_file_returns_core_result() {
             "ok": true,
             "value": {
                 "schemaVersion": 2,
+                "scriptId": "troubleBrewing",
                 "eventCount": 0,
                 "phase": "setup",
                 "players": [],
@@ -143,14 +176,16 @@ fn schema_v1_fixture_is_rejected_without_partial_replay() {
 fn public_json_entrypoints_keep_representative_wire_strings() {
     assert_eq!(
         replay_json(EMPTY_GAME),
-        r#"{"ok":true,"value":{"schemaVersion":2,"eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[],"ruleState":{"unannouncedNightDeathPlayerIds":[]},"gameEnd":null}}"#
+        r#"{"ok":true,"value":{"schemaVersion":2,"scriptId":"troubleBrewing","eventCount":0,"phase":"setup","players":[],"currentStep":null,"phaseOverview":[],"warnings":[],"ruleState":{"unannouncedNightDeathPlayerIds":[]},"gameEnd":null}}"#
     );
     assert_eq!(
         propose_json(EMPTY_GAME, r#"{ "type": "smoke" }"#),
         r#"{"ok":true,"value":{"event":{"id":"smoke-event","type":"smokeConfirmed","payload":{"source":"smoke"},"phase":"setup","summary":"스모크 명령 확인","createdAt":"1970-01-01T00:00:00.000Z"},"warnings":[],"followUpSteps":[],"preview":{"messageKo":"코어 계약 정상"}}}"#
     );
     assert_eq!(
-        setup_distribution_json(r#"{"playerCount":7,"actualCharacters":["baron"]}"#),
+        setup_distribution_json(
+            r#"{"scriptId":"troubleBrewing","playerCount":7,"actualCharacters":["baron"]}"#
+        ),
         r#"{"ok":true,"value":{"Townsfolk":3,"Outsider":2,"Minion":1,"Demon":1}}"#
     );
 }

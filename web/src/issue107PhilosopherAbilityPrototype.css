@@ -1,0 +1,90 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+.issue107Prototype { min-height: 100dvh; background: #17101d; }
+.issue107ReviewStrip {
+  display: flex;
+  min-height: 48px;
+  padding: 6px clamp(12px, 4vw, 56px);
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(231, 208, 239, .12);
+  color: #c8b6cf;
+  background: #100a14;
+  font: 800 .68rem Inter, Pretendard, system-ui, sans-serif;
+}
+.issue107ReviewStrip > span { white-space: nowrap; }
+.issue107ReviewStrip > div { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+.issue107ReviewStrip > div::-webkit-scrollbar { display: none; }
+.issue107ReviewStrip button {
+  display: flex;
+  min-height: 34px;
+  padding: 0 10px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(231, 208, 239, .16);
+  border-radius: 999px;
+  color: #c8b6cf;
+  background: rgba(255, 255, 255, .04);
+  font: inherit;
+  cursor: pointer;
+}
+.issue107ReviewStrip button b { color: #d7b0df; }
+.issue107ReviewStrip button[aria-pressed="true"] { border-color: #d6a9e2; color: #fff; background: #82509a; }
+.issue107ReviewStrip button[aria-pressed="true"] b { color: #f5d87f; }
+
+.issue107LiveScreen { min-height: calc(100dvh - 48px); }
+.issue107Progress { align-items: start; }
+.issue107Step { min-height: 390px; }
+.issue107Step .issue107ActorIdentity { margin: 26px 0 12px !important; }
+.issue107ActorIdentity > div { display: grid; gap: 7px; }
+.issue107ActorIdentity strong { color: #ddcae2; font-size: .9rem; }
+.issue107Step > .snvInformationAbility { margin-top: 0; }
+
+.issue107AbilitySelect { display: grid; width: min(360px, 100%); margin-top: 28px; gap: 7px; }
+.issue107AbilitySelect span { color: #c7b4cf; font-size: .72rem; font-weight: 850; }
+.issue107AbilitySelect select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(214, 169, 226, .42);
+  border-radius: 12px;
+  color: #f8f0fb;
+  background: #3a2147;
+  font: inherit;
+  font-weight: 800;
+}
+
+.issue107AbilityResult {
+  display: grid;
+  width: min(620px, 100%);
+  min-height: 92px;
+  margin-top: 24px;
+  padding: 14px 16px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 14px;
+  border: 1px solid rgba(214, 169, 226, .38);
+  border-radius: 16px;
+  background: rgba(130, 80, 154, .24);
+}
+.issue107AbilityResult > span { grid-column: 1 / -1; color: #c7b4cf; font-size: .66rem; font-weight: 850; }
+.issue107AbilityResult img { width: 58px; height: 58px; object-fit: contain; }
+.issue107AbilityResult > div { min-width: 0; }
+.issue107AbilityResult strong { font: 1.45rem Georgia, serif; }
+.issue107AbilityResult p { margin: 6px 0 0; color: #c7b9cc; font-size: .78rem; line-height: 1.5; }
+
+.issue107GrimoireSurface .snvSeatingWorkspace { grid-template-columns: 1fr; }
+
+@media (max-width: 760px) {
+  .issue107ReviewStrip { justify-content: flex-start; }
+  .issue107ReviewStrip > span { display: none; }
+  .issue107ReviewStrip > div { width: 100%; }
+  .issue107LiveScreen { min-height: calc(100dvh - 48px); }
+  .issue107Step { min-height: 320px; }
+  .issue107Step .issue107ActorIdentity { margin-top: 20px !important; }
+  .issue107AbilityResult { margin-top: 18px; }
+}

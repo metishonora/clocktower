@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "acceptance-vigormortis-kills-minion",
+    "name": "Sects & Violets 인수 테스트 · vigormortis-kills-minion",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:00:00.000Z",
+    "events": [
+      {
+        "id": "setup-vigormortis-kills-minion",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "flowergirl",
+              "actualCharacter": "flowergirl",
+              "shownCharacter": "flowergirl"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "townCrier",
+              "actualCharacter": "townCrier",
+              "shownCharacter": "townCrier"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "oracle",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "savant",
+              "actualCharacter": "savant",
+              "shownCharacter": "savant"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "artist",
+              "actualCharacter": "artist",
+              "shownCharacter": "artist"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "pitHag",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "vigormortis",
+              "actualCharacter": "vigormortis",
+              "shownCharacter": "vigormortis"
+            }
+          ]
+        },
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:minionInfo",
+          "input": null,
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": []
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 7번 vigormortis(비고르모르티스) · 하수인: 6번 pitHag(마귀할멈)",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:demonInfo",
+          "input": {
+            "characterIds": [
+              "clockmaker",
+              "dreamer",
+              "snakeCharmer"
+            ]
+          },
+          "information": {
+            "targetPlayerIds": [],
+            "computedResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer"
+              ]
+            },
+            "deliveredResult": {
+              "kind": "teamInfo",
+              "demonPlayerIds": [
+                "player-7"
+              ],
+              "minionPlayerIds": [
+                "player-6"
+              ],
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "snakeCharmer"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 6번 pitHag(마귀할멈) · 블러프: 시계공, 꿈꾸는 자, 뱀 조련사",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-4",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:toDay",
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-5",
+        "type": "nightDeathsAnnounced",
+        "payload": {
+          "stepId": "day:announceDeaths",
+          "playerIds": []
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-6",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:whisper",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-7",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:discussion",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "nomination-closed-8",
+        "type": "phaseStepSkipped",
+        "payload": {
+          "stepId": "day:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "execution-9",
+        "type": "noExecutionConfirmed",
+        "payload": {
+          "stepId": "day:execution",
+          "input": {
+            "execute": false,
+            "playerId": null
+          }
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-10",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "day:toNight",
+          "input": null
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "pit-hag-11",
+        "type": "pitHagTransformationResolved",
+        "payload": {
+          "stepId": "night:pitHag:player-6",
+          "actorPlayerId": "player-6",
+          "targetPlayerId": "player-6",
+          "characterId": "pitHag",
+          "outcome": {
+            "kind": "noChange",
+            "reason": "characterAlreadyInPlay"
+          }
+        },
+        "phase": "night",
+        "summary": "마귀할멈 선택 확정 · 변경 없음",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      }
+    ]
+  }
+}

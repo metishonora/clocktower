@@ -1,0 +1,907 @@
+{
+  "game": {
+    "createdAt": "2026-08-01T00:00:00.000Z",
+    "events": [
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "example2-setup",
+        "payload": {
+          "players": [
+            {
+              "actualCharacter": "mathematician",
+              "id": "player-1",
+              "name": "Math",
+              "seat": 1,
+              "shownCharacter": "mathematician"
+            },
+            {
+              "actualCharacter": "juggler",
+              "id": "player-2",
+              "name": "Juggler",
+              "seat": 2,
+              "shownCharacter": "juggler"
+            },
+            {
+              "actualCharacter": "sweetheart",
+              "id": "player-3",
+              "name": "Sweetheart",
+              "seat": 3,
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "actualCharacter": "snakeCharmer",
+              "id": "player-4",
+              "name": "Snake",
+              "seat": 4,
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "actualCharacter": "noDashii",
+              "id": "player-5",
+              "name": "Demon",
+              "seat": 5,
+              "shownCharacter": "noDashii"
+            },
+            {
+              "actualCharacter": "savant",
+              "id": "player-6",
+              "name": "Savant",
+              "seat": 6,
+              "shownCharacter": "savant"
+            },
+            {
+              "actualCharacter": "evilTwin",
+              "id": "player-7",
+              "name": "Twin",
+              "seat": 7,
+              "shownCharacter": "evilTwin"
+            },
+            {
+              "actualCharacter": "pitHag",
+              "id": "player-8",
+              "name": "Pit Hag",
+              "seat": 8,
+              "shownCharacter": "pitHag"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "setup",
+        "type": "setupConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-2",
+        "payload": {
+          "information": {
+            "computedResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-7",
+                "player-8"
+              ]
+            },
+            "deliveredResult": {
+              "bluffCharacterIds": [],
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-7",
+                "player-8"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:minionInfo"
+        },
+        "phase": "firstNight",
+        "summary": "하수인 정보 전달 · 악마: 5번 Demon(노 다시) · 하수인: 7번 Twin(사악한 쌍둥이), 8번 Pit Hag(마귀할멈)",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-3",
+        "payload": {
+          "information": {
+            "computedResult": {
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "flowergirl"
+              ],
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-7",
+                "player-8"
+              ]
+            },
+            "deliveredResult": {
+              "bluffCharacterIds": [
+                "clockmaker",
+                "dreamer",
+                "flowergirl"
+              ],
+              "demonPlayerIds": [
+                "player-5"
+              ],
+              "kind": "teamInfo",
+              "minionPlayerIds": [
+                "player-7",
+                "player-8"
+              ]
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": {
+            "characterIds": [
+              "clockmaker",
+              "dreamer",
+              "flowergirl"
+            ]
+          },
+          "stepId": "firstNight:demonInfo"
+        },
+        "phase": "firstNight",
+        "summary": "악마 정보 전달 · 하수인: 7번 Twin(사악한 쌍둥이), 8번 Pit Hag(마귀할멈) · 블러프: 시계공, 꿈꾸는 자, 꽃팔이 소녀",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "snake-charmer-4",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          },
+          "stepId": "firstNight:snakeCharmer:player-4",
+          "targetPlayerId": "player-1"
+        },
+        "phase": "firstNight",
+        "summary": "뱀 조련사 선택 확정",
+        "type": "snakeCharmerActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-5",
+        "payload": {
+          "actorAlignment": "evil",
+          "actorPlayerId": "player-7",
+          "sourceAbilityInstanceId": "setup:player-7",
+          "stepId": "firstNight:evilTwin",
+          "twinAlignment": "good",
+          "twinPlayerId": "player-1"
+        },
+        "phase": "firstNight",
+        "summary": "쌍둥이 지정: 7번 Twin · 1번 Math",
+        "type": "evilTwinPairAssigned"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-6",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "mathematician",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "firstNight:mathematician"
+        },
+        "phase": "firstNight",
+        "summary": "정보 확정: firstNight:mathematician",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-7",
+        "payload": {
+          "input": null,
+          "stepId": "firstNight:toDay"
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-8",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-9",
+        "payload": {
+          "input": null,
+          "stepId": "day:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-10",
+        "payload": {
+          "input": null,
+          "stepId": "day:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "nomination-started-11",
+        "payload": {
+          "nominatorId": "player-1",
+          "nomineeId": "player-3",
+          "registrationJudgments": [],
+          "stepId": "day:nomination:1",
+          "virginResolution": {
+            "kind": "notApplicable"
+          }
+        },
+        "phase": "day",
+        "summary": "지목 확정: 1번 Math(수학자) → 3번 Sweetheart(사랑꾼)",
+        "type": "nominationStarted"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "nomination-vote-12",
+        "payload": {
+          "ghostVoteSpentPlayerIds": [],
+          "nominationEventId": "nomination-started-11",
+          "stepId": "day:nomination:1:vote",
+          "voterIds": [
+            "player-1",
+            "player-2",
+            "player-4",
+            "player-6"
+          ]
+        },
+        "phase": "day",
+        "summary": "지목 투표 확정: 1번 Math(수학자) → 3번 Sweetheart(사랑꾼), 4표",
+        "type": "nominationVoteConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "nomination-closed-13",
+        "payload": {
+          "stepId": "day:nomination:2"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "execution-14",
+        "payload": {
+          "input": {
+            "execute": true,
+            "playerId": "player-3"
+          },
+          "stepId": "day:execution"
+        },
+        "phase": "day",
+        "summary": "처형 확정: 3번 Sweetheart(사랑꾼)",
+        "type": "executionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "execution-death-15",
+        "payload": {
+          "playerId": "player-3",
+          "stepId": "day:executionDeath"
+        },
+        "phase": "day",
+        "summary": "사망 확정: 3번 Sweetheart(사랑꾼)",
+        "type": "deathConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "sweetheart-consequence-16",
+        "payload": {
+          "outcome": {
+            "impairment": {
+              "expires": "never",
+              "kind": "drunk",
+              "playerId": "player-2",
+              "sourceCharacterId": "sweetheart",
+              "sourceEventId": "sweetheart-consequence-16"
+            },
+            "kind": "drunkApplied"
+          },
+          "stepId": "day:death:execution-death-15:1:sweetheart",
+          "targetPlayerId": "player-2",
+          "trigger": {
+            "deathSequence": 1,
+            "playerId": "player-3",
+            "sourceAbilityInstanceId": "setup:player-3",
+            "sourceEventId": "execution-death-15"
+          }
+        },
+        "phase": "day",
+        "summary": "사랑꾼 취함 적용",
+        "type": "sweetheartConsequenceResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-17",
+        "payload": {
+          "input": null,
+          "stepId": "day:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "snake-charmer-18",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          },
+          "stepId": "night:snakeCharmer:player-4",
+          "targetPlayerId": "player-1"
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 선택 확정",
+        "type": "snakeCharmerActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "pit-hag-19",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "characterId": "mutant",
+          "outcome": {
+            "createdDemon": false,
+            "identityTransition": {
+              "after": {
+                "actualCharacter": "mutant",
+                "alignment": "good",
+                "shownCharacter": "mutant"
+              },
+              "before": {
+                "actualCharacter": "juggler",
+                "alignment": "good",
+                "shownCharacter": "juggler"
+              },
+              "playerId": "player-2"
+            },
+            "kind": "changed"
+          },
+          "stepId": "night:pitHag:player-8",
+          "targetPlayerId": "player-2"
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "type": "pitHagTransformationResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-20",
+        "payload": {
+          "actorCharacterId": "noDashii",
+          "actorPlayerId": "player-5",
+          "resolution": {
+            "kind": "demonAttack",
+            "outcome": {
+              "deaths": [
+                {
+                  "cause": {
+                    "actorCharacterId": "noDashii",
+                    "actorPlayerId": "player-5",
+                    "kind": "demonAttack",
+                    "targetPlayerId": "player-7"
+                  },
+                  "playerId": "player-7"
+                }
+              ],
+              "kind": "deaths"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night:demon:player-5"
+        },
+        "phase": "night",
+        "summary": "5번 Demon(noDashii) → 7번 Twin 공격 · 사망",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-21",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "mathematician",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night:mathematician"
+        },
+        "phase": "night",
+        "summary": "정보 확정: night:mathematician",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-22",
+        "payload": {
+          "input": null,
+          "stepId": "night:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-23",
+        "payload": {
+          "playerIds": [
+            "player-7"
+          ],
+          "stepId": "day2:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 7번 Twin · 부활: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-24",
+        "payload": {
+          "input": null,
+          "stepId": "day2:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-25",
+        "payload": {
+          "input": null,
+          "stepId": "day2:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "nomination-closed-26",
+        "payload": {
+          "stepId": "day2:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "execution-27",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day2:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-28",
+        "payload": {
+          "input": null,
+          "stepId": "day2:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day2:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "snake-charmer-29",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          },
+          "stepId": "night2:snakeCharmer:player-4",
+          "targetPlayerId": "player-1"
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 선택 확정",
+        "type": "snakeCharmerActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "pit-hag-30",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "characterId": "juggler",
+          "outcome": {
+            "createdDemon": false,
+            "identityTransition": {
+              "after": {
+                "actualCharacter": "juggler",
+                "alignment": "good",
+                "shownCharacter": "juggler"
+              },
+              "before": {
+                "actualCharacter": "mutant",
+                "alignment": "good",
+                "shownCharacter": "mutant"
+              },
+              "playerId": "player-2"
+            },
+            "kind": "changed"
+          },
+          "stepId": "night2:pitHag:player-8",
+          "targetPlayerId": "player-2"
+        },
+        "phase": "night",
+        "summary": "마귀할멈 직업 변경 확정",
+        "type": "pitHagTransformationResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-31",
+        "payload": {
+          "actorCharacterId": "noDashii",
+          "actorPlayerId": "player-5",
+          "resolution": {
+            "kind": "demonAttack",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "targetAlreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night2:demon:player-5"
+        },
+        "phase": "night",
+        "summary": "5번 Demon(noDashii) → 7번 Twin 공격 · 이미 사망 · 추가 효과 없음",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-32",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "mathematician",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 0
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night2:mathematician"
+        },
+        "phase": "night",
+        "summary": "정보 확정: night2:mathematician",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-33",
+        "payload": {
+          "input": null,
+          "stepId": "night2:toDay"
+        },
+        "phase": "night",
+        "summary": "단계 확정: night2:toDay",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "day-action-34",
+        "payload": {
+          "activeReasons": [
+            {
+              "poisonEventId": "example2-setup",
+              "poisonerPlayerId": "player-5",
+              "type": "poisoned"
+            }
+          ],
+          "actorPlayerId": "player-6",
+          "characterId": "savant",
+          "dayId": "day3",
+          "record": {
+            "kind": "savant",
+            "statements": [
+              {
+                "text": "one",
+                "truthful": true
+              },
+              {
+                "text": "two",
+                "truthful": true
+              }
+            ]
+          }
+        },
+        "phase": "day",
+        "summary": "백치천재 자유 행동 기록: 6번 Savant",
+        "type": "dayActionRecorded"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "day-action-35",
+        "payload": {
+          "activeReasons": [],
+          "actorPlayerId": "player-2",
+          "characterId": "juggler",
+          "dayId": "day3",
+          "record": {
+            "correctCount": 1,
+            "kind": "juggler"
+          }
+        },
+        "phase": "day",
+        "summary": "곡예사 자유 행동 기록: 2번 Juggler",
+        "type": "dayActionRecorded"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-36",
+        "payload": {
+          "playerIds": [],
+          "stepId": "day3:announceDeaths"
+        },
+        "phase": "day",
+        "summary": "밤 결과 · 사망자: 없음 · 부활: 없음",
+        "type": "nightDeathsAnnounced"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-37",
+        "payload": {
+          "input": null,
+          "stepId": "day3:whisper"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:whisper",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-38",
+        "payload": {
+          "input": null,
+          "stepId": "day3:discussion"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:discussion",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "nomination-closed-39",
+        "payload": {
+          "stepId": "day3:nomination:1"
+        },
+        "phase": "day",
+        "summary": "지목 종료",
+        "type": "phaseStepSkipped"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "execution-40",
+        "payload": {
+          "input": {
+            "execute": false,
+            "playerId": null
+          },
+          "stepId": "day3:execution"
+        },
+        "phase": "day",
+        "summary": "처형 없음 확정",
+        "type": "noExecutionConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-41",
+        "payload": {
+          "input": null,
+          "stepId": "day3:toNight"
+        },
+        "phase": "day",
+        "summary": "단계 확정: day3:toNight",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "snake-charmer-42",
+        "payload": {
+          "actorPlayerId": "player-4",
+          "outcome": {
+            "kind": "noSwap",
+            "reason": "targetNotDemon"
+          },
+          "stepId": "night3:snakeCharmer:player-4",
+          "targetPlayerId": "player-1"
+        },
+        "phase": "night",
+        "summary": "뱀 조련사 선택 확정",
+        "type": "snakeCharmerActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "pit-hag-43",
+        "payload": {
+          "actorPlayerId": "player-8",
+          "characterId": "pitHag",
+          "outcome": {
+            "kind": "noChange",
+            "reason": "characterAlreadyInPlay"
+          },
+          "stepId": "night3:pitHag:player-8",
+          "targetPlayerId": "player-8"
+        },
+        "phase": "night",
+        "summary": "마귀할멈 선택 확정 · 변경 없음",
+        "type": "pitHagTransformationResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-44",
+        "payload": {
+          "actorCharacterId": "noDashii",
+          "actorPlayerId": "player-5",
+          "resolution": {
+            "kind": "demonAttack",
+            "outcome": {
+              "kind": "noEffect",
+              "reason": "targetAlreadyDead"
+            },
+            "targetPlayerId": "player-7"
+          },
+          "stepId": "night3:demon:player-5"
+        },
+        "phase": "night",
+        "summary": "5번 Demon(noDashii) → 7번 Twin 공격 · 이미 사망 · 추가 효과 없음",
+        "type": "nightActionResolved"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-45",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "juggler",
+              "playerId": "player-2"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "reasons": [
+                {
+                  "type": "drunk"
+                }
+              ],
+              "type": "discretionary"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night3:ability:pit-hag-30:player-2:juggler"
+        },
+        "phase": "night",
+        "summary": "정보 확정: night3:ability:pit-hag-30:player-2:juggler",
+        "type": "phaseStepConfirmed"
+      },
+      {
+        "createdAt": "2026-08-01T00:00:00.000Z",
+        "id": "phase-46",
+        "payload": {
+          "information": {
+            "actor": {
+              "characterId": "mathematician",
+              "playerId": "player-1"
+            },
+            "computedResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveredResult": {
+              "kind": "number",
+              "value": 1
+            },
+            "deliveryContext": {
+              "type": "fixed"
+            },
+            "targetPlayerIds": []
+          },
+          "input": null,
+          "stepId": "night3:mathematician"
+        },
+        "phase": "night",
+        "summary": "정보 확정: night3:mathematician",
+        "type": "phaseStepConfirmed"
+      }
+    ],
+    "id": "example2",
+    "name": "example2",
+    "scriptId": "sectsAndViolets",
+    "updatedAt": "2026-08-01T00:00:00.000Z"
+  },
+  "schemaVersion": 3
+}

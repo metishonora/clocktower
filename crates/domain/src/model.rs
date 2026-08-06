@@ -32,12 +32,23 @@ pub(crate) enum StepType {
     Execution,
     #[serde(rename = "executionDeath")]
     ExecutionDeath,
+    #[serde(rename = "witchDeath")]
+    WitchDeath,
     #[serde(rename = "slayerDeath")]
     SlayerDeath,
     #[serde(rename = "demonSuccession")]
     DemonSuccession,
     #[serde(rename = "redHerringAssignment")]
     RedHerringAssignment,
+    #[serde(rename = "pitHagArbitraryDeaths")]
+    PitHagArbitraryDeaths,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PhaseStepSupport {
+    Automated,
+    Manual,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
@@ -48,6 +59,10 @@ pub(crate) enum RequiredInputKind {
     PlayerIds,
     #[serde(rename = "characterIds")]
     CharacterIds,
+    #[serde(rename = "characterTransformation")]
+    CharacterTransformation,
+    #[serde(rename = "madnessAssignment")]
+    MadnessAssignment,
     #[serde(rename = "setupInfo")]
     SetupInfo,
     #[serde(rename = "number")]
@@ -104,8 +119,17 @@ pub(crate) enum InformationResult {
     Character {
         character_id: String,
     },
+    CharacterPair {
+        character_ids: Vec<String>,
+    },
     Number {
-        value: usize,
+        value: u64,
+    },
+    Player {
+        player_id: String,
+    },
+    PlayerPair {
+        player_ids: Vec<String>,
     },
     SetupInfo {
         player_ids: Vec<String>,
@@ -179,10 +203,14 @@ pub(crate) struct InformationActor {
     rename_all_fields = "camelCase"
 )]
 pub(crate) enum DeliveryReason {
+    AbilityChoice,
     Drunk,
     Poisoned {
         poisoner_player_id: String,
         poison_event_id: String,
+    },
+    Vortox {
+        demon_player_id: String,
     },
     RegistrationJudgment {
         judgments: Vec<RegistrationJudgment>,
@@ -224,9 +252,83 @@ pub(crate) struct InformationPrompt {
     pub(crate) active_reasons: Vec<DeliveryReason>,
     pub(crate) registration_candidate_player_ids: Vec<String>,
     pub(crate) number_choices: Vec<NumberInformationChoice>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) number_constraint: Option<NumberInformationConstraint>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) boolean_choices: Vec<BooleanInformationChoice>,
     pub(crate) setup_info_registration_options: Vec<SetupInfoRegistrationOption>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) target_checks: Vec<TargetInformationCheck>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) mathematician_audit: Option<MathematicianAudit>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MathematicianAudit {
+    pub(crate) records: Vec<AbnormalAbilityAuditRecord>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AbnormalAbilityAuditRecord {
+    pub(crate) subject_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+    pub(crate) evidence: Vec<AbnormalAbilityEvidence>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AbnormalAbilityEvidence {
+    pub(crate) resolution_event_id: String,
+    pub(crate) step_id: String,
+    pub(crate) phase: Phase,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+    pub(crate) outcome: AbnormalAbilityOutcome,
+    pub(crate) causes: Vec<DeliveryReason>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum AbnormalAbilityOutcome {
+    IncorrectInformation {
+        computed_result: InformationResult,
+        delivered_result: InformationResult,
+    },
+    InvalidSavantPattern {
+        truthful_count: u8,
+    },
+    EffectFailure {
+        effect: AbnormalAbilityEffect,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum AbnormalAbilityEffect {
+    SnakeCharmerSwap,
+    WitchDeath,
+    SweetheartDrunkenness,
+    DemonDeath,
+    PitHagCharacterChange,
+    NoDashiiPoison,
+    VigormortisOngoingEffect,
+    VortoxFalseInformation,
+    VortoxExecution,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BooleanInformationChoice {
+    pub(crate) value: bool,
+    pub(crate) is_computed: bool,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -248,9 +350,19 @@ pub(crate) struct TargetInformationChoice {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NumberInformationChoice {
-    pub(crate) value: usize,
+    pub(crate) value: u64,
     pub(crate) is_computed: bool,
     pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
+pub(crate) const MAX_SAFE_INFORMATION_NUMBER: u64 = 9_007_199_254_740_991;
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NumberInformationConstraint {
+    pub(crate) min: u64,
+    pub(crate) max: u64,
+    pub(crate) excluded_values: Vec<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -328,8 +440,13 @@ pub(crate) struct PhaseStep {
     pub(crate) character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_origin: Option<AbilityOrigin>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -364,6 +481,8 @@ pub(crate) struct RequiredInput {
     pub(crate) allowed_character_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) allowed_player_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) dependent_player_selections: Vec<DependentPlayerSelection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_registration_options: Option<Vec<RegistrationJudgment>>,
     #[serde(skip_serializing_if = "is_false")]
@@ -381,6 +500,14 @@ pub(crate) struct RequiredInput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) demon_succession: Option<DemonSuccessionPrompt>,
     pub(crate) optional: bool,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DependentPlayerSelection {
+    pub(crate) trigger_player_id: String,
+    pub(crate) selection_index: u8,
+    pub(crate) allowed_player_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -438,8 +565,13 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) character: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_origin: Option<AbilityOrigin>,
     pub(crate) required_input: RequiredInput,
     pub(crate) can_skip: bool,
+    pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
     pub(crate) status: PhaseStepStatus,
@@ -524,7 +656,7 @@ pub(crate) struct ConfirmedExecution {
     pub(crate) player_id: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Player {
     pub(crate) id: String,
@@ -539,6 +671,151 @@ pub(crate) struct Player {
     pub(crate) system_token_ids: Vec<SystemTokenId>,
     pub(crate) script_tokens: Vec<ScriptTokenRef>,
     pub(crate) notes: String,
+    pub(crate) ability_instance: AbilityInstance,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) identity_history: Vec<IdentityHistoryEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityInstance {
+    pub(crate) id: AbilityInstanceId,
+    pub(crate) character_id: String,
+    pub(crate) source_event_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(transparent)]
+pub(crate) struct AbilityInstanceId(String);
+
+impl AbilityInstanceId {
+    pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
+        Self(format!("{source_event_id}:{player_id}"))
+    }
+}
+
+/// Identifies the concrete ability instance that is acting. A player keeps
+/// their current base ability instance, while replay-derived grants get their
+/// own independent instance IDs.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityUseRef {
+    pub(crate) owner_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+}
+
+/// Replay-derived provenance for an acting ability. This is deliberately not
+/// part of persisted events: old schema-v3 files keep their existing shape,
+/// while projections no longer need to infer ownership from character IDs.
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub(crate) enum AbilityOrigin {
+    IdentityBound,
+    Acquired {
+        acquisition_event_id: String,
+        source: AbilityUseRef,
+    },
+}
+
+/// A rule-layer view of an ability owner. `identity` always remains the
+/// canonical player identity; `ability` and `origin` describe what is acting.
+#[derive(Debug, Clone)]
+pub(crate) struct AbilityActor<'a> {
+    pub(crate) identity: &'a Player,
+    pub(crate) ability: AbilityUseRef,
+    pub(crate) origin: AbilityOrigin,
+    pub(crate) source_event_id: String,
+}
+
+/// A healthy Philosopher acquisition projected from the confirmed event
+/// stream. The grant does not alter the owning player's canonical identity.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityGrant {
+    pub(crate) owner_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) source_event_id: String,
+    pub(crate) source_ability_instance_id: AbilityInstanceId,
+    pub(crate) ability_instance_id: AbilityInstanceId,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct IdentityState {
+    pub(crate) actual_character: String,
+    pub(crate) shown_character: String,
+    pub(crate) alignment: Alignment,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct IdentityHistoryEntry {
+    pub(crate) source_event_id: String,
+    pub(crate) phase: Phase,
+    pub(crate) before: IdentityState,
+    pub(crate) after: IdentityState,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerIdentityTransition {
+    pub(crate) player_id: String,
+    pub(crate) before: IdentityState,
+    pub(crate) after: IdentityState,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PlayerStateSnapshot {
+    pub(crate) actual_character: String,
+    pub(crate) shown_character: String,
+    pub(crate) alignment: Alignment,
+    pub(crate) alive: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum PlayerTransition {
+    CharacterChange {
+        player_id: String,
+        before: PlayerStateSnapshot,
+        after: PlayerStateSnapshot,
+    },
+    Resurrection {
+        player_id: String,
+        before: PlayerStateSnapshot,
+        after: PlayerStateSnapshot,
+    },
+}
+
+impl PlayerTransition {
+    pub(crate) fn player_id(&self) -> &str {
+        match self {
+            Self::CharacterChange { player_id, .. } | Self::Resurrection { player_id, .. } => {
+                player_id
+            }
+        }
+    }
+    pub(crate) fn before(&self) -> &PlayerStateSnapshot {
+        match self {
+            Self::CharacterChange { before, .. } | Self::Resurrection { before, .. } => before,
+        }
+    }
+    pub(crate) fn after(&self) -> &PlayerStateSnapshot {
+        match self {
+            Self::CharacterChange { after, .. } | Self::Resurrection { after, .. } => after,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -599,13 +876,22 @@ impl CharacterKind {
 pub(crate) enum PhaseStepStatus {
     Waiting,
     Current,
+    Interrupted,
     Complete,
     Skipped,
     NeedsFollowUp,
+    ManualComplete,
+    NotApplicable,
 }
 
 impl PhaseStepStatus {
     pub(crate) fn is_done(self) -> bool {
-        matches!(self, PhaseStepStatus::Complete | PhaseStepStatus::Skipped)
+        matches!(
+            self,
+            PhaseStepStatus::Complete
+                | PhaseStepStatus::Skipped
+                | PhaseStepStatus::ManualComplete
+                | PhaseStepStatus::NotApplicable
+        )
     }
 }

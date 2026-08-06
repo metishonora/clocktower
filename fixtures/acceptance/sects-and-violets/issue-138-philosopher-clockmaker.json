@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "issue-138-philosopher-clockmaker",
+    "name": "Issue 138 Philosopher Clockmaker",
+    "scriptId": "sectsAndViolets",
+    "createdAt": "2026-08-05T00:00:00.000Z",
+    "updatedAt": "2026-08-05T00:01:00.000Z",
+    "events": [
+      {
+        "id": "setup-138",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            { "id": "player-1", "seat": 1, "name": "Philosopher", "actualCharacter": "philosopher", "shownCharacter": "philosopher" },
+            { "id": "player-2", "seat": 2, "name": "Dreamer", "actualCharacter": "dreamer", "shownCharacter": "dreamer" },
+            { "id": "player-3", "seat": 3, "name": "Snake Charmer", "actualCharacter": "snakeCharmer", "shownCharacter": "snakeCharmer" },
+            { "id": "player-4", "seat": 4, "name": "Mathematician", "actualCharacter": "mathematician", "shownCharacter": "mathematician" },
+            { "id": "player-5", "seat": 5, "name": "Oracle", "actualCharacter": "oracle", "shownCharacter": "oracle" },
+            { "id": "player-6", "seat": 6, "name": "Cerenovus", "actualCharacter": "cerenovus", "shownCharacter": "cerenovus" },
+            { "id": "player-7", "seat": 7, "name": "Fang Gu", "actualCharacter": "fangGu", "shownCharacter": "fangGu" }
+          ]
+        },
+        "summary": "초기 설정 확정",
+        "createdAt": "2026-08-05T00:00:00.000Z"
+      },
+      {
+        "id": "phase-2",
+        "type": "philosopherAbilityResolved",
+        "phase": "firstNight",
+        "payload": {
+          "stepId": "firstNight:philosopher",
+          "actor": {
+            "ownerPlayerId": "player-1",
+            "characterId": "philosopher",
+            "abilityInstanceId": "setup:player-1"
+          },
+          "selectedCharacterId": "clockmaker",
+          "outcome": {
+            "kind": "acquired",
+            "grantedAbilityInstanceId": "phase-2:player-1"
+          }
+        },
+        "summary": "철학자 능력 획득: 시계공",
+        "createdAt": "2026-08-05T00:01:00.000Z"
+      }
+    ]
+  }
+}

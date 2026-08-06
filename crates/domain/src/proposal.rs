@@ -32,13 +32,26 @@ use crate::{
     phase::validate_required_input,
     replay::{pending_demon_succession, replay_phase_state, replay_players, replay_rule_state},
     setup::{
-        normalized_setup_player, player_from_setup_input, validate_setup_inputs,
-        validate_setup_warnings,
+        normalized_setup_player_for_script, player_from_setup_input_for_script,
+        validate_setup_inputs_for_script, validate_setup_warnings_for_script,
     },
 };
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
+    crate::characters::rules(game_file.script_id).validate_command(&command)?;
+    if command
+        .expected_event_count()
+        .is_some_and(|expected| expected != game_file.game.events.len())
+    {
+        return Err(ErrorKind::StaleCommand.into_error());
+    }
+    if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
+        return match command {
+            Command::CreateGame { payload } => propose_create_game(&game_file, payload),
+            command => crate::characters::propose_snv_phase_command(&game_file, command),
+        };
+    }
     if game_file
         .game
         .events
@@ -68,7 +81,22 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         Command::CreateGame { payload } => propose_create_game(&game_file, payload),
         Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
         Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
+        Command::ResolveManualStep { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
+        Command::RecordDayAction { .. } => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
+        Command::RecordMadnessCheck { .. } | Command::ExecuteMadness { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
+        Command::ResolveVigormortisPoison { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
+        Command::ResolveSweetheartConsequence { .. }
+        | Command::ResolveBarberConsequence { .. }
+        | Command::ResolveKlutzConsequence { .. } => {
+            Err(ErrorKind::CommandNotSupportedByScript.into_error())
+        }
         Command::EndGame { payload } => propose_end_game(&game_file, payload),
         Command::UpdatePlayerAnnotations { payload } => {
             propose_player_annotations(&game_file, payload)
@@ -161,6 +189,7 @@ fn propose_end_game(
             kind: GameEventKind::GameEnded {
                 payload: GameEndedPayload {
                     winning_team: payload.winning_team,
+                    source: None,
                 },
             },
             phase,
@@ -303,18 +332,18 @@ pub(crate) fn propose_create_game(
         return Err(ErrorKind::GameAlreadyHasEvents.into_error());
     }
 
-    validate_setup_inputs(&payload.players)?;
+    validate_setup_inputs_for_script(game_file.script_id, &payload.players)?;
 
     let players = payload
         .players
         .iter()
-        .map(normalized_setup_player)
+        .map(|player| normalized_setup_player_for_script(game_file.script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
     let derived_players = players
         .iter()
-        .map(player_from_setup_input)
+        .map(|player| player_from_setup_input_for_script(game_file.script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
-    let warnings = validate_setup_warnings(&derived_players);
+    let warnings = validate_setup_warnings_for_script(game_file.script_id, &derived_players);
     let count = players.len();
 
     Ok(Proposal {
@@ -383,6 +412,7 @@ pub(crate) fn propose_phase_step(
             &players,
             payload.input,
             payload.registration_judgments,
+            crate::contracts::WitchNominationResolution::NotApplicable,
         );
     }
     if !skip && current_step.required_input.kind == RequiredInputKind::NominationVote {
@@ -439,6 +469,7 @@ pub(crate) fn propose_phase_step(
                 payload: NightDeathsAnnouncedPayload {
                     step_id: current_step.id.clone(),
                     player_ids,
+                    resurrected_player_ids: vec![],
                 },
             },
             summary,
@@ -798,6 +829,9 @@ fn night_action_proposal(
                 player_verbose_label(players, target_player_id)
             )
         }
+        NightActionResolution::DemonAttack { .. } => {
+            unreachable!("S&V Demon attacks use the script-specific proposal path")
+        }
     };
     Proposal {
         event: GameEvent {
@@ -806,6 +840,7 @@ fn night_action_proposal(
                 payload: NightActionResolvedPayload {
                     step_id: step.id.clone(),
                     actor_player_id: actor,
+                    actor_character_id: None,
                     resolution,
                 },
             },
@@ -859,6 +894,7 @@ pub(crate) fn propose_nomination_started(
     players: &[Player],
     input: StepInput,
     registration_judgments: Vec<crate::model::RegistrationJudgment>,
+    witch_resolution: crate::contracts::WitchNominationResolution,
 ) -> Result<Proposal, CoreError> {
     let input = nomination_start_input(&input)?;
     let prefix = step_prefix(&current_step.id)?;
@@ -902,6 +938,7 @@ pub(crate) fn propose_nomination_started(
                     nominee_id: input.nominee_id.clone(),
                     registration_judgments,
                     virgin_resolution,
+                    witch_resolution,
                 },
             },
             phase: current_step.phase,
@@ -1049,8 +1086,8 @@ fn propose_demon_succession(
         reveal_payload: (pending.phase == Phase::Night).then(|| RevealPayload::CharacterChange {
             kind: "characterChange",
             player_id: successor.id.clone(),
-            alignment: "evil",
-            character_id: "imp",
+            alignment: "evil".into(),
+            character_id: "imp".into(),
         }),
     })
 }

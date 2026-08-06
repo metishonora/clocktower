@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, Discriminator, Game, GameEvent, GameFile, PhaseInputSuggestionRequest,
-        RawGameFile, SetupDistributionRequest,
+        Command, Discriminator, Game, GameEvent, GameEventKind, GameFile,
+        PhaseInputSuggestionRequest, RawGameFile, SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
+    identity::EventId,
 };
 
 pub(crate) fn replay_json(game_file_json: &str) -> String {
@@ -50,9 +53,15 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
 
-    if raw.schema_version != 2 {
-        return Err(ErrorKind::UnsupportedSchemaVersion.into_error());
-    }
+    let script_id = match raw.schema_version {
+        2 if raw.game.script_id.is_none() => crate::contracts::ScriptId::TroubleBrewing,
+        2 => return Err(ErrorKind::MalformedGameFile.into_error()),
+        3 => raw
+            .game
+            .script_id
+            .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?,
+        _ => return Err(ErrorKind::UnsupportedSchemaVersion.into_error()),
+    };
 
     let events = raw
         .game
@@ -60,9 +69,12 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .into_iter()
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
+    validate_event_references(&events)?;
+    crate::characters::rules(script_id).validate_replay_events(&events)?;
 
     Ok(GameFile {
         schema_version: raw.schema_version,
+        script_id,
         game: Game {
             updated_at: raw.game.updated_at,
             events,
@@ -70,21 +82,117 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     })
 }
 
+fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
+    let mut prior_by_id: HashMap<EventId, &GameEventKind> = HashMap::with_capacity(events.len());
+    for event in events {
+        let current_id = EventId::parse(&event.id)?;
+        if prior_by_id.contains_key(&current_id) {
+            return Err(ErrorKind::DuplicateEventId.into_error());
+        }
+        let require_prior = |event_id: &str, expected: fn(&GameEventKind) -> bool| {
+            EventId::parse(event_id)
+                .ok()
+                .and_then(|event_id| prior_by_id.get(&event_id))
+                .filter(|kind| expected(kind))
+                .ok_or_else(|| ErrorKind::InvalidEventReference.into_error())
+                .map(|_| ())
+        };
+        match &event.kind {
+            GameEventKind::NominationVoteConfirmed { payload } => {
+                if let Some(event_id) = payload.nomination_event_id.as_deref() {
+                    require_prior(event_id, |kind| {
+                        matches!(kind, GameEventKind::NominationStarted { .. })
+                    })?;
+                }
+            }
+            GameEventKind::DemonSuccessionConfirmed { payload } => {
+                require_prior(&payload.trigger_imp_death_event_id, |kind| {
+                    matches!(
+                        kind,
+                        GameEventKind::DeathConfirmed { .. }
+                            | GameEventKind::NightActionResolved { .. }
+                    )
+                })?
+            }
+            GameEventKind::MadnessExecutionConfirmed { payload } => {
+                if let Some(event_id) = payload.check_event_id.as_deref() {
+                    require_prior(event_id, |kind| {
+                        matches!(kind, GameEventKind::MadnessCheckRecorded { .. })
+                    })?;
+                }
+            }
+            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
+                require_prior(&payload.source_transformation_event_id, |kind| {
+                    matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                })?;
+                for death in &payload.deaths {
+                    if let crate::contracts::NightDeathCause::PitHagArbitraryDeath {
+                        source_transformation_event_id,
+                        ..
+                    } = &death.cause
+                    {
+                        require_prior(source_transformation_event_id, |kind| {
+                            matches!(kind, GameEventKind::PitHagTransformationResolved { .. })
+                        })?;
+                    }
+                }
+            }
+            GameEventKind::SnakeCharmerActionResolved { payload } => {
+                if let crate::contracts::SnakeCharmerActionOutcome::Swap { impairment, .. } =
+                    &payload.outcome
+                {
+                    if impairment.source_event_id != event.id {
+                        require_prior(&impairment.source_event_id, |kind| {
+                            matches!(kind, GameEventKind::SnakeCharmerActionResolved { .. })
+                        })?;
+                    }
+                }
+            }
+            GameEventKind::VigormortisPoisonTargetChanged { payload } => {
+                require_prior(&payload.source_event_id, |kind| {
+                    matches!(kind, GameEventKind::NightActionResolved { .. })
+                })?;
+            }
+            GameEventKind::SweetheartConsequenceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::BarberConsequenceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::KlutzChoiceResolved { payload } => {
+                require_prior(&payload.trigger.source_event_id, is_death_source_event)?;
+            }
+            GameEventKind::GameEnded { payload } => {
+                if let Some(crate::contracts::GameEndSource::KlutzChoice { source_event_id }) =
+                    &payload.source
+                {
+                    require_prior(source_event_id, |kind| {
+                        matches!(kind, GameEventKind::KlutzChoiceResolved { .. })
+                    })?;
+                }
+            }
+            _ => {}
+        }
+        prior_by_id.insert(current_id, &event.kind);
+    }
+    Ok(())
+}
+
+fn is_death_source_event(kind: &GameEventKind) -> bool {
+    matches!(
+        kind,
+        GameEventKind::DeathConfirmed { .. }
+            | GameEventKind::NightActionResolved { .. }
+            | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
+    )
+}
+
 pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
     let value: Value =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedCommand.into_error())?;
     let discriminator: Discriminator = serde_json::from_value(value.clone())
         .map_err(|_| ErrorKind::MalformedCommand.into_error())?;
-    if !matches!(
-        discriminator.kind.as_str(),
-        "smoke"
-            | "createGame"
-            | "confirmStep"
-            | "skipStep"
-            | "useSlayerAbility"
-            | "endGame"
-            | "updatePlayerAnnotations"
-    ) {
+    if !Command::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedCommand.into_error());
     }
     serde_json::from_value(value).map_err(|_| ErrorKind::MalformedCommand.into_error())
@@ -93,27 +201,7 @@ pub(crate) fn parse_command(json: &str) -> Result<Command, CoreError> {
 pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     let discriminator: Discriminator = serde_json::from_value(value.clone())
         .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
-    if !matches!(
-        discriminator.kind.as_str(),
-        "smokeConfirmed"
-            | "setupConfirmed"
-            | "phaseStepConfirmed"
-            | "phaseStepSkipped"
-            | "phaseStepNeedsFollowUp"
-            | "nominationVoteConfirmed"
-            | "nominationStarted"
-            | "executionConfirmed"
-            | "noExecutionConfirmed"
-            | "deathConfirmed"
-            | "executionSurvivalConfirmed"
-            | "redHerringAssigned"
-            | "nightActionResolved"
-            | "nightDeathsAnnounced"
-            | "slayerAbilityUsed"
-            | "demonSuccessionConfirmed"
-            | "gameEnded"
-            | "playerAnnotationsUpdated"
-    ) {
+    if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
     serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())

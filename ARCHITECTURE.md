@@ -40,7 +40,10 @@ core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
 
 `replay` checks the schema version and rebuilds the current rules state, visible step overview, and warnings from confirmed events.
 
-`setupDistribution` is a read-only setup draft query. It owns Trouble Brewing setup distribution rules, including Baron adjustment, before the setup draft is complete enough to become a `createGame` command. Its draft input is limited to player count and assigned Actual Character IDs; Rust derives all rule effects from that input. Keep this API limited to deterministic setup guidance that has no confirmed event.
+`setupDistribution` is a read-only setup draft query. Its request carries the selected `scriptId`,
+player count, and assigned Actual Character IDs. The common layer owns the base player-count table;
+the active script owns modifiers such as Trouble Brewing's Baron adjustment. Keep this API limited
+to deterministic setup guidance that has no confirmed event.
 
 `suggestPhaseInput` is a stateless read-only live-play draft query. Replay identifies the current
 step and its semantic `supportsRandomSuggestion` marker; the active script constructs complete valid
@@ -124,6 +127,9 @@ messages.rs
 characters/
   mod.rs
   trouble_brewing.rs
+  sects_and_violets.rs
+  sects_and_violets/
+    step_key.rs
 ```
 
 - `lib.rs` owns only the public JSON entrypoints and intentional module declarations.
@@ -141,6 +147,15 @@ characters/
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
+- `identity.rs` owns validated event identities used while crossing the import/replay boundary.
+- `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
+  Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
+
+`GameFile.game.scriptId` is the canonical rules selector. `replay`, `propose`, and
+`suggestPhaseInput` obtain it from the file; `setupDistribution` receives it in its standalone
+request. Dispatch occurs before a persisted event or command can enter a script-specific reducer.
+Until a script implements an event or command, reject it explicitly rather than falling back to
+another script's rules.
 
 ### Character Script File Convention
 
@@ -152,6 +167,12 @@ Group character catalogs and character-specific rules by Blood on the Clocktower
 - Add a new script by adding a new `characters/<script_name>.rs` file and connecting it through the narrow interface in `characters/mod.rs`; do not add script conditionals throughout the common engine.
 - Keep a rule in its script file when it has only one real caller. Extract shared behavior only after another script needs the same domain concept.
 - Keep generic setup, phase, day, night, replay, proposal, and message behavior outside script files.
+
+S&V is the current reference implementation for typed step identities and script lifecycle rules.
+Do not reshape Trouble Brewing merely to make both implementations look alike while S&V is still
+evolving. After S&V behavior is complete, reassess Trouble Brewing against the proven S&V seams and
+extract only concepts that are genuinely shared. Until then, keep the script-selection interface
+narrow and do not introduce a generic rules DSL or cross-script reducer abstraction.
 
 Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
 
@@ -172,6 +193,11 @@ screens/components
 - The game store owns loaded event logs, draft UI state, current replay result, autosave status, undo, import, and export.
 - The wasm client owns calls to `propose` and `replay`.
 - Screens and components own rendering, input collection, selection state, and reveal mode presentation.
+
+For S&V, `canonicalSessionController.ts` is the application boundary for propose, append, replay,
+and undo. It rejects stale proposals, duplicate event identities, and replay results that do not
+cover the exact canonical stream. React screens may own draft state, but they must not maintain an
+independent confirmed-event history or bypass this controller when mutating a session.
 
 Screens should not create canonical events directly. They should send Storyteller commands through the game store to the Rust core.
 
@@ -316,7 +342,7 @@ later night steps. It does not append a second `deathConfirmed`; that event rema
 execution-Death contract. Soldier, Mayor bounce, Scarlet Woman transfer, and win handling extend
 this seam in their owning follow-up issues.
 
-Use these schema-version-2 wire shapes:
+GameFile schema version 3 retains these event shapes introduced in schema version 2:
 
 ```ts
 type RedHerringAssigned = {
@@ -472,6 +498,12 @@ UI draft
 
 TypeScript must not append an event that did not come from a proposal returned by Rust.
 
+Event identities and ability-instance identities are opaque typed values in the Rust domain. Import
+validates event IDs in stream order: IDs are non-blank and unique, and an event may reference only a
+previously confirmed event except for an explicitly documented self-reference contract. The
+checked-in TypeScript discriminator mirror is tested against Rust's command and event discriminator
+constants so boundary validation cannot silently drift from the canonical contracts.
+
 ### Delivered Information Contract
 
 Treat information shown or told to a Player as confirmed domain data, not as Reveal presentation
@@ -609,15 +641,16 @@ Use a small IndexedDB wrapper without a storage dependency for MVP.
 ```text
 database: clocktower
 object store: game
-key: latest
+keys: latest:troubleBrewing, latest:sectsAndViolets
 value: GameFile
 ```
 
 ```ts
 type GameFile = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   exportedAt?: string;
   game: {
+    scriptId: "troubleBrewing" | "sectsAndViolets";
     id: string;
     name: string;
     createdAt: string;
@@ -627,16 +660,24 @@ type GameFile = {
 };
 ```
 
-IndexedDB stores one `GameFile` without `exportedAt`.
+IndexedDB stores one latest `GameFile` per script without `exportedAt`. Script pages bind their
+storage driver to one script key, so navigation cannot replace the other script's latest game.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 
-Import reads a `GameFile`, checks the basic JSON shape and schema version, calls Rust `replay` to
-verify the complete event log, then replaces the stored game and opens it. Schema version 1 and an
-invalid version-2 log are rejected as whole files; import never installs a successfully replayed
-prefix or partial state.
+Import reads a `GameFile`, checks the basic JSON shape, schema version, and expected page script,
+calls Rust `replay` to verify the complete event log, then replaces the script's stored game and
+opens it. A schema-version-2 file without `scriptId` is the only legacy form: it is interpreted as
+Trouble Brewing and normalized to schema version 3 after successful load. Schema version 1,
+script-aware version-2 files, wrong-script files, and invalid logs are rejected as whole files;
+import never installs a successfully replayed prefix or partial state.
 
-Only keep the latest stored game for MVP. Starting a new game or importing a game replaces the current stored game after user confirmation.
+For migration, the Trouble Brewing driver checks the old `latest` key only when
+`latest:troubleBrewing` is absent. It writes the normalized file to the new key after replay succeeds
+and leaves the legacy value untouched. The Sects & Violets driver never reads the legacy key.
+
+Only keep the latest stored game per script for MVP. Starting a new game or importing a game
+replaces the current script's stored game after user confirmation.
 
 Do not build a saved game list or merge imported events for MVP.
 

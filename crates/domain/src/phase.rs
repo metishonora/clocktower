@@ -32,8 +32,11 @@ pub(crate) fn simple_step(
         step_type,
         character: None,
         player_id: None,
+        ability_use: None,
+        ability_origin: None,
         required_input,
         can_skip,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -51,6 +54,8 @@ pub(crate) fn phase_transition_step(
         step_type: StepType::PhaseTransition,
         character: None,
         player_id: None,
+        ability_use: None,
+        ability_origin: None,
         required_input: RequiredInput {
             kind: next_phase,
             target: Some(InputTarget::Phase),
@@ -60,6 +65,7 @@ pub(crate) fn phase_transition_step(
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -71,6 +77,7 @@ pub(crate) fn phase_transition_step(
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -94,6 +101,7 @@ pub(crate) fn required_none() -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         allowed_player_ids: None,
+        dependent_player_selections: vec![],
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
@@ -121,6 +129,7 @@ pub(crate) fn required_characters(
         character_kind: None,
         allowed_character_ids,
         allowed_player_ids: None,
+        dependent_player_selections: vec![],
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion,
@@ -137,6 +146,48 @@ pub(crate) fn validate_required_input(
     typed_value: &StepInput,
     players: &[Player],
 ) -> Result<(), CoreError> {
+    if input.kind == RequiredInputKind::CharacterTransformation {
+        let mut player_input = input.clone();
+        player_input.kind = RequiredInputKind::PlayerIds;
+        player_input.target = Some(InputTarget::Player);
+        validate_required_input(&player_input, typed_value, players)?;
+        let character_ids = typed_value
+            .as_ref()
+            .and_then(|value| value.character_ids.as_ref())
+            .ok_or_else(|| ErrorKind::MalformedCommand.into_error())?;
+        if character_ids.len() != 1 {
+            return Err(if character_ids.is_empty() {
+                ErrorKind::MissingStepInput.into_error()
+            } else {
+                ErrorKind::TooMuchStepInput.into_error()
+            });
+        }
+        if input
+            .allowed_character_ids
+            .as_ref()
+            .is_some_and(|allowed| !allowed.contains(&character_ids[0]))
+        {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        return Ok(());
+    }
+    if input.kind == RequiredInputKind::MadnessAssignment {
+        let mut player_input = input.clone();
+        player_input.kind = RequiredInputKind::PlayerIds;
+        validate_required_input(&player_input, typed_value, players)?;
+        let character_id = typed_value
+            .as_ref()
+            .and_then(|value| value.character_id.as_ref())
+            .ok_or_else(|| ErrorKind::MissingStepInput.into_error())?;
+        if input
+            .allowed_character_ids
+            .as_ref()
+            .is_some_and(|allowed| !allowed.iter().any(|id| id == character_id))
+        {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        return Ok(());
+    }
     if input.kind == RequiredInputKind::SetupInfo {
         return validate_setup_info_input(
             input
@@ -276,8 +327,10 @@ pub(crate) fn validate_character_selection(
     });
     for character_id in &character_ids {
         let character_id = character_id.as_str();
+        let unknown_without_explicit_catalog =
+            allowed_character_ids.is_none() && character_kind(character_id).is_none();
         if !unique_character_ids.insert(character_id)
-            || character_kind(character_id).is_none()
+            || unknown_without_explicit_catalog
             || allowed_character_ids
                 .as_ref()
                 .is_some_and(|allowed| !allowed.contains(character_id))

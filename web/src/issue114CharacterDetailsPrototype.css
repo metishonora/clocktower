@@ -1,0 +1,177 @@
+.issue114Prototype {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 26px clamp(18px, 4vw, 58px) 58px;
+  color: #f7f1f8;
+  background:
+    radial-gradient(circle at 78% 0%, rgba(145, 91, 164, .24), transparent 28%),
+    radial-gradient(circle at 12% 62%, rgba(74, 39, 84, .2), transparent 32%),
+    #130b18;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue114Prototype button { font: inherit; }
+.issue114Prototype button:focus-visible,
+.issue114CharacterBackdrop button:focus-visible,
+.issue114PlayerBackdrop button:focus-visible,
+.issue114CharacterBackdrop a:focus-visible,
+.issue114CharacterBackdrop summary:focus-visible { outline: 3px solid #f2ca70; outline-offset: 3px; }
+
+.issue114Header { display: flex; max-width: 1180px; margin: 0 auto 22px; align-items: end; justify-content: space-between; gap: 24px; }
+.issue114Header > div:first-child > span { color: #cda9d5; font-size: .66rem; font-weight: 900; letter-spacing: .13em; }
+.issue114Header h1 { margin: 7px 0 2px; font: clamp(2rem, 5vw, 3.8rem)/1 Georgia, serif; }
+.issue114Header p { margin: 8px 0 0; color: #bdaec1; font-size: .82rem; }
+.issue114PhaseMark { display: grid; width: 64px; height: 64px; flex: 0 0 auto; place-items: center; align-content: center; border: 1px solid rgba(235, 215, 240, .2); border-radius: 50%; background: rgba(255, 255, 255, .04); }
+.issue114PhaseMark b { font: 1.25rem Georgia, serif; }
+.issue114PhaseMark span { color: #c6b2cc; font-size: .62rem; font-weight: 900; }
+
+.issue114Tabs { display: flex; max-width: 1180px; margin: 0 auto 18px; padding: 5px; gap: 5px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 15px; background: rgba(255, 255, 255, .035); }
+.issue114Tabs button { min-width: 104px; padding: 10px 20px; border: 0; border-radius: 11px; color: #bcaec1; background: transparent; font-weight: 900; cursor: pointer; }
+.issue114Tabs button[aria-pressed="true"] { color: #27152d; background: #dfc0e5; box-shadow: 0 7px 18px rgba(4, 1, 6, .25); }
+
+.issue114Surface { max-width: 1180px; min-height: 590px; margin: 0 auto; box-sizing: border-box; border: 1px solid rgba(230, 207, 237, .12); border-radius: 24px; background: rgba(28, 16, 34, .8); box-shadow: 0 24px 70px rgba(4, 1, 6, .26); }
+.issue114Roles { display: grid; padding: 26px; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 24px; }
+.issue114RoleCatalog { padding: 22px; border-radius: 20px; background: rgba(255, 255, 255, .03); }
+.issue114RoleCatalog > header { display: flex; margin-bottom: 18px; align-items: center; justify-content: space-between; color: #cfbed3; font-size: .75rem; font-weight: 900; }
+.issue114RoleCatalog > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.issue114RoleCatalog button { display: grid; min-height: 142px; padding: 13px; place-items: center; gap: 7px; border: 1px solid rgba(224, 197, 232, .13); border-radius: 17px; color: #e8dfea; background: rgba(255, 255, 255, .025); cursor: pointer; }
+.issue114RoleCatalog button.selected { border-color: #e0bc69; background: rgba(224, 188, 105, .12); box-shadow: inset 0 0 0 1px rgba(224, 188, 105, .12); }
+.issue114RoleCatalog img { width: 76px; height: 76px; object-fit: contain; }
+.issue114RoleCatalog button span { font-size: .78rem; font-weight: 900; }
+.issue114SelectedRole { display: flex; min-height: 0; padding: 24px; flex-direction: column; border: 1px solid rgba(215, 171, 226, .2); border-radius: 20px; background: linear-gradient(155deg, rgba(130, 80, 154, .2), rgba(255, 255, 255, .025)); }
+.issue114SelectedRole > span { color: #c4aecb; font-size: .68rem; font-weight: 900; letter-spacing: .06em; }
+.issue114SelectedRole > p { margin: 22px 0; color: #cdbfd1; font-size: .82rem; line-height: 1.65; }
+.issue114SelectedRole .issue114PrimaryAction { margin-top: auto; }
+
+.issue114CharacterIdentity { display: flex; min-width: 0; padding: 8px; align-items: center; gap: 13px; border: 1px solid transparent; border-radius: 16px; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.issue114CharacterIdentity:hover { border-color: rgba(226, 190, 235, .24); background: rgba(255, 255, 255, .045); }
+.issue114CharacterIdentity img { width: 64px; height: 64px; flex: 0 0 auto; object-fit: contain; }
+.issue114CharacterIdentity span { min-width: 0; font: 1.55rem Georgia, serif; }
+.issue114SelectedRole > .issue114CharacterIdentity { margin: 12px -8px 0; }
+
+.issue114PrimaryAction { min-height: 48px; padding: 12px 18px; border: 1px solid #e2bd69; border-radius: 13px; color: #26170b; background: linear-gradient(135deg, #f1d58f, #d9a847); font-weight: 950; cursor: pointer; }
+
+.issue114Grimoire { position: relative; min-height: 660px; overflow: hidden; background: radial-gradient(ellipse at center, #291731 0 22%, #190e20 62%, #110914 100%); }
+.issue114Grimoire::before { position: absolute; inset: 5%; border: 1px solid rgba(231, 208, 239, .1); border-radius: 28px; content: ""; }
+.issue114GrimoireCenter { position: absolute; top: 50%; left: 50%; display: grid; width: 180px; height: 104px; place-items: center; align-content: center; gap: 5px; border: 1px solid rgba(235, 212, 239, .12); border-radius: 50%; color: #f3e9f5; background: rgba(7, 3, 9, .3); transform: translate(-50%, -50%); }
+.issue114GrimoireCenter strong { font: 1.2rem Georgia, serif; }
+.issue114GrimoireCenter span { color: #b9a7be; font-size: .76rem; }
+.issue114Seat { position: absolute; z-index: 2; display: grid; width: 136px; min-height: 120px; padding: 8px; place-items: center; grid-template-columns: 28px 50px 1fr; grid-template-rows: 1fr auto; gap: 2px 5px; border: 1px solid rgba(221, 193, 229, .2); border-radius: 19px; color: #f5edf7; background: linear-gradient(145deg, #39223f, #211328); box-shadow: 0 12px 28px rgba(0, 0, 0, .32); cursor: pointer; transform: translate(-50%, -50%); }
+.issue114Seat > span { grid-row: 1 / 3; color: #c0a9c6; font: 1.15rem Georgia, serif; }
+.issue114Seat img { width: 50px; height: 50px; grid-row: 1 / 3; object-fit: contain; }
+.issue114Seat strong, .issue114Seat small { justify-self: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.issue114Seat strong { align-self: end; font-size: .78rem; }
+.issue114Seat small { align-self: start; color: #bba8c0; font-size: .64rem; }
+.issue114Seat em { position: absolute; top: -8px; right: -8px; display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid #e2bd69; border-radius: 50%; color: #fff2c8; background: #291a18; font-size: .65rem; font-style: normal; font-weight: 900; }
+.issue114Seat1 { top: 18%; left: 19%; }.issue114Seat2 { top: 18%; left: 50%; }.issue114Seat3 { top: 18%; left: 81%; }
+.issue114Seat4 { top: 82%; left: 19%; }.issue114Seat5 { top: 82%; left: 50%; }.issue114Seat6 { top: 82%; left: 81%; }
+
+.issue114Progress { padding: 24px; }
+.issue114Progress > header { position: relative; display: flex; min-height: 50px; align-items: center; justify-content: center; }
+.issue114Progress > header > button { position: absolute; left: 0; padding: 9px 12px; border: 1px solid rgba(226, 203, 232, .15); border-radius: 10px; color: #d2c4d5; background: rgba(255, 255, 255, .03); }
+.issue114Progress > header h2 { margin: 0; font: 1.5rem Georgia, serif; }
+.issue114ProgressWorkspace { display: grid; min-height: 490px; margin-top: 22px; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; }
+.issue114CurrentTask { display: flex; padding: clamp(24px, 4vw, 54px); flex-direction: column; justify-content: center; border: 1px solid rgba(222, 190, 231, .14); border-radius: 21px; background: linear-gradient(145deg, rgba(97, 55, 109, .22), rgba(255, 255, 255, .025)); }
+.issue114CurrentTask > span { color: #c5afcb; font-size: .68rem; font-weight: 900; letter-spacing: .08em; }
+.issue114CurrentTask .issue114CharacterIdentity { align-self: flex-start; margin: 14px -8px 0; }
+.issue114CurrentTask .issue114CharacterIdentity img { width: 88px; height: 88px; }
+.issue114CurrentTask .issue114CharacterIdentity span { font-size: 2.2rem; }
+.issue114CurrentTask > p { max-width: 620px; margin: 24px 0; color: #d0c4d3; line-height: 1.7; }
+.issue114CurrentTask > div { display: flex; }
+.issue114ProgressWorkspace > ol { margin: 0; padding: 12px; border: 1px solid rgba(225, 199, 232, .12); border-radius: 18px; background: rgba(255, 255, 255, .025); list-style: none; }
+.issue114ProgressWorkspace > ol li { display: grid; min-height: 70px; padding: 11px; align-content: center; border-bottom: 1px solid rgba(230, 207, 236, .08); }
+.issue114ProgressWorkspace > ol li:last-child { border: 0; }
+.issue114ProgressWorkspace > ol span { color: #9f8ea4; font-size: .62rem; font-weight: 900; }
+.issue114ProgressWorkspace > ol strong { margin-top: 4px; color: #c9bccd; font-size: .78rem; }
+.issue114ProgressWorkspace > ol li.current { border-radius: 12px; background: rgba(224, 188, 105, .12); }
+.issue114ProgressWorkspace > ol li.current span, .issue114ProgressWorkspace > ol li.current strong { color: #f0d898; }
+.issue114ProgressWorkspace > ol li.complete { opacity: .58; }
+
+.issue114PlayerBackdrop, .issue114CharacterBackdrop { position: fixed; inset: 0; display: flex; justify-content: flex-end; background: rgba(4, 1, 6, .58); backdrop-filter: blur(6px); }
+.issue114PlayerBackdrop { z-index: 220; }
+.issue114CharacterBackdrop { z-index: 320; }
+.issue114PlayerDetail, .issue114CharacterDrawer { width: min(500px, 100%); height: 100%; box-sizing: border-box; color: #f7f1f8; background: #1b0f21; box-shadow: -24px 0 70px rgba(0, 0, 0, .52); overflow: auto; animation: issue114PanelIn .22s ease-out; }
+.issue114PlayerDetail { border-left: 1px solid rgba(227, 198, 234, .2); }
+.issue114PlayerDetail > header { display: flex; padding: 24px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(228, 202, 235, .1); }
+.issue114PlayerDetail > header span { color: #b8a5bd; font-size: .66rem; font-weight: 900; }
+.issue114PlayerDetail > header h2 { margin: 4px 0 0; font: 1.8rem Georgia, serif; }
+.issue114PlayerDetail > header button, .issue114CharacterDrawer > header button { width: 44px; height: 44px; flex: 0 0 auto; border: 1px solid rgba(228, 202, 235, .18); border-radius: 50%; color: #f8f1fa; background: rgba(255, 255, 255, .04); font-size: 1.4rem; cursor: pointer; }
+.issue114PlayerBody { display: grid; padding: 24px; gap: 28px; }
+.issue114PlayerBody section > span { color: #aa92b1; font-size: .66rem; font-weight: 900; letter-spacing: .06em; }
+.issue114PlayerBody .issue114CharacterIdentity { width: 100%; margin: 8px 0; }
+.issue114PlayerBody section > p { margin: 8px 0 0; color: #d4c8d7; font-size: .82rem; line-height: 1.7; }
+.issue114AttachedTokens ul { display: flex; margin: 12px 0 0; padding: 18px; flex-wrap: wrap; gap: 10px; border-radius: 18px; background: rgba(255, 255, 255, .035); list-style: none; }
+.issue114AttachedTokens li { display: grid; width: 76px; height: 76px; place-items: center; border: 2px double #cab172; border-radius: 50%; color: #fff3cb; background: radial-gradient(circle at 35% 25%, #55451f, #16110d 72%); font-size: .72rem; font-weight: 900; }
+
+.issue114CharacterDrawer { border-left: 1px solid rgba(227, 198, 234, .22); }
+.issue114CharacterDrawer > header { position: sticky; z-index: 2; top: 0; display: grid; padding: 22px 24px; grid-template-columns: 68px minmax(0, 1fr) 44px; align-items: center; gap: 15px; border-bottom: 1px solid rgba(228, 202, 235, .11); background: rgba(27, 15, 33, .97); backdrop-filter: blur(12px); }
+.issue114CharacterDrawer > header > img { width: 68px; height: 68px; object-fit: contain; }
+.issue114CharacterDrawer > header span { color: #bca8c2; font-size: .67rem; font-weight: 900; }
+.issue114CharacterDrawer > header h2 { margin: 4px 0 0; font: 1.45rem Georgia, serif; }
+.issue114CharacterContents { display: grid; padding: 25px 26px max(38px, env(safe-area-inset-bottom)); gap: 28px; }
+.issue114CharacterContents > section { display: grid; gap: 10px; }
+.issue114CharacterContents h3 { margin: 0; color: #d8b9df; font-size: .75rem; letter-spacing: .05em; }
+.issue114CharacterContents p { margin: 0; color: #d2c5d5; line-height: 1.7; }
+.issue114CharacterContents ul, .issue114CharacterContents ol { display: grid; margin: 0; padding-left: 1.2rem; gap: 9px; color: #d4c9d7; line-height: 1.6; }
+.issue114OfficialAbility p { padding: 16px 17px; border-left: 3px solid #c48bd1; border-radius: 0 11px 11px 0; background: rgba(180, 112, 197, .1); color: #f3e9f5; font-weight: 800; }
+.issue114Reminders > ul { display: grid; padding: 0; gap: 10px; list-style: none; }
+.issue114Reminders li { padding: 13px 14px; border: 1px solid rgba(226, 198, 232, .12); border-radius: 13px; background: rgba(255, 255, 255, .025); }
+.issue114Reminders li > div { display: flex; align-items: center; justify-content: space-between; }
+.issue114Reminders li strong { color: #f0dfaf; font-size: .78rem; }
+.issue114Reminders li span { color: #b8a7bc; font-size: .7rem; font-weight: 900; }
+.issue114Reminders li p { margin-top: 7px; color: #bcaec0; font-size: .76rem; }
+.issue114Examples { border: 1px solid rgba(225, 196, 232, .13); border-radius: 14px; background: rgba(255, 255, 255, .025); }
+.issue114Examples summary { padding: 15px; color: #e2c9e7; font-size: .79rem; font-weight: 900; cursor: pointer; }
+.issue114Examples ol { padding: 0 20px 18px 2.25rem; }
+.issue114CharacterContents > a { justify-self: start; color: #e1b8e9; font-size: .8rem; font-weight: 900; }
+
+@keyframes issue114PanelIn { from { opacity: 0; transform: translateX(36px); } }
+
+@media (max-width: 780px) {
+  .issue114Prototype { padding: 18px 12px 34px; }
+  .issue114Header { margin-bottom: 16px; }
+  .issue114Header h1 { font-size: 2.25rem; }
+  .issue114Header p { max-width: 250px; font-size: .72rem; }
+  .issue114PhaseMark { width: 54px; height: 54px; }
+  .issue114Tabs { position: sticky; z-index: 8; top: 8px; justify-content: stretch; backdrop-filter: blur(14px); }
+  .issue114Tabs button { min-width: 0; flex: 1; padding: 10px 8px; }
+  .issue114Surface { min-height: 620px; border-radius: 20px; }
+  .issue114Roles { display: block; padding: 14px; }
+  .issue114RoleCatalog { padding: 14px; }
+  .issue114RoleCatalog > div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .issue114RoleCatalog button { min-height: 118px; }
+  .issue114RoleCatalog img { width: 62px; height: 62px; }
+  .issue114SelectedRole { position: sticky; bottom: max(8px, env(safe-area-inset-bottom)); margin-top: 14px; padding: 13px; box-shadow: 0 15px 42px rgba(0, 0, 0, .48); }
+  .issue114SelectedRole > span, .issue114SelectedRole > p { display: none; }
+  .issue114SelectedRole .issue114CharacterIdentity { margin: 0; }
+  .issue114SelectedRole .issue114CharacterIdentity img { width: 50px; height: 50px; }
+  .issue114SelectedRole .issue114CharacterIdentity span { font-size: 1.25rem; }
+  .issue114SelectedRole .issue114PrimaryAction { margin-top: 8px; }
+  .issue114Grimoire { min-height: 680px; }
+  .issue114GrimoireCenter { width: 120px; height: 86px; }
+  .issue114Seat { width: 106px; min-height: 100px; grid-template-columns: 18px 38px 1fr; padding: 6px; }
+  .issue114Seat img { width: 38px; height: 38px; }
+  .issue114Seat > span { font-size: .88rem; }
+  .issue114Seat1, .issue114Seat4 { left: 18%; }.issue114Seat3, .issue114Seat6 { left: 82%; }
+  .issue114Seat1, .issue114Seat2, .issue114Seat3 { top: 17%; }.issue114Seat4, .issue114Seat5, .issue114Seat6 { top: 83%; }
+  .issue114Progress { padding: 14px; }
+  .issue114ProgressWorkspace { display: block; }
+  .issue114CurrentTask { min-height: 420px; padding: 22px; }
+  .issue114CurrentTask .issue114CharacterIdentity img { width: 74px; height: 74px; }
+  .issue114CurrentTask .issue114CharacterIdentity span { font-size: 1.85rem; }
+  .issue114ProgressWorkspace > ol { margin-top: 14px; }
+  .issue114PlayerBackdrop, .issue114CharacterBackdrop { align-items: flex-end; }
+  .issue114PlayerDetail, .issue114CharacterDrawer { width: 100%; height: auto; max-height: min(82dvh, 720px); border-top: 1px solid rgba(227, 198, 234, .22); border-left: 0; border-radius: 25px 25px 0 0; animation-name: issue114SheetIn; }
+  .issue114PlayerDetail > header { padding: 17px; }
+  .issue114PlayerBody { padding: 18px 17px max(24px, env(safe-area-inset-bottom)); }
+  .issue114CharacterDrawer > header { padding: 17px; grid-template-columns: 56px minmax(0, 1fr) 44px; }
+  .issue114CharacterDrawer > header > img { width: 56px; height: 56px; }
+  .issue114CharacterDrawer > header h2 { font-size: 1.25rem; }
+  .issue114CharacterContents { padding: 20px 18px max(30px, env(safe-area-inset-bottom)); gap: 24px; }
+}
+
+@keyframes issue114SheetIn { from { opacity: 0; transform: translateY(38px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .issue114PlayerDetail, .issue114CharacterDrawer { animation: none; }
+}

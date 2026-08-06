@@ -123,7 +123,7 @@ export function Issue11EdgeRulesPrototype() {
             <span className="newImpSigil">I</span>
             <h2>당신은 임프입니다</h2>
             <strong>{successorLabel(successorId)}</strong>
-            <button type="button" onClick={() => setSuccessionStage("revealEntry")}>확인했다면 눈을 감으세요.</button>
+            <button type="button" onClick={() => setSuccessionStage("revealEntry")}>확인했으면 눈을 감으세요</button>
           </div>
         </section>
       </main>

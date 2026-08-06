@@ -1,0 +1,147 @@
+.snvInformationTask { min-height: 390px; }
+.snvInformationTaskPending { min-height: 330px; }
+.snvInformationIdentity { margin: 0 0 24px !important; }
+.snvInformationPendingIdentity { margin: 34px 0 12px !important; }
+.snvInformationIdentity > div { display: grid; gap: 7px; }
+.snvInformationRoleLine { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.snvInformationInfluenceBadges { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.snvInformationInfluenceBadge { display: inline-grid; min-height: 26px; padding: 0 10px; place-items: center; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; color: #fff; box-shadow: 0 7px 18px rgba(0, 0, 0, .25); font-size: .62rem; font-style: normal; font-weight: 900; letter-spacing: .02em; }
+.snvInformationInfluenceBadge.poisoned,
+.snvInformationInfluenceBadge.drunk { background: linear-gradient(135deg, #a95bd2, #71378f); }
+.snvInformationInfluenceBadge.vortox { background: linear-gradient(135deg, #e34a68, #a92643); }
+.snvInformationIdentity strong { color: #ddcae2; font-size: .9rem; }
+.snvInformationAbility { max-width: 620px; color: #c7b9cc !important; font-size: .82rem; line-height: 1.58; }
+.snvDaySurface .snvDeathConsequence .snvInformationIdentity strong { color: #4b3650; }
+.snvDaySurface .snvDeathConsequence .snvCurrentStepRoleName { color: #2f2033; }
+.snvDaySurface .snvDeathConsequence .snvInformationAbility { color: #624f67 !important; }
+.snvDaySurface .snvDeathConsequence .issue107AbilityResult { border-color: rgba(88, 55, 97, .16); color: #38283d; background: rgba(130, 80, 154, .09); }
+.snvDaySurface .snvDeathConsequence .issue107AbilityResult > span { color: #715f76; }
+.snvDaySurface .snvDeathConsequence .issue107AbilityResult strong { color: #38283d; }
+.snvDaySurface .snvDeathConsequence .issue107AbilityResult p { color: #624f67; }
+.snvInformationValues { display: grid; margin: 18px 0 0; gap: 8px; }
+.snvInformationValues > div { display: grid; min-height: 58px; padding: 10px 14px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 13px; background: rgba(9, 5, 12, .26); }
+.snvInformationValues dt { color: #b7a5bd; font-size: .68rem; font-weight: 850; }
+.snvInformationValues dd { margin: 0; color: #fff; font: 1.18rem Georgia, serif; }
+.snvInformationValues select { min-width: 148px; padding: 9px 30px 9px 11px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .78rem system-ui, sans-serif; }
+.snvMathematicianAudit { margin-top: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 13px; background: rgba(9, 5, 12, .2); overflow: hidden; }
+.snvMathematicianAudit summary { display: flex; min-height: 48px; padding: 12px 14px; align-items: center; justify-content: space-between; gap: 14px; color: #eadfed; cursor: pointer; list-style: none; font-size: .74rem; font-weight: 850; }
+.snvMathematicianAudit summary::-webkit-details-marker { display: none; }
+.snvMathematicianAudit summary::after { width: 8px; height: 8px; margin-left: auto; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg) translateY(-2px); content: ""; }
+.snvMathematicianAudit[open] summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+.snvMathematicianAudit summary small { margin-left: auto; color: #b7a5bd; font-size: .66rem; font-weight: 750; }
+.snvMathematicianAuditList { display: grid; margin: 0; padding: 0 10px 10px; gap: 7px; list-style: none; }
+.snvMathematicianAuditRow { display: grid; padding: 11px 12px; gap: 8px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 11px; background: rgba(255, 255, 255, .035); }
+.snvMathematicianAuditMain { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 3px 10px; }
+.snvMathematicianAuditMain > strong { color: #f7effa; font-size: .76rem; }
+.snvMathematicianAuditCharacter { color: #b7a5bd; font-size: .68rem; }
+.snvMathematicianAuditOutcome { grid-column: 1 / -1; color: #f2d98b; font-size: .73rem; font-weight: 850; line-height: 1.35; }
+.snvMathematicianAuditMeta { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; }
+.snvMathematicianAuditMeta time { flex: 0 0 auto; color: #a894ad; font-size: .62rem; font-weight: 750; }
+.snvMathematicianAuditCauses { display: inline-flex; min-width: 0; flex-wrap: wrap; gap: 5px; }
+.snvMathematicianAuditCause { display: inline-grid; min-height: 22px; padding: 0 7px; place-items: center; border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; color: #eadfed; background: rgba(255, 255, 255, .055); font-size: .59rem; font-style: normal; font-weight: 850; }
+.snvMathematicianAuditCause.drunk,
+.snvMathematicianAuditCause.poisoned { border-color: rgba(214, 141, 239, .42); color: #e7c1f3; background: rgba(125, 57, 153, .35); }
+.snvMathematicianAuditCause.vortox { border-color: rgba(238, 93, 120, .48); color: #ffc4cf; background: rgba(160, 30, 59, .34); }
+.snvMathematicianAuditEmpty { margin: 0; padding: 0 14px 14px; color: #b7a5bd; font-size: .7rem; }
+.snvNumberConstraintEditor > div dd { display: flex; align-items: center; gap: 8px; }
+.snvNumberConstraintEditor input { width: 118px; min-height: 42px; padding: 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .82rem system-ui, sans-serif; }
+.snvNumberConstraintEditor dd span { color: #d9c9de; font: 850 .72rem system-ui, sans-serif; }
+.snvNumberConstraintEditor > p { margin: 0 4px; font-size: .68rem; line-height: 1.45; }
+.snvInformationInputHint { color: #b7a5bd; }
+.snvInformationInputError { color: #ff9caf; }
+.snvInformationInputTruthWarning { color: #b7a5bd; }
+.snvInformationInputTruthWarning.truthPulse { animation: snvTruthWarningPulse 1.45s ease-in-out; }
+@keyframes snvTruthWarningPulse {
+  0%, 100% { color: #b7a5bd; text-shadow: 0 0 0 rgba(255, 70, 104, 0); }
+  50% { color: #ff4668; text-shadow: 0 0 14px rgba(255, 70, 104, .72); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .snvInformationInputTruthWarning.truthPulse { animation: none; }
+}
+.snvInformationActions { margin-top: auto !important; }
+.snvInformationActions button { flex: 1 1 0; min-height: 50px; }
+.snvStepActions button.informationReveal.poisoned,
+.snvStepActions button.informationReveal.drunk { border-color: #9d59bd; color: #fff; background: linear-gradient(135deg, #a95bd2, #71378f); box-shadow: 0 12px 30px rgba(112, 49, 145, .36); }
+.snvStepActions button.informationReveal.vortox { border-color: #cc3c58; color: #fff; background: linear-gradient(135deg, #e34a68, #a92643); box-shadow: 0 12px 30px rgba(158, 30, 61, .4); }
+.snvInformationTargetActions { margin-top: auto !important; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.snvInformationTargetActions button:only-child { grid-column: 1 / -1; }
+.snvInformationTaskPending .snvInformationTargetActions { display: flex !important; margin-top: 28px !important; }
+.snvInformationTaskPending .snvInformationTargetActions button { flex: 0 0 auto; min-width: 0; min-height: 44px; padding-inline: 22px; }
+.snvInformationTargetSummary { margin: 14px 0 0; color: #b7a5bd !important; font-size: .72rem; }
+.snvInformationTargetSummary strong { margin-left: 5px; color: #f7effa; }
+.snvInformationPairEditor, .snvInformationBinary { display: grid; margin: 14px 0 0; padding: 14px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 14px; background: rgba(9, 5, 12, .26); }
+.snvInformationPairEditor { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 10px; }
+.snvInformationPairEditor legend, .snvInformationBinary legend { padding: 0 6px; color: #b7a5bd; font-size: .66rem; font-weight: 850; }
+.snvInformationPairEditor label { display: grid; gap: 6px; color: #b7a5bd; font-size: .65rem; font-weight: 800; }
+.snvInformationPairEditor select { width: 100%; min-height: 44px; padding: 8px 28px 8px 10px; border: 1px solid rgba(214, 169, 226, .38); border-radius: 10px; color: #fff; background: #3a2344; font: 850 .76rem system-ui, sans-serif; }
+.snvInformationPairEditor select:disabled { color: #f4e9f7; opacity: 1; background: rgba(89, 55, 102, .5); }
+.snvInformationPairEditor .snvDreamerLockedSelect:disabled { border-color: rgba(220, 217, 224, .32); color: #ddd9df; background: #514d55; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035); cursor: not-allowed; }
+.snvInformationBinary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.snvInformationBinary button { min-height: 48px; border: 1px solid rgba(214, 169, 226, .25); border-radius: 11px; color: #eadfed; background: rgba(255, 255, 255, .04); font: inherit; font-size: .74rem; font-weight: 850; }
+.snvInformationBinary button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; }
+.snvSageSwap { width: 36px; height: 36px; margin-bottom: 4px; padding: 7px; border: 1px solid rgba(214, 169, 226, .3); border-radius: 999px; color: #eadfed; background: rgba(255, 255, 255, .05); }
+.snvSageSwap svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.snvProductionInformationReveal { min-height: min(520px, calc(100dvh - 40px)); }
+.snvProductionInformationReveal > img { width: 92px; height: 92px; margin: 0 auto 13px; object-fit: contain; filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .42)); }
+.snvProductionInformationReveal .snvInformationRevealLabel { margin-top: 22px; color: #e1d5e4; font: clamp(1.15rem, 3vw, 1.5rem)/1.35 Georgia, serif; }
+.snvInformationRevealValue { display: block; margin-top: 14px; color: #fff; font: clamp(3.1rem, 10vw, 6.2rem)/.95 Georgia, serif; }
+.snvTargetedRevealPair { display: grid; margin: 24px auto 0; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px; }
+.snvTargetedRevealPair > div { display: grid; min-width: 0; padding: 14px; justify-items: center; gap: 10px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 18px; background: rgba(255, 255, 255, .04); }
+.snvRevealCharacterCard img { width: 82px; height: 82px; object-fit: contain; }
+.snvTargetedRevealPair strong { font: 1.35rem Georgia, serif; }
+.snvTargetedRevealPair > b { color: #d7bd72; font-size: .72rem; }
+.snvPlayerRevealPair { width: min(100%, 420px); }
+.snvRevealPlayerCard { min-height: 110px; align-content: center; }
+.snvRevealPlayerCard > span { color: #c7b6cc; font-size: .7rem; font-weight: 850; }
+.snvSeamstressRevealValue { font-size: clamp(2.5rem, 9vw, 5rem); }
+
+@media (min-width: 781px) {
+  .snvTargetedInformationContext { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; overflow: hidden; border: 1px solid rgba(231, 208, 239, .14); border-radius: 13px; background: rgba(9, 5, 12, .26); }
+  .snvTargetedInformationContext > div { min-height: 72px; padding: 14px 18px; border: 0; border-radius: 0; background: transparent; }
+  .snvTargetedInformationContext > div + div { border-left: 1px solid rgba(231, 208, 239, .14); }
+  .snvDreamerEditor { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 16px 18px; }
+  .snvSageContext > div { min-height: 72px; padding: 14px 18px; }
+  .snvSageEditor { gap: 16px; padding: 16px 18px; }
+  .snvSpaciousInformationContext > div,
+  .snvSpaciousInformationEditor > div { min-height: 72px; padding: 14px 18px; }
+  .snvSpaciousInformationActions { justify-content: flex-end; margin-top: 20px !important; }
+  .snvSpaciousInformationActions button { flex: 0 0 auto; min-width: 156px; min-height: 44px; padding-inline: 28px; }
+}
+
+@media (max-width: 780px) {
+  .snvInformationTask { min-height: 360px; }
+  .snvClockmakerInformationTask .snvInformationValues > div { min-height: 72px; padding: 14px 18px; }
+  .snvClockmakerInformationTask .snvInformationActions { margin-top: 24px !important; }
+  .snvInformationTaskPending { min-height: 330px; }
+  .snvInformationIdentity { margin-bottom: 20px !important; }
+  .snvInformationPendingIdentity { margin: 28px 0 12px !important; }
+  .snvTargetedInformationContext { margin-top: 14px; }
+  .snvMobileStackedInformationContext { grid-template-columns: 1fr; gap: 8px; }
+  .snvInformationValues > div { grid-template-columns: 1fr auto; }
+  .snvProductionInformationReveal { min-height: calc(100dvh - 24px); border-radius: 22px; }
+  .snvInformationPairEditor { grid-template-columns: 1fr; align-items: stretch; }
+  .snvSageSwap { margin: 0; justify-self: center; transform: rotate(90deg); }
+  .snvTargetedRevealPair { gap: 8px; }
+  .snvTargetedRevealPair > div { padding: 10px 7px; }
+  .snvRevealCharacterCard img { width: 58px; height: 58px; }
+  .snvTargetedRevealPair strong { font-size: 1rem; }
+}
+
+.issue107AbilityResult {
+  display: grid;
+  width: min(620px, 100%);
+  min-height: 92px;
+  margin-top: 24px;
+  padding: 14px 16px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 14px;
+  border: 1px solid rgba(214, 169, 226, .38);
+  border-radius: 16px;
+  background: rgba(130, 80, 154, .24);
+}
+.issue107AbilityResult > span { grid-column: 1 / -1; color: #c7b4cf; font-size: .66rem; font-weight: 850; }
+.issue107AbilityResult img { width: 58px; height: 58px; object-fit: contain; }
+.issue107AbilityResult > div { min-width: 0; }
+.issue107AbilityResult strong { font: 1.45rem Georgia, serif; }
+.issue107AbilityResult p { margin: 6px 0 0; color: #c7b9cc; font-size: .78rem; line-height: 1.5; }

@@ -804,10 +804,10 @@ pub(crate) fn computed_information_result(
             })
         }
         "chef" => Some(InformationResult::Number {
-            value: evil_neighbor_pair_count(players),
+            value: evil_neighbor_pair_count(players) as u64,
         }),
         "empath" => Some(InformationResult::Number {
-            value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)?,
+            value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)? as u64,
         }),
         "spy" => Some(spy_grimoire_result(players, &[], &[])),
         _ => None,
@@ -956,15 +956,15 @@ pub(crate) fn legal_number_choices(
         };
         return (0..=max)
             .map(|value| NumberInformationChoice {
-                value,
-                is_computed: value == computed,
+                value: value as u64,
+                is_computed: value as u64 == computed,
                 registration_judgments: Vec::new(),
             })
             .collect();
     }
 
     let candidates = registration_candidate_player_ids(step, players);
-    let mut by_value = BTreeMap::<usize, Vec<RegistrationJudgment>>::new();
+    let mut by_value = BTreeMap::<u64, Vec<RegistrationJudgment>>::new();
     by_value.insert(computed, Vec::new());
     for mask in 0..(1usize << candidates.len()) {
         let judgments = candidates
@@ -984,8 +984,8 @@ pub(crate) fn legal_number_choices(
         else {
             continue;
         };
-        if value != computed {
-            by_value.entry(value).or_insert(judgments);
+        if value as u64 != computed {
+            by_value.entry(value as u64).or_insert(judgments);
         }
     }
 
@@ -1063,8 +1063,11 @@ pub(crate) fn character_steps(
                 player_id: waking_characters
                     .get(character)
                     .map(|player| player.id.clone()),
+                ability_use: None,
+                ability_origin: None,
                 required_input: character_required_input(character),
                 can_skip: true,
+                support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
                 pre_action_reveal: None,
             })
@@ -1339,6 +1342,7 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -1403,6 +1407,7 @@ fn required_none() -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         allowed_player_ids: None,
+        dependent_player_selections: vec![],
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
@@ -1429,6 +1434,7 @@ fn required_players(min: u8, max: u8) -> RequiredInput {
         character_kind: None,
         allowed_character_ids: None,
         allowed_player_ids: None,
+        dependent_player_selections: vec![],
         player_registration_options: None,
         zero_allowed: false,
         supports_random_suggestion: false,
@@ -1457,6 +1463,7 @@ fn required_setup_info(
         character_kind: Some(character_kind),
         allowed_character_ids: None,
         allowed_player_ids: None,
+        dependent_player_selections: vec![],
         player_registration_options: None,
         zero_allowed,
         supports_random_suggestion: true,

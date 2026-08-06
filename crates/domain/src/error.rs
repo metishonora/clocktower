@@ -15,6 +15,10 @@ pub(crate) enum ErrorKind {
     UnsupportedCommand,
     MalformedEvent,
     UnsupportedEvent,
+    CommandNotSupportedByScript,
+    EventNotSupportedByScript,
+    DuplicateEventId,
+    InvalidEventReference,
     MalformedRequest,
     InvalidPlayerCount,
     InvalidPlayer,
@@ -23,6 +27,7 @@ pub(crate) enum ErrorKind {
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
+    InvalidEvilTeamState,
     InvalidButlerMaster,
     ButlerMasterVoteRequired,
     GhostVoteAlreadySpent,
@@ -32,6 +37,8 @@ pub(crate) enum ErrorKind {
     NoCurrentStep,
     StaleStep,
     StepCannotBeSkipped,
+    StepRequiresManualResolution,
+    StepIsAutomated,
     NoExecutionCandidate,
     ExecutionSurvivalNotAllowed,
     MissingDeliveredInformation,
@@ -46,6 +53,15 @@ pub(crate) enum ErrorKind {
     SlayerAlreadyUsed,
     InvalidSlayerTarget,
     InvalidSlayerRegistration,
+    DayActionWrongPhase,
+    InvalidDayActionActor,
+    DayActionUnavailable,
+    InvalidDayActionRecord,
+    MadnessCheckWrongPhase,
+    MadnessAssignmentUnavailable,
+    MadnessCheckUnchanged,
+    MadnessViolationLatched,
+    MadnessExecutionUnavailable,
     MissingMayorDecision,
     InvalidMayorDecision,
     InvalidPlayerAnnotations,
@@ -66,6 +82,22 @@ impl ErrorKind {
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),
             Self::MalformedEvent => ("MALFORMED_EVENT", "이벤트 형식이 올바르지 않습니다."),
             Self::UnsupportedEvent => ("UNSUPPORTED_EVENT", "지원하지 않는 이벤트입니다."),
+            Self::CommandNotSupportedByScript => (
+                "COMMAND_NOT_SUPPORTED_BY_SCRIPT",
+                "현재 스크립트에서 지원하지 않는 명령입니다.",
+            ),
+            Self::EventNotSupportedByScript => (
+                "EVENT_NOT_SUPPORTED_BY_SCRIPT",
+                "현재 스크립트에서 지원하지 않는 이벤트입니다.",
+            ),
+            Self::DuplicateEventId => (
+                "DUPLICATE_EVENT_ID",
+                "이벤트 ID가 중복되어 게임 파일을 불러올 수 없습니다.",
+            ),
+            Self::InvalidEventReference => (
+                "INVALID_EVENT_REFERENCE",
+                "이벤트가 존재하지 않거나 올바르지 않은 원본 이벤트를 참조합니다.",
+            ),
             Self::MalformedRequest => ("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."),
             Self::InvalidPlayerCount => (
                 "INVALID_PLAYER_COUNT",
@@ -83,6 +115,10 @@ impl ErrorKind {
             ),
             Self::ReplayFailed => ("REPLAY_FAILED", "확정 이벤트를 재생할 수 없습니다."),
             Self::InvalidStepInput => ("INVALID_STEP_INPUT", "현재 단계 입력이 올바르지 않습니다."),
+            Self::InvalidEvilTeamState => (
+                "INVALID_EVIL_TEAM_STATE",
+                "악한 팀 구성이 올바르지 않아 정보를 공개할 수 없습니다.",
+            ),
             Self::InvalidButlerMaster => (
                 "INVALID_BUTLER_MASTER",
                 "집사는 자신을 주인으로 선택할 수 없습니다.",
@@ -104,6 +140,14 @@ impl ErrorKind {
             Self::NoCurrentStep => ("NO_CURRENT_STEP", "진행할 현재 단계가 없습니다."),
             Self::StaleStep => ("STALE_STEP", "현재 단계와 일치하지 않는 명령입니다."),
             Self::StepCannotBeSkipped => ("STEP_CANNOT_BE_SKIPPED", "건너뛸 수 없는 단계입니다."),
+            Self::StepRequiresManualResolution => (
+                "STEP_REQUIRES_MANUAL_RESOLUTION",
+                "수동 단계는 수동 처리 결과로 완료해야 합니다.",
+            ),
+            Self::StepIsAutomated => (
+                "STEP_IS_AUTOMATED",
+                "자동화 단계는 수동 처리할 수 없습니다.",
+            ),
             Self::NoExecutionCandidate => ("NO_EXECUTION_CANDIDATE", "처형 후보가 없습니다."),
             Self::ExecutionSurvivalNotAllowed => (
                 "EXECUTION_SURVIVAL_NOT_ALLOWED",
@@ -152,6 +196,42 @@ impl ErrorKind {
             Self::InvalidSlayerRegistration => (
                 "INVALID_SLAYER_REGISTRATION",
                 "대상의 악마 등록 판정이 올바르지 않습니다.",
+            ),
+            Self::DayActionWrongPhase => (
+                "DAY_ACTION_WRONG_PHASE",
+                "낮에만 이 능력을 기록할 수 있습니다.",
+            ),
+            Self::InvalidDayActionActor => (
+                "INVALID_DAY_ACTION_ACTOR",
+                "현재 이 낮 능력을 사용할 수 있는 플레이어가 아닙니다.",
+            ),
+            Self::DayActionUnavailable => (
+                "DAY_ACTION_UNAVAILABLE",
+                "이 낮 능력의 사용 기회가 없습니다.",
+            ),
+            Self::InvalidDayActionRecord => (
+                "INVALID_DAY_ACTION_RECORD",
+                "낮 능력 기록의 형식이나 값이 올바르지 않습니다.",
+            ),
+            Self::MadnessCheckWrongPhase => (
+                "MADNESS_CHECK_WRONG_PHASE",
+                "광기 준수 여부는 낮에만 기록할 수 있습니다.",
+            ),
+            Self::MadnessAssignmentUnavailable => (
+                "MADNESS_ASSIGNMENT_UNAVAILABLE",
+                "현재 확인할 수 있는 광기 지시가 아닙니다.",
+            ),
+            Self::MadnessCheckUnchanged => (
+                "MADNESS_CHECK_UNCHANGED",
+                "같은 광기 판정은 다시 기록하지 않습니다.",
+            ),
+            Self::MadnessViolationLatched => (
+                "MADNESS_VIOLATION_LATCHED",
+                "확인된 광기 위반은 되돌리기 전까지 유지됩니다.",
+            ),
+            Self::MadnessExecutionUnavailable => (
+                "MADNESS_EXECUTION_UNAVAILABLE",
+                "현재 이 광기 위반으로 처형할 수 없습니다.",
             ),
             Self::MissingMayorDecision => (
                 "MISSING_MAYOR_DECISION",

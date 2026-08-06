@@ -25,6 +25,10 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
+        return crate::characters::replay_snv(game_file);
+    }
+    crate::characters::rules(game_file.script_id).validate_replay_events(&game_file.game.events)?;
     let events = &game_file.game.events;
     let ended_positions = events
         .iter()
@@ -151,6 +155,9 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             Ok(GameEndState {
                 event_id: event.id.clone(),
                 winning_team: payload.winning_team,
+                source_event_id: None,
+                cause: None,
+                reason_ko: None,
             })
         })
         .transpose()?;
@@ -161,6 +168,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
+        script_id: game_file.script_id,
         event_count: events.len(),
         phase: phase_state.phase,
         players,
@@ -170,6 +178,14 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         warnings,
         rule_state,
         game_end,
+        pending_identity_reveals: vec![],
+        available_day_actions: vec![],
+        day_action_records: vec![],
+        madness_assignments: vec![],
+        pending_madness_execution: None,
+        pending_vigormortis_poison_choices: vec![],
+        pending_death_consequences: vec![],
+        pending_game_end: None,
     })
 }
 
@@ -467,6 +483,8 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
         step_type: StepType::DemonSuccession,
         character: Some("imp".into()),
         player_id,
+        ability_use: None,
+        ability_origin: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::DemonSuccession,
             target,
@@ -484,9 +502,11 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
             execution_survival_allowed: false,
             mayor_decision: None,
             demon_succession: Some(pending.prompt.clone()),
+            dependent_player_selections: vec![],
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -549,8 +569,11 @@ pub(crate) fn replay_phase_state(
                 step_type: step.step_type,
                 character: step.character,
                 player_id: step.player_id,
+                ability_use: step.ability_use,
+                ability_origin: step.ability_origin,
                 required_input: step.required_input,
                 can_skip: false,
+                support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
                 status: PhaseStepStatus::Current,
             }],
@@ -567,8 +590,11 @@ pub(crate) fn replay_phase_state(
                 step_type: step.step_type,
                 character: None,
                 player_id: step.player_id,
+                ability_use: step.ability_use,
+                ability_origin: step.ability_origin,
                 required_input: step.required_input,
                 can_skip: false,
+                support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
                 status: PhaseStepStatus::Current,
             }],
@@ -599,10 +625,14 @@ pub(crate) fn replay_phase_state(
                     PhaseStepStatus::Complete => PhaseStepStatus::Complete,
                     PhaseStepStatus::Skipped => PhaseStepStatus::Skipped,
                     PhaseStepStatus::NeedsFollowUp => PhaseStepStatus::NeedsFollowUp,
+                    PhaseStepStatus::ManualComplete => PhaseStepStatus::ManualComplete,
+                    PhaseStepStatus::NotApplicable => PhaseStepStatus::NotApplicable,
                     PhaseStepStatus::Waiting if Some(step.id.as_str()) == current_step_id => {
                         PhaseStepStatus::Current
                     }
-                    PhaseStepStatus::Waiting | PhaseStepStatus::Current => PhaseStepStatus::Waiting,
+                    PhaseStepStatus::Waiting
+                    | PhaseStepStatus::Current
+                    | PhaseStepStatus::Interrupted => PhaseStepStatus::Waiting,
                 };
 
                 PhaseOverviewItem {
@@ -611,8 +641,11 @@ pub(crate) fn replay_phase_state(
                     step_type: step.step_type,
                     character: step.character,
                     player_id: step.player_id,
+                    ability_use: step.ability_use,
+                    ability_origin: step.ability_origin,
                     required_input: step.required_input,
                     can_skip: step.can_skip,
+                    support: step.support,
                     information_prompt: step.information_prompt,
                     status,
                 }
@@ -848,6 +881,9 @@ pub(crate) fn phase_step_statuses(
                 }
             }
             GameEventKind::NightActionResolved { payload } => {
+                if payload.actor_character_id.is_some() {
+                    return Err(ErrorKind::ReplayFailed.into_error());
+                }
                 if step.player_id.as_deref() != Some(payload.actor_player_id.as_str()) {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
@@ -861,6 +897,9 @@ pub(crate) fn phase_step_statuses(
                     | NightActionResolution::ImpAttack {
                         target_player_id, ..
                     } => target_player_id,
+                    NightActionResolution::DemonAttack { .. } => {
+                        return Err(ErrorKind::ReplayFailed.into_error())
+                    }
                 };
                 let actual = players_at_event
                     .iter()
@@ -984,7 +1023,7 @@ pub(crate) fn phase_step_statuses(
                     || payload.input.player_id.as_deref() != Some(expected_player_id.as_str())
                     || !players_at_event
                         .iter()
-                        .any(|player| player.id == expected_player_id && player.alive)
+                        .any(|player| player.id == expected_player_id)
                 {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
@@ -1090,7 +1129,10 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
         step_type: StepType::SlayerDeath,
         character: None,
         player_id: Some(player_id.into()),
+        ability_use: None,
+        ability_origin: None,
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
         required_input: RequiredInput {
@@ -1102,6 +1144,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -1310,9 +1353,15 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         active_poison,
         active_protection,
         unannounced_night_death_player_ids,
+        unannounced_night_resurrection_player_ids: vec![],
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,
+        active_impairments: None,
+        ability_grants: None,
+        automatic_reminders: vec![],
+        active_witch_curse: None,
+        evil_twin_relationships: vec![],
     }
 }
 

@@ -1,6 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { fileURLToPath } from "node:url";
+
+const webRoot = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   base: "/clocktower/",
@@ -11,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: "Clocktower Storyteller",
         short_name: "Clocktower",
-        description: "개인용 Trouble Brewing Storyteller 도구",
+        description: "개인용 Blood on the Clocktower Storyteller 도구",
         id: "/clocktower/",
         lang: "ko",
         start_url: "/clocktower/",
@@ -42,8 +45,17 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,webmanifest,wasm,png,svg,webp}"],
-        navigateFallback: "/clocktower/index.html",
+        navigateFallback: null,
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        landing: `${webRoot}index.html`,
+        troubleBrewing: `${webRoot}trouble-brewing/index.html`,
+        sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
+      },
+    },
+  },
 });

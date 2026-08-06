@@ -33,7 +33,9 @@ import { suggestionRequestFingerprint } from "./randomSuggestion";
 import type { PhaseInputDraftController } from "./usePhaseInputDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
 import { CharacterIcon } from "../../components/CharacterIcon";
-import { CharacterRulesButton } from "../../components/CharacterRulesCard";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
+import { troubleBrewingCharacterDetail } from "../../characterDetails";
+import { NightResultsAnnouncement } from "./NightResultsAnnouncement";
 
 type ConfirmedReveal = {
   payload: RevealPayload;
@@ -253,25 +255,6 @@ function ImpActionResult({ proposal, players }: { proposal: Proposal; players: P
   return <p className="nightActionResult" aria-label="밤 행동 결과">{target.seat}번 {target.name} - {outcome}</p>;
 }
 
-function NightDeathAnnouncement({ players, playerIds }: { players: Player[]; playerIds: string[] }) {
-  const deaths = playerIds.flatMap((id) => {
-    const player = players.find((candidate) => candidate.id === id);
-    return player ? [player] : [];
-  });
-  return (
-    <section className="nightDeathAnnouncement" aria-label="밤 사망 발표">
-      {deaths.length === 0 ? <div className="empty"><strong>사망자 없음</strong></div> : null}
-      {deaths.map((player) => (
-        <div key={player.id}>
-          <span role="img" aria-label="사망">†</span>
-          <strong>{player.seat}번</strong>
-          <span>{player.name}</span>
-        </div>
-      ))}
-    </section>
-  );
-}
-
 function CurrentStepPane({
   currentStep,
   phaseOverview,
@@ -338,6 +321,7 @@ function CurrentStepPane({
   const isNightDeathAnnouncement =
     currentStep?.stepType === "announcement" && currentStep.id.endsWith(":announceDeaths");
   const unannouncedNightDeathPlayerIds = ruleState?.unannouncedNightDeathPlayerIds ?? [];
+  const unannouncedNightResurrectionPlayerIds = ruleState?.unannouncedNightResurrectionPlayerIds ?? [];
   const currentSubjectCharacter = resultSubject && currentPlayer
     ? characters.find((character) => character.id === currentPlayer.actualCharacter)
     : undefined;
@@ -422,7 +406,7 @@ function CurrentStepPane({
       <div className="sectionHeader compact">
         <div>
           <p className="eyebrow">{currentStep ? phaseLabel(currentStep.phase) : "진행"}</p>
-          <h2>{currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
+          <h2>{isNightDeathAnnouncement ? "밤 결과 확인" : currentStep?.stepType === "slayerDeath" ? "사망 확인" : currentStep ? stepTitle(currentStep, currentPlayer) : "완료"}</h2>
         </div>
       </div>
 
@@ -463,20 +447,19 @@ function CurrentStepPane({
         {currentStep ? (
           <>
             {isNightDeathAnnouncement ? (
-              <NightDeathAnnouncement players={players} playerIds={unannouncedNightDeathPlayerIds} />
+              <NightResultsAnnouncement players={players} deathPlayerIds={unannouncedNightDeathPlayerIds} resurrectionPlayerIds={unannouncedNightResurrectionPlayerIds} />
             ) : null}
             {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? (
               <section className="currentActor" aria-label="현재 행동자">
-                <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
+                <CharacterDetailButton
+                  details={troubleBrewingCharacterDetail(currentStep.character)}
+                  className="currentActorCharacterButton"
+                >
+                  <CharacterIcon characterId={currentStep.character} className="currentActorIcon" />
+                  <h3>{currentCharacter?.label ?? currentStep.character}</h3>
+                </CharacterDetailButton>
                 <div>
                   <small>행동자</small>
-                  <div className="currentActorTitle">
-                    <h3>{currentCharacter?.label ?? currentStep.character}</h3>
-                    <CharacterRulesButton
-                      characterId={currentStep.character}
-                      ariaLabel={`현재 단계 ${currentCharacter?.label ?? currentStep.character} 세부 규칙 보기`}
-                    />
-                  </div>
                   <strong>{currentPlayer.seat}번 {currentPlayer.name}</strong>
                   <div className="currentActorTags">
                     {currentCharacterKind ? <em>{kindLabels[currentCharacterKind]}</em> : null}
@@ -576,9 +559,7 @@ function CurrentStepPane({
                     : currentStep.stepType === "discussion"
                       ? "지목 및 투표 시작"
                       : isNightDeathAnnouncement
-                        ? unannouncedNightDeathPlayerIds.length === 0
-                          ? "사망자 없음 발표 확정"
-                          : "사망 발표 확정"
+                        ? "확인하고 낮 시작"
                         : "확정"}
                 </button>
                 {currentStep.canSkip ? (

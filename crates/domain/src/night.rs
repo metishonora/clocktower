@@ -74,6 +74,8 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                     step_type: StepType::RedHerringAssignment,
                     character: Some("fortuneTeller".into()),
                     player_id: actor,
+                    ability_use: None,
+                    ability_origin: None,
                     required_input: RequiredInput {
                         kind: RequiredInputKind::PlayerIds,
                         target: Some(InputTarget::Player),
@@ -92,6 +94,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                                 .map(|p| p.id.clone())
                                 .collect(),
                         ),
+                        dependent_player_selections: vec![],
                         player_registration_options: Some(
                             players
                                 .iter()
@@ -113,6 +116,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                         optional: false,
                     },
                     can_skip: false,
+                    support: crate::model::PhaseStepSupport::Automated,
                     information_prompt: None,
                     pre_action_reveal: None,
                 },
@@ -166,6 +170,8 @@ pub(crate) fn night_steps(
                     step_type: StepType::RedHerringAssignment,
                     character: Some("fortuneTeller".into()),
                     player_id: actor,
+                    ability_use: None,
+                    ability_origin: None,
                     required_input: RequiredInput {
                         kind: RequiredInputKind::PlayerIds,
                         target: Some(InputTarget::Player),
@@ -184,6 +190,7 @@ pub(crate) fn night_steps(
                                 .map(|p| p.id.clone())
                                 .collect(),
                         ),
+                        dependent_player_selections: vec![],
                         player_registration_options: Some(
                             players
                                 .iter()
@@ -205,6 +212,7 @@ pub(crate) fn night_steps(
                         optional: false,
                     },
                     can_skip: false,
+                    support: crate::model::PhaseStepSupport::Automated,
                     information_prompt: None,
                     pre_action_reveal: None,
                 },
@@ -257,8 +265,11 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
         step_type: StepType::Character,
         character: Some(character.into()),
         player_id: Some(player_id),
+        ability_use: None,
+        ability_origin: None,
         required_input: crate::characters::character_required_input(character),
         can_skip: true,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }

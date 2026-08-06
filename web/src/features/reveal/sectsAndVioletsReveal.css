@@ -1,0 +1,6 @@
+.snvInformationRevealBackdrop { position: fixed; z-index: 400; inset: 0; display: grid; padding: clamp(20px, 6vw, 72px); place-items: center; color: #f7f1fb; background: #100a15; }
+.snvInformationReveal { display: grid; width: min(680px, 100%); min-height: min(520px, calc(100dvh - 40px)); padding: clamp(28px, 7vw, 72px); align-content: center; border: 1px solid rgba(244, 210, 117, .25); border-radius: 30px; background: radial-gradient(circle at 50% 35%, rgba(120, 76, 142, .32), rgba(20, 12, 26, .95)); box-shadow: 0 30px 100px rgba(0, 0, 0, .58); text-align: center; }
+.snvInformationReveal > span { color: #d7bd72; font-size: .72rem; font-weight: 900; letter-spacing: .14em; }
+.snvInformationReveal h2 { margin: 18px 0; font: clamp(2.8rem, 8vw, 5.4rem)/1 Georgia, serif; }
+.snvInformationReveal p { margin: 0 auto; color: #e1d5e4; font-size: clamp(1rem, 2.5vw, 1.35rem); line-height: 1.65; }
+.snvInformationReveal > button { justify-self: center; margin-top: 52px; padding: 12px 24px; border: 1px solid rgba(230, 209, 237, .28); border-radius: 999px; color: #fff; background: rgba(255, 255, 255, .08); font: inherit; font-weight: 850; cursor: pointer; }

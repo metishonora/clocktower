@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    contracts::{GameEvent, GameEventKind, VirginResolution},
+    contracts::{GameEvent, GameEventKind, VirginResolution, WitchNominationResolution},
     error::{CoreError, ErrorKind},
     model::{
         ActiveNomination, ConfirmedExecution, DayState, ExecutionCandidate, ExecutionStanding,
@@ -49,7 +49,9 @@ pub(crate) fn day_steps(
     loop {
         let nomination_id = format!("{prefix}:nomination:{nomination_number}");
         match step_status(&nomination_id, statuses) {
-            PhaseStepStatus::Complete => {
+            PhaseStepStatus::Complete
+            | PhaseStepStatus::ManualComplete
+            | PhaseStepStatus::NotApplicable => {
                 steps.push(nomination_step_for_players(
                     &prefix,
                     nomination_number,
@@ -64,6 +66,14 @@ pub(crate) fn day_steps(
                         RequiredInputKind::Night,
                     ));
                     return steps;
+                }
+                if let Some(nominator_id) = witch_death_nominator(events, &nomination_id) {
+                    let death_step = witch_death_step(&nomination_id, nominator_id);
+                    let death_done = step_status(&death_step.id, statuses).is_done();
+                    steps.push(death_step);
+                    if !death_done {
+                        break;
+                    }
                 }
                 if legacy_nomination_complete(events, &nomination_id) {
                     nomination_number += 1;
@@ -88,6 +98,7 @@ pub(crate) fn day_steps(
             }
             PhaseStepStatus::Waiting
             | PhaseStepStatus::Current
+            | PhaseStepStatus::Interrupted
             | PhaseStepStatus::NeedsFollowUp => {
                 steps.push(nomination_step_for_players(
                     &prefix,
@@ -113,6 +124,7 @@ pub(crate) fn day_steps(
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -125,35 +137,46 @@ pub(crate) fn day_steps(
         },
         false,
     ));
-    steps.push(PhaseStep {
-        id: format!("{prefix}:executionDeath"),
-        phase: Phase::Day,
-        step_type: StepType::ExecutionDeath,
-        character: None,
-        player_id: executed_player_id,
-        required_input: RequiredInput {
-            kind: RequiredInputKind::ExecutionDeathDecision,
-            target: Some(InputTarget::Execution),
-            min_selections: None,
-            max_selections: None,
-            setup_info: None,
-            character_kind: None,
-            allowed_character_ids: None,
-            allowed_player_ids: None,
-            player_registration_options: None,
-            zero_allowed: false,
-            supports_random_suggestion: false,
-            player_id: None,
-            survival_allowed: None,
-            execution_survival_allowed: false,
-            mayor_decision: None,
-            demon_succession: None,
-            optional: false,
-        },
-        can_skip: false,
-        information_prompt: None,
-        pre_action_reveal: None,
+    let execution_needs_death_confirmation = executed_player_id.as_ref().is_none_or(|player_id| {
+        players
+            .iter()
+            .any(|player| player.id == *player_id && player.alive)
     });
+    if execution_needs_death_confirmation {
+        steps.push(PhaseStep {
+            id: format!("{prefix}:executionDeath"),
+            phase: Phase::Day,
+            step_type: StepType::ExecutionDeath,
+            character: None,
+            player_id: executed_player_id,
+            ability_use: None,
+            ability_origin: None,
+            required_input: RequiredInput {
+                kind: RequiredInputKind::ExecutionDeathDecision,
+                target: Some(InputTarget::Execution),
+                min_selections: None,
+                max_selections: None,
+                setup_info: None,
+                character_kind: None,
+                allowed_character_ids: None,
+                allowed_player_ids: None,
+                dependent_player_selections: vec![],
+                player_registration_options: None,
+                zero_allowed: false,
+                supports_random_suggestion: false,
+                player_id: None,
+                survival_allowed: None,
+                execution_survival_allowed: false,
+                mayor_decision: None,
+                demon_succession: None,
+                optional: false,
+            },
+            can_skip: false,
+            support: crate::model::PhaseStepSupport::Automated,
+            information_prompt: None,
+            pre_action_reveal: None,
+        });
+    }
     steps.push(phase_transition_step(
         Phase::Day,
         &prefix,
@@ -163,6 +186,38 @@ pub(crate) fn day_steps(
     steps
 }
 
+fn witch_death_nominator(events: &[GameEvent], nomination_step_id: &str) -> Option<String> {
+    events.iter().find_map(|event| match &event.kind {
+        GameEventKind::NominationStarted { payload }
+            if payload.step_id == nomination_step_id
+                && matches!(
+                    payload.witch_resolution,
+                    WitchNominationResolution::DeathPending { .. }
+                ) =>
+        {
+            Some(payload.nominator_id.clone())
+        }
+        _ => None,
+    })
+}
+
+fn witch_death_step(nomination_step_id: &str, nominator_id: String) -> PhaseStep {
+    PhaseStep {
+        id: format!("{nomination_step_id}:witchDeath"),
+        phase: Phase::Day,
+        step_type: StepType::WitchDeath,
+        character: Some("witch".into()),
+        player_id: Some(nominator_id),
+        ability_use: None,
+        ability_origin: None,
+        required_input: required_none(),
+        can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
+        information_prompt: None,
+        pre_action_reveal: None,
+    }
+}
+
 pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseStep {
     PhaseStep {
         id: format!("{prefix}:nomination:{nomination_number}"),
@@ -170,6 +225,8 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
         step_type: StepType::Nomination,
         character: None,
         player_id: None,
+        ability_use: None,
+        ability_origin: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::Nomination,
             target: Some(InputTarget::Players),
@@ -179,6 +236,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -190,6 +248,7 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
             optional: true,
         },
         can_skip: true,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -222,6 +281,8 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
         step_type: StepType::Nomination,
         character: None,
         player_id: None,
+        ability_use: None,
+        ability_origin: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::NominationVote,
             target: Some(InputTarget::Players),
@@ -231,6 +292,7 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -242,6 +304,7 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
             optional: true,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -254,6 +317,8 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
         step_type: StepType::ExecutionDeath,
         character: Some("virgin".into()),
         player_id: Some(player_id.clone()),
+        ability_use: None,
+        ability_origin: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::ExecutionDeathDecision,
             target: Some(InputTarget::Execution),
@@ -263,6 +328,7 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
             character_kind: None,
             allowed_character_ids: None,
             allowed_player_ids: None,
+            dependent_player_selections: vec![],
             player_registration_options: None,
             zero_allowed: false,
             supports_random_suggestion: false,
@@ -274,6 +340,7 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
             optional: false,
         },
         can_skip: false,
+        support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
     }
@@ -459,7 +526,7 @@ pub(crate) fn nomination_eligibility(
         .collect();
     let eligible_nominee_ids = players
         .iter()
-        .filter(|player| player.alive && !used_nominee_ids.contains(player.id.as_str()))
+        .filter(|player| !used_nominee_ids.contains(player.id.as_str()))
         .map(|player| player.id.clone())
         .collect();
 
@@ -645,7 +712,7 @@ fn nomination_eligibility_from_pairs(
             .collect(),
         players
             .iter()
-            .filter(|player| player.alive && !used_nominee_ids.contains(player.id.as_str()))
+            .filter(|player| !used_nominee_ids.contains(player.id.as_str()))
             .map(|player| player.id.clone())
             .collect(),
     )

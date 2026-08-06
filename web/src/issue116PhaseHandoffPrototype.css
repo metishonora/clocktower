@@ -1,0 +1,139 @@
+.issue116Prototype { padding-bottom: 72px; }
+.issue116ScenarioBar { display: flex; max-width: 1180px; margin: 0 auto 18px; padding: 12px 14px; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 18px; background: rgba(20, 12, 26, .48); }
+.issue116ScenarioBar > span { color: #c9b4d1; font-size: .72rem; font-weight: 900; letter-spacing: .08em; }
+.issue116ScenarioBar > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.issue116ScenarioBar button { padding: 8px 11px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .04); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.issue116ScenarioBar button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; }
+.snvDayMode .issue116ScenarioBar { color: #3d2b42; border-color: rgba(88, 55, 97, .16); background: rgba(255, 252, 249, .58); }
+.snvDayMode .issue116ScenarioBar > span { color: #68536d; }
+.snvDayMode .issue116ScenarioBar button { border-color: rgba(88, 55, 97, .18); background: rgba(255, 255, 255, .46); }
+.snvDayMode .issue116ScenarioBar button[aria-pressed="true"] { color: #fff; background: #82509a; }
+.issue116CurrentStep { display: flex; min-height: 370px; flex-direction: column; }
+.issue116CurrentStep header { justify-content: flex-start; gap: 8px; }
+.issue116CurrentStep .snvStepActions { margin-top: auto; }
+.issue116CandidateSummary { display: grid; margin: 36px 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; }
+.issue116CandidateSummary strong, .issue116CandidateSummary span { display: flex; min-height: 96px; padding: 0 26px; align-items: center; border: 1px solid rgba(88, 55, 97, .15); border-radius: 18px; background: rgba(255, 255, 255, .38); }
+.issue116CandidateSummary strong { font: 1.65rem Georgia, serif; }
+.issue116CandidateSummary span { min-width: 94px; justify-content: center; color: #724581; font-size: 1.45rem; font-weight: 950; }
+.issue116NominationActions { display: grid !important; grid-template-columns: 1fr 1fr; }
+.issue116ExecutionStep { display: grid; padding: 42px !important; place-content: center; gap: 24px; text-align: center; }
+.issue116ExecutionTarget { display: grid; min-width: min(560px, 70vw); min-height: 170px; padding: 30px; place-content: center; gap: 16px; border: 1px solid rgba(88, 55, 97, .16); border-radius: 24px; background: rgba(255, 255, 255, .42); }
+.issue116ExecutionTarget span { color: #6a4673; font-size: .78rem; font-weight: 900; letter-spacing: .08em; }
+.issue116ExecutionTarget strong { font: 2.3rem Georgia, serif; }
+.issue116ExecutionTarget small { color: #7b6680; font-size: .9rem; font-weight: 850; }
+.issue116ExecutionConfirm { min-height: 58px; border: 1px solid #724581; border-radius: 16px; color: #fff; background: #724581; font: inherit; font-weight: 900; cursor: pointer; }
+.issue116ExecutionConfirm.issue116NightTransitionAction { border-color: #4d3658; background: linear-gradient(135deg, #34213d, #17101d); box-shadow: 0 12px 30px rgba(20, 10, 25, .36); }
+.issue116DemonStep { justify-content: center; }
+.issue116DemonStep .issue116ActorIdentity { margin: 0 0 22px; align-items: flex-start; flex-direction: column; gap: 4px; }
+.issue116ActorRoleButton { display: flex; padding: 5px 8px 5px 0; align-items: center; gap: 18px; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.issue116DemonStep .issue116ActorRoleButton h3 { margin: 0; font-size: 2rem; text-decoration: none; }
+.issue116ActorRoleButton { border-radius: 14px; text-decoration: none; }
+.issue116ActorRoleButton:hover { background: rgba(255, 255, 255, .055); }
+.issue116DemonStep .issue116ActorIdentity > strong { margin-left: 94px; color: #ddcae2; font-size: 1rem; }
+.issue116AbilitySummary { max-width: 520px; margin: 0 0 28px; color: #cdbed1; font-size: .86rem; line-height: 1.55; }
+.issue116ActorIdentity { display: flex; margin: 28px 0 14px; align-items: center; gap: 18px; }
+.issue116ActorIdentity img { width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 9px 18px rgba(4, 2, 7, .28)); }
+.issue116ActorIdentity h3 { margin: 0 0 7px; }
+.issue116ActorIdentity strong { color: #ddcae2; font-size: .82rem; }
+.snvDaySurface .issue116CurrentStep { color: #342538; background: linear-gradient(145deg, rgba(255, 255, 255, .78), rgba(226, 202, 232, .75)); }
+.snvDaySurface .issue116CurrentStep p { color: #65536a; }
+.snvDaySurface .issue116CurrentStep .snvCurrentStepLabel { color: #6a4673; }
+.snvDaySurface .issue116CurrentStep .snvStepActions button { border-color: #724581; color: #fff; background: #724581; }
+.snvDaySurface .issue116CurrentStep .snvStepActions button.secondary { color: #593b61; background: rgba(255, 255, 255, .48); }
+.issue116GrimoireSurface { padding-bottom: 28px; transition: background-color .9s ease, border-color .9s ease, box-shadow .9s ease; }
+.issue116GrimoireSurface .snvGrimoireDraft, .issue116GrimoireSurface .issue116SelectionPanel { transition: background-color .9s ease, border-color .9s ease, box-shadow .9s ease; }
+.issue116GrimoireSurface .snvGrimoireDraft::before { position: absolute; z-index: 0; inset: 0; border-radius: inherit; background-color: transparent; content: ""; pointer-events: none; transition: background-color .9s ease; }
+.issue116GrimoireSurface.issue116NominationMode { background-color: rgba(239, 246, 255, .76); }
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft::before { background-color: rgba(105, 149, 204, .08); }
+.issue116GrimoireSurface.issue116NominationMode .issue116SelectionPanel { background-color: rgba(246, 249, 255, .82); }
+.issue116GrimoireSurface.issue116VoteMode { border-color: rgba(154, 56, 76, .25); background-color: rgba(255, 233, 237, .8); box-shadow: 0 22px 70px rgba(130, 46, 66, .2); }
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft { border-color: rgba(154, 56, 76, .27); }
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft::before { background-color: rgba(184, 54, 78, .13); }
+.issue116GrimoireSurface.issue116VoteMode .issue116SelectionPanel { border-color: rgba(154, 56, 76, .2); background-color: rgba(255, 240, 242, .88); }
+.issue116GrimoireSurface .snvSeatingToolbar { align-items: center; }
+.issue116PhaseChip { margin-right: auto; color: #d9c1df; font: 1.1rem Georgia, serif; }
+.snvDayMode .issue116PhaseChip { color: #4d3654; }
+.issue116SelectionPanel { display: grid; box-sizing: border-box; min-height: 100%; padding: 24px; align-content: start; gap: 16px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); }
+.issue116SelectionPanel > span { color: #bca7c4; font-size: .72rem; font-weight: 900; letter-spacing: .08em; }
+.issue116SelectionPanel h2 { margin: 0; font: 2rem Georgia, serif; }
+.issue116SelectionPanel h2.issue107HandoffActionTitle { display: flex; align-items: center; gap: 10px; }
+.issue107HandoffActionTitle img { width: 38px; height: 38px; flex: 0 0 auto; object-fit: contain; }
+.issue116SelectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.issue116SelectionHeader button { padding: 7px 9px; border: 0; border-radius: 9px; color: #7b667f; background: transparent; font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.issue116SelectionHeader button:hover:not(:disabled) { color: #4f3857; background: rgba(104, 66, 114, .08); }
+.issue116SelectionHeader button:disabled { opacity: .45; cursor: wait; }
+.issue116SelectionPanel p { color: #bdaec3; line-height: 1.55; }
+.issue116SelectionPanel dl { display: grid; margin: 8px 0 0; gap: 8px; }
+.issue116SelectionPanel dl > div { display: flex; min-height: 46px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 12px; border-radius: 12px; background: rgba(255, 255, 255, .045); }
+.issue116SelectionPanel dt { color: #ad9bb5; font-size: .72rem; font-weight: 850; }
+.issue116SelectionPanel dd { margin: 0; font-size: .83rem; font-weight: 900; text-align: right; }
+.issue116PrimaryAction { width: 100%; min-height: 54px; margin-top: auto; padding: 11px 14px; border: 1px solid #e0bc64; border-radius: 14px; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 12px 28px rgba(205, 143, 45, .26); font: inherit; font-weight: 900; cursor: pointer; }
+.issue116PrimaryAction:disabled { border-color: rgba(230, 209, 237, .17); color: #8d8191; background: rgba(255, 255, 255, .035); box-shadow: none; cursor: not-allowed; }
+.issue116PrimaryAction.issue116VoteCompleteAction { border-color: #176b64; color: #fff; background: linear-gradient(135deg, #278b80, #17635d); box-shadow: 0 12px 30px rgba(23, 107, 100, .34); }
+.issue116PrimaryAction.issue116NextAction { border-color: #365aa8; color: #fff; background: linear-gradient(135deg, #557dd3, #344f9b); box-shadow: 0 12px 30px rgba(52, 79, 155, .38); }
+.issue116GrimoireSurface .snvGrimoireDraft > button:disabled { cursor: default; opacity: 1; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116IneligibleSeat { z-index: 1; border-color: #aaa; background: #ddd; box-shadow: none; filter: grayscale(1); opacity: .42; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116SelectedSeat { z-index: 3; border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 4px rgba(130, 80, 154, .22), 0 11px 28px rgba(73, 46, 80, .2); }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116NominatorSeat { border-color: #5f378b; background: #e2d2f4; box-shadow: 0 0 0 7px rgba(95, 55, 139, .34), 0 0 34px rgba(95, 55, 139, .44); transform: translate(-50%, -50%) scale(1.08); }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116NomineeSeat { border-color: #b23f67; background: #f3d5df; box-shadow: 0 0 0 7px rgba(178, 63, 103, .3), 0 0 34px rgba(178, 63, 103, .42); transform: translate(-50%, -50%) scale(1.08); }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116VoterSeat { border-color: #ca7b16; background: #fff0bd; box-shadow: 0 0 0 8px rgba(226, 147, 34, .38), 0 0 38px rgba(226, 147, 34, .55); transform: translate(-50%, -50%) scale(1.1); }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116DemonTargetSeat { z-index: 3; border-color: #ff526b; background: linear-gradient(145deg, #69283b, #3b2030); box-shadow: 0 0 0 8px rgba(255, 62, 91, .32), 0 0 42px rgba(255, 62, 91, .58); transform: translate(-50%, -50%) scale(1.1); }
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSeat,
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.issue116GhostVoteSeat { --kind-accent: #aeb2b8; border-color: #8f949c; background: linear-gradient(145deg, #565b63, #3e4148); box-shadow: 0 9px 24px rgba(46, 48, 54, .25); }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116GhostVoteSeat .snvSeatPlayerName { color: #f1f2f4; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116GhostVoteSeat small { color: #c5c8cd; }
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.issue116GhostVoteSeat.issue116VoterSeat { border-color: #db952f; background: linear-gradient(145deg, #716342, #4c4b4c); box-shadow: 0 0 0 8px rgba(226, 147, 34, .38), 0 0 38px rgba(226, 147, 34, .55); }
+.issue116GhostIcon { width: 46px; height: 46px; margin: 0 auto; overflow: visible; fill: #d7d9dd; filter: drop-shadow(0 5px 7px rgba(16, 17, 20, .28)); }
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSpentSeat,
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.issue116GhostVoteSpentSeat { --kind-accent: #858991; border-color: #979ba2; background: linear-gradient(145deg, #d2d3d5, #b9bbc0); box-shadow: none; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116GhostVoteSpentSeat > :not(.issue116DeathShroud) { filter: grayscale(1) blur(.45px); opacity: .42; }
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.issue116GhostVoteSpentSeat { cursor: not-allowed; }
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSeat.issue116NomineeSeat,
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSpentSeat.issue116NomineeSeat { z-index: 3; border-color: #b23f67; background: linear-gradient(145deg, #72616b, #555258); box-shadow: 0 0 0 7px rgba(178, 63, 103, .3), 0 0 34px rgba(178, 63, 103, .42); transform: translate(-50%, -50%) scale(1.08); }
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSeat.issue116IneligibleSeat,
+.issue116GrimoireSurface.issue116NominationMode .snvGrimoireDraft > button.issue116GhostVoteSpentSeat.issue116IneligibleSeat { box-shadow: none; opacity: .72; }
+.issue116DeathShroud { position: absolute; z-index: 4; top: 5px; left: 50%; width: 40px; height: 52px; transform: translateX(-50%); filter: drop-shadow(0 5px 7px rgba(28, 29, 33, .34)); pointer-events: none; }
+.issue116DeathShroud svg { display: block; width: 100%; height: 100%; }
+.issue116DeathShroud svg > path:first-child { fill: #4e5158; stroke: #e0e2e5; stroke-width: 1.2; stroke-linejoin: round; }
+.issue116DeathShroud .issue116DeathMark { fill: none; stroke: #f5f5f6; stroke-width: 3; stroke-linecap: round; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116NominatorSeat small { color: #5f378b; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116NomineeSeat small { color: #a12852; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116VoterSeat small { color: #8a4d00; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.issue116DemonTargetSeat small { color: #ffd3da; }
+.issue116NominationArrow { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.issue116NominationArrow.mobile { display: none; }
+.issue116NominationArrow polyline, .issue116NominationArrow > path { fill: none; stroke: #a2295b; stroke-width: 6px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 5px rgba(75, 16, 44, .42)); }
+.issue116NominationArrow marker path { fill: #a2295b; }
+.issue116VoteSummary > div:last-child { display: grid; grid-template-columns: auto 1fr auto 1fr; }
+.issue116VoteSummary > div:last-child > span { color: #a992b0; font-weight: 900; }
+.issue116VoteSummary .thresholdMet { color: #c2353e; font-size: 1.15rem; }
+.issue116ReferenceWorkspace { grid-template-columns: minmax(0, 1fr); }
+.issue116PhaseClock { z-index: 4; }
+.issue116AttackMode .issue116PhaseClock { border-color: rgba(240, 211, 131, .42); background: rgba(42, 20, 52, .9); box-shadow: 0 0 30px rgba(240, 211, 131, .18); }
+.issue116AttackMode .issue116PhaseClock strong { color: #f7e9bd; }
+.issue116AttackMode .issue116PhaseClock span, .issue116AttackMode .issue116PhaseClock time { color: #ddcce3; }
+.snvNightMode .issue116GrimoireSurface .snvGrimoireDraft > button.issue116SelectedSeat { border-color: #f0d383; background: #684377; box-shadow: 0 0 0 4px rgba(240, 211, 131, .22), 0 0 30px rgba(240, 211, 131, .25); }
+.snvNightMode .issue116GrimoireSurface.issue116AttackMode .snvGrimoireDraft > button.issue116DemonTargetSeat { border-color: #d84f73; background: linear-gradient(145deg, #713148, #422235); box-shadow: 0 0 0 8px rgba(216, 79, 115, .34), 0 0 42px rgba(216, 79, 115, .58); }
+.snvNightMode .issue116GrimoireSurface.issue116AttackMode .snvGrimoireDraft > button.issue116DemonTargetSeat small { color: #ffd4df; }
+.snvDayMode .issue116SelectionPanel { border-color: rgba(88, 55, 97, .16); background: rgba(255, 252, 249, .62); }
+.snvDayMode .issue116SelectionPanel > span, .snvDayMode .issue116SelectionPanel dt, .snvDayMode .issue116SelectionPanel p { color: #68566e; }
+.snvDayMode .issue116SelectionPanel dl > div { background: rgba(104, 66, 114, .07); }
+.snvDayMode .issue116PrimaryAction:disabled { border-color: rgba(88, 55, 97, .14); color: #8a7a8d; background: rgba(88, 55, 97, .06); }
+@media (prefers-reduced-motion: reduce) {
+  .issue116GrimoireSurface, .issue116GrimoireSurface .snvGrimoireDraft, .issue116GrimoireSurface .snvGrimoireDraft::before, .issue116GrimoireSurface .issue116SelectionPanel { transition-duration: 0s; }
+}
+@media (max-width: 760px) {
+  .issue116ScenarioBar { align-items: flex-start; flex-direction: column; }
+  .issue116ScenarioBar > div { width: 100%; justify-content: flex-start; }
+  .issue116ScenarioBar button { flex: 1 1 auto; }
+  .issue116CurrentStep { min-height: 340px; }
+  .issue116CandidateSummary strong, .issue116CandidateSummary span { min-height: 78px; padding: 0 18px; }
+  .issue116ExecutionStep { padding: 24px !important; }
+  .issue116ExecutionTarget { min-width: min(520px, 68vw); }
+  .issue116SelectionPanel { min-height: 270px; order: -1; }
+  .issue116GrimoireSurface .snvSeatingWorkspace { display: flex; flex-direction: column; }
+  .issue116NominationArrow.desktop { display: none; }
+  .issue116NominationArrow.mobile { display: block; }
+  .issue116GhostIcon { width: 38px; height: 38px; }
+  .issue116DeathShroud { top: 3px; width: 34px; height: 45px; }
+}

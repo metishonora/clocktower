@@ -1,0 +1,172 @@
+.issue116GrimoireSurface .snvGrimoireDraft > button {
+  transition: opacity .24s ease, filter .24s ease, border-color .24s ease, background .24s ease, box-shadow .24s ease, transform .24s ease;
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat {
+  --kind-accent: #92959b;
+  border-color: #a1a3a8;
+  color: #f8f8f9;
+  background: linear-gradient(145deg, #6d7076, #4f5258);
+  box-shadow: 0 9px 24px rgba(26, 27, 30, .32), inset 0 -3px rgba(199, 201, 205, .34);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat img {
+  filter: grayscale(.18) contrast(.94) brightness(.94) drop-shadow(0 6px 11px rgba(20, 21, 23, .34));
+  opacity: .88;
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat .snvSeatNumber,
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat .snvSeatPlayerName { color: #fafafb; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat small { color: #d7d8db; }
+
+.snvFuneralIcon {
+  position: absolute;
+  z-index: 3;
+  top: 3px;
+  right: 6px;
+  width: 23px;
+  height: 30px;
+  filter: drop-shadow(0 3px 5px rgba(19, 20, 22, .42));
+  pointer-events: none;
+}
+
+.snvFuneralIcon svg { display: block; width: 100%; height: 100%; }
+.snvFuneralIcon svg > path:first-child { fill: #45484e; stroke: #f0f1f3; stroke-width: 1.5; stroke-linejoin: round; }
+.snvFuneralIcon .snvFuneralMark { fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round; }
+
+.snvGhostVoteIcon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto;
+  overflow: visible;
+  fill: #d7d9dd;
+  filter: drop-shadow(0 5px 7px rgba(16, 17, 20, .28));
+}
+
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) {
+  --kind-accent: #272c33;
+  border-color: #454c56;
+  color: #fff;
+  background: linear-gradient(145deg, #555b64, #343940);
+  box-shadow: 0 0 0 3px rgba(54, 60, 69, .2), 0 12px 30px rgba(39, 43, 49, .34), inset 0 -3px rgba(218, 221, 225, .22);
+  filter: none;
+  opacity: 1;
+}
+
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvSeatNumber,
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvSeatPlayerName { color: #fff; }
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) small { color: #e3e5e8; }
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.assigned.snvDeadSeat.snvGhostVoteAvailable:not(.snvSeatStateSelected) .snvGhostVoteIcon {
+  fill: #f2f3f5;
+  filter: drop-shadow(0 5px 8px rgba(8, 10, 13, .52));
+}
+
+.snvDayMode .issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.snvGhostVoteAvailable.snvSeatStateStrong.issue116VoterSeat .snvGhostVoteIcon {
+  fill: #56360b;
+  filter: drop-shadow(0 3px 5px rgba(86, 54, 11, .22));
+}
+
+.issue116GrimoireSurface.issue116VoteMode .snvGrimoireDraft > button.snvGhostVoteSpent {
+  --kind-accent: #858991;
+  border-color: #979ba2;
+  background: linear-gradient(145deg, #d2d3d5, #b9bbc0);
+  box-shadow: none;
+  filter: grayscale(1);
+  opacity: .62;
+  cursor: not-allowed;
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvGhostVoteSpent > :not(.snvFuneralIcon) {
+  filter: grayscale(1) blur(.45px);
+  opacity: .42;
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateActor {
+  z-index: 4;
+  border-color: #c59527;
+  box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32);
+  filter: none;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateTarget {
+  z-index: 5;
+  border-color: #b23f67;
+  box-shadow: 0 0 0 4px rgba(178, 63, 103, .22), 0 0 30px rgba(178, 63, 103, .32);
+  filter: none;
+  opacity: 1;
+  outline: 0;
+  transform: translate(-50%, -50%);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStatePoisonTarget {
+  border-color: #8f67d8;
+  box-shadow: 0 0 0 4px rgba(143, 103, 216, .25), 0 0 32px rgba(143, 103, 216, .4);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget {
+  z-index: 6;
+  border-color: #c9a2ff;
+  background: linear-gradient(145deg, #6f478f, #3e285a);
+  box-shadow: 0 0 0 7px rgba(166, 112, 226, .38), 0 0 40px rgba(176, 116, 236, .62);
+  filter: none;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget .snvSeatNumber,
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget .snvSeatPlayerName { color: #fff; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSeatStateDrunkTarget small { color: #f1ddff; }
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected {
+  z-index: 4;
+  filter: none;
+  opacity: 1;
+  outline: 0;
+  transform: translate(-50%, -50%);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateSelected.issue116NominatorSeat {
+  border-color: #8a5ab8;
+  box-shadow: 0 0 0 4px rgba(138, 90, 184, .24), 0 0 30px rgba(95, 55, 139, .34);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116NomineeSeat {
+  z-index: 4;
+  border-color: #b23f67;
+  background: #f3d5df;
+  box-shadow: 0 0 0 7px rgba(178, 63, 103, .3), 0 0 34px rgba(178, 63, 103, .42);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116NomineeSeat .snvSeatNumber,
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116NomineeSeat .snvSeatPlayerName { color: #5d273c; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116NomineeSeat small { color: #a12852; }
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116VoterSeat {
+  z-index: 4;
+  border-color: #ca7b16;
+  background: #fff0bd;
+  box-shadow: 0 0 0 8px rgba(226, 147, 34, .38), 0 0 38px rgba(226, 147, 34, .55);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116VoterSeat .snvSeatNumber,
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116VoterSeat .snvSeatPlayerName { color: #56360b; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvDeadSeat.snvSeatStateStrong.issue116VoterSeat small { color: #8a4d00; }
+
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat { filter: saturate(.45); opacity: .5; }
+.issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat.snvDeadSeat { filter: none; opacity: .46; }
+
+.snvSelectionCompletePanel { border-color: rgba(83, 190, 154, .24) !important; background: rgba(24, 53, 46, .84) !important; }
+.snvDayMode .snvSelectionCompletePanel { border-color: rgba(39, 139, 120, .24) !important; background: rgba(240, 251, 247, .82) !important; }
+
+@media (max-width: 780px) {
+  .snvFuneralIcon { top: 2px; right: 4px; width: 20px; height: 27px; }
+  .snvGhostVoteIcon { width: 38px; height: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue116GrimoireSurface .snvGrimoireDraft > button { transition: none; }
+}

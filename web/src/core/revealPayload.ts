@@ -1,7 +1,11 @@
-import type { CharacterChangeRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
+import type { CharacterChangeRevealPayload, EvilTwinPairRevealPayload, MadnessAssignmentRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
 import { characters } from "../setupDraft.js";
+import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 
-const characterIds = new Set(characters.map((character) => character.id));
+const characterIds = new Set([
+  ...characters.map((character) => character.id),
+  ...sectsAndVioletsCharacters.map((character) => character.id),
+]);
 const spyPayloadKeys = ["kind", "players"];
 const spyPlayerKeys = [
   "alive",
@@ -21,11 +25,26 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
-  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload);
+  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload) || isEvilTwinPairRevealPayload(payload);
   if (!nonEmptyString(payload.messageKo)) return false;
   if (!optionalNonEmptyString(payload.previewMessageKo)) return false;
   if (!optionalNonEmptyString(payload.labelKo) || !optionalNonEmptyString(payload.valueKo)) return false;
   return (payload.labelKo === undefined) === (payload.valueKo === undefined);
+}
+
+export function isEvilTwinPairRevealPayload(value: unknown): value is EvilTwinPairRevealPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Record<string, unknown>;
+  if (payload.kind !== "evilTwinPair" || !hasExactKeys(payload, ["kind", "players"]) || !Array.isArray(payload.players) || payload.players.length !== 2) return false;
+  const playerIds = new Set<string>();
+  return payload.players.every((value) => {
+    if (!value || typeof value !== "object") return false;
+    const player = value as Record<string, unknown>;
+    if (!hasExactKeys(player, ["alignment", "characterId", "name", "playerId", "seat"])) return false;
+    if (!nonEmptyString(player.playerId) || playerIds.has(player.playerId) || !Number.isInteger(player.seat) || (player.seat as number) <= 0 || !nonEmptyString(player.name) || !nonEmptyString(player.characterId) || !characterIds.has(player.characterId) || (player.alignment !== "good" && player.alignment !== "evil")) return false;
+    playerIds.add(player.playerId);
+    return true;
+  }) && new Set(payload.players.map((value) => (value as { alignment: string }).alignment)).size === 2;
 }
 
 export function isCharacterChangeRevealPayload(value: unknown): value is CharacterChangeRevealPayload {
@@ -35,6 +54,15 @@ export function isCharacterChangeRevealPayload(value: unknown): value is Charact
     && nonEmptyString(payload.playerId)
     && (payload.alignment === "good" || payload.alignment === "evil")
     && hasExactKeys(payload, ["alignment", "characterId", "kind", "playerId"]);
+}
+
+export function isMadnessAssignmentRevealPayload(value: unknown): value is MadnessAssignmentRevealPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Record<string, unknown>;
+  return payload.kind === "madnessAssignment"
+    && nonEmptyString(payload.characterId) && characterIds.has(payload.characterId)
+    && nonEmptyString(payload.playerId)
+    && hasExactKeys(payload, ["characterId", "kind", "playerId"]);
 }
 
 export function isRoleInformationRevealPayload(value: unknown): value is RoleInformationRevealPayload {
@@ -55,8 +83,13 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && payload.bluffCharacterIds.every((characterId) => typeof characterId === "string" && characterIds.has(characterId));
   }
   if (payload.kind === "numericInformation") {
-    return (payload.characterId === "chef" || payload.characterId === "empath")
+    return ["chef", "empath", "clockmaker", "mathematician", "oracle", "juggler"].includes(String(payload.characterId))
       && Number.isInteger(payload.value) && (payload.value as number) >= 0
+      && hasExactKeys(payload, ["characterId", "kind", "value"]);
+  }
+  if (payload.kind === "booleanInformation") {
+    return (payload.characterId === "flowergirl" || payload.characterId === "townCrier")
+      && typeof payload.value === "boolean"
       && hasExactKeys(payload, ["characterId", "kind", "value"]);
   }
   if (payload.kind === "fortuneTellerInformation") {
@@ -68,6 +101,19 @@ export function isRoleInformationRevealPayload(value: unknown): value is RoleInf
       && characterIds.has(payload.revealedCharacterId as string)
       && isRevealPlayer(payload.targetPlayer)
       && hasExactKeys(payload, ["characterId", "kind", "revealedCharacterId", "targetPlayer"]);
+  }
+  if (payload.kind === "dreamerInformation") {
+    return hasExactKeys(payload, ["characterIds", "kind"])
+      && Array.isArray(payload.characterIds) && payload.characterIds.length === 2
+      && payload.characterIds.every((id) => typeof id === "string" && characterIds.has(id));
+  }
+  if (payload.kind === "seamstressInformation") {
+    return hasExactKeys(payload, ["kind", "sameAlignment", "targetPlayers"])
+      && typeof payload.sameAlignment === "boolean" && isRevealPlayers(payload.targetPlayers, 2);
+  }
+  if (payload.kind === "sageInformation") {
+    return hasExactKeys(payload, ["candidatePlayers", "kind"])
+      && isRevealPlayers(payload.candidatePlayers, 2);
   }
   if (payload.kind === "setupInformation") {
     const setupCharacter = payload.characterId === "washerwoman" || payload.characterId === "librarian" || payload.characterId === "investigator";

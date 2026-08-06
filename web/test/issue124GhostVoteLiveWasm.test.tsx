@@ -1,0 +1,369 @@
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expect, test } from "vitest";
+import type { Command, GameEvent, GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
+import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+
+test("a real-WASM second-day nomination accepts the killed Snake Charmer's ghost vote", async () => {
+  const game = await gameAtSecondDayNomination();
+  const beforeVote = await replayOrThrow(game);
+  expect(beforeVote.players.find((player) => player.id === "player-3")).toMatchObject({
+    actualCharacter: "snakeCharmer",
+    alive: false,
+    ghostVoteUsed: false,
+  });
+
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  expect(await within(app).findByRole("heading", { name: "지명 및 투표" })).toBeTruthy();
+
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: /5번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: /9번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "5번 → 9번 지명 확정" }));
+
+  expect(await within(app).findByRole("heading", { name: "투표" })).toBeTruthy();
+  const deadSnakeCharmer = within(app).getByRole("button", {
+    name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
+  });
+  expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
+  expect(deadSnakeCharmer.classList.contains("snvDeadSeat")).toBe(true);
+  expect(deadSnakeCharmer.querySelector(".snvGhostVoteIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(deadSnakeCharmer.querySelector("img")).toBeNull();
+
+  await user.click(deadSnakeCharmer);
+  expect(within(app).getByText("1표")).toBeTruthy();
+  expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateStrong")).toBe(true);
+  expect(deadSnakeCharmer.classList.contains("snvSeatStateSelected")).toBe(true);
+
+  await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
+  const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
+  expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
+
+  await user.click(await within(app).findByRole("button", { name: "투표 완료 →" }));
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: /6번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: /8번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "6번 → 8번 지명 확정" }));
+
+  const spentSnakeCharmer = await within(app).findByRole("button", {
+    name: /3번 좌석.*뱀 조련사.*사망, 투표 불가/,
+  });
+  expect(spentSnakeCharmer.hasAttribute("disabled")).toBe(true);
+  expect(spentSnakeCharmer.classList.contains("snvGhostVoteSpent")).toBe(true);
+  expect(getComputedStyle(spentSnakeCharmer).filter).toContain("grayscale");
+  expect(getComputedStyle(spentSnakeCharmer.querySelector("img")!).opacity).toBe("0.42");
+  expect(spentSnakeCharmer.querySelector(".snvFuneralIcon")).not.toBeNull();
+  expect(spentSnakeCharmer.querySelector(".snvGhostVoteIcon")).toBeNull();
+});
+
+test("the same mounted game keeps the swapped and killed Snake Charmer eligible for a later ghost vote", async () => {
+  const game = await gameAtStep("firstNight:philosopher");
+  const storage = new MemoryGameStorageDriver(game);
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+  await user.click(await within(app).findByRole("button", { name: "이번 밤 보류" }));
+  await completeMinionInformation(user, app);
+  await completeDemonInformation(user, app);
+  await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
+  await user.click(within(app).getByRole("button", { name: /1번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "1번 플레이어 1 선택 확정" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 →" }));
+  await assignCerenovus(user, app);
+  await revealCurrentInformation(user, app);
+  const mathematicianTask = await within(app).findByRole("article", { name: "수학자 정보" });
+  expect(within(mathematicianTask).getByText("진실").nextElementSibling?.textContent).toContain("0개");
+  expect(within(mathematicianTask).getByText("비정상 작동 기록 없음")).toBeTruthy();
+  expect(within(mathematicianTask).getByRole("group", { hidden: true, name: "계산 근거" }).hasAttribute("open")).toBe(false);
+  await revealCurrentInformation(user, app);
+  await user.click(await within(app).findByRole("button", { name: "낮으로" }));
+  await user.click(await within(app).findByRole("button", { name: "발표 완료" }));
+  await user.click(await within(app).findByRole("button", { name: "밀담 종료" }));
+  await user.click(await within(app).findByRole("button", { name: "지명 시작" }));
+
+  await completeNomination(user, app, 9, 1, [1, 2, 3]);
+  await user.click(within(app).getByRole("button", { name: "지명 종료" }));
+  await user.click(await within(app).findByRole("button", { name: "확정" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 →" }));
+
+  await user.click(await within(app).findByRole("button", { name: "이번 밤 보류" }));
+  await user.click(await within(app).findByRole("button", { name: "대상 선택" }));
+  await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "3번 플레이어 3 선택 확정" }));
+  await acknowledgeSnakeCharmerSwap(user);
+  await user.click(await within(app).findByRole("button", { name: "진행 →" }));
+
+  await assignCerenovus(user, app);
+  await completePitHagNoChange(user, app, 9);
+  await user.click(await within(app).findByRole("button", { name: "← 공격" }));
+  await user.click(within(app).getByRole("button", { name: /3번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "3번 플레이어 3 공격 확정" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 →" }));
+
+  for (let informationIndex = 0; informationIndex < 3; informationIndex += 1) {
+    await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
+    const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+    await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+  }
+  await revealCurrentInformation(user, app);
+  await user.click(await within(app).findByRole("button", { name: "다음 →" }));
+  await user.click(await within(app).findByRole("button", { name: "발표 완료" }));
+  await user.click(await within(app).findByRole("button", { name: "밀담 종료" }));
+  await user.click(await within(app).findByRole("button", { name: "지명 시작" }));
+
+  await user.click(await within(app).findByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: /5번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: /9번 좌석/ }));
+  await user.click(within(app).getByRole("button", { name: "5번 → 9번 지명 확정" }));
+
+  const deadSnakeCharmer = await within(app).findByRole("button", {
+    name: /3번 좌석.*뱀 조련사.*사망, 투표 가능/,
+});
+
+async function completeMinionInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  await user.click(await within(app).findByRole("button", { name: "정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: "하수인 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+  await user.click(await within(app).findByRole("button", { name: "다음으로" }));
+}
+
+async function completeDemonInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  const candidates = await waitFor(() => {
+    const grid = app.querySelector<HTMLElement>(".snvBluffCandidateGrid");
+    expect(grid).not.toBeNull();
+    return within(grid!).getAllByRole("button");
+  });
+  for (const candidate of candidates.slice(0, 3)) await user.click(candidate);
+  await user.click(within(app).getByRole("button", { name: "정보 공개" }));
+  const reveal = await screen.findByRole("dialog", { name: "악마 정보 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+  await user.click(await within(app).findByRole("button", { name: "다음으로" }));
+}
+  expect(deadSnakeCharmer.hasAttribute("disabled")).toBe(false);
+  await user.click(deadSnakeCharmer);
+  expect(within(app).getByText("1표")).toBeTruthy();
+  expect(deadSnakeCharmer.getAttribute("aria-pressed")).toBe("true");
+  await user.click(within(app).getByRole("button", { name: "1표로 투표 확정" }));
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events.at(-1)?.type).toBe("nominationVoteConfirmed"));
+  const afterVote = await replayOrThrow(storage.savedGames.at(-1)!);
+  expect(afterVote.players.find((player) => player.id === "player-3")?.ghostVoteUsed).toBe(true);
+}, 15_000);
+
+async function gameAtSecondDayNomination(): Promise<GameFile> {
+  return gameAtStep("day2:nomination:1");
+}
+
+async function gameAtStep(targetStepId: string): Promise<GameFile> {
+  const players = setupPlayers();
+  const setup: GameEvent = {
+    id: "setup-1",
+    type: "setupConfirmed",
+    phase: "setup",
+    payload: { players },
+    summary: "초기 설정 확정: 10명",
+    createdAt: "2026-07-24T15:06:45.000Z",
+  };
+  const game: GameFile = {
+    schemaVersion: 3,
+    game: {
+      id: "issue-124-live-regression",
+      name: "Issue 124 live ghost vote",
+      scriptId: "sectsAndViolets",
+      createdAt: setup.createdAt,
+      updatedAt: setup.createdAt,
+      events: [setup],
+    },
+  };
+
+  for (let attempts = 0; attempts < 64; attempts += 1) {
+    const state = await replayOrThrow(game);
+    const step = state.currentStep;
+    if (step?.id === targetStepId) break;
+    if (!step) throw new Error(`game ended before ${targetStepId}`);
+    await proposeAndAppend(game, commandFor(step));
+  }
+
+  expect((await replayOrThrow(game)).currentStep?.id).toBe(targetStepId);
+  game.ui = liveSession(players, game.game.events);
+  return game;
+}
+
+async function completeNomination(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+  nominator: number,
+  nominee: number,
+  voters: number[],
+) {
+  await user.click(within(app).getByRole("button", { name: "← 지명하기" }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${nominator}번 좌석`) }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${nominee}번 좌석`) }));
+  await user.click(within(app).getByRole("button", { name: `${nominator}번 → ${nominee}번 지명 확정` }));
+  for (const voter of voters) {
+    await user.click(within(app).getByRole("button", { name: new RegExp(`${voter}번 좌석`) }));
+  }
+  await user.click(within(app).getByRole("button", { name: `${voters.length}표로 투표 확정` }));
+  await user.click(await within(app).findByRole("button", { name: "투표 완료 →" }));
+}
+
+async function acknowledgeSnakeCharmerSwap(user: ReturnType<typeof userEvent.setup>) {
+  for (const sequence of [1, 2]) {
+    const prompt = await screen.findByRole("dialog", { name: `직업 변경 안내 ${sequence}/2` });
+    await user.click(within(prompt).getByRole("button", { name: "공개" }));
+    const reveal = await screen.findByRole("dialog", { name: `역할 변경 공개 ${sequence}/2` });
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+  }
+}
+
+async function revealCurrentInformation(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  await user.click(await within(app).findByRole("button", { name: /^(?:거짓 |중독 |취한 )?정보 공개$/ }));
+  const reveal = await screen.findByRole("dialog", { name: /정보 공개$/ });
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+  await user.click(await within(app).findByRole("button", { name: "다음 단계" }));
+}
+
+async function completePitHagNoChange(
+  user: ReturnType<typeof userEvent.setup>,
+  app: HTMLElement,
+  actorSeat: number,
+) {
+  await user.click(await within(app).findByRole("button", { name: "← 선택" }));
+  await user.click(within(app).getByRole("button", { name: new RegExp(`${actorSeat}번 좌석`) }));
+  const panel = within(app).getByRole("complementary", { name: "마귀할멈 선택" });
+  await user.selectOptions(within(panel).getByRole("combobox", { name: "바꿀 캐릭터" }), "pitHag");
+  await user.click(within(panel).getByRole("button", { name: "변화 없음 확정" }));
+}
+
+function commandFor(step: NonNullable<ReplayState["currentStep"]>): Command {
+  if (step.character === "philosopher") {
+    return { type: "skipStep", payload: { stepId: step.id } };
+  }
+  if (step.id === "day:nomination:1") {
+    return {
+      type: "confirmStep",
+      payload: { stepId: step.id, input: { nominatorId: "player-9", nomineeId: "player-1" } },
+    };
+  }
+  if (step.id === "day:nomination:1:vote") {
+    return {
+      type: "confirmStep",
+      payload: { stepId: step.id, input: { voterIds: ["player-1", "player-2", "player-3"] } },
+    };
+  }
+  if (step.requiredInput.kind === "nomination") {
+    return { type: "skipStep", payload: { stepId: step.id } };
+  }
+  if (step.requiredInput.kind === "executionDecision") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { execute: false } } };
+  }
+  if (step.requiredInput.kind === "characterTransformation") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: [step.playerId!], characterIds: ["pitHag"] } } };
+  }
+  if (step.support === "manual") {
+    return { type: "resolveManualStep", payload: { stepId: step.id, outcome: "handled" } };
+  }
+  if (step.requiredInput.kind === "madnessAssignment") {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-1"], characterId: "clockmaker" } } };
+  }
+  if (step.character === "snakeCharmer") {
+    const targetId = step.id.startsWith("firstNight") ? "player-1" : "player-3";
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: [targetId] } } };
+  }
+  if (step.id.includes(":demon:")) {
+    return { type: "confirmStep", payload: { stepId: step.id, input: { playerIds: ["player-3"] } } };
+  }
+  if (step.informationPrompt?.deliveryMode === "selectable") {
+    const targetChoice = step.informationPrompt.targetChecks?.[0]?.choices[0];
+    const numberChoice = step.informationPrompt.numberChoices[0];
+    const booleanChoice = step.informationPrompt.booleanChoices?.[0];
+    return {
+      type: "confirmStep",
+      payload: {
+        stepId: step.id,
+        input: null,
+        deliveredResult: targetChoice?.result
+          ?? (numberChoice ? { kind: "number", value: numberChoice.value } : undefined)
+          ?? (booleanChoice ? { kind: "boolean", value: booleanChoice.value } : undefined),
+        registrationJudgments: targetChoice?.registrationJudgments
+          ?? numberChoice?.registrationJudgments
+          ?? booleanChoice?.registrationJudgments
+          ?? [],
+      },
+    };
+  }
+  return { type: "confirmStep", payload: { stepId: step.id, input: null } };
+}
+
+async function assignCerenovus(user: ReturnType<typeof userEvent.setup>, app: HTMLElement) {
+  await user.click(await within(app).findByRole("button", { name: "집착 지정" }));
+  await user.click(within(app).getByRole("button", { name: /1번 좌석/ }));
+  await user.selectOptions(within(app).getByRole("combobox", { name: "집착할 캐릭터" }), "clockmaker");
+  await user.click(within(app).getByRole("button", { name: "1번 플레이어 1 집착 지정" }));
+  const prompt = await within(app).findByRole("dialog", { name: "집착 안내" });
+  await user.click(within(prompt).getByRole("button", { name: "공개" }));
+  const reveal = within(app).getByRole("dialog", { name: "세레노버스 집착 공개" });
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
+  await user.click(await within(app).findByRole("button", { name: "진행 →" }));
+}
+
+function setupPlayers(): SetupPlayerInput[] {
+  return [
+    "mathematician",
+    "townCrier",
+    "noDashii",
+    "philosopher",
+    "oracle",
+    "cerenovus",
+    "clockmaker",
+    "snakeCharmer",
+    "pitHag",
+    "flowergirl",
+  ].map((actualCharacter, index) => ({
+    id: `player-${index + 1}`,
+    seat: index + 1,
+    name: `플레이어 ${index + 1}`,
+    actualCharacter,
+    shownCharacter: actualCharacter,
+  }));
+}
+
+function liveSession(players: SetupPlayerInput[], events: GameEvent[]): NonNullable<GameFile["ui"]> {
+  return {
+    sectsAndVioletsSession: {
+      version: 1,
+      activeTab: "play",
+      savedAt: "2026-07-24T15:21:44.000Z",
+      setup: {
+        playerCount: players.length,
+        demon: "noDashii",
+        selectedIds: players.map((player) => player.actualCharacter),
+        seatAssignments: Object.fromEntries(players.map((player) => [player.seat, player.actualCharacter])),
+        seatAlignments: Object.fromEntries(players.map((player) => [
+          player.seat,
+          ["noDashii", "cerenovus", "pitHag"].includes(player.actualCharacter) ? "evil" : "good",
+        ])),
+        seatNames: Object.fromEntries(players.map((player) => [player.seat, player.name])),
+        rosterConfirmed: true,
+        seatingConfirmed: true,
+      },
+      phaseCheckpoints: events.map((event, index) => ({
+        id: event.id,
+        kind: index === 0 ? "setup" : "phase",
+        eventCount: index + 1,
+        summary: event.summary,
+        activeTab: index === 0 ? "seating" : "play",
+      })),
+    },
+  };
+}

@@ -1,0 +1,91 @@
+.snvMadnessDock {
+  position: fixed;
+  z-index: 145;
+  right: calc(max(22px, env(safe-area-inset-right)) + var(--snv-madness-dock-offset));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.snvMadnessDock > button { position: relative; display: grid; width: 54px; height: 54px; padding: 6px; place-items: center; border-radius: 50%; cursor: pointer; }
+.snvMadnessDock.day > button { border: 1px solid rgba(91, 57, 101, .22); color: #fff; background: rgba(255, 251, 253, .96); box-shadow: 0 11px 30px rgba(65, 39, 73, .24); }
+.snvMadnessDock.night > button { border: 1px solid rgba(230, 209, 237, .3); color: #f8f0fb; background: #2b1932; box-shadow: 0 11px 30px rgba(5, 2, 8, .45); }
+.snvMadnessDock img { width: 42px; height: 42px; object-fit: contain; }
+.snvMadnessDock > button > span { font: 300 2.2rem/1 Georgia, serif; }
+.snvMadnessDock.day > button.selected { border-color: #8a58a0; background: #82509a; box-shadow: 0 0 0 4px rgba(130, 80, 154, .18), 0 12px 30px rgba(77, 42, 89, .3); }
+.snvMadnessDock.night > button.selected { border-color: #f0d383; background: #684377; box-shadow: 0 0 0 4px rgba(240, 211, 131, .2), 0 12px 30px rgba(5, 2, 8, .48); }
+.snvMadnessDock > button.violated { box-shadow: 0 0 0 4px rgba(163, 31, 42, .3), 0 11px 30px rgba(18, 8, 30, .38); }
+.snvMadnessDock > button:disabled { cursor: wait; opacity: .55; }
+.snvMadnessDock i { position: absolute; top: -5px; right: -3px; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; color: white; background: #a31f2a; font-style: normal; font-weight: 800; }
+
+.snvMadnessPanel {
+  position: fixed;
+  z-index: 140;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+  box-sizing: border-box;
+  width: min(480px, calc(100vw - 28px));
+  max-height: min(64dvh, 620px);
+  padding: 18px;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(35, 17, 43, .3);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.snvMadnessPanel.day { border: 1px solid rgba(91, 57, 101, .18); color: #3d3041; background: rgba(255, 252, 250, .98); }
+.snvMadnessPanel.night { border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); box-shadow: 0 24px 70px rgba(4, 1, 7, .58); }
+.snvMadnessHeaderContent { display: grid; width: 100%; min-width: 0; gap: 12px; }
+.snvMadnessIdentity { display: flex; box-sizing: border-box; width: 100%; min-width: 0; padding: 0; align-items: center; gap: 12px; border-radius: 12px; text-align: left; }
+.snvMadnessIdentity:hover { background: rgba(98, 60, 108, .06); }
+.snvMadnessIdentity > img { width: 54px; height: 54px; flex: 0 0 auto; object-fit: contain; }
+.snvMadnessIdentity > div { min-width: 0; }
+.snvMadnessPanel header span { color: #765783; font-size: .65rem; font-weight: 850; }
+.snvMadnessPanel.night header span { color: #c8b2ce; }
+.snvMadnessPanel h2 { margin: 3px 0 0; font: 1.7rem Georgia, serif; }
+.snvMadnessAbility { margin: 0; padding: 11px 12px; border: 1px solid rgba(91, 57, 101, .1); border-radius: 11px; color: #5f4d64; background: rgba(130, 80, 154, .045); font-size: .75rem; line-height: 1.55; }
+.snvMadnessPanel.night .snvMadnessAbility { border-color: rgba(231, 208, 239, .14); color: #d5c7d9; background: rgba(255, 255, 255, .05); }
+.snvMadnessQuestion { margin: 20px 0 14px; font-weight: 650; line-height: 1.5; }
+.snvMadnessStatus { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: #f1ebf4; }
+.snvMadnessPanel.night .snvMadnessStatus { background: rgba(255, 255, 255, .08); }
+.snvMadnessStatus[data-status="violated"] { color: #861c28; background: #fbe7e8; }
+.snvMadnessPanel.night .snvMadnessStatus[data-status="violated"] { color: #ffd5d9; background: rgba(163, 31, 42, .32); }
+.snvMadnessResults { display: grid; margin-top: 14px; grid-template-columns: 1fr 1fr; gap: 10px; }
+.snvMadnessResults button, .snvMadnessExecute, .snvMadnessDialog button { min-height: 44px; border: 1px solid #80618d; border-radius: 12px; color: #3d2646; background: white; font-weight: 700; cursor: pointer; }
+.snvMadnessPanel.night .snvMadnessResults button { border-color: rgba(231, 208, 239, .26); color: #f8f0fb; background: rgba(255, 255, 255, .07); }
+.snvMadnessResults button.violation, .snvMadnessExecute, .snvMadnessDialog button.destructive { border-color: #992733; color: white; background: #a42d39; }
+.snvMadnessExecute { width: 100%; margin-top: 14px; }
+.snvMadnessPanel button:disabled { cursor: not-allowed; opacity: .46; }
+.snvMadnessUnavailable { margin: 12px 0 0; color: #805d67; font-size: .86rem; }
+.snvMadnessPanel.night .snvMadnessUnavailable { color: #c6aebc; }
+
+.snvMadnessDialogBackdrop { position: fixed; z-index: 230; inset: 0; display: grid; padding: 24px; place-items: center; background: rgba(16, 9, 20, .58); }
+.snvMadnessDialog { box-sizing: border-box; width: min(420px, 100%); padding: 26px; border-radius: 22px; box-shadow: 0 24px 70px rgba(0, 0, 0, .42); }
+.snvMadnessDialog.day { color: #321c39; background: #fffdf9; }
+.snvMadnessDialog.night { border: 1px solid rgba(231, 208, 239, .24); color: #f8f0fb; background: linear-gradient(145deg, #281631, #160f1c); }
+.snvMadnessDialog > span { color: #8b2631; font-size: .8rem; font-weight: 800; }
+.snvMadnessDialog.night > span { color: #ff9aa5; }
+.snvMadnessDialog h2 { margin: 7px 0 12px; }
+.snvMadnessDialog p { line-height: 1.55; }
+.snvMadnessDialog > div { display: grid; margin-top: 20px; grid-template-columns: 1fr 1fr; gap: 10px; }
+.snvMadnessDialog.night button:not(.destructive) { border-color: rgba(231, 208, 239, .26); color: #f8f0fb; background: rgba(255, 255, 255, .07); }
+.snvMadnessCharacterChoice { display: grid; margin: 12px 0; gap: 6px; color: #4a3554; font-size: .85rem; font-weight: 750; }
+.snvMadnessCharacterChoice select { min-height: 44px; padding: 0 12px; border: 1px solid #8d7198; border-radius: 10px; color: #382440; background: #fff; font: inherit; }
+
+@media (min-width: 781px) {
+  .snvMadnessDock > button { width: 62px; height: 62px; padding: 7px; }
+  .snvMadnessDock img { width: 48px; height: 48px; }
+  .snvMadnessPanel { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 84px); }
+}
+
+@media (max-width: 780px) {
+  .snvMadnessDock { right: calc(max(14px, env(safe-area-inset-right)) + var(--snv-madness-mobile-dock-offset)); bottom: max(14px, env(safe-area-inset-bottom)); }
+  .snvMadnessDock > button { width: 50px; height: 50px; }
+  .snvMadnessDock img { width: 40px; height: 40px; }
+  .snvMadnessPanel { right: 10px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px); left: 10px; width: auto; max-height: min(58dvh, 520px); padding: 16px; border-radius: 22px; }
+  .snvMadnessIdentity > img { width: 48px; height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snvMadnessPanel, .snvMadnessDock > button { scroll-behavior: auto; transition: none; }
+}

@@ -39,6 +39,8 @@ test("RevealPayload accepts the narrow role-information contracts", () => {
       zeroOutsiders: true,
     },
     { kind: "numericInformation", characterId: "chef", value: 1 },
+    { kind: "numericInformation", characterId: "mathematician", value: 2 },
+    { kind: "numericInformation", characterId: "juggler", value: 3 },
     {
       kind: "fortuneTellerInformation",
       targetPlayers: [

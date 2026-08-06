@@ -129,7 +129,8 @@ function replayStateWithPlayers(playerCount: number): ReplayState {
   ];
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: playerCount > 0 ? 1 : 0,
     phase: "setup",
     players: basePlayers.slice(0, playerCount),

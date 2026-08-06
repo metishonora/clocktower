@@ -2,6 +2,7 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
+import { TROUBLE_BREWING } from "./scripts.js";
 import {
   parseCoreResult,
   parseGameEvent,
@@ -11,18 +12,713 @@ import {
 } from "./validation.js";
 
 test("imports schema-v2 events as typed GameEvent values", () => {
-  const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()));
+  const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()), TROUBLE_BREWING);
 
-  equal(gameFile.schemaVersion, 2);
+  equal(gameFile.schemaVersion, 3);
+  equal(gameFile.game.scriptId, TROUBLE_BREWING);
   equal(gameFile.game.events.length, 8);
   equal(gameFile.game.events[0]?.type, "setupConfirmed");
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");
 });
 
+test("accepts the S&V manual phase support and replayable outcomes", () => {
+  const manualEvent = {
+    id: "phase-2",
+    type: "manualPhaseStepResolved",
+    phase: "firstNight",
+    payload: { stepId: "firstNight:philosopher", outcome: "handled" },
+    summary: "수동 단계 처리: firstNight:philosopher",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+  equal(parseGameEvent(manualEvent).type, "manualPhaseStepResolved");
+
+  const manualStep = {
+    id: "firstNight:philosopher",
+    phase: "firstNight",
+    stepType: "character",
+    character: "philosopher",
+    playerId: "player-1",
+    requiredInput: { kind: "none", optional: false },
+    canSkip: false,
+    support: "manual",
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: { ...manualStep, id: "firstNight:minionInfo", support: "automated" },
+    phaseOverview: [
+      { ...manualStep, status: "manualComplete" },
+      { ...manualStep, id: "firstNight:minionInfo", support: "automated", status: "current" },
+      { ...manualStep, id: "firstNight:snakeCharmer", status: "notApplicable" },
+    ],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const mismatchedAbilityContext = structuredClone(replay) as unknown as {
+    currentStep: Record<string, unknown>;
+  };
+  mismatchedAbilityContext.currentStep.abilityUse = {
+    ownerPlayerId: "player-1",
+    characterId: "dreamer",
+    abilityInstanceId: "setup:player-1",
+  };
+  mismatchedAbilityContext.currentStep.abilityOrigin = { kind: "identityBound" };
+  throws(() => parseReplayState(mismatchedAbilityContext), /코어 응답/);
+});
+
+test("accepts only the canonical Philosopher resolution and grant references", () => {
+  const event = {
+    id: "phase-2",
+    type: "philosopherAbilityResolved",
+    phase: "firstNight",
+    payload: {
+      stepId: "firstNight:philosopher",
+      actor: {
+        ownerPlayerId: "player-1",
+        characterId: "philosopher",
+        abilityInstanceId: "setup:player-1",
+      },
+      selectedCharacterId: "dreamer",
+      outcome: { kind: "acquired", grantedAbilityInstanceId: "phase-2:player-1" },
+    },
+    summary: "철학자 능력 획득: dreamer",
+    createdAt: "2026-08-04T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "philosopherAbilityResolved");
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, outcome: { kind: "acquired" } },
+  }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, forgedTargetPlayerId: "player-2" },
+  }));
+});
+
+test("accepts Philosopher grants and active or inactive automatic reminder tokens in replay state", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      abilityGrants: [{
+        ownerPlayerId: "player-6",
+        characterId: "savant",
+        sourceEventId: "phase-2",
+        sourceAbilityInstanceId: "setup:player-6",
+        abilityInstanceId: "phase-2:player-6",
+      }],
+      automaticReminders: [{
+        playerId: "player-9",
+        characterId: "juggler",
+        tokenId: "correct",
+        label: "정답",
+        description: "첫 낮 공개 추측의 정답 수입니다.",
+        count: 3,
+      }, {
+        playerId: "player-2",
+        characterId: "noDashii",
+        tokenId: "poisoned",
+        label: "중독",
+        description: "노 다시의 가장 가까운 주민 이웃이지만 현재 효력이 없습니다.",
+        sourceEventId: "setup-1",
+        inactiveReason: "노 다시가 취하거나 중독되어 능력이 일시적으로 무효입니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+  const missingSource = structuredClone(replay);
+  delete (missingSource.ruleState.automaticReminders[1] as Partial<{
+    sourceEventId: string;
+  }>).sourceEventId;
+  throws(() => parseReplayState(missingSource), /코어 응답 형식/);
+});
+
+test("accepts canonical Vortox and impaired numeric constraints", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 2,
+    phase: "firstNight",
+    players: [],
+    currentStep: {
+      id: "firstNight:clockmaker",
+      phase: "firstNight",
+      stepType: "character",
+      character: "clockmaker",
+      playerId: "player-1",
+      requiredInput: { kind: "none", optional: false },
+      canSkip: false,
+      support: "automated",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 2 },
+        deliveryMode: "selectable",
+        activeReasons: [{ type: "vortox", demonPlayerId: "player-7" }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        numberConstraint: {
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          excludedValues: [2],
+        },
+        booleanChoices: [],
+        setupInfoRegistrationOptions: [],
+        targetChecks: [],
+      },
+    },
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+  deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
+
+  const poisoned = structuredClone(replay);
+  poisoned.currentStep.informationPrompt.activeReasons = [{
+    type: "poisoned",
+    poisonerPlayerId: "player-4",
+    poisonEventId: "poison-1",
+  }] as unknown as typeof poisoned.currentStep.informationPrompt.activeReasons;
+  poisoned.currentStep.informationPrompt.numberConstraint.excludedValues = [];
+  deepEqual<unknown>(parseReplayState(poisoned).currentStep, poisoned.currentStep);
+
+  const unsafeMaximum = structuredClone(replay);
+  unsafeMaximum.currentStep.informationPrompt.numberConstraint.max = Number.MAX_SAFE_INTEGER + 1;
+  throws(() => parseReplayState(unsafeMaximum), /코어 응답 형식/);
+
+  const truthNotExcluded = structuredClone(replay);
+  truthNotExcluded.currentStep.informationPrompt.numberConstraint.excludedValues = [3];
+  throws(() => parseReplayState(truthNotExcluded), /코어 응답 형식/);
+
+  const ended = {
+    id: "game-ended-3",
+    type: "gameEnded",
+    phase: "day",
+    payload: {
+      winningTeam: "evil",
+      source: { kind: "vortoxNoExecution", sourceEventId: "execution-2" },
+    },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-31T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(ended), ended);
+});
+
+test("accepts the Snake Charmer swap event, identity history, impairment, and pending reveals", () => {
+  const beforeSnake = { actualCharacter: "snakeCharmer", shownCharacter: "snakeCharmer", alignment: "good" };
+  const afterSnake = { actualCharacter: "vigormortis", shownCharacter: "vigormortis", alignment: "evil" };
+  const beforeDemon = { actualCharacter: "vigormortis", shownCharacter: "vigormortis", alignment: "evil" };
+  const afterDemon = { actualCharacter: "snakeCharmer", shownCharacter: "snakeCharmer", alignment: "good" };
+  const impairment = {
+    kind: "poisoned",
+    playerId: "player-7",
+    sourceEventId: "snake-1",
+    sourceCharacterId: "snakeCharmer",
+    expires: "never",
+  };
+  const event = {
+    id: "snake-1",
+    type: "snakeCharmerActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:snakeCharmer:player-1",
+      actorPlayerId: "player-1",
+      targetPlayerId: "player-7",
+      outcome: {
+        kind: "swap",
+        identityTransitions: [
+          { playerId: "player-1", before: beforeSnake, after: afterSnake },
+          { playerId: "player-7", before: beforeDemon, after: afterDemon },
+        ],
+        impairment,
+      },
+    },
+    summary: "뱀 조련사 교환",
+    createdAt: "2026-07-23T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(event), event);
+
+  const player = {
+    id: "player-1",
+    seat: 1,
+    name: "민서",
+    ...afterSnake,
+    alive: true,
+    ghostVoteUsed: false,
+    deathAnnounced: false,
+    systemTokenIds: [],
+    scriptTokens: [],
+    notes: "",
+    identityHistory: [{ sourceEventId: "snake-1", phase: "night", before: beforeSnake, after: afterSnake }],
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 3,
+    phase: "night",
+    players: [player],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [], activeImpairments: [impairment] },
+    warnings: [],
+    gameEnd: null,
+    pendingIdentityReveals: [
+      {
+        sourceEventId: "snake-1",
+        sequence: 1,
+        payload: { kind: "characterChange", playerId: "player-1", alignment: "evil", characterId: "vigormortis" },
+      },
+    ],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const madnessReveal: unknown = {
+    ...structuredClone(replay),
+    pendingIdentityReveals: [{
+      sourceEventId: "cerenovus-1",
+      sequence: 1,
+      payload: { kind: "madnessAssignment", playerId: "player-1", characterId: "artist" },
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(madnessReveal), madnessReveal);
+  const outOfOrder = structuredClone(replay);
+  outOfOrder.pendingIdentityReveals[0].sequence = 2;
+  throws(() => parseReplayState(outOfOrder), /코어 응답 형식/);
+});
+
+test("accepts source-bound S&V impairment projections", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      activeImpairments: [{
+        kind: "poisoned",
+        playerId: "player-2",
+        sourceEventId: "setup-1",
+        sourceCharacterId: "noDashii",
+        expires: "whileSourceAbilityActive",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
+test("accepts only the atomic Fang Gu jump event and its player-anchored ONCE reminder", () => {
+  const event = {
+    id: "night-action-12",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon:player-7",
+      actorPlayerId: "player-7",
+      actorCharacterId: "fangGu",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-5",
+        outcome: {
+          kind: "fangGuJump",
+          death: {
+            playerId: "player-7",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "fangGu",
+              targetPlayerId: "player-5",
+            },
+          },
+          sourceAbilityInstanceId: "setup-1:player-7",
+          identityTransition: {
+            playerId: "player-5",
+            before: { actualCharacter: "sweetheart", shownCharacter: "sweetheart", alignment: "good" },
+            after: { actualCharacter: "fangGu", shownCharacter: "fangGu", alignment: "evil" },
+          },
+        },
+      },
+    },
+    summary: "팡 구 이동",
+    createdAt: "2026-07-29T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(event), event);
+
+  for (const malformed of [
+    (() => { const value = structuredClone(event); value.payload.resolution.outcome.death.playerId = 7 as never; return value; })(),
+    (() => { const value = structuredClone(event); delete (value.payload.resolution.outcome as Partial<typeof event.payload.resolution.outcome>).sourceAbilityInstanceId; return value; })(),
+    (() => { const value = structuredClone(event); value.payload.resolution.outcome.identityTransition.after.alignment = "good" as "evil"; return value; })(),
+  ]) {
+    throws(() => parseGameEvent(malformed), /이벤트 형식/);
+  }
+
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 12,
+    phase: "night",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: ["player-7"],
+      automaticReminders: [{
+        playerId: "player-5",
+        characterId: "fangGu",
+        tokenId: "once",
+        label: "한 번",
+        description: "첫 외지인 이동이 사용되었습니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
+test("accepts only canonical trigger-impaired death consequence events", () => {
+  const trigger = {
+    sourceEventId: "death-1",
+    deathSequence: 1,
+    playerId: "player-2",
+    sourceAbilityInstanceId: "setup:player-2",
+  };
+  const event = (type: string, payload: Record<string, unknown>) => ({
+    id: `consequence-${type}`,
+    type,
+    phase: "night",
+    payload: { stepId: "night:death:death-1:1", trigger, ...payload },
+    summary: "효과 없음",
+    createdAt: "2026-07-29T00:00:00.000Z",
+  });
+  const sweetheart = event("sweetheartConsequenceResolved", {
+    outcome: { kind: "noEffect", reason: "actorImpairedAtDeath" },
+  });
+  const barber = event("barberConsequenceResolved", {
+    outcome: { kind: "noEffect", reason: "actorImpairedAtDeath" },
+  });
+  const klutz = event("klutzChoiceResolved", { outcome: { kind: "actorImpaired" } });
+  const sweetheartEffective = event("sweetheartConsequenceResolved", {
+    targetPlayerId: "player-3",
+    outcome: {
+      kind: "drunkApplied",
+      impairment: {
+        kind: "drunk",
+        playerId: "player-3",
+        sourceEventId: "consequence-sweetheartConsequenceResolved",
+        sourceCharacterId: "sweetheart",
+        expires: "never",
+      },
+    },
+  });
+  const barberEffective = event("barberConsequenceResolved", {
+    chooserDemonPlayerId: "player-7",
+    decision: { kind: "decline" },
+    outcome: { kind: "declined" },
+  });
+  const klutzEffective = event("klutzChoiceResolved", {
+    targetPlayerId: "player-3",
+    actorAlignment: "good",
+    targetAlignment: "good",
+    outcome: { kind: "safe" },
+  });
+
+  equal(parseGameEvent(sweetheart).type, "sweetheartConsequenceResolved");
+  equal(parseGameEvent(barber).type, "barberConsequenceResolved");
+  equal(parseGameEvent(klutz).type, "klutzChoiceResolved");
+  equal(parseGameEvent(sweetheartEffective).type, "sweetheartConsequenceResolved");
+  equal(parseGameEvent(barberEffective).type, "barberConsequenceResolved");
+  equal(parseGameEvent(klutzEffective).type, "klutzChoiceResolved");
+
+  throws(
+    () => parseGameEvent({ ...sweetheart, payload: { ...sweetheart.payload, targetPlayerId: "player-3" } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...sweetheart, payload: {
+      ...sweetheart.payload,
+      outcome: { kind: "noEffect", reason: "noLivingDemon" },
+    } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...barber, payload: {
+      ...barber.payload,
+      chooserDemonPlayerId: "player-7",
+      decision: { kind: "decline" },
+    } }),
+    /이벤트 형식/,
+  );
+  throws(
+    () => parseGameEvent({ ...klutz, payload: {
+      ...klutz.payload,
+      targetPlayerId: "player-3",
+      actorAlignment: "good",
+      targetAlignment: "evil",
+    } }),
+    /이벤트 형식/,
+  );
+});
+
+test("accepts a pending healthy Barber with no living Demon as an empty chooser list", () => {
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 4,
+    phase: "night",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+    pendingDeathConsequences: [{
+      stepId: "night:death:death-1:1:barber",
+      kind: "barber",
+      sourceEventId: "death-1",
+      deathSequence: 1,
+      actorPlayerId: "player-2",
+      sourceAbilityInstanceId: "setup:player-2",
+      abilityUse: {
+        ownerPlayerId: "player-2",
+        characterId: "barber",
+        abilityInstanceId: "setup:player-2",
+      },
+      abilityOrigin: { kind: "identityBound" },
+      actorImpairedAtTrigger: false,
+      allowedPlayerIds: [],
+      eligibleChooserPlayerIds: [],
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const mismatchedInstance = structuredClone(replay);
+  mismatchedInstance.pendingDeathConsequences[0].abilityUse.abilityInstanceId = "other-instance";
+  throws(() => parseReplayState(mismatchedInstance), /코어 응답/);
+});
+
+test("accepts Pit-Hag transformation and arbitrary death audit events", () => {
+  const before = { actualCharacter: "mutant", shownCharacter: "mutant", alignment: "good" };
+  const after = { actualCharacter: "noDashii", shownCharacter: "noDashii", alignment: "good" };
+  const transformation = {
+    id: "pit-hag-1",
+    type: "pitHagTransformationResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:pitHag:player-1",
+      actorPlayerId: "player-1",
+      targetPlayerId: "player-2",
+      characterId: "noDashii",
+      outcome: {
+        kind: "changed",
+        identityTransition: { playerId: "player-2", before, after },
+        createdDemon: true,
+      },
+    },
+    summary: "마귀할멈 직업 변경 확정",
+    createdAt: "2026-07-26T00:00:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(transformation), transformation);
+
+  const deaths = {
+    id: "phase-2",
+    type: "pitHagArbitraryDeathsConfirmed",
+    phase: "night",
+    payload: {
+      stepId: "night:pitHagArbitraryDeaths",
+      sourceTransformationEventId: "pit-hag-1",
+      deaths: [{
+        playerId: "player-3",
+        cause: {
+          kind: "pitHagArbitraryDeath",
+          actorPlayerId: "player-1",
+          sourceTransformationEventId: "pit-hag-1",
+        },
+      }],
+    },
+    summary: "마귀할멈 임의 사망 확정 · 1명",
+    createdAt: "2026-07-26T00:01:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(deaths), deaths);
+});
+
+test("accepts the generic S&V Demon attack while preserving the Imp payload contract", () => {
+  const demonAttack = {
+    id: "phase-7",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon",
+      actorPlayerId: "player-7",
+      actorCharacterId: "vortox",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-4",
+        outcome: {
+          kind: "deaths",
+          deaths: [{
+            playerId: "player-4",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "vortox",
+              targetPlayerId: "player-4",
+            },
+          }],
+        },
+      },
+    },
+    summary: "7번 Demon(vortox) → 4번 Savant 공격 · 사망",
+    createdAt: "2026-07-22T00:00:00.000Z",
+  };
+
+  deepEqual<unknown>(parseGameEvent(demonAttack), demonAttack);
+
+  const impWithUnexpectedCharacterSnapshot = {
+    ...demonAttack,
+    payload: {
+      stepId: "night:imp",
+      actorPlayerId: "player-7",
+      actorCharacterId: "imp",
+      resolution: {
+        kind: "impAttack",
+        targetPlayerId: "player-4",
+        outcome: { kind: "death", playerId: "player-4" },
+      },
+    },
+  };
+  throws(() => parseGameEvent(impWithUnexpectedCharacterSnapshot), /이벤트 형식/);
+});
+
+test("accepts the Vigormortis source effect, replacement event, and pending choice projection", () => {
+  const effectEvent = {
+    id: "attack-1",
+    type: "nightActionResolved",
+    phase: "night",
+    payload: {
+      stepId: "night:demon:player-7",
+      actorPlayerId: "player-7",
+      actorCharacterId: "vigormortis",
+      resolution: {
+        kind: "demonAttack",
+        targetPlayerId: "player-6",
+        outcome: {
+          kind: "deaths",
+          deaths: [{
+            playerId: "player-6",
+            cause: {
+              kind: "demonAttack",
+              actorPlayerId: "player-7",
+              actorCharacterId: "vigormortis",
+              targetPlayerId: "player-6",
+            },
+          }],
+          vigormortisEffect: {
+            minionPlayerId: "player-6",
+            sourceAbilityInstanceId: "setup-1:player-7",
+            poisonTargetPlayerId: "player-5",
+          },
+        },
+      },
+    },
+    summary: "비고르모르티스 공격",
+    createdAt: "2026-07-28T00:00:00.000Z",
+  };
+  const replacementEvent = {
+    id: "vigormortis-poison-2",
+    type: "vigormortisPoisonTargetChanged",
+    phase: "night",
+    payload: {
+      sourceEventId: "attack-1",
+      previousTargetPlayerId: "player-5",
+      targetPlayerId: "player-4",
+    },
+    summary: "비고르모르티스 중독 이동",
+    createdAt: "2026-07-28T00:01:00.000Z",
+  };
+  deepEqual<unknown>(parseGameEvent(effectEvent), effectEvent);
+  deepEqual<unknown>(parseGameEvent(replacementEvent), replacementEvent);
+
+  const currentStep = {
+    id: "night:demon:player-7",
+    phase: "night",
+    stepType: "character",
+    character: "vigormortis",
+    playerId: "player-7",
+    requiredInput: {
+      kind: "playerIds",
+      optional: false,
+      dependentPlayerSelections: [{
+        triggerPlayerId: "player-6",
+        selectionIndex: 1,
+        allowedPlayerIds: ["player-1", "player-5"],
+      }],
+    },
+    canSkip: false,
+    support: "automated",
+  };
+  const replay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 1,
+    phase: "night",
+    players: [],
+    currentStep,
+    phaseOverview: [{ ...currentStep, status: "current" }],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-6",
+        characterId: "vigormortis",
+        tokenId: "hasAbility",
+        label: "능력 있음",
+        description: "비고르모르티스에게 죽었지만 하수인 능력을 유지합니다.",
+      }, {
+        playerId: "player-2",
+        characterId: "seamstress",
+        tokenId: "noAbility",
+        label: "능력 없음",
+        description: "재봉사 능력을 이미 사용했습니다.",
+      }],
+    },
+    warnings: [],
+    gameEnd: null,
+    pendingVigormortisPoisonChoices: [{
+      sourceEventId: "attack-1",
+      vigormortisPlayerId: "player-7",
+      minionPlayerId: "player-6",
+      previousTargetPlayerId: "player-5",
+      allowedPlayerIds: ["player-1", "player-4"],
+      reason: "targetNotTownsfolk",
+    }],
+  };
+  deepEqual<unknown>(parseReplayState(replay), replay);
+});
+
 test("rejects the canonical schema-v1 fixture", () => {
   const fixture = readFileSync("../fixtures/schema-v1-game.json", "utf8");
 
-  throws(() => importGameFileJson(fixture), /지원하지 않는 게임 파일 버전/);
+  throws(() => importGameFileJson(fixture, TROUBLE_BREWING), /지원하지 않는 게임 파일 버전/);
 });
 
 test("validates complete phase-input suggestion results", () => {
@@ -62,8 +758,8 @@ test("rejects unsupported and malformed imported events", () => {
   const malformed = structuredClone(fixture);
   delete malformed.game.events[0].payload.players;
 
-  throws(() => importGameFileJson(JSON.stringify(unsupported)), /지원하지 않는 이벤트/);
-  throws(() => importGameFileJson(JSON.stringify(malformed)), /이벤트 형식/);
+  throws(() => importGameFileJson(JSON.stringify(unsupported), TROUBLE_BREWING), /지원하지 않는 이벤트/);
+  throws(() => importGameFileJson(JSON.stringify(malformed), TROUBLE_BREWING), /이벤트 형식/);
 });
 
 test("rejects non-canonical nomination payload fields", () => {
@@ -148,6 +844,108 @@ test("validates the strict Slayer audit event used by import and export", () => 
   throws(() => parseGameEvent(invalid), /이벤트 형식/);
 });
 
+test("validates the strict daytime free-action audit event used by import and export", () => {
+  const event = {
+    id: "event-day-action",
+    type: "dayActionRecorded",
+    phase: "day",
+    payload: {
+      dayId: "day",
+      actorPlayerId: "player-2",
+      characterId: "artist",
+      record: { kind: "artist", question: "악마가 홀수 좌석에 있나요?", answer: "no", truthful: true },
+      activeReasons: [],
+    },
+    summary: "화가: 2번 Ada · 질문과 답변 기록",
+    createdAt: "2026-07-25T00:00:00.000Z",
+  };
+
+  equal(parseGameEvent(event).type, "dayActionRecorded");
+  const invalid = structuredClone(event);
+  invalid.payload.record.answer = "maybe";
+  throws(() => parseGameEvent(invalid), /이벤트 형식/);
+
+  const savant = {
+    ...event,
+    id: "event-savant-action",
+    payload: {
+      ...event.payload,
+      actorPlayerId: "player-1",
+      characterId: "savant",
+      record: {
+        kind: "savant",
+        statements: [
+          { text: "악마는 홀수 좌석에 있습니다.", truthful: true },
+          { text: "", truthful: false },
+        ],
+      },
+      activeReasons: [{ type: "poisoned", poisonerPlayerId: "player-7", poisonEventId: "poison-1" }],
+    },
+  };
+  equal(parseGameEvent(savant).type, "dayActionRecorded");
+  const legacy = structuredClone(savant) as unknown as { payload: { record: Record<string, unknown> } };
+  legacy.payload.record = { kind: "savant", referenceSentences: [] };
+  throws(() => parseGameEvent(legacy), /이벤트 형식/);
+});
+
+test("validates daytime free-action replay projections at the WASM boundary", () => {
+  const state = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 6,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    warnings: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    gameEnd: null,
+    availableDayActions: [{
+      actorPlayerId: "player-1",
+      characterId: "juggler",
+      dayId: "day",
+      activeReasons: [],
+      abilityUse: {
+        ownerPlayerId: "player-1",
+        characterId: "juggler",
+        abilityInstanceId: "setup:player-1",
+      },
+      abilityOrigin: { kind: "identityBound" },
+    }],
+    dayActionRecords: [{
+      eventId: "day-action-6",
+      actorPlayerId: "player-1",
+      characterId: "juggler",
+      dayId: "day",
+      record: { kind: "juggler", correctCount: 3 },
+      activeReasons: [],
+    }],
+  };
+
+  equal(parseReplayState(state).dayActionRecords?.[0].record.kind, "juggler");
+  const invalid = structuredClone(state);
+  invalid.availableDayActions[0].characterId = "clockmaker";
+  throws(() => parseReplayState(invalid), /코어 응답/);
+
+  const mismatchedOwner = structuredClone(state);
+  mismatchedOwner.availableDayActions[0].abilityUse.ownerPlayerId = "player-2";
+  throws(() => parseReplayState(mismatchedOwner), /코어 응답/);
+
+  const mismatchedAcquisitionSource = structuredClone(state) as unknown as {
+    availableDayActions: Array<{ abilityOrigin: unknown }>;
+  };
+  mismatchedAcquisitionSource.availableDayActions[0].abilityOrigin = {
+    kind: "acquired",
+    acquisitionEventId: "phase-2",
+    source: {
+      ownerPlayerId: "player-2",
+      characterId: "philosopher",
+      abilityInstanceId: "setup:player-2",
+    },
+  };
+  throws(() => parseReplayState(mismatchedAcquisitionSource), /코어 응답/);
+});
+
 function schemaV2Fixture(): {
   schemaVersion: number;
   game: { events: Array<{ type: string; payload: Record<string, unknown> }> };
@@ -202,7 +1000,8 @@ test("validates win warnings and the canonical game-ended contract", () => {
   equal(parseGameEvent(event).type, "gameEnded");
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -227,6 +1026,52 @@ test("validates win warnings and the canonical game-ended contract", () => {
   throws(() => parseReplayState(malformedWarning), /코어 응답 형식/);
 });
 
+test("validates the S&V rules-owned game-end cause and Korean reason", () => {
+  const event = {
+    id: "game-ended-12",
+    type: "gameEnded",
+    phase: "day",
+    payload: {
+      winningTeam: "evil",
+      source: { kind: "vortoxNoExecution", sourceEventId: "no-execution-11" },
+    },
+    summary: "게임 종료 · 악한 팀 승리",
+    createdAt: "2026-07-16T00:00:00.000Z",
+  };
+  equal(parseGameEvent(event).type, "gameEnded");
+
+  const pendingReplay = {
+    schemaVersion: 3,
+    scriptId: "sectsAndViolets",
+    eventCount: 11,
+    phase: "day",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+    pendingGameEnd: {
+      sourceEventId: "no-execution-11",
+      winningTeam: "evil",
+      cause: "vortoxNoExecution",
+      reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    },
+  };
+  deepEqual<unknown>(parseReplayState(pendingReplay), pendingReplay);
+
+  const endedReplay: Record<string, unknown> = structuredClone(pendingReplay);
+  delete (endedReplay as { pendingGameEnd?: unknown }).pendingGameEnd;
+  endedReplay.gameEnd = {
+    eventId: "game-ended-12",
+    sourceEventId: "no-execution-11",
+    winningTeam: "evil",
+    cause: "vortoxNoExecution",
+    reasonKo: "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+  };
+  deepEqual<unknown>(parseReplayState(endedReplay), endedReplay);
+});
+
 test("validates canonical player annotation events and replay projections", () => {
   const event = {
     id: "player-annotations-2",
@@ -244,7 +1089,8 @@ test("validates canonical player annotation events and replay projections", () =
   equal(parseGameEvent(event).type, "playerAnnotationsUpdated");
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 2,
     phase: "firstNight",
     players: [{
@@ -316,7 +1162,8 @@ test("validates typed confirmed information and derived information prompts", ()
   deepEqual<unknown>(parseProposal(proposal).event, event);
 
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 1,
     phase: "firstNight",
     players: [],
@@ -434,7 +1281,8 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
     },
   };
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 3,
     phase: "night",
     players: [player],
@@ -458,6 +1306,19 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
   };
 
   deepEqual<unknown>(parseReplayState(replay), replay);
+
+  const vortoxWithTruthfulTargetChoice = structuredClone(replay);
+  (vortoxWithTruthfulTargetChoice.currentStep.informationPrompt as { activeReasons: unknown[] }).activeReasons = [
+    { type: "vortox", demonPlayerId: "player-7" },
+  ];
+  throws(() => parseReplayState(vortoxWithTruthfulTargetChoice), /코어 응답 형식/);
+
+  vortoxWithTruthfulTargetChoice.currentStep.informationPrompt.targetChecks[0].choices[0].isComputed = false;
+  deepEqual<unknown>(
+    parseReplayState(vortoxWithTruthfulTargetChoice),
+    vortoxWithTruthfulTargetChoice,
+  );
+
   const missingRuleState = structuredClone(replay);
   delete (missingRuleState as { ruleState?: unknown }).ruleState;
   throws(() => parseReplayState(missingRuleState), /코어 응답 형식/);
@@ -540,7 +1401,8 @@ test("validates the narrow ongoing-night replay, target-check, and typed-event c
 
 test("requires canonical nomination eligibility lists in Day replay state", () => {
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -570,7 +1432,8 @@ test("requires canonical nomination eligibility lists in Day replay state", () =
 
 test("validates the optional Butler vote projection in replay state", () => {
   const replay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 12,
     phase: "day",
     players: [],
@@ -596,7 +1459,8 @@ test("validates the optional Butler vote projection in replay state", () => {
 
 test("allows computedResult omission only at setup prompt or impaired setup audit boundaries", () => {
   const setupPromptReplay = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
     eventCount: 1,
     phase: "firstNight",
     players: [],

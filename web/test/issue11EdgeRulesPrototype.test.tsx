@@ -83,6 +83,6 @@ test("distinguishes fixed and selectable succession and hands off a narrow new-I
   expect(within(reveal).getByRole("heading", { name: "당신은 임프입니다" })).toBeTruthy();
   expect(within(reveal).getByText("5번 은지")).toBeTruthy();
   expect(screen.queryByText("마도서")).toBeNull();
-  await user.click(within(reveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+  await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(screen.getByLabelText("새 임프 공개 후속")).toBeTruthy();
 });

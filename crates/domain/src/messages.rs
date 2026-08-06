@@ -1,5 +1,5 @@
 use crate::{
-    contracts::{RevealIdentity, RevealPayload, RevealPlayer, SetupDistribution},
+    contracts::{GameEndCause, RevealIdentity, RevealPayload, RevealPlayer, SetupDistribution},
     model::{
         ConfirmedInformation, CoreWarning, DeliveryContext, DeliveryReason, ExecutionStanding,
         InformationResult, NominationRecord, PhaseStep, Player, StepInput,
@@ -21,6 +21,16 @@ pub(crate) fn setup_event_summary(player_count: usize) -> String {
 
 pub(crate) fn setup_preview(player_count: usize) -> Value {
     json!({ "messageKo": format!("플레이어 {player_count}명 설정을 확정합니다.") })
+}
+
+pub(crate) fn game_end_reason_ko(cause: GameEndCause) -> &'static str {
+    match cause {
+        GameEndCause::DemonAbsent => "살아 있는 악마가 없습니다.",
+        GameEndCause::TwoLivingPlayers => "생존자가 2명 이하로 남았습니다.",
+        GameEndCause::KlutzChoice => "얼뜨기가 악한 팀을 선택했습니다.",
+        GameEndCause::EvilTwinExecution => "선한 쌍둥이가 처형되었습니다.",
+        GameEndCause::VortoxNoExecution => "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",
+    }
 }
 
 pub(crate) fn phase_step_event_summary(
@@ -157,11 +167,46 @@ pub(crate) fn phase_step_reveal_payload(
                 revealed_character_id: character_id.clone(),
             })
         }
+        InformationResult::CharacterPair { character_ids }
+            if step.character.as_deref() == Some("dreamer") =>
+        {
+            Some(RevealPayload::DreamerInformation {
+                kind: "dreamerInformation",
+                character_ids: character_ids.clone(),
+            })
+        }
+        InformationResult::Boolean { value } if step.character.as_deref() == Some("seamstress") => {
+            Some(RevealPayload::SeamstressInformation {
+                kind: "seamstressInformation",
+                target_players: reveal_players(players, &information.target_player_ids)?,
+                same_alignment: *value,
+            })
+        }
+        InformationResult::PlayerPair { player_ids }
+            if step.character.as_deref() == Some("sage") =>
+        {
+            Some(RevealPayload::SageInformation {
+                kind: "sageInformation",
+                candidate_players: reveal_players(players, player_ids)?,
+            })
+        }
         InformationResult::Number { value }
-            if matches!(step.character.as_deref(), Some("chef" | "empath")) =>
+            if matches!(
+                step.character.as_deref(),
+                Some("chef" | "empath" | "clockmaker" | "mathematician" | "oracle" | "juggler")
+            ) =>
         {
             Some(RevealPayload::NumericInformation {
                 kind: "numericInformation",
+                character_id: step.character.clone()?,
+                value: *value,
+            })
+        }
+        InformationResult::Boolean { value }
+            if matches!(step.character.as_deref(), Some("flowergirl" | "townCrier")) =>
+        {
+            Some(RevealPayload::BooleanInformation {
+                kind: "booleanInformation",
                 character_id: step.character.clone()?,
                 value: *value,
             })
@@ -270,6 +315,46 @@ pub(crate) fn phase_step_summary(
                 "{actor_label}가 살아있는 양옆 이웃 중 악한 팀 {count}명을 확인했습니다.{audit}"
             )
         }),
+        "clockmaker" => number_result(information).map(|count| {
+            format!("{actor_label}가 악마와 하수인의 거리 {count}칸을 확인했습니다.{audit}")
+        }),
+        "flowergirl" => boolean_result(information).map(|voted| {
+            format!(
+                "{actor_label}가 오늘 악마의 투표를 확인했습니다: {}{audit}",
+                if voted {
+                    "투표함"
+                } else {
+                    "투표하지 않음"
+                }
+            )
+        }),
+        "townCrier" => boolean_result(information).map(|nominated| {
+            format!(
+                "{actor_label}가 오늘 하수인의 지목을 확인했습니다: {}{audit}",
+                if nominated {
+                    "지목함"
+                } else {
+                    "지목하지 않음"
+                }
+            )
+        }),
+        "oracle" => number_result(information).map(|count| {
+            format!("{actor_label}가 죽은 악한 플레이어 {count}명을 확인했습니다.{audit}")
+        }),
+        "dreamer" => Some(format!(
+            "{actor_label}가 {}의 캐릭터 후보를 확인했습니다.{audit}",
+            targets.join(", ")
+        )),
+        "seamstress" => boolean_result(information).map(|same| {
+            format!(
+                "{actor_label}가 {}의 진영을 비교했습니다: {}{audit}",
+                targets.join(", "),
+                if same { "같음" } else { "다름" }
+            )
+        }),
+        "sage" => Some(format!(
+            "{actor_label}가 악마 후보 두 명을 확인했습니다.{audit}"
+        )),
         "fortuneTeller" => boolean_result(information).map(|has_demon| {
             format!(
                 "{actor_label}가 {}를 확인: 악마 {}{audit}",
@@ -296,7 +381,7 @@ pub(crate) fn phase_step_summary(
     }
 }
 
-fn number_result(information: &ConfirmedInformation) -> Option<usize> {
+fn number_result(information: &ConfirmedInformation) -> Option<u64> {
     match &information.delivered_result {
         InformationResult::Number { value } => Some(*value),
         _ => None,
@@ -381,6 +466,24 @@ fn information_result_label(kind: &str, result: &InformationResult) -> Option<St
         }
         InformationResult::Number { value } if kind == "chef" => Some(format!("{value}쌍")),
         InformationResult::Number { value } if kind == "empath" => Some(format!("{value}명")),
+        InformationResult::Number { value } if kind == "clockmaker" => Some(format!("{value}칸")),
+        InformationResult::Number { value } if kind == "oracle" => Some(format!("{value}명")),
+        InformationResult::Boolean { value } if kind == "flowergirl" => Some(
+            if *value {
+                "투표함"
+            } else {
+                "투표하지 않음"
+            }
+            .into(),
+        ),
+        InformationResult::Boolean { value } if kind == "townCrier" => Some(
+            if *value {
+                "지목함"
+            } else {
+                "지목하지 않음"
+            }
+            .into(),
+        ),
         _ => None,
     }
 }
@@ -392,8 +495,10 @@ fn delivery_context_label(context: &DeliveryContext) -> String {
     let labels = reasons
         .iter()
         .map(|reason| match reason {
+            DeliveryReason::AbilityChoice => "능력 선택",
             DeliveryReason::Drunk => "술취함",
             DeliveryReason::Poisoned { .. } => "중독",
+            DeliveryReason::Vortox { .. } => "보르톡스",
             DeliveryReason::RegistrationJudgment { .. } => "등록 판정",
         })
         .collect::<Vec<_>>();
@@ -556,6 +661,31 @@ pub(crate) fn character_label(character: &str) -> &'static str {
         "scarletWoman" => "탕녀",
         "baron" => "남작",
         "imp" => "임프",
+        "clockmaker" => "시계공",
+        "dreamer" => "꿈꾸는 자",
+        "snakeCharmer" => "뱀 조련사",
+        "mathematician" => "수학자",
+        "flowergirl" => "꽃팔이 소녀",
+        "townCrier" => "포고꾼",
+        "oracle" => "예언자",
+        "savant" => "백치천재",
+        "seamstress" => "재봉사",
+        "philosopher" => "철학자",
+        "artist" => "화가",
+        "juggler" => "곡예사",
+        "sage" => "현자",
+        "mutant" => "변종",
+        "sweetheart" => "사랑꾼",
+        "barber" => "이발사",
+        "klutz" => "얼뜨기",
+        "evilTwin" => "사악한 쌍둥이",
+        "witch" => "마녀",
+        "cerenovus" => "세레노버스",
+        "pitHag" => "마귀할멈",
+        "fangGu" => "팡 구",
+        "vigormortis" => "비고르모르티스",
+        "noDashii" => "노 다시",
+        "vortox" => "보르톡스",
         _ => "알 수 없음",
     }
 }
@@ -589,6 +719,41 @@ mod tests {
             ("scarletWoman", "탕녀"),
             ("baron", "남작"),
             ("imp", "임프"),
+        ];
+
+        for (character_id, label) in expected {
+            assert_eq!(character_label(character_id), label);
+        }
+    }
+
+    #[test]
+    fn sects_and_violets_character_labels_match_the_official_korean_edition() {
+        let expected = [
+            ("clockmaker", "시계공"),
+            ("dreamer", "꿈꾸는 자"),
+            ("snakeCharmer", "뱀 조련사"),
+            ("mathematician", "수학자"),
+            ("flowergirl", "꽃팔이 소녀"),
+            ("townCrier", "포고꾼"),
+            ("oracle", "예언자"),
+            ("savant", "백치천재"),
+            ("seamstress", "재봉사"),
+            ("philosopher", "철학자"),
+            ("artist", "화가"),
+            ("juggler", "곡예사"),
+            ("sage", "현자"),
+            ("mutant", "변종"),
+            ("sweetheart", "사랑꾼"),
+            ("barber", "이발사"),
+            ("klutz", "얼뜨기"),
+            ("evilTwin", "사악한 쌍둥이"),
+            ("witch", "마녀"),
+            ("cerenovus", "세레노버스"),
+            ("pitHag", "마귀할멈"),
+            ("fangGu", "팡 구"),
+            ("vigormortis", "비고르모르티스"),
+            ("noDashii", "노 다시"),
+            ("vortox", "보르톡스"),
         ];
 
         for (character_id, label) in expected {

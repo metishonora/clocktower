@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 2,
+  "script": "sectsAndViolets",
+  "issue": 111,
+  "generatedAt": "2026-08-05T00:00:00.000Z",
+  "officialSources": [
+    "https://wiki.bloodontheclocktower.com/Sects_%26_Violets",
+    "https://wiki.bloodontheclocktower.com/Fang_Gu",
+    "https://wiki.bloodontheclocktower.com/Vigormortis",
+    "https://wiki.bloodontheclocktower.com/Cerenovus",
+    "https://wiki.bloodontheclocktower.com/Snake_Charmer",
+    "https://wiki.bloodontheclocktower.com/Sweetheart",
+    "https://wiki.bloodontheclocktower.com/No_Dashii",
+    "https://wiki.bloodontheclocktower.com/Mathematician",
+    "https://wiki.bloodontheclocktower.com/Vortox",
+    "https://wiki.bloodontheclocktower.com/Barber",
+    "https://wiki.bloodontheclocktower.com/Philosopher"
+  ],
+  "requiredCategories": [
+    "setup",
+    "first-night",
+    "day",
+    "night",
+    "information",
+    "madness",
+    "character-change",
+    "impairment",
+    "death",
+    "win",
+    "persistence"
+  ],
+  "cases": [
+    {
+      "id": "setup-fang-gu-plus-outsider",
+      "categories": [
+        "setup",
+        "first-night"
+      ],
+      "characterIds": [
+        "clockmaker",
+        "dreamer",
+        "seamstress",
+        "juggler",
+        "mutant",
+        "sweetheart",
+        "pitHag",
+        "fangGu"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Sects_%26_Violets",
+        "https://wiki.bloodontheclocktower.com/Fang_Gu"
+      ],
+      "reproductionStepsKo": [
+        "JSON을 불러온 뒤 마도서와 직업 구성을 확인한다.",
+        "진행 탭에서 첫날 밤의 첫 단계를 확인한다."
+      ],
+      "expectedResultsKo": [
+        "8명 구성이 주민 4명, 외지인 2명, 하수인 1명, 악마 1명으로 표시된다.",
+        "팡 구의 외지인 +1 설정 경고가 없고 첫날 밤 진행이 가능하다."
+      ],
+      "file": "setup-fang-gu-plus-outsider.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo"
+      }
+    },
+    {
+      "id": "setup-vigormortis-no-outsider",
+      "categories": [
+        "setup"
+      ],
+      "characterIds": [
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "artist",
+        "sage",
+        "evilTwin",
+        "vigormortis"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Sects_%26_Violets",
+        "https://wiki.bloodontheclocktower.com/Vigormortis"
+      ],
+      "reproductionStepsKo": [
+        "JSON을 불러온 뒤 직업 구성과 설정 경고를 확인한다."
+      ],
+      "expectedResultsKo": [
+        "8명 구성이 주민 6명, 외지인 0명, 하수인 1명, 악마 1명으로 표시된다.",
+        "비고르모르티스의 외지인 -1 설정이 적용되고 설정 경고가 없다."
+      ],
+      "file": "setup-vigormortis-no-outsider.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:minionInfo"
+      }
+    },
+    {
+      "id": "cerenovus-madness-assignment",
+      "categories": [
+        "first-night",
+        "day",
+        "madness"
+      ],
+      "characterIds": [
+        "mutant",
+        "artist",
+        "dreamer",
+        "seamstress",
+        "savant",
+        "witch",
+        "cerenovus",
+        "vortox"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Sects_%26_Violets",
+        "https://wiki.bloodontheclocktower.com/Cerenovus"
+      ],
+      "reproductionStepsKo": [
+        "집착 지정에서 2번 현우를 고르고 집착할 캐릭터로 시계공을 선택해 확정한다.",
+        "공개를 눌러 플레이어용 집착 안내를 확인한 뒤 첫날 밤을 끝까지 진행한다.",
+        "낮에 세레노버스 집착 확인을 열어 충분히 집착함과 위반을 각각 기록해 본다."
+      ],
+      "expectedResultsKo": [
+        "공개 화면에는 2번 현우와 내일 시계공이라고 집착해야 한다는 문구만 표시된다.",
+        "낮의 판정은 마지막 선택으로 교체되며 이벤트 로그와 자동 저장에도 남는다."
+      ],
+      "file": "cerenovus-madness-assignment.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:cerenovus"
+      }
+    },
+    {
+      "id": "snake-charmer-vigormortis-swap",
+      "categories": [
+        "first-night",
+        "character-change",
+        "impairment",
+        "persistence"
+      ],
+      "characterIds": [
+        "snakeCharmer",
+        "clockmaker",
+        "dreamer",
+        "seamstress",
+        "mathematician",
+        "pitHag",
+        "vigormortis"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Snake_Charmer",
+        "https://wiki.bloodontheclocktower.com/Vigormortis"
+      ],
+      "reproductionStepsKo": [
+        "대상으로 7번 비고르모르티스를 선택해 확정한다.",
+        "두 역할 공개를 순서대로 완료하고 마도서에서 두 플레이어를 확인한다.",
+        "JSON으로 내보내 다시 불러온 뒤 Undo를 실행한다."
+      ],
+      "expectedResultsKo": [
+        "1번은 악한 비고르모르티스, 7번은 선한 중독된 뱀 조련사가 된다.",
+        "역할 공개 순서는 1번 다음 7번이며 같은 밤에 새 뱀 조련사가 다시 행동하지 않는다.",
+        "재import 뒤 상태가 같고 Undo하면 두 역할·진영·중독이 모두 원래대로 돌아간다."
+      ],
+      "file": "snake-charmer-vigormortis-swap.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:snakeCharmer:player-1"
+      }
+    },
+    {
+      "id": "overlapping-no-dashii-sweetheart",
+      "categories": [
+        "night",
+        "death",
+        "impairment",
+        "persistence"
+      ],
+      "characterIds": [
+        "clockmaker",
+        "sweetheart",
+        "barber",
+        "oracle",
+        "savant",
+        "pitHag",
+        "noDashii"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Sweetheart",
+        "https://wiki.bloodontheclocktower.com/No_Dashii"
+      ],
+      "reproductionStepsKo": [
+        "마도서에서 1번 시계공의 상태 토큰과 상세를 확인한다.",
+        "최근 행동 Undo를 한 번 실행하고 다시 1번 상태를 확인한다.",
+        "Undo 전 JSON을 export/import해 중첩 상태가 보존되는지도 확인한다."
+      ],
+      "expectedResultsKo": [
+        "1번에는 노 다시 중독과 사랑꾼 취함이 동시에 존재하며 각각의 출처가 구분된다.",
+        "Undo하면 사랑꾼 취함만 사라지고 노 다시 중독은 유지된다.",
+        "export/import 뒤에도 두 원인과 토큰의 활성 상태가 동일하다."
+      ],
+      "file": "overlapping-no-dashii-sweetheart.json",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:oracle",
+        "deadPlayerIds": [
+          "player-2"
+        ],
+        "impairments": [
+          {
+            "playerId": "player-1",
+            "kind": "poisoned",
+            "sourceCharacterId": "noDashii"
+          },
+          {
+            "playerId": "player-1",
+            "kind": "drunk",
+            "sourceCharacterId": "sweetheart"
+          }
+        ]
+      }
+    },
+    {
+      "id": "vortox-mathematician-false-number",
+      "categories": [
+        "first-night",
+        "night",
+        "information"
+      ],
+      "characterIds": [
+        "mathematician",
+        "evilTwin",
+        "clockmaker",
+        "cerenovus",
+        "vortox",
+        "pitHag",
+        "savant",
+        "oracle"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Mathematician",
+        "https://wiki.bloodontheclocktower.com/Vortox"
+      ],
+      "reproductionStepsKo": [
+        "수학자 감사 내역을 펼쳐 시계공의 보르톡스 거짓 정보 기록을 확인한다.",
+        "실제 계산값 1과 다른 합법적인 값 0을 전달하고 공개 화면을 완료한다."
+      ],
+      "expectedResultsKo": [
+        "감사 내역은 시계공 한 명을 정확히 한 번만 세고 실제 계산값은 1이다.",
+        "수학자에게 전달하는 값은 0으로 기록되며 실제 계산값 1은 이야기꾼 화면에만 남는다."
+      ],
+      "file": "vortox-mathematician-false-number.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:mathematician"
+      }
+    },
+    {
+      "id": "sweetheart-barber-follow-up-order",
+      "categories": [
+        "night",
+        "death",
+        "character-change"
+      ],
+      "characterIds": [
+        "sweetheart",
+        "barber",
+        "klutz",
+        "townCrier",
+        "oracle",
+        "pitHag",
+        "witch",
+        "noDashii"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Sweetheart",
+        "https://wiki.bloodontheclocktower.com/Barber"
+      ],
+      "reproductionStepsKo": [
+        "첫 후속 처리에서 사랑꾼의 취함 대상을 2번 이발사로 지정한다.",
+        "이어지는 이발사 후속 처리에서 악마 선택자와 교환 가능 대상을 확인한 뒤 교환하지 않음을 선택한다."
+      ],
+      "expectedResultsKo": [
+        "사랑꾼 후속 처리가 먼저, 이발사 후속 처리가 두 번째로 제시된다.",
+        "이발사는 사망 시점에 정상 상태였으므로 이후 사랑꾼에게 취해도 후속 능력이 취소되지 않는다.",
+        "두 후속 처리가 끝난 뒤에만 일반 밤 진행으로 복귀한다."
+      ],
+      "file": "sweetheart-barber-follow-up-order.json",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:barber",
+        "deadPlayerIds": [
+          "player-1",
+          "player-2"
+        ],
+        "pendingDeathConsequenceKinds": [
+          "sweetheart",
+          "barber"
+        ]
+      }
+    },
+    {
+      "id": "fang-gu-first-outsider-jump",
+      "categories": [
+        "night",
+        "death",
+        "character-change",
+        "persistence"
+      ],
+      "characterIds": [
+        "clockmaker",
+        "dreamer",
+        "artist",
+        "klutz",
+        "sweetheart",
+        "pitHag",
+        "fangGu"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Fang_Gu"
+      ],
+      "reproductionStepsKo": [
+        "공격 대상으로 살아 있는 외지인 5번 사랑꾼을 선택한다.",
+        "공개 안내와 새 팡 구 역할 공개를 완료하고 마도서를 확인한다.",
+        "export/import 후 Undo를 실행한다."
+      ],
+      "expectedResultsKo": [
+        "5번은 죽지 않고 악한 팡 구가 되며 기존 7번 팡 구가 대신 죽는다.",
+        "5번에 한 번 토큰이 생기고 사랑꾼 사망 후속 처리는 발생하지 않는다.",
+        "재import 결과가 같고 Undo하면 기존 팡 구와 사랑꾼 상태가 함께 복원된다."
+      ],
+      "file": "fang-gu-first-outsider-jump.json",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:demon:player-7"
+      }
+    },
+    {
+      "id": "vigormortis-kills-minion",
+      "categories": [
+        "night",
+        "death",
+        "impairment"
+      ],
+      "characterIds": [
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "artist",
+        "pitHag",
+        "vigormortis"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Vigormortis"
+      ],
+      "reproductionStepsKo": [
+        "공격 대상으로 6번 마귀할멈을 선택한다.",
+        "연동 선택에서 5번 화가를 중독 대상으로 선택하고 확정한다.",
+        "마도서에서 6번과 5번의 토큰을 확인한다."
+      ],
+      "expectedResultsKo": [
+        "6번은 죽지만 능력 있음 토큰을 유지한다.",
+        "5번에는 비고르모르티스 출처의 중독이 생기며 다른 이웃은 선택할 수 있어도 동시에 둘을 고를 수 없다."
+      ],
+      "file": "vigormortis-kills-minion.json",
+      "checkpoint": {
+        "phase": "night",
+        "currentStepId": "night:demon:player-7"
+      }
+    },
+    {
+      "id": "philosopher-mathematician-duplicate",
+      "categories": [
+        "first-night",
+        "information",
+        "impairment",
+        "persistence"
+      ],
+      "characterIds": [
+        "philosopher",
+        "artist",
+        "clockmaker",
+        "oracle",
+        "snakeCharmer",
+        "mathematician",
+        "cerenovus",
+        "fangGu"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Philosopher",
+        "https://wiki.bloodontheclocktower.com/Mathematician"
+      ],
+      "reproductionStepsKo": [
+        "현재 원래 수학자에게 실제 값과 다른 1을 전달한다.",
+        "다음 철학자 소유 수학자 단계에서 감사 내역과 계산값을 확인한다.",
+        "JSON export/import 후 같은 두 능력 인스턴스와 취함 출처가 복원되는지 확인한다."
+      ],
+      "expectedResultsKo": [
+        "6번 원래 수학자는 철학자 중복 때문에 취해 있고 거짓 1을 받을 수 있다.",
+        "1번 철학자가 얻은 수학자 능력은 원래 수학자의 비정상 작동을 한 번 세어 실제 값 1을 표시한다.",
+        "두 수학자 능력 인스턴스, 취함과 감사 근거가 재import 후 동일하다."
+      ],
+      "file": "philosopher-mathematician-duplicate.json",
+      "checkpoint": {
+        "phase": "firstNight",
+        "currentStepId": "firstNight:mathematician",
+        "impairments": [
+          {
+            "playerId": "player-6",
+            "kind": "drunk",
+            "sourceCharacterId": "philosopher"
+          }
+        ]
+      }
+    },
+    {
+      "id": "vortox-no-execution-win",
+      "categories": [
+        "day",
+        "win"
+      ],
+      "characterIds": [
+        "clockmaker",
+        "dreamer",
+        "seamstress",
+        "juggler",
+        "mutant",
+        "evilTwin",
+        "vortox"
+      ],
+      "officialSources": [
+        "https://wiki.bloodontheclocktower.com/Vortox"
+      ],
+      "reproductionStepsKo": [
+        "지명 종료를 선택하고 처형 없음을 확정한다.",
+        "악 진영 승리 확인 창에서 사유를 확인한 뒤 게임 종료를 확정한다.",
+        "Undo 후 같은 낮 상태로 복원되는지 확인한다."
+      ],
+      "expectedResultsKo": [
+        "보르톡스가 존재하지만 처형이 없었다는 사유의 악 진영 승리 확인이 나타난다.",
+        "종료 확정 후 마도서는 읽기 전용이 되고 Undo하면 승리 확정 전 상태로 돌아간다."
+      ],
+      "file": "vortox-no-execution-win.json",
+      "checkpoint": {
+        "phase": "day",
+        "currentStepId": "day:nomination:1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+.scriptSelectionPrototype {
+  min-height: 100vh;
+  color: #292720;
+  background: radial-gradient(circle at 50% 42%, rgba(173, 143, 84, .12), transparent 38%), #f2ede3;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.scriptSelectionPrototype * { box-sizing: border-box; }
+.scriptSelectionPrototype button { min-height: 44px; font: inherit; cursor: pointer; }
+
+.minimalScriptLanding {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  padding: 24px;
+}
+
+.minimalScriptLanding h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scriptLogoChoices { display: flex; align-items: center; justify-content: center; gap: clamp(36px, 8vw, 96px); }
+
+.scriptLogoChoice {
+  display: grid;
+  width: clamp(190px, 24vw, 280px);
+  justify-items: center;
+  gap: 18px;
+  border: 0;
+  color: #3b3830;
+  background: transparent;
+  padding: 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 2vw, 1.28rem);
+  font-weight: 700;
+}
+
+.scriptLogoMark,
+.synopsisLogoMark,
+.loadingMark {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+}
+
+.scriptLogoMark {
+  width: clamp(150px, 20vw, 226px);
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 10px rgba(255, 255, 255, .7), 0 20px 50px rgba(60, 46, 24, .13);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.troubleBrewingLogoChoice { color: #28634f; }
+.sectsAndVioletsLogoChoice { color: #755288; }
+.troubleBrewingLogoChoice .scriptLogoMark { background: #e8f0eb; }
+.sectsAndVioletsLogoChoice .scriptLogoMark { background: #f0e8f2; }
+
+.scriptLogoChoice:hover .scriptLogoMark,
+.scriptLogoChoice:focus-visible .scriptLogoMark {
+  transform: translateY(-5px);
+  box-shadow: inset 0 0 0 10px rgba(255, 255, 255, .7), 0 26px 58px rgba(60, 46, 24, .2);
+}
+
+.scriptLogoChoice:focus-visible { outline: 3px solid currentColor; outline-offset: 8px; border-radius: 18px; }
+
+.scriptTheme { position: relative; display: grid; min-height: 100vh; place-items: center; overflow-x: hidden; transition: background 280ms ease; }
+.scriptTheme.troubleBrewing { color: #dbe9df; background: radial-gradient(circle at 50% 25%, #446956 0, #1d362c 42%, #101c18 100%); }
+.scriptTheme.sectsAndViolets { color: #f1e7f4; background: radial-gradient(circle at 50% 20%, #88699a 0, #4c345b 42%, #24182c 100%); }
+
+.scriptBackButton {
+  position: fixed;
+  z-index: 3;
+  top: 20px;
+  left: 20px;
+  width: 48px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(10, 14, 12, .2);
+  font-size: 1.25rem;
+}
+
+.scriptSynopsis {
+  display: grid;
+  width: min(680px, calc(100% - 48px));
+  justify-items: center;
+  padding: 52px 48px 46px;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 28px;
+  background: rgba(8, 13, 11, .24);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+}
+
+.synopsisLogoMark { width: 96px; background: rgba(255, 255, 255, .08); font-size: 1.35rem; }
+.scriptSynopsis h1 { margin: 22px 0 24px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 500; text-align: center; }
+.synopsisCopy { max-width: 58ch; color: rgba(255, 255, 255, .82); font-family: Georgia, "Times New Roman", serif; font-size: .88rem; line-height: 1.9; }
+.synopsisCopy p { margin: 0; }
+.synopsisCopy p + p { margin-top: 1em; }
+
+.confirmScriptButton {
+  min-width: 150px;
+  margin-top: 30px;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, .12);
+  padding: 10px 28px;
+  font-weight: 800;
+}
+.confirmScriptButton:hover,
+.confirmScriptButton:focus-visible { background: rgba(255, 255, 255, .24); }
+
+.scriptLoading {
+  position: fixed;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  color: inherit;
+  background: rgba(8, 11, 10, .9);
+  font-size: .84rem;
+  letter-spacing: .14em;
+}
+.loadingMark { width: 108px; background: rgba(255, 255, 255, .08); font-size: 1.35rem; animation: scriptPulse 650ms ease-in-out infinite alternate; }
+@keyframes scriptPulse { to { transform: scale(1.08); box-shadow: 0 0 42px currentColor; } }
+
+.selectedScriptSurface { display: block; }
+.selectedScriptSurface > header { display: flex; min-height: 64px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .2); padding: 8px 20px; }
+.selectedScriptSurface > header button { border: 0; color: inherit; background: transparent; font-weight: 850; }
+.selectedScriptBody { display: grid; min-height: calc(100vh - 64px); place-content: center; justify-items: center; padding: 24px; text-align: center; }
+.selectedScriptMark { display: grid; width: 116px; aspect-ratio: 1; place-items: center; margin-bottom: 18px; border: 1px solid currentColor; border-radius: 50%; background: rgba(255, 255, 255, .08); font-family: Georgia, serif; font-size: 1.5rem; font-weight: 800; }
+.selectedScriptBody h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 600; }
+.selectedScriptBody p { margin: 12px 0 0; color: rgba(255, 255, 255, .72); }
+
+@media (max-width: 600px) {
+  .scriptLogoChoices { flex-direction: column; gap: 24px; }
+  .scriptLogoChoice { width: 180px; gap: 10px; }
+  .scriptLogoMark { width: 142px; }
+  .scriptSynopsis { width: calc(100% - 28px); padding: 42px 24px 32px; }
+  .synopsisLogoMark { width: 76px; }
+  .scriptSynopsis h1 { margin: 16px 0 18px; }
+  .synopsisCopy { font-size: .79rem; line-height: 1.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scriptLogoMark, .scriptTheme { transition: none; }
+  .loadingMark { animation: none; }
+}

@@ -15,7 +15,7 @@ test("RevealScreen renders from RevealPayload alone", () => {
 
   equal(html.includes("서로 이웃한 악한 팀 쌍"), true);
   equal(html.includes("1쌍"), true);
-  equal(html.includes("확인했다면 눈을 감으세요."), true);
+  equal(html.includes("확인했으면 눈을 감으세요"), true);
   equal(html.includes("actualCharacter"), false);
   equal(html.includes("eventList"), false);
   equal(html.includes("마도서"), false);
@@ -29,9 +29,37 @@ test("character change Reveal identifies the new role without exposing Grimoire 
   equal(html.includes(">악<"), true);
   equal(html.includes("임프"), true);
   equal(html.includes("마도서"), false);
-  equal(html.includes("확인했다면 눈을 감으세요."), true);
+  equal(html.includes("확인했으면 눈을 감으세요"), true);
   const preview = renderToStaticMarkup(<RevealPreview payload={payload} onShow={() => undefined} />);
   equal(preview.includes("플레이어에게 공개"), true);
+});
+
+test("good-aligned Evil Twin Reveals use the neutral twin label", () => {
+  const characterChange: RevealPayload = {
+    kind: "characterChange",
+    playerId: "player-4",
+    alignment: "good",
+    characterId: "evilTwin",
+  };
+  const twinPair = {
+    kind: "evilTwinPair",
+    players: [
+      { playerId: "player-4", seat: 4, name: "지우", alignment: "good", characterId: "evilTwin" },
+      { playerId: "player-9", seat: 9, name: "예린", alignment: "evil", characterId: "vortox" },
+    ],
+  } as RevealPayload;
+
+  const changeHtml = renderToStaticMarkup(<RevealScreen payload={characterChange} onClose={() => undefined} />);
+  equal(changeHtml.includes("<strong>쌍둥이</strong>"), true);
+  equal(changeHtml.includes("<strong>사악한 쌍둥이</strong>"), false);
+
+  const pairHtml = renderToStaticMarkup(<RevealScreen payload={twinPair} onClose={() => undefined} />);
+  for (const copy of ["여러분은 쌍둥이입니다", "상대와 직업을 확인하십시오", "확인했으면 눈을 감으세요"]) {
+    equal(pairHtml.includes(copy), true);
+  }
+  for (const punctuated of ["여러분은 쌍둥이입니다,", "상대와 직업을 확인하십시오,", "확인했으면 눈을 감으세요."]) {
+    equal(pairHtml.includes(punctuated), false);
+  }
 });
 
 test("role information Reveal renders the approved copy from narrow payloads", () => {
@@ -39,13 +67,31 @@ test("role information Reveal renders the approved copy from narrow payloads", (
     { kind: "setupInformation", characterId: "washerwoman", candidatePlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], revealedCharacterId: "chef", zeroOutsiders: false },
     { kind: "setupInformation", characterId: "librarian", candidatePlayers: [], zeroOutsiders: true },
     { kind: "numericInformation", characterId: "chef", value: 1 },
+    { kind: "numericInformation", characterId: "mathematician", value: 2 },
+    { kind: "numericInformation", characterId: "juggler", value: 3 },
     { kind: "fortuneTellerInformation", targetPlayers: [{ playerId: "p2", seat: 2, name: "민준" }, { playerId: "p5", seat: 5, name: "하린" }], hasDemon: false },
     { kind: "characterInformation", characterId: "undertaker", targetPlayer: { playerId: "p3", seat: 3, name: "서연" }, revealedCharacterId: "librarian" },
   ];
   const html = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />)).join("\n");
-  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 주민입니다.", "외지인은 없습니다.", "서로 이웃한 악한 팀", "1쌍", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
+  for (const copy of ["세탁부 정보", "둘 중 한 명은 이 주민입니다.", "외지인은 없습니다.", "서로 이웃한 악한 팀", "1쌍", "수학자 정보", "비정상적으로 작동한 능력", "2개", "곡예사 정보", "맞힌 추측", "3개", "이 중에 악마는…", "없음", "장의사 정보", "이 자의 직업은…"]) {
     equal(html.includes(copy), true, copy);
   }
+});
+
+test("targeted S&V Reveals preserve the approved pair copy and order", () => {
+  const payloads: RevealPayload[] = [
+    { kind: "dreamerInformation", characterIds: ["seamstress", "evilTwin"] },
+    { kind: "seamstressInformation", targetPlayers: [{ playerId: "p1", seat: 1, name: "민서" }, { playerId: "p6", seat: 6, name: "유나" }], sameAlignment: false },
+    { kind: "sageInformation", candidatePlayers: [{ playerId: "p2", seat: 2, name: "지우" }, { playerId: "p7", seat: 7, name: "현우" }] },
+  ];
+  const [dreamer, seamstress, sage] = payloads.map((payload) => renderToStaticMarkup(<RevealScreen payload={payload} onClose={() => undefined} />));
+  equal(dreamer.includes("이 자는…"), true);
+  equal(dreamer.indexOf("재봉사") < dreamer.indexOf("사악한 쌍둥이"), true);
+  equal(seamstress.includes("1번 민서 · 6번 유나"), true);
+  equal(seamstress.includes("다른 진영"), true);
+  equal(sage.includes("당신을 죽인 악마는…"), true);
+  equal(sage.indexOf("지우") < sage.indexOf("현우"), true);
+  equal(sage.includes("사망"), false);
 });
 
 test("evil-team information Reveals render safe identities and official bluff icons", () => {

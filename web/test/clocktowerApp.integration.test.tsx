@@ -38,7 +38,7 @@ describe("ClocktowerApp live-play integration", () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    render(<ClocktowerApp coreAdapter={core} storageDriver={new IndexedDbGameStorageDriver(idb)} />);
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new IndexedDbGameStorageDriver("troubleBrewing", idb)} />);
 
     expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
     expect((screen.getByRole("button", { name: "플레이어 추가" }) as HTMLButtonElement).disabled).toBe(false);
@@ -67,9 +67,9 @@ describe("ClocktowerApp live-play integration", () => {
       expect(screen.queryAllByText("지원하지 않는 게임 파일 버전입니다.")).toHaveLength(0);
     });
     await waitFor(async () => {
-      expect(await getRawLatestGame(idb)).toMatchObject({
-        schemaVersion: 2,
-        game: { events: [] },
+      expect(await getRawLatestGame(idb, "latest:troubleBrewing")).toMatchObject({
+        schemaVersion: 3,
+        game: { scriptId: "troubleBrewing", events: [] },
       });
     });
     expect(confirm).not.toHaveBeenCalled();
@@ -88,7 +88,8 @@ describe("ClocktowerApp live-play integration", () => {
         : {
             ok: true,
             value: {
-              schemaVersion: 2,
+              schemaVersion: 3,
+              scriptId: "troubleBrewing",
               eventCount: 0,
               phase: "setup",
               players: [],
@@ -109,7 +110,8 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "새 게임" }));
 
     await waitFor(() => expect(storage.savedGames).toHaveLength(1));
-    expect(storage.savedGames[0]?.schemaVersion).toBe(2);
+    expect(storage.savedGames[0]?.schemaVersion).toBe(3);
+    expect(storage.savedGames[0]?.game.scriptId).toBe("troubleBrewing");
     expect(storage.savedGames[0]?.game.events).toEqual([]);
   });
 
@@ -1257,6 +1259,55 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
+  test("submits an arbitrary safe integer for poisoned numeric information", async () => {
+    const currentStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
+      kind: "number",
+      informationPrompt: {
+        computedResult: { kind: "number", value: 1 },
+        deliveryMode: "selectable",
+        activeReasons: [{
+          type: "poisoned",
+          poisonerPlayerId: "player-4",
+          poisonEventId: "poison-1",
+        }],
+        registrationCandidatePlayerIds: [],
+        numberChoices: [],
+        numberConstraint: {
+          min: 0,
+          max: Number.MAX_SAFE_INTEGER,
+          excludedValues: [],
+        },
+        setupInfoRegistrationOptions: [],
+      },
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("event-poisoned-chef", "중독된 요리사 정보 확정")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+    await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "100");
+    expect(confirm.disabled).toBe(false);
+    await user.click(confirm);
+
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "firstNight:chef",
+        input: null,
+        deliveredResult: { kind: "number", value: 100 },
+      },
+    });
+  });
+
   test("shows a Recluse and adjacent Demon before dynamic Chef truth and alternate buttons", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-4"
@@ -1370,14 +1421,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByText("마도서")).toBeNull();
     expect(screen.queryByText("이벤트 로그")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.queryByLabelText("플레이어 공개 화면")).toBeNull();
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "초공감자: 3번 Cy" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
     const reopenedReveal = screen.getByLabelText("플레이어 공개 화면");
-    await user.click(within(reopenedReveal).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(reopenedReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
     expect(core.propose).toHaveBeenCalledTimes(1);
     expect(vi.mocked(core.replay).mock.calls).toHaveLength(replayCallsAfterConfirm);
@@ -1508,14 +1559,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByText("이벤트 로그")).toBeNull();
     expect(screen.queryByText("설정 및 불러오기")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "확인했다면 눈을 감으세요." }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "낮 시작" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
     await user.click(
       within(screen.getByLabelText("플레이어 공개 화면")).getByRole("button", {
-        name: "확인했다면 눈을 감으세요.",
+        name: "확인했으면 눈을 감으세요",
       }),
     );
     await user.click(screen.getByRole("button", { name: "다음 단계로 계속" }));
@@ -1981,19 +2032,24 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
     await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
     const savesBeforeImport = storage.savedGames.length;
-    const incompatibleGame = { ...gameFile(), schemaVersion: 1 };
+    const incompatibleGame = gameFile();
+    incompatibleGame.game.scriptId = "sectsAndViolets";
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
     if (!fileInput) throw new Error("JSON file input was not rendered");
 
     await user.upload(
       fileInput,
-      new File([JSON.stringify(incompatibleGame)], "old-clocktower.json", { type: "application/json" }),
+      new File([JSON.stringify(incompatibleGame)], "sects-and-violets.json", { type: "application/json" }),
     );
 
-    expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText("현재 페이지와 다른 스크립트의 게임 파일입니다.")).length,
+    ).toBeGreaterThan(0);
     expect(confirm).not.toHaveBeenCalled();
     expect(screen.getAllByText("초기 설정 확정").length).toBeGreaterThan(0);
-    expect(core.replay).not.toHaveBeenCalledWith(expect.objectContaining({ schemaVersion: 1 }));
+    expect(core.replay).not.toHaveBeenCalledWith(
+      expect.objectContaining({ game: expect.objectContaining({ scriptId: "sectsAndViolets" }) }),
+    );
     expect(storage.savedGames).toHaveLength(savesBeforeImport);
     expect(latestSavedGame(storage.savedGames)).toEqual(storedGame);
   });
@@ -2160,11 +2216,11 @@ async function putRawLatestGame(idb: IDBFactory, value: unknown): Promise<void> 
   }
 }
 
-async function getRawLatestGame(idb: IDBFactory): Promise<unknown> {
+async function getRawLatestGame(idb: IDBFactory, key = "latest"): Promise<unknown> {
   const database = await openGameDatabase(idb);
   try {
     const transaction = database.transaction("game", "readonly");
-    return await requestResult(transaction.objectStore("game").get("latest"));
+    return await requestResult(transaction.objectStore("game").get(key));
   } finally {
     database.close();
   }

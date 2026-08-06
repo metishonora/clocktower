@@ -12,8 +12,9 @@ use crate::{
     error::{CoreError, ErrorKind},
     model::{
         ConfirmedInformation, DeliveryContext, DeliveryReason, InformationActor,
-        InformationDeliveryMode, InformationPrompt, InformationResult, PhaseStep, Player,
-        RegistrationJudgment, RegistrationValue, RequiredInputKind, StepInput,
+        InformationDeliveryMode, InformationPrompt, InformationResult, NumberInformationConstraint,
+        PhaseStep, Player, RegistrationJudgment, RegistrationValue, RequiredInputKind, StepInput,
+        MAX_SAFE_INFORMATION_NUMBER,
     },
 };
 
@@ -35,11 +36,17 @@ pub(crate) fn information_prompt(
     } else {
         Vec::new()
     };
-    let number_choices = if is_number {
+    let number_choices = if is_number && active_reasons.is_empty() {
         legal_number_choices(step, players, !active_reasons.is_empty())
     } else {
         Vec::new()
     };
+    let number_constraint =
+        (is_number && !active_reasons.is_empty()).then(|| NumberInformationConstraint {
+            min: 0,
+            max: MAX_SAFE_INFORMATION_NUMBER,
+            excluded_values: vec![],
+        });
     let setup_info_registration_options = if is_setup_info {
         setup_info_registration_options(step, players)
     } else {
@@ -61,8 +68,11 @@ pub(crate) fn information_prompt(
         active_reasons,
         registration_candidate_player_ids,
         number_choices,
+        number_constraint,
+        boolean_choices: Vec::new(),
         setup_info_registration_options,
         target_checks,
+        mathematician_audit: None,
     })
 }
 
@@ -272,7 +282,7 @@ fn confirmed_number_information(
         let InformationResult::Number { value } = delivered else {
             return Err(ErrorKind::InvalidDeliveredInformation.into_error());
         };
-        if !choices.iter().any(|choice| choice.value == value) {
+        if value > MAX_SAFE_INFORMATION_NUMBER {
             return Err(ErrorKind::InvalidDeliveredInformation.into_error());
         }
         (
@@ -444,15 +454,14 @@ pub(crate) fn validate_confirmed_information(
     if expected
         .as_ref()
         .is_ok_and(|expected| expected.as_ref() == Some(information))
-    {
-        Ok(())
-    } else if legacy_numeric_registration_information_is_valid(
-        step,
-        players,
-        prior_events,
-        input,
-        information,
-    ) || legacy_spy_information_is_valid(step, players, input, information)
+        || legacy_numeric_registration_information_is_valid(
+            step,
+            players,
+            prior_events,
+            input,
+            information,
+        )
+        || legacy_spy_information_is_valid(step, players, input, information)
     {
         Ok(())
     } else {
@@ -542,7 +551,10 @@ fn legacy_numeric_registration_information_is_valid(
     if active_reasons.is_empty() {
         number_result_with_registration_judgments(step, players, judgments).is_some_and(
             |expected| {
-                information.delivered_result == InformationResult::Number { value: expected }
+                information.delivered_result
+                    == InformationResult::Number {
+                        value: expected as u64,
+                    }
             },
         )
     } else {

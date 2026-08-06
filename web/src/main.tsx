@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
+import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
 import type { Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
@@ -30,9 +31,15 @@ import {
   type RuntimeClock,
 } from "./features/phase-control/phaseRuntime";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
-import { CommunityContentNotice } from "./components/CommunityContentNotice";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import "./styles.css";
+
+const DevScriptSelectionPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./scriptSelectionPrototype");
+      return { default: module.ScriptSelectionPrototype };
+    })
+  : undefined;
 
 const DevFirstNightSuggestionPrototype = import.meta.env.DEV
   ? React.lazy(async () => {
@@ -118,7 +125,36 @@ const DevCharacterRulesTooltipPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevSectsAndVioletsFoundationPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./sectsAndVioletsFoundationPrototype");
+      return { default: module.SectsAndVioletsFoundationPrototype };
+    })
+  : undefined;
+
+const DevIssue116PhaseHandoffPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue116PhaseHandoffPrototype");
+      return { default: module.Issue116PhaseHandoffPrototype };
+    })
+  : undefined;
+
+const DevIssue114CharacterDetailsPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue114CharacterDetailsPrototype");
+      return { default: module.Issue114CharacterDetailsPrototype };
+    })
+  : undefined;
+
+const DevIssue101SnakeCharmerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue101SnakeCharmerPrototype");
+      return { default: module.Issue101SnakeCharmerPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
+  scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
   storageDriver: GameStorageDriver;
   choiceTokenSource?: ChoiceTokenSource;
@@ -126,6 +162,57 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue101SnakeCharmerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-101-snake-charmer"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue101SnakeCharmerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue114CharacterDetailsPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-114-character-details"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue114CharacterDetailsPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue116PhaseHandoffPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-116-phase-handoff"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue116PhaseHandoffPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevSectsAndVioletsFoundationPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "snv-foundation"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevSectsAndVioletsFoundationPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevScriptSelectionPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "script-selection"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevScriptSelectionPrototype />
+      </React.Suspense>
+    );
+  }
+
   if (
     DevCharacterRulesTooltipPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "character-rules-tooltip"
@@ -289,12 +376,13 @@ export function App(props: ClocktowerAppProps) {
 }
 
 export function ClocktowerApp({
+  scriptId = TROUBLE_BREWING,
   coreAdapter,
   storageDriver,
   choiceTokenSource = browserCryptoChoiceToken,
   phaseRuntimeClock = browserRuntimeClock,
 }: ClocktowerAppProps) {
-  const gameStore = useGameStore({ core: coreAdapter, storage: storageDriver });
+  const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
@@ -428,6 +516,9 @@ export function ClocktowerApp({
       data-mobile-panel-state={gameStore.setupConfirmed && mobilePhasePanel.mobile && !activeSpyRevealPayload ? mobilePhasePanel.state : undefined}
       style={{ "--mobile-phase-panel-height": mobilePhasePanel.height } as React.CSSProperties}
     >
+      <a className="scriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">
+        <span aria-hidden="true">←</span>
+      </a>
       {!activeSpyRevealPayload ? (
         <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
       ) : null}
@@ -484,13 +575,12 @@ export function ClocktowerApp({
                     : undefined
                 }
               />
-              {!activeSpyRevealPayload ? <CommunityContentNotice /> : null}
             </section>
 
             {activeSpyRevealPayload ? (
               <aside className="spyRevealRail" aria-label="첩자 Reveal 닫기 동작">
                 <button type="button" className="primaryButton" onClick={closeActiveReveal}>
-                  확인했다면 눈을 감으세요.
+                  확인했으면 눈을 감으세요
                 </button>
               </aside>
             ) : <aside className="setupRail">
@@ -586,7 +676,6 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!gameStore.setupConfirmed ? <CommunityContentNotice /> : null}
       {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}
