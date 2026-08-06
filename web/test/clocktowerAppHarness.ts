@@ -17,6 +17,7 @@ import type {
   StepType,
 } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
+import type { WebSessionSnapshot, WebSessionStorageDriver } from "../src/webSessionStorage";
 
 const setupDistribution: SetupDistribution = {
   Townsfolk: 3,
@@ -49,6 +50,26 @@ export class MemoryGameStorageDriver implements GameStorageDriver {
   readonly saveLatestGame = vi.fn(async (gameFile: GameFile): Promise<void> => {
     this.savedGames.push(structuredClone(gameFile));
   });
+}
+
+export class MemoryWebSessionStorageDriver<SetupDraft, Presentation>
+implements WebSessionStorageDriver<SetupDraft, Presentation> {
+  readonly savedSessions: Array<WebSessionSnapshot<SetupDraft, Presentation>> = [];
+
+  constructor(private latestSession?: WebSessionSnapshot<SetupDraft, Presentation>) {}
+
+  readonly loadSession = vi.fn(async () => (
+    this.latestSession ? structuredClone(this.latestSession) : undefined
+  ));
+
+  readonly saveSession = vi.fn(async (snapshot: WebSessionSnapshot<SetupDraft, Presentation>) => {
+    this.latestSession = structuredClone(snapshot);
+    this.savedSessions.push(structuredClone(snapshot));
+  });
+
+  latestCanonical(): GameFile | undefined {
+    return this.latestSession ? structuredClone(this.latestSession.canonical) : undefined;
+  }
 }
 
 export function createCoreHarness({

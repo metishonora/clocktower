@@ -206,6 +206,10 @@ test("same-phase Undo preserves the active phase runtime", async () => {
     replayAfterProposal: replay,
     proposal: proposal(event("unused", "unused", "day")),
   });
+  vi.mocked(core.replay).mockImplementation(async (candidate) => ({
+    ok: true,
+    value: replayState({ currentStep, eventCount: candidate.game.events.length }),
+  }));
   const user = userEvent.setup();
 
   render(

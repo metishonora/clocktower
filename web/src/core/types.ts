@@ -4,6 +4,7 @@ export type GameFile = {
   schemaVersion: 3;
   ui?: {
     seatLayout?: SeatLayoutState;
+    /** @deprecated Imported for schema tolerance only; runtime session state is stored separately. */
     sectsAndVioletsSession?: SectsAndVioletsSessionState;
   };
   game: {
@@ -16,8 +17,10 @@ export type GameFile = {
   };
 };
 
+/** @deprecated Runtime S&V presentation state no longer belongs to GameFile. */
 export type SectsAndVioletsTab = "roles" | "seating" | "play" | "storage";
 
+/** @deprecated Runtime S&V presentation state no longer belongs to GameFile. */
 export type SectsAndVioletsPhaseCheckpoint = {
   id: string;
   eventIds?: string[];
@@ -27,6 +30,7 @@ export type SectsAndVioletsPhaseCheckpoint = {
   activeTab: SectsAndVioletsTab;
 };
 
+/** @deprecated Runtime S&V setup state no longer belongs to GameFile. */
 export type SectsAndVioletsSetupSession = {
   playerCount: number;
   demon: "fangGu" | "vigormortis" | "noDashii" | "vortox";
@@ -38,6 +42,7 @@ export type SectsAndVioletsSetupSession = {
   seatingConfirmed: boolean;
 };
 
+/** @deprecated Imported only to discard obsolete metadata. */
 export type SectsAndVioletsSessionState = {
   version: 1;
   activeTab: SectsAndVioletsTab;

@@ -1,7 +1,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import "./sectsAndVioletsFoundationPrototype.css";
 import type { CoreAdapter } from "./core/coreAdapter";
-import { CanonicalSessionController } from "./core/canonicalSessionController";
+import {
+  CanonicalSessionController,
+  replayMatches,
+  type CanonicalReplaySnapshot,
+} from "./core/canonicalSessionController";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
 import type {
   Command,
@@ -16,8 +20,6 @@ import type {
   Player,
   ReplayState,
   RevealPayload,
-  SectsAndVioletsPhaseCheckpoint,
-  SectsAndVioletsSessionState,
   SetupDistribution,
 } from "./core/types";
 import { proposalRevealPayload } from "./core/revealPayload";
@@ -40,10 +42,13 @@ export { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrim
 import {
   exportGameFileJson,
   importGameFileJson,
-  loadLatestGame,
-  saveLatestGame,
-  type GameStorageDriver,
 } from "./gameStorage";
+import {
+  loadCompatibleWebSession,
+  saveCompatibleWebSession,
+  type CompatibleWebSessionStorage,
+  type WebSessionSnapshot,
+} from "./webSessionStorage";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
@@ -97,8 +102,8 @@ import { inferCanonicalUndoUnits } from "./core/canonicalUndo";
 import {
   exportLatestSectsAndVioletsCheckpoint,
   inferSectsAndVioletsCheckpoints,
-  removeLatestSectsAndVioletsPhaseCheckpoint,
-  withSectsAndVioletsSession,
+  type SectsAndVioletsPhaseCheckpoint,
+  type SectsAndVioletsSetupSession,
 } from "./sectsAndVioletsSession";
 import { DayActionDock } from "./features/day-actions/DayActionDock";
 import { MadnessActionDock } from "./features/madness/MadnessActionDock";
@@ -184,13 +189,20 @@ const baseDistribution: Record<number, [number, number, number, number]> = {
 
 export type SectsAndVioletsFoundationPrototypeProps = {
   coreAdapter?: CoreAdapter;
-  storageDriver?: GameStorageDriver;
+  storageDriver?: CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>;
   production?: boolean;
   phaseRuntimeClock?: RuntimeClock;
   choiceTokenSource?: ChoiceTokenSource;
   bugReportEmail?: string;
   bugReportDelivery?: BugReportDelivery;
 };
+
+export type SnvSetupDraft = SectsAndVioletsSetupSession | null;
+export type SnvPresentation = {
+  activeTab?: PrototypeTab;
+  phaseCheckpoints?: SectsAndVioletsPhaseCheckpoint[];
+};
+type SnvWebSessionSnapshot = WebSessionSnapshot<SnvSetupDraft, SnvPresentation>;
 
 export function SectsAndVioletsFoundationPrototype() {
   return <SectsAndVioletsGameSurface />;
@@ -206,7 +218,7 @@ export function SectsAndVioletsGameSurface({
   bugReportDelivery,
 }: SectsAndVioletsFoundationPrototypeProps = {}) {
   const canonicalSession = useMemo(
-    () => coreAdapter ? new CanonicalSessionController(coreAdapter) : undefined,
+    () => coreAdapter ? new CanonicalSessionController(SECTS_AND_VIOLETS, coreAdapter) : undefined,
     [coreAdapter],
   );
   const [activeTab, setActiveTab] = useState<PrototypeTab>("roles");
@@ -239,7 +251,7 @@ export function SectsAndVioletsGameSurface({
   const [playPhase, setPlayPhase] = useState<PlayPhase>("firstNight");
   const [dayComplete, setDayComplete] = useState(false);
   const [gameFile, setGameFile] = useState<GameFile>(createSectsAndVioletsGameFile);
-  const [replayState, setReplayState] = useState<ReplayState>();
+  const [replayState, setReplayState] = useState<CanonicalReplaySnapshot>();
   const [phaseCheckpoints, setPhaseCheckpoints] = useState<SectsAndVioletsPhaseCheckpoint[]>([]);
   const [canonicalDistribution, setCanonicalDistribution] = useState<SetupDistribution>();
   const [operationBusy, setOperationBusy] = useState(false);
@@ -272,7 +284,7 @@ export function SectsAndVioletsGameSurface({
     reproductionContext: SectsAndVioletsBugReportContextInput;
   }>();
   const lastEnqueuedAutosaveRevisionRef = useRef(0);
-  const pendingAutosaveRef = useRef<GameFile | undefined>(undefined);
+  const pendingAutosaveRef = useRef<SnvWebSessionSnapshot | undefined>(undefined);
   const pendingAutosaveCompletionRef = useRef<((saved: boolean) => void) | undefined>(undefined);
   const autoResolvedVigormortisPoisonRef = useRef<string | undefined>(undefined);
   const autosaveInFlightRef = useRef(false);
@@ -715,15 +727,14 @@ export function SectsAndVioletsGameSurface({
   useEffect(() => {
     if (!canonicalSession || !storageDriver) return;
     let cancelled = false;
-    loadLatestGame(storageDriver)
-      .then(async (storedGameFile) => {
+    loadCompatibleWebSession(storageDriver, (canonical) => createSnvWebSessionSnapshot(
+      canonical ?? createSectsAndVioletsGameFile(),
+      null,
+      {},
+    ))
+      .then(async (storedSession) => {
         if (cancelled) return;
-        if (!storedGameFile) {
-          setAutosaveRecoveryBlocked(false);
-          setStorageReady(true);
-          return;
-        }
-        const replayed = await canonicalSession.replay(storedGameFile);
+        const replayed = await canonicalSession.replay(storedSession.canonical);
         if (cancelled) return;
         if (!replayed.ok) {
           setOperationError(replayed.error.messageKo);
@@ -731,7 +742,7 @@ export function SectsAndVioletsGameSurface({
           setStorageReady(true);
           return;
         }
-        restoreStoredSession(storedGameFile, replayed.value);
+        restoreStoredSession(storedSession, replayed.value);
         setStorageReady(true);
       })
       .catch((error: unknown) => {
@@ -758,10 +769,7 @@ export function SectsAndVioletsGameSurface({
     }
     lastEnqueuedAutosaveRevisionRef.current = autosaveRevision;
     const savedAt = new Date().toISOString();
-    enqueueAutosave(withSectsAndVioletsSession(
-      gameFile,
-      currentSessionState(savedAt),
-    ));
+    enqueueAutosave(currentWebSession(savedAt));
   }, [
     activeTab,
     autosaveRecoveryBlocked,
@@ -782,6 +790,7 @@ export function SectsAndVioletsGameSurface({
 
   useEffect(() => {
     if (!canonicalSession || (storageDriver && !storageReady)) return;
+    if (replayMatches(gameFile, replayState)) return;
     let cancelled = false;
     canonicalSession.replay(gameFile)
       .then((result) => {
@@ -799,7 +808,7 @@ export function SectsAndVioletsGameSurface({
     return () => {
       cancelled = true;
     };
-  }, [coreAdapter, gameFile, storageDriver, storageReady]);
+  }, [canonicalSession, gameFile, replayState, storageDriver, storageReady]);
 
   useEffect(() => {
     if (!coreAdapter || rosterConfirmed) return;
@@ -853,12 +862,8 @@ export function SectsAndVioletsGameSurface({
     markAutosaveNeeded();
   }
 
-  function currentSessionState(savedAt: string): SectsAndVioletsSessionState {
+  function currentSetupDraft(): SectsAndVioletsSetupSession {
     return {
-      version: 1,
-      activeTab,
-      savedAt,
-      setup: {
         playerCount,
         demon,
         selectedIds: [...selectedIds],
@@ -867,9 +872,19 @@ export function SectsAndVioletsGameSurface({
         seatNames: structuredClone(seatNames),
         rosterConfirmed,
         seatingConfirmed,
-      },
-      phaseCheckpoints: structuredClone(phaseCheckpoints),
     };
+  }
+
+  function currentWebSession(
+    savedAt: string,
+    canonical: GameFile = gameFile,
+    setupDraft: SectsAndVioletsSetupSession = currentSetupDraft(),
+    presentation: SnvPresentation = {
+      activeTab,
+      phaseCheckpoints: structuredClone(phaseCheckpoints),
+    },
+  ): SnvWebSessionSnapshot {
+    return createSnvWebSessionSnapshot(canonical, setupDraft, presentation, savedAt);
   }
 
   async function drainAutosaveQueue() {
@@ -883,9 +898,8 @@ export function SectsAndVioletsGameSurface({
     setAutosaveStatus("saving");
     let saved = false;
     try {
-      await saveLatestGame(candidate, storageDriver);
-      const savedAt = candidate.ui?.sectsAndVioletsSession?.savedAt;
-      setLastSavedAt(savedAt);
+      await saveCompatibleWebSession(candidate, storageDriver);
+      setLastSavedAt(candidate.savedAt);
       setAutosaveStatus("saved");
       saved = true;
     } catch {
@@ -898,7 +912,7 @@ export function SectsAndVioletsGameSurface({
     if (saved && pendingAutosaveRef.current) void drainAutosaveQueue();
   }
 
-  function enqueueAutosave(candidate: GameFile, completion?: (saved: boolean) => void) {
+  function enqueueAutosave(candidate: SnvWebSessionSnapshot, completion?: (saved: boolean) => void) {
     pendingAutosaveCompletionRef.current?.(false);
     pendingAutosaveRef.current = candidate;
     pendingAutosaveCompletionRef.current = completion;
@@ -912,8 +926,8 @@ export function SectsAndVioletsGameSurface({
     completion?.(false);
   }
 
-  function restoreStoredSession(storedGameFile: GameFile, replayed: ReplayState) {
-    const storedSession = storedGameFile.ui?.sectsAndVioletsSession;
+  function restoreStoredSession(storedSession: SnvWebSessionSnapshot, replayed: CanonicalReplaySnapshot) {
+    const storedGameFile = storedSession.canonical;
     const canonicalPlayers = replayed.players;
     const canonicalDemon = canonicalPlayers.find((player) =>
       demonChoices.some((choice) => choice.id === player.actualCharacter),
@@ -933,14 +947,14 @@ export function SectsAndVioletsGameSurface({
       seatNames: Object.fromEntries(canonicalPlayers.map((player) => [player.seat, player.name])),
       rosterConfirmed: canonicalPlayers.length > 0,
       seatingConfirmed: canonicalPlayers.length > 0,
-    } satisfies SectsAndVioletsSessionState["setup"];
-    const setup = storedSession?.setup ?? fallbackSetup;
+    } satisfies SectsAndVioletsSetupSession;
+    const setup = storedSession.setupDraft ?? fallbackSetup;
     const fallbackTab: PrototypeTab = replayed.gameEnd ? "seating" : replayed.eventCount > 1
       ? "play"
       : replayed.eventCount === 1
         ? "seating"
         : "roles";
-    const requestedTab = replayed.gameEnd ? "seating" : storedSession?.activeTab ?? fallbackTab;
+    const requestedTab = replayed.gameEnd ? "seating" : storedSession.presentation.activeTab ?? fallbackTab;
     const restoredTab = requestedTab === "play" && !setup.seatingConfirmed
       ? setup.rosterConfirmed ? "seating" : "roles"
       : requestedTab === "seating" && !setup.rosterConfirmed
@@ -961,14 +975,15 @@ export function SectsAndVioletsGameSurface({
     setRosterConfirmed(setup.rosterConfirmed);
     setSeatingConfirmed(setup.seatingConfirmed);
     setPhaseCheckpoints(
-      storedSession?.phaseCheckpoints ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
+      storedSession.presentation.phaseCheckpoints
+        ?? inferSectsAndVioletsCheckpoints(storedGameFile, fallbackTab),
     );
     setActiveTab(restoredTab);
     setPlayPhase(
       replayed.phase === "firstNight" ? "firstNight" : replayed.phase === "day" ? "day" : "laterNight",
     );
-    setLastSavedAt(storedSession?.savedAt);
-    setAutosaveStatus(storedSession?.savedAt ? "saved" : "idle");
+    setLastSavedAt(storedSession.savedAt);
+    setAutosaveStatus("saved");
     setOperationError(undefined);
     setAutosaveRecoveryBlocked(false);
   }
@@ -1022,7 +1037,7 @@ export function SectsAndVioletsGameSurface({
   function openBugReport() {
     const capturedAt = new Date().toISOString();
     setBugReportSnapshot({
-      gameFile: withSectsAndVioletsSession(gameFile, currentSessionState(capturedAt)),
+      gameFile,
       environment: currentBugReportEnvironment(),
       reproductionContext: {
         activeTab,
@@ -1072,28 +1087,24 @@ export function SectsAndVioletsGameSurface({
 
   const confirmPhaseUndo = async () => {
     if (!undoCheckpoint || !canonicalSession || operationBusy) return;
-    const currentWithSession = withSectsAndVioletsSession(
-      gameFile,
-      currentSessionState(new Date().toISOString()),
-    );
-    const removal = removeLatestSectsAndVioletsPhaseCheckpoint(currentWithSession);
-    if (!removal || removal.removed.id !== undoCheckpoint.id) {
+    const removal = canonicalSession.prepareUndo(gameFile, replayState, undoCheckpoint.id);
+    if (!removal.ok) {
       setUndoCheckpoint(undefined);
-      setOperationError("최근 페이즈가 변경되어 되돌리지 않았습니다.");
+      setOperationError(removal.error.messageKo);
       return;
     }
     setOperationBusy(true);
     setOperationError(undefined);
-    const replayed = await canonicalSession.replay(removal.gameFile);
+    const replayed = await canonicalSession.replay(removal.value.gameFile);
     if (!replayed.ok) {
       setOperationBusy(false);
       setUndoCheckpoint(undefined);
       setOperationError(replayed.error.messageKo);
       return;
     }
-    setGameFile(removal.gameFile);
+    setGameFile(removal.value.gameFile);
     setReplayState(replayed.value);
-    setPhaseCheckpoints(removal.gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? []);
+    setPhaseCheckpoints((current) => current.filter((checkpoint) => checkpoint.id !== removal.value.removed.id));
     setProposalTransientStateAfterHistoryChange();
     setUndoCheckpoint(undefined);
     setOperationBusy(false);
@@ -1101,11 +1112,7 @@ export function SectsAndVioletsGameSurface({
   };
 
   const exportCurrentCheckpoint = () => {
-    const currentWithSession = withSectsAndVioletsSession(
-      gameFile,
-      currentSessionState(new Date().toISOString()),
-    );
-    const exported = exportLatestSectsAndVioletsCheckpoint(currentWithSession);
+    const exported = exportLatestSectsAndVioletsCheckpoint(gameFile, phaseCheckpoints);
     const blob = new Blob([exportGameFileJson(exported)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1131,7 +1138,7 @@ export function SectsAndVioletsGameSurface({
       if (hasMeaningfulCurrentSession() && !window.confirm("현재 게임을 가져온 게임으로 교체할까요?")) {
         return;
       }
-      restoreStoredSession(imported, replayed.value);
+      restoreStoredSession(createSnvWebSessionSnapshot(imported, null, {}), replayed.value);
       setAutosaveRecoveryBlocked(false);
       setProposalTransientStateAfterHistoryChange();
       markAutosaveNeeded();
@@ -1246,13 +1253,7 @@ export function SectsAndVioletsGameSurface({
       const command = step.support === "manual"
         ? { type: "resolveManualStep" as const, payload: { stepId: step.id, outcome: manualOutcome } }
         : { type: "confirmStep" as const, payload: { stepId: step.id, input: null as null } };
-      const result = await canonicalSession.propose(gameFile, replayState, command);
-      if (!result.ok) {
-        setOperationBusy(false);
-        setOperationError(result.error.messageKo);
-        return;
-      }
-      await applyCanonicalEvent(result.value.event, "phase");
+      await executeCanonicalCommand(command);
       setOperationBusy(false);
       return;
     }
@@ -1275,13 +1276,7 @@ export function SectsAndVioletsGameSurface({
             input: { characterIds: [selectedPhilosopherCharacterId] },
           },
         };
-    const result = await canonicalSession.propose(gameFile, replayState, command);
-    if (!result.ok) {
-      setOperationBusy(false);
-      setOperationError(result.error.messageKo);
-      return;
-    }
-    await applyCanonicalEvent(result.value.event, "phase");
+    await executeCanonicalCommand(command);
     setSelectedPhilosopherCharacterId("");
     setOperationBusy(false);
   };
@@ -1327,32 +1322,26 @@ export function SectsAndVioletsGameSurface({
     if (isDemon && selectedBluffCharacterIds.length !== 3) return;
     setOperationBusy(true);
     setOperationError(undefined);
-    const result = await canonicalSession.propose(gameFile, replayState, {
+    const executed = await executeCanonicalCommand({
       type: "confirmStep",
       payload: {
         stepId: canonicalEvilInformationStep.id,
         input: isDemon ? { characterIds: selectedBluffCharacterIds } : null,
       },
     });
-    if (!result.ok) {
+    if (!executed) {
       setOperationBusy(false);
-      setOperationError(result.error.messageKo);
       return;
     }
-    const revealPayload = proposalRevealPayload(result.value);
+    const revealPayload = proposalRevealPayload(executed.proposal);
     if (!revealPayload || !("kind" in revealPayload)
       || (revealPayload.kind !== "minionInformation" && revealPayload.kind !== "demonInformation")) {
       setOperationBusy(false);
       setOperationError("공개할 악한 팀 정보가 없습니다.");
       return;
     }
-    const applied = await applyCanonicalEvent(result.value.event, "phase");
-    if (!applied) {
-      setOperationBusy(false);
-      return;
-    }
     setEvilInformationCheckpoint({
-      sourceEventId: result.value.event.id,
+      sourceEventId: executed.proposal.event.id,
       stepId: canonicalEvilInformationStep.id,
       step: canonicalEvilInformationStep,
       payload: revealPayload,
@@ -1396,7 +1385,7 @@ export function SectsAndVioletsGameSurface({
       return;
     }
     const targeted = canonicalInformationStep.character === "dreamer" || canonicalInformationStep.character === "seamstress";
-    const result = await canonicalSession.propose(gameFile, replayState, {
+    const executed = await executeCanonicalCommand({
       type: "confirmStep",
       payload: {
         stepId: canonicalInformationStep.id,
@@ -1406,20 +1395,14 @@ export function SectsAndVioletsGameSurface({
           : {}),
       },
     });
-    if (!result.ok) {
+    if (!executed) {
       setOperationBusy(false);
-      setOperationError(result.error.messageKo);
       return;
     }
-    const revealPayload = automatedInformationRevealPayload(result.value.revealPayload);
+    const revealPayload = automatedInformationRevealPayload(executed.proposal.revealPayload);
     if (!revealPayload) {
       setOperationBusy(false);
       setOperationError("공개할 정보가 없습니다.");
-      return;
-    }
-    const applied = await applyCanonicalEvent(result.value.event, "phase");
-    if (!applied) {
-      setOperationBusy(false);
       return;
     }
     setInformationCheckpoint({
@@ -1444,9 +1427,7 @@ export function SectsAndVioletsGameSurface({
     if (!canonicalSession || !canonicalInformationStep || operationBusy) return;
     setOperationBusy(true);
     setOperationError(undefined);
-    const result = await canonicalSession.propose(gameFile, replayState, { type: "skipStep", payload: { stepId: canonicalInformationStep.id } });
-    if (!result.ok) setOperationError(result.error.messageKo);
-    else await applyCanonicalEvent(result.value.event, "phase");
+    await executeCanonicalCommand({ type: "skipStep", payload: { stepId: canonicalInformationStep.id } });
     setOperationBusy(false);
   };
 
@@ -1562,35 +1543,35 @@ export function SectsAndVioletsGameSurface({
 
     setOperationBusy(true);
     setOperationError(undefined);
-    const result = await canonicalSession.propose(gameFile, replayState, {
+    const applied = await executeCanonicalCommand({
       type: "createGame",
       payload: { players: players as Array<{ seat: number; name: string; actualCharacter: string }> },
-    });
-    if (!result.ok) {
-      setOperationBusy(false);
-      setOperationError(result.error.messageKo);
-      return;
-    }
-
-    const applied = await applyCanonicalEvent(result.value.event, "setup", gameFile, false);
+    }, "setup", gameFile, false);
     if (!applied) {
       setOperationBusy(false);
       return;
     }
     if (storageDriver) {
       const savedAt = new Date().toISOString();
-      const confirmedSession = currentSessionState(savedAt);
-      const confirmedGameFile = withSectsAndVioletsSession(applied.gameFile, {
-        ...confirmedSession,
-        activeTab: "seating",
-        setup: {
-          ...confirmedSession.setup,
+      const confirmedSetup = {
+          ...currentSetupDraft(),
           seatingConfirmed: true,
+      };
+      const confirmedSession = currentWebSession(
+        savedAt,
+        applied.gameFile,
+        confirmedSetup,
+        {
+          activeTab: "seating",
+          phaseCheckpoints: [...phaseCheckpoints, applied.checkpoint],
         },
-        phaseCheckpoints: [...phaseCheckpoints, applied.checkpoint],
-      });
-      await new Promise<boolean>((resolve) => enqueueAutosave(confirmedGameFile, resolve));
-      setGameFile(confirmedGameFile);
+      );
+      const saved = await new Promise<boolean>((resolve) => enqueueAutosave(confirmedSession, resolve));
+      if (!saved) {
+        setOperationBusy(false);
+        setOperationError("설정을 저장하지 못했습니다. 다시 시도해 주세요.");
+        return;
+      }
     }
     setOperationBusy(false);
     setSeatingConfirmed(true);
@@ -1598,20 +1579,13 @@ export function SectsAndVioletsGameSurface({
     setPendingCharacterId(undefined);
   };
 
-  const applyCanonicalEvent = async (
+  const commitCanonicalEvent = (
     event: GameEvent,
+    nextGameFile: GameFile,
+    nextReplayState: CanonicalReplaySnapshot,
     checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"],
-    baseGameFile: GameFile = gameFile,
-    scheduleAutosave = true,
-    baseReplayState: ReplayState | undefined = replayState,
-  ): Promise<{ gameFile: GameFile; replayState: ReplayState; checkpoint: SectsAndVioletsPhaseCheckpoint } | undefined> => {
-    if (!canonicalSession) return undefined;
-    const applied = await canonicalSession.apply(baseGameFile, baseReplayState, event);
-    if (!applied.ok) {
-      setOperationError(applied.error.messageKo);
-      return undefined;
-    }
-    const { gameFile: nextGameFile, replayState: nextReplayState } = applied.value;
+    scheduleAutosave: boolean,
+  ) => {
     setReplayState(nextReplayState);
     setGameFile(nextGameFile);
     const checkpoint: SectsAndVioletsPhaseCheckpoint = {
@@ -1642,18 +1616,38 @@ export function SectsAndVioletsGameSurface({
     return { gameFile: nextGameFile, replayState: nextReplayState, checkpoint };
   };
 
+  const executeCanonicalCommand = async (
+    command: Command,
+    checkpointKind: SectsAndVioletsPhaseCheckpoint["kind"] = "phase",
+    baseGameFile: GameFile = gameFile,
+    scheduleAutosave = true,
+    baseReplayState: CanonicalReplaySnapshot | undefined = replayState,
+  ) => {
+    if (!canonicalSession) return undefined;
+    const executed = await canonicalSession.execute(baseGameFile, baseReplayState, command);
+    if (!executed.ok) {
+      setOperationError(executed.error.messageKo);
+      return undefined;
+    }
+    return {
+      proposal: executed.value.proposal,
+      ...commitCanonicalEvent(
+        executed.value.proposal.event,
+        executed.value.gameFile,
+        executed.value.replayState,
+        checkpointKind,
+        scheduleAutosave,
+      ),
+    };
+  };
+
   const proposeAndApplyLiveCommand = async (
     command: Command,
     baseGameFile: GameFile = gameFile,
-    baseReplayState: ReplayState | undefined = replayState,
+    baseReplayState: CanonicalReplaySnapshot | undefined = replayState,
   ) => {
     if (!canonicalSession) return undefined;
-    const result = await canonicalSession.propose(baseGameFile, baseReplayState, command);
-    if (!result.ok) {
-      setOperationError(result.error.messageKo);
-      return undefined;
-    }
-    return applyCanonicalEvent(result.value.event, "phase", baseGameFile, true, baseReplayState);
+    return executeCanonicalCommand(command, "phase", baseGameFile, true, baseReplayState);
   };
 
   const resolveDeathConsequence = async (resolution: DeathConsequenceResolution) => {
@@ -2139,26 +2133,22 @@ export function SectsAndVioletsGameSurface({
       return;
     }
     if (!canonicalSession || !liveNominationCheckpointId) return;
-    const currentWithSession = withSectsAndVioletsSession(
-      gameFile,
-      currentSessionState(new Date().toISOString()),
-    );
-    const removal = removeLatestSectsAndVioletsPhaseCheckpoint(currentWithSession);
-    if (!removal || removal.removed.id !== liveNominationCheckpointId) {
+    const removal = canonicalSession.prepareUndo(gameFile, replayState, liveNominationCheckpointId);
+    if (!removal.ok) {
       setOperationError("현재 지명 기록이 변경되어 투표를 취소하지 않았습니다.");
       return;
     }
     setOperationBusy(true);
     setOperationError(undefined);
-    const replayed = await canonicalSession.replay(removal.gameFile);
+    const replayed = await canonicalSession.replay(removal.value.gameFile);
     if (!replayed.ok) {
       setOperationBusy(false);
       setOperationError(replayed.error.messageKo);
       return;
     }
-    setGameFile(removal.gameFile);
+    setGameFile(removal.value.gameFile);
     setReplayState(replayed.value);
-    setPhaseCheckpoints(removal.gameFile.ui?.sectsAndVioletsSession?.phaseCheckpoints ?? []);
+    setPhaseCheckpoints((current) => current.filter((checkpoint) => checkpoint.id !== removal.value.removed.id));
     setProposalTransientStateAfterHistoryChange();
     setLiveNominationCheckpointId(undefined);
     setOperationBusy(false);
@@ -3217,6 +3207,22 @@ function createSectsAndVioletsGameFile(): GameFile {
       updatedAt: now,
       events: [],
     },
+  };
+}
+
+function createSnvWebSessionSnapshot(
+  canonical: GameFile,
+  setupDraft: SnvSetupDraft,
+  presentation: SnvPresentation,
+  savedAt = new Date().toISOString(),
+): SnvWebSessionSnapshot {
+  return {
+    version: 1,
+    scriptId: SECTS_AND_VIOLETS,
+    savedAt,
+    canonical,
+    setupDraft,
+    presentation,
   };
 }
 

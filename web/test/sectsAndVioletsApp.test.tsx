@@ -2,8 +2,10 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SectsAndVioletsApp } from "../src/sectsAndVioletsApp";
+import type { SnvPresentation, SnvSetupDraft } from "../src/sectsAndVioletsGame";
 import type { GameFile, ReplayState, SetupPlayerInput } from "../src/core/types";
 import type { GameStorageDriver } from "../src/gameStorage";
+import type { WebSessionSnapshot, WebSessionStorageDriver } from "../src/webSessionStorage";
 import { SectsAndVioletsBugReportDialog } from "../src/features/bug-report/SectsAndVioletsBugReportDialog";
 
 const core = vi.hoisted(() => ({
@@ -137,7 +139,7 @@ beforeEach(() => {
 });
 
 test("uses the approved setup, Grimoire, and progression shell on the production S&V route", async () => {
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
 
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   expect(within(app).queryByText("준비 중")).toBeNull();
@@ -169,7 +171,7 @@ test("uses the approved setup, Grimoire, and progression shell on the production
 
 test("opens the approved optional S&V bug report without focusing the description", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   const utilities = within(app).getByRole("navigation", { name: "게임 데이터" });
 
@@ -199,7 +201,12 @@ test("opens the configured email handoff without a copy action for a short repor
     copyReport: vi.fn(async () => undefined),
     downloadReport: vi.fn(),
   };
-  render(<SectsAndVioletsApp bugReportDelivery={delivery} />);
+  render(
+    <SectsAndVioletsApp
+      bugReportDelivery={delivery}
+      storageDriver={new MemorySectsAndVioletsStorageDriver()}
+    />,
+  );
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await user.click(within(app).getByRole("button", { name: "버그 제보" }));
   const dialog = screen.getByRole("dialog", { name: "버그 제보" });
@@ -225,7 +232,12 @@ test("opens the configured email handoff without a copy action for a short repor
 
 test("keeps copy and file recovery when an email recipient is unavailable", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp bugReportEmail="" />);
+  render(
+    <SectsAndVioletsApp
+      bugReportEmail=""
+      storageDriver={new MemorySectsAndVioletsStorageDriver()}
+    />,
+  );
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await user.click(within(app).getByRole("button", { name: "버그 제보" }));
   const dialog = screen.getByRole("dialog", { name: "버그 제보" });
@@ -302,7 +314,7 @@ test("downloads oversized reports as JSON and opens a metadata-only email", asyn
 
 test("confirms the assigned production roster through the canonical S&V createGame command", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -327,7 +339,7 @@ test("confirms the assigned production roster through the canonical S&V createGa
 
 test("visually distinguishes the roster after character selection is confirmed", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -353,7 +365,7 @@ test("does not expose a confirmed Grimoire until the canonical setup is durably 
   await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
   await user.click(within(app).getByRole("button", { name: "무작위 배치" }));
   await waitFor(() => expect(
-    Object.keys(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.setup.seatAssignments ?? {}),
+    Object.keys(storage.savedSessions.at(-1)?.setupDraft?.seatAssignments ?? {}),
   ).toHaveLength(7));
 
   storage.pauseCanonicalSave = true;
@@ -375,7 +387,7 @@ test("does not expose a confirmed Grimoire until the canonical setup is durably 
 
 test("keeps the seating draft intact when canonical setup confirmation fails", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -397,7 +409,7 @@ test("keeps the seating draft intact when canonical setup confirmation fails", a
 
 test("advances the production first-night step through the canonical phase command", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -419,7 +431,7 @@ test("advances the production first-night step through the canonical phase comma
 
 test("records manual work and follows the canonical first-night to day boundary", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -551,7 +563,6 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
   } satisfies ReplayState;
   core.replay
     .mockResolvedValueOnce({ ok: true, value: replayState } as never)
-    .mockResolvedValueOnce({ ok: true, value: replayState } as never)
     .mockResolvedValueOnce({ ok: true, value: { ...replayState, eventCount: 3 } } as never)
     .mockResolvedValueOnce({ ok: true, value: replayState } as never);
   storage.savedGames.push(savedDayGame(players.map(({ seat, name, actualCharacter, shownCharacter }) => ({
@@ -591,7 +602,7 @@ test("shows the canonical nomination standing and sends the Storyteller to the G
 
 test("starts a production new game with fresh canonical history", async () => {
   const user = userEvent.setup();
-  render(<SectsAndVioletsApp />);
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
 
   for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
@@ -621,13 +632,12 @@ test("autosaves a meaningful S&V setup choice and reports the completed time", a
   expect(storage.savedGames[0]).toMatchObject({
     schemaVersion: 3,
     game: { scriptId: "sectsAndViolets", events: [] },
-    ui: {
-      sectsAndVioletsSession: {
-        version: 1,
-        activeTab: "roles",
-        setup: { playerCount: 9, demon: "fangGu", selectedIds: ["fangGu"] },
-      },
-    },
+  });
+  expect(storage.savedSessions[0]).toMatchObject({
+    version: 1,
+    scriptId: "sectsAndViolets",
+    setupDraft: { playerCount: 9, demon: "fangGu", selectedIds: ["fangGu"] },
+    presentation: { activeTab: "roles" },
   });
   expect(within(app).getByRole("status").textContent).toMatch(/^자동 저장 완료 \d{2}:\d{2}:\d{2}$/);
 });
@@ -685,7 +695,7 @@ test("does not retry a failed autosave until the next meaningful input", async (
   await user.click(within(app).getByRole("button", { name: "8명" }));
   await waitFor(() => expect(storage.savedGames).toHaveLength(1));
   expect(storage.saveAttempts).toBe(2);
-  expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(8);
+  expect(storage.savedSessions[0]?.setupDraft?.playerCount).toBe(8);
   expect(within(app).getByRole("status").textContent).toMatch(/^자동 저장 완료 \d{2}:\d{2}:\d{2}$/);
 });
 
@@ -800,7 +810,7 @@ test("imports a replay-valid S&V checkpoint and restores its saved page", async 
   await completeCurrentEvilInformation(user, app);
   await waitFor(() => expect(sourceStorage.savedGames.at(-1)?.game.events).toHaveLength(2));
   const exported = sourceStorage.savedGames.at(-1)!;
-  expect(exported.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
+  expect(sourceStorage.savedSessions.at(-1)?.presentation.activeTab).toBe("play");
   source.unmount();
 
   const targetStorage = new MemorySectsAndVioletsStorageDriver();
@@ -813,7 +823,7 @@ test("imports a replay-valid S&V checkpoint and restores its saved page", async 
 
   await waitFor(() => expect(within(app).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
   expect(targetStorage.savedGames.at(-1)?.game.events).toHaveLength(2);
-  expect(targetStorage.savedGames.at(-1)?.ui?.sectsAndVioletsSession?.activeTab).toBe("play");
+  expect(targetStorage.savedSessions.at(-1)?.presentation.activeTab).toBe("play");
 });
 
 test.each([
@@ -829,7 +839,9 @@ test.each([
   },
 ])("restores the actual eight-player distribution from $caseId", async ({ caseId, characterIds, expectedDistribution }) => {
   const user = userEvent.setup();
-  const view = render(<SectsAndVioletsApp />);
+  const view = render(
+    <SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />,
+  );
   const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
   await user.click(within(app).getByRole("button", { name: "저장 / 불러오기" }));
 
@@ -866,9 +878,9 @@ test("replaces autosave with a fresh baseline only after new-game confirmation",
   dialog = screen.getByRole("dialog", { name: "새 게임 시작 확인" });
   await user.click(within(dialog).getByRole("button", { name: "새 게임 시작" }));
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(0));
-  expect(storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession).toMatchObject({
-    activeTab: "roles",
-    setup: {
+  expect(storage.savedSessions.at(-1)).toMatchObject({
+    presentation: { activeTab: "roles" },
+    setupDraft: {
       playerCount: 7,
       demon: "fangGu",
       selectedIds: ["fangGu"],
@@ -900,14 +912,13 @@ test("returns to the preserved roster and seating with progress removed", async 
   dialog = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
   await user.click(within(dialog).getByRole("button", { name: "초기화하고 돌아가기" }));
   await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(0));
-  const baseline = storage.savedGames.at(-1)?.ui?.sectsAndVioletsSession;
+  const baseline = storage.savedSessions.at(-1);
   expect(baseline).toMatchObject({
-    activeTab: "seating",
-    setup: { rosterConfirmed: true, seatingConfirmed: false },
-    phaseCheckpoints: [],
+    presentation: { activeTab: "seating", phaseCheckpoints: [] },
+    setupDraft: { rosterConfirmed: true, seatingConfirmed: false },
   });
-  expect(Object.keys(baseline?.setup.seatAssignments ?? {})).toHaveLength(7);
-  expect(baseline?.setup.selectedIds).toHaveLength(7);
+  expect(Object.keys(baseline?.setupDraft?.seatAssignments ?? {})).toHaveLength(7);
+  expect(baseline?.setupDraft?.selectedIds).toHaveLength(7);
 });
 
 test("invalid import and valid replacement cancellation preserve the current S&V session", async () => {
@@ -958,7 +969,7 @@ test("preserves an unreadable autosave until confirmed new-game recovery", async
   await user.click(within(screen.getByRole("dialog", { name: "새 게임 시작 확인" })).getByRole("button", { name: "새 게임 시작" }));
   await waitFor(() => expect(storage.savedGames).toHaveLength(1));
   expect(storage.savedGames[0]?.game.events).toEqual([]);
-  expect(storage.savedGames[0]?.ui?.sectsAndVioletsSession?.setup.playerCount).toBe(7);
+  expect(storage.savedSessions[0]?.setupDraft?.playerCount).toBe(7);
 });
 
 test("shows actionable replay warnings but not the expected pending night-death state", async () => {
@@ -1263,8 +1274,10 @@ test("downloads the latest completed S&V checkpoint as JSON", async () => {
   }
 });
 
-class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
+class MemorySectsAndVioletsStorageDriver
+implements WebSessionStorageDriver<SnvSetupDraft, SnvPresentation> {
   readonly savedGames: GameFile[] = [];
+  readonly savedSessions: Array<WebSessionSnapshot<SnvSetupDraft, SnvPresentation>> = [];
   saveAttempts = 0;
   failNextSave = false;
   loadError?: Error;
@@ -1272,15 +1285,31 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
   canonicalSaveStarted = false;
   releaseCanonicalSave?: () => void;
 
-  async loadLatestGame(): Promise<GameFile | undefined> {
+  async loadSession(): Promise<WebSessionSnapshot<SnvSetupDraft, SnvPresentation> | undefined> {
     if (this.loadError) throw this.loadError;
+    const latestSession = this.savedSessions.at(-1);
+    if (latestSession) return structuredClone(latestSession);
     const latest = this.savedGames.at(-1);
-    return latest ? structuredClone(latest) : undefined;
+    if (!latest) return undefined;
+    const obsolete = latest.ui?.sectsAndVioletsSession;
+    return {
+      version: 1,
+      scriptId: "sectsAndViolets",
+      savedAt: obsolete?.savedAt ?? new Date().toISOString(),
+      canonical: structuredClone(latest),
+      setupDraft: obsolete?.setup ? structuredClone(obsolete.setup) : null,
+      presentation: {
+        activeTab: obsolete?.activeTab,
+        phaseCheckpoints: obsolete?.phaseCheckpoints
+          ? structuredClone(obsolete.phaseCheckpoints)
+          : undefined,
+      },
+    };
   }
 
-  async saveLatestGame(gameFile: GameFile): Promise<void> {
+  async saveSession(snapshot: WebSessionSnapshot<SnvSetupDraft, SnvPresentation>): Promise<void> {
     this.saveAttempts += 1;
-    if (this.pauseCanonicalSave && gameFile.game.events.length > 0) {
+    if (this.pauseCanonicalSave && snapshot.canonical.game.events.length > 0) {
       this.canonicalSaveStarted = true;
       await new Promise<void>((resolve) => { this.releaseCanonicalSave = resolve; });
       this.pauseCanonicalSave = false;
@@ -1289,7 +1318,8 @@ class MemorySectsAndVioletsStorageDriver implements GameStorageDriver {
       this.failNextSave = false;
       throw new Error("테스트 저장 실패");
     }
-    this.savedGames.push(structuredClone(gameFile));
+    this.savedSessions.push(structuredClone(snapshot));
+    this.savedGames.push(structuredClone(snapshot.canonical));
   }
 }
 
