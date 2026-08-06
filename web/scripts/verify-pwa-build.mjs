@@ -64,7 +64,11 @@ const workflow = join(root.pathname, "../../.github/workflows/deploy-pages.yml")
 assert.ok(existsSync(workflow), "GitHub Pages deployment workflow is missing");
 const workflowSource = readFileSync(workflow, "utf8");
 assert.match(workflowSource, /workflow_dispatch:/, "Pages deployment must support an explicit manual trigger");
-assert.equal(/\n\s+push:/.test(workflowSource), false, "Pages deployment must not publish automatically");
+assert.match(
+  workflowSource,
+  /\n {2}push:\n {4}branches:\s*\[main\]/,
+  "Pages deployment must publish automatically when main is updated",
+);
 
 console.log("PWA build contract verified");
 
