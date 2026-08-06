@@ -11,13 +11,23 @@ session, persistence path, or production route.
 - Use the existing Trouble Brewing visual identity as the brand-token source: forest green and
   parchment are the primary Day/Night surfaces, muted gold marks selection and current focus, and
   rust marks evil or destructive emphasis. Day and Night retain explicit sun/moon and text signals.
+  These are adapter-level brand tokens rather than shared-shell constants: S&V remains violet and a
+  future BMR adapter can supply its own moonlit navy and oxblood palette without changing layout or
+  semantic state colors.
+- Match the production S&V shell chrome exactly: `새 게임 / 저장·불러오기 / 버그 제보` in that
+  order, with global Undo immediately before the Day/Night mark. Prototype controls remain inert;
+  runtime behavior belongs to the production integration.
 - Review 5, 6, 7, and 15 Player specimens. Six Players is included because the production adapter
   must approve the full 5–6 Player composition, not just the five-Player endpoint.
 - Pin Imp as the sole Demon. Present one effective distribution. When Baron is selected, use the
-  concise `남작 · 외지인 +2 / 주민 -2` note without a second base-distribution table.
+  concise `남작 · 외지인 +2 / 주민 -2` note without a second base-distribution table. The pinned Imp
+  card and every selected read-only role remain available for role-summary review.
 - Select Drunk as an Actual Outsider in Setup, then require its Shown Townsfolk in the Grimoire seat
   inspector. Show both identities to the Storyteller. The Shown Character does not reserve or consume
-  an Actual Character slot, so the same Townsfolk may also exist in the Actual roster.
+  an Actual Character slot, so the same Townsfolk may also exist in the Actual roster. Keep the editor
+  to one `보여준 직업` selector and render the result as an attached Character token on the Drunk seat.
+- Keep Player-name inputs accessible by seat-specific labels, but omit a redundant visible `이름`
+  caption to match the shared S&V seat inspector.
 - Keep ordinary roles unique. `무작위 배치` only shuffles the approved roster among seats; it never
   generates a random roster.
 - Use the shared rectangular perimeter, fixed-size seat tokens, role-first and seat-first assignment,
@@ -31,6 +41,7 @@ session, persistence path, or production route.
 ## Rejected
 
 - Keeping the Sects & Violets purple palette unchanged: it obscures script identity.
+- Using one palette for every script: it would couple future BMR branding to S&V or TB presentation.
 - Reviewing only 5, 7, and 15 Players: it leaves the six-Player composition unapproved.
 - Choosing the Drunk Shown Character in the role catalog or counting it as another Actual role:
   the choice belongs to the assigned Player and must not distort the effective distribution.

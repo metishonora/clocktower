@@ -20,10 +20,22 @@ test("adapts the shared shell with the approved Trouble Brewing Setup fixtures",
   const prototype = screen.getByRole("main", { name: "Trouble Brewing adaptation prototype" });
   expect(prototype.classList.contains("productionApplicationShell")).toBe(true);
   expect(prototype.classList.contains("issue148TroubleBrewingShell")).toBe(true);
-  expect(within(prototype).getByRole("button", { name: "저장 / 불러오기" })).toBeTruthy();
-  expect(within(prototype).getByRole("button", { name: "새 게임" })).toBeTruthy();
-  expect(within(prototype).getByRole("button", { name: "임프 고정됨" }).hasAttribute("disabled")).toBe(true);
-  expect(within(prototype).getByRole("button", { name: "임프 고정됨" }).getAttribute("aria-pressed")).toBe("true");
+  const utilities = within(prototype).getByRole("navigation", { name: "게임 데이터" });
+  expect(within(utilities).getAllByRole("button").map((button) => button.textContent)).toEqual([
+    "새 게임",
+    "저장 / 불러오기",
+    "버그 제보",
+  ]);
+  const phaseActions = within(prototype).getByLabelText("현재 페이즈와 되돌리기");
+  expect(phaseActions.querySelector(".snvGlobalUndo.empty")?.nextElementSibling?.classList.contains("snvPhaseMark")).toBe(true);
+  const imp = within(prototype).getByRole("button", { name: "임프 직업 요약 보기" });
+  expect(imp.hasAttribute("disabled")).toBe(false);
+  expect(imp.getAttribute("aria-pressed")).toBe("true");
+  expect(within(prototype).queryByText("단일 악마 · 항상 포함")).toBeNull();
+  await user.click(imp);
+  expect(within(prototype).getByRole("complementary", { name: "직업 설명" }).textContent).toContain("임프");
+  await user.click(within(prototype).getByRole("button", { name: "세탁부" }));
+  expect(within(prototype).getByRole("complementary", { name: "직업 설명" }).textContent).toContain("세탁부");
   expect(within(prototype).getByRole("button", { name: "남작" }).getAttribute("aria-pressed")).toBe("true");
   expect(within(prototype).getByRole("button", { name: "주정뱅이" }).getAttribute("aria-pressed")).toBe("true");
   expect(within(prototype).getByLabelText("인원 구성 주민 3명")).toBeTruthy();
@@ -59,11 +71,13 @@ test("requires the Drunk Shown Character in the shared Grimoire assignment flow"
   await user.click(within(grimoire).getByRole("button", { name: /번 좌석.*주정뱅이/ }));
   const inspector = within(grimoire).getByRole("complementary", { name: "선택한 좌석 편집" });
   expect(inspector.classList.contains("mobileOpen")).toBe(true);
-  const shownCharacter = within(inspector).getByRole("combobox", { name: "Shown Character" });
+  expect(within(inspector).queryByText("이름")).toBeNull();
+  expect(within(inspector).queryByText("실제: 주정뱅이")).toBeNull();
+  expect(within(inspector).queryByText(/표시 직업은 실제 직업 슬롯/)).toBeNull();
+  const shownCharacter = within(inspector).getByRole("combobox", { name: "보여준 직업" });
   await user.selectOptions(shownCharacter, "fortuneTeller");
-  expect(within(inspector).getByText("실제: 주정뱅이")).toBeTruthy();
-  expect(within(inspector).getByText("표시: 점쟁이")).toBeTruthy();
-  expect(within(grimoire).getByRole("button", { name: /번 좌석.*실제 주정뱅이.*표시 점쟁이/ })).toBeTruthy();
+  const drunkSeat = within(grimoire).getByRole("button", { name: /번 좌석.*실제 주정뱅이.*표시 점쟁이/ });
+  expect(within(drunkSeat).getByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeTruthy();
   expect(within(grimoire).getByRole("button", { name: "배치 확정" }).hasAttribute("disabled")).toBe(false);
 
   await user.click(within(grimoire).getByRole("button", { name: "배치 초기화" }));
@@ -92,7 +106,11 @@ test("shows confirmed review surfaces and the approved first Play transition", a
 
   await user.click(within(screen.getByRole("main")).getByRole("button", { name: "직업" }));
   expect(screen.getByRole("region", { name: "Trouble Brewing 설정 검토" })).toBeTruthy();
-  expect(within(screen.getByRole("main")).getByRole("button", { name: "남작" }).hasAttribute("disabled")).toBe(true);
+  const confirmedPoisoner = within(screen.getByRole("main")).getByRole("button", { name: "독살범" });
+  expect(confirmedPoisoner.hasAttribute("disabled")).toBe(false);
+  await user.click(confirmedPoisoner);
+  expect(within(screen.getByRole("main")).getByRole("complementary", { name: "직업 설명" }).textContent).toContain("독살범");
+  expect(confirmedPoisoner.getAttribute("aria-pressed")).toBe("true");
 
   await user.click(within(reviewTools).getByRole("button", { name: "첫 Play 시료" }));
   const prototype = screen.getByRole("main", { name: "Trouble Brewing adaptation prototype" });

@@ -107,8 +107,8 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
   };
 
   const toggleCharacter = (characterId: string) => {
-    if (rosterConfirmed || characterId === "imp") return;
     setActiveCharacterId(characterId);
+    if (rosterConfirmed || characterId === "imp") return;
     setSelectedIds((current) => current.includes(characterId)
       ? current.filter((id) => id !== characterId)
       : [...current, characterId]);
@@ -228,10 +228,27 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
         title="Trouble Brewing"
         eyebrow="ISSUE 148 · SHARED SHELL ADAPTATION"
         subtitle={subtitle}
-        headerActions={<span className={`issue148PhaseMark ${theme}`} aria-label={theme === "day" ? "낮 테마" : "밤 테마"}>{theme === "day" ? "☀" : "☾"}</span>}
+        headerActionsAriaLabel="현재 페이즈와 되돌리기"
+        headerActions={<>
+          <button
+            type="button"
+            className="snvGlobalUndo empty"
+            data-visual-state="muted"
+            aria-hidden="true"
+            tabIndex={-1}
+            disabled
+          >
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M12.2 9.2 6.5 14.8l5.7 5.7" />
+              <path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" />
+            </svg>
+          </button>
+          <span className={`snvPhaseMark issue148PhaseMark ${theme}`} aria-label={theme === "day" ? "낮 테마" : "밤 테마"}>{theme === "day" ? "☀" : "☾"}</span>
+        </>}
         utilities={[
-          { id: "storage", label: "저장 / 불러오기" },
           { id: "new-game", label: "새 게임", className: "snvNewGameTab" },
+          { id: "storage", label: "저장 / 불러오기" },
+          { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger" },
         ]}
         stages={[
           { id: "setup", label: "직업", active: activeStage === "setup" },
@@ -333,10 +350,16 @@ function TroubleBrewingSetup({
         </section>
         <section className="snvControlCard">
           <span>악마</span>
-          <div className="issue148PinnedDemon" aria-label="단일 악마 고정">
+          <button
+            type="button"
+            className="issue148PinnedDemon"
+            aria-label="임프 직업 요약 보기"
+            aria-pressed="true"
+            onClick={() => onCharacterSelect("imp")}
+          >
             <img src={characterAsset("imp")?.src} alt="" />
-            <div><strong>임프</strong><small>단일 악마 · 항상 포함</small></div>
-          </div>
+            <strong>임프</strong>
+          </button>
         </section>
         <section className="snvDistributionFlow" aria-label="인원 구성">
           <DistributionValues values={requiredByKind} />
@@ -356,14 +379,13 @@ function TroubleBrewingSetup({
           requiredCount: requiredByKind[kind],
           roles: characters.filter((candidate) => candidate.kind === kind).map((candidate) => {
             const selected = selectedIds.includes(candidate.id);
-            const pinned = candidate.id === "imp";
             const capacityReached = !selected && selectedByKind[kind] >= requiredByKind[kind];
             return {
               id: candidate.id,
               label: candidate.label,
               selected,
-              disabled: rosterConfirmed || pinned || capacityReached,
-              ariaLabel: pinned ? "임프 고정됨" : candidate.label,
+              disabled: !selected && (rosterConfirmed || capacityReached),
+              ariaLabel: candidate.label,
             };
           }),
         }))}
@@ -487,7 +509,7 @@ function TroubleBrewingGrimoire({
             id: `seat-${seat}`,
             position: desktopPositions[index],
             mobilePosition: mobilePositions[index],
-            className: `fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "snvCurrentActorSeat " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter)} kind-${assignedCharacter.kind.toLowerCase()}` : "unassigned"}`,
+            className: `fixedSize ${selectedSeat === seat ? "selected " : ""}${isCurrentActor ? "snvCurrentActorSeat " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter)} kind-${assignedCharacter.kind.toLowerCase()} character-${assignedCharacter.id}` : "unassigned"}`,
             ariaLabel: `${seat}번 좌석, ${seatNames[seat]}, ${identityLabel}${isCurrentActor ? ", 현재 행동자" : ""}`,
             pressed: selectedSeat === seat,
             onSelect: () => onSeatSelect(seat),
@@ -496,7 +518,17 @@ function TroubleBrewingGrimoire({
               {asset ? <img src={asset.src} alt="" /> : null}
               <span className="snvSeatPlayerName">{seatNames[seat]}</span>
               <small>{assignedCharacter?.label ?? "미할당"}</small>
-              {assignedCharacter?.id === "drunk" ? <em>{shownCharacter ? `표시 ${shownCharacter.label}` : "Shown Character 필요"}</em> : null}
+              {assignedCharacter?.id === "drunk" ? (
+                <span
+                  className={`issue148ShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
+                  role="img"
+                  aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
+                >
+                  {shownCharacter && characterAsset(shownCharacter.id)
+                    ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
+                    : <span aria-hidden="true">?</span>}
+                </span>
+              ) : null}
             </>,
           };
         })}
@@ -516,7 +548,7 @@ function TroubleBrewingGrimoire({
                 {characterAsset(selectedCharacter.id) ? <img src={characterAsset(selectedCharacter.id)?.src} alt="" /> : null}
                 <div><span className={`snvAlignmentIcon alignment-${alignmentFor(selectedCharacter)}`}>{alignmentFor(selectedCharacter) === "evil" ? "악" : "선"}</span><strong>{selectedCharacter.label}</strong></div>
               </div>
-              {selectedCharacter.id === "drunk" ? <div className="issue148DrunkReview"><span>실제: 주정뱅이</span><span>표시: {character(drunkShownCharacterId).label}</span></div> : null}
+              {selectedCharacter.id === "drunk" ? <div className="issue148DrunkReview"><span>보여준 직업</span><strong>{character(drunkShownCharacterId).label}</strong></div> : null}
             </> : <span>좌석을 선택하세요</span>}
           </aside>
         ) : (
@@ -527,16 +559,14 @@ function TroubleBrewingGrimoire({
                 <strong>{selectedCharacter?.label ?? "미할당"}</strong>
                 <span className={`snvAlignmentIcon ${selectedCharacter ? `alignment-${alignmentFor(selectedCharacter)}` : "unassigned"}`}>{selectedCharacter ? alignmentFor(selectedCharacter) === "evil" ? "악" : "선" : "-"}</span>
               </div>
-              <label className="issue148NameField">이름<input type="text" aria-label={`${selectedSeat}번 좌석 이름`} value={seatNames[selectedSeat]} onChange={(event) => onSeatNameChange(selectedSeat, event.target.value)} /></label>
+              <label className="issue148NameField"><input type="text" aria-label={`${selectedSeat}번 좌석 이름`} value={seatNames[selectedSeat]} onChange={(event) => onSeatNameChange(selectedSeat, event.target.value)} /></label>
               {selectedCharacter?.id === "drunk" ? <div className="issue148DrunkEditor">
-                <div><span>실제: 주정뱅이</span><span>표시: {drunkShownCharacterId ? character(drunkShownCharacterId).label : "선택 필요"}</span></div>
-                <label>Shown Character
-                  <select aria-label="Shown Character" value={drunkShownCharacterId} onChange={(event) => onShownCharacterSelect(event.target.value)}>
+                <label><span>보여준 직업</span>
+                  <select aria-label="보여준 직업" value={drunkShownCharacterId} onChange={(event) => onShownCharacterSelect(event.target.value)}>
                     <option value="">선택 필요</option>
                     {characters.filter((candidate) => candidate.kind === "Townsfolk").map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}
                   </select>
                 </label>
-                <small>표시 직업은 실제 직업 슬롯을 사용하지 않습니다.</small>
               </div> : null}
             </div> : null}
             <div className="snvSelectedRosterTray">

@@ -97,6 +97,12 @@
   font: 2.65rem Georgia, serif;
 }
 
+.issue148TroubleBrewingShell .snvGlobalUndo {
+  border-color: rgba(166, 79, 53, .5);
+  color: #dc9c83;
+  background: rgba(92, 40, 28, .48);
+}
+
 .issue148TroubleBrewingShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
 .issue148TroubleBrewingShell button:focus-visible,
 .issue148TroubleBrewingShell input:focus-visible,
@@ -126,6 +132,8 @@
 
 .issue148PinnedDemon {
   display: flex;
+  box-sizing: border-box;
+  width: 100%;
   min-height: 66px;
   padding: 8px 12px;
   align-items: center;
@@ -134,6 +142,9 @@
   border-radius: 16px;
   color: #f6dfd4;
   background: linear-gradient(135deg, rgba(147, 55, 39, .34), rgba(67, 35, 26, .18));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .issue148PinnedDemon img {
@@ -142,14 +153,14 @@
   object-fit: contain;
 }
 
-.issue148PinnedDemon div {
-  display: grid;
-  gap: 3px;
+.issue148PinnedDemon strong {
+  font-size: .88rem;
 }
 
-.issue148PinnedDemon small {
-  color: #cdb9a8;
-  font-size: .68rem;
+.issue148PinnedDemon[aria-pressed="true"] {
+  border-color: #d2ad64;
+  background: linear-gradient(135deg, rgba(147, 55, 39, .62), rgba(91, 76, 38, .48));
+  box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .12);
 }
 
 .issue148TroubleBrewingShell .snvDistributionCard.emphasized {
@@ -249,16 +260,41 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
-.issue148GrimoireBoard > button em {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  color: #efd79f;
-  font-size: .52rem;
-  font-style: normal;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk {
+  overflow: visible;
+}
+
+.issue148ShownCharacterToken {
+  position: absolute;
+  z-index: 3;
+  right: -12px;
+  bottom: -17px;
+  display: grid;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 4px;
+  place-items: center;
+  border: 2px solid #72c6e7;
+  border-radius: 50%;
+  color: #fff8e8;
+  background: #173f4c;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .16);
+  font-size: .78rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.issue148ShownCharacterToken.missing {
+  border-color: #d2ad64;
+  background: #3e3520;
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button .issue148ShownCharacterToken img {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  object-fit: contain;
 }
 
 .issue148TroubleBrewingShell .snvSeatingTray,
@@ -287,13 +323,7 @@
 }
 
 .issue148NameField {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  color: #cbbf9f;
-  font-size: .66rem;
-  font-weight: 850;
+  display: block;
 }
 
 .issue148NameField input,
@@ -310,26 +340,22 @@
 
 .issue148DrunkEditor {
   display: grid;
-  padding: 10px;
-  gap: 8px;
+  padding: 9px 10px;
   border: 1px solid rgba(171, 137, 213, .34);
   border-radius: 12px;
   background: rgba(110, 74, 139, .16);
 }
 
-.issue148DrunkEditor > div,
 .issue148DrunkReview {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.issue148DrunkEditor > div span,
-.issue148DrunkReview span {
-  padding: 5px 7px;
-  border-radius: 999px;
+.issue148DrunkReview span,
+.issue148DrunkReview strong {
   color: #eadcf2;
-  background: rgba(139, 100, 168, .24);
   font-size: .64rem;
   font-weight: 850;
 }
@@ -342,11 +368,6 @@
   color: #e0d0e8;
   font-size: .68rem;
   font-weight: 850;
-}
-
-.issue148DrunkEditor small {
-  color: #bdb7ae;
-  font-size: .6rem;
 }
 
 .issue148LiveIdentity {
