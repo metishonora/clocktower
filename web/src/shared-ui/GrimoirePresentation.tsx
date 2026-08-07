@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type PointerEventHandler, type ReactNode } from "react";
 import "./styles/productionShell.css";
 
 export type SeatPosition = { x: number; y: number };
@@ -13,7 +13,12 @@ export type RectangularGrimoireSeat = {
   ariaLabel?: string;
   pressed?: boolean;
   disabled?: boolean;
+  interactive?: boolean;
   onSelect?: () => void;
+  onPointerDown?: PointerEventHandler<HTMLButtonElement>;
+  onPointerUp?: PointerEventHandler<HTMLButtonElement>;
+  onPointerCancel?: PointerEventHandler<HTMLButtonElement>;
+  onPointerLeave?: PointerEventHandler<HTMLButtonElement>;
 };
 
 export function GrimoirePresentation({
@@ -68,28 +73,42 @@ export function RectangularGrimoireBoard({
     <div className={joinClasses("rectangularGrimoireBoard", className)} aria-label={ariaLabel} style={style}>
       {seats.map((seat) => (
         <Fragment key={seat.id}>
-          <button
+          {seat.interactive === false ? <article
+            className={seat.className}
+            aria-label={seat.ariaLabel}
+            style={seatStyle(seat)}
+          >
+            {seat.content}
+          </article> : <button
             type="button"
             className={seat.className}
             aria-label={seat.ariaLabel}
             aria-pressed={seat.pressed}
             disabled={seat.disabled}
-            style={{
-              "--seat-x": `${seat.position.x}%`,
-              "--seat-y": `${seat.position.y}%`,
-              "--mobile-seat-x": `${seat.mobilePosition.x}%`,
-              "--mobile-seat-y": `${seat.mobilePosition.y}%`,
-            } as CSSProperties}
+            style={seatStyle(seat)}
             onClick={seat.onSelect}
+            onPointerDown={seat.onPointerDown}
+            onPointerUp={seat.onPointerUp}
+            onPointerCancel={seat.onPointerCancel}
+            onPointerLeave={seat.onPointerLeave}
           >
             {seat.content}
-          </button>
+          </button>}
           {seat.afterSeat}
         </Fragment>
       ))}
       {center === undefined ? null : <div className={joinClasses("rectangularGrimoireCenter", centerClassName)}>{center}</div>}
     </div>
   );
+}
+
+function seatStyle(seat: RectangularGrimoireSeat) {
+  return {
+    "--seat-x": `${seat.position.x}%`,
+    "--seat-y": `${seat.position.y}%`,
+    "--mobile-seat-x": `${seat.mobilePosition.x}%`,
+    "--mobile-seat-y": `${seat.mobilePosition.y}%`,
+  } as CSSProperties;
 }
 
 export function grimoireHeights(playerCount: number): { desktop: number; mobile: number } {

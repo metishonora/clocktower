@@ -7,6 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { openLiveGrimoire, returnToLiveProgress } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -65,43 +66,34 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByText("확인할 플레이어 2명을 선택하세요.");
-    const phaseInput = screen.getByLabelText("단계 입력");
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
-    const phaseFortuneTeller = within(phaseInput).getByRole("button", { name: /플레이어 5/ });
-    const phaseDemon = within(phaseInput).getByRole("button", { name: new RegExp(`플레이어 ${demonSeat}`) });
-    const phaseThird = within(phaseInput).getByRole("button", { name: /플레이어 4/ });
-    const grimoireFortuneTeller = within(grimoire).getByRole("button", { name: /5번 플레이어 5 좌석 선택/ });
-    const grimoireDemon = within(grimoire).getByRole("button", { name: new RegExp(`${demonSeat}번 플레이어 ${demonSeat} 좌석 선택`) });
-    const grimoireThird = within(grimoire).getByRole("button", { name: /4번 플레이어 4 좌석 선택/ });
+    const selectionSurface = await openLiveGrimoire(user);
+    const fortuneTeller = within(selectionSurface).getByRole("button", {
+      name: /5번 플레이어 5 좌석 선택/,
+    });
+    const demon = within(selectionSurface).getByRole("button", {
+      name: new RegExp(`${demonSeat}번 플레이어 ${demonSeat} 좌석 선택`),
+    });
+    const third = within(selectionSurface).getByRole("button", {
+      name: /4번 플레이어 4 좌석 선택/,
+    });
 
-    expect((phaseFortuneTeller as HTMLButtonElement).disabled).toBe(false);
-    expect((phaseDemon as HTMLButtonElement).disabled).toBe(false);
-    expect(grimoireFortuneTeller.getAttribute("aria-disabled")).toBe("false");
-    expect(grimoireDemon.getAttribute("aria-disabled")).toBe("false");
-
-    const fortuneTeller = surface === "phase input" ? phaseFortuneTeller : grimoireFortuneTeller;
-    const demon = surface === "phase input" ? phaseDemon : grimoireDemon;
-    const third = surface === "phase input" ? phaseThird : grimoireThird;
+    expect((fortuneTeller as HTMLButtonElement).disabled).toBe(false);
+    expect((demon as HTMLButtonElement).disabled).toBe(false);
 
     await user.click(fortuneTeller);
     await user.click(demon);
-    expect(phaseFortuneTeller.getAttribute("aria-pressed")).toBe("true");
-    expect(phaseDemon.getAttribute("aria-pressed")).toBe("true");
-    expect(grimoireFortuneTeller.getAttribute("aria-pressed")).toBe("true");
-    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("true");
+    expect(fortuneTeller.getAttribute("aria-pressed")).toBe("true");
+    expect(demon.getAttribute("aria-pressed")).toBe("true");
 
     await user.click(third);
-    expect(phaseThird.getAttribute("aria-pressed")).toBe("false");
-    expect(grimoireThird.getAttribute("aria-pressed")).toBe("false");
+    expect(third.getAttribute("aria-pressed")).toBe("false");
 
     await user.click(demon);
-    expect(phaseDemon.getAttribute("aria-pressed")).toBe("false");
-    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("false");
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(demon.getAttribute("aria-pressed")).toBe("false");
 
     await user.click(demon);
-    expect(phaseDemon.getAttribute("aria-pressed")).toBe("true");
-    expect(grimoireDemon.getAttribute("aria-pressed")).toBe("true");
+    expect(demon.getAttribute("aria-pressed")).toBe("true");
+    await returnToLiveProgress(user);
     const confirm = screen.getByRole("button", { name: "확정" });
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
     await user.dblClick(confirm);

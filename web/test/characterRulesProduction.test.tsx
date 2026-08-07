@@ -41,6 +41,8 @@ test("opens a player's official rules card from the production player detail", a
   const user = userEvent.setup();
   renderCharacterStep();
 
+  await screen.findByLabelText("현재 행동자");
+  await user.click(screen.getByRole("button", { name: "마도서" }));
   const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).queryByRole("button", { name: "1번 세탁부 세부 규칙 보기" })).toBeNull();
   longPressSeat(/1번 Ada 좌석 선택/);
@@ -74,14 +76,16 @@ test("opens a player's official rules card from the production player detail", a
 test("mounts player detail in the top-level overlay layer above live-play panels", async () => {
   renderCharacterStep();
 
-  const grimoire = (await screen.findByLabelText("라이브 마도서 좌석 맵")).closest(".grimoire");
+  await screen.findByLabelText("현재 행동자");
+  fireEvent.click(screen.getByRole("button", { name: "마도서" }));
+  const grimoire = (await screen.findByLabelText("라이브 마도서 좌석 맵")).closest(".tbConfirmedGrimoire");
   longPressSeat(/1번 Ada 좌석 선택/);
   const detail = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
   const backdrop = detail.closest(".playerAnnotationsBackdrop");
 
   expect(backdrop?.parentElement).toBe(document.body);
   expect(grimoire?.contains(backdrop)).toBe(false);
-  expect(screen.getByLabelText("현재 행동자")).toBeTruthy();
+  expect(screen.getByRole("main", { name: "Trouble Brewing 진행" })).toBeTruthy();
 });
 
 test("opens the current actor rules card and restores focus after Escape", async () => {
@@ -91,7 +95,7 @@ test("opens the current actor rules card and restores focus after Escape", async
   const actor = await screen.findByLabelText("현재 행동자");
   const trigger = within(actor).getByRole("button", { name: "세탁부 캐릭터 상세 열기" });
   expect(within(trigger).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  expect(within(trigger).getByRole("heading", { name: "세탁부" })).toBeTruthy();
+  expect(within(trigger).getByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   await user.click(trigger);
   expect(screen.getByRole("dialog", { name: "세탁부 캐릭터 상세" })).toBeTruthy();
 

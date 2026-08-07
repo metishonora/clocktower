@@ -7,6 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { selectLivePlayers } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -31,8 +32,7 @@ describe("issue #91 target-information selected choices", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "까마귀지기: 1번 플레이어 1" });
-    const input = screen.getByLabelText("단계 입력");
-    await user.click(within(input).getByRole("button", { name: /플레이어 8/ }));
+    await selectLivePlayers(user, /플레이어 8/);
 
     const delivery = screen.getByLabelText("전달 정보");
     const actualSpy = within(delivery).getByRole("button", { name: "첩자" });
@@ -87,14 +87,13 @@ describe("issue #91 target-information selected choices", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "까마귀지기: 1번 플레이어 1" });
-    const input = screen.getByLabelText("단계 입력");
-    await user.click(within(input).getByRole("button", { name: /플레이어 8/ }));
+    await selectLivePlayers(user, /플레이어 8/);
     let delivery = screen.getByLabelText("전달 정보");
     const registeredChef = within(delivery).getByRole("button", { name: "요리사" });
     await user.click(registeredChef);
     expect(within(registeredChef).getByText("✓")).toBeTruthy();
 
-    await user.click(within(input).getByRole("button", { name: /플레이어 6/ }));
+    await selectLivePlayers(user, /플레이어 6/);
     delivery = screen.getByLabelText("전달 정보");
     expect(within(delivery).queryByText("✓")).toBeNull();
     expect(within(delivery).queryAllByRole("button", { pressed: true })).toHaveLength(0);

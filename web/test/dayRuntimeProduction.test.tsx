@@ -183,7 +183,7 @@ test("successful import of an already-Day game starts a fresh transient runtime"
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   expect(screen.getByLabelText("2일차 낮 경과 시간 12:00")).toBeTruthy();
 
-  await user.click(screen.getByText("설정 및 불러오기"));
+  await user.click(screen.getByRole("button", { name: "저장 / 불러오기" }));
   const imported = gameFile();
   imported.game.id = "imported-day-game";
   const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -192,6 +192,7 @@ test("successful import of an already-Day game starts a fresh transient runtime"
   await user.upload(fileInput, new File([JSON.stringify(imported)], "day.json", { type: "application/json" }));
 
   await waitFor(() => expect(vi.mocked(core.replay)).toHaveBeenCalledWith(imported));
+  await user.click(screen.getByRole("button", { name: "진행" }));
   expect(await screen.findByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
 });
 

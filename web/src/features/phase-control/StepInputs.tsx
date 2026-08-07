@@ -129,6 +129,7 @@ export function StepInputFields({
   onMayorDecisionChange,
   onRegistrationJudgmentsChange,
   randomSuggestion,
+  hidePlayerInput = false,
 }: {
   step: PhaseStep;
   players: Player[];
@@ -154,6 +155,7 @@ export function StepInputFields({
   onMayorDecisionChange: (decision: MayorDecisionInput | undefined) => void;
   onRegistrationJudgmentsChange: (judgments: RegistrationJudgment[]) => void;
   randomSuggestion?: RandomSuggestionAction;
+  hidePlayerInput?: boolean;
 }) {
   return (
     <>
@@ -183,7 +185,7 @@ export function StepInputFields({
           busy={busy}
           onChange={onSelectedPlayerIdsChange}
         />
-      ) : (
+      ) : hidePlayerInput && (step.requiredInput.kind === "playerIds" || step.requiredInput.kind === "setupInfo") ? null : (
         <PlayerStepInput
           step={step}
           players={players}

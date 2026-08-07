@@ -23,6 +23,13 @@ import { usePhaseInputDraft } from "./features/phase-control/usePhaseInputDraft"
 import { browserCryptoChoiceToken, type ChoiceTokenSource } from "./features/phase-control/randomSuggestion";
 import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
+import { TroubleBrewingSetupFlow } from "./features/trouble-brewing/TroubleBrewingSetupFlow";
+import {
+  TroubleBrewingLiveFlow,
+  type TroubleBrewingLiveStage,
+} from "./features/trouble-brewing/TroubleBrewingLiveFlow";
+import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
+import { TroubleBrewingLiveGrimoire } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
@@ -409,6 +416,7 @@ export function ClocktowerApp({
   const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
   const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [undoResetRevision, setUndoResetRevision] = useState(0);
+  const [troubleBrewingStage, setTroubleBrewingStage] = useState<TroubleBrewingLiveStage>("play");
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
   const preActionRevealKey = gameStore.currentStep?.preActionReveal
     ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
@@ -520,8 +528,184 @@ export function ClocktowerApp({
     setActiveRevealPayload(undefined);
   }
 
+  if (scriptId === TROUBLE_BREWING && !gameStore.setupConfirmed) {
+    return <>
+      <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
+      <TroubleBrewingSetupFlow
+        draft={gameStore.setupDraft}
+        expectedCounts={gameStore.setupExpectedCounts}
+        warnings={gameStore.shownWarnings}
+        loadError={gameStore.loadError}
+        busy={gameStore.busy}
+        confirmationBlocked={gameStore.setupConfirmationBlocked}
+        storageReady={gameStore.storageReady}
+        onChange={gameStore.setSetupDraft}
+        onConfirm={async () => {
+          await gameStore.confirmSetup();
+          setTroubleBrewingStage("play");
+        }}
+        onImport={() => importInputRef.current?.click()}
+        onReset={gameStore.resetSetup}
+      />
+    </>;
+  }
+
   if (activeRevealPayload && !activeSpyRevealPayload) {
     return <RevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />;
+  }
+
+  if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && !activeSpyRevealPayload) {
+    const livePhaseLabel = numberedPhase?.label ?? (gameStore.phase === "day" ? "낮" : "밤");
+    return (
+      <div
+        className="clocktowerApp tbSharedLivePlay"
+        data-testid="clocktower-app"
+      >
+        <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
+        <TroubleBrewingLiveFlow
+          draft={gameStore.setupDraft}
+          expectedCounts={gameStore.setupExpectedCounts}
+          activeStage={troubleBrewingStage}
+          theme={gameStore.phase === "day" ? "day" : "night"}
+          busy={gameStore.busy}
+          storageReady={gameStore.storageReady}
+          warnings={gameStore.shownWarnings}
+          loadError={gameStore.loadError}
+          canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
+          onStageChange={setTroubleBrewingStage}
+          onReset={gameStore.resetSetup}
+          onRequestUndo={(trigger) => {
+            if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
+          }}
+          grimoire={<TroubleBrewingLiveGrimoire
+            players={gameStore.players}
+            currentStep={phaseInputStep}
+            phaseLabel={livePhaseLabel}
+            phaseRuntime={phaseRuntime ?? "00:00"}
+            theme={gameStore.phase === "day" ? "day" : "night"}
+            busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal) || preActionRevealPending}
+            gameEnded={Boolean(gameStore.gameEnd)}
+            ruleState={gameStore.ruleState}
+            onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
+            slayerAbility={gameStore.ruleState?.slayerAbility ? {
+              actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
+              enabled: gameStore.ruleState.slayerAbility.canUseNow,
+              spent: gameStore.ruleState.slayerAbility.spent,
+              onUse: (button) => { slayerTriggerRef.current = button; setSlayerDialogOpen(true); },
+            } : undefined}
+            nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
+            setupInformationSelection={
+              !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
+                ? {
+                    selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                    disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
+                    onTogglePlayer: phaseInputDraft.togglePlayer,
+                  }
+                : undefined
+            }
+            phasePlayerSelection={
+              !votingStepActive && phaseInputStep?.requiredInput.kind === "playerIds"
+                ? {
+                    selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                    allowedPlayerIds: phaseInputStep.requiredInput.allowedPlayerIds,
+                    disabled: gameStore.busy,
+                    onTogglePlayer: phaseInputDraft.togglePlayer,
+                  }
+                : undefined
+            }
+            onReturnToAssignment={gameStore.recoverConfirmedSetup}
+            onGoToProgress={() => setTroubleBrewingStage("play")}
+          />}
+          progress={<TroubleBrewingProgress
+            phaseLabel={livePhaseLabel}
+            phaseRuntime={phaseRuntime ?? "00:00"}
+            theme={gameStore.phase === "day" ? "day" : "night"}
+            onGoToGrimoire={() => setTroubleBrewingStage("seating")}
+            pendingReveal={gameStore.pendingConfirmedReveal}
+            currentStep={gameStore.currentStep}
+            phaseOverview={gameStore.phaseOverview}
+            players={gameStore.players}
+            dayState={gameStore.dayState}
+            ruleState={gameStore.ruleState}
+            latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
+            nominationDraft={nominationDraft}
+            onNominationDraftChange={setNominationDraft}
+            phaseInputDraft={phaseInputDraft}
+            replayReady={gameStore.pendingConfirmedRevealReady}
+            busy={gameStore.busy}
+            preActionRevealPending={preActionRevealPending}
+            onShowPreActionReveal={showPreActionReveal}
+            onShowReveal={showReveal}
+            onContinue={gameStore.continueAfterConfirmedReveal}
+            onConfirm={gameStore.confirmCurrentStep}
+            onSkip={gameStore.skipCurrentStep}
+            onSuggest={gameStore.suggestPhaseInput}
+            choiceTokenSource={choiceTokenSource}
+            suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
+            warnings={gameStore.shownWarnings}
+            gameEnd={gameStore.gameEnd}
+            onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
+            onRequestUndoGameEnd={(trigger) => {
+              if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
+            }}
+          />}
+          storage={<section className="snvStorageSurface snvTabPanel tbStorageSurface" aria-label="저장 및 불러오기">
+            <article>
+              <span>현재 게임</span>
+              <h2>이 기기에 저장</h2>
+              <button type="button" disabled={gameStore.busy} onClick={exportLatestGame}>export JSON</button>
+            </article>
+            <article>
+              <span>저장된 게임</span>
+              <h2>계속 진행</h2>
+              <button type="button" disabled={gameStore.busy} onClick={() => importInputRef.current?.click()}>import JSON</button>
+            </article>
+            <section className="snvEventLog" aria-label="이벤트 로그">
+              <header><h2>이벤트 로그</h2><strong>{gameStore.gameFile.game.events.length}건</strong></header>
+              {gameStore.gameFile.game.events.length ? <ol className="snvScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
+                {[...gameStore.gameFile.game.events].reverse().map((confirmedEvent, index) => <li key={confirmedEvent.id}>
+                  <span>{String(gameStore.gameFile.game.events.length - index).padStart(2, "0")}</span>
+                  <p>{confirmedEvent.summary}</p>
+                </li>)}
+              </ol> : <p className="snvEmptyEventLog">확정된 이벤트가 없습니다.</p>}
+            </section>
+          </section>}
+        />
+        {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
+          actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
+          players={gameStore.players}
+          busy={gameStore.busy}
+          onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
+          onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
+        /> : null}
+        {liveUndoDialogEvent ? (
+          <LiveUndoDialog events={liveUndoDialogEvent.events} onCancel={closeLiveUndoDialog} onConfirm={confirmLiveUndo} />
+        ) : null}
+      </div>
+    );
+  }
+
+  if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && activeSpyRevealPayload && revealPlayers) {
+    return (
+      <div className="clocktowerApp tbSharedLivePlay spyRevealActive" data-testid="clocktower-app">
+        <main
+          className="productionApplicationShell tbProductionShell tbSpyRevealShell"
+          data-theme="night"
+          aria-label="플레이어 공개 화면"
+        >
+          <TroubleBrewingLiveGrimoire
+            players={revealPlayers}
+            phaseLabel="첩자 공개"
+            phaseRuntime=""
+            theme="night"
+            busy={false}
+            gameEnded={false}
+            ruleState={revealRuleState}
+            revealMode={{ onClose: closeActiveReveal }}
+          />
+        </main>
+      </div>
+    );
   }
 
   return (

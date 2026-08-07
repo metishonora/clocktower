@@ -1,0 +1,995 @@
+.tbProductionShell {
+  --tb-night-deep: #071611;
+  --tb-night: #102a20;
+  --tb-forest: #24513d;
+  --tb-moss: #47765c;
+  --tb-parchment: #e7d5ad;
+  --tb-gold: #d2ad64;
+  --tb-rust: #a64f35;
+  --tb-ink: #19251f;
+  color: #f5eddc;
+  background:
+    radial-gradient(circle at 76% 0%, rgba(114, 147, 101, .34), transparent 30%),
+    radial-gradient(circle at 12% 34%, rgba(150, 76, 46, .18), transparent 25%),
+    linear-gradient(145deg, #071611 0%, #153328 52%, #081913 100%);
+}
+
+.tbProductionShell::before {
+  background:
+    radial-gradient(circle at 76% 0%, rgba(255, 247, 211, .9), transparent 27%),
+    radial-gradient(circle at 16% 28%, rgba(142, 177, 128, .24), transparent 36%),
+    linear-gradient(145deg, #d9d8bd 0%, #eee5c9 52%, #c8d1b7 100%);
+}
+
+.tbProductionShell .productionApplicationEyebrow,
+.tbProductionShell .snvControlCard > span,
+.tbProductionShell .roleCatalog h2,
+.tbProductionShell .snvDistributionCard h2,
+.tbProductionShell .snvDistributionCard span {
+  color: #d1b77e;
+}
+
+.tbProductionShell .productionApplicationHeader p {
+  color: #b8c6b7;
+}
+
+.tbPhaseMark {
+  display: grid;
+  width: 76px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(226, 201, 143, .34);
+  border-radius: 50%;
+  color: #e4ca8d;
+  background: rgba(4, 18, 12, .42);
+  font: 2.65rem Georgia, serif;
+}
+
+.tbProductionShell .snvGlobalUndo {
+  border-color: rgba(166, 79, 53, .5);
+  color: #dc9c83;
+  background: rgba(92, 40, 28, .48);
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
+.tbProductionShell button:focus-visible,
+.tbProductionShell input:focus-visible,
+.tbProductionShell select:focus-visible {
+  outline: 3px solid rgba(229, 192, 111, .64);
+  outline-offset: 3px;
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button[aria-current="page"],
+.tbProductionShell .snvChoiceRow button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #fff8e8;
+  background: #376b50;
+  box-shadow: 0 8px 26px rgba(4, 25, 16, .42);
+}
+
+.tbProductionShell :is(.snvSetupControls, .roleCatalog, .grimoirePresentation, .playPresentation) {
+  border-color: rgba(221, 198, 151, .16);
+  background: rgba(7, 25, 18, .66);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .34);
+}
+
+.tbPlayerCounts {
+  max-height: 126px;
+  overflow: auto;
+}
+
+.tbPinnedDemon {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 66px;
+  padding: 8px 12px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(178, 77, 55, .48);
+  border-radius: 16px;
+  color: #f6dfd4;
+  background: linear-gradient(135deg, rgba(147, 55, 39, .34), rgba(67, 35, 26, .18));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tbPinnedDemon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.tbPinnedDemon strong {
+  font-size: .88rem;
+}
+
+.tbPinnedDemon[aria-pressed="true"] {
+  border-color: #d2ad64;
+  background: linear-gradient(135deg, rgba(147, 55, 39, .62), rgba(91, 76, 38, .48));
+  box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .12);
+}
+
+.tbProductionShell .snvDistributionCard.emphasized {
+  border-color: rgba(210, 173, 100, .48);
+  background: rgba(64, 111, 81, .22);
+}
+
+.tbProductionShell .snvModifierNote.active {
+  color: #f0d799;
+}
+
+.tbCatalog button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  background: linear-gradient(135deg, rgba(55, 107, 80, .84), rgba(126, 81, 46, .62));
+  box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .14);
+}
+
+.tbCatalog button:disabled {
+  cursor: default;
+}
+
+.tbCatalog.rosterConfirmed button:disabled {
+  opacity: .74;
+}
+
+.tbRoleDetail {
+  border-color: rgba(210, 173, 100, .38);
+  background: linear-gradient(135deg, rgba(30, 77, 55, .96), rgba(43, 38, 25, .96));
+}
+
+.tbRoleIdentity {
+  cursor: default;
+}
+
+.tbRoleIdentity:hover {
+  background: transparent;
+}
+
+.tbProductionShell .tbRoleDetail h2 {
+  color: #fff8e8;
+}
+
+.tbProductionShell .tbRoleDetail p {
+  color: #d4d5c8;
+}
+
+.tbProductionShell .snvStageForward.prominent {
+  border-color: #d2ad64;
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+  box-shadow: 0 10px 28px rgba(4, 20, 13, .4);
+}
+
+.tbProductionShell .snvStageForward.prominent:disabled {
+  border-color: rgba(213, 199, 166, .16);
+  color: #8f958c;
+  background: #34453c;
+  box-shadow: none;
+}
+
+.tbProductionShell .tbGrimoireBoard {
+  border-color: rgba(210, 173, 100, .28);
+  background:
+    radial-gradient(circle at center, rgba(63, 102, 75, .36), rgba(5, 22, 15, .92)),
+    linear-gradient(145deg, #0d281d, #081610);
+}
+
+.tbProductionShell .tbGrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(75, 147, 184, .74);
+  background: linear-gradient(145deg, #1d4350, #172e29);
+}
+
+.tbProductionShell .tbGrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(197, 88, 67, .8);
+  background: linear-gradient(145deg, #542c25, #2b261e);
+}
+
+.tbProductionShell .tbGrimoireBoard > button.unassigned {
+  border-color: rgba(213, 190, 143, .3);
+  background: #243a2f;
+}
+
+.tbProductionShell .tbGrimoireBoard > button.selected {
+  border-color: #e2bd6e;
+  background: #3e694f;
+  box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
+}
+
+.tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
+  transform: translateX(-6px);
+}
+
+.tbShownCharacterToken {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  right: 2px;
+  display: grid;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  padding: 4px;
+  place-items: center;
+  border: 2px solid #72c6e7;
+  border-radius: 50%;
+  color: #fff8e8;
+  background: #173f4c;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .15);
+  font-size: .78rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.tbShownCharacterToken.missing {
+  border-color: #d2ad64;
+  background: #3e3520;
+}
+
+.tbProductionShell .tbGrimoireBoard > button .tbShownCharacterToken img {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  object-fit: contain;
+}
+
+.tbProductionShell .snvSeatingTray,
+.tbProductionShell .snvLiveSeatDetails {
+  border-color: rgba(215, 193, 150, .16);
+  background: rgba(255, 255, 255, .025);
+}
+
+.tbProductionShell .snvSelectedRosterTray button[aria-pressed="true"] {
+  border-color: #e1c278;
+  background: #3f7658;
+}
+
+.tbProductionShell .snvSelectedRosterTray button.assigned {
+  border-color: rgba(210, 173, 100, .34);
+  background: rgba(55, 107, 80, .22);
+}
+
+.tbProductionShell .snvSelectedRosterTray button.selectedForSeat {
+  border-color: #efd68d;
+  background: linear-gradient(135deg, #3b7557, #8b593c);
+}
+
+.tbSeatInspector .snvSeatInspector {
+  height: auto;
+}
+
+.tbNameField {
+  display: block;
+}
+
+.tbNameField input,
+.tbDrunkEditor select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid rgba(219, 199, 158, .2);
+  border-radius: 9px;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+}
+
+.tbDrunkEditor {
+  display: grid;
+  padding: 9px 10px;
+  border: 1px solid rgba(171, 137, 213, .34);
+  border-radius: 12px;
+  background: rgba(110, 74, 139, .16);
+}
+
+.tbDrunkEditor label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #e0d0e8;
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.tbPlayerDetails {
+  display: grid;
+  padding: 0;
+  align-content: start;
+  gap: 0;
+}
+
+.tbProductionShell .tbPlayerDetails {
+  background: #10271b;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, .58);
+}
+
+.tbPlayerDetailsHeader {
+  display: grid;
+  padding: 18px;
+  grid-template-columns: 54px minmax(0, 1fr) 32px 38px;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(215, 193, 150, .14);
+}
+
+.tbPlayerHeaderRole {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.tbPlayerHeaderRole img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.tbPlayerHeaderRole strong {
+  color: #d7c18f;
+  font-size: .58rem;
+}
+
+.tbPlayerDetailsHeader > div:nth-child(2) {
+  min-width: 0;
+}
+
+.tbPlayerDetailsHeader > div:nth-child(2) > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 850;
+}
+
+.tbPlayerDetailsHeader h2 {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #fff8e8;
+  font: 1.45rem Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbPlayerAlignment {
+  justify-self: end;
+}
+
+.tbPlayerDetailsClose {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(215, 193, 150, .22);
+  border-radius: 50%;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .04);
+  font-family: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tbPlayerDetailsBody {
+  display: grid;
+  padding: 18px;
+  gap: 22px;
+}
+
+.tbDrunkIdentities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tbDrunkIdentities article {
+  display: grid;
+  min-width: 0;
+  padding: 10px;
+  gap: 7px;
+  border: 1px solid rgba(182, 151, 237, .28);
+  border-radius: 14px;
+  background: rgba(115, 82, 151, .13);
+}
+
+.tbDrunkIdentities article.shown {
+  border-color: rgba(90, 177, 213, .34);
+  background: rgba(43, 123, 151, .13);
+}
+
+.tbDrunkIdentities article > span,
+.tbCharacterAbility > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.tbDrunkIdentities article > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tbDrunkIdentities img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.tbDrunkIdentities strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f6edda;
+  font-size: .72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbCharacterAbility p {
+  margin: 9px 0 0;
+  color: #d4d5c8;
+  font-size: .76rem;
+  line-height: 1.65;
+}
+
+.tbPlaySurface .tbPlayPrimary {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.tbPlayHeader .snvProgressRuntime {
+  color: #cdb477;
+}
+
+.tbCurrentTask {
+  display: flex;
+  min-height: 370px;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
+    linear-gradient(145deg, rgba(45, 91, 67, .58), rgba(38, 31, 22, .68));
+}
+
+.tbProgressActor {
+  margin-bottom: 4px;
+}
+
+.tbProgressActorBlock {
+  display: contents;
+}
+
+.tbProgressPlayer {
+  margin-left: 110px;
+  color: #d3c6a7;
+  font-size: .86rem;
+}
+
+.tbProgressPlayerStandalone {
+  margin: 14px 0 0;
+  font-size: 1rem;
+}
+
+.tbProgressActorTags {
+  display: flex;
+  margin: 10px 0 0 110px;
+  gap: 7px;
+}
+
+.tbProgressActorTags em {
+  padding: 4px 9px;
+  border: 1px solid rgba(216, 190, 122, .32);
+  border-radius: 999px;
+  color: #ead9a9;
+  background: rgba(8, 28, 18, .44);
+  font-size: .72rem;
+  font-style: normal;
+}
+
+.tbCurrentTask .tbProgressAbility {
+  max-width: 560px;
+  margin-top: 28px;
+  color: #e0d4b9;
+  font-size: .86rem;
+  line-height: 1.55;
+}
+
+.tbCurrentTask .snvStepActions {
+  margin-top: auto;
+  padding-top: 30px;
+}
+
+.tbCurrentTask .snvStepActions button {
+  border-color: #7fa58a;
+  color: #fff8e8;
+  background: #3f6f55;
+}
+
+.tbPhaseOrder {
+  min-width: 0;
+}
+
+.tbProgressTaskColumn,
+.tbProgressOrder {
+  min-width: 0;
+}
+
+.tbProgressTaskColumn {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.tbProgressOrder {
+  align-self: stretch;
+}
+
+.tbCurrentTask .tbProgressPrompt {
+  max-width: 620px;
+  margin-top: 22px;
+  color: #e0d4b9;
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+.tbProgressInputs {
+  display: grid;
+  margin-top: 22px;
+  gap: 14px;
+}
+
+.tbProgressInputs:empty {
+  display: none;
+}
+
+.tbProgressSubject,
+.tbExecutionStanding {
+  display: grid;
+  margin-top: 22px;
+  gap: 5px;
+}
+
+.tbConfirmedGrimoire {
+  min-height: 0;
+}
+
+.tbProductionShell .tbPhaseClock {
+  border-color: rgba(210, 173, 100, .34);
+  background: rgba(8, 28, 18, .78);
+}
+
+.tbProductionShell .tbPhaseClock button {
+  border-color: rgba(226, 189, 110, .5);
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+}
+
+.tbProductionShell .tbGrimoireBoard > button.tbIneligibleSeat {
+  opacity: .38;
+  filter: grayscale(.45);
+}
+
+.tbSeatAbilityAction {
+  position: absolute;
+  z-index: 5;
+  top: var(--ability-seat-y);
+  left: var(--ability-seat-x);
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  transform: translate(-50%, -50%) translate(-42px, 30px);
+  border: 1px solid rgba(239, 214, 158, .62);
+  border-radius: 50%;
+  color: #fff8e8;
+  background: #315d45;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .42);
+  font-family: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.tbSpyRevealShell {
+  min-height: 100dvh;
+  padding-top: 32px;
+}
+
+.tbSpyRevealShell .tbConfirmedGrimoire {
+  width: min(1400px, 100%);
+  margin: 0 auto;
+}
+
+.tbSpyRevealToolbar {
+  align-items: end;
+}
+
+.tbSpyRevealToolbar p,
+.tbSpyRevealToolbar h1 {
+  margin: 0;
+}
+
+.tbSpyRevealToolbar p {
+  color: #d6b675;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+.tbSpyRevealToolbar h1 {
+  margin-top: 5px;
+  font: 2rem Georgia, serif;
+}
+
+.tbRevealWorkspace {
+  grid-template-columns: 1fr;
+}
+
+.tbProductionShell .tbGrimoireBoard > article {
+  position: absolute;
+  top: var(--seat-y);
+  left: var(--seat-x);
+  display: grid;
+  box-sizing: border-box;
+  width: 124px;
+  height: 88px;
+  padding: 10px 12px 8px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(122, 207, 239, .42);
+  border-radius: 20px;
+  color: inherit;
+  background: linear-gradient(145deg, rgba(37, 80, 93, .9), rgba(18, 44, 50, .94));
+  text-align: center;
+}
+
+.tbProductionShell .tbGrimoireBoard > article.alignment-evil {
+  border-color: rgba(197, 88, 67, .8);
+  background: linear-gradient(145deg, #542c25, #2b261e);
+}
+
+.tbProductionShell .tbGrimoireBoard > article.snvDeadSeat {
+  opacity: .62;
+  filter: saturate(.55);
+}
+
+.tbProductionShell .tbGrimoireBoard > article img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.tbProductionShell .tbGrimoireBoard > article .snvSeatNumber {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+}
+
+.tbProductionShell .tbGrimoireBoard > article .snvSeatPlayerName {
+  font-weight: 900;
+}
+
+.tbProductionShell .tbGrimoireBoard > article small {
+  color: #b7a9be;
+}
+
+.tbRevealTokenList {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  display: flex;
+  gap: 3px;
+}
+
+.tbRevealTokenList span {
+  padding: 2px 5px;
+  border: 1px solid rgba(237, 205, 132, .42);
+  border-radius: 999px;
+  color: #f3ddab;
+  background: rgba(8, 22, 18, .82);
+  font-size: .58rem;
+  font-weight: 850;
+}
+
+@media (max-width: 1040px) {
+  .tbProductionShell .tbGrimoireBoard > article {
+    top: var(--mobile-seat-y);
+    left: var(--mobile-seat-x);
+  }
+}
+
+@media (max-width: 780px) {
+  .tbSpyRevealShell {
+    padding-top: 12px;
+  }
+
+  .tbProductionShell .tbGrimoireBoard > article {
+    width: 88px;
+    height: 76px;
+    padding: 5px;
+    gap: 1px;
+  }
+
+  .tbProductionShell .tbGrimoireBoard > article img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tbRevealTokenList {
+    right: 3px;
+    bottom: 3px;
+  }
+
+  .tbRevealTokenList span {
+    padding: 1px 3px;
+    font-size: .5rem;
+  }
+}
+
+.tbSeatAbilityAction.spent {
+  opacity: .48;
+  filter: grayscale(1);
+}
+
+.tbProductionShell .tbPhaseOrder li.current {
+  color: #fff8e8;
+  background: rgba(55, 118, 83, .34);
+}
+
+.tbProductionShell .tbPhaseOrder li.complete {
+  color: #cfc29e;
+}
+
+.tbProductionShell[data-theme="day"] {
+  color: #213128;
+}
+
+.tbProductionShell[data-theme="day"] .productionApplicationEyebrow,
+.tbProductionShell[data-theme="day"] .productionApplicationHeader p,
+.tbProductionShell[data-theme="day"] .snvControlCard > span,
+.tbProductionShell[data-theme="day"] .roleCatalog h2,
+.tbProductionShell[data-theme="day"] .snvDistributionCard h2,
+.tbProductionShell[data-theme="day"] .snvDistributionCard span {
+  color: #5f6c4e;
+}
+
+.tbProductionShell[data-theme="day"] .tbPhaseMark {
+  border-color: rgba(87, 105, 67, .28);
+  color: #98642f;
+  background: rgba(255, 253, 239, .58);
+}
+
+.tbProductionShell[data-theme="day"] :is(.snvSetupControls, .roleCatalog, .grimoirePresentation, .playPresentation) {
+  border-color: rgba(67, 89, 62, .17);
+  color: #213128;
+  background: rgba(255, 251, 230, .72);
+  box-shadow: 0 22px 70px rgba(49, 61, 40, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail {
+  border-color: rgba(99, 111, 70, .28);
+  color: #26342a;
+  background: linear-gradient(135deg, rgba(250, 243, 212, .97), rgba(201, 216, 183, .97));
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail h2 {
+  color: #203126;
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail p {
+  color: #526154;
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard {
+  border-color: rgba(81, 103, 69, .22);
+  background: linear-gradient(145deg, #f7f2d8, #d9e2c8);
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(52, 129, 163, .62);
+  color: #20343d;
+  background: linear-gradient(145deg, #f8fdff, #dceef0);
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(168, 71, 52, .66);
+  color: #472921;
+  background: linear-gradient(145deg, #fff8ef, #efd9ca);
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button .snvSeatPlayerName {
+  color: #25352b;
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button small {
+  color: #58645b;
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerDetails {
+  border-color: rgba(76, 100, 65, .18);
+  color: #243329;
+  background: #fbf6df;
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader {
+  border-bottom-color: rgba(76, 100, 65, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerHeaderRole strong,
+.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader > div:nth-child(2) > span,
+.tbProductionShell[data-theme="day"] .tbDrunkIdentities article > span,
+.tbProductionShell[data-theme="day"] .tbCharacterAbility > span {
+  color: #627057;
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader h2 {
+  color: #203126;
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerDetailsClose {
+  border-color: rgba(76, 100, 65, .24);
+  color: #294034;
+  background: rgba(255, 255, 255, .5);
+}
+
+.tbProductionShell[data-theme="day"] .tbDrunkIdentities article {
+  border-color: rgba(121, 89, 154, .22);
+  background: rgba(206, 192, 219, .34);
+}
+
+.tbProductionShell[data-theme="day"] .tbDrunkIdentities article.shown {
+  border-color: rgba(45, 126, 157, .24);
+  background: rgba(182, 216, 222, .4);
+}
+
+.tbProductionShell[data-theme="day"] .tbDrunkIdentities strong,
+.tbProductionShell[data-theme="day"] .tbCharacterAbility p {
+  color: #38483d;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask {
+  color: #243329;
+  background: linear-gradient(145deg, rgba(255, 252, 231, .9), rgba(202, 219, 187, .82));
+  box-shadow: inset 0 0 0 1px rgba(66, 88, 58, .09);
+}
+
+.tbProductionShell[data-theme="day"] .tbPhaseClock {
+  border-color: rgba(81, 103, 69, .22);
+  background: rgba(255, 253, 238, .88);
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayHeader button {
+  border-color: rgba(57, 83, 55, .28);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .7);
+}
+
+.tbProductionShell[data-theme="day"] .tbPhaseOrder li {
+  border-bottom-color: rgba(57, 83, 55, .14);
+  color: #5d6758;
+}
+
+.tbProductionShell[data-theme="day"] .tbPhaseOrder li.complete {
+  color: #425849;
+}
+
+.tbProductionShell[data-theme="day"] .tbPhaseOrder li.current {
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressPlayer,
+.tbProductionShell[data-theme="day"] .tbCurrentTask p,
+.tbProductionShell[data-theme="day"] .tbCurrentTask .snvCurrentStepLabel {
+  color: #5f684e;
+}
+
+@media (max-width: 1040px) {
+  .tbReviewControls {
+    grid-template-columns: 1fr;
+  }
+
+  .tbPlayerCounts {
+    max-height: none;
+  }
+
+  .tbSeatInspector .snvSeatInspector {
+    height: auto;
+  }
+}
+
+@media (max-width: 780px) {
+  .tbReviewControls {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  .tbReviewControls > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .tbReviewControls strong,
+  .tbReviewControls button {
+    flex: 0 0 auto;
+  }
+
+  .tbProductionShell {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .tbPhaseMark {
+    width: 52px;
+    font-size: 1.8rem;
+  }
+
+  .tbSeatInspector.snvSeatingTray.mobileOpen {
+    background: #10271d;
+  }
+
+  .tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
+    transform: translateX(-12px);
+  }
+
+  .tbDrunkEditor label,
+  .tbNameField {
+    grid-template-columns: 1fr;
+  }
+
+  .tbPlaySurface .tbPlayPrimary {
+    grid-template-columns: 1fr;
+  }
+
+  .tbSeatAbilityAction {
+    top: var(--ability-mobile-seat-y);
+    left: var(--ability-mobile-seat-x);
+    transform: translate(-50%, -50%) translate(-34px, 26px);
+  }
+
+  .tbProgressPlayer {
+    margin-left: 88px;
+  }
+
+  .tbProgressPlayerStandalone {
+    margin-left: 0;
+  }
+
+  .tbProgressActorTags {
+    margin-left: 88px;
+  }
+
+}
+
+@media (max-width: 390px) {
+  .tbReviewControls {
+    gap: 6px;
+  }
+
+  .tbProductionShell .productionApplicationHeader h1 {
+    font-size: 2rem;
+  }
+
+  .tbProductionShell .productionApplicationHeader p {
+    font-size: .74rem;
+  }
+
+  .tbProductionShell .productionApplicationStages button {
+    min-width: 0;
+    flex: 1 1 0;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tbProductionShell *,
+  .tbProductionShell *::before,
+  .tbProductionShell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}

@@ -1,5 +1,4 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { PhaseOverviewItem, Player } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
@@ -24,7 +23,6 @@ afterEach(() => {
 });
 
 test("condenses a multi-Minion night overview while preserving status, detail, and current-step scrolling", async () => {
-  const user = userEvent.setup();
   const playerRoster = [
     player("player-6", 6, "Faye", "spy", "evil"),
     ...players(),
@@ -77,8 +75,7 @@ test("condenses a multi-Minion night overview while preserving status, detail, a
   expect(screen.getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
 
   const overview = screen.getByRole("region", { name: "단계 개요" });
-  const disclosure = overview.closest("details") as HTMLDetailsElement;
-  await user.click(within(disclosure).getByText("첫 밤 순서", { selector: "summary span" }));
+  expect(overview.closest("details")).toBeNull();
 
   expect(within(overview).getByText("하수인 (4, 6)")).toBeTruthy();
   expect(within(overview).getByText("악마 (5)")).toBeTruthy();
