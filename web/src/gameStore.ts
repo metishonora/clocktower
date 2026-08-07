@@ -464,18 +464,31 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   }
 
   function resetSetup() {
-    if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 새 게임으로 교체할까요?")) {
-      return;
-    }
-
     setUndoReplayPending(false);
     setAutosaveRecoveryError(undefined);
     setStorageWriteError(undefined);
     setLoadError(undefined);
+    setReplayResult(undefined);
     setGameFile(createGameFile(scriptId));
+    setGameSessionRevision((current) => current + 1);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
     setSetupDraft(createSetupDraft());
+  }
+
+  function returnToConfirmedSetup() {
+    if (!setupConfirmed || transitionBusy || players.length === 0) return;
+    const preservedDraft = createSetupDraftFromConfirmedPlayers(players, gameFile.ui?.seatLayout);
+    setUndoReplayPending(false);
+    setAutosaveRecoveryError(undefined);
+    setStorageWriteError(undefined);
+    setLoadError(undefined);
+    setReplayResult(undefined);
+    setGameFile(createGameFile(scriptId));
+    setGameSessionRevision((current) => current + 1);
+    setProposalResult(undefined);
+    setPendingConfirmedReveal(undefined);
+    setSetupDraft({ ...preservedDraft, rosterConfirmed: true, setupStage: "seating" });
   }
 
   function removeLatestEvent(expectedEventId: string, expectedType: "live" | "setup"): boolean {
@@ -629,6 +642,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     endGame,
     updatePlayerAnnotations,
     resetSetup,
+    returnToConfirmedSetup,
     undoLatestLiveEvent,
     recoverConfirmedSetup,
     clearProposalResult,

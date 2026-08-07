@@ -35,3 +35,13 @@ export async function selectLivePlayers(user: User, ...names: RegExp[]) {
   await returnToLiveProgress(user);
   return grimoire;
 }
+
+export async function confirmLivePlayerSelection(user: User, ...names: RegExp[]) {
+  const grimoire = await openLiveGrimoire(user);
+  for (const name of names) {
+    await user.click(within(grimoire).getByRole("button", { name }));
+  }
+  const panel = screen.getByLabelText("현재 마도서 작업");
+  const confirm = within(panel).getByRole("button", { name: /선택 확정$/ });
+  await user.click(confirm);
+}

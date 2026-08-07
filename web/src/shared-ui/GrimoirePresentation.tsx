@@ -58,6 +58,7 @@ export function GrimoirePresentation({
 export function RectangularGrimoireBoard({
   ariaLabel,
   seats,
+  overlay,
   center,
   className,
   centerClassName,
@@ -65,6 +66,7 @@ export function RectangularGrimoireBoard({
 }: {
   ariaLabel: string;
   seats: RectangularGrimoireSeat[];
+  overlay?: ReactNode;
   center?: ReactNode;
   className?: string;
   centerClassName?: string;
@@ -99,6 +101,7 @@ export function RectangularGrimoireBoard({
           {seat.afterSeat}
         </Fragment>
       ))}
+      {overlay}
       {center === undefined ? null : <div className={joinClasses("rectangularGrimoireCenter", centerClassName)}>{center}</div>}
     </div>
   );

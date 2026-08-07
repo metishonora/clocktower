@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { characterAsset } from "../../characterAssets";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
-import type { CoreResult, PhaseStep, Player, PlayerAnnotationsInput, Proposal, RuleState } from "../../core/types";
+import type { CoreResult, DayState, PhaseStep, Player, PlayerAnnotationsInput, Proposal, RuleState } from "../../core/types";
 import {
   GrimoirePresentation,
   RectangularGrimoireBoard,
@@ -9,6 +9,7 @@ import {
   rectangularSeatPositions,
 } from "../../shared-ui/GrimoirePresentation";
 import { characterLabel, characters, kindLabels } from "../../setupDraft";
+import { NominationArrow } from "../../shared-ui/NominationArrow";
 import { nextVoterIdsAfterToggle, voteStatusForPlayer } from "../../voting";
 import { FuneralIcon, GhostVoteIcon } from "../grimoire/SeatStateIcons";
 import { PlayerAnnotationsDialog } from "../grimoire/PlayerAnnotationsDialog";
@@ -16,6 +17,8 @@ import { PlayerTokenCountBadge, PlayerTokenDetailDialog } from "../grimoire/play
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { troubleBrewingPlayerTokens } from "./troubleBrewingPlayerTokenPresentation";
 import "../grimoire/sectsAndVioletsSeatStates.css";
+
+export type TroubleBrewingLiveHandoff = "target" | "nomination" | "vote";
 
 export function TroubleBrewingLiveGrimoire({
   players,
@@ -25,6 +28,8 @@ export function TroubleBrewingLiveGrimoire({
   theme,
   busy,
   gameEnded,
+  handoff,
+  dayState,
   nominationVoting,
   setupInformationSelection,
   phasePlayerSelection,
@@ -33,6 +38,10 @@ export function TroubleBrewingLiveGrimoire({
   onUpdatePlayerAnnotations,
   onReturnToAssignment,
   onGoToProgress,
+  onConfirmSelection,
+  onResetSelection,
+  onCancelSelection,
+  selectionReady,
   revealMode,
 }: {
   players: Player[];
@@ -42,6 +51,8 @@ export function TroubleBrewingLiveGrimoire({
   theme: "day" | "night";
   busy: boolean;
   gameEnded: boolean;
+  handoff?: TroubleBrewingLiveHandoff;
+  dayState?: DayState;
   nominationVoting?: {
     draft: NominationDraft;
     onChange: (draft: NominationDraft) => void;
@@ -70,6 +81,10 @@ export function TroubleBrewingLiveGrimoire({
   ) => Promise<CoreResult<Proposal> | undefined>;
   onReturnToAssignment?: () => void;
   onGoToProgress?: () => void;
+  onConfirmSelection?: () => void;
+  onResetSelection?: () => void;
+  onCancelSelection?: () => void;
+  selectionReady?: boolean;
   revealMode?: {
     onClose: () => void;
   };
@@ -94,7 +109,11 @@ export function TroubleBrewingLiveGrimoire({
   const detailsShownCharacter = detailsPlayer?.actualCharacter === "drunk"
     ? characters.find((candidate) => candidate.id === detailsPlayer.shownCharacter)
     : undefined;
-  const selectionActive = !revealMode && Boolean(nominationVoting || setupInformationSelection || phasePlayerSelection);
+  const selectionActive = !revealMode && Boolean(handoff);
+  const nominatorId = nominationVoting?.draft.nominatorId || dayState?.activeNomination?.nominatorId;
+  const nomineeId = nominationVoting?.draft.nomineeId || dayState?.activeNomination?.nomineeId;
+  const nominator = players.find((player) => player.id === nominatorId);
+  const nominee = players.find((player) => player.id === nomineeId);
   const tokensByPlayerId = useMemo(() => Object.fromEntries(
     players.map((player) => [player.id, troubleBrewingPlayerTokens(player, players, ruleState)]),
   ), [players, ruleState]);
@@ -143,7 +162,15 @@ export function TroubleBrewingLiveGrimoire({
       return;
     }
     if (disabled) return;
-    if (nominationVoting) {
+    if (handoff === "nomination" && nominationVoting) {
+      if (!nominationVoting.draft.nominatorId) {
+        nominationVoting.onChange({ ...nominationVoting.draft, nominatorId: player.id, nomineeId: "" });
+      } else {
+        nominationVoting.onChange({ ...nominationVoting.draft, nomineeId: player.id });
+      }
+      return;
+    }
+    if (handoff === "vote" && nominationVoting) {
       nominationVoting.onChange({
         ...nominationVoting.draft,
         voterIds: nextVoterIdsAfterToggle(
@@ -154,11 +181,11 @@ export function TroubleBrewingLiveGrimoire({
       });
       return;
     }
-    if (setupInformationSelection) {
+    if (handoff === "target" && setupInformationSelection) {
       setupInformationSelection.onTogglePlayer(player.id);
       return;
     }
-    if (phasePlayerSelection) {
+    if (handoff === "target" && phasePlayerSelection) {
       phasePlayerSelection.onTogglePlayer(player.id);
       return;
     }
@@ -168,19 +195,22 @@ export function TroubleBrewingLiveGrimoire({
   return <>
     <GrimoirePresentation
       ariaLabel={revealMode ? "Trouble Brewing 첩자 마도서" : "Trouble Brewing 마도서 검토"}
-      className={`snvSeatingSurface snvTabPanel tbConfirmedGrimoire confirmed issue116GrimoireSurface${nominationVoting ? " issue116VoteMode" : selectionActive ? " issue116AttackMode" : ""}${theme === "day" ? " snvDayMode" : " snvNightMode"}`}
+      className={`snvSeatingSurface snvTabPanel tbConfirmedGrimoire confirmed issue116GrimoireSurface${handoff === "nomination" ? " issue116NominationMode" : handoff === "vote" ? " issue116VoteMode" : handoff === "target" ? " issue116AttackMode" : ""}${theme === "day" ? " snvDayMode" : " snvNightMode"}`}
       toolbar={revealMode ? <div className="snvSeatingToolbar tbSpyRevealToolbar" aria-label="첩자 공개 안내">
         <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
-      </div> : <div className="snvSeatingToolbar" aria-label="확정된 마도서 도구">
-        <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
+      </div> : <div className="snvSeatingToolbar" aria-label={handoff ? "마도서 도구" : "확정된 마도서 도구"}>
+        {handoff ? <>
+          <span className="issue116PhaseChip">{phaseLabel}</span>
+          <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : "돌아가기 →"}</button>
+        </> : <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>}
         {actorPlayerId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
       </div>}
-      workspaceClassName={`snvSeatingWorkspace stable${revealMode ? " tbRevealWorkspace" : ""}`}
+      workspaceClassName={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}${revealMode ? " tbRevealWorkspace" : ""}`}
       style={sizeStyle}
       board={<RectangularGrimoireBoard
         ariaLabel={revealMode ? "첩자 공개 마도서 좌석 맵" : "라이브 마도서 좌석 맵"}
         className="snvGrimoireDraft rectangular tbGrimoireBoard"
-        centerClassName="snvGrimoireCenter live tbPhaseClock"
+        centerClassName="snvGrimoireCenter live issue116PhaseClock"
         style={sizeStyle}
         seats={players.map((player, index) => {
           const position = desktopPositions[index];
@@ -189,20 +219,36 @@ export function TroubleBrewingLiveGrimoire({
             ? characters.find((candidate) => candidate.id === player.shownCharacter)
             : undefined;
           const asset = characterAsset(player.actualCharacter);
-          const selected = nominationVoting
-            ? nominationVoting.draft.voterIds.includes(player.id)
-            : setupInformationSelection
+          const selfNominee = handoff === "nomination"
+            && player.id === nominatorId
+            && player.id === nomineeId;
+          const selectionRole = handoff === "nomination"
+            ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
+            : handoff === "vote" && nominationVoting?.draft.voterIds.includes(player.id) ? "투표"
+              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? "선택 대상" : undefined;
+          const selected = handoff === "nomination"
+            ? player.id === nominatorId || player.id === nomineeId
+            : handoff === "vote"
+              ? Boolean(nominationVoting?.draft.voterIds.includes(player.id))
+              : setupInformationSelection
               ? setupInformationSelection.selectedPlayerIds.includes(player.id)
               : phasePlayerSelection
                 ? phasePlayerSelection.selectedPlayerIds.includes(player.id)
                 : detailsPlayerId === player.id;
           const allowed = !phasePlayerSelection?.allowedPlayerIds
             || phasePlayerSelection.allowedPlayerIds.includes(player.id);
-          const voteStatus = nominationVoting
+          const voteStatus = handoff === "vote" && nominationVoting
             ? voteStatusForPlayer(player, selected, nominationVoting.draft.voterIds, ruleState?.butlerVote)
             : undefined;
+          const selectingNominator = handoff === "nomination" && !nominatorId;
+          const nominationIneligible = handoff === "nomination" && (
+            selectingNominator
+              ? !dayState?.eligibleNominatorIds.includes(player.id)
+              : !dayState?.eligibleNomineeIds.includes(player.id)
+          );
           const disabled = busy
-            || Boolean(nominationVoting && voteStatus?.disabled)
+            || nominationIneligible
+            || Boolean(handoff === "vote" && voteStatus?.disabled)
             || Boolean(setupInformationSelection?.disabled)
             || Boolean(phasePlayerSelection && (!allowed || phasePlayerSelection.disabled));
           const actor = actorPlayerId === player.id;
@@ -220,13 +266,17 @@ export function TroubleBrewingLiveGrimoire({
           const identityLabel = player.actualCharacter === "drunk"
             ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
             : characterLabel(player.actualCharacter);
-          const deadVoteState = nominationVoting && !player.alive
+          const deadVoteState = (handoff === "nomination" || handoff === "vote") && !player.alive
             ? player.ghostVoteUsed ? "spent" : "available"
             : undefined;
-          const showGhostVoteIndicator = deadVoteState === "available";
-          const showSpentGhostVoteState = deadVoteState === "spent";
-          const targetSelected = selected && Boolean(setupInformationSelection || phasePlayerSelection);
-          const voteSelected = selected && Boolean(nominationVoting);
+          const showGhostVoteIndicator = handoff === "vote" && deadVoteState === "available";
+          const showSpentGhostVoteState = handoff === "vote" && deadVoteState === "spent";
+          const targetSelected = selected && handoff === "target";
+          const voteSelected = selected && handoff === "vote";
+          const nominationClass = selfNominee
+            ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
+            : selectionRole === "지명자" ? " issue116NominatorSeat"
+              : selectionRole === "피지명자" ? " issue116NomineeSeat" : "";
           return {
             id: player.id,
             position,
@@ -236,8 +286,8 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${voteSelected ? ` selected issue116SelectedSeat snvSeatStateSelected issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? " selected snvSeatStateTarget" : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
-            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${automaticTokenLabels.length ? `, ${automaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${selected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget${currentStep?.character === "poisoner" ? " snvSeatStatePoisonTarget" : ""}` : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
+            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${automaticTokenLabels.length ? `, ${automaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
             disabled: gameEnded || (selectionActive ? disabled : false),
             onSelect: () => selectPlayer(player, disabled),
@@ -278,20 +328,37 @@ export function TroubleBrewingLiveGrimoire({
                 disabled={!slayerAbility.enabled || busy}
                 onClick={(event) => slayerAbility.onUse(event.currentTarget)}
               >S</button> : null}
-              {player.id === ruleState?.virginAbility?.actorPlayerId ? <span
-                className={`tbSeatAbilityAction virgin ${ruleState.virginAbility.spent ? "spent" : ""}`}
-                style={abilityActionStyle(position, mobilePosition)}
-                aria-label={`${player.seat}번 ${player.name} 성결자 능력 ${ruleState.virginAbility.spent ? "소모" : "사용 가능"}`}
-              >V</span> : null}
             </>,
           };
         })}
-        center={<div role="group" aria-label={revealMode ? "첩자 공개" : "현재 단계"}>
+        overlay={handoff === "nomination" && nominator && nominee ? <NominationArrow
+          nominatorIndex={players.indexOf(nominator)}
+          nomineeIndex={players.indexOf(nominee)}
+          label={`${nominator.name} → ${nominee.name} 지명`}
+          desktopPositions={desktopPositions}
+          mobilePositions={mobilePositions}
+          markerPrefix="tbLiveNominationArrow"
+        /> : undefined}
+        center={handoff === "nomination" || handoff === "vote" ? undefined : <div role="group" aria-label={revealMode ? "첩자 공개" : "현재 단계"}>
           <strong>{revealMode ? "첩자 공개" : gameEnded ? "게임 종료" : phaseLabel}</strong>
           {!revealMode && !gameEnded ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time> : null}
-          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
+          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
         </div>}
       />}
+      inspector={handoff ? <TroubleBrewingSelectionPanel
+        handoff={handoff}
+        currentStep={currentStep}
+        players={players}
+        nominator={nominator}
+        nominee={nominee}
+        voterIds={nominationVoting?.draft.voterIds ?? []}
+        selectedPlayerIds={setupInformationSelection?.selectedPlayerIds ?? phasePlayerSelection?.selectedPlayerIds ?? []}
+        executionVoteThreshold={dayState?.executionVoteThreshold ?? 0}
+        busy={busy}
+        ready={Boolean(selectionReady)}
+        onReset={onResetSelection}
+        onConfirm={onConfirmSelection}
+      /> : undefined}
     />
     {!revealMode && detailsPlayer && detailsCharacter ? <PlayerTokenDetailDialog
       characterDetails={troubleBrewingCharacterDetail(detailsCharacter.id)}
@@ -312,15 +379,6 @@ export function TroubleBrewingLiveGrimoire({
       </section> : null}
       details={<>
         {detailsPlayer.notes ? <section className="tbPlayerNotes" aria-label="Notes"><span>Notes</span><p>{detailsPlayer.notes}</p></section> : null}
-        {onUpdatePlayerAnnotations && !gameEnded ? <button
-          type="button"
-          className="tbPlayerAnnotationsEdit"
-          aria-label="토큰 / Notes 편집"
-          onClick={() => {
-            setDetailsPlayerId(undefined);
-            setEditingPlayerId(detailsPlayer.id);
-          }}
-        >토큰 / Notes 편집</button> : null}
       </>}
       theme={theme}
       onClose={closePlayerDetails}
@@ -332,6 +390,72 @@ export function TroubleBrewingLiveGrimoire({
       onConfirm={onUpdatePlayerAnnotations}
     /> : null}
   </>;
+}
+
+function TroubleBrewingSelectionPanel({
+  handoff,
+  currentStep,
+  players,
+  nominator,
+  nominee,
+  voterIds,
+  selectedPlayerIds,
+  executionVoteThreshold,
+  busy,
+  ready,
+  onReset,
+  onConfirm,
+}: {
+  handoff: TroubleBrewingLiveHandoff;
+  currentStep?: PhaseStep;
+  players: Player[];
+  nominator?: Player;
+  nominee?: Player;
+  voterIds: string[];
+  selectedPlayerIds: string[];
+  executionVoteThreshold: number;
+  busy: boolean;
+  ready: boolean;
+  onReset?: () => void;
+  onConfirm?: () => void;
+}) {
+  const targets = selectedPlayerIds.flatMap((id) => {
+    const player = players.find((candidate) => candidate.id === id);
+    return player ? [player] : [];
+  });
+  const actor = players.find((player) => player.id === currentStep?.playerId);
+  const target = targets[0];
+  const targetLabel = target ? `${target.seat}번 ${target.name}` : "선택 전";
+  const title = handoff === "nomination" ? "지명 선택" : handoff === "vote" ? "투표 집계" : "대상 선택";
+  const confirmLabel = handoff === "nomination"
+    ? nominator && nominee ? `${nominator.seat}번 → ${nominee.seat}번 지명 확정` : "지명자와 피지명자를 선택하세요"
+    : handoff === "vote" ? `${voterIds.length}표로 투표 확정`
+      : currentStep?.requiredInput.kind === "setupInfo" ? "선택 완료 →"
+        : target ? `${targetLabel} 선택 확정` : "대상을 선택하세요";
+
+  return <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
+    <header className="issue116SelectionHeader">
+      <h2>{title}</h2>
+      <button type="button" disabled={busy} onClick={onReset}>
+        {handoff === "nomination" ? "지명 초기화 X" : handoff === "vote" ? "투표 초기화 X" : "선택 초기화 X"}
+      </button>
+    </header>
+    {handoff === "nomination" ? <dl>
+      <div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div>
+      <div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div>
+    </dl> : handoff === "vote" ? <dl className="issue116VoteSummary">
+      <div><dt>지명</dt><dd>{playerLabel(nominator)} → {playerLabel(nominee)}</dd></div>
+      <div><dt>현재</dt><dd className={voterIds.length >= executionVoteThreshold ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>처형 기준 {executionVoteThreshold}표</dd></div>
+    </dl> : <dl>
+      <div><dt>행동자</dt><dd>{playerLabel(actor)}</dd></div>
+      <div><dt>선택 대상</dt><dd>{targets.length > 1 ? targets.map(playerLabel).join(", ") : targetLabel}</dd></div>
+    </dl>}
+    <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+  </aside>;
+}
+
+function playerLabel(player?: Player) {
+  return player ? `${player.seat}번 ${player.name}` : "선택 전";
 }
 
 function characterKindClass(characterId: string) {

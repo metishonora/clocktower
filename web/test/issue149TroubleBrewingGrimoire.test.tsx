@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
-import type { Player, ReplayState } from "../src/core/types";
+import type { GameFile, Player, ReplayState, RuleState } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
   MemoryGameStorageDriver,
@@ -40,11 +40,169 @@ test("uses the S&V player-detail hierarchy for Trouble Brewing tokens and Notes"
   expect(within(detail).getByText("능력 소모")).toBeTruthy();
   expect(within(detail).getByText("중독")).toBeTruthy();
   expect(within(detail).getByText("다음 낮에 능력 사용을 확인")).toBeTruthy();
-  expect(within(detail).getByRole("button", { name: "토큰 / Notes 편집" })).toBeTruthy();
+  expect(within(detail).queryByRole("button", { name: "토큰 / Notes 편집" })).toBeNull();
   expect(within(detail).queryByLabelText("현재 상태")).toBeNull();
+});
 
-  await user.click(within(detail).getByRole("button", { name: "토큰 / Notes 편집" }));
-  expect(screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" })).toBeTruthy();
+test("uses the S&V center clock layout on the Trouble Brewing grimoire", async () => {
+  const user = userEvent.setup();
+  renderLiveGrimoire(players());
+
+  const grimoire = await openLiveGrimoire(user);
+  const center = grimoire.querySelector(".snvGrimoireCenter");
+  expect(center?.classList.contains("issue116PhaseClock")).toBe(true);
+  expect(center?.classList.contains("tbPhaseClock")).toBe(false);
+});
+
+test("presents the spent Virgin ability as the official no-ability token instead of V", async () => {
+  const user = userEvent.setup();
+  const playerRoster = players().map((player) => player.id === "player-1" ? {
+    ...player,
+    actualCharacter: "virgin",
+    shownCharacter: "virgin",
+  } : player);
+  renderLiveGrimoire(playerRoster, {
+    unannouncedNightDeathPlayerIds: [],
+    virginAbility: {
+      actorPlayerId: "player-1",
+      spent: true,
+      spentByNominationEventId: "event-nomination",
+    },
+  });
+
+  const grimoire = await openLiveGrimoire(user);
+  expect(within(grimoire).queryByLabelText("1번 Ada 성결자 능력 소모")).toBeNull();
+  expect(within(grimoire).getByText("+1")).toBeTruthy();
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ }));
+
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 플레이어 상세" });
+  expect(within(detail).getByText("능력 없음")).toBeTruthy();
+  expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 성결자" })).toBeTruthy();
+});
+
+test("confirms a player target inside the S&V grimoire work panel", async () => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: "firstNight:poisoner",
+    character: "poisoner",
+    playerId: "player-4",
+    kind: "playerIds",
+    target: "player",
+    minSelections: 1,
+    maxSelections: 1,
+  }));
+
+  const progress = await screen.findByRole("region", { name: "현재 단계" });
+  expect(within(progress).queryByRole("button", { name: "확정" })).toBeNull();
+  await user.click(within(progress).getByRole("button", { name: "대상 선택" }));
+
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
+  await user.click(target);
+  expect(target.classList.contains("snvSeatStateTarget")).toBe(true);
+  expect(within(panel).getByRole("button", { name: /Ada.*확정/ })).toBeTruthy();
+});
+
+test("runs nomination and vote through the S&V grimoire modes", async () => {
+  const user = userEvent.setup();
+  const nominationStep = step({
+    id: "day:nomination:1",
+    kind: "nomination",
+    stepType: "nomination",
+    phase: "day",
+    canSkip: true,
+  });
+  renderStep(nominationStep, {
+    nominations: [],
+    executionVoteThreshold: 2,
+    highestVoteCount: 0,
+    eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+    eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+  } as ReplayState["dayState"]);
+
+  await user.click(await screen.findByRole("button", { name: "← 지명하기" }));
+  const nominationSurface = await screen.findByLabelText("Trouble Brewing 마도서 검토");
+  expect(nominationSurface.classList.contains("issue116NominationMode")).toBe(true);
+  const panel = within(nominationSurface).getByRole("complementary", { name: "현재 마도서 작업" });
+  await user.click(within(nominationSurface).getByRole("button", { name: /1번 좌석, Ada/ }));
+  await user.click(within(nominationSurface).getByRole("button", { name: /4번 좌석, Dae/ }));
+  expect(nominationSurface.querySelector(".issue116NominationArrow")).not.toBeNull();
+  expect(within(panel).getByRole("button", { name: "1번 → 4번 지명 확정" })).toBeTruthy();
+});
+
+test("opens an active nomination vote directly in the S&V vote grimoire", async () => {
+  const voteStep = step({
+    id: "day:nomination:1:vote",
+    kind: "nominationVote",
+    stepType: "nomination",
+    phase: "day",
+    canSkip: true,
+  });
+  renderStep(voteStep, {
+    nominations: [],
+    activeNomination: {
+      eventId: "event-nomination",
+      stepId: "day:nomination:1",
+      nominatorId: "player-1",
+      nomineeId: "player-4",
+    },
+    executionVoteThreshold: 2,
+    highestVoteCount: 0,
+    eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+    eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+  } as ReplayState["dayState"]);
+
+  const surface = await screen.findByLabelText("Trouble Brewing 마도서 검토");
+  expect(surface.classList.contains("issue116VoteMode")).toBe(true);
+  const panel = within(surface).getByRole("complementary", { name: "현재 마도서 작업" });
+  expect(within(panel).getByText("처형 기준 2표")).toBeTruthy();
+  expect(within(panel).getByRole("button", { name: "0표로 투표 확정" })).toBeTruthy();
+});
+
+test("starts a fresh game after one S&V-style confirmation and clears the selected roles", async () => {
+  const user = userEvent.setup();
+  const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
+  const replay = replayState({ currentStep });
+  const core = createCoreHarness({
+    initialReplay: replay,
+    replayAfterProposal: replay,
+    proposal: proposal(event("unused", "unused")),
+  });
+  render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+  await waitFor(() => expect((screen.getByRole("button", { name: "새 게임" }) as HTMLButtonElement).disabled).toBe(false));
+  await user.click(screen.getByRole("button", { name: "새 게임" }));
+  const dialog = await screen.findByRole("dialog", { name: "새 게임 시작 확인" });
+  await user.click(within(dialog).getByRole("button", { name: "새 게임 시작" }));
+
+  const setup = screen.getByRole("main", { name: "Trouble Brewing 게임 설정" });
+  expect(within(setup).getByRole("button", { name: "세탁부" }).getAttribute("aria-pressed")).toBe("false");
+  expect((within(setup).getByRole("button", { name: "마도서" }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test("returns from progressed play to preserved seating after the S&V-style confirmation", async () => {
+  const user = userEvent.setup();
+  const currentStep = step({ id: "firstNight:chef", character: "chef", playerId: "player-2" });
+  const replay = replayState({ currentStep, eventCount: 2 });
+  const core = createCoreHarness({
+    initialReplay: replay,
+    replayAfterProposal: replay,
+    proposal: proposal(event("unused", "unused")),
+  });
+  const storage = new MemoryGameStorageDriver(progressedGameFile());
+  render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
+
+  const grimoire = await openLiveGrimoire(user);
+  await user.click(within(grimoire.closest("section")!).getByRole("button", { name: "배치로 돌아가기" }));
+  const dialog = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
+  expect(within(dialog).getByText("좌석 이름과 직업 배치는 유지됩니다.", { exact: false })).toBeTruthy();
+  await user.click(within(dialog).getByRole("button", { name: "초기화하고 돌아가기" }));
+
+  expect(await screen.findByLabelText("Trouble Brewing 마도서 배치")).toBeTruthy();
+  expect(screen.getByDisplayValue("Ada")).toBeTruthy();
+  expect(screen.getByRole("button", { name: /1번 좌석.*세탁부/ })).toBeTruthy();
+  await waitFor(() => expect(storage.savedGames.at(-1)?.game.events).toHaveLength(0));
 });
 
 test("shows Drunk actual and shown identities in the shared detail and restores seat focus", async () => {
@@ -91,13 +249,16 @@ test("keeps S&V death and ghost-vote state semantics on Trouble Brewing seats", 
   expect(ghostVoteSpent.querySelector(".snvFuneralIcon")).not.toBeNull();
 });
 
-function renderLiveGrimoire(playerRoster: Player[]) {
+function renderLiveGrimoire(playerRoster: Player[], ruleState?: RuleState) {
   const currentStep = step({
     id: "firstNight:washerwoman",
     character: "washerwoman",
     playerId: "player-1",
   });
-  const replay = replayState({ currentStep, playerRoster });
+  const replay = {
+    ...replayState({ currentStep, playerRoster }),
+    ...(ruleState ? { ruleState } : {}),
+  };
   const core = createCoreHarness({
     initialReplay: replay,
     replayAfterProposal: replayAfterAnnotation(replay),
@@ -106,6 +267,27 @@ function renderLiveGrimoire(playerRoster: Player[]) {
   render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 }
 
+function renderStep(currentStep: ReturnType<typeof step>, dayState?: ReplayState["dayState"]) {
+  const replay = replayState({ currentStep, dayState });
+  const core = createCoreHarness({
+    initialReplay: replay,
+    replayAfterProposal: { ...replay, eventCount: replay.eventCount + 1 },
+    proposal: proposal(event("event-confirm", "단계 확정", currentStep.phase)),
+  });
+  render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+}
+
 function replayAfterAnnotation(replay: ReplayState): ReplayState {
   return { ...replay, eventCount: replay.eventCount + 1 };
+}
+
+function progressedGameFile(): GameFile {
+  const stored = gameFile();
+  return {
+    ...stored,
+    game: {
+      ...stored.game,
+      events: [...stored.game.events, event("event-progress", "첫 단계 완료")],
+    },
+  };
 }

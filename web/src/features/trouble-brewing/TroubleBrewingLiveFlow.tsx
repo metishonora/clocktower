@@ -90,7 +90,7 @@ export function TroubleBrewingLiveFlow({
         <span className={`snvPhaseMark tbPhaseMark ${theme}`} role="img" aria-label={theme === "day" ? "낮" : "밤"}>{theme === "day" ? "☀" : "☾"}</span>
       </>}
       utilities={[
-        { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: !storageReady || busy },
+        { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: !storageReady || busy, onSelect: onReset },
         { id: "storage", label: "저장 / 불러오기", active: activeStage === "storage", disabled: busy },
         { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger" },
       ]}

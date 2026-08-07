@@ -42,6 +42,19 @@ export function troubleBrewingPlayerTokens(
       "수도사의 능력으로 현재 보호받는 대상입니다.",
     ));
   }
+  if (
+    ruleState?.virginAbility?.actorPlayerId === player.id
+    && ruleState.virginAbility.spent
+  ) {
+    tokens.push({
+      instanceId: "virgin-no-ability",
+      label: "능력 없음",
+      sourceLabel: "성결자",
+      sourceIconSrc: characterAsset("virgin")?.src,
+      visualKind: "usage",
+      description: "성결자의 능력이 지목으로 소모되었습니다.",
+    });
+  }
 
   player.systemTokenIds.forEach((tokenId, index) => {
     tokens.push({

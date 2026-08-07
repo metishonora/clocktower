@@ -20,7 +20,7 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
-import { openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
+import { confirmLivePlayerSelection, openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
 
 describe("ongoing-night production UI", () => {
   test("renders replay-derived poison and protection as distinct read-only Grimoire badges", async () => {
@@ -111,8 +111,7 @@ describe("ongoing-night production UI", () => {
     expect(screen.queryByText(/등록 판정|선한 팀으로 등록|첩자.*등록/)).toBeNull();
 
     await user.click(spy);
-    await returnToLiveProgress(user);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "4번 도윤 선택 확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -173,8 +172,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     const targetName = outcome.kind === "death" ? /하린/ : /서연/;
-    await selectLivePlayers(user, targetName);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await confirmLivePlayerSelection(user, targetName);
 
     const actionResult = await screen.findByLabelText("밤 행동 결과");
     expect(within(actionResult).getByText(expected)).toBeTruthy();

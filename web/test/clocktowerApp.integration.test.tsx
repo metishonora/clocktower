@@ -400,7 +400,6 @@ describe("ClocktowerApp live-play integration", () => {
       proposal: proposal(event("unused", "unused")),
     });
     const storage = new MemoryGameStorageDriver(gameFile());
-    const confirmSetupRecovery = vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
@@ -409,13 +408,13 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
     await user.click(liveStageButton("마도서"));
     await user.click(await screen.findByRole("button", { name: "배치로 돌아가기" }));
+    const recoveryDialog = screen.getByRole("dialog", { name: "진행 상태 초기화 확인" });
+    await user.click(within(recoveryDialog).getByRole("button", { name: "초기화하고 돌아가기" }));
 
-    expect(confirmSetupRecovery).toHaveBeenCalledWith("설정 확정을 되돌리고 다시 수정할까요?");
     expect(await screen.findByLabelText("Trouble Brewing 마도서 배치")).toBeTruthy();
     expect(screen.getByDisplayValue("Ada")).toBeTruthy();
     await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(0));
     expect(vi.mocked(core.replay).mock.calls.some(([candidate]) => candidate.game.events.length === 0)).toBe(true);
-    confirmSetupRecovery.mockRestore();
   });
 
   test("confirms a completed setup draft through the visible setup form", async () => {
@@ -506,12 +505,10 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(currentAction).getByText("매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.")).toBeTruthy();
     expect(within(currentAction).getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
     expect(storage.loadLatestGame).toHaveBeenCalledTimes(1);
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
-    const grimoire = await openLiveGrimoire(user);
+    await user.click(screen.getByRole("button", { name: "대상 선택" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     await user.click(within(grimoire).getByRole("button", { name: /Ada/ }));
-    await returnToLiveProgress(user);
-    const readyConfirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    const readyConfirm = screen.getByRole("button", { name: "1번 Ada 선택 확정" }) as HTMLButtonElement;
     expect(readyConfirm.disabled).toBe(false);
     await user.click(readyConfirm);
 
@@ -1843,23 +1840,20 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "지목 및 투표 1" });
     expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
     expect(screen.getByText("기준 2표 · 생존자 3명")).toBeTruthy();
-    await user.selectOptions(screen.getByRole("combobox", { name: "지목자" }), "player-1");
-    await user.selectOptions(screen.getByRole("combobox", { name: "피지목자" }), "player-4");
-    await user.click(screen.getByRole("button", { name: "마도서" }));
+    await user.click(screen.getByRole("button", { name: "← 지명하기" }));
     const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
+    await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
+    await user.click(within(seatMap).getByRole("button", { name: /Dae/ }));
+    await user.click(screen.getByRole("button", { name: "1번 → 4번 지명 확정" }));
     await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
     await user.click(within(seatMap).getByRole("button", { name: /Bert/ }));
 
-    await user.click(screen.getByRole("button", { name: "진행" }));
-
-    const votePreview = screen.getByText("현재 표").closest("dl");
+    const votePreview = screen.getByText("현재").closest("dl");
     if (!votePreview) throw new Error("vote preview was not rendered");
     expect(within(votePreview).getByText("2표")).toBeTruthy();
-    expect(within(votePreview).getByText(/2번 Bert/)).toBeTruthy();
-    expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
-    expect(screen.queryByText("확정된 투표만 반영")).toBeNull();
+    expect(within(votePreview).getByText("1번 Ada → 4번 Dae")).toBeTruthy();
 
-    const confirmButton = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    const confirmButton = screen.getByRole("button", { name: "2표로 투표 확정" }) as HTMLButtonElement;
     expect(confirmButton.disabled).toBe(false);
     await user.click(confirmButton);
 
@@ -1931,8 +1925,6 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    await screen.findByText("찬성한 플레이어를 선택하세요.");
-    await user.click(screen.getByRole("button", { name: "마도서" }));
     const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     const blockedButler = within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ });
     expect((blockedButler as HTMLButtonElement).disabled).toBe(true);
@@ -2041,23 +2033,20 @@ describe("ClocktowerApp live-play integration", () => {
       proposal: proposal(event("unused", "unused", "day")),
     });
 
+    const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "지목 및 투표 2" });
-    const nominators = screen.getByRole("combobox", { name: "지목자" });
-    const nominees = screen.getByRole("combobox", { name: "피지목자" });
-    expect(within(nominators).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "선택",
-      "1번 Ada",
-      "5번 Eun",
-    ]);
-    expect(within(nominees).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "선택",
-      "4번 Dae",
-      "5번 Eun",
-    ]);
-    expect(within(nominators).getByRole("option", { name: "5번 Eun" })).toBeTruthy();
-    expect(within(nominees).getByRole("option", { name: "5번 Eun" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "← 지명하기" }));
+    const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
+    expect((within(seatMap).getByRole("button", { name: /Ada/ }) as HTMLButtonElement).disabled).toBe(false);
+    expect((within(seatMap).getByRole("button", { name: /Bert/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(seatMap).getByRole("button", { name: /Eun/ }) as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(within(seatMap).getByRole("button", { name: /Eun/ }));
+    expect((within(seatMap).getByRole("button", { name: /Ada/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(seatMap).getByRole("button", { name: /Dae/ }) as HTMLButtonElement).disabled).toBe(false);
+    expect((within(seatMap).getByRole("button", { name: /Eun/ }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   test("renders concise typed Day workflow actions for Whisper and Discussion", async () => {

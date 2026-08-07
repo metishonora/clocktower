@@ -5,7 +5,7 @@ import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { phaseEvent, proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
-import { selectLivePlayers } from "./livePlayTestHelpers";
+import { confirmLivePlayerSelection, selectLivePlayers } from "./livePlayTestHelpers";
 
 const players = {
   undertaker: "player-1",
@@ -25,8 +25,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
-    await selectLivePlayers(user, /Night Victim/);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await confirmLivePlayerSelection(user, /Night Victim/);
 
     expect((await screen.findAllByText("공개하지 않은 밤 사망이 있습니다.")).length).toBeGreaterThan(0);
     expect(await screen.findByRole("heading", { name: "장의사: 1번 Undertaker" })).toBeTruthy();
@@ -74,8 +73,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
-    await selectLivePlayers(user, /Night Victim/);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await confirmLivePlayerSelection(user, /Night Victim/);
 
     expect(await screen.findByRole("heading", { name: "까마귀지기: 3번 Night Victim" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 1);

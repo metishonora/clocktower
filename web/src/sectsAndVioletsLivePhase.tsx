@@ -9,7 +9,7 @@ import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets"
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
-import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import { PlayPresentation } from "./shared-ui/PlayPresentation";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
@@ -26,6 +26,7 @@ import {
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
 import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
+import { NominationArrow } from "./shared-ui/NominationArrow";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -870,24 +871,4 @@ function isDemonCharacter(character?: string) {
 
 function isDeathConsequenceHandoff(handoff?: LiveHandoff) {
   return handoff?.kind === "sweetheart" || handoff?.kind === "barber" || handoff?.kind === "klutz";
-}
-
-function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions, mobilePositions }: {
-  nominatorIndex: number;
-  nomineeIndex: number;
-  label: string;
-  desktopPositions: { x: number; y: number }[];
-  mobilePositions: { x: number; y: number }[];
-}) {
-  return <><ArrowGraphic className="desktop" label={label} start={desktopPositions[nominatorIndex]} end={desktopPositions[nomineeIndex]} /><ArrowGraphic className="mobile" start={mobilePositions[nominatorIndex]} end={mobilePositions[nomineeIndex]} /></>;
-}
-
-function ArrowGraphic({ className, label, start, end }: { className: string; label?: string; start: { x: number; y: number }; end: { x: number; y: number } }) {
-  const selfNomination = start.x === end.x && start.y === end.y;
-  return (
-    <svg className={`issue116NominationArrow ${className}${selfNomination ? " issue116SelfNominationArrow" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
-      <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
-      {selfNomination ? <path d={inwardSelfNominationPath(start)} markerEnd={`url(#snvLiveArrow-${className})`} /> : <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />}
-    </svg>
-  );
 }
