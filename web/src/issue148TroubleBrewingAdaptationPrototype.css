@@ -207,8 +207,7 @@
   color: #d4d5c8;
 }
 
-.issue148TroubleBrewingShell .snvStageForward.prominent,
-.issue148TaskAction {
+.issue148TroubleBrewingShell .snvStageForward.prominent {
   border-color: #d2ad64;
   color: #102419;
   background: linear-gradient(135deg, #efd69e, #c6a055);
@@ -498,90 +497,44 @@
 
 .issue148CurrentTask {
   display: flex;
-  min-height: 430px;
+  min-height: 370px;
   flex-direction: column;
   background:
     radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
     linear-gradient(145deg, rgba(45, 91, 67, .58), rgba(38, 31, 22, .68));
 }
 
-.issue148TaskMeta {
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(226, 205, 157, .15);
+.issue148ProgressActor {
+  margin-bottom: 4px;
 }
 
-.issue148CurrentTask .issue148TaskMeta > span {
-  padding: 0;
-  color: #cdb477;
-  background: transparent;
-  font-size: .68rem;
-  letter-spacing: .08em;
-}
-
-.issue148TaskMeta strong {
-  color: #f2dfae;
-  font-size: .75rem;
-}
-
-.issue148CurrentTask > .snvCurrentStepLabel {
-  margin-top: 32px;
-}
-
-.issue148ActorIdentity {
-  display: flex;
-  margin: 18px 0 14px;
-  align-items: center;
-  gap: 18px;
-}
-
-.issue148ActorIdentity img {
-  width: 92px;
-  height: 92px;
-  object-fit: contain;
-  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, .32));
-}
-
-.issue148ActorIdentity h3 {
-  margin: 0 0 7px;
-  color: #fff8e8;
-  font: clamp(2.5rem, 4.5vw, 3.8rem)/1 Georgia, serif;
-}
-
-.issue148ActorIdentity strong {
+.issue148ProgressPlayer {
+  margin-left: 110px;
   color: #d3c6a7;
+  font-size: .86rem;
 }
 
-.issue148CurrentTask .issue148TaskInstruction {
+.issue148CurrentTask .issue148ProgressAbility {
+  max-width: 560px;
+  margin-top: 28px;
   color: #e0d4b9;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: .86rem;
+  line-height: 1.55;
 }
 
-.issue148TaskActions {
-  margin-top: 24px;
+.issue148CurrentTask .snvStepActions {
+  margin-top: auto;
+  padding-top: 30px;
 }
 
-.issue148TaskActions .issue148TaskAction {
-  min-width: 210px;
-  min-height: 52px;
-  padding: 10px 18px;
-  border: 1px solid #d2ad64;
-  border-radius: 15px;
-  color: #201608;
-  background: linear-gradient(135deg, #f2d184, #d5a653);
-  box-shadow: 0 12px 28px rgba(205, 143, 45, .22);
-  font: inherit;
-  font-weight: 900;
-  cursor: pointer;
+.issue148CurrentTask .snvStepActions button {
+  border-color: #7fa58a;
+  color: #fff8e8;
+  background: #3f6f55;
 }
 
 .issue148PhaseOrder {
-  max-height: 430px;
-  padding: 4px;
-  border: 1px solid rgba(215, 193, 150, .12);
-  border-radius: 20px;
-  background: rgba(0, 0, 0, .12);
-  overflow: auto;
+  min-width: 0;
 }
 
 .issue148TroubleBrewingShell .issue148PhaseOrder li.current {
@@ -591,10 +544,6 @@
 
 .issue148TroubleBrewingShell .issue148PhaseOrder li.complete {
   color: #cfc29e;
-}
-
-.issue148PhaseDrawerToggle {
-  display: none;
 }
 
 .issue148TroubleBrewingShell[data-theme="day"] {
@@ -716,11 +665,6 @@
   background: rgba(255, 253, 238, .7);
 }
 
-.issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseOrder {
-  border-color: rgba(57, 83, 55, .18);
-  background: rgba(73, 91, 62, .08);
-}
-
 .issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseOrder li {
   border-bottom-color: rgba(57, 83, 55, .14);
   color: #5d6758;
@@ -735,13 +679,9 @@
   background: #58745c;
 }
 
-.issue148TroubleBrewingShell[data-theme="day"] .issue148ActorIdentity h3 {
-  color: #203126;
-}
-
-.issue148TroubleBrewingShell[data-theme="day"] .issue148ActorIdentity strong,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148ProgressPlayer,
 .issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask p,
-.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask .issue148TaskMeta > span {
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask .snvCurrentStepLabel {
   color: #5f684e;
 }
 
@@ -802,82 +742,8 @@
     grid-template-columns: 1fr;
   }
 
-  .issue148CurrentTask {
-    min-height: 0;
-    padding: 16px;
-  }
-
-  .issue148PlaySurface {
-    padding-bottom: 82px;
-    backdrop-filter: none;
-  }
-
-  .issue148TaskMeta {
-    padding-bottom: 10px;
-  }
-
-  .issue148CurrentTask > .snvCurrentStepLabel {
-    margin-top: 16px;
-  }
-
-  .issue148ActorIdentity img {
-    width: 64px;
-    height: 64px;
-  }
-
-  .issue148ActorIdentity {
-    margin: 10px 0 8px;
-  }
-
-  .issue148ActorIdentity h3 {
-    font-size: 2.25rem;
-  }
-
-  .issue148TaskActions {
-    margin-top: 14px;
-  }
-
-  .issue148TaskActions .issue148TaskAction {
-    width: 100%;
-    min-height: 48px;
-  }
-
-  .issue148PhaseOrder {
-    display: none;
-    position: fixed;
-    z-index: 180;
-    right: max(10px, env(safe-area-inset-right));
-    bottom: calc(74px + env(safe-area-inset-bottom));
-    left: max(10px, env(safe-area-inset-left));
-    max-height: min(54vh, 430px);
-    padding: 10px;
-    border-color: rgba(222, 197, 143, .3);
-    background: rgba(8, 29, 20, .98);
-    box-shadow: 0 -18px 58px rgba(0, 0, 0, .48);
-  }
-
-  .issue148PhaseOrder.mobileOpen {
-    display: block;
-  }
-
-  .issue148PhaseDrawerToggle {
-    position: fixed;
-    z-index: 185;
-    right: max(10px, env(safe-area-inset-right));
-    bottom: max(10px, env(safe-area-inset-bottom));
-    left: max(10px, env(safe-area-inset-left));
-    display: flex;
-    min-height: 54px;
-    padding: 10px 16px;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid rgba(222, 197, 143, .34);
-    border-radius: 18px;
-    color: #fff6e4;
-    background: #17412f;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, .38);
-    font: inherit;
-    cursor: pointer;
+  .issue148ProgressPlayer {
+    margin-left: 88px;
   }
 
 }
@@ -902,9 +768,6 @@
     padding-left: 10px;
   }
 
-  .issue148ActorIdentity {
-    gap: 12px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

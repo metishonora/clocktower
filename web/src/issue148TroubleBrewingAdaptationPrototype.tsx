@@ -1,5 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { characterAsset } from "./characterAssets";
+import { troubleBrewingCharacterDetail } from "./characterDetails";
+import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import {
   GrimoirePresentation,
   RectangularGrimoireBoard,
@@ -68,7 +70,6 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
   const [selectedSeat, setSelectedSeat] = useState<number>();
   const [pendingCharacterId, setPendingCharacterId] = useState<string>();
   const [drunkShownCharacterId, setDrunkShownCharacterId] = useState("");
-  const [phaseDrawerOpen, setPhaseDrawerOpen] = useState(false);
 
   const effectiveDistribution = setupDistribution(playerCount, selectedIds.includes("baron"));
   const selectedByKind = countKinds(selectedIds);
@@ -95,7 +96,6 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
     setPendingCharacterId(undefined);
     setDrunkShownCharacterId(mode === "grimoire" ? "" : roster.includes("drunk") ? "fortuneTeller" : "");
     setActiveStage(mode === "setup" ? "setup" : mode === "play" ? "play" : "grimoire");
-    setPhaseDrawerOpen(false);
     if (mode === "play") setTheme("night");
   };
 
@@ -305,9 +305,7 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
         ) : (
           <TroubleBrewingPlay
             playerCount={playerCount}
-            phaseDrawerOpen={phaseDrawerOpen}
             onGoToGrimoire={() => setActiveStage("grimoire")}
-            onTogglePhaseDrawer={() => setPhaseDrawerOpen((open) => !open)}
           />
         )}
       </ProductionApplicationShell>
@@ -644,17 +642,12 @@ function TroubleBrewingGrimoire({
 
 function TroubleBrewingPlay({
   playerCount,
-  phaseDrawerOpen,
   onGoToGrimoire,
-  onTogglePhaseDrawer,
 }: {
   playerCount: number;
-  phaseDrawerOpen: boolean;
   onGoToGrimoire: () => void;
-  onTogglePhaseDrawer: () => void;
 }) {
   const order = playerCount <= 6 ? firstNightOrder.slice(2) : firstNightOrder;
-  const currentStep = order.indexOf("독살범") + 1;
   return (
     <PlayPresentation
       ariaLabel="Trouble Brewing 첫 Play 전환"
@@ -669,22 +662,23 @@ function TroubleBrewingPlay({
         </div>
       </>}
       currentTask={<article className="snvCurrentStep issue148CurrentTask" role="group" aria-label="독살범 대상 선택">
-        <header className="issue148TaskMeta">
-          <span>{playerCount <= 6 ? "악 진영 정보 생략" : "악 진영 정보 완료"}</span>
-          <strong>현재 {currentStep}/{order.length}</strong>
-        </header>
         <p className="snvCurrentStepLabel">현재 할 일</p>
-        <div className="issue148ActorIdentity">
+        <CharacterDetailButton
+          details={troubleBrewingCharacterDetail("poisoner")}
+          className="snvCurrentStepIdentity interactive issue148ProgressActor"
+          theme="snv-night"
+        >
           <img src={characterAsset("poisoner")?.src} alt="독살범 공식 캐릭터 아이콘" />
-          <div><h3>독살범</h3><strong>4번 지우</strong></div>
-        </div>
-        <p className="issue148TaskInstruction">중독시킬 플레이어 1명</p>
-        <div className="snvStepActions issue148TaskActions">
-          <button type="button" className="issue148TaskAction" onClick={onGoToGrimoire}>대상 선택</button>
+          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>독살범</span>
+        </CharacterDetailButton>
+        <strong className="issue148ProgressPlayer">4번 지우</strong>
+        <p className="issue148ProgressAbility">{character("poisoner").abilitySummary}</p>
+        <div className="snvStepActions">
+          <button type="button" onClick={onGoToGrimoire}>← 대상 선택</button>
         </div>
       </article>}
-      phaseOrder={<>
-        <ol className={`snvPhaseOverview issue148PhaseOrder ${phaseDrawerOpen ? "mobileOpen" : ""}`} aria-label="첫날 밤 순서">
+      phaseOrder={
+        <ol className="snvPhaseOverview issue148PhaseOrder" aria-label="첫날 밤 순서">
           {order.map((label) => {
             const originalIndex = firstNightOrder.indexOf(label);
             const current = label === "독살범";
@@ -692,10 +686,7 @@ function TroubleBrewingPlay({
             return <li key={label} className={current ? "current" : complete ? "complete" : ""}><span>{current ? "현재" : complete ? "완료" : "대기"}</span><strong>{label}</strong></li>;
           })}
         </ol>
-        <button type="button" className="issue148PhaseDrawerToggle" aria-label={phaseDrawerOpen ? "단계 순서 닫기" : "단계 순서 열기"} aria-expanded={phaseDrawerOpen} onClick={onTogglePhaseDrawer}>
-          <span>첫날 밤 순서</span><strong>{phaseDrawerOpen ? "닫기" : `${currentStep}/${order.length}`}</strong>
-        </button>
-      </>}
+      }
     />
   );
 }

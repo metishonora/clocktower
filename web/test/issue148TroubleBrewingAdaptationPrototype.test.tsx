@@ -158,23 +158,26 @@ test("shows confirmed review surfaces and the approved first Play transition", a
   expect(play.classList.contains("playPresentation")).toBe(true);
   expect(within(play).getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
   expect(within(play).getByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
-  expect(within(play).getByText("현재 3/11")).toBeTruthy();
+  expect(within(play).queryByText("현재 3/11")).toBeNull();
   expect(within(play).getByRole("group", { name: "독살범 대상 선택" })).toBeTruthy();
   expect(within(play).getByRole("heading", { name: "독살범" })).toBeTruthy();
   expect(within(play).getByText("4번 지우")).toBeTruthy();
   expect(within(play).queryByText("4번 지우 · 독살범")).toBeNull();
-  expect(within(play).getByText("중독시킬 플레이어 1명")).toBeTruthy();
-  const targetAction = within(play).getByRole("button", { name: "대상 선택" });
+  expect(within(play).getByText("매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.")).toBeTruthy();
+  expect(within(play).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
+  expect(within(play).queryByRole("button", { name: "단계 순서 열기" })).toBeNull();
+
+  await user.click(within(play).getByRole("button", { name: "독살범 캐릭터 상세 열기" }));
+  expect(screen.getByRole("dialog", { name: "독살범 캐릭터 상세" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "캐릭터 상세 닫기" }));
+
+  const targetAction = within(play).getByRole("button", { name: "← 대상 선택" });
   await user.click(targetAction);
   expect(screen.getByRole("region", { name: "Trouble Brewing 마도서 배치" })).toBeTruthy();
 
   await user.click(within(reviewTools).getByRole("button", { name: "첫 Play 시료" }));
   const reopenedPlay = screen.getByRole("region", { name: "Trouble Brewing 첫 Play 전환" });
   expect(within(reopenedPlay).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
-  const drawer = within(reopenedPlay).getByRole("button", { name: "단계 순서 열기" });
-  expect(drawer.getAttribute("aria-expanded")).toBe("false");
-  await user.click(drawer);
-  expect(drawer.getAttribute("aria-expanded")).toBe("true");
 
   await user.click(within(reviewTools).getByRole("button", { name: "5인 시료" }));
   const smallGameOrder = screen.getByRole("list", { name: "첫날 밤 순서" });
@@ -190,7 +193,10 @@ test("keeps the prototype on script-neutral shared presentation contracts", () =
   expect(source).toMatch(/shared-ui\/SetupPresentation/);
   expect(source).toMatch(/shared-ui\/GrimoirePresentation/);
   expect(source).toMatch(/shared-ui\/PlayPresentation/);
+  expect(source).toMatch(/snvCurrentStepIdentity interactive issue148ProgressActor/);
   expect(source).not.toMatch(/sectsAndViolets/);
+  expect(source).not.toMatch(/phaseDrawer/);
+  expect(styles).not.toMatch(/issue148PhaseDrawerToggle/);
   expect(styles).toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*top:\s*4px;[^}]*right:\s*2px;[^}]*width:\s*34px;[^}]*height:\s*34px;/s);
   expect(styles).not.toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*bottom:\s*-\d+px;/s);
   expect(styles).not.toMatch(/button\.character-drunk\s*>\s*img\s*\{[^}]*width:\s*(?:44|52)px;/s);
