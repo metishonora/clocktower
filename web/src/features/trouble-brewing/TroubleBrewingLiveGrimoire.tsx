@@ -15,6 +15,7 @@ import { nextVoterIdsAfterToggle, voteStatusForPlayer } from "../../voting";
 import { FuneralIcon, GhostVoteIcon } from "../grimoire/SeatStateIcons";
 import { PlayerAnnotationsDialog } from "../grimoire/PlayerAnnotationsDialog";
 import { PlayerTokenCountBadge, PlayerTokenDetailDialog } from "../grimoire/playerTokenPresentation";
+import { currentActionPrompt } from "../phase-control/phaseInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { troubleBrewingPlayerTokens } from "./troubleBrewingPlayerTokenPresentation";
 import "../grimoire/sectsAndVioletsSeatStates.css";
@@ -414,13 +415,20 @@ function TroubleBrewingSelectionPanel({
     const player = players.find((candidate) => candidate.id === id);
     return player ? [player] : [];
   });
-  const actor = players.find((player) => player.id === currentStep?.playerId);
   const setupInformationTargetCount = currentStep?.requiredInput.kind === "setupInfo"
     ? currentStep.requiredInput.maxSelections ?? 0
     : 0;
+  const playerTargetCount = currentStep?.requiredInput.kind === "playerIds"
+    ? currentStep.requiredInput.maxSelections ?? 0
+    : 0;
+  const numberedTargetCount = setupInformationTargetCount || (playerTargetCount > 1 ? playerTargetCount : 0);
   const target = targets[0];
   const targetLabel = target ? `${target.seat}번 ${target.name}` : "선택 전";
-  const title = handoff === "nomination" ? "지명 선택" : handoff === "vote" ? "투표 집계" : "대상 선택";
+  const title = handoff === "nomination"
+    ? "지명 선택"
+    : handoff === "vote"
+      ? "투표 집계"
+      : targetSelectionTitle(currentStep);
   const confirmLabel = handoff === "nomination"
     ? nominator && nominee ? `${nominator.seat}번 → ${nominee.seat}번 지명 확정` : "지명자와 피지명자를 선택하세요"
     : handoff === "vote" ? `${voterIds.length}표로 투표 확정`
@@ -440,13 +448,12 @@ function TroubleBrewingSelectionPanel({
     </dl> : handoff === "vote" ? <dl className="issue116VoteSummary">
       <div><dt>지명</dt><dd>{playerLabel(nominator)} → {playerLabel(nominee)}</dd></div>
       <div><dt>현재</dt><dd className={voterIds.length >= executionVoteThreshold ? "thresholdMet" : ""}>{voterIds.length}표</dd><span aria-hidden="true">/</span><dd>처형 기준 {executionVoteThreshold}표</dd></div>
-    </dl> : setupInformationTargetCount > 0 ? <dl>
+    </dl> : numberedTargetCount > 0 ? <dl>
       {targets.map((selectedTarget, index) => <div key={selectedTarget.id}>
-        <dt>{index + 1}번째</dt><dd>{playerLabel(selectedTarget)}</dd>
+        <dt>{targetOrdinal(index)}</dt><dd>{playerLabel(selectedTarget)}</dd>
       </div>)}
     </dl> : <dl>
-      <div><dt>행동자</dt><dd>{playerLabel(actor)}</dd></div>
-      <div><dt>선택 대상</dt><dd>{targets.length > 1 ? targets.map(playerLabel).join(", ") : targetLabel}</dd></div>
+      <div><dt>선택 대상</dt><dd>{targetLabel}</dd></div>
     </dl>}
     <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
   </aside>;
@@ -454,6 +461,24 @@ function TroubleBrewingSelectionPanel({
 
 function playerLabel(player?: Player) {
   return player ? `${player.seat}번 ${player.name}` : "선택 전";
+}
+
+function targetOrdinal(index: number) {
+  if (index === 0) return "첫 번째";
+  if (index === 1) return "두 번째";
+  return `${index + 1}번째`;
+}
+
+function targetSelectionTitle(step?: PhaseStep) {
+  if (!step) return "대상 선택";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "선한 미끼 선택";
+  if (step.character === "fortuneTeller") return "악마 확인";
+  if (step.character === "poisoner") return "중독 대상";
+  if (step.character === "monk") return "보호 대상";
+  if (step.character === "imp") return "공격 대상";
+  if (step.character === "ravenkeeper") return "캐릭터 확인";
+  if (step.character === "butler") return "주인 선택";
+  return currentActionPrompt(step) ?? "대상 선택";
 }
 
 function characterKindClass(characterId: string) {

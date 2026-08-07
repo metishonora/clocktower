@@ -179,6 +179,34 @@ test("confirms a player target inside the S&V grimoire work panel", async () => 
     .getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
 });
 
+test("describes the Fortune Teller action and numbers both targets without an actor row", async () => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: "night:fortuneTeller",
+    character: "fortuneTeller",
+    playerId: "player-1",
+    kind: "playerIds",
+    target: "players",
+    minSelections: 2,
+    maxSelections: 2,
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: "대상 선택" }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  expect(within(panel).getByRole("heading", { name: "악마 확인" })).toBeTruthy();
+  expect(within(panel).queryByRole("heading", { name: "대상 선택" })).toBeNull();
+  expect(within(panel).queryByText("행동자")).toBeNull();
+
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ }));
+  await user.click(within(grimoire).getByRole("button", { name: /3번 좌석, Cy/ }));
+  expect(within(panel).getByText("첫 번째")).toBeTruthy();
+  expect(within(panel).getByText("2번 Bert")).toBeTruthy();
+  expect(within(panel).getByText("두 번째")).toBeTruthy();
+  expect(within(panel).getByText("3번 Cy")).toBeTruthy();
+});
+
 test("uses the S&V numbered target summary for setup information", async () => {
   const user = userEvent.setup();
   renderStep(step({
@@ -202,9 +230,9 @@ test("uses the S&V numbered target summary for setup information", async () => {
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ }));
   await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ }));
-  expect(within(panel).getByText("1번째")).toBeTruthy();
+  expect(within(panel).getByText("첫 번째")).toBeTruthy();
   expect(within(panel).getByText("1번 Ada")).toBeTruthy();
-  expect(within(panel).getByText("2번째")).toBeTruthy();
+  expect(within(panel).getByText("두 번째")).toBeTruthy();
   expect(within(panel).getByText("2번 Bert")).toBeTruthy();
 
   await user.click(within(panel).getByRole("button", { name: "선택 확정" }));
