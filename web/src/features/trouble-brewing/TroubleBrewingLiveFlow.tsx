@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react";
 import type { SetupDistribution } from "../../core/types";
-import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { ProductionApplicationShell } from "../../shared-ui/ProductionApplicationShell";
 import {
   characterKinds,
@@ -20,8 +19,6 @@ export function TroubleBrewingLiveFlow({
   draft,
   expectedCounts,
   activeStage,
-  phaseLabel,
-  phaseRuntime,
   theme,
   busy,
   storageReady,
@@ -29,8 +26,7 @@ export function TroubleBrewingLiveFlow({
   loadError,
   canUndo,
   grimoire,
-  phaseControl,
-  auxiliary,
+  progress,
   onStageChange,
   onReturnToAssignment,
   onImport,
@@ -40,8 +36,6 @@ export function TroubleBrewingLiveFlow({
   draft: SetupDraft;
   expectedCounts?: SetupDistribution;
   activeStage: TroubleBrewingLiveStage;
-  phaseLabel: string;
-  phaseRuntime: string;
   theme: "day" | "night";
   busy: boolean;
   storageReady: boolean;
@@ -49,8 +43,7 @@ export function TroubleBrewingLiveFlow({
   loadError?: string;
   canUndo: boolean;
   grimoire: ReactNode;
-  phaseControl: ReactNode;
-  auxiliary: ReactNode;
+  progress: ReactNode;
   onStageChange: (stage: TroubleBrewingLiveStage) => void;
   onReturnToAssignment: () => void;
   onImport: () => void;
@@ -81,7 +74,7 @@ export function TroubleBrewingLiveFlow({
       motion="none"
       title="Trouble Brewing"
       eyebrow="STORYTELLER CONSOLE"
-      subtitle={`${draft.players.length}명 · ${phaseLabel}`}
+      subtitle="5–15명"
       leading={<a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a>}
       headerActionsAriaLabel="현재 페이즈와 되돌리기"
       headerActions={<>
@@ -138,21 +131,7 @@ export function TroubleBrewingLiveFlow({
           <div className="tbConfirmedGrimoireBoard">{grimoire}</div>
         </section>
       ) : (
-        <PlayPresentation
-          ariaLabel="Trouble Brewing 진행"
-          className="snvManualSurface snvTabPanel tbPlaySurface"
-          headerClassName="snvFirstNightHeader tbPlayHeader"
-          primaryClassName="snvFirstNightPrimary tbPlayPrimary"
-          phaseHeader={<>
-            <button type="button" aria-label="마도서로 이동" onClick={() => onStageChange("seating")}>← 마도서</button>
-            <div className="snvProgressPhaseHeader">
-              <h2>{phaseLabel}</h2>
-              <time className="snvProgressRuntime" aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
-            </div>
-          </>}
-          currentTask={<section className="panel phasePanel tbLivePhasePanel">{phaseControl}</section>}
-          phaseOrder={<aside className="tbLiveAuxiliary">{auxiliary}</aside>}
-        />
+        progress
       )}
     </ProductionApplicationShell>
   );

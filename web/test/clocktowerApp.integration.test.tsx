@@ -147,6 +147,46 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
 
+  test("uses the supported player range and the approved SnV-style progress structure", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    const main = await screen.findByRole("main", { name: "Trouble Brewing 진행" });
+    const progress = within(main).getByRole("region", { name: "Trouble Brewing 진행" });
+    const applicationHeader = main.querySelector(".productionApplicationHeader");
+    if (!applicationHeader) throw new Error("application header was not rendered");
+    expect(within(applicationHeader as HTMLElement).getByText("5–15명")).toBeTruthy();
+    expect(progress.querySelector(".snvCurrentStep.tbCurrentTask")).toBeTruthy();
+    expect(within(progress).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
+    expect(progress.querySelector(".phasePanelContent")).toBeNull();
+    expect(progress.querySelector(".currentStepCard")).toBeNull();
+  });
+
+  test("shows the supported player range before a Trouble Brewing game starts", async () => {
+    const currentStep = step({ id: "unused" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(undefined)} />);
+
+    const main = await screen.findByRole("main", { name: "Trouble Brewing 게임 설정" });
+    const applicationHeader = main.querySelector(".productionApplicationHeader");
+    if (!applicationHeader) throw new Error("application header was not rendered");
+    expect(within(applicationHeader as HTMLElement).getByText("5–15명")).toBeTruthy();
+  });
+
   test("keeps an unsupported IndexedDB autosave until the existing new-game recovery is chosen", async () => {
     const core = createCoreHarness({
       initialReplay: replayState({ currentStep: step({ id: "unused" }) }),
@@ -164,7 +204,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect((await screen.findAllByText("지원하지 않는 게임 파일 버전입니다.")).length).toBeGreaterThan(0);
     expect((screen.getByRole("button", { name: "6명" }) as HTMLButtonElement).disabled).toBe(false);
     await user.click(screen.getByRole("button", { name: "6명" }));
-    expect(screen.getByText("6명", { selector: ".productionApplicationHeader p" })).toBeTruthy();
+    expect(screen.getByText("5–15명", { selector: ".productionApplicationHeader p" })).toBeTruthy();
     expect(await getRawLatestGame(idb)).toEqual(unsupportedGame);
 
     await user.click(screen.getByRole("button", { name: "새 게임" }));
@@ -440,11 +480,9 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "독살범: 4번 Dae" });
     const currentAction = screen.getByLabelText("현재 단계");
-    const actor = within(currentAction).getByLabelText("현재 행동자");
-    expect(within(actor).getByText("행동자")).toBeTruthy();
-    expect(within(actor).getByRole("heading", { name: "독살범" })).toBeTruthy();
-    expect(within(actor).getByText("4번 Dae")).toBeTruthy();
-    expect(within(actor).getByText("매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.")).toBeTruthy();
+    expect(within(currentAction).getByRole("heading", { name: "독살범: 4번 Dae" })).toBeTruthy();
+    expect(within(currentAction).getByText("4번 Dae")).toBeTruthy();
+    expect(within(currentAction).getByText("매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.")).toBeTruthy();
     expect(within(currentAction).getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
     expect(storage.loadLatestGame).toHaveBeenCalledTimes(1);
     const stepInput = screen.getByLabelText("단계 입력");
@@ -902,7 +940,6 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "악마 깨우기 · 하수인과 블러프 확인" });
-    await user.click(screen.getByText("0 / 1 완료"));
     const phaseOverview = screen.getByRole("region", { name: "단계 개요" });
     expect(within(phaseOverview).getByText("악마 (5)")).toBeTruthy();
     const characterInput = await screen.findByLabelText("캐릭터 입력");

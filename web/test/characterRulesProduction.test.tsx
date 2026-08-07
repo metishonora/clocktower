@@ -95,7 +95,7 @@ test("opens the current actor rules card and restores focus after Escape", async
   const actor = await screen.findByLabelText("현재 행동자");
   const trigger = within(actor).getByRole("button", { name: "세탁부 캐릭터 상세 열기" });
   expect(within(trigger).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  expect(within(trigger).getByRole("heading", { name: "세탁부" })).toBeTruthy();
+  expect(within(trigger).getByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   await user.click(trigger);
   expect(screen.getByRole("dialog", { name: "세탁부 캐릭터 상세" })).toBeTruthy();
 

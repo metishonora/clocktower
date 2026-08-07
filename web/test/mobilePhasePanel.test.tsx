@@ -1,5 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -99,81 +98,66 @@ function renderLivePlay() {
   return render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 }
 
-test("toggles the mobile live-play sheet between approved control and Grimoire heights", async () => {
+test("keeps the approved current-task and phase-order layout on mobile", async () => {
   installMobileViewport(true);
-  const user = userEvent.setup();
   renderLivePlay();
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   const app = screen.getByTestId("clocktower-app");
-  const panel = document.querySelector(".phasePanel");
-  const toggle = screen.getByTestId("mobile-phase-panel-toggle");
-
-  expect(app.dataset.mobilePanelState).toBe("controls");
-  expect(app.style.getPropertyValue("--mobile-phase-panel-height")).toContain("85dvh");
-  expect(toggle.dataset.direction).toBe("down");
-  expect(panel?.querySelector(".phasePanelContent")).not.toBeNull();
-
-  await user.click(toggle);
-  expect(app.dataset.mobilePanelState).toBe("grimoire");
-  expect(app.style.getPropertyValue("--mobile-phase-panel-height")).toContain("20dvh");
-  expect(toggle.dataset.direction).toBe("up");
-
-  await user.click(toggle);
-  expect(app.dataset.mobilePanelState).toBe("controls");
-  expect(toggle.dataset.direction).toBe("down");
+  expect(within(app).getByLabelText("현재 단계").classList.contains("tbCurrentTask")).toBe(true);
+  expect(within(app).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
+  expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
+  expect(app.dataset.mobilePanelState).toBeUndefined();
 });
 
-test("keeps the landing-only CCC notice out of live play and resets panel state on remount", async () => {
+test("keeps the landing-only CCC notice and legacy mobile panel out of live play after remount", async () => {
   installMobileViewport(true);
-  const user = userEvent.setup();
   const firstRender = renderLivePlay();
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   expect(screen.queryByLabelText("Community Created Content 안내")).toBeNull();
-  await user.click(screen.getByTestId("mobile-phase-panel-toggle"));
-  expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("grimoire");
+  expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
 
   firstRender.unmount();
   renderLivePlay();
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-  expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBe("controls");
+  expect(screen.getByTestId("clocktower-app").dataset.mobilePanelState).toBeUndefined();
   expect(screen.queryByLabelText("Community Created Content 안내")).toBeNull();
 });
 
-test("removes the mobile control without restoring the landing-only notice above 900px", async () => {
+test("does not restore the legacy mobile control when crossing 900px", async () => {
   const viewport = installMobileViewport(true);
   renderLivePlay();
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-  expect(screen.getByTestId("mobile-phase-panel-toggle")).toBeTruthy();
+  expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
 
   viewport.setMatches(false);
-  await waitFor(() => expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull());
+  expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
   const app = screen.getByTestId("clocktower-app");
   expect(app.dataset.mobilePanelState).toBeUndefined();
   expect(within(app).queryByLabelText("Community Created Content 안내")).toBeNull();
 });
 
 test.each(["portrait", "landscape"] as const)(
-  "uses only the vertical phase overview accordion on a full-screen 12.9-inch fifth-generation iPad Pro in %s",
+  "uses the always-visible SnV phase order on a full-screen 12.9-inch fifth-generation iPad Pro in %s",
   async (orientation) => {
     installIpadPro12_9Gen5Viewport(orientation);
     renderLivePlay();
 
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-    const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+    const overview = screen.getByRole("list", { name: "첫날 밤 순서" });
     const app = screen.getByTestId("clocktower-app");
 
-    expect(overview?.dataset.layout).toBe("accordion");
-    expect(overview?.open).toBe(false);
+    expect(overview.classList.contains("snvPhaseOverview")).toBe(true);
+    expect(overview.closest("details")).toBeNull();
     expect(screen.queryByTestId("mobile-phase-panel-toggle")).toBeNull();
     expect(app.dataset.mobilePanelState).toBeUndefined();
     expect(within(app).queryByLabelText("Community Created Content 안내")).toBeNull();
   },
 );
 
-test("uses the vertical phase overview accordion on a large mouse desktop", async () => {
+test("uses the always-visible SnV phase order on a large mouse desktop", async () => {
   installMobileViewport(false);
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1920 });
   Object.defineProperty(window.screen, "width", { configurable: true, value: 1920 });
@@ -183,8 +167,8 @@ test("uses the vertical phase overview accordion on a large mouse desktop", asyn
   renderLivePlay();
 
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-  const overview = document.querySelector<HTMLDetailsElement>(".phaseOverviewDisclosure");
+  const overview = screen.getByRole("list", { name: "첫날 밤 순서" });
 
-  expect(overview?.dataset.layout).toBe("accordion");
-  expect(overview?.open).toBe(false);
+  expect(overview.classList.contains("snvPhaseOverview")).toBe(true);
+  expect(overview.closest("details")).toBeNull();
 });

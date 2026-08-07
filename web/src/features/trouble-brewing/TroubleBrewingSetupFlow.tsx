@@ -173,7 +173,7 @@ export function TroubleBrewingSetupFlow({
       motion="none"
       title="Trouble Brewing"
       eyebrow="STORYTELLER CONSOLE"
-      subtitle={`${draft.players.length}명`}
+      subtitle="5–15명"
       leading={<a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a>}
       headerActionsAriaLabel="현재 페이즈와 되돌리기"
       headerActions={<>

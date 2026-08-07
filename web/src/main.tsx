@@ -28,6 +28,7 @@ import {
   TroubleBrewingLiveFlow,
   type TroubleBrewingLiveStage,
 } from "./features/trouble-brewing/TroubleBrewingLiveFlow";
+import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
@@ -556,18 +557,14 @@ export function ClocktowerApp({
     const livePhaseLabel = numberedPhase?.label ?? (gameStore.phase === "day" ? "낮" : "밤");
     return (
       <div
-        className={`clocktowerApp tbSharedLivePlay ${mobilePhasePanel.mobile ? "mobileLivePlay" : ""}`}
+        className="clocktowerApp tbSharedLivePlay"
         data-testid="clocktower-app"
-        data-mobile-panel-state={mobilePhasePanel.mobile ? mobilePhasePanel.state : undefined}
-        style={{ "--mobile-phase-panel-height": mobilePhasePanel.height } as React.CSSProperties}
       >
         <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
         <TroubleBrewingLiveFlow
           draft={gameStore.setupDraft}
           expectedCounts={gameStore.setupExpectedCounts}
           activeStage={troubleBrewingStage}
-          phaseLabel={livePhaseLabel}
-          phaseRuntime={phaseRuntime ?? "00:00"}
           theme={gameStore.phase === "day" ? "day" : "night"}
           busy={gameStore.busy}
           storageReady={gameStore.storageReady}
@@ -615,67 +612,64 @@ export function ClocktowerApp({
                 : undefined
             }
           />}
-          phaseControl={<>
-            {mobilePhasePanel.mobile ? (
-              <MobilePhasePanelToggle state={mobilePhasePanel.state} onToggle={mobilePhasePanel.toggle} />
-            ) : null}
-            <div className="phasePanelContent">
-              <PhaseControl
-                pendingReveal={gameStore.pendingConfirmedReveal}
-                currentStep={gameStore.currentStep}
-                phaseOverview={gameStore.phaseOverview}
-                players={gameStore.players}
-                dayState={gameStore.dayState}
-                ruleState={gameStore.ruleState}
-                latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
-                nominationDraft={nominationDraft}
-                onNominationDraftChange={setNominationDraft}
-                phaseInputDraft={phaseInputDraft}
-                replayReady={gameStore.pendingConfirmedRevealReady}
-                busy={gameStore.busy}
-                preActionRevealPending={preActionRevealPending}
-                onShowPreActionReveal={showPreActionReveal}
-                onShowReveal={showReveal}
-                onContinue={gameStore.continueAfterConfirmedReveal}
-                onConfirm={gameStore.confirmCurrentStep}
-                onSkip={gameStore.skipCurrentStep}
-                onSuggest={gameStore.suggestPhaseInput}
-                choiceTokenSource={choiceTokenSource}
-                suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
+          progress={<TroubleBrewingProgress
+            phaseLabel={livePhaseLabel}
+            phaseRuntime={phaseRuntime ?? "00:00"}
+            theme={gameStore.phase === "day" ? "day" : "night"}
+            onGoToGrimoire={() => setTroubleBrewingStage("seating")}
+            pendingReveal={gameStore.pendingConfirmedReveal}
+            currentStep={gameStore.currentStep}
+            phaseOverview={gameStore.phaseOverview}
+            players={gameStore.players}
+            dayState={gameStore.dayState}
+            ruleState={gameStore.ruleState}
+            latestProposal={gameStore.proposalResult?.ok ? gameStore.proposalResult.value : undefined}
+            nominationDraft={nominationDraft}
+            onNominationDraftChange={setNominationDraft}
+            phaseInputDraft={phaseInputDraft}
+            replayReady={gameStore.pendingConfirmedRevealReady}
+            busy={gameStore.busy}
+            preActionRevealPending={preActionRevealPending}
+            onShowPreActionReveal={showPreActionReveal}
+            onShowReveal={showReveal}
+            onContinue={gameStore.continueAfterConfirmedReveal}
+            onConfirm={gameStore.confirmCurrentStep}
+            onSkip={gameStore.skipCurrentStep}
+            onSuggest={gameStore.suggestPhaseInput}
+            choiceTokenSource={choiceTokenSource}
+            suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
+            warnings={gameStore.shownWarnings}
+            gameEnd={gameStore.gameEnd}
+            onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
+            onRequestUndoGameEnd={(trigger) => {
+              if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
+            }}
+            auxiliary={<>
+              <details className="panel auxiliaryPanel setup">
+                <summary><span>설정 및 불러오기</span><small>{gameStore.players.length}명</small></summary>
+                <div className="auxiliaryPanelContent">
+                  <ConfirmedSetup
+                    players={gameStore.players}
+                    canRecoverSetup={gameStore.canRecoverConfirmedSetup}
+                    onRecoverSetup={gameStore.recoverConfirmedSetup}
+                    onExport={exportLatestGame}
+                    onImport={() => importInputRef.current?.click()}
+                    onReset={gameStore.resetSetup}
+                  />
+                </div>
+              </details>
+              <EventLog
+                events={gameStore.gameFile.game.events}
+                replayResult={gameStore.replayResult}
+                proposalResult={gameStore.proposalResult}
+                loadError={gameStore.loadError}
                 warnings={gameStore.shownWarnings}
-                gameEnd={gameStore.gameEnd}
-                onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
-                onRequestUndoGameEnd={(trigger) => {
-                  if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
-                }}
+                latestUndoEvent={undefined}
+                undoDisabled
+                onRequestUndo={requestLiveUndo}
               />
-            </div>
-          </>}
-          auxiliary={<>
-            <details className="panel auxiliaryPanel setup">
-              <summary><span>설정 및 불러오기</span><small>{gameStore.players.length}명</small></summary>
-              <div className="auxiliaryPanelContent">
-                <ConfirmedSetup
-                  players={gameStore.players}
-                  canRecoverSetup={gameStore.canRecoverConfirmedSetup}
-                  onRecoverSetup={gameStore.recoverConfirmedSetup}
-                  onExport={exportLatestGame}
-                  onImport={() => importInputRef.current?.click()}
-                  onReset={gameStore.resetSetup}
-                />
-              </div>
-            </details>
-            <EventLog
-              events={gameStore.gameFile.game.events}
-              replayResult={gameStore.replayResult}
-              proposalResult={gameStore.proposalResult}
-              loadError={gameStore.loadError}
-              warnings={gameStore.shownWarnings}
-              latestUndoEvent={undefined}
-              undoDisabled
-              onRequestUndo={requestLiveUndo}
-            />
-          </>}
+            </>}
+          />}
         />
         {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
           actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
