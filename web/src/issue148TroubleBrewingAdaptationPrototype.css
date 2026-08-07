@@ -261,33 +261,25 @@
 }
 
 .issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
-  width: 52px;
-  height: 52px;
-  margin: -3px auto -2px;
-  transform: translateX(-3px);
-}
-
-.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > small {
-  font-size: .66rem;
-  font-weight: 900;
+  transform: translateX(-6px);
 }
 
 .issue148ShownCharacterToken {
   position: absolute;
   z-index: 3;
-  top: 3px;
+  top: 4px;
   right: 2px;
   display: grid;
   box-sizing: border-box;
-  width: 22px;
-  height: 22px;
-  padding: 2px;
+  width: 34px;
+  height: 34px;
+  padding: 4px;
   place-items: center;
-  border: 1px solid #72c6e7;
+  border: 2px solid #72c6e7;
   border-radius: 50%;
   color: #fff8e8;
   background: #173f4c;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .48), 0 0 0 2px rgba(114, 198, 231, .14);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .15);
   font-size: .78rem;
   font-weight: 900;
   pointer-events: none;
@@ -299,8 +291,8 @@
 }
 
 .issue148TroubleBrewingShell .issue148GrimoireBoard > button .issue148ShownCharacterToken img {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   margin: 0;
   object-fit: contain;
 }
@@ -789,8 +781,7 @@
   }
 
   .issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
-    width: 44px;
-    height: 44px;
+    transform: translateX(-12px);
   }
 
   .issue148DrunkEditor label,

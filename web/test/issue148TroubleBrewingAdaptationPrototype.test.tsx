@@ -174,7 +174,7 @@ test("keeps the prototype on script-neutral shared presentation contracts", () =
   expect(source).toMatch(/shared-ui\/GrimoirePresentation/);
   expect(source).toMatch(/shared-ui\/PlayPresentation/);
   expect(source).not.toMatch(/sectsAndViolets/);
-  expect(styles).toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*top:\s*3px;[^}]*right:\s*2px;/s);
+  expect(styles).toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*top:\s*4px;[^}]*right:\s*2px;[^}]*width:\s*34px;[^}]*height:\s*34px;/s);
   expect(styles).not.toMatch(/\.issue148ShownCharacterToken\s*\{[^}]*bottom:\s*-\d+px;/s);
-  expect(styles).toMatch(/button\.character-drunk\s*>\s*img\s*\{[^}]*width:\s*52px;[^}]*height:\s*52px;/s);
+  expect(styles).not.toMatch(/button\.character-drunk\s*>\s*img\s*\{[^}]*width:\s*(?:44|52)px;/s);
 });
