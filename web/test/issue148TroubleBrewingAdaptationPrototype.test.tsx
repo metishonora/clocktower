@@ -78,7 +78,10 @@ test("requires the Drunk Shown Character in the shared Grimoire assignment flow"
   await user.selectOptions(shownCharacter, "fortuneTeller");
   const drunkSeat = within(grimoire).getByRole("button", { name: /번 좌석.*실제 주정뱅이.*표시 점쟁이/ });
   expect(within(drunkSeat).getByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeTruthy();
-  expect(within(grimoire).getByRole("button", { name: "배치 확정" }).hasAttribute("disabled")).toBe(false);
+  const confirmSeating = within(grimoire).getByRole("button", { name: "배치 확정" });
+  expect(confirmSeating.hasAttribute("disabled")).toBe(false);
+  expect(confirmSeating.classList.contains("snvConfirmRoster")).toBe(true);
+  expect(confirmSeating.classList.contains("snvStageForward")).toBe(false);
 
   await user.click(within(grimoire).getByRole("button", { name: "배치 초기화" }));
   expect(within(grimoire).getAllByRole("button", { name: /미할당/ })).toHaveLength(7);
@@ -136,6 +139,9 @@ test("shows confirmed review surfaces and the approved first Play transition", a
   expect(within(confirmedGrimoire).getByLabelText("현재 행동자 안내")).toBeTruthy();
   expect(within(confirmedGrimoire).getByRole("button", { name: /독살범.*현재 행동자/ })).toBeTruthy();
   expect(within(confirmedGrimoire).queryByRole("button", { name: "무작위 배치" })).toBeNull();
+  await user.click(within(confirmedGrimoire).getByRole("button", { name: "배치로 돌아가기" }));
+  expect(within(confirmedGrimoire).getByRole("button", { name: "직업 선택으로 돌아가기" })).toBeTruthy();
+  expect(within(confirmedGrimoire).getByRole("button", { name: "배치 확정" })).toBeTruthy();
 
   await user.click(within(screen.getByRole("main")).getByRole("button", { name: "직업" }));
   expect(screen.getByRole("region", { name: "Trouble Brewing 설정 검토" })).toBeTruthy();

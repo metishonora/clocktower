@@ -36,6 +36,9 @@ session, persistence path, or production route.
   Actual Drunk icon at the standard seat size and enlarge the Shown Character token inside the seat.
 - Keep ordinary roles unique. `무작위 배치` only shuffles the approved roster among seats; it never
   generates a random roster.
+- Match S&V's Grimoire navigation and confirmation treatment exactly: use the shared floating
+  `snvConfirmRoster snvConfirmSeating prominent floatingAction` button, and replace the confirmed
+  read-only chip with the destructive `배치로 돌아가기` toolbar action that restores assignment mode.
 - Use the shared rectangular perimeter, fixed-size seat tokens, role-first and seat-first assignment,
   Player names, reset, explicit confirmation, and mobile bottom-sheet contract.
 - Keep confirmed Setup and Grimoire available as read-only review surfaces. The confirmed Grimoire

@@ -183,6 +183,12 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
     setSelectedSeat(undefined);
   };
 
+  const returnToAssignment = () => {
+    setSeatingConfirmed(false);
+    setSelectedSeat(undefined);
+    setPendingCharacterId(undefined);
+  };
+
   const navigate = (destination: string) => {
     if (destination === "storage") return;
     if (destination === "new-game") {
@@ -285,6 +291,7 @@ export function Issue148TroubleBrewingAdaptationPrototype() {
             seatingConfirmed={seatingConfirmed}
             theme={theme}
             onGoToSetup={() => setActiveStage("setup")}
+            onReturnToAssignment={returnToAssignment}
             onRandomize={randomizeAssignments}
             onReset={resetAssignments}
             onSeatSelect={chooseSeat}
@@ -427,6 +434,7 @@ function TroubleBrewingGrimoire({
   seatingConfirmed,
   theme,
   onGoToSetup,
+  onReturnToAssignment,
   onRandomize,
   onReset,
   onSeatSelect,
@@ -449,6 +457,7 @@ function TroubleBrewingGrimoire({
   seatingConfirmed: boolean;
   theme: Theme;
   onGoToSetup: () => void;
+  onReturnToAssignment: () => void;
   onRandomize: () => void;
   onReset: () => void;
   onSeatSelect: (seat: number) => void;
@@ -478,13 +487,13 @@ function TroubleBrewingGrimoire({
       ariaLabel="Trouble Brewing 마도서 배치"
       className={`snvSeatingSurface snvTabPanel issue148GrimoireSurface ${seatingConfirmed ? "confirmed" : "editing"}`}
       toolbar={<div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
-        {!seatingConfirmed ? <>
+        {seatingConfirmed ? <>
+          <button type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
+          {currentActorSeat ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
+        </> : <>
           <button type="button" className="snvToolbarBack" aria-label="직업 선택으로 돌아가기" onClick={onGoToSetup}><span aria-hidden="true">←</span></button>
           <button type="button" onClick={onRandomize}>무작위 배치</button>
           <button type="button" onClick={onReset}>배치 초기화</button>
-        </> : <>
-          <span className="issue148ReadOnlyBadge">확정 · 읽기 전용</span>
-          {currentActorSeat ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
         </>}
       </div>}
       workspaceClassName="snvSeatingWorkspace stable"
@@ -628,7 +637,7 @@ function TroubleBrewingGrimoire({
         )}
       </>}
       actionsClassName={`snvSeatingActions ${seatingConfirmed ? "placeholder" : ""}`}
-      actions={!seatingConfirmed ? <button type="button" className="snvConfirmSeating snvStageForward prominent floatingAction" disabled={!seatingComplete} onClick={onConfirm}>배치 확정</button> : undefined}
+      actions={!seatingConfirmed ? <button type="button" className="snvConfirmRoster snvConfirmSeating prominent floatingAction" disabled={!seatingComplete} onClick={onConfirm}>배치 확정</button> : undefined}
     />
   );
 }
