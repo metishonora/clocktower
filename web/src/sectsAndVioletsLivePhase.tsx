@@ -25,6 +25,7 @@ import {
 } from "./features/pitHag/PitHagSelectionPanel";
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
+import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -698,6 +699,7 @@ export function SectsAndVioletsLiveGrimoire({
       </div>
       {!handoff && detailsPlayer && detailsCharacter ? (
         <PlayerTokenDetailDialog
+          characterDetails={sectsAndVioletsCharacterDetail(detailsPlayer.seatCharacterId ?? detailsPlayer.actualCharacter)}
           player={{
             characterId: detailsPlayer.seatCharacterId ?? detailsPlayer.actualCharacter,
             seat: detailsPlayer.seat,
@@ -886,18 +888,6 @@ function ArrowGraphic({ className, label, start, end }: { className: string; lab
     <svg className={`issue116NominationArrow ${className}${selfNomination ? " issue116SelfNominationArrow" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
       <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
       {selfNomination ? <path d={inwardSelfNominationPath(start)} markerEnd={`url(#snvLiveArrow-${className})`} /> : <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />}
-    </svg>
-  );
-}
-
-function FuneralIcon() {
-  return <span className="snvFuneralIcon" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="snvFuneralMark" d="M20 12v19M13 20h14" /></svg></span>;
-}
-
-function GhostVoteIcon() {
-  return (
-    <svg className="snvGhostVoteIcon" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M14 50V30C14 18 21 10 32 10s18 8 18 20v20l-6-5-6 5-6-5-6 5-6-5-6 5Z" />
     </svg>
   );
 }

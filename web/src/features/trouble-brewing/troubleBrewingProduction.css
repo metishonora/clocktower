@@ -293,89 +293,6 @@
   font-weight: 850;
 }
 
-.tbPlayerDetails {
-  display: grid;
-  padding: 0;
-  align-content: start;
-  gap: 0;
-}
-
-.tbProductionShell .tbPlayerDetails {
-  background: #10271b;
-  box-shadow: 0 -22px 70px rgba(0, 0, 0, .58);
-}
-
-.tbPlayerDetailsHeader {
-  display: grid;
-  padding: 18px;
-  grid-template-columns: 54px minmax(0, 1fr) 32px 38px;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid rgba(215, 193, 150, .14);
-}
-
-.tbPlayerHeaderRole {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.tbPlayerHeaderRole img {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
-}
-
-.tbPlayerHeaderRole strong {
-  color: #d7c18f;
-  font-size: .58rem;
-}
-
-.tbPlayerDetailsHeader > div:nth-child(2) {
-  min-width: 0;
-}
-
-.tbPlayerDetailsHeader > div:nth-child(2) > span {
-  color: #bcae8d;
-  font-size: .6rem;
-  font-weight: 850;
-}
-
-.tbPlayerDetailsHeader h2 {
-  margin: 4px 0 0;
-  overflow: hidden;
-  color: #fff8e8;
-  font: 1.45rem Georgia, serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tbPlayerAlignment {
-  justify-self: end;
-}
-
-.tbPlayerDetailsClose {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  place-items: center;
-  border: 1px solid rgba(215, 193, 150, .22);
-  border-radius: 50%;
-  color: #fff8e8;
-  background: rgba(255, 255, 255, .04);
-  font-family: inherit;
-  font-size: 1.35rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.tbPlayerDetailsBody {
-  display: grid;
-  padding: 18px;
-  gap: 22px;
-}
-
 .tbDrunkIdentities {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -397,8 +314,7 @@
   background: rgba(43, 123, 151, .13);
 }
 
-.tbDrunkIdentities article > span,
-.tbCharacterAbility > span {
+.tbDrunkIdentities article > span {
   color: #bcae8d;
   font-size: .6rem;
   font-weight: 900;
@@ -427,11 +343,44 @@
   white-space: nowrap;
 }
 
-.tbCharacterAbility p {
-  margin: 9px 0 0;
-  color: #d4d5c8;
-  font-size: .76rem;
-  line-height: 1.65;
+.tbPlayerNotes {
+  display: grid;
+  padding: 16px;
+  gap: 8px;
+  border: 1px solid rgba(228, 202, 235, .12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.tbPlayerNotes > span {
+  color: #aa92b1;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.tbPlayerNotes p {
+  margin: 0;
+  color: #d4c8d7;
+  font-size: .8rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.tbPlayerAnnotationsEdit {
+  min-height: 44px;
+  border: 1px solid rgba(228, 202, 235, .2);
+  border-radius: 12px;
+  color: #f7f1f8;
+  background: rgba(255, 255, 255, .06);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.tbPlayerAnnotationsEdit:hover {
+  background: rgba(255, 255, 255, .1);
 }
 
 .tbPlaySurface .tbPlayPrimary {
@@ -806,46 +755,35 @@
   color: #58645b;
 }
 
-.tbProductionShell[data-theme="day"] .tbPlayerDetails {
-  border-color: rgba(76, 100, 65, .18);
-  color: #243329;
-  background: #fbf6df;
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader {
-  border-bottom-color: rgba(76, 100, 65, .14);
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerHeaderRole strong,
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader > div:nth-child(2) > span,
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article > span,
-.tbProductionShell[data-theme="day"] .tbCharacterAbility > span {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article > span,
+.playerTokenDetailBackdrop.day .tbPlayerNotes > span {
   color: #627057;
 }
 
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader h2 {
-  color: #203126;
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsClose {
-  border-color: rgba(76, 100, 65, .24);
-  color: #294034;
-  background: rgba(255, 255, 255, .5);
-}
-
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article {
   border-color: rgba(121, 89, 154, .22);
   background: rgba(206, 192, 219, .34);
 }
 
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article.shown {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article.shown {
   border-color: rgba(45, 126, 157, .24);
   background: rgba(182, 216, 222, .4);
 }
 
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities strong,
-.tbProductionShell[data-theme="day"] .tbCharacterAbility p {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities strong,
+.playerTokenDetailBackdrop.day .tbPlayerNotes p {
   color: #38483d;
+}
+
+.playerTokenDetailBackdrop.day .tbPlayerNotes {
+  border-color: rgba(88, 55, 97, .12);
+  background: rgba(96, 60, 105, .04);
+}
+
+.playerTokenDetailBackdrop.day .tbPlayerAnnotationsEdit {
+  border-color: rgba(88, 55, 97, .18);
+  color: #47364c;
+  background: rgba(130, 80, 154, .08);
 }
 
 .tbProductionShell[data-theme="day"] .tbCurrentTask {

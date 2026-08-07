@@ -199,7 +199,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(grimoire).getByRole("group", { name: "현재 단계" })).toBeTruthy();
 
     fireEvent.click(within(grimoire).getByRole("button", { name: /2번 좌석/ }));
-    const details = within(grimoire).getByRole("complementary", { name: "좌석 상세 정보" });
+    const details = screen.getByRole("dialog", { name: "2번 Bert 플레이어 상세" });
     expect(within(details).getByText("캐릭터 능력")).toBeTruthy();
   });
 
@@ -2363,7 +2363,7 @@ function seatLayoutOf(game: GameFile) {
 
 function liveStageButton(name: "직업" | "마도서" | "진행" | "저장 / 불러오기") {
   return within(screen.getByRole("main", { name: "Trouble Brewing 진행" }))
-    .getByRole("button", { name, exact: true });
+    .getByRole("button", { name });
 }
 
 async function openLiveGrimoire(user: ReturnType<typeof userEvent.setup>) {

@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties, type PointerEventHandler, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type PointerEventHandler, type ReactNode, type Ref } from "react";
 import "./styles/productionShell.css";
 
 export type SeatPosition = { x: number; y: number };
@@ -14,6 +14,7 @@ export type RectangularGrimoireSeat = {
   pressed?: boolean;
   disabled?: boolean;
   interactive?: boolean;
+  buttonRef?: Ref<HTMLButtonElement>;
   onSelect?: () => void;
   onPointerDown?: PointerEventHandler<HTMLButtonElement>;
   onPointerUp?: PointerEventHandler<HTMLButtonElement>;
@@ -80,6 +81,7 @@ export function RectangularGrimoireBoard({
           >
             {seat.content}
           </article> : <button
+            ref={seat.buttonRef}
             type="button"
             className={seat.className}
             aria-label={seat.ariaLabel}
