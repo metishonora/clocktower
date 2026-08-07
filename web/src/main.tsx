@@ -661,6 +661,7 @@ export function ClocktowerApp({
       <div
         className="clocktowerApp tbSharedLivePlay"
         data-testid="clocktower-app"
+        data-theme={gameStore.phase === "day" ? "day" : "night"}
       >
         <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
         <TroubleBrewingLiveFlow

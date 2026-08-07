@@ -31,6 +31,7 @@ test("uses the S&V player-detail hierarchy for Trouble Brewing tokens and Notes"
   await user.click(seat);
 
   const detail = screen.getByRole("dialog", { name: "1번 Ada 플레이어 상세" });
+  expect(detail.closest(".playerTokenDetailBackdrop")?.classList.contains("tbTheme")).toBe(true);
   expect(detail.classList.contains("playerTokenDetailDialog")).toBe(true);
   expect(within(detail).getByRole("heading", { name: "Ada" })).toBeTruthy();
   expect(within(detail).getByText("세탁부")).toBeTruthy();
@@ -49,6 +50,12 @@ test("uses the S&V center clock layout on the Trouble Brewing grimoire", async (
   renderLiveGrimoire(players());
 
   const grimoire = await openLiveGrimoire(user);
+  expect(screen.getByRole("navigation", { name: "게임 데이터" })).toBeTruthy();
+  expect(screen.getByRole("navigation", { name: "작업 단계" })).toBeTruthy();
+  const toolbar = screen.getByLabelText("확정된 마도서 도구");
+  expect(within(toolbar).getByRole("button", { name: "배치로 돌아가기" })).toBeTruthy();
+  expect(within(toolbar).queryByText("1일차 밤")).toBeNull();
+  expect(within(toolbar).queryByLabelText("현재 행동자 안내")).toBeNull();
   const center = grimoire.querySelector(".snvGrimoireCenter");
   expect(center?.classList.contains("issue116PhaseClock")).toBe(true);
   expect(center?.classList.contains("tbPhaseClock")).toBe(false);
@@ -106,7 +113,10 @@ test("confirms a player target inside the S&V grimoire work panel", async () => 
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   const toolbar = screen.getByLabelText("마도서 도구");
-  expect(within(toolbar).getByRole("button", { name: "배치로 돌아가기" })).toBeTruthy();
+  expect(within(toolbar).queryByRole("button", { name: "배치로 돌아가기" })).toBeNull();
+  expect(Array.from(toolbar.children).map((child) => child.tagName)).toEqual(["SPAN", "DIV", "BUTTON"]);
+  expect(within(toolbar).getByText("1일차 밤")).toBeTruthy();
+  expect(within(toolbar).getByLabelText("현재 행동자 안내")).toBeTruthy();
   expect(within(toolbar).getByRole("button", { name: "선택 취소 →" })).toBeTruthy();
   expect(within(toolbar).queryByRole("button", { name: "돌아가기 →" })).toBeNull();
   const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });

@@ -8,6 +8,7 @@ import {
   grimoireHeights,
   rectangularSeatPositions,
 } from "../../shared-ui/GrimoirePresentation";
+import { GrimoireToolbar } from "../../shared-ui/GrimoireToolbar";
 import { characterLabel, characters, kindLabels } from "../../setupDraft";
 import { NominationArrow } from "../../shared-ui/NominationArrow";
 import { nextVoterIdsAfterToggle, voteStatusForPlayer } from "../../voting";
@@ -198,14 +199,15 @@ export function TroubleBrewingLiveGrimoire({
       className={`snvSeatingSurface snvTabPanel tbConfirmedGrimoire confirmed issue116GrimoireSurface${handoff === "nomination" ? " issue116NominationMode" : handoff === "vote" ? " issue116VoteMode" : handoff === "target" ? " issue116AttackMode" : ""}${theme === "day" ? " snvDayMode" : " snvNightMode"}`}
       toolbar={revealMode ? <div className="snvSeatingToolbar tbSpyRevealToolbar" aria-label="첩자 공개 안내">
         <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
-      </div> : <div className="snvSeatingToolbar" aria-label={handoff ? "마도서 도구" : "확정된 마도서 도구"}>
-        <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
-        {handoff ? <>
-          <span className="issue116PhaseChip">{phaseLabel}</span>
+      </div> : handoff ? (
+        <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
           <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button>
-        </> : null}
-        {actorPlayerId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
-      </div>}
+        </GrimoireToolbar>
+      ) : (
+        <GrimoireToolbar ariaLabel="확정된 마도서 도구">
+          <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
+        </GrimoireToolbar>
+      )}
       workspaceClassName={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}${revealMode ? " tbRevealWorkspace" : ""}`}
       style={sizeStyle}
       board={<RectangularGrimoireBoard
@@ -364,6 +366,7 @@ export function TroubleBrewingLiveGrimoire({
       /> : undefined}
     />
     {!revealMode && detailsPlayer && detailsCharacter ? <PlayerTokenDetailDialog
+      appearance="tb"
       characterDetails={troubleBrewingCharacterDetail(detailsCharacter.id)}
       player={{
         characterId: detailsCharacter.id,

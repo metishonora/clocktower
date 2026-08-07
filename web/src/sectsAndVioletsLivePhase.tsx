@@ -27,6 +27,7 @@ import { NightResultsAnnouncement } from "./features/phase-control/NightResultsA
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
 import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
 import { NominationArrow } from "./shared-ui/NominationArrow";
+import { GrimoireToolbar } from "./shared-ui/GrimoireToolbar";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -458,21 +459,19 @@ export function SectsAndVioletsLiveGrimoire({
   return (
     <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={readOnly ? "종료된 게임의 읽기 전용 마도서" : currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
       {handoff ? (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구">
-          <span className="issue116PhaseChip">{phaseLabel}</span>
-          {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
+        <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorId)}>
           {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
             <button type="button" disabled={operationBusy} onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
           ) : !handoff.complete && (handoff.kind === "pitHag" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff)) ? (
             <button type="button" disabled={operationBusy} onClick={onReturn}>선택 취소 →</button>
           ) : null}
-        </div>
+        </GrimoireToolbar>
       ) : readOnly ? (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구"><span className="issue116PhaseChip">읽기 전용</span></div>
+        <GrimoireToolbar phaseLabel="읽기 전용" />
       ) : (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구">
+        <GrimoireToolbar>
           <button type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={onReturnToSetup}><span aria-hidden="true">←</span></button>
-        </div>
+        </GrimoireToolbar>
       )}
       <div className={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}`} style={sizeStyle}>
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>

@@ -194,7 +194,7 @@ describe("ClocktowerApp live-play integration", () => {
     const grimoire = await screen.findByRole("region", { name: "Trouble Brewing 마도서 검토" });
     expect(grimoire.querySelector(".snvGrimoireDraft.rectangular")).toBeTruthy();
     expect(grimoire.querySelector(".seatMap, .confirmedSeatMap")).toBeNull();
-    expect(within(grimoire).getByLabelText("현재 행동자 안내")).toBeTruthy();
+    expect(within(grimoire).queryByLabelText("현재 행동자 안내")).toBeNull();
     expect(within(grimoire).getByRole("button", { name: /1번 좌석.*현재 행동자/ })).toBeTruthy();
     expect(within(grimoire).getByRole("group", { name: "현재 단계" })).toBeTruthy();
 

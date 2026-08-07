@@ -154,6 +154,7 @@ export function PlayerTokenDetailDialog({
   characterDetails,
   identityDetails,
   details,
+  appearance = "snv",
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
@@ -162,6 +163,7 @@ export function PlayerTokenDetailDialog({
   characterDetails?: CharacterDetail;
   identityDetails?: ReactNode;
   details?: ReactNode;
+  appearance?: "snv" | "tb";
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -198,7 +200,7 @@ export function PlayerTokenDetailDialog({
 
   return createPortal(
     <div
-      className={`playerTokenDetailBackdrop ${theme}`}
+      className={`playerTokenDetailBackdrop ${theme}${appearance === "tb" ? " tbTheme" : ""}`}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
