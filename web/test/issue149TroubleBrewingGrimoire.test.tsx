@@ -94,6 +94,54 @@ test("presents the spent Virgin ability as the official no-ability token instead
   expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 성결자" })).toBeTruthy();
 });
 
+test("uses the official Slayer icon for its available public ability action", async () => {
+  const user = userEvent.setup();
+  const playerRoster = players().map((player) => player.id === "player-1" ? {
+    ...player,
+    actualCharacter: "slayer",
+    shownCharacter: "slayer",
+  } : player);
+  renderLiveGrimoire(playerRoster, {
+    unannouncedNightDeathPlayerIds: [],
+    slayerAbility: {
+      actorPlayerId: "player-1",
+      spent: false,
+      canUseNow: true,
+    },
+  });
+
+  const grimoire = await openLiveGrimoire(user);
+  const action = within(grimoire).getByRole("button", { name: "1번 Ada 처단자 능력 사용" });
+  expect(within(action).getByRole("img", { name: "처단자" })).toBeTruthy();
+  expect(action.textContent).toBe("");
+});
+
+test("presents the spent Slayer ability as its official no-ability token", async () => {
+  const user = userEvent.setup();
+  const playerRoster = players().map((player) => player.id === "player-1" ? {
+    ...player,
+    actualCharacter: "slayer",
+    shownCharacter: "slayer",
+  } : player);
+  renderLiveGrimoire(playerRoster, {
+    unannouncedNightDeathPlayerIds: [],
+    slayerAbility: {
+      actorPlayerId: "player-1",
+      spent: true,
+      canUseNow: false,
+    },
+  });
+
+  const grimoire = await openLiveGrimoire(user);
+  expect(within(grimoire).queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
+  expect(within(grimoire).getByText("+1")).toBeTruthy();
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ }));
+
+  const detail = screen.getByRole("dialog", { name: "1번 Ada 플레이어 상세" });
+  expect(within(detail).getByText("능력 없음")).toBeTruthy();
+  expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 처단자" })).toBeTruthy();
+});
+
 test("confirms a player target inside the S&V grimoire work panel", async () => {
   const user = userEvent.setup();
   renderStep(step({

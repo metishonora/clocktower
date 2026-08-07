@@ -325,14 +325,16 @@ export function TroubleBrewingLiveGrimoire({
             </>,
             afterSeat: <>
               <PlayerTokenCountBadge count={tokenCount} position={position} mobilePosition={mobilePosition} theme={theme} />
-              {player.id === slayerAbility?.actorPlayerId ? <button
+              {player.id === slayerAbility?.actorPlayerId && !slayerAbility.spent ? <button
                 type="button"
-                className={`tbSeatAbilityAction slayer ${slayerAbility.spent ? "spent" : ""}`}
+                className="tbSeatAbilityAction slayer"
                 style={abilityActionStyle(position, mobilePosition)}
                 aria-label={`${player.seat}번 ${player.name} 처단자 능력 사용`}
                 disabled={!slayerAbility.enabled || busy}
                 onClick={(event) => slayerAbility.onUse(event.currentTarget)}
-              >S</button> : null}
+              >
+                {characterAsset("slayer") ? <img src={characterAsset("slayer")?.src} alt="처단자" /> : null}
+              </button> : null}
             </>,
           };
         })}

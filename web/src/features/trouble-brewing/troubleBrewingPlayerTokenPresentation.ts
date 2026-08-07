@@ -55,6 +55,19 @@ export function troubleBrewingPlayerTokens(
       description: "성결자의 능력이 지목으로 소모되었습니다.",
     });
   }
+  if (
+    ruleState?.slayerAbility?.actorPlayerId === player.id
+    && ruleState.slayerAbility.spent
+  ) {
+    tokens.push({
+      instanceId: "slayer-no-ability",
+      label: "능력 없음",
+      sourceLabel: "처단자",
+      sourceIconSrc: characterAsset("slayer")?.src,
+      visualKind: "usage",
+      description: "처단자의 게임당 한 번인 능력이 소모되었습니다.",
+    });
+  }
 
   player.systemTokenIds.forEach((tokenId, index) => {
     tokens.push({

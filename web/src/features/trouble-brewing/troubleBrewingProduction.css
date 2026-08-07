@@ -760,6 +760,12 @@
   font-weight: 800;
 }
 
+.tbSeatAbilityAction img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
 .tbSpyRevealShell {
   min-height: 100dvh;
   padding-top: 32px;
@@ -896,11 +902,6 @@
   }
 }
 
-.tbSeatAbilityAction.spent {
-  opacity: .48;
-  filter: grayscale(1);
-}
-
 .tbProductionShell .tbPhaseOrder li.current {
   color: #fff8e8;
   background: rgba(55, 118, 83, .34);
@@ -1030,6 +1031,69 @@
 .tbProductionShell[data-theme="day"] .tbCurrentTask p,
 .tbProductionShell[data-theme="day"] .tbCurrentTask .snvCurrentStepLabel {
   color: #5f684e;
+}
+
+.tbProductionShell .tbStorageSurface article,
+.tbProductionShell .tbStorageSurface .snvEventLog {
+  border-color: rgba(221, 198, 151, .18);
+  background: rgba(7, 25, 18, .72);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .36);
+}
+
+.tbProductionShell .tbStorageSurface article > span,
+.tbProductionShell .tbStorageSurface .snvScrollableEventList li > span {
+  color: #c9af75;
+}
+
+.tbProductionShell .tbStorageSurface button {
+  border-color: rgba(226, 201, 143, .5);
+  color: #fff8e8;
+  background: #376b50;
+}
+
+.tbProductionShell .tbStorageSurface .snvEventLog > header,
+.tbProductionShell .tbStorageSurface .snvScrollableEventList li {
+  border-color: rgba(221, 198, 151, .12);
+}
+
+.tbProductionShell .tbStorageSurface .snvEventLog > header > strong {
+  color: #efd69e;
+}
+
+.tbProductionShell .tbStorageSurface .snvScrollableEventList {
+  scrollbar-color: rgba(210, 173, 100, .58) transparent;
+}
+
+.tbProductionShell .tbStorageSurface .snvScrollableEventList:focus-visible {
+  outline-color: #d2ad64;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface article,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog {
+  color: #243329;
+  border-color: rgba(66, 88, 58, .18);
+  background: rgba(255, 252, 231, .72);
+  box-shadow: 0 20px 56px rgba(54, 76, 48, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface article > span,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvScrollableEventList li > span {
+  color: #6c714e;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface button {
+  border-color: #58745c;
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog > header,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvScrollableEventList li {
+  border-color: rgba(66, 88, 58, .12);
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog > header > strong {
+  color: #4d674f;
 }
 
 @media (max-width: 1040px) {
