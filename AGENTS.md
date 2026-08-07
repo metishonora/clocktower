@@ -5,7 +5,6 @@
 - Keep `main` deployable. Start normal code work from an updated `develop` in a dedicated issue branch and worktree.
 - Merge issue branches into `develop` only after explicit user acceptance. Release by merging `develop` into `main`.
 - Branch hotfixes from `main` and merge them back into `develop`.
-- Do not add UI behavior or product scope the user did not request.
 - Keep live-play UI concise for a rule-literate Storyteller. Prefer actionable values and add explanatory copy only for validation, failure, recovery, destructive actions, or explicit requests.
 - For Rust domain changes, follow `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
 
@@ -14,8 +13,9 @@
 - Use prototypes to settle the intended final UI before production implementation, so production work carries the approved design forward instead of redesigning it.
 - Keep prototypes visually aligned with the current `develop` app shell, layout, styles, and target viewports so review feedback applies directly to the final experience.
 - Use only the fixture state needed for visual review. Do not create fake behavior that is unnecessary for the decisions being reviewed, and keep review controls outside the production-like screen.
-- Record approved and rejected UI decisions in the issue plan before finalizing the production plan.
-- Keep the final production UI faithful to the approved prototype, and call out necessary deviations before acceptance.
+- Record approved and rejected UI decisions in the issue plan, and retain a reviewable approved prototype reference until production acceptance.
+- Treat the approved prototype as the visual acceptance baseline. Reusing existing components is acceptable only when the resulting production UI remains faithful to that baseline.
+- Before requesting production acceptance, compare the real production UI with the approved prototype for the agreed states and target viewports. Fix unintended differences or obtain explicit approval for necessary deviations.
 - Prototype approval validates UI and interaction decisions only. Production acceptance must use the real production entry and runtime.
 - Skip TDD and full regression suites for isolated prototypes. Run focused checks only when shared production code or configuration changes.
 
