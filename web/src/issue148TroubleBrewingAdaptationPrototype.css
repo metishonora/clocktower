@@ -487,42 +487,49 @@
   line-height: 1.65;
 }
 
-.issue148PlayHeader > div {
-  grid-column: 2;
-  text-align: center;
-}
-
-.issue148PlaySurface .playPresentationPrimary {
+.issue148PlaySurface .issue148PlayPrimary {
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1fr) 320px;
 }
 
-.issue148PlayHeader > div > span {
-  display: block;
-  margin-bottom: 6px;
+.issue148PlayHeader .snvProgressRuntime {
   color: #cdb477;
-  font-size: .68rem;
-  font-weight: 900;
-  letter-spacing: .08em;
-}
-
-.issue148PlayHeader h2 {
-  grid-column: auto;
 }
 
 .issue148CurrentTask {
   display: flex;
   min-height: 430px;
   flex-direction: column;
-  justify-content: center;
   background:
     radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
     linear-gradient(145deg, rgba(45, 91, 67, .58), rgba(38, 31, 22, .68));
 }
 
+.issue148TaskMeta {
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(226, 205, 157, .15);
+}
+
+.issue148CurrentTask .issue148TaskMeta > span {
+  padding: 0;
+  color: #cdb477;
+  background: transparent;
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
+.issue148TaskMeta strong {
+  color: #f2dfae;
+  font-size: .75rem;
+}
+
+.issue148CurrentTask > .snvCurrentStepLabel {
+  margin-top: 32px;
+}
+
 .issue148ActorIdentity {
   display: flex;
-  margin: 22px 0 18px;
+  margin: 18px 0 14px;
   align-items: center;
   gap: 18px;
 }
@@ -537,20 +544,32 @@
 .issue148ActorIdentity h3 {
   margin: 0 0 7px;
   color: #fff8e8;
-  font: clamp(2.6rem, 5vw, 4.4rem)/1 Georgia, serif;
+  font: clamp(2.5rem, 4.5vw, 3.8rem)/1 Georgia, serif;
 }
 
 .issue148ActorIdentity strong {
   color: #d3c6a7;
 }
 
-.issue148TaskAction {
+.issue148CurrentTask .issue148TaskInstruction {
+  color: #e0d4b9;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.issue148TaskActions {
+  margin-top: 24px;
+}
+
+.issue148TaskActions .issue148TaskAction {
+  min-width: 210px;
   min-height: 52px;
-  margin-top: 32px;
   padding: 10px 18px;
-  align-self: flex-start;
   border: 1px solid #d2ad64;
-  border-radius: 999px;
+  border-radius: 15px;
+  color: #201608;
+  background: linear-gradient(135deg, #f2d184, #d5a653);
+  box-shadow: 0 12px 28px rgba(205, 143, 45, .22);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
@@ -722,7 +741,7 @@
 
 .issue148TroubleBrewingShell[data-theme="day"] .issue148ActorIdentity strong,
 .issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask p,
-.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayHeader > div > span {
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask .issue148TaskMeta > span {
   color: #5f684e;
 }
 
@@ -779,21 +798,48 @@
     grid-template-columns: 1fr;
   }
 
-  .issue148PlayHeader > div > span {
-    font-size: .58rem;
-  }
-
-  .issue148PlaySurface .playPresentationPrimary {
+  .issue148PlaySurface .issue148PlayPrimary {
     grid-template-columns: 1fr;
   }
 
   .issue148CurrentTask {
-    min-height: 360px;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .issue148PlaySurface {
+    padding-bottom: 82px;
+    backdrop-filter: none;
+  }
+
+  .issue148TaskMeta {
+    padding-bottom: 10px;
+  }
+
+  .issue148CurrentTask > .snvCurrentStepLabel {
+    margin-top: 16px;
   }
 
   .issue148ActorIdentity img {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .issue148ActorIdentity {
+    margin: 10px 0 8px;
+  }
+
+  .issue148ActorIdentity h3 {
+    font-size: 2.25rem;
+  }
+
+  .issue148TaskActions {
+    margin-top: 14px;
+  }
+
+  .issue148TaskActions .issue148TaskAction {
+    width: 100%;
+    min-height: 48px;
   }
 
   .issue148PhaseOrder {
@@ -834,9 +880,6 @@
     cursor: pointer;
   }
 
-  .issue148PlaySurface {
-    padding-bottom: 82px;
-  }
 }
 
 @media (max-width: 390px) {
@@ -857,10 +900,6 @@
     flex: 1 1 0;
     padding-right: 10px;
     padding-left: 10px;
-  }
-
-  .issue148CurrentTask {
-    padding: 22px 18px;
   }
 
   .issue148ActorIdentity {

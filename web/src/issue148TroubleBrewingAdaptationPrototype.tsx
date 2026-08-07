@@ -654,22 +654,34 @@ function TroubleBrewingPlay({
   onTogglePhaseDrawer: () => void;
 }) {
   const order = playerCount <= 6 ? firstNightOrder.slice(2) : firstNightOrder;
+  const currentStep = order.indexOf("독살범") + 1;
   return (
     <PlayPresentation
       ariaLabel="Trouble Brewing 첫 Play 전환"
       className="snvManualSurface snvTabPanel issue148PlaySurface"
-      phaseHeader={<div className="snvFirstNightHeader issue148PlayHeader">
+      headerClassName="snvFirstNightHeader issue148PlayHeader"
+      primaryClassName="snvFirstNightPrimary issue148PlayPrimary"
+      phaseHeader={<>
         <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
-        <div><span>{playerCount <= 6 ? "악 진영 정보 생략" : "악 진영 정보 완료"}</span><h2>1일차 밤</h2></div>
-      </div>}
+        <div className="snvProgressPhaseHeader">
+          <h2>1일차 밤</h2>
+          <time className="snvProgressRuntime" aria-label="1일차 밤 경과 시간 00:00">00:00</time>
+        </div>
+      </>}
       currentTask={<article className="snvCurrentStep issue148CurrentTask" role="group" aria-label="독살범 대상 선택">
+        <header className="issue148TaskMeta">
+          <span>{playerCount <= 6 ? "악 진영 정보 생략" : "악 진영 정보 완료"}</span>
+          <strong>현재 {currentStep}/{order.length}</strong>
+        </header>
         <p className="snvCurrentStepLabel">현재 할 일</p>
         <div className="issue148ActorIdentity">
           <img src={characterAsset("poisoner")?.src} alt="독살범 공식 캐릭터 아이콘" />
-          <div><h3>독살범</h3><strong>4번 지우 · 독살범</strong></div>
+          <div><h3>독살범</h3><strong>4번 지우</strong></div>
         </div>
-        <p>중독시킬 플레이어 1명을 선택하세요.</p>
-        <button type="button" className="issue148TaskAction" onClick={onGoToGrimoire}>← 마도서에서 대상 선택</button>
+        <p className="issue148TaskInstruction">중독시킬 플레이어 1명</p>
+        <div className="snvStepActions issue148TaskActions">
+          <button type="button" className="issue148TaskAction" onClick={onGoToGrimoire}>대상 선택</button>
+        </div>
       </article>}
       phaseOrder={<>
         <ol className={`snvPhaseOverview issue148PhaseOrder ${phaseDrawerOpen ? "mobileOpen" : ""}`} aria-label="첫날 밤 순서">
@@ -681,7 +693,7 @@ function TroubleBrewingPlay({
           })}
         </ol>
         <button type="button" className="issue148PhaseDrawerToggle" aria-label={phaseDrawerOpen ? "단계 순서 닫기" : "단계 순서 열기"} aria-expanded={phaseDrawerOpen} onClick={onTogglePhaseDrawer}>
-          <span>첫날 밤 순서</span><strong>{phaseDrawerOpen ? "닫기" : `${order.indexOf("독살범") + 1}/${order.length}`}</strong>
+          <span>첫날 밤 순서</span><strong>{phaseDrawerOpen ? "닫기" : `${currentStep}/${order.length}`}</strong>
         </button>
       </>}
     />

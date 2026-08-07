@@ -157,10 +157,21 @@ test("shows confirmed review surfaces and the approved first Play transition", a
   const play = screen.getByRole("region", { name: "Trouble Brewing 첫 Play 전환" });
   expect(play.classList.contains("playPresentation")).toBe(true);
   expect(within(play).getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
+  expect(within(play).getByLabelText("1일차 밤 경과 시간 00:00")).toBeTruthy();
+  expect(within(play).getByText("현재 3/11")).toBeTruthy();
   expect(within(play).getByRole("group", { name: "독살범 대상 선택" })).toBeTruthy();
-  expect(within(play).getByText("4번 지우 · 독살범")).toBeTruthy();
-  expect(within(play).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
-  const drawer = within(play).getByRole("button", { name: "단계 순서 열기" });
+  expect(within(play).getByRole("heading", { name: "독살범" })).toBeTruthy();
+  expect(within(play).getByText("4번 지우")).toBeTruthy();
+  expect(within(play).queryByText("4번 지우 · 독살범")).toBeNull();
+  expect(within(play).getByText("중독시킬 플레이어 1명")).toBeTruthy();
+  const targetAction = within(play).getByRole("button", { name: "대상 선택" });
+  await user.click(targetAction);
+  expect(screen.getByRole("region", { name: "Trouble Brewing 마도서 배치" })).toBeTruthy();
+
+  await user.click(within(reviewTools).getByRole("button", { name: "첫 Play 시료" }));
+  const reopenedPlay = screen.getByRole("region", { name: "Trouble Brewing 첫 Play 전환" });
+  expect(within(reopenedPlay).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
+  const drawer = within(reopenedPlay).getByRole("button", { name: "단계 순서 열기" });
   expect(drawer.getAttribute("aria-expanded")).toBe("false");
   await user.click(drawer);
   expect(drawer.getAttribute("aria-expanded")).toBe("true");
