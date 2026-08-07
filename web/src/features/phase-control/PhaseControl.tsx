@@ -299,6 +299,9 @@ function CurrentStepPane({
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
+  useEffect(() => () => {
+    activeSuggestionRequestRef.current = undefined;
+  }, []);
   useEffect(() => {
     activeSuggestionRequestRef.current = undefined;
     setSuggesting(false);

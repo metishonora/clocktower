@@ -60,7 +60,8 @@ describe.each([
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
     expect(screen.queryByRole("button", { name: "자동 배치" })).toBeNull();
 
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     expect(grimoire.classList.contains("layoutEditing")).toBe(false);
     const ada = within(grimoire).getByRole("button", { name: /1번 Ada 좌석 선택/ });
     expect(ada.getAttribute("style")).toContain("left: 41%");
@@ -69,6 +70,7 @@ describe.each([
     await user.click(ada);
     expect(ada.getAttribute("aria-pressed")).toBe("true");
 
+    await user.click(screen.getByRole("button", { name: "진행" }));
     await user.click(screen.getByText("설정 및 불러오기"));
     const management = screen.getByText("초기 Grimoire 준비됨").parentElement;
     if (!management) throw new Error("setup management panel was not rendered");

@@ -104,6 +104,49 @@ describe("ClocktowerApp live-play integration", () => {
     expect(confirmButton.disabled).toBe(false);
   });
 
+  test("random seating leaves the seat inspector closed", async () => {
+    const currentStep = step({ id: "unused" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(undefined)} />);
+
+    for (const characterName of ["세탁부", "사서", "요리사", "독살범"]) {
+      await user.click(await screen.findByRole("button", { name: characterName }));
+    }
+    await user.click(screen.getByRole("button", { name: "직업 선택 확정" }));
+    await user.click(await screen.findByRole("button", { name: "무작위 배치" }));
+
+    expect(screen.queryByRole("button", { name: "좌석 편집 패널 닫기 배경" })).toBeNull();
+    expect(screen.getByText("5/5")).toBeTruthy();
+  });
+
+  test("opens a confirmed Trouble Brewing game in the approved shared Play stage", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await waitFor(() => {
+      const stages = screen.getByRole("navigation", { name: "작업 단계" });
+      expect(within(stages).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
+    });
+    expect(screen.getByRole("main", { name: "Trouble Brewing 진행" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
+  });
+
   test("keeps an unsupported IndexedDB autosave until the existing new-game recovery is chosen", async () => {
     const core = createCoreHarness({
       initialReplay: replayState({ currentStep: step({ id: "unused" }) }),
@@ -359,6 +402,9 @@ describe("ClocktowerApp live-play integration", () => {
       },
     });
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
+    expect(screen.getByRole("main", { name: "Trouble Brewing 진행" })).toBeTruthy();
+    const liveStages = screen.getByRole("navigation", { name: "작업 단계" });
+    expect(within(liveStages).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByText("초기 설정 확정")).toBeTruthy();
     await waitFor(() => expect(seatLayoutOf(latestSavedGame(storage.savedGames))).toEqual({
       preset: "circle",
@@ -483,16 +529,21 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(cy).getByText("실제: 주정뱅이")).toBeTruthy();
     expect(within(cy).getByText("본인 인식: 사서")).toBeTruthy();
 
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     const grimoireAda = within(grimoire).getByRole("button", { name: /Ada/ });
     const grimoireBert = within(grimoire).getByRole("button", { name: /Bert/ });
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
     await user.click(grimoireAda);
     expect(grimoireAda.getAttribute("aria-pressed")).toBe("true");
     await user.click(grimoireBert);
-    expect(bert.getAttribute("aria-pressed")).toBe("true");
     await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
-    expect(cy.getAttribute("aria-pressed")).toBe("false");
+    await user.click(screen.getByRole("button", { name: "진행" }));
+    const updatedCandidateInput = await screen.findByLabelText("단계 입력");
+    const updatedBert = within(updatedCandidateInput).getByRole("button", { name: /Bert/ });
+    const updatedCy = within(updatedCandidateInput).getByRole("button", { name: /Cy/ });
+    expect(updatedBert.getAttribute("aria-pressed")).toBe("true");
+    expect(updatedCy.getAttribute("aria-pressed")).toBe("false");
     const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement;
     expect(within(characterSelect).getByRole("option", { name: "세탁부" })).toBeTruthy();
     expect(within(characterSelect).getByRole("option", { name: "요리사" })).toBeTruthy();
@@ -500,9 +551,9 @@ describe("ClocktowerApp live-play integration", () => {
     await user.selectOptions(characterSelect, "chef");
     expect(characterSelect.value).toBe("chef");
 
-    await user.click(bert);
+    await user.click(updatedBert);
     expect(characterSelect.value).toBe("");
-    await user.click(cy);
+    await user.click(updatedCy);
     expect(within(characterSelect).queryByRole("option", { name: "요리사" })).toBeNull();
     expect(within(characterSelect).queryByRole("option", { name: "사서" })).toBeNull();
     expect(within(characterSelect).queryByRole("option", { name: "주정뱅이" })).toBeNull();
@@ -672,7 +723,8 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
 
     await user.click(screen.getByRole("button", { name: "무작위 추천" }));
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     await user.click(within(grimoire).getByRole("button", { name: /Ada/ }));
     expect(within(grimoire).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
 
@@ -684,11 +736,13 @@ describe("ClocktowerApp live-play integration", () => {
       },
     });
 
+    await user.click(screen.getByRole("button", { name: "진행" }));
     await waitFor(() =>
       expect((screen.getByRole("button", { name: "무작위 추천" }) as HTMLButtonElement).disabled).toBe(false),
     );
-    expect(within(grimoire).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
-    expect(within(grimoire).getByRole("button", { name: /Bert/ }).getAttribute("aria-pressed")).toBe("false");
+    const updatedInput = screen.getByLabelText("단계 입력");
+    expect(within(updatedInput).getByRole("button", { name: /Ada/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(updatedInput).getByRole("button", { name: /Bert/ }).getAttribute("aria-pressed")).toBe("false");
     expect((screen.getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement).value).toBe("");
   });
 
@@ -1065,10 +1119,12 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
     const zero = screen.getByRole("checkbox", { name: "외지인 0명" });
     await user.click(zero);
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     expect(
       within(grimoire).getByRole("button", { name: /Bert/ }).getAttribute("aria-disabled"),
     ).toBe("true");
+    await user.click(screen.getByRole("button", { name: "진행" }));
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -1591,9 +1647,11 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "첩자: 4번 Dae" });
+    await user.click(screen.getByRole("button", { name: "마도서" }));
     const storytellerSeatStyle = screen
       .getByRole("button", { name: /4번 Dae 좌석 선택/ })
       .getAttribute("style");
+    await user.click(screen.getByRole("button", { name: "진행" }));
     await user.click(screen.getByRole("button", { name: "확정" }));
     const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
     expect(within(followup).queryByLabelText("Reveal 미리보기")).toBeNull();
@@ -1751,9 +1809,12 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.getByText("기준 2표 · 생존자 3명")).toBeTruthy();
     await user.selectOptions(screen.getByRole("combobox", { name: "지목자" }), "player-1");
     await user.selectOptions(screen.getByRole("combobox", { name: "피지목자" }), "player-4");
-    const seatMap = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
     await user.click(within(seatMap).getByRole("button", { name: /Bert/ }));
+
+    await user.click(screen.getByRole("button", { name: "진행" }));
 
     const votePreview = screen.getByText("현재 표").closest("dl");
     if (!votePreview) throw new Error("vote preview was not rendered");
@@ -1835,20 +1896,20 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByText("찬성한 플레이어를 선택하세요.");
-    const seatMap = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     const blockedButler = within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ });
     expect(blockedButler.getAttribute("aria-disabled")).toBe("true");
     await user.click(blockedButler);
-    expect(screen.getByText("0표")).toBeTruthy();
+    expect(blockedButler.getAttribute("aria-pressed")).toBe("false");
 
     await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
     const enabledButler = within(seatMap).getByRole("button", { name: /Bert.*생존/ });
     expect(enabledButler.getAttribute("aria-disabled")).toBe("false");
     await user.click(enabledButler);
-    expect(screen.getByText("2표")).toBeTruthy();
+    expect(enabledButler.getAttribute("aria-pressed")).toBe("true");
 
     await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
-    expect(screen.getByText("0표")).toBeTruthy();
     expect(within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ }).getAttribute("aria-disabled"))
       .toBe("true");
   });
@@ -1864,7 +1925,8 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "밀담" });
-    const seatMap = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await userEvent.setup().click(screen.getByRole("button", { name: "마도서" }));
+    const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     expect(within(seatMap).getByRole("button", { name: /Ada.*생존/ })).toBeTruthy();
     expect(within(seatMap).getByRole("button", { name: /Bert.*사망 · 유령표 남음/ })).toBeTruthy();
     expect(within(seatMap).getByRole("button", { name: /Cy.*사망 · 유령표 사용됨/ })).toBeTruthy();
@@ -2184,6 +2246,8 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
+    await screen.findByRole("heading", { name: "토론" });
+    await user.click(screen.getByRole("button", { name: "마도서" }));
     await user.click(await screen.findByRole("button", { name: "1번 Ada 처단자 능력 사용" }));
     const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
     expect(within(dialog).getByText("확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.")).toBeTruthy();
@@ -2207,6 +2271,7 @@ describe("ClocktowerApp live-play integration", () => {
         targetRegistration: { kind: "recluseAsDemon", registeredCharacterId: "imp" },
       },
     });
+    await user.click(screen.getByRole("button", { name: "진행" }));
     expect(await screen.findByText("사망 확인")).toBeTruthy();
     const currentStep = screen.getByRole("region", { name: "현재 단계" });
     expect(within(currentStep).getByLabelText("처단자 결과 대상")).toBeTruthy();
@@ -2238,8 +2303,11 @@ describe("ClocktowerApp live-play integration", () => {
       proposal: proposal(event("unused", "unused", "day")),
     });
 
+    const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
+    await screen.findByRole("heading", { name: "밀담" });
+    await user.click(screen.getByRole("button", { name: "마도서" }));
     const icon = await screen.findByRole("button", { name: "1번 Ada 처단자 능력 사용" });
     expect((icon as HTMLButtonElement).disabled).toBe(true);
     expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();

@@ -68,7 +68,10 @@ test("shows one numbered First Night, Day, Night, and later Day runtime inside t
     />,
   );
 
-  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
+  await screen.findByRole("main", { name: "Trouble Brewing 진행" });
+  const stages = screen.getByRole("navigation", { name: "작업 단계" });
+  await user.click(within(stages).getByRole("button", { name: "마도서" }));
+  let grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   const firstNightCenter = within(grimoire).getByLabelText("1일차 밤 경과 시간 00:00");
   const tableMarker = grimoire.querySelector<HTMLElement>(".draftLayoutTableMark");
   if (!tableMarker) throw new Error("Grimoire table marker was not rendered");
@@ -83,7 +86,10 @@ test("shows one numbered First Night, Day, Night, and later Day runtime inside t
   await act(async () => vi.advanceTimersByTime(1_000));
   expect(within(grimoire).getByLabelText("1일차 밤 경과 시간 05:07")).toBeTruthy();
 
-  await user.click(screen.getByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "진행" }));
+  await user.click(await screen.findByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "마도서" }));
+  grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   await waitFor(() => expect(within(grimoire).getByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy());
   expect(screen.queryByLabelText("낮 경과 시간")).toBeNull();
 
@@ -91,9 +97,15 @@ test("shows one numbered First Night, Day, Night, and later Day runtime inside t
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   expect(within(grimoire).getByLabelText("2일차 낮 경과 시간 02:00")).toBeTruthy();
 
-  await user.click(screen.getByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "진행" }));
+  await user.click(await screen.findByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "마도서" }));
+  grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   await waitFor(() => expect(within(grimoire).getByLabelText("2일차 밤 경과 시간 00:00")).toBeTruthy());
-  await user.click(screen.getByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "진행" }));
+  await user.click(await screen.findByRole("button", { name: "확정" }));
+  await user.click(within(stages).getByRole("button", { name: "마도서" }));
+  grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   await waitFor(() => expect(within(grimoire).getByLabelText("3일차 낮 경과 시간 00:00")).toBeTruthy());
 
   const replayCallsBeforeTicks = vi.mocked(core.replay).mock.calls.length;
@@ -122,6 +134,9 @@ test("derives later Night numbering when reopening an active saved session", asy
     />,
   );
 
+  await screen.findByRole("main", { name: "Trouble Brewing 진행" });
+  const stages = screen.getByRole("navigation", { name: "작업 단계" });
+  await userEvent.setup().click(within(stages).getByRole("button", { name: "마도서" }));
   const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByLabelText("4일차 밤 경과 시간 00:00")).toBeTruthy();
 });

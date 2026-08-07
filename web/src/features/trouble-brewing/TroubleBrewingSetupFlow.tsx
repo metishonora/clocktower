@@ -140,10 +140,13 @@ export function TroubleBrewingSetupFlow({
       const swapIndex = Math.floor(Math.random() * (index + 1));
       [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
     }
-    update((current) => shuffled.reduce(
-      (next, characterId, index) => assignActualCharacter(next, characterId, index + 1),
-      resetActualCharacters(current),
-    ));
+    update((current) => ({
+      ...shuffled.reduce(
+        (next, characterId, index) => assignActualCharacter(next, characterId, index + 1),
+        resetActualCharacters(current),
+      ),
+      selectedSeat: 0,
+    }));
     setPendingCharacterId(undefined);
   }
 

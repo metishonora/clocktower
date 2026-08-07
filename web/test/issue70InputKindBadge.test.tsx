@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -24,7 +24,7 @@ test("omits the input-kind badge from a no-input current step", async () => {
   expect(screen.getByText("낮", { selector: ".eyebrow" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "토론 시작" })).toBeTruthy();
   expect(screen.queryByText("없음")).toBeNull();
-  expect(screen.getByText("설정 확정")).toBeTruthy();
+  expect(within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
 });
 
 test("omits the input-kind badge from a player-selection current step", async () => {
@@ -45,7 +45,7 @@ test("omits the input-kind badge from a player-selection current step", async ()
   expect(screen.getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
   expect(screen.getByLabelText("단계 입력")).toBeTruthy();
   expect(screen.queryByText("플레이어")).toBeNull();
-  expect(screen.getByText("설정 확정")).toBeTruthy();
+  expect(within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
 });
 
 test("omits the input-kind badge from a numeric-information current step", async () => {
@@ -74,7 +74,7 @@ test("omits the input-kind badge from a numeric-information current step", async
   expect(screen.getByText("전달할 악한 팀 이웃 쌍의 수를 선택하세요.")).toBeTruthy();
   expect(screen.getByLabelText("전달할 숫자")).toBeTruthy();
   expect(screen.queryByText("숫자")).toBeNull();
-  expect(screen.getByText("설정 확정")).toBeTruthy();
+  expect(within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
 });
 
 function renderLiveStep(currentStep: ReturnType<typeof step>) {

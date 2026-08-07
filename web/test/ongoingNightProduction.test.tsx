@@ -52,10 +52,12 @@ describe("ongoing-night production UI", () => {
       proposal: proposal(phaseEvent("unused", "unused")),
     });
 
+    const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 하린" });
-    const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     const poisonedSeat = within(grimoire).getByRole("button", { name: /2.*민준|민준/ });
     const protectedSeat = within(grimoire).getByRole("button", { name: /3.*서연|서연/ });
     const poisonBadge = within(poisonedSeat).getByText("중독");
@@ -286,10 +288,12 @@ describe("ongoing-night production UI", () => {
     expect(within(announcement).getByText("사망자:")).toBeTruthy();
     expect(within(announcement).getAllByText("없음")).toHaveLength(2);
     expect(within(announcement).getByText("부활:")).toBeTruthy();
-    const playerStatusesBefore = within(screen.getByLabelText("라이브 마도서 좌석 맵"))
+    await user.click(screen.getByRole("button", { name: "마도서" }));
+    const playerStatusesBefore = within(await screen.findByLabelText("라이브 마도서 좌석 맵"))
       .getAllByRole("button")
       .map((button) => button.getAttribute("aria-label"));
 
+    await user.click(screen.getByRole("button", { name: "진행" }));
     await user.click(screen.getByRole("button", { name: "확인하고 낮 시작" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -300,8 +304,9 @@ describe("ongoing-night production UI", () => {
       expect(storage.savedGames.at(-1)?.game.events.at(-1)).toEqual(canonicalEvent);
     });
     expect(await screen.findByRole("button", { name: "토론 시작" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "마도서" }));
     expect(
-      within(screen.getByLabelText("라이브 마도서 좌석 맵"))
+      within(await screen.findByLabelText("라이브 마도서 좌석 맵"))
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
     ).toEqual(playerStatusesBefore);

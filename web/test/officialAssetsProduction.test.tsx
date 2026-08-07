@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver, createCoreHarness, event, gameFile, proposal, replayState, step } from "./clocktowerAppHarness";
@@ -34,7 +35,8 @@ test("production live play renders official icons without the landing-only CCC n
 
   const actor = await screen.findByLabelText("현재 행동자");
   expect(within(actor).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  await userEvent.setup().click(screen.getByRole("button", { name: "마도서" }));
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
   expect(screen.queryByLabelText("Community Created Content 안내")).toBeNull();
 });
