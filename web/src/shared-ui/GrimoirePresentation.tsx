@@ -60,6 +60,7 @@ export function RectangularGrimoireBoard({
   seats,
   overlay,
   center,
+  centerAriaLabel,
   className,
   centerClassName,
   style,
@@ -68,6 +69,7 @@ export function RectangularGrimoireBoard({
   seats: RectangularGrimoireSeat[];
   overlay?: ReactNode;
   center?: ReactNode;
+  centerAriaLabel?: string;
   className?: string;
   centerClassName?: string;
   style?: CSSProperties;
@@ -102,7 +104,11 @@ export function RectangularGrimoireBoard({
         </Fragment>
       ))}
       {overlay}
-      {center === undefined ? null : <div className={joinClasses("rectangularGrimoireCenter", centerClassName)}>{center}</div>}
+      {center === undefined ? null : <div
+        className={joinClasses("rectangularGrimoireCenter", centerClassName)}
+        role={centerAriaLabel ? "group" : undefined}
+        aria-label={centerAriaLabel}
+      >{center}</div>}
     </div>
   );
 }

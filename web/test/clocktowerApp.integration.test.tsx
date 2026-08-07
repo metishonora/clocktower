@@ -508,7 +508,7 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "대상 선택" }));
     const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     await user.click(within(grimoire).getByRole("button", { name: /Ada/ }));
-    const readyConfirm = screen.getByRole("button", { name: "1번 Ada 선택 확정" }) as HTMLButtonElement;
+    const readyConfirm = screen.getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
     expect(readyConfirm.disabled).toBe(false);
     await user.click(readyConfirm);
 

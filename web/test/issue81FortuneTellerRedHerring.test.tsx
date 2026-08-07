@@ -42,7 +42,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
 
     await user.click(goodTarget);
     await user.click(spy);
-    const confirm = screen.getByRole("button", { name: "6번 Spy 선택 확정" }) as HTMLButtonElement;
+    const confirm = screen.getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
     await user.dblClick(confirm);
 

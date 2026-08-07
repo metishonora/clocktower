@@ -52,6 +52,13 @@ test("uses the S&V center clock layout on the Trouble Brewing grimoire", async (
   const center = grimoire.querySelector(".snvGrimoireCenter");
   expect(center?.classList.contains("issue116PhaseClock")).toBe(true);
   expect(center?.classList.contains("tbPhaseClock")).toBe(false);
+  expect(center?.getAttribute("role")).toBe("group");
+  expect(center?.getAttribute("aria-label")).toBe("현재 단계");
+  expect(Array.from(center?.children ?? []).map((child) => child.tagName)).toEqual([
+    "STRONG",
+    "TIME",
+    "BUTTON",
+  ]);
 });
 
 test("presents the spent Virgin ability as the official no-ability token instead of V", async () => {
@@ -98,10 +105,55 @@ test("confirms a player target inside the S&V grimoire work panel", async () => 
 
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const toolbar = screen.getByLabelText("마도서 도구");
+  expect(within(toolbar).getByRole("button", { name: "배치로 돌아가기" })).toBeTruthy();
+  expect(within(toolbar).getByRole("button", { name: "선택 취소 →" })).toBeTruthy();
+  expect(within(toolbar).queryByRole("button", { name: "돌아가기 →" })).toBeNull();
   const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
   await user.click(target);
   expect(target.classList.contains("snvSeatStateTarget")).toBe(true);
-  expect(within(panel).getByRole("button", { name: /Ada.*확정/ })).toBeTruthy();
+  expect(target.classList.contains("snvSeatStatePoisonTarget")).toBe(false);
+  expect(target.classList.contains("snvSeatStateSelected")).toBe(false);
+  expect(target.classList.contains("issue116SelectedSeat")).toBe(false);
+  expect(within(target).getByText("선택 대상")).toBeTruthy();
+  expect(within(target).queryByText("세탁부")).toBeNull();
+
+  await user.click(within(panel).getByRole("button", { name: "선택 확정" }));
+  await waitFor(() => expect(within(screen.getByRole("navigation", { name: "작업 단계" }))
+    .getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
+});
+
+test("uses the S&V numbered target summary for setup information", async () => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: "firstNight:washerwoman",
+    character: "washerwoman",
+    playerId: "player-1",
+    kind: "setupInfo",
+    target: "players",
+    minSelections: 2,
+    maxSelections: 2,
+    setupInfo: "washerwoman",
+    characterKind: "Townsfolk",
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: /대상 선택/ }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  expect(within(panel).getByRole("heading", { name: "두 명 선택" })).toBeTruthy();
+  expect(within(panel).queryByText("행동자")).toBeNull();
+
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ }));
+  await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ }));
+  expect(within(panel).getByText("1번째")).toBeTruthy();
+  expect(within(panel).getByText("1번 Ada")).toBeTruthy();
+  expect(within(panel).getByText("2번째")).toBeTruthy();
+  expect(within(panel).getByText("2번 Bert")).toBeTruthy();
+
+  await user.click(within(panel).getByRole("button", { name: "선택 확정" }));
+  await waitFor(() => expect(within(screen.getByRole("navigation", { name: "작업 단계" }))
+    .getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
 });
 
 test("runs nomination and vote through the S&V grimoire modes", async () => {

@@ -111,7 +111,7 @@ describe("ongoing-night production UI", () => {
     expect(screen.queryByText(/등록 판정|선한 팀으로 등록|첩자.*등록/)).toBeNull();
 
     await user.click(spy);
-    await user.click(screen.getByRole("button", { name: "4번 도윤 선택 확정" }));
+    await user.click(screen.getByRole("button", { name: "선택 확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
