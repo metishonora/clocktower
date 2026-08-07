@@ -43,7 +43,8 @@ test("omits the input-kind badge from a player-selection current step", async ()
   await screen.findByRole("heading", { name: "독살범: 4번 Dae" });
   expect(screen.getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
   expect(screen.getByText("중독시킬 플레이어 1명을 선택하세요.")).toBeTruthy();
-  expect(screen.getByLabelText("단계 입력")).toBeTruthy();
+  expect(screen.queryByLabelText("단계 입력")).toBeNull();
+  expect(screen.getByRole("button", { name: "← 대상 선택" })).toBeTruthy();
   expect(screen.queryByText("플레이어")).toBeNull();
   expect(within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
 });

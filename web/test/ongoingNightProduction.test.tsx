@@ -20,6 +20,7 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
+import { openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
 
 describe("ongoing-night production UI", () => {
   test("renders replay-derived poison and protection as distinct read-only Grimoire badges", async () => {
@@ -60,14 +61,10 @@ describe("ongoing-night production UI", () => {
     const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
     const poisonedSeat = within(grimoire).getByRole("button", { name: /2.*민준|민준/ });
     const protectedSeat = within(grimoire).getByRole("button", { name: /3.*서연|서연/ });
-    const poisonBadge = within(poisonedSeat).getByText("중독");
-    const protectionBadge = within(protectedSeat).getByText("보호");
-
-    expect(poisonBadge.className).toMatch(/poison/i);
-    expect(protectionBadge.className).toMatch(/protect/i);
-    expect(poisonBadge.className).not.toBe(protectionBadge.className);
-    expect(poisonBadge.tagName).not.toBe("BUTTON");
-    expect(protectionBadge.tagName).not.toBe("BUTTON");
+    expect(poisonedSeat.getAttribute("aria-label")).toContain("중독");
+    expect(poisonedSeat.getAttribute("aria-label")).not.toContain("보호");
+    expect(protectedSeat.getAttribute("aria-label")).toContain("보호");
+    expect(protectedSeat.getAttribute("aria-label")).not.toContain("중독");
   });
 
   test("uses the Red Herring allowlist and automatically submits the Spy's Good-registration witness without rationale copy", async () => {
@@ -106,7 +103,7 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const input = await screen.findByLabelText("단계 입력");
+    const input = await openLiveGrimoire(user);
     const spy = within(input).getByRole("button", { name: /도윤/ }) as HTMLButtonElement;
     const disallowedImp = within(input).getByRole("button", { name: /하린/ }) as HTMLButtonElement;
     expect(spy.disabled).toBe(false);
@@ -114,6 +111,7 @@ describe("ongoing-night production UI", () => {
     expect(screen.queryByText(/등록 판정|선한 팀으로 등록|첩자.*등록/)).toBeNull();
 
     await user.click(spy);
+    await returnToLiveProgress(user);
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -174,9 +172,8 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const input = await screen.findByLabelText("단계 입력");
     const targetName = outcome.kind === "death" ? /하린/ : /서연/;
-    await user.click(within(input).getByRole("button", { name: targetName }));
+    await selectLivePlayers(user, targetName);
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     const actionResult = await screen.findByLabelText("밤 행동 결과");
@@ -234,9 +231,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
-    const input = await screen.findByLabelText("단계 입력");
-    await user.click(within(input).getByRole("button", { name: /서연/ }));
-    await user.click(within(input).getByRole("button", { name: /하린/ }));
+    await selectLivePlayers(user, /서연/, /하린/);
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     const result = await screen.findByLabelText("확정된 Reveal 후속 조치");
@@ -462,9 +457,7 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const input = await screen.findByLabelText("단계 입력");
-    await user.click(within(input).getByRole("button", { name: /지우/ }));
-    await user.click(within(input).getByRole("button", { name: /민준/ }));
+    await selectLivePlayers(user, /지우/, /민준/);
     expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -501,7 +494,7 @@ describe("ongoing-night production UI", () => {
       <ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />,
     );
 
-    const input = await screen.findByLabelText("단계 입력");
+    const input = await openLiveGrimoire(user);
     const firstPlayer = within(input).getByRole("button", { name: /지우/ });
     await user.click(firstPlayer);
     expect(firstPlayer.getAttribute("aria-pressed")).toBe("true");
@@ -512,10 +505,12 @@ describe("ongoing-night production UI", () => {
       target: { files: [new File([JSON.stringify(importedFile)], "imported.json", { type: "application/json" })] },
     });
 
+    await returnToLiveProgress(user);
     await screen.findByRole("heading", { name: "점쟁이: 1번 지우-새게임" });
+    await openLiveGrimoire(user);
     await waitFor(() => {
       expect(
-        within(screen.getByLabelText("단계 입력")).getByRole("button", { name: /지우-새게임/ }).getAttribute("aria-pressed"),
+        within(screen.getByLabelText("라이브 마도서 좌석 맵")).getByRole("button", { name: /지우-새게임/ }).getAttribute("aria-pressed"),
       ).toBe("false");
     });
     confirmImport.mockRestore();

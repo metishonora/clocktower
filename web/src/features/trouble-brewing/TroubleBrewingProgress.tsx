@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
@@ -27,14 +27,12 @@ export function TroubleBrewingProgress({
   phaseRuntime,
   theme,
   onGoToGrimoire,
-  auxiliary,
   ...control
 }: PhaseControlProps & {
   phaseLabel: string;
   phaseRuntime: string;
   theme: "day" | "night";
   onGoToGrimoire: () => void;
-  auxiliary?: ReactNode;
 }) {
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
 
@@ -72,7 +70,6 @@ export function TroubleBrewingProgress({
           ))}
         </ol>
       </section>}
-      auxiliary={auxiliary ? <aside className="tbLiveAuxiliary">{auxiliary}</aside> : undefined}
     />
   );
 }
@@ -314,7 +311,14 @@ function TroubleBrewingTask({
                 disabled: busy || suggesting,
                 onClick: suggestCurrentInput,
               } : undefined}
+              hidePlayerInput={usesGrimoireSelection}
             />
+            {usesGrimoireSelection && currentStep.requiredInput.supportsRandomSuggestion ? <button
+              type="button"
+              className="randomSuggestionButton"
+              disabled={busy || suggesting}
+              onClick={suggestCurrentInput}
+            >{suggestionUsed ? "다시 추천" : "무작위 추천"}</button> : null}
             {latestProposal?.event.type === "nightActionResolved" ? <ImpActionResult proposal={latestProposal} players={players} /> : null}
             {latestProposal?.event.type === "slayerAbilityUsed" && latestProposal.event.payload.outcome.kind === "noEffect" ? (
               <p className="nightActionResult" aria-label="처단자 능력 결과">아무 일도 일어나지 않음</p>

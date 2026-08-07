@@ -10,6 +10,7 @@ import { emptyNominationDraft } from "../src/features/voting/useNominationDraft"
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { selectLivePlayers } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -57,8 +58,7 @@ test("IMP-04 confirms a poisoned Imp attack on the Mayor exactly once through re
   render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
   await screen.findByRole("heading", { name: "임프: 8번 플레이어 8" });
-  const input = screen.getByLabelText("단계 입력");
-  await user.click(within(input).getByRole("button", { name: /3플레이어 3/ }));
+  await selectLivePlayers(user, /플레이어 3/);
   expect(screen.queryByRole("group", { name: "시장 공격 결과" })).toBeNull();
 
   const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;

@@ -7,6 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { openLiveGrimoire, returnToLiveProgress } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -65,31 +66,19 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByText("확인할 플레이어 2명을 선택하세요.");
-    if (surface === "Grimoire") {
-      await user.click(screen.getByRole("button", { name: "마도서" }));
-    }
-    const selectionSurface = surface === "phase input"
-      ? screen.getByLabelText("단계 입력")
-      : await screen.findByLabelText("라이브 마도서 좌석 맵");
+    const selectionSurface = await openLiveGrimoire(user);
     const fortuneTeller = within(selectionSurface).getByRole("button", {
-      name: surface === "phase input" ? /플레이어 5/ : /5번 플레이어 5 좌석 선택/,
+      name: /5번 플레이어 5 좌석 선택/,
     });
     const demon = within(selectionSurface).getByRole("button", {
-      name: surface === "phase input"
-        ? new RegExp(`플레이어 ${demonSeat}`)
-        : new RegExp(`${demonSeat}번 플레이어 ${demonSeat} 좌석 선택`),
+      name: new RegExp(`${demonSeat}번 플레이어 ${demonSeat} 좌석 선택`),
     });
     const third = within(selectionSurface).getByRole("button", {
-      name: surface === "phase input" ? /플레이어 4/ : /4번 플레이어 4 좌석 선택/,
+      name: /4번 플레이어 4 좌석 선택/,
     });
 
-    if (surface === "phase input") {
-      expect((fortuneTeller as HTMLButtonElement).disabled).toBe(false);
-      expect((demon as HTMLButtonElement).disabled).toBe(false);
-    } else {
-      expect(fortuneTeller.getAttribute("aria-disabled")).toBe("false");
-      expect(demon.getAttribute("aria-disabled")).toBe("false");
-    }
+    expect((fortuneTeller as HTMLButtonElement).disabled).toBe(false);
+    expect((demon as HTMLButtonElement).disabled).toBe(false);
 
     await user.click(fortuneTeller);
     await user.click(demon);
@@ -104,9 +93,7 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
 
     await user.click(demon);
     expect(demon.getAttribute("aria-pressed")).toBe("true");
-    if (surface === "Grimoire") {
-      await user.click(screen.getByRole("button", { name: "진행" }));
-    }
+    await returnToLiveProgress(user);
     const confirm = screen.getByRole("button", { name: "확정" });
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
     await user.dblClick(confirm);

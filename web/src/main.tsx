@@ -29,6 +29,7 @@ import {
   type TroubleBrewingLiveStage,
 } from "./features/trouble-brewing/TroubleBrewingLiveFlow";
 import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
+import { TroubleBrewingLiveGrimoire } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
@@ -572,17 +573,18 @@ export function ClocktowerApp({
           loadError={gameStore.loadError}
           canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
           onStageChange={setTroubleBrewingStage}
-          onReturnToAssignment={gameStore.recoverConfirmedSetup}
-          onImport={() => importInputRef.current?.click()}
           onReset={gameStore.resetSetup}
           onRequestUndo={(trigger) => {
             if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
           }}
-          grimoire={<Grimoire
+          grimoire={<TroubleBrewingLiveGrimoire
             players={gameStore.players}
-            draft={gameStore.setupDraft}
+            currentStep={phaseInputStep}
+            phaseLabel={livePhaseLabel}
+            phaseRuntime={phaseRuntime ?? "00:00"}
+            theme={gameStore.phase === "day" ? "day" : "night"}
             busy={gameStore.busy || Boolean(gameStore.pendingConfirmedReveal) || preActionRevealPending}
-            centerStatus={grimoireCenterStatus}
+            gameEnded={Boolean(gameStore.gameEnd)}
             ruleState={gameStore.ruleState}
             onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
             slayerAbility={gameStore.ruleState?.slayerAbility ? {
@@ -611,6 +613,8 @@ export function ClocktowerApp({
                   }
                 : undefined
             }
+            onReturnToAssignment={gameStore.recoverConfirmedSetup}
+            onGoToProgress={() => setTroubleBrewingStage("play")}
           />}
           progress={<TroubleBrewingProgress
             phaseLabel={livePhaseLabel}
@@ -644,32 +648,28 @@ export function ClocktowerApp({
             onRequestUndoGameEnd={(trigger) => {
               if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
             }}
-            auxiliary={<>
-              <details className="panel auxiliaryPanel setup">
-                <summary><span>설정 및 불러오기</span><small>{gameStore.players.length}명</small></summary>
-                <div className="auxiliaryPanelContent">
-                  <ConfirmedSetup
-                    players={gameStore.players}
-                    canRecoverSetup={gameStore.canRecoverConfirmedSetup}
-                    onRecoverSetup={gameStore.recoverConfirmedSetup}
-                    onExport={exportLatestGame}
-                    onImport={() => importInputRef.current?.click()}
-                    onReset={gameStore.resetSetup}
-                  />
-                </div>
-              </details>
-              <EventLog
-                events={gameStore.gameFile.game.events}
-                replayResult={gameStore.replayResult}
-                proposalResult={gameStore.proposalResult}
-                loadError={gameStore.loadError}
-                warnings={gameStore.shownWarnings}
-                latestUndoEvent={undefined}
-                undoDisabled
-                onRequestUndo={requestLiveUndo}
-              />
-            </>}
           />}
+          storage={<section className="snvStorageSurface snvTabPanel tbStorageSurface" aria-label="저장 및 불러오기">
+            <article>
+              <span>현재 게임</span>
+              <h2>이 기기에 저장</h2>
+              <button type="button" disabled={gameStore.busy} onClick={exportLatestGame}>export JSON</button>
+            </article>
+            <article>
+              <span>저장된 게임</span>
+              <h2>계속 진행</h2>
+              <button type="button" disabled={gameStore.busy} onClick={() => importInputRef.current?.click()}>import JSON</button>
+            </article>
+            <section className="snvEventLog" aria-label="이벤트 로그">
+              <header><h2>이벤트 로그</h2><strong>{gameStore.gameFile.game.events.length}건</strong></header>
+              {gameStore.gameFile.game.events.length ? <ol className="snvScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
+                {[...gameStore.gameFile.game.events].reverse().map((confirmedEvent, index) => <li key={confirmedEvent.id}>
+                  <span>{String(gameStore.gameFile.game.events.length - index).padStart(2, "0")}</span>
+                  <p>{confirmedEvent.summary}</p>
+                </li>)}
+              </ol> : <p className="snvEmptyEventLog">확정된 이벤트가 없습니다.</p>}
+            </section>
+          </section>}
         />
         {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
           actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
@@ -681,6 +681,29 @@ export function ClocktowerApp({
         {liveUndoDialogEvent ? (
           <LiveUndoDialog events={liveUndoDialogEvent.events} onCancel={closeLiveUndoDialog} onConfirm={confirmLiveUndo} />
         ) : null}
+      </div>
+    );
+  }
+
+  if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && activeSpyRevealPayload && revealPlayers) {
+    return (
+      <div className="clocktowerApp tbSharedLivePlay spyRevealActive" data-testid="clocktower-app">
+        <main
+          className="productionApplicationShell tbProductionShell tbSpyRevealShell"
+          data-theme="night"
+          aria-label="플레이어 공개 화면"
+        >
+          <TroubleBrewingLiveGrimoire
+            players={revealPlayers}
+            phaseLabel="첩자 공개"
+            phaseRuntime=""
+            theme="night"
+            busy={false}
+            gameEnded={false}
+            ruleState={revealRuleState}
+            revealMode={{ onClose: closeActiveReveal }}
+          />
+        </main>
       </div>
     );
   }

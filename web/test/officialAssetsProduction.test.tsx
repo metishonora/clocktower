@@ -37,6 +37,6 @@ test("production live play renders official icons without the landing-only CCC n
   expect(within(actor).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
   await userEvent.setup().click(screen.getByRole("button", { name: "마도서" }));
   const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
-  expect(within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
+  expect(grimoire.querySelector('img[src*="washerwoman_g.webp"]')).toBeTruthy();
   expect(screen.queryByLabelText("Community Created Content 안내")).toBeNull();
 });

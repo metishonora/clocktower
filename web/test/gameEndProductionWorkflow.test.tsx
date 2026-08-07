@@ -65,7 +65,7 @@ test("warning confirmation ends the game and protected Undo restores the live st
   expect(within(grimoire).queryByLabelText(/경과 시간/)).toBeNull();
   expect(screen.queryByLabelText("단계 입력")).toBeNull();
   const endedSeat = within(grimoire).getByRole("button", { name: /1번 Ada 좌석 선택/ });
-  expect(endedSeat.getAttribute("aria-disabled")).toBe("true");
+  expect((endedSeat as HTMLButtonElement).disabled).toBe(true);
   await user.click(endedSeat);
   expect(core.propose).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "진행" }));

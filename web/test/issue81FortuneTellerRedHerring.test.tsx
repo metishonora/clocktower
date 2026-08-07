@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
+import { openLiveGrimoire, returnToLiveProgress } from "./livePlayTestHelpers";
 import { phaseEvent, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const playerIds = {
@@ -29,20 +30,20 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByText("점쟁이의 선한 미끼 플레이어 1명을 선택하세요.");
-    const input = screen.getByLabelText("단계 입력");
+    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    const input = await openLiveGrimoire(user);
     const goodTarget = within(input).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement;
     const spy = within(input).getByRole("button", { name: /Spy/ }) as HTMLButtonElement;
     const imp = within(input).getByRole("button", { name: /Imp/ }) as HTMLButtonElement;
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
 
     expect(goodTarget.disabled).toBe(false);
     expect(spy.disabled).toBe(false);
     expect(imp.disabled).toBe(true);
-    expect(confirm.disabled).toBe(true);
 
     await user.click(goodTarget);
-    expect(confirm.disabled).toBe(false);
     await user.click(spy);
+    await returnToLiveProgress(user);
+    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
     await user.dblClick(confirm);
 
@@ -77,7 +78,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
     expect(await screen.findByText("점쟁이의 선한 미끼 플레이어 1명을 선택하세요.")).toBeTruthy();
-    const restoredInput = screen.getByLabelText("단계 입력");
+    const restoredInput = await openLiveGrimoire(user);
     expect((within(restoredInput).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Spy/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Imp/ }) as HTMLButtonElement).disabled).toBe(true);

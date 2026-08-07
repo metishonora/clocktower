@@ -11,7 +11,7 @@ import {
 import { TroubleBrewingSetupPresentation, type TroubleBrewingDistribution } from "./TroubleBrewingSetupPresentation";
 import "./troubleBrewingProduction.css";
 
-export type TroubleBrewingLiveStage = "roles" | "seating" | "play";
+export type TroubleBrewingLiveStage = "roles" | "seating" | "play" | "storage";
 
 type LiveWarning = { code: string; messageKo: string };
 
@@ -27,9 +27,8 @@ export function TroubleBrewingLiveFlow({
   canUndo,
   grimoire,
   progress,
+  storage,
   onStageChange,
-  onReturnToAssignment,
-  onImport,
   onReset,
   onRequestUndo,
 }: {
@@ -44,9 +43,8 @@ export function TroubleBrewingLiveFlow({
   canUndo: boolean;
   grimoire: ReactNode;
   progress: ReactNode;
+  storage: ReactNode;
   onStageChange: (stage: TroubleBrewingLiveStage) => void;
-  onReturnToAssignment: () => void;
-  onImport: () => void;
   onReset: () => void;
   onRequestUndo: (trigger: HTMLButtonElement) => void;
 }) {
@@ -56,12 +54,11 @@ export function TroubleBrewingLiveFlow({
   const requiredByKind = toDistribution(expectedCounts);
 
   function navigate(destination: string) {
-    if (destination === "roles" || destination === "seating" || destination === "play") {
+    if (destination === "roles" || destination === "seating" || destination === "play" || destination === "storage") {
       onStageChange(destination);
       return;
     }
     if (destination === "new-game") onReset();
-    if (destination === "storage") onImport();
     if (destination === "bug-report") {
       window.open("https://github.com/metishonora/clocktower/issues/new", "_blank", "noopener,noreferrer");
     }
@@ -94,7 +91,7 @@ export function TroubleBrewingLiveFlow({
       </>}
       utilities={[
         { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: !storageReady || busy },
-        { id: "storage", label: "저장 / 불러오기", disabled: busy },
+        { id: "storage", label: "저장 / 불러오기", active: activeStage === "storage", disabled: busy },
         { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger" },
       ]}
       stages={[
@@ -108,7 +105,7 @@ export function TroubleBrewingLiveFlow({
       </aside> : undefined}
       className="tbProductionShell tbLiveShell"
     >
-      {activeStage === "roles" ? (
+      {activeStage === "storage" ? storage : activeStage === "roles" ? (
         <TroubleBrewingSetupPresentation
           playerCount={draft.players.length}
           selectedIds={selectedIds}
@@ -123,13 +120,7 @@ export function TroubleBrewingLiveFlow({
           onConfirmRoster={() => undefined}
         />
       ) : activeStage === "seating" ? (
-        <section className="grimoirePresentation snvSeatingSurface snvTabPanel tbConfirmedGrimoire" aria-label="Trouble Brewing 마도서 검토">
-          <div className="snvSeatingToolbar" aria-label="확정된 마도서 도구">
-            <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
-            <button type="button" onClick={() => onStageChange("play")}>진행으로 이동</button>
-          </div>
-          <div className="tbConfirmedGrimoireBoard">{grimoire}</div>
-        </section>
+        grimoire
       ) : (
         progress
       )}
