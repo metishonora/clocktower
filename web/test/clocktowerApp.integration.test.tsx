@@ -2201,7 +2201,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(latestSavedGame(storage.savedGames)).toEqual(storedGame);
   });
 
-  test("uses the living Slayer icon to resolve an explicit Recluse shot into a death confirmation", async () => {
+  test("does not expose a dedicated Slayer action from the live grimoire", async () => {
     const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
     const slayerDeathStep = {
       ...step({
@@ -2274,42 +2274,12 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "토론" });
     await user.click(screen.getByRole("button", { name: "마도서" }));
-    await user.click(await screen.findByRole("button", { name: "1번 Ada 처단자 능력 사용" }));
-    const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
-    expect(within(dialog).getByText("확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.")).toBeTruthy();
-    expect(within(dialog).getByRole("button", { name: /2번 Bert/ })).toBeTruthy();
-    expect(within(dialog).getByRole("button", { name: /4번 Dae/ })).toBeTruthy();
-
-    await user.click(within(dialog).getByRole("button", { name: /3번 Cy/ }));
-    const confirm = within(dialog).getByRole("button", { name: "처단자 사용 확정" }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
-    await user.click(within(dialog).getByRole("button", { name: "악마로 등록" }));
-    expect(confirm.disabled).toBe(false);
-    await user.click(confirm);
-
-    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
-      type: "useSlayerAbility",
-      payload: {
-        discussionStepId: "day:discussion",
-        expectedEventCount: 1,
-        actorPlayerId: "player-1",
-        targetPlayerId: "player-3",
-        targetRegistration: { kind: "recluseAsDemon", registeredCharacterId: "imp" },
-      },
-    });
-    await user.click(screen.getByRole("button", { name: "진행" }));
-    expect(await screen.findByText("사망 확인")).toBeTruthy();
-    const currentStep = screen.getByRole("region", { name: "현재 단계" });
-    expect(within(currentStep).getByLabelText("처단자 결과 대상")).toBeTruthy();
-    expect(within(currentStep).getByText("3번 Cy")).toBeTruthy();
-    expect(within(currentStep).getByText("은둔자")).toBeTruthy();
-    expect(within(currentStep).getByText("처단자 능력으로 사망합니다.")).toBeTruthy();
-    expect(within(currentStep).getByRole("button", { name: "확정" })).toBeTruthy();
-    expect(within(currentStep).queryByRole("button", { name: "사망 확정" })).toBeNull();
-    expect(within(currentStep).queryByRole("button", { name: "사망하지 않음" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();
+    expect(core.propose).not.toHaveBeenCalled();
   });
 
-  test("keeps the actual Slayer icon disabled when Rust marks the action unavailable", async () => {
+  test("does not expose a Slayer action when Rust marks the action unavailable", async () => {
     const whisperStep = step({ id: "day:whisper", stepType: "whisper" as never, phase: "day" });
     const playerRoster = players().map((player) =>
       player.id === "player-1"
@@ -2334,8 +2304,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "밀담" });
     await user.click(screen.getByRole("button", { name: "마도서" }));
-    const icon = await screen.findByRole("button", { name: "1번 Ada 처단자 능력 사용" });
-    expect((icon as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
     expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();
   });
 });

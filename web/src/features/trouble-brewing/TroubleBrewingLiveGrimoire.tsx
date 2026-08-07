@@ -35,7 +35,6 @@ export function TroubleBrewingLiveGrimoire({
   setupInformationSelection,
   phasePlayerSelection,
   ruleState,
-  slayerAbility,
   onUpdatePlayerAnnotations,
   onReturnToAssignment,
   onGoToProgress,
@@ -70,12 +69,6 @@ export function TroubleBrewingLiveGrimoire({
     onTogglePlayer: (playerId: string) => void;
   };
   ruleState?: RuleState;
-  slayerAbility?: {
-    actorPlayerId: string;
-    enabled: boolean;
-    spent: boolean;
-    onUse: (button: HTMLButtonElement) => void;
-  };
   onUpdatePlayerAnnotations?: (
     playerId: string,
     annotations: PlayerAnnotationsInput,
@@ -325,16 +318,6 @@ export function TroubleBrewingLiveGrimoire({
             </>,
             afterSeat: <>
               <PlayerTokenCountBadge count={tokenCount} position={position} mobilePosition={mobilePosition} theme={theme} />
-              {player.id === slayerAbility?.actorPlayerId && !slayerAbility.spent ? <button
-                type="button"
-                className="tbSeatAbilityAction slayer"
-                style={abilityActionStyle(position, mobilePosition)}
-                aria-label={`${player.seat}번 ${player.name} 처단자 능력 사용`}
-                disabled={!slayerAbility.enabled || busy}
-                onClick={(event) => slayerAbility.onUse(event.currentTarget)}
-              >
-                {characterAsset("slayer") ? <img src={characterAsset("slayer")?.src} alt="처단자" /> : null}
-              </button> : null}
             </>,
           };
         })}
@@ -475,13 +458,4 @@ function playerLabel(player?: Player) {
 
 function characterKindClass(characterId: string) {
   return characters.find((candidate) => candidate.id === characterId)?.kind.toLowerCase() ?? "unknown";
-}
-
-function abilityActionStyle(position: { x: number; y: number }, mobilePosition: { x: number; y: number }) {
-  return {
-    "--ability-seat-x": `${position.x}%`,
-    "--ability-seat-y": `${position.y}%`,
-    "--ability-mobile-seat-x": `${mobilePosition.x}%`,
-    "--ability-mobile-seat-y": `${mobilePosition.y}%`,
-  } as CSSProperties;
 }

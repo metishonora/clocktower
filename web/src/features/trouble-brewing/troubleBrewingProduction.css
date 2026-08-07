@@ -739,33 +739,6 @@
   filter: grayscale(.45);
 }
 
-.tbSeatAbilityAction {
-  position: absolute;
-  z-index: 5;
-  top: var(--ability-seat-y);
-  left: var(--ability-seat-x);
-  display: grid;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  place-items: center;
-  transform: translate(-50%, -50%) translate(-42px, 30px);
-  border: 1px solid rgba(239, 214, 158, .62);
-  border-radius: 50%;
-  color: #fff8e8;
-  background: #315d45;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .42);
-  font-family: inherit;
-  font-size: .68rem;
-  font-weight: 800;
-}
-
-.tbSeatAbilityAction img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
 .tbSpyRevealShell {
   min-height: 100dvh;
   padding-top: 32px;
@@ -1151,12 +1124,6 @@
 
   .tbPlaySurface .tbPlayPrimary {
     grid-template-columns: 1fr;
-  }
-
-  .tbSeatAbilityAction {
-    top: var(--ability-mobile-seat-y);
-    left: var(--ability-mobile-seat-x);
-    transform: translate(-50%, -50%) translate(-34px, 26px);
   }
 
   .tbProgressPlayer {

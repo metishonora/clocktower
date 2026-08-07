@@ -694,12 +694,6 @@ export function ClocktowerApp({
             dayState={gameStore.dayState}
             ruleState={gameStore.ruleState}
             onUpdatePlayerAnnotations={gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
-            slayerAbility={gameStore.ruleState?.slayerAbility ? {
-              actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
-              enabled: gameStore.ruleState.slayerAbility.canUseNow,
-              spent: gameStore.ruleState.slayerAbility.spent,
-              onUse: (button) => { slayerTriggerRef.current = button; setSlayerDialogOpen(true); },
-            } : undefined}
             nominationVoting={troubleBrewingHandoff === "nomination" || troubleBrewingHandoff === "vote" ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
             setupInformationSelection={
               troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "setupInfo"

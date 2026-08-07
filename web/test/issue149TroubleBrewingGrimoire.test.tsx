@@ -94,7 +94,7 @@ test("presents the spent Virgin ability as the official no-ability token instead
   expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 성결자" })).toBeTruthy();
 });
 
-test("uses the official Slayer icon for its available public ability action", async () => {
+test("does not show a dedicated Slayer ability action beside the seat", async () => {
   const user = userEvent.setup();
   const playerRoster = players().map((player) => player.id === "player-1" ? {
     ...player,
@@ -111,9 +111,7 @@ test("uses the official Slayer icon for its available public ability action", as
   });
 
   const grimoire = await openLiveGrimoire(user);
-  const action = within(grimoire).getByRole("button", { name: "1번 Ada 처단자 능력 사용" });
-  expect(within(action).getByRole("img", { name: "처단자" })).toBeTruthy();
-  expect(action.textContent).toBe("");
+  expect(within(grimoire).queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
 });
 
 test("presents the spent Slayer ability as its official no-ability token", async () => {
