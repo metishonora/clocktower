@@ -13,8 +13,9 @@ test("production setup renders bundled official icons without the landing-only C
 
   render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(undefined)} />);
 
-  const pool = await screen.findByLabelText("Trouble Brewing 캐릭터 풀");
-  const washerwoman = within(pool).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" });
+  const pool = await screen.findByLabelText("Trouble Brewing 직업 선택 패널");
+  const washerwoman = within(pool).getByRole("button", { name: "세탁부" }).querySelector("img");
+  if (!washerwoman) throw new Error("세탁부 공식 캐릭터 아이콘이 렌더링되지 않았습니다.");
   expect(washerwoman.getAttribute("src")).toMatch(/\/assets\/characters\/tb\/washerwoman_g\.webp$/);
   expect(washerwoman.getAttribute("src")).not.toContain("release.botc.app");
 

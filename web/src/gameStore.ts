@@ -32,6 +32,7 @@ import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
   createSetupDraftFromConfirmedPlayers,
+  setupDraftSelectedCharacterIds,
   toCreateGamePlayers,
   type SetupDraft,
 } from "./setupDraft.js";
@@ -204,11 +205,9 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     () => ({
       scriptId,
       playerCount: setupDraft.players.length,
-      actualCharacters: setupDraft.players.flatMap((player) =>
-        player.actualCharacter ? [player.actualCharacter] : [],
-      ),
+      actualCharacters: setupDraftSelectedCharacterIds(setupDraft),
     }),
-    [scriptId, setupDraft.players],
+    [scriptId, setupDraft],
   );
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {

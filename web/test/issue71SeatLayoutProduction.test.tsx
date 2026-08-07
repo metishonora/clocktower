@@ -77,7 +77,7 @@ describe.each([
   });
 });
 
-test("setup recovery restores the persisted confirmed coordinates and setup-only controls", async () => {
+test("setup recovery preserves legacy metadata without exposing or using the former free-position controls", async () => {
   const currentStep = step({ id: "firstNight:washerwoman", character: "washerwoman", playerId: "player-1" });
   const core = createCoreHarness({
     initialReplay: replayState({ currentStep }),
@@ -93,13 +93,14 @@ test("setup recovery restores the persisted confirmed coordinates and setup-only
   await user.click(screen.getByText("설정 및 불러오기"));
   await user.click(screen.getByRole("button", { name: "설정 다시 수정" }));
 
-  const setupMap = await screen.findByLabelText("조정 가능한 마도서 좌석 맵");
-  const ada = within(setupMap).getByText("Ada").closest("button");
+  const setupMap = await screen.findByLabelText("5자리 Trouble Brewing 마도서");
+  const ada = within(setupMap).getByRole("button", { name: /1번 좌석, Ada/ });
   if (!ada) throw new Error("recovered Ada seat was not rendered");
-  expect(ada.getAttribute("style")).toContain("left: 41%");
-  expect(ada.getAttribute("style")).toContain("top: 31%");
-  expect(screen.getByRole("group", { name: "좌석 배치 프리셋" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "위치 조정" })).toBeTruthy();
+  expect(ada.getAttribute("style")).toContain("--seat-x: 28%");
+  expect(ada.getAttribute("style")).not.toContain("41%");
+  expect(screen.queryByRole("group", { name: "좌석 배치 프리셋" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
+  expect(screen.getByRole("button", { name: "무작위 배치" })).toBeTruthy();
   await waitFor(() => {
     expect(storage.savedGames.at(-1)?.game.events).toEqual([]);
     expect(storage.savedGames.at(-1)?.ui).toBeUndefined();

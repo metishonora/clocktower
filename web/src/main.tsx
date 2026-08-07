@@ -23,6 +23,7 @@ import { usePhaseInputDraft } from "./features/phase-control/usePhaseInputDraft"
 import { browserCryptoChoiceToken, type ChoiceTokenSource } from "./features/phase-control/randomSuggestion";
 import { ConfirmedSetup } from "./features/setup/ConfirmedSetup";
 import { SetupForm } from "./features/setup/SetupForm";
+import { TroubleBrewingSetupFlow } from "./features/trouble-brewing/TroubleBrewingSetupFlow";
 import { useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
@@ -518,6 +519,25 @@ export function ClocktowerApp({
       setActivePreActionRevealKey(undefined);
     }
     setActiveRevealPayload(undefined);
+  }
+
+  if (scriptId === TROUBLE_BREWING && !gameStore.setupConfirmed) {
+    return <>
+      <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
+      <TroubleBrewingSetupFlow
+        draft={gameStore.setupDraft}
+        expectedCounts={gameStore.setupExpectedCounts}
+        warnings={gameStore.shownWarnings}
+        loadError={gameStore.loadError}
+        busy={gameStore.busy}
+        confirmationBlocked={gameStore.setupConfirmationBlocked}
+        storageReady={gameStore.storageReady}
+        onChange={gameStore.setSetupDraft}
+        onConfirm={gameStore.confirmSetup}
+        onImport={() => importInputRef.current?.click()}
+        onReset={gameStore.resetSetup}
+      />
+    </>;
   }
 
   if (activeRevealPayload && !activeSpyRevealPayload) {
