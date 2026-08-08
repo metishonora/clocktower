@@ -148,7 +148,7 @@ pub(crate) enum InformationResult {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct InformationPlayer {
     pub(crate) player_id: String,
     pub(crate) seat: u8,
@@ -160,6 +160,27 @@ pub(crate) struct InformationPlayer {
     pub(crate) ghost_vote_used: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) reminder_tokens: Option<Vec<SpyReminderToken>>,
+    /// Canonical script reminders safe to show in a Spy Grimoire snapshot. This is
+    /// intentionally narrower than ReplayState: it contains only the reminders
+    /// attached to this seat and never annotations or event history.
+    #[serde(default)]
+    pub(crate) automatic_reminders: Vec<AutomaticReminder>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AutomaticReminder {
+    pub(crate) player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) token_id: String,
+    pub(crate) label: String,
+    pub(crate) description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) count: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) source_event_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) inactive_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]

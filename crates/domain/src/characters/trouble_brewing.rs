@@ -1,13 +1,14 @@
 pub(crate) mod step_key;
 
 use crate::contracts::{
-    ActiveRuleEffect, ButlerVoteState, GameEvent, GameEventKind, ImpAttackOutcome,
-    ImpNoDeathReason, ImpPreventionReason, MayorAttackContext, NightActionResolution,
-    SlayerRegistrationContext, SlayerTargetRegistration, VirginImpairmentContext, VirginResolution,
+    ActiveRuleEffect, AutomaticReminder, ButlerVoteState, GameEvent, GameEventKind,
+    ImpAttackOutcome, ImpNoDeathReason, ImpPreventionReason, MayorAttackContext,
+    NightActionResolution, SlayerRegistrationContext, SlayerTargetRegistration,
+    VirginImpairmentContext, VirginResolution,
 };
 use crate::error::ErrorKind;
 use crate::model::{
-    Alignment, CharacterKind, InformationPlayer, InformationResult, InputTarget,
+    Alignment, CharacterKind, DeliveryContext, InformationPlayer, InformationResult, InputTarget,
     MayorDecisionInput, MayorDecisionPrompt, NumberInformationChoice, Phase, PhaseStep, Player,
     RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind, SetupInfoKind,
     SetupInfoRegistrationOption, SpyReminderToken, StepInput, StepInputFields, StepType,
@@ -985,15 +986,665 @@ pub(crate) fn computed_information_result(
         "empath" => Some(InformationResult::Number {
             value: empath_evil_neighbor_count(players, step.player_id.as_deref()?)? as u64,
         }),
-        "spy" => Some(spy_grimoire_result(players, &[], &[])),
+        "spy" => Some(spy_grimoire_result(players, &[], &[], &[])),
         _ => None,
     }
+}
+
+/// Rebuilds the official Trouble Brewing reminder projection from confirmed
+/// events. Manual PlayerAnnotations are intentionally not consulted here.
+/// Keep this function deterministic and event-prefix based so undo/replay
+/// naturally restores the same reminder set.
+pub(crate) fn automatic_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    let (active_poison, active_protection) = active_rule_effects(players, events);
+    let butler_vote = butler_vote_state(players, events, active_poison.as_ref());
+    let mut reminders = Vec::new();
+
+    reminders.extend(setup_information_reminders(players, events));
+    reminders.extend(drunk_identity_reminders(players));
+    reminders.extend(red_herring_reminders(players, events));
+    reminders.extend(effect_reminders(
+        active_poison.as_ref(),
+        active_protection.as_ref(),
+    ));
+    reminders.extend(butler_master_reminders(
+        players,
+        events,
+        butler_vote.as_ref(),
+    ));
+    reminders.extend(unannounced_imp_death_reminders(players, events));
+    reminders.extend(undertaker_died_today_reminders(players, events));
+    reminders.extend(spent_ability_reminders(players, events));
+    reminders.extend(scarlet_woman_successor_reminders(players, events));
+
+    reminders
+}
+
+/// Active poison/protection has deliberately the same lifetime as the
+/// existing RuleState projection. This helper is shared by the canonical
+/// reminder projection and replay's RuleState to prevent Spy snapshots from
+/// inventing a second effect lifetime.
+pub(crate) fn active_rule_effects(
+    players: &[Player],
+    events: &[GameEvent],
+) -> (Option<ActiveRuleEffect>, Option<ActiveRuleEffect>) {
+    let last_to_night = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload }
+                if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToNight)
+        )
+    });
+    let last_to_day = events.iter().rposition(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload }
+                if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToDay)
+        )
+    });
+    let active_poison =
+        events
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, event)| match &event.kind {
+                GameEventKind::NightActionResolved { payload }
+                    if matches!(
+                        payload.resolution,
+                        NightActionResolution::Poison { applied: true, .. }
+                    ) && last_to_night.is_none_or(|boundary| index > boundary) =>
+                {
+                    let NightActionResolution::Poison {
+                        target_player_id, ..
+                    } = &payload.resolution
+                    else {
+                        unreachable!()
+                    };
+                    players
+                        .iter()
+                        .any(|player| {
+                            player.id == payload.actor_player_id
+                                && player.alive
+                                && player.actual_character == "poisoner"
+                        })
+                        .then(|| ActiveRuleEffect {
+                            player_id: target_player_id.clone(),
+                            source_player_id: payload.actor_player_id.clone(),
+                            source_event_id: event.id.clone(),
+                        })
+                }
+                _ => None,
+            });
+    let active_protection = events
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(index, event)| match &event.kind {
+            GameEventKind::NightActionResolved { payload }
+                if matches!(
+                    payload.resolution,
+                    NightActionResolution::MonkProtection { applied: true, .. }
+                ) && last_to_night.is_some_and(|boundary| index > boundary)
+                    && last_to_day.is_none_or(|boundary| index > boundary) =>
+            {
+                let NightActionResolution::MonkProtection {
+                    target_player_id, ..
+                } = &payload.resolution
+                else {
+                    unreachable!()
+                };
+                players
+                    .iter()
+                    .any(|player| {
+                        player.id == payload.actor_player_id
+                            && player.alive
+                            && player.actual_character == "monk"
+                    })
+                    .then(|| ActiveRuleEffect {
+                        player_id: target_player_id.clone(),
+                        source_player_id: payload.actor_player_id.clone(),
+                        source_event_id: event.id.clone(),
+                    })
+            }
+            _ => None,
+        });
+    (active_poison, active_protection)
+}
+
+fn reminder(
+    player_id: impl Into<String>,
+    character_id: &'static str,
+    token_id: &'static str,
+    label: &'static str,
+    description: &'static str,
+    source_event_id: Option<String>,
+) -> AutomaticReminder {
+    AutomaticReminder {
+        player_id: player_id.into(),
+        character_id: character_id.into(),
+        token_id: token_id.into(),
+        label: label.into(),
+        description: description.into(),
+        // AutomaticReminder::count is reserved for reminders that display a
+        // measured value (for example S&V Juggler's correct count). TB's
+        // official reminders are one physical token each, so no runtime count
+        // belongs in the replay projection.
+        count: None,
+        source_event_id,
+        inactive_reason: None,
+    }
+}
+
+fn setup_information_reminders(players: &[Player], events: &[GameEvent]) -> Vec<AutomaticReminder> {
+    let first_to_day = events.iter().position(|event| {
+        matches!(
+            &event.kind,
+            GameEventKind::PhaseStepConfirmed { payload }
+                if step_key::TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == step_key::TbSemanticStep::ToDay)
+        )
+    });
+    if first_to_day.is_some() {
+        return Vec::new();
+    }
+    events
+        .iter()
+        .enumerate()
+        .take(events.len())
+        .flat_map(|(_, event)| {
+            let GameEventKind::PhaseStepConfirmed { payload } = &event.kind else {
+                return Vec::new();
+            };
+            let Ok(step) = step_key::TbStepKey::parse(&payload.step_id, event.phase) else {
+                return Vec::new();
+            };
+            let (character_id, setup_kind) = match step.semantic {
+                step_key::TbSemanticStep::Character(TbCharacterId::Washerwoman) => {
+                    ("washerwoman", SetupInfoKind::Washerwoman)
+                }
+                step_key::TbSemanticStep::Character(TbCharacterId::Librarian) => {
+                    ("librarian", SetupInfoKind::Librarian)
+                }
+                step_key::TbSemanticStep::Character(TbCharacterId::Investigator) => {
+                    ("investigator", SetupInfoKind::Investigator)
+                }
+                _ => return Vec::new(),
+            };
+            let (target_player_ids, selected_character_id, registration_judgments) =
+                setup_information_selection(payload);
+            if target_player_ids.len() != 2
+                || target_player_ids[0] == target_player_ids[1]
+                || selected_character_id.is_none()
+                || (setup_kind == SetupInfoKind::Librarian
+                    && payload
+                        .input
+                        .as_ref()
+                        .and_then(|input| input.zero_outsiders)
+                        == Some(true))
+            {
+                return Vec::new();
+            }
+            let selected_character_id = selected_character_id.expect("checked above");
+            let correct_id = identified_setup_player_id(
+                setup_kind,
+                &selected_character_id,
+                &target_player_ids,
+                &registration_judgments,
+                players,
+            );
+            let Some(correct_id) = correct_id else {
+                // A drunk/poisoned Storyteller selection may be intentionally
+                // arbitrary. Do not fabricate which candidate was correct.
+                return Vec::new();
+            };
+            let Some(wrong_id) = target_player_ids
+                .iter()
+                .find(|player_id| **player_id != correct_id)
+            else {
+                return Vec::new();
+            };
+            let (kind_token, kind_label, kind_description) = match setup_kind {
+                SetupInfoKind::Washerwoman => (
+                    "townsfolk",
+                    "주민",
+                    "세탁부 정보에서 주민으로 식별된 플레이어입니다.",
+                ),
+                SetupInfoKind::Librarian => (
+                    "outsider",
+                    "외지인",
+                    "사서 정보에서 외지인으로 식별된 플레이어입니다.",
+                ),
+                SetupInfoKind::Investigator => (
+                    "minion",
+                    "하수인",
+                    "수사관 정보에서 하수인으로 식별된 플레이어입니다.",
+                ),
+            };
+            vec![
+                reminder(
+                    correct_id,
+                    character_id,
+                    kind_token,
+                    kind_label,
+                    kind_description,
+                    Some(event.id.clone()),
+                ),
+                reminder(
+                    wrong_id.clone(),
+                    character_id,
+                    "wrong",
+                    "오답",
+                    "설정 정보에서 함께 제시된 다른 플레이어입니다.",
+                    Some(event.id.clone()),
+                ),
+            ]
+        })
+        .collect()
+}
+
+fn setup_information_selection(
+    payload: &crate::contracts::PhaseStepEventPayload,
+) -> (Vec<String>, Option<String>, Vec<RegistrationJudgment>) {
+    let input_player_ids = payload
+        .input
+        .as_ref()
+        .and_then(|input| input.player_ids.clone())
+        .unwrap_or_default();
+    let input_character_id = payload
+        .input
+        .as_ref()
+        .and_then(|input| input.character_id.clone());
+    let Some(information) = payload.information.as_ref() else {
+        return (input_player_ids, input_character_id, Vec::new());
+    };
+    let target_player_ids = if information.target_player_ids.is_empty() {
+        input_player_ids
+    } else {
+        information.target_player_ids.clone()
+    };
+    let selected_character_id = match &information.delivered_result {
+        InformationResult::SetupInfo { character_id, .. } => character_id.clone(),
+        _ => input_character_id,
+    };
+    let registration_judgments = match &information.delivery_context {
+        DeliveryContext::Discretionary { reasons } => reasons
+            .iter()
+            .find_map(|reason| match reason {
+                crate::model::DeliveryReason::RegistrationJudgment { judgments } => {
+                    Some(judgments.clone())
+                }
+                _ => None,
+            })
+            .unwrap_or_default(),
+        DeliveryContext::Fixed => Vec::new(),
+    };
+    (
+        target_player_ids,
+        selected_character_id,
+        registration_judgments,
+    )
+}
+
+fn identified_setup_player_id(
+    setup_kind: SetupInfoKind,
+    selected_character_id: &str,
+    target_player_ids: &[String],
+    registration_judgments: &[RegistrationJudgment],
+    players: &[Player],
+) -> Option<String> {
+    let expected_kind = setup_info_kind(setup_kind);
+    if character_kind(selected_character_id) != Some(expected_kind) {
+        return None;
+    }
+    if let Some(judged) = registration_judgments.iter().find(|judgment| {
+        target_player_ids.contains(&judgment.player_id)
+            && judgment.character_id.as_deref() == Some(selected_character_id)
+    }) {
+        return Some(judged.player_id.clone());
+    }
+    let exact = target_player_ids
+        .iter()
+        .filter(|player_id| {
+            players.iter().any(|player| {
+                player.id == **player_id
+                    && (player.actual_character == selected_character_id
+                        || (player.actual_character == "drunk"
+                            && player.shown_character == selected_character_id))
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    (exact.len() == 1).then(|| exact[0].clone())
+}
+
+fn drunk_identity_reminders(players: &[Player]) -> Vec<AutomaticReminder> {
+    players
+        .iter()
+        .filter(|player| player.actual_character == "drunk")
+        .map(|player| {
+            reminder(
+                player.id.clone(),
+                "drunk",
+                "isTheDrunk",
+                "주정뱅이임",
+                "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+                Some(player.ability_instance.source_event_id.clone()),
+            )
+        })
+        .collect()
+}
+
+fn red_herring_reminders(players: &[Player], events: &[GameEvent]) -> Vec<AutomaticReminder> {
+    let Some(event) = events
+        .iter()
+        .find(|event| matches!(event.kind, GameEventKind::RedHerringAssigned { .. }))
+    else {
+        return Vec::new();
+    };
+    let GameEventKind::RedHerringAssigned { payload } = &event.kind else {
+        unreachable!()
+    };
+    let fortune_teller_applicable = players
+        .iter()
+        .any(|player| player.alive && player.actual_character == "fortuneTeller");
+    if !fortune_teller_applicable || !players.iter().any(|player| player.id == payload.player_id) {
+        return Vec::new();
+    }
+    vec![reminder(
+        payload.player_id.clone(),
+        "fortuneTeller",
+        "redHerring",
+        "오답 대상",
+        "점쟁이 능력의 레드 헤링 대상입니다.",
+        Some(event.id.clone()),
+    )]
+}
+
+fn effect_reminders(
+    active_poison: Option<&ActiveRuleEffect>,
+    active_protection: Option<&ActiveRuleEffect>,
+) -> Vec<AutomaticReminder> {
+    let mut reminders = Vec::new();
+    if let Some(poison) = active_poison {
+        reminders.push(reminder(
+            poison.player_id.clone(),
+            "poisoner",
+            "poisoned",
+            "중독",
+            "독살범의 능력으로 현재 중독된 상태입니다.",
+            Some(poison.source_event_id.clone()),
+        ));
+    }
+    if let Some(protection) = active_protection {
+        reminders.push(reminder(
+            protection.player_id.clone(),
+            "monk",
+            "safe",
+            "안전",
+            "수도사의 보호를 받아 악마의 공격으로부터 안전합니다.",
+            Some(protection.source_event_id.clone()),
+        ));
+    }
+    reminders
+}
+
+fn butler_master_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+    butler_vote: Option<&ButlerVoteState>,
+) -> Vec<AutomaticReminder> {
+    let Some(vote) = butler_vote.filter(|vote| vote.restriction_applies) else {
+        return Vec::new();
+    };
+    let Some(master_player_id) = vote.master_player_id.as_ref() else {
+        return Vec::new();
+    };
+    if !players.iter().any(|player| player.id == *master_player_id) {
+        return Vec::new();
+    }
+    let source_event_id = events.iter().rev().find_map(|event| match &event.kind {
+        GameEventKind::PhaseStepConfirmed { payload }
+            if step_key::TbStepKey::parse(&payload.step_id, event.phase).is_ok_and(|key| {
+                key.semantic == step_key::TbSemanticStep::Character(TbCharacterId::Butler)
+            }) && payload
+                .input
+                .as_ref()
+                .and_then(|input| input.player_ids.as_ref())
+                .and_then(|ids| ids.first())
+                == Some(master_player_id) =>
+        {
+            Some(event.id.clone())
+        }
+        _ => None,
+    });
+    vec![reminder(
+        master_player_id.clone(),
+        "butler",
+        "master",
+        "주인",
+        "집사가 현재 투표 제한을 따르는 주인입니다.",
+        source_event_id,
+    )]
+}
+
+fn unannounced_imp_death_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    let announced = events
+        .iter()
+        .flat_map(|event| match &event.kind {
+            GameEventKind::NightDeathsAnnounced { payload } => payload.player_ids.clone(),
+            _ => Vec::new(),
+        })
+        .collect::<HashSet<_>>();
+    let mut identities: HashMap<String, String> = events
+        .first()
+        .and_then(|event| match &event.kind {
+            GameEventKind::SetupConfirmed { payload } => Some(
+                payload
+                    .players
+                    .iter()
+                    .filter_map(|player| {
+                        player
+                            .id
+                            .clone()
+                            .map(|id| (id, player.actual_character.clone()))
+                    })
+                    .collect::<HashMap<_, _>>(),
+            ),
+            _ => None,
+        })
+        .unwrap_or_default();
+    let mut reminders = Vec::new();
+    for event in events {
+        match &event.kind {
+            GameEventKind::NightActionResolved { payload } => {
+                let NightActionResolution::ImpAttack {
+                    outcome: ImpAttackOutcome::Death { player_id },
+                    ..
+                } = &payload.resolution
+                else {
+                    continue;
+                };
+                if !announced.contains(player_id)
+                    && identities
+                        .get(&payload.actor_player_id)
+                        .is_some_and(|character| character == "imp")
+                    && players.iter().any(|player| player.id == *player_id)
+                {
+                    reminders.push(reminder(
+                        player_id.clone(),
+                        "imp",
+                        "dead",
+                        "사망",
+                        "임프의 공격으로 사망했지만 아직 밤 사망 발표 전입니다.",
+                        Some(event.id.clone()),
+                    ));
+                }
+            }
+            GameEventKind::DemonSuccessionConfirmed { payload } => {
+                identities.insert(payload.successor_player_id.clone(), "imp".into());
+            }
+            _ => {}
+        }
+    }
+    reminders
+}
+
+fn current_day_cycle(events: &[GameEvent]) -> Option<usize> {
+    let transition = events.iter().enumerate().rev().find_map(|(index, event)| {
+        let GameEventKind::PhaseStepConfirmed { payload } = &event.kind else {
+            return None;
+        };
+        let key = step_key::TbStepKey::parse(&payload.step_id, event.phase).ok()?;
+        matches!(
+            key.semantic,
+            step_key::TbSemanticStep::ToDay | step_key::TbSemanticStep::ToNight
+        )
+        .then_some((index, key))
+    })?;
+    Some(match transition.1.semantic {
+        step_key::TbSemanticStep::ToDay => match transition.1.phase {
+            step_key::TbPhaseKey::FirstNight => 1,
+            step_key::TbPhaseKey::Night { cycle } => cycle + 1,
+            step_key::TbPhaseKey::Day { cycle } => cycle,
+        },
+        step_key::TbSemanticStep::ToNight => transition.1.phase.cycle(),
+        _ => unreachable!(),
+    })
+}
+
+fn undertaker_died_today_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    if !players
+        .iter()
+        .any(|player| player.alive && player.actual_character == "undertaker")
+    {
+        return Vec::new();
+    }
+    let Some(cycle) = current_day_cycle(events) else {
+        return Vec::new();
+    };
+    let Some((event, player_id)) = events.iter().rev().find_map(|event| {
+        let GameEventKind::DeathConfirmed { payload } = &event.kind else {
+            return None;
+        };
+        let step_id = payload.step_id.as_deref()?;
+        let key = step_key::TbStepKey::parse(step_id, event.phase).ok()?;
+        (event.phase == Phase::Day
+            && key.phase.cycle() == cycle
+            && matches!(
+                key.semantic,
+                step_key::TbSemanticStep::ExecutionDeath | step_key::TbSemanticStep::VirginDeath
+            ))
+        .then_some((event, payload.player_id.clone()))
+    }) else {
+        return Vec::new();
+    };
+    if !players.iter().any(|player| player.id == player_id) {
+        return Vec::new();
+    }
+    vec![reminder(
+        player_id,
+        "undertaker",
+        "diedToday",
+        "오늘 사망",
+        "오늘 낮 처형으로 사망한 플레이어입니다.",
+        Some(event.id.clone()),
+    )]
+}
+
+fn spent_ability_reminders(players: &[Player], events: &[GameEvent]) -> Vec<AutomaticReminder> {
+    let slayer_event = events.iter().find_map(|event| match &event.kind {
+        GameEventKind::SlayerAbilityUsed { payload } => {
+            Some((payload.actor_player_id.clone(), event.id.clone()))
+        }
+        _ => None,
+    });
+    let virgin_event = events.iter().find_map(|event| match &event.kind {
+        GameEventKind::NominationStarted { payload }
+            if !matches!(payload.virgin_resolution, VirginResolution::NotApplicable) =>
+        {
+            Some((event.id.clone(), payload.virgin_resolution.clone()))
+        }
+        _ => None,
+    });
+    let mut reminders = Vec::new();
+    if let Some((actor_id, event_id)) = slayer_event {
+        if players
+            .iter()
+            .any(|player| player.id == actor_id && player.actual_character == "slayer")
+        {
+            reminders.push(reminder(
+                actor_id,
+                "slayer",
+                "noAbility",
+                "능력 없음",
+                "처단자의 게임당 한 번 능력을 이미 사용했습니다.",
+                Some(event_id),
+            ));
+        }
+    }
+    if let Some((event_id, _)) = virgin_event {
+        if let Some(actor) = players
+            .iter()
+            .find(|player| player.actual_character == "virgin")
+        {
+            reminders.push(reminder(
+                actor.id.clone(),
+                "virgin",
+                "noAbility",
+                "능력 없음",
+                "성결자의 능력이 이미 소모되었습니다.",
+                Some(event_id),
+            ));
+        }
+    }
+    reminders
+}
+
+fn scarlet_woman_successor_reminders(
+    players: &[Player],
+    events: &[GameEvent],
+) -> Vec<AutomaticReminder> {
+    events
+        .iter()
+        .filter_map(|event| {
+            let GameEventKind::DemonSuccessionConfirmed { payload } = &event.kind else {
+                return None;
+            };
+            if payload.source != crate::contracts::DemonSuccessionSource::ScarletWoman
+                || !players
+                    .iter()
+                    .any(|player| player.id == payload.successor_player_id)
+            {
+                return None;
+            }
+            Some(reminder(
+                payload.successor_player_id.clone(),
+                "scarletWoman",
+                "isTheDemon",
+                "악마임",
+                "붉은 여인이 임프를 승계해 악마가 되었습니다.",
+                Some(event.id.clone()),
+            ))
+        })
+        .collect()
 }
 
 pub(crate) fn spy_grimoire_result(
     players: &[Player],
     poisoned_player_ids: &[String],
     protected_player_ids: &[String],
+    automatic_reminders: &[AutomaticReminder],
 ) -> InformationResult {
     InformationResult::SpyGrimoire {
         players: seated_players(players)
@@ -1006,6 +1657,11 @@ pub(crate) fn spy_grimoire_result(
                 if protected_player_ids.contains(&player.id) {
                     reminder_tokens.push(SpyReminderToken::Protected);
                 }
+                let player_automatic_reminders = automatic_reminders
+                    .iter()
+                    .filter(|reminder| reminder.player_id == player.id)
+                    .cloned()
+                    .collect::<Vec<_>>();
                 InformationPlayer {
                     player_id: player.id.clone(),
                     seat: player.seat,
@@ -1014,6 +1670,7 @@ pub(crate) fn spy_grimoire_result(
                     alive: Some(player.alive),
                     ghost_vote_used: Some(player.ghost_vote_used),
                     reminder_tokens: Some(reminder_tokens),
+                    automatic_reminders: player_automatic_reminders,
                 }
             })
             .collect(),
