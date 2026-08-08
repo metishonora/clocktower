@@ -667,9 +667,11 @@
   display: flex;
   min-height: 370px;
   flex-direction: column;
+  color: #fff8e8;
   background:
     radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
     linear-gradient(145deg, rgba(45, 91, 67, .58), rgba(38, 31, 22, .68));
+  box-shadow: inset 0 0 0 1px rgba(221, 198, 151, .08);
 }
 
 .tbProgressActor {
@@ -677,13 +679,28 @@
 }
 
 .tbProgressActorBlock {
-  display: contents;
+  display: flex;
+  margin: 20px 0 0;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .tbProgressPlayer {
-  margin-left: 110px;
+  margin-left: 0;
   color: #d3c6a7;
   font-size: .86rem;
+}
+
+.tbProgressActor > div {
+  display: grid;
+  gap: 7px;
+}
+
+.tbProgressActor .snvInformationRoleLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tbProgressPlayerStandalone {
@@ -693,7 +710,7 @@
 
 .tbProgressActorTags {
   display: flex;
-  margin: 10px 0 0 110px;
+  margin: 6px 0 0 102px;
   gap: 7px;
 }
 
@@ -709,7 +726,7 @@
 
 .tbCurrentTask .tbProgressAbility {
   max-width: 560px;
-  margin-top: 28px;
+  margin: 16px 0 28px;
   color: #e0d4b9;
   font-size: .86rem;
   line-height: 1.55;
@@ -726,8 +743,190 @@
   background: #3f6f55;
 }
 
-.tbPhaseOrder {
+.tbCurrentTask.snvEvilInformationTask {
+  min-height: 0;
+  padding: clamp(22px, 3vw, 34px);
+}
+
+.tbCurrentTask.snvEvilInformationTask > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.tbCurrentTask.snvEvilInformationTask > header > div {
+  display: grid;
+  gap: 5px;
+}
+
+.tbCurrentTask.snvEvilInformationTask h3 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
+.tbCurrentTask.snvEvilInformationTask > header > span {
+  display: grid;
+  min-width: 58px;
+  min-height: 42px;
+  place-items: center;
+  border: 1px solid rgba(221, 198, 151, .28);
+  border-radius: 999px;
+  color: #ead9a9;
+  background: rgba(8, 28, 18, .54);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.tbCurrentTask.snvEvilInformationTask > header > span.complete {
+  border-color: rgba(126, 176, 133, .46);
+  color: #d9ebd4;
+  background: rgba(55, 107, 80, .38);
+}
+
+.tbCurrentTask .snvEvilInformationWakeInstruction {
+  margin: clamp(24px, 3.5vw, 36px) 0 0;
+  color: #e7d5ad;
+  font-size: clamp(1rem, 2.2vw, 1.35rem);
+  line-height: 1.6;
+}
+
+.tbCurrentTask .snvEvilInformationWakeInstruction strong {
+  color: #f1d99e;
+  overflow-wrap: anywhere;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid {
+  display: grid;
+  margin-top: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button {
+  position: relative;
+  display: grid;
   min-width: 0;
+  min-height: 104px;
+  padding: 10px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 10px;
+  border: 1px solid rgba(221, 198, 151, .18);
+  border-radius: 14px;
+  color: #fff8e8;
+  background: rgba(5, 20, 14, .34);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button img {
+  width: 48px;
+  height: 48px;
+  grid-row: 1 / -1;
+  object-fit: contain;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button strong {
+  min-width: 0;
+  font-size: .84rem;
+  overflow-wrap: anywhere;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button small {
+  color: #f1d99e;
+  font-size: .64rem;
+  font-weight: 800;
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button.selected {
+  border-color: #d2ad64;
+  background: linear-gradient(145deg, rgba(55, 107, 80, .6), rgba(126, 81, 46, .32));
+  box-shadow: 0 0 0 2px rgba(210, 173, 100, .11);
+}
+
+.tbCurrentTask .snvBluffCandidateGrid button:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
+.tbCurrentTask .snvEvilInformationTaskActions {
+  display: flex;
+  margin-top: 18px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.tbCurrentTask .snvEvilInformationTaskActions button {
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 12px;
+  color: #fff8e8;
+  background: rgba(8, 28, 18, .48);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tbCurrentTask .snvEvilInformationTaskActions .snvBluffShuffle {
+  display: grid;
+  width: 46px;
+  padding: 0;
+  place-items: center;
+  color: #e7d5ad;
+  background: rgba(126, 81, 46, .18);
+}
+
+.tbCurrentTask .snvBluffShuffle svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tbCurrentTask .snvEvilInformationTaskActions .prominent {
+  min-width: 130px;
+  border-color: #d2ad64;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+  box-shadow: 0 10px 28px rgba(80, 52, 16, .28);
+}
+
+.tbCurrentTask .snvEvilInformationTaskActions button:disabled {
+  border-color: rgba(221, 198, 151, .12);
+  color: #778379;
+  background: rgba(255, 255, 255, .035);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.tbPhaseOrder {
+  position: static;
+  min-width: 0;
+  max-height: none;
+}
+
+.tbPhaseOrder li.current {
+  color: #fff8e8;
+  background: rgba(55, 107, 80, .72);
+  box-shadow: inset 3px 0 #d2ad64;
+}
+
+.tbPhaseOrder li.complete {
+  color: #d6c69f;
+}
+
+.tbPhaseOrder li {
+  border-bottom-color: rgba(221, 198, 151, .12);
+  color: #9fac9d;
 }
 
 .tbProgressTaskColumn,
@@ -768,6 +967,55 @@
   display: grid;
   margin-top: 22px;
   gap: 5px;
+}
+
+.tbCurrentTask .issue116CandidateSummary {
+  display: grid;
+}
+
+.tbCurrentTask .issue116CandidateSummary strong,
+.tbCurrentTask .issue116CandidateSummary span,
+.tbCurrentTask .issue116ExecutionTarget {
+  border-color: rgba(221, 198, 151, .2);
+  color: #fff8e8;
+  background: rgba(5, 20, 14, .34);
+}
+
+.tbCurrentTask .issue116CandidateSummary span,
+.tbCurrentTask .issue116ExecutionTarget span,
+.tbCurrentTask .issue116ExecutionTarget small {
+  color: #d6c69f;
+}
+
+.tbExecutionDecisionActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tbExecutionDecisionActions button {
+  min-height: 58px;
+  border-radius: 16px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tbExecutionDecisionActions button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.tbCurrentTask .issue116ExecutionConfirm {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+}
+
+.tbCurrentTask .issue116ExecutionCancel {
+  border: 1px solid rgba(221, 198, 151, .24);
+  color: #fff8e8;
+  background: rgba(8, 28, 18, .48);
 }
 
 .tbConfirmedGrimoire {
@@ -1046,6 +1294,36 @@
   color: #5f684e;
 }
 
+.tbProductionShell[data-theme="day"] .tbCurrentTask :is(.tbProgressPlayer, .tbProgressAbility) {
+  color: #5f684e;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116CandidateSummary strong,
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116CandidateSummary span,
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116ExecutionTarget {
+  border-color: rgba(57, 83, 55, .2);
+  color: #243329;
+  background: rgba(255, 253, 238, .64);
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116CandidateSummary span,
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116ExecutionTarget span,
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116ExecutionTarget small {
+  color: #58745c;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116ExecutionConfirm {
+  border-color: #58745c;
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .issue116ExecutionCancel {
+  border-color: rgba(57, 83, 55, .28);
+  color: #385042;
+  background: rgba(255, 253, 238, .66);
+}
+
 .tbProductionShell .tbStorageSurface article,
 .tbProductionShell .tbStorageSurface .snvEventLog {
   border-color: rgba(221, 198, 151, .18);
@@ -1149,6 +1427,13 @@
     font-size: 1.8rem;
   }
 
+  .tbProductionShell[data-theme="day"] :is(
+    .productionApplicationStages button[aria-current="page"],
+    .tbPlayerCounts button[aria-pressed="true"]
+  ) {
+    box-shadow: inset 0 0 0 1px rgba(210, 173, 100, .28);
+  }
+
   .tbSeatInspector.snvSeatingTray.mobileOpen {
     background: #10271d;
   }
@@ -1166,16 +1451,62 @@
     grid-template-columns: 1fr;
   }
 
-  .tbProgressPlayer {
-    margin-left: 88px;
-  }
-
   .tbProgressPlayerStandalone {
     margin-left: 0;
   }
 
   .tbProgressActorTags {
-    margin-left: 88px;
+    margin-left: 76px;
+  }
+
+  .tbCurrentTask .snvBluffCandidateGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .tbCurrentTask .snvBluffCandidateGrid button {
+    min-height: 0;
+    padding: 8px 4px;
+    aspect-ratio: 1;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    align-content: center;
+    justify-items: center;
+    gap: 5px;
+    text-align: center;
+  }
+
+  .tbCurrentTask .snvBluffCandidateGrid button img {
+    width: 38px;
+    height: 38px;
+    grid-row: auto;
+  }
+
+  .tbCurrentTask .snvBluffCandidateGrid button strong {
+    font-size: .68rem;
+    line-height: 1.2;
+  }
+
+  .tbCurrentTask .snvBluffCandidateGrid button small {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 4px;
+    border-radius: 999px;
+    background: rgba(8, 28, 18, .84);
+    font-size: .48rem;
+  }
+
+  .tbCurrentTask .snvEvilInformationTaskActions {
+    align-items: stretch;
+  }
+
+  .tbCurrentTask .snvEvilInformationTaskActions .snvBluffShuffle {
+    flex: 0 0 46px;
+  }
+
+  .tbCurrentTask .snvEvilInformationTaskActions .prominent {
+    flex: 1;
   }
 
 }
