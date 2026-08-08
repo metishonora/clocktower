@@ -302,6 +302,27 @@
   filter: brightness(1.12) saturate(1.08);
 }
 
+.tbProductionShell .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
+  z-index: 4;
+  border-color: #f0c96f;
+  outline: 2px solid rgba(240, 201, 111, .78);
+  outline-offset: 4px;
+  box-shadow:
+    0 0 0 7px rgba(240, 201, 111, .34),
+    0 0 46px rgba(240, 201, 111, .72),
+    inset 0 0 18px rgba(240, 201, 111, .12);
+  filter: brightness(1.12) saturate(1.06);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
+  border-color: #a87512;
+  outline-color: rgba(168, 117, 18, .72);
+  box-shadow:
+    0 0 0 7px rgba(185, 133, 24, .26),
+    0 0 38px rgba(168, 117, 18, .46),
+    inset 0 0 16px rgba(185, 133, 24, .1);
+}
+
 .playerTokenDetailBackdrop.tbTheme {
   background: rgba(3, 14, 10, .64);
 }
