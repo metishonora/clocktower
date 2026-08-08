@@ -3,6 +3,7 @@ import "./sectsAndVioletsReveal.css";
 
 export function SectsAndVioletsReveal({
   dialogLabel,
+  backdropAriaLabel,
   className,
   children,
   closeLabel,
@@ -11,6 +12,7 @@ export function SectsAndVioletsReveal({
   onClose,
 }: {
   dialogLabel: string;
+  backdropAriaLabel?: string;
   className?: string;
   children: ReactNode;
   closeLabel: string;
@@ -19,7 +21,7 @@ export function SectsAndVioletsReveal({
   onClose: () => void;
 }) {
   return (
-    <div className="snvInformationRevealBackdrop">
+    <div className="snvInformationRevealBackdrop" aria-label={backdropAriaLabel}>
       <section
         className={`snvInformationReveal${className ? ` ${className}` : ""}`}
         role="dialog"

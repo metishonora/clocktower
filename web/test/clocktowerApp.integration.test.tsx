@@ -896,13 +896,14 @@ describe("ClocktowerApp live-play integration", () => {
       },
     });
     render(<ClocktowerApp coreAdapter={demonCore} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 2} />);
-    const characterInput = await screen.findByLabelText("캐릭터 입력");
-    expect(screen.getByText("악마에게 보여줄 블러프 캐릭터를 최대 3개 선택하세요.")).toBeTruthy();
-    await user.click(within(characterInput).getByRole("button", { name: "무작위 추천" }));
+    const characterInput = await screen.findByLabelText("사용 가능한 속임수");
+    expect(screen.getByRole("heading", { name: "악마 정보" })).toBeTruthy();
+    expect(screen.getByText("0 / 3")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "속임수 무작위 추천" }));
     expect(within(characterInput).getAllByRole("button", { pressed: true })).toHaveLength(3);
     await user.click(within(characterInput).getByRole("button", { name: /사서/ }));
     expect(within(characterInput).getAllByRole("button", { pressed: true })).toHaveLength(2);
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "정보 확정" }) as HTMLButtonElement).disabled).toBe(false);
     expect(demonCore.propose).not.toHaveBeenCalled();
   });
 
@@ -936,10 +937,10 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    await screen.findByRole("heading", { name: "악마 깨우기 · 하수인과 블러프 확인" });
+    await screen.findByRole("heading", { name: "악마 정보" });
     const phaseOverview = screen.getByRole("region", { name: "단계 개요" });
     expect(within(phaseOverview).getByText("악마 (5)")).toBeTruthy();
-    const characterInput = await screen.findByLabelText("캐릭터 입력");
+    const characterInput = await screen.findByLabelText("사용 가능한 속임수");
     expect(within(characterInput).getByRole("button", { name: /사서/ })).toBeTruthy();
     expect(within(characterInput).getByRole("button", { name: /장의사/ })).toBeTruthy();
     expect(within(characterInput).getByRole("button", { name: /집사/ })).toBeTruthy();
@@ -950,7 +951,7 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(within(characterInput).getByRole("button", { name: /사서/ }));
     await user.click(within(characterInput).getByRole("button", { name: /장의사/ }));
     await user.click(within(characterInput).getByRole("button", { name: /집사/ }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 확정" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -970,7 +971,7 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     const revealScreen = screen.getByLabelText("플레이어 공개 화면");
     expect(within(revealScreen).getByText("악마 정보")).toBeTruthy();
-    expect(within(revealScreen).getByRole("heading", { name: "하수인과 블러프를 확인하세요" })).toBeTruthy();
+    expect(within(revealScreen).getByRole("heading", { name: "당신은 악마입니다" })).toBeTruthy();
     expect(within(revealScreen).getByText("4번 Dae")).toBeTruthy();
     for (const character of ["사서", "장의사", "집사"]) {
       expect(within(revealScreen).getByRole("img", { name: `${character} 공식 캐릭터 아이콘` })).toBeTruthy();
@@ -1838,8 +1839,9 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "지목 및 투표 1" });
-    expect(screen.getByText("5번 Eun — 4표")).toBeTruthy();
-    expect(screen.getByText("기준 2표 · 생존자 3명")).toBeTruthy();
+    const standing = screen.getByLabelText("현재 최고 득표");
+    expect(within(standing).getByText("5번 Eun")).toBeTruthy();
+    expect(within(standing).getByText("4표")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "← 지명하기" }));
     const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
@@ -2113,7 +2115,7 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "지목 및 투표 1" });
-    await user.click(screen.getByRole("button", { name: "지목 종료" }));
+    await user.click(screen.getByRole("button", { name: "지명 종료" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "skipStep",

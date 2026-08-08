@@ -240,8 +240,9 @@ describe("ongoing-night production UI", () => {
     const reveal = screen.getByLabelText("플레이어 공개 화면");
     expect(within(reveal).getByText("이 중에 악마는…")).toBeTruthy();
     expect(within(reveal).getByText("있음")).toBeTruthy();
-    expect(within(reveal).getByText("서연")).toBeTruthy();
-    expect(within(reveal).getByText("하린")).toBeTruthy();
+    const targets = within(reveal).getByLabelText("확인한 플레이어");
+    expect(within(targets).getByText("3번 서연")).toBeTruthy();
+    expect(within(targets).getByText("5번 하린")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });

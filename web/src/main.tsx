@@ -29,6 +29,7 @@ import {
   type TroubleBrewingLiveStage,
 } from "./features/trouble-brewing/TroubleBrewingLiveFlow";
 import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
+import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBrewingRevealScreen";
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
 import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
@@ -168,6 +169,13 @@ const DevIssue148TroubleBrewingAdaptationPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue150TroubleBrewingProgressPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue150TroubleBrewingProgressPrototype");
+      return { default: module.Issue150TroubleBrewingProgressPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -177,6 +185,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue150TroubleBrewingProgressPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-150-tb-progress"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue150TroubleBrewingProgressPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue148TroubleBrewingAdaptationPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-148-tb-adaptation"
@@ -652,7 +670,9 @@ export function ClocktowerApp({
   }
 
   if (activeRevealPayload && !activeSpyRevealPayload) {
-    return <RevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />;
+    return scriptId === TROUBLE_BREWING && gameStore.setupConfirmed
+      ? <TroubleBrewingRevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />
+      : <RevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />;
   }
 
   if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && !activeSpyRevealPayload) {

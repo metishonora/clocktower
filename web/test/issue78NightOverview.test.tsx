@@ -151,7 +151,7 @@ test.each([
 
   renderLiveOverview(minionInfo, phaseOverview, playerRoster);
 
-  await screen.findByRole("heading", { name: "하수인 깨우기 · 악마와 동료 하수인 확인" });
+  await screen.findByRole("heading", { name: "하수인 정보" });
   const overview = screen.getByRole("region", { name: "단계 개요" });
   expect(within(overview).getByText("하수인 (4)")).toBeTruthy();
   expect(within(overview).getByText("악마 (5)")).toBeTruthy();

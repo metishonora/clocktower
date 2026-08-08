@@ -9,7 +9,7 @@ import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { characterLabel, characters } from "../../setupDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
 import type { PhaseControlProps } from "../phase-control/PhaseControl";
-import { ExecutionDeathActions, ExecutionDecisionActions, StepInputFields } from "../phase-control/StepInputs";
+import { StepInputFields } from "../phase-control/StepInputs";
 import {
   currentActionPrompt,
   phaseOverviewTitle,
@@ -56,7 +56,7 @@ export function TroubleBrewingProgress({
       currentTask={<TroubleBrewingTask {...control} onGoToGrimoire={onGoToGrimoire} />}
       phaseOrder={<section className="tbProgressOrder" aria-label="단계 개요">
         <ol className="snvPhaseOverview tbPhaseOrder" aria-label={phaseOrderLabel(control.currentStep, phaseLabel)}>
-          {control.phaseOverview.length === 0 ? <li className="current"><span>현재</span><strong>진행할 단계 없음</strong></li> : null}
+          {control.phaseOverview.length === 0 ? <li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>진행할 단계 없음</strong></span></li> : null}
           {control.phaseOverview.map((step) => (
             <li
               key={step.id}
@@ -65,7 +65,7 @@ export function TroubleBrewingProgress({
               ref={step.status === "current" ? currentOverviewItemRef : undefined}
             >
               <span>{stepStatusLabel(step.status)}</span>
-              <strong>{phaseOverviewTitle(step, control.players)}</strong>
+              <span className="snvPhaseOverviewAction"><strong>{phaseOverviewTitle(step, control.players)}</strong></span>
             </li>
           ))}
         </ol>
@@ -217,6 +217,72 @@ function TroubleBrewingTask({
         )),
   );
 
+  if (currentStep?.requiredInput.kind === "executionDecision") {
+    const candidate = dayState?.executionCandidate;
+    const candidatePlayer = candidate
+      ? players.find((player) => player.id === candidate.nomineeId)
+      : undefined;
+    return <div className="tbProgressTaskColumn">
+      <GameEndControls
+        warnings={warnings}
+        busy={busy}
+        onEndGame={onEndGame}
+        onRequestUndo={onRequestUndoGameEnd}
+      >
+        <article className="snvCurrentStep tbCurrentTask issue116CurrentStep issue116ExecutionStep" role="region" aria-label="현재 단계">
+          <div className="issue116ExecutionTarget" aria-label="처형 대상">
+            <span>처형 대상</span>
+            <strong role="heading" aria-level={3} aria-label={stepTitle(currentStep, candidatePlayer)}>{candidatePlayer ? `${candidatePlayer.seat}번 ${candidatePlayer.name}` : "후보 없음"}</strong>
+            <small>{candidatePlayer ? characterLabel(candidatePlayer.actualCharacter) : `최고 득표 ${dayState?.highestVoteCount ?? 0}표`}</small>
+          </div>
+          <div className="tbExecutionDecisionActions">
+            <button
+              type="button"
+              className="issue116ExecutionConfirm"
+              disabled={busy || !candidate}
+              onClick={() => onConfirm({ input: { execute: true } })}
+            >처형 확정</button>
+            <button
+              type="button"
+              className="issue116ExecutionCancel"
+              disabled={busy}
+              onClick={() => onConfirm({ input: { execute: false } })}
+            >처형 없음</button>
+          </div>
+        </article>
+      </GameEndControls>
+    </div>;
+  }
+
+  if (currentStep && (
+    currentStep.requiredInput.kind === "executionDeathDecision"
+    || currentStep.requiredInput.kind === "slayerDeathDecision"
+  )) {
+    return <div className="tbProgressTaskColumn">
+      <GameEndControls
+        warnings={warnings}
+        busy={busy}
+        onEndGame={onEndGame}
+        onRequestUndo={onRequestUndoGameEnd}
+      >
+        <article className="snvCurrentStep tbCurrentTask issue116CurrentStep issue116ExecutionStep" role="region" aria-label="현재 단계">
+          <div className="issue116ExecutionTarget" aria-label={currentStep.requiredInput.kind === "executionDeathDecision" ? "처형 대상" : "처단자 결과 대상"}>
+            <span>{currentStep.requiredInput.kind === "executionDeathDecision" ? "처형 대상" : "처단자 결과 대상"}</span>
+            <strong role="heading" aria-level={3} aria-label={stepTitle(currentStep, currentPlayer)}>{currentPlayer ? `${currentPlayer.seat}번 ${currentPlayer.name}` : "대상 없음"}</strong>
+            <small>{currentPlayer ? characterLabel(currentPlayer.actualCharacter) : "대상을 확인하세요"}</small>
+            {resultEffectDescription(currentStep) ? <p>{resultEffectDescription(currentStep)}</p> : null}
+          </div>
+          <button
+            type="button"
+            className="issue116ExecutionConfirm"
+            disabled={busy || !currentPlayer}
+            onClick={() => onConfirm({ input: { died: true } })}
+          >확정</button>
+        </article>
+      </GameEndControls>
+    </div>;
+  }
+
   async function suggestCurrentInput() {
     if (!currentStep?.requiredInput.supportsRandomSuggestion || suggesting) return;
     const requestedStepId = currentStep.id;
@@ -243,6 +309,82 @@ function TroubleBrewingTask({
     setSuggestionUsed(true);
   }
 
+  if (currentStep && (currentStep.id.endsWith(":minionInfo") || currentStep.id.endsWith(":demonInfo"))) {
+    const demonInformation = currentStep.id.endsWith(":demonInfo");
+    const wakePlayers = players.filter((player) => {
+      const kind = characters.find((character) => character.id === player.actualCharacter)?.kind;
+      return kind === (demonInformation ? "Demon" : "Minion");
+    });
+    const selectedCharacterIds = phaseInputDraft.selectedCharacterIds;
+    const allowedCharacterIds = currentStep.requiredInput.kind === "characterIds"
+      ? currentStep.requiredInput.allowedCharacterIds ?? []
+      : [];
+    const maxSelections = currentStep.requiredInput.kind === "characterIds"
+      ? currentStep.requiredInput.maxSelections ?? 3
+      : 0;
+    const complete = selectedCharacterIds.length === maxSelections;
+
+    return <div className="tbProgressTaskColumn">
+      <GameEndControls
+        warnings={warnings}
+        busy={busy}
+        onEndGame={onEndGame}
+        onRequestUndo={onRequestUndoGameEnd}
+      >
+        <article
+          className={`snvCurrentStep tbCurrentTask snvEvilInformationTask ${demonInformation ? "snvDemonInformationTask" : "snvMinionInformationTask"}`}
+          role="region"
+          aria-label="현재 단계"
+        >
+          <header>
+            <div><p className="snvCurrentStepLabel">현재 할 일</p><h3>{demonInformation ? "악마 정보" : "하수인 정보"}</h3></div>
+            {demonInformation ? <span className={complete ? "complete" : undefined}>{selectedCharacterIds.length} / {maxSelections}</span> : null}
+          </header>
+          <p className="snvEvilInformationWakeInstruction"><strong>{wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ")}</strong>를 깨웁니다.</p>
+          {demonInformation ? <div className="snvBluffCandidateGrid" aria-label="사용 가능한 속임수">
+            {allowedCharacterIds.map((characterId) => {
+              const selected = selectedCharacterIds.includes(characterId);
+              return <button
+                type="button"
+                className={selected ? "selected" : undefined}
+                aria-pressed={selected}
+                aria-label={`${characterLabel(characterId)}${selected ? ", 선택됨" : ""}`}
+                disabled={busy || suggesting || (!selected && complete)}
+                onClick={() => phaseInputDraft.setSelectedCharacterIds(selected
+                  ? selectedCharacterIds.filter((id) => id !== characterId)
+                  : [...selectedCharacterIds, characterId])}
+                key={characterId}
+              >
+                <CharacterIcon characterId={characterId} />
+                <strong>{characterLabel(characterId)}</strong>
+                {selected ? <small>선택됨</small> : null}
+              </button>;
+            })}
+          </div> : null}
+          {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
+          <div className="snvEvilInformationTaskActions">
+            {demonInformation && currentStep.requiredInput.supportsRandomSuggestion ? <button
+              type="button"
+              className="snvBluffShuffle"
+              aria-label="속임수 무작위 추천"
+              title={suggestionUsed ? "다시 추천" : "무작위 추천"}
+              disabled={busy || suggesting}
+              onClick={() => { void suggestCurrentInput(); }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h2.3c4.2 0 4.7 10 9.2 10H20" /><path d="m17 14 3 3-3 3" /><path d="M4 17h2.3c1.8 0 2.9-1.8 4-4" /><path d="M15.5 7H20" /><path d="m17 4 3 3-3 3" /></svg>
+            </button> : null}
+            <button
+              type="button"
+              className="prominent"
+              disabled={busy || suggesting || !selectionValid}
+              onClick={() => onConfirm(currentConfirmation)}
+            >정보 확정</button>
+          </div>
+        </article>
+      </GameEndControls>
+    </div>;
+  }
+
   return <div className="tbProgressTaskColumn">
     <GameEndControls
       warnings={warnings}
@@ -250,7 +392,11 @@ function TroubleBrewingTask({
       onEndGame={onEndGame}
       onRequestUndo={onRequestUndoGameEnd}
     >
-      <article className="snvCurrentStep tbCurrentTask" role="region" aria-label="현재 단계">
+      <article
+        className={`snvCurrentStep tbCurrentTask issue116CurrentStep${currentPlayer && !resultSubject && currentStep?.stepType !== "demonSuccession" ? " issue116DemonStep" : ""}`}
+        role="region"
+        aria-label="현재 단계"
+      >
         {currentStep ? <>
           <p className="snvCurrentStepLabel">현재 할 일</p>
           {isNightDeathAnnouncement ? (
@@ -260,25 +406,29 @@ function TroubleBrewingTask({
               resurrectionPlayerIds={ruleState?.unannouncedNightResurrectionPlayerIds ?? []}
             />
           ) : null}
-          {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? <section className="tbProgressActorBlock" aria-label="현재 행동자">
+          {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? <section className="tbProgressActorBlock issue116ActorIdentity" aria-label="현재 행동자">
             <CharacterDetailButton
               details={troubleBrewingCharacterDetail(currentStep.character)}
-              className="snvCurrentStepIdentity interactive tbProgressActor"
+              className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
             >
               <CharacterIcon characterId={currentStep.character} />
-              <span
-                className="snvCurrentStepRoleName"
-                role="heading"
-                aria-level={3}
-                aria-label={stepTitle(currentStep, currentPlayer)}
-              >{currentCharacter?.label ?? currentStep.character}</span>
+              <div>
+                <span className="snvInformationRoleLine">
+                  <span
+                    className="snvCurrentStepRoleName"
+                    role="heading"
+                    aria-level={3}
+                    aria-label={stepTitle(currentStep, currentPlayer)}
+                  >{currentCharacter?.label ?? currentStep.character}</span>
+                </span>
+                <strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>
+              </div>
             </CharacterDetailButton>
-            <strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>
             {currentPlayer.actualCharacter === "drunk" || registrationSensitive ? <div className="tbProgressActorTags">
               {currentPlayer.actualCharacter === "drunk" ? <em>실제 주정뱅이</em> : null}
               {registrationSensitive ? <em>등록 판정</em> : null}
             </div> : null}
-            {currentCharacter?.abilitySummary ? <p className="tbProgressAbility">{currentCharacter.abilitySummary}</p> : null}
+            {currentCharacter?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{currentCharacter.abilitySummary}</p> : null}
           </section> : (
             <h3>{currentStep.stepType === "slayerDeath" ? "사망 확인" : stepTitle(currentStep, currentPlayer)}</h3>
           )}
@@ -337,21 +487,17 @@ function TroubleBrewingTask({
             ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
           </div>
-          {currentStep.requiredInput.kind === "executionDecision" ? (
-            <ExecutionDecisionActions players={players} candidate={dayState?.executionCandidate} busy={busy} onConfirm={onConfirm} />
-          ) : currentStep.requiredInput.kind === "executionDeathDecision" || currentStep.requiredInput.kind === "slayerDeathDecision" ? (
-            <ExecutionDeathActions player={currentPlayer} busy={busy} onConfirm={onConfirm} />
-          ) : (
-            <div className="snvStepActions">
+          <div className={`snvStepActions${currentStep.stepType === "nomination" ? " issue116NominationActions" : ""}`}>
               {usesGrimoireSelection ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
                 {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : currentStep.requiredInput.kind === "setupInfo" ? "← 대상 선택" : "대상 선택"}
               </button> : null}
               {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button type="button" disabled={busy || suggesting || !selectionValid || !targetChoiceReady} onClick={() => onConfirm(currentConfirmation)}>
                 {confirmationLabel(currentStep, isNightDeathAnnouncement)}
               </button> : null}
-              {currentStep.canSkip ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>지목 종료</button> : null}
-            </div>
-          )}
+              {currentStep.canSkip ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>
+                {currentStep.stepType === "nomination" ? "지명 종료" : "건너뛰기"}
+              </button> : null}
+          </div>
         </> : <h3>진행할 단계 없음</h3>}
       </article>
     </GameEndControls>
@@ -362,12 +508,9 @@ function ExecutionStanding({ players, dayState }: { players: Player[]; dayState:
   const candidate = dayState.executionCandidate
     ? players.find((player) => player.id === dayState.executionCandidate?.nomineeId)
     : undefined;
-  const standing = candidate && dayState.executionCandidate
-    ? `${candidate.seat}번 ${candidate.name} — ${dayState.executionCandidate.voteCount}표`
-    : `후보 없음 — ${dayState.highestVoteCount}표`;
-  return <div className="tbExecutionStanding" aria-label="현재 처형 후보">
-    <span>현재 처형 후보</span><strong>{standing}</strong>
-    <small>기준 {dayState.executionVoteThreshold}표 · 생존자 {players.filter((player) => player.alive).length}명</small>
+  return <div className="tbExecutionStanding issue116CandidateSummary" aria-label="현재 최고 득표">
+    <strong>{candidate ? `${candidate.seat}번 ${candidate.name}` : "후보 없음"}</strong>
+    <span>{dayState.executionCandidate?.voteCount ?? dayState.highestVoteCount}표</span>
   </div>;
 }
 

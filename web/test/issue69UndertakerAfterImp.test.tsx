@@ -46,7 +46,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
 
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     let reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("2번 Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     expect(within(reveal).getByText("요리사")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
@@ -86,7 +86,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await expectSavedEventCount(storage, beforeAttackCount + 2);
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     let reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Imp")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("5번 Imp")).toBeTruthy();
     expect(within(reveal).getByText("임프")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
@@ -99,7 +99,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await expectSavedEventCount(storage, beforeAttackCount + 3);
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("2번 Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");

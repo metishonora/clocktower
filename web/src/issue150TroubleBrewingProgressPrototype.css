@@ -1,0 +1,396 @@
+.issue150ReviewRoot {
+  min-height: 100vh;
+  background: #071611;
+}
+
+.issue150ReviewControls {
+  position: relative;
+  z-index: 220;
+  display: grid;
+  padding: 10px max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left));
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: #f4ead4;
+  border-bottom: 1px solid rgba(212, 181, 121, .22);
+  background: #0a1e17;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue150ReviewControls > strong {
+  color: #d8ba7c;
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.issue150ReviewControls > div {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.issue150ReviewControls button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid rgba(221, 203, 165, .22);
+  border-radius: 999px;
+  color: #efe7d6;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.issue150ReviewControls button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: #e2c98f;
+}
+
+.issue150ReviewControls p {
+  max-width: 290px;
+  margin: 0;
+  color: #9eb0a3;
+  font-size: .66rem;
+  line-height: 1.4;
+}
+
+.issue150RevealFixtureControls {
+  grid-column: 1 / -1;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(212, 181, 121, .12);
+}
+
+.issue150RevealFixtureControls > span {
+  margin-right: 3px;
+  color: #9eb0a3;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.issue150PrototypeShell {
+  min-height: calc(100vh - 55px);
+}
+
+.issue150PrototypeShell .issue150PlayPrimary {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.issue150PrototypeShell .tbPlaySurface {
+  color: #f5eddc;
+  border-color: rgba(221, 198, 151, .16);
+  background:
+    radial-gradient(circle at 74% 2%, rgba(95, 137, 90, .2), transparent 32%),
+    rgba(7, 25, 18, .72);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .34);
+}
+
+.issue150PrototypeShell .tbCurrentTask {
+  color: #fff8e8;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
+    linear-gradient(145deg, rgba(45, 91, 67, .64), rgba(38, 31, 22, .74));
+  box-shadow: inset 0 0 0 1px rgba(221, 198, 151, .08);
+}
+
+.issue150PrototypeShell .tbCurrentTask :is(.snvInformationIdentity strong, .snvInformationAbility, .issue116AbilitySummary) {
+  color: #e0d4b9 !important;
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvInformationValues > div {
+  border-color: rgba(221, 198, 151, .2);
+  background: rgba(5, 20, 14, .34);
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvInformationValues dt,
+.issue150PrototypeShell .tbCurrentTask .snvInformationTargetSummary {
+  color: #c5b693 !important;
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvInformationValues dd,
+.issue150PrototypeShell .tbCurrentTask .snvInformationTargetSummary strong {
+  color: #fff8e8;
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvEvilInformationWakeInstruction,
+.issue150PrototypeShell .tbCurrentTask .snvEvilInformationWakeInstruction strong {
+  color: #e7d5ad;
+}
+
+.issue150PrototypeShell .tbCurrentTask.snvEvilInformationTask > header > span {
+  border-color: rgba(221, 198, 151, .28);
+  color: #ead9a9;
+  background: rgba(8, 28, 18, .54);
+}
+
+.issue150PrototypeShell .tbCurrentTask.snvEvilInformationTask > header > span.complete {
+  border-color: rgba(126, 176, 133, .46);
+  color: #d9ebd4;
+  background: rgba(55, 107, 80, .38);
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvEvilInformationTaskActions button {
+  border-color: rgba(221, 198, 151, .24);
+  color: #fff8e8;
+  background: rgba(8, 28, 18, .48);
+}
+
+.issue150PrototypeShell .tbCurrentTask .snvEvilInformationTaskActions .prominent {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+  box-shadow: 0 10px 28px rgba(80, 52, 16, .28);
+}
+
+.issue150PrototypeShell .issue150PhaseOrder li.current {
+  color: #fff8e8;
+  background: rgba(55, 107, 80, .72);
+  box-shadow: inset 3px 0 #d2ad64;
+}
+
+.issue150PrototypeShell .issue150PhaseOrder li.complete {
+  color: #d6c69f;
+}
+
+.issue150PrototypeShell .issue150PhaseOrder li {
+  border-bottom-color: rgba(221, 198, 151, .12);
+  color: #9fac9d;
+}
+
+.issue150PrototypeShell[data-theme="day"] .tbPlaySurface {
+  color: #213128;
+  border-color: rgba(67, 89, 62, .17);
+  background:
+    radial-gradient(circle at 76% 0%, rgba(255, 247, 211, .72), transparent 30%),
+    rgba(255, 251, 230, .78);
+  box-shadow: 0 22px 70px rgba(49, 61, 40, .14);
+}
+
+.issue150PrototypeShell[data-theme="day"] .tbCurrentTask {
+  color: #243329;
+  background: linear-gradient(145deg, rgba(255, 252, 231, .94), rgba(202, 219, 187, .88));
+  box-shadow: inset 0 0 0 1px rgba(66, 88, 58, .09);
+}
+
+.issue150PrototypeShell[data-theme="day"] .tbCurrentTask p,
+.issue150PrototypeShell[data-theme="day"] .tbCurrentTask .snvCurrentStepLabel {
+  color: #5f684e !important;
+}
+
+.issue150PrototypeShell[data-theme="day"] .issue116CandidateSummary strong,
+.issue150PrototypeShell[data-theme="day"] .issue116CandidateSummary span,
+.issue150PrototypeShell[data-theme="day"] .issue116ExecutionTarget {
+  border-color: rgba(57, 83, 55, .2);
+  color: #243329;
+  background: rgba(255, 253, 238, .64);
+}
+
+.issue150PrototypeShell[data-theme="day"] .issue116CandidateSummary span,
+.issue150PrototypeShell[data-theme="day"] .issue116ExecutionTarget span {
+  color: #58745c;
+}
+
+.issue150PrototypeShell[data-theme="day"] .issue116ExecutionTarget small {
+  color: #627057;
+}
+
+.issue150PrototypeShell[data-theme="day"] .issue116ExecutionConfirm,
+.issue150PrototypeShell[data-theme="day"] .tbCurrentTask .snvStepActions button {
+  border-color: #58745c;
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.issue150PrototypeShell[data-theme="day"] .tbCurrentTask .snvStepActions button.secondary {
+  color: #385042;
+  background: rgba(255, 253, 238, .66);
+}
+
+.issue150PhaseOrder {
+  position: static;
+  max-height: none;
+}
+
+.issue150PrototypeShell .snvInformationValues dd {
+  font-size: clamp(.9rem, 2vw, 1.18rem);
+  text-align: right;
+}
+
+.snvInformationRevealBackdrop:has(.issue150TbReveal) {
+  color: #fff8e8;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(76, 118, 79, .32), transparent 38%),
+    #071611;
+}
+
+.snvInformationReveal.issue150TbReveal {
+  border-color: rgba(226, 201, 143, .34);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(95, 137, 90, .34), transparent 42%),
+    linear-gradient(145deg, rgba(21, 51, 40, .98), rgba(7, 22, 17, .99));
+  box-shadow: 0 30px 100px rgba(1, 10, 6, .72);
+}
+
+.snvInformationReveal.issue150TbReveal > span,
+.issue150TbReveal .snvEvilInformationRevealSection > header > span {
+  color: #d2ad64;
+}
+
+.snvInformationReveal.issue150TbReveal :is(h1, h2, strong),
+.issue150TbReveal .snvEvilInformationRevealSection h2 {
+  color: #fff8e8;
+}
+
+.snvInformationReveal.issue150TbReveal p,
+.snvInformationReveal.issue150TbReveal .snvInformationRevealLabel {
+  color: #d8ccb0;
+}
+
+.snvInformationReveal.issue150TbReveal .snvTargetedRevealPair > div,
+.issue150TbReveal .snvEvilInformationIdentityCards > article,
+.issue150TbReveal .snvEvilInformationCharacterCards > article {
+  border-color: rgba(221, 198, 151, .22);
+  background: linear-gradient(145deg, rgba(55, 107, 80, .34), rgba(126, 81, 46, .15));
+}
+
+.issue150TbReveal .snvEvilInformationIdentityCards > article > span,
+.issue150TbReveal .snvEvilInformationCharacterCards > article > span {
+  border-color: rgba(226, 201, 143, .34);
+  color: #f1d99e;
+  background: rgba(126, 81, 46, .22);
+}
+
+.snvInformationReveal.issue150TbReveal > button {
+  border-color: rgba(226, 201, 143, .5);
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+  box-shadow: 0 10px 28px rgba(80, 52, 16, .32);
+}
+
+.issue150NightInformationReveal h2 {
+  font-size: clamp(1.8rem, 6vw, 3.4rem);
+}
+
+.issue150NightInformationReveal .issue150BooleanRevealValue {
+  color: #e7d5ad;
+}
+
+.issue150SpyRevealShell {
+  position: fixed;
+  z-index: 400;
+  inset: 0;
+  overflow: auto;
+}
+
+.issue150ReviewRoot .snvHistoryDialog {
+  border-color: rgba(221, 198, 151, .28);
+  color: #fff8e8;
+  background: linear-gradient(145deg, #173326, #0b2118);
+}
+
+.issue150ReviewRoot .snvHistoryDialog[data-theme="day"] {
+  border-color: rgba(57, 83, 55, .24);
+  color: #243329;
+  background: linear-gradient(145deg, #fffced, #dbe5ca);
+}
+
+.issue150PrototypeShell .gameWinWarningCard,
+.issue150PrototypeShell .gameEndDialog,
+.issue150PrototypeShell .gameEndedCard {
+  border-color: rgba(87, 105, 67, .28);
+  color: #243329;
+  background: #fffced;
+}
+
+.issue150PrototypeShell .gameWinWarningCard > button,
+.issue150PrototypeShell .gameEndDialogActions .confirm {
+  border-color: #58745c;
+  background: #58745c;
+}
+
+.issue150PrototypeShell .gameWinWarningCard,
+.issue150PrototypeShell .gameEndedCard,
+.issue150PrototypeShell .manualGameEndButton {
+  box-sizing: border-box;
+}
+
+.issue150PrototypeShell .gameEndedCard {
+  border-radius: 24px;
+  background: rgba(255, 253, 249, .82);
+}
+
+@media (max-width: 1040px) {
+  .issue150ReviewControls {
+    grid-template-columns: 1fr;
+  }
+
+  .issue150ReviewControls p {
+    max-width: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .issue150ReviewControls {
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  .issue150ReviewControls > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 3px;
+    scrollbar-width: none;
+  }
+
+  .issue150ReviewControls .issue150RevealFixtureControls {
+    flex-wrap: nowrap;
+  }
+
+  .issue150ReviewControls > div::-webkit-scrollbar {
+    display: none;
+  }
+
+  .issue150ReviewControls button {
+    flex: 0 0 auto;
+  }
+
+  .issue150ReviewControls p {
+    display: none;
+  }
+
+  .issue150PrototypeShell .issue150PlayPrimary {
+    grid-template-columns: 1fr;
+  }
+
+  .issue150PrototypeShell .issue116ExecutionTarget {
+    min-width: min(520px, 68vw);
+  }
+
+}
+
+@media (max-width: 390px) {
+  .issue150ReviewControls > strong {
+    font-size: .64rem;
+  }
+
+  .issue150ReviewControls button {
+    min-height: 32px;
+    font-size: .63rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue150ReviewRoot *,
+  .issue150ReviewRoot *::before,
+  .issue150ReviewRoot *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}
