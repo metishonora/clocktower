@@ -1427,6 +1427,13 @@
     font-size: 1.8rem;
   }
 
+  .tbProductionShell[data-theme="day"] :is(
+    .productionApplicationStages button[aria-current="page"],
+    .tbPlayerCounts button[aria-pressed="true"]
+  ) {
+    box-shadow: inset 0 0 0 1px rgba(210, 173, 100, .28);
+  }
+
   .tbSeatInspector.snvSeatingTray.mobileOpen {
     background: #10271d;
   }
