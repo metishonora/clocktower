@@ -117,7 +117,7 @@ export function inputKindLabel(inputKind: string): string {
 export function currentActionPrompt(step: PhaseStep): string | undefined {
   if (step.stepType === "executionDeath" || step.stepType === "slayerDeath") return undefined;
   if (step.id.endsWith(":fortuneTellerRedHerring")) {
-    return "점쟁이의 선한 미끼 플레이어 1명을 선택하세요.";
+    return "점쟁이의 오답 대상 플레이어 1명을 선택하세요.";
   }
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "selectable"

@@ -220,10 +220,11 @@ export function TroubleBrewingLiveGrimoire({
           const selfNominee = handoff === "nomination"
             && player.id === nominatorId
             && player.id === nomineeId;
+          const targetRole = targetSelectionSeatLabel(currentStep);
           const selectionRole = handoff === "nomination"
             ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
             : handoff === "vote" && nominationVoting?.draft.voterIds.includes(player.id) ? "투표"
-              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? "선택 대상" : undefined;
+              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? targetRole : undefined;
           const selected = handoff === "nomination"
             ? player.id === nominatorId || player.id === nomineeId
             : handoff === "vote"
@@ -285,7 +286,7 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? " snvSeatStateTarget" : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${automaticTokenLabels.length ? `, ${automaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
             disabled: gameEnded || (selectionActive ? disabled : false),
@@ -436,12 +437,11 @@ function TroubleBrewingSelectionPanel({
 
   return <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
     <header className="issue116SelectionHeader">
-      {setupInformationTargetCount === 0 ? <h2>{title}</h2> : null}
+      <h2>{title}</h2>
       <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
         {handoff === "nomination" ? "지명 초기화 X" : handoff === "vote" ? "투표 초기화 X" : setupInformationTargetCount > 0 ? "초기화" : "선택 초기화 X"}
       </button>
     </header>
-    {setupInformationTargetCount > 0 ? <h2>{setupInformationTargetCount === 1 ? "한 명을 선택" : "두 명 선택"}</h2> : null}
     {handoff === "nomination" ? <dl>
       <div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div>
       <div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div>
@@ -453,7 +453,7 @@ function TroubleBrewingSelectionPanel({
         <dt>{targetOrdinal(index)}</dt><dd>{playerLabel(selectedTarget)}</dd>
       </div>)}
     </dl> : <dl>
-      <div><dt>선택 대상</dt><dd>{targetLabel}</dd></div>
+      <div><dt>{targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
     <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
   </aside>;
@@ -471,14 +471,44 @@ function targetOrdinal(index: number) {
 
 function targetSelectionTitle(step?: PhaseStep) {
   if (!step) return "대상 선택";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "선한 미끼 선택";
-  if (step.character === "fortuneTeller") return "악마 확인";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상 지정";
+  if (step.character === "washerwoman") return "세탁부 능력";
+  if (step.character === "librarian") return "사서 능력";
+  if (step.character === "investigator") return "수사관 능력";
+  if (step.character === "fortuneTeller") return "점쟁이 능력";
+  if (step.character === "poisoner") return "독살범 능력";
+  if (step.character === "monk") return "수도사 능력";
+  if (step.character === "imp") return "임프 능력";
+  if (step.character === "ravenkeeper") return "까마귀지기 능력";
+  if (step.character === "butler") return "집사 능력";
+  return currentActionPrompt(step) ?? "대상 선택";
+}
+
+function targetSelectionFieldLabel(step?: PhaseStep) {
+  if (!step) return "선택 대상";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
   if (step.character === "poisoner") return "중독 대상";
   if (step.character === "monk") return "보호 대상";
   if (step.character === "imp") return "공격 대상";
-  if (step.character === "ravenkeeper") return "캐릭터 확인";
-  if (step.character === "butler") return "주인 선택";
-  return currentActionPrompt(step) ?? "대상 선택";
+  if (step.character === "ravenkeeper") return "확인 대상";
+  if (step.character === "butler") return "주인";
+  return "선택 대상";
+}
+
+function targetSelectionSeatLabel(step?: PhaseStep) {
+  if (!step) return "선택";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.character === "poisoner") return "중독";
+  if (step.character === "monk") return "보호";
+  if (step.character === "imp") return "공격";
+  if (step.character === "butler") return "주인";
+  return "선택";
+}
+
+function targetSelectionStateClass(step?: PhaseStep) {
+  if (step?.character === "poisoner") return "tbSeatStatePoison";
+  if (step?.character === "imp") return "tbSeatStateAttack";
+  return "tbSeatStateSelection";
 }
 
 function characterKindClass(characterId: string) {

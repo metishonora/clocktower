@@ -168,11 +168,13 @@ test("confirms a player target inside the S&V grimoire work panel", async () => 
   const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
   await user.click(target);
   expect(target.classList.contains("snvSeatStateTarget")).toBe(true);
-  expect(target.classList.contains("snvSeatStatePoisonTarget")).toBe(false);
+  expect(target.classList.contains("tbSeatStatePoison")).toBe(true);
   expect(target.classList.contains("snvSeatStateSelected")).toBe(false);
   expect(target.classList.contains("issue116SelectedSeat")).toBe(false);
-  expect(within(target).getByText("선택 대상")).toBeTruthy();
+  expect(within(target).getByText("중독")).toBeTruthy();
   expect(within(target).queryByText("세탁부")).toBeNull();
+  expect(within(panel).getByRole("heading", { name: "독살범 능력" })).toBeTruthy();
+  expect(within(panel).getByText("중독 대상")).toBeTruthy();
 
   await user.click(within(panel).getByRole("button", { name: "선택 확정" }));
   await waitFor(() => expect(within(screen.getByRole("navigation", { name: "작업 단계" }))
@@ -194,13 +196,15 @@ test("describes the Fortune Teller action and numbers both targets without an ac
   await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
     .getByRole("button", { name: "대상 선택" }));
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
-  expect(within(panel).getByRole("heading", { name: "악마 확인" })).toBeTruthy();
+  expect(within(panel).getByRole("heading", { name: "점쟁이 능력" })).toBeTruthy();
   expect(within(panel).queryByRole("heading", { name: "대상 선택" })).toBeNull();
   expect(within(panel).queryByText("행동자")).toBeNull();
 
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ }));
   await user.click(within(grimoire).getByRole("button", { name: /3번 좌석, Cy/ }));
+  expect(within(grimoire).getAllByText("선택")).toHaveLength(2);
+  expect(within(grimoire).getByRole("button", { name: /2번 좌석.*선택/ }).classList.contains("tbSeatStateSelection")).toBe(true);
   expect(within(panel).getByText("첫 번째")).toBeTruthy();
   expect(within(panel).getByText("2번 Bert")).toBeTruthy();
   expect(within(panel).getByText("두 번째")).toBeTruthy();
@@ -224,7 +228,7 @@ test("uses the S&V numbered target summary for setup information", async () => {
   await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
     .getByRole("button", { name: /대상 선택/ }));
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
-  expect(within(panel).getByRole("heading", { name: "두 명 선택" })).toBeTruthy();
+  expect(within(panel).getByRole("heading", { name: "세탁부 능력" })).toBeTruthy();
   expect(within(panel).queryByText("행동자")).toBeNull();
 
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
@@ -238,6 +242,115 @@ test("uses the S&V numbered target summary for setup information", async () => {
   await user.click(within(panel).getByRole("button", { name: "선택 확정" }));
   await waitFor(() => expect(within(screen.getByRole("navigation", { name: "작업 단계" }))
     .getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page"));
+});
+
+test("uses attack semantics and a distinct attack highlight for the Imp", async () => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: "night:imp",
+    character: "imp",
+    playerId: "player-4",
+    kind: "playerIds",
+    target: "player",
+    minSelections: 1,
+    maxSelections: 1,
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: "대상 선택" }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
+  await user.click(target);
+
+  expect(within(panel).getByRole("heading", { name: "임프 능력" })).toBeTruthy();
+  expect(within(panel).getByText("공격 대상")).toBeTruthy();
+  expect(within(target).getByText("공격")).toBeTruthy();
+  expect(target.classList.contains("tbSeatStateAttack")).toBe(true);
+  expect(target.classList.contains("tbSeatStatePoison")).toBe(false);
+  expect(target.classList.contains("tbSeatStateSelection")).toBe(false);
+});
+
+test("uses the official red-herring reminder wording in the grimoire", async () => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: "firstNight:fortuneTellerRedHerring",
+    character: "fortuneTeller",
+    playerId: "player-1",
+    kind: "playerIds",
+    target: "player",
+    minSelections: 1,
+    maxSelections: 1,
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: "대상 선택" }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const target = within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ });
+  await user.click(target);
+
+  expect(within(panel).getByRole("heading", { name: "오답 대상 지정" })).toBeTruthy();
+  expect(within(panel).getByText("오답 대상")).toBeTruthy();
+  expect(within(target).getByText("오답 대상")).toBeTruthy();
+});
+
+test.each([
+  { character: "librarian", title: "사서 능력" },
+  { character: "investigator", title: "수사관 능력" },
+] as const)("labels $character setup information as an ability", async ({ character, title }) => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: `firstNight:${character}`,
+    character,
+    playerId: "player-1",
+    kind: "setupInfo",
+    target: "players",
+    minSelections: 2,
+    maxSelections: 2,
+    setupInfo: character,
+    characterKind: character === "librarian" ? "Outsider" : "Minion",
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: /대상 선택/ }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
+  await user.click(target);
+
+  expect(within(panel).getByRole("heading", { name: title })).toBeTruthy();
+  expect(within(panel).getByText("첫 번째")).toBeTruthy();
+  expect(within(target).getByText("선택")).toBeTruthy();
+});
+
+test.each([
+  { character: "ravenkeeper", title: "까마귀지기 능력", field: "확인 대상", seat: "선택", stateClass: "tbSeatStateSelection" },
+  { character: "monk", title: "수도사 능력", field: "보호 대상", seat: "보호", stateClass: "tbSeatStateSelection" },
+  { character: "butler", title: "집사 능력", field: "주인", seat: "주인", stateClass: "tbSeatStateSelection" },
+] as const)("uses semantic labels for the $character target", async ({ character, title, field, seat, stateClass }) => {
+  const user = userEvent.setup();
+  renderStep(step({
+    id: `night:${character}`,
+    character,
+    playerId: "player-4",
+    kind: "playerIds",
+    target: "player",
+    minSelections: 1,
+    maxSelections: 1,
+  }));
+
+  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: "대상 선택" }));
+  const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
+  await user.click(target);
+
+  expect(within(panel).getByRole("heading", { name: title })).toBeTruthy();
+  expect(within(panel).getByText(field)).toBeTruthy();
+  expect(within(target).getByText(seat)).toBeTruthy();
+  expect(target.classList.contains(stateClass)).toBe(true);
 });
 
 test("runs nomination and vote through the S&V grimoire modes", async () => {
