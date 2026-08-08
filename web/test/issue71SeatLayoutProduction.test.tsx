@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { GameFile } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -84,13 +84,14 @@ test("setup recovery preserves legacy metadata without exposing or using the for
     proposal: proposal(event("unused", "unused")),
   });
   const storage = new MemoryGameStorageDriver(gameWithConfirmedLayout());
-  vi.spyOn(window, "confirm").mockReturnValue(true);
   const user = userEvent.setup();
 
   render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
   await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
   await user.click(screen.getByRole("button", { name: "마도서" }));
   await user.click(screen.getByRole("button", { name: "배치로 돌아가기" }));
+  await user.click(within(screen.getByRole("dialog", { name: "진행 상태 초기화 확인" }))
+    .getByRole("button", { name: "초기화하고 돌아가기" }));
 
   const setupMap = await screen.findByLabelText("5자리 Trouble Brewing 마도서");
   const ada = within(setupMap).getByRole("button", { name: /1번 좌석, Ada/ });

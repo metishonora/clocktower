@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
+import type { CharacterDetail } from "../../characterDetails";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import "./playerTokenPresentation.css";
 
@@ -151,13 +151,19 @@ export function PlayerTokenDetailDialog({
   player,
   tokens,
   theme,
+  characterDetails,
+  identityDetails,
   details,
+  appearance = "snv",
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
+  characterDetails?: CharacterDetail;
+  identityDetails?: ReactNode;
   details?: ReactNode;
+  appearance?: "snv" | "tb";
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -194,7 +200,7 @@ export function PlayerTokenDetailDialog({
 
   return createPortal(
     <div
-      className={`playerTokenDetailBackdrop ${theme}`}
+      className={`playerTokenDetailBackdrop ${theme}${appearance === "tb" ? " tbTheme" : ""}`}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
@@ -206,7 +212,7 @@ export function PlayerTokenDetailDialog({
       >
         <header>
           <CharacterDetailButton
-            details={sectsAndVioletsCharacterDetail(player.characterId)}
+            details={characterDetails}
             className="playerTokenCharacterIdentityButton"
             theme={theme === "day" ? "snv-day" : "snv-night"}
             onOpenChange={setCharacterDetailOpen}
@@ -226,6 +232,7 @@ export function PlayerTokenDetailDialog({
           <button ref={closeRef} className="playerTokenDetailClose" type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
         </header>
         <div className="playerTokenDetailBody">
+          {identityDetails}
           <section className="playerTokenCharacterSummary" aria-label="캐릭터 정보">
             <span>캐릭터 능력</span>
             <p>{player.characterAbility}</p>

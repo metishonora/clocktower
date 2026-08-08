@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { openLiveGrimoire, returnToLiveProgress } from "./livePlayTestHelpers";
+import { openLiveGrimoire } from "./livePlayTestHelpers";
 import { phaseEvent, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const playerIds = {
@@ -29,8 +29,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     const user = userEvent.setup();
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("점쟁이의 선한 미끼 플레이어 1명을 선택하세요.");
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.");
     const input = await openLiveGrimoire(user);
     const goodTarget = within(input).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement;
     const spy = within(input).getByRole("button", { name: /Spy/ }) as HTMLButtonElement;
@@ -39,11 +38,11 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     expect(goodTarget.disabled).toBe(false);
     expect(spy.disabled).toBe(false);
     expect(imp.disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "대상을 선택하세요" }) as HTMLButtonElement).disabled).toBe(true);
 
     await user.click(goodTarget);
     await user.click(spy);
-    await returnToLiveProgress(user);
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    const confirm = screen.getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
     await user.dblClick(confirm);
 
@@ -77,7 +76,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     await user.click(undo);
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
-    expect(await screen.findByText("점쟁이의 선한 미끼 플레이어 1명을 선택하세요.")).toBeTruthy();
+    expect(await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.")).toBeTruthy();
     const restoredInput = await openLiveGrimoire(user);
     expect((within(restoredInput).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Spy/ }) as HTMLButtonElement).disabled).toBe(false);

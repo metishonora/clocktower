@@ -77,7 +77,7 @@ test("shows one numbered First Night, Day, Night, and later Day runtime inside t
   if (!tableMarker) throw new Error("Grimoire center was not rendered");
   expect(firstNightCenter.textContent).toBe("00:00");
   expect(within(firstNightCenter).queryByText("경과")).toBeNull();
-  expect(firstNightCenter.closest("[aria-label='현재 단계']")?.parentElement).toBe(tableMarker);
+  expect(firstNightCenter.closest("[aria-label='현재 단계']")).toBe(tableMarker);
   expect(firstNightCenter.classList.contains("mapCenter")).toBe(false);
   expect(within(tableMarker).queryByText("테이블")).toBeNull();
   expect(grimoire.querySelectorAll(".rectangularGrimoireCenter")).toHaveLength(1);

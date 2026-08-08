@@ -227,6 +227,20 @@
   background: #3e3520;
 }
 
+.tbProductionShell[data-theme="day"] .tbShownCharacterToken {
+  border-color: #3481a3;
+  color: #20343d;
+  background: #e7f4f7;
+  box-shadow: 0 5px 14px rgba(38, 73, 82, .2), 0 0 0 3px rgba(52, 129, 163, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbShownCharacterToken.missing {
+  border-color: #a8782c;
+  color: #4b3719;
+  background: #f3e4b7;
+  box-shadow: 0 5px 14px rgba(89, 67, 30, .16), 0 0 0 3px rgba(168, 120, 44, .12);
+}
+
 .tbProductionShell .tbGrimoireBoard > button .tbShownCharacterToken img {
   width: 24px;
   height: 24px;
@@ -238,6 +252,279 @@
 .tbProductionShell .snvLiveSeatDetails {
   border-color: rgba(215, 193, 150, .16);
   background: rgba(255, 255, 255, .025);
+}
+
+.tbProductionShell .issue116PhaseClock button {
+  border-color: #d2ad64;
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+  box-shadow: 0 8px 22px rgba(198, 160, 85, .3);
+}
+
+.tbProductionShell .issue116GrimoireSurface .issue116PhaseClock {
+  border-color: rgba(210, 173, 100, .34);
+  background: linear-gradient(145deg, rgba(7, 22, 17, .96), rgba(17, 48, 36, .94));
+  box-shadow: 0 12px 34px rgba(1, 10, 7, .42), inset 0 0 0 1px rgba(239, 214, 158, .04);
+}
+
+.tbProductionShell .issue116GrimoireSurface .issue116PhaseClock strong {
+  color: #f5eddc;
+}
+
+.tbProductionShell .issue116GrimoireSurface .issue116PhaseClock time {
+  color: #c5cbbd;
+}
+
+.tbProductionShell[data-theme="day"] .issue116PhaseClock button {
+  border-color: #496b50;
+  color: #fffdf2;
+  background: linear-gradient(135deg, #68876d, #49664f);
+  box-shadow: 0 8px 22px rgba(49, 82, 57, .24);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .issue116PhaseClock {
+  border-color: rgba(73, 107, 80, .28);
+  background: linear-gradient(145deg, #f7f1d8, #dce5ca);
+  box-shadow: 0 9px 26px rgba(49, 61, 40, .16), inset 0 0 0 1px rgba(255, 255, 255, .42);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .issue116PhaseClock strong {
+  color: #243329;
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .issue116PhaseClock time {
+  color: #5d6758;
+}
+
+.tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateSelection {
+  border-color: #e35c89;
+  box-shadow: 0 0 0 7px rgba(227, 92, 137, .48), 0 0 44px rgba(227, 92, 137, .72);
+  filter: brightness(1.12) saturate(1.08);
+}
+
+.tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
+  border-color: #a989f0;
+  box-shadow: 0 0 0 7px rgba(151, 112, 226, .52), 0 0 46px rgba(128, 80, 217, .76);
+  filter: brightness(1.12) saturate(1.12);
+}
+
+.tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
+  border-color: #ff756c;
+  box-shadow: 0 0 0 7px rgba(239, 70, 66, .5), 0 0 48px rgba(224, 44, 41, .78);
+  filter: brightness(1.1) saturate(1.18);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateSelection {
+  border-color: #b73668;
+  box-shadow: 0 0 0 6px rgba(183, 54, 104, .26), 0 0 30px rgba(183, 54, 104, .4);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
+  border-color: #7650bf;
+  box-shadow: 0 0 0 6px rgba(118, 80, 191, .28), 0 0 30px rgba(118, 80, 191, .42);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
+  border-color: #c93434;
+  box-shadow: 0 0 0 6px rgba(201, 52, 52, .28), 0 0 30px rgba(201, 52, 52, .44);
+}
+
+.tbProductionShell .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
+  z-index: 4;
+  border-color: #e5c26d;
+  outline: none;
+  box-shadow: 0 0 0 5px rgba(229, 194, 109, .26), 0 0 34px rgba(229, 194, 109, .5);
+  filter: brightness(1.06);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
+  border-color: #a87512;
+  box-shadow: 0 0 0 5px rgba(185, 133, 24, .2), 0 0 28px rgba(168, 117, 18, .34);
+}
+
+.playerTokenDetailBackdrop.tbTheme {
+  background: rgba(3, 14, 10, .64);
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenDetailDialog {
+  border-color: rgba(210, 173, 100, .28);
+  color: #f5eddc;
+  background: linear-gradient(160deg, #0b2118, #153328);
+  box-shadow: -24px 0 70px rgba(1, 10, 7, .56);
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenDetailDialog > header {
+  border-bottom-color: rgba(210, 173, 100, .14);
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenDetailDialog > header span,
+.playerTokenDetailBackdrop.tbTheme .playerTokenCharacterSummary > span,
+.playerTokenDetailBackdrop.tbTheme .tbPlayerNotes > span {
+  color: #bcae8d;
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenCharacterIdentityButton > strong,
+.playerTokenDetailBackdrop.tbTheme .playerTokenDetailDialog > header strong {
+  color: #d1b77e;
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(210, 173, 100, .24);
+  color: #f5eddc;
+  background: rgba(255, 255, 255, .045);
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenCharacterIdentityButton:hover {
+  background: rgba(91, 141, 105, .12);
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerTokenCharacterSummary p,
+.playerTokenDetailBackdrop.tbTheme .tbPlayerNotes p {
+  color: #d9d5c4;
+}
+
+.playerTokenDetailBackdrop.tbTheme .playerPinnedTokenArea {
+  background: radial-gradient(circle at 28% 20%, rgba(69, 111, 80, .34), transparent 36%), linear-gradient(145deg, rgba(5, 22, 15, .82), rgba(18, 49, 36, .78));
+  box-shadow: inset 0 0 0 1px rgba(210, 173, 100, .09), inset 0 14px 38px rgba(0, 0, 0, .24);
+}
+
+.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article,
+.playerTokenDetailBackdrop.tbTheme .tbPlayerNotes {
+  border-color: rgba(210, 173, 100, .14);
+  background: rgba(255, 255, 255, .035);
+}
+
+.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article.shown {
+  border-color: rgba(90, 177, 213, .34);
+  background: rgba(43, 123, 151, .13);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day {
+  background: rgba(43, 52, 38, .5);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenDetailDialog {
+  border-color: rgba(73, 107, 80, .25);
+  color: #213128;
+  background: linear-gradient(160deg, #f7f2dc, #dfe8ce);
+  box-shadow: -24px 0 70px rgba(49, 61, 40, .28);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenDetailDialog > header {
+  border-bottom-color: rgba(73, 107, 80, .14);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenDetailDialog > header span,
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterSummary > span,
+.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes > span {
+  color: #627057;
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterIdentityButton > strong,
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenDetailDialog > header strong {
+  color: #49664f;
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(73, 107, 80, .22);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .72);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterIdentityButton:hover {
+  background: rgba(73, 107, 80, .08);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterSummary p,
+.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes p,
+.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities strong {
+  color: #38483d;
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .playerPinnedTokenArea {
+  background: radial-gradient(circle at 28% 20%, rgba(255, 255, 255, .78), transparent 38%), linear-gradient(145deg, rgba(245, 239, 211, .94), rgba(207, 222, 190, .86));
+  box-shadow: inset 0 0 0 1px rgba(73, 107, 80, .12), inset 0 14px 38px rgba(49, 61, 40, .08);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article,
+.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes {
+  border-color: rgba(73, 107, 80, .14);
+  background: rgba(73, 107, 80, .05);
+}
+
+.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article.shown {
+  border-color: rgba(45, 126, 157, .24);
+  background: rgba(182, 216, 222, .4);
+}
+
+.tbSharedLivePlay .snvDetailsBackdrop {
+  background: rgba(4, 14, 10, .76);
+}
+
+.tbSharedLivePlay .snvReturnDialog {
+  border-color: rgba(210, 173, 100, .42);
+  color: #f5eddc;
+  background: #102a20;
+  box-shadow: 0 28px 90px rgba(1, 9, 6, .64);
+}
+
+.tbSharedLivePlay .snvReturnDialog p {
+  color: #c7cbbd;
+}
+
+.tbSharedLivePlay .snvReturnDialog button {
+  border-color: rgba(221, 198, 151, .24);
+  color: #f5eddc;
+  background: rgba(255, 255, 255, .055);
+}
+
+.tbSharedLivePlay .snvReturnDialog button:last-child {
+  border-color: #d2ad64;
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+}
+
+.tbSharedLivePlay .snvReturnDialog button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvDetailsBackdrop {
+  background: rgba(43, 52, 38, .48);
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog {
+  border-color: rgba(67, 89, 62, .24);
+  color: #213128;
+  background: #f4efd7;
+  box-shadow: 0 26px 80px rgba(49, 61, 40, .28);
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog h2 {
+  color: #213128;
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog p {
+  color: #526154;
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog button {
+  border-color: rgba(67, 89, 62, .22);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .72);
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog button:last-child {
+  border-color: #496b50;
+  color: #fffdf2;
+  background: linear-gradient(135deg, #68876d, #49664f);
+}
+
+.tbSharedLivePlay[data-theme="day"] .snvReturnDialog button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
 }
 
 .tbProductionShell .snvSelectedRosterTray button[aria-pressed="true"] {
@@ -293,89 +580,6 @@
   font-weight: 850;
 }
 
-.tbPlayerDetails {
-  display: grid;
-  padding: 0;
-  align-content: start;
-  gap: 0;
-}
-
-.tbProductionShell .tbPlayerDetails {
-  background: #10271b;
-  box-shadow: 0 -22px 70px rgba(0, 0, 0, .58);
-}
-
-.tbPlayerDetailsHeader {
-  display: grid;
-  padding: 18px;
-  grid-template-columns: 54px minmax(0, 1fr) 32px 38px;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid rgba(215, 193, 150, .14);
-}
-
-.tbPlayerHeaderRole {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.tbPlayerHeaderRole img {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
-}
-
-.tbPlayerHeaderRole strong {
-  color: #d7c18f;
-  font-size: .58rem;
-}
-
-.tbPlayerDetailsHeader > div:nth-child(2) {
-  min-width: 0;
-}
-
-.tbPlayerDetailsHeader > div:nth-child(2) > span {
-  color: #bcae8d;
-  font-size: .6rem;
-  font-weight: 850;
-}
-
-.tbPlayerDetailsHeader h2 {
-  margin: 4px 0 0;
-  overflow: hidden;
-  color: #fff8e8;
-  font: 1.45rem Georgia, serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tbPlayerAlignment {
-  justify-self: end;
-}
-
-.tbPlayerDetailsClose {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  place-items: center;
-  border: 1px solid rgba(215, 193, 150, .22);
-  border-radius: 50%;
-  color: #fff8e8;
-  background: rgba(255, 255, 255, .04);
-  font-family: inherit;
-  font-size: 1.35rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.tbPlayerDetailsBody {
-  display: grid;
-  padding: 18px;
-  gap: 22px;
-}
-
 .tbDrunkIdentities {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -397,8 +601,7 @@
   background: rgba(43, 123, 151, .13);
 }
 
-.tbDrunkIdentities article > span,
-.tbCharacterAbility > span {
+.tbDrunkIdentities article > span {
   color: #bcae8d;
   font-size: .6rem;
   font-weight: 900;
@@ -427,11 +630,28 @@
   white-space: nowrap;
 }
 
-.tbCharacterAbility p {
-  margin: 9px 0 0;
-  color: #d4d5c8;
-  font-size: .76rem;
-  line-height: 1.65;
+.tbPlayerNotes {
+  display: grid;
+  padding: 16px;
+  gap: 8px;
+  border: 1px solid rgba(228, 202, 235, .12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.tbPlayerNotes > span {
+  color: #aa92b1;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.tbPlayerNotes p {
+  margin: 0;
+  color: #d4c8d7;
+  font-size: .8rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .tbPlaySurface .tbPlayPrimary {
@@ -554,41 +774,9 @@
   min-height: 0;
 }
 
-.tbProductionShell .tbPhaseClock {
-  border-color: rgba(210, 173, 100, .34);
-  background: rgba(8, 28, 18, .78);
-}
-
-.tbProductionShell .tbPhaseClock button {
-  border-color: rgba(226, 189, 110, .5);
-  color: #102419;
-  background: linear-gradient(135deg, #efd69e, #c6a055);
-}
-
 .tbProductionShell .tbGrimoireBoard > button.tbIneligibleSeat {
   opacity: .38;
   filter: grayscale(.45);
-}
-
-.tbSeatAbilityAction {
-  position: absolute;
-  z-index: 5;
-  top: var(--ability-seat-y);
-  left: var(--ability-seat-x);
-  display: grid;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  place-items: center;
-  transform: translate(-50%, -50%) translate(-42px, 30px);
-  border: 1px solid rgba(239, 214, 158, .62);
-  border-radius: 50%;
-  color: #fff8e8;
-  background: #315d45;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .42);
-  font-family: inherit;
-  font-size: .68rem;
-  font-weight: 800;
 }
 
 .tbSpyRevealShell {
@@ -727,11 +915,6 @@
   }
 }
 
-.tbSeatAbilityAction.spent {
-  opacity: .48;
-  filter: grayscale(1);
-}
-
 .tbProductionShell .tbPhaseOrder li.current {
   color: #fff8e8;
   background: rgba(55, 118, 83, .34);
@@ -806,57 +989,35 @@
   color: #58645b;
 }
 
-.tbProductionShell[data-theme="day"] .tbPlayerDetails {
-  border-color: rgba(76, 100, 65, .18);
-  color: #243329;
-  background: #fbf6df;
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader {
-  border-bottom-color: rgba(76, 100, 65, .14);
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerHeaderRole strong,
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader > div:nth-child(2) > span,
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article > span,
-.tbProductionShell[data-theme="day"] .tbCharacterAbility > span {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article > span,
+.playerTokenDetailBackdrop.day .tbPlayerNotes > span {
   color: #627057;
 }
 
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsHeader h2 {
-  color: #203126;
-}
-
-.tbProductionShell[data-theme="day"] .tbPlayerDetailsClose {
-  border-color: rgba(76, 100, 65, .24);
-  color: #294034;
-  background: rgba(255, 255, 255, .5);
-}
-
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article {
   border-color: rgba(121, 89, 154, .22);
   background: rgba(206, 192, 219, .34);
 }
 
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities article.shown {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities article.shown {
   border-color: rgba(45, 126, 157, .24);
   background: rgba(182, 216, 222, .4);
 }
 
-.tbProductionShell[data-theme="day"] .tbDrunkIdentities strong,
-.tbProductionShell[data-theme="day"] .tbCharacterAbility p {
+.playerTokenDetailBackdrop.day .tbDrunkIdentities strong,
+.playerTokenDetailBackdrop.day .tbPlayerNotes p {
   color: #38483d;
+}
+
+.playerTokenDetailBackdrop.day .tbPlayerNotes {
+  border-color: rgba(88, 55, 97, .12);
+  background: rgba(96, 60, 105, .04);
 }
 
 .tbProductionShell[data-theme="day"] .tbCurrentTask {
   color: #243329;
   background: linear-gradient(145deg, rgba(255, 252, 231, .9), rgba(202, 219, 187, .82));
   box-shadow: inset 0 0 0 1px rgba(66, 88, 58, .09);
-}
-
-.tbProductionShell[data-theme="day"] .tbPhaseClock {
-  border-color: rgba(81, 103, 69, .22);
-  background: rgba(255, 253, 238, .88);
 }
 
 .tbProductionShell[data-theme="day"] .tbPlayHeader button {
@@ -883,6 +1044,69 @@
 .tbProductionShell[data-theme="day"] .tbCurrentTask p,
 .tbProductionShell[data-theme="day"] .tbCurrentTask .snvCurrentStepLabel {
   color: #5f684e;
+}
+
+.tbProductionShell .tbStorageSurface article,
+.tbProductionShell .tbStorageSurface .snvEventLog {
+  border-color: rgba(221, 198, 151, .18);
+  background: rgba(7, 25, 18, .72);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .36);
+}
+
+.tbProductionShell .tbStorageSurface article > span,
+.tbProductionShell .tbStorageSurface .snvScrollableEventList li > span {
+  color: #c9af75;
+}
+
+.tbProductionShell .tbStorageSurface button {
+  border-color: rgba(226, 201, 143, .5);
+  color: #fff8e8;
+  background: #376b50;
+}
+
+.tbProductionShell .tbStorageSurface .snvEventLog > header,
+.tbProductionShell .tbStorageSurface .snvScrollableEventList li {
+  border-color: rgba(221, 198, 151, .12);
+}
+
+.tbProductionShell .tbStorageSurface .snvEventLog > header > strong {
+  color: #efd69e;
+}
+
+.tbProductionShell .tbStorageSurface .snvScrollableEventList {
+  scrollbar-color: rgba(210, 173, 100, .58) transparent;
+}
+
+.tbProductionShell .tbStorageSurface .snvScrollableEventList:focus-visible {
+  outline-color: #d2ad64;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface article,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog {
+  color: #243329;
+  border-color: rgba(66, 88, 58, .18);
+  background: rgba(255, 252, 231, .72);
+  box-shadow: 0 20px 56px rgba(54, 76, 48, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface article > span,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvScrollableEventList li > span {
+  color: #6c714e;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface button {
+  border-color: #58745c;
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog > header,
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvScrollableEventList li {
+  border-color: rgba(66, 88, 58, .12);
+}
+
+.tbProductionShell[data-theme="day"] .tbStorageSurface .snvEventLog > header > strong {
+  color: #4d674f;
 }
 
 @media (max-width: 1040px) {
@@ -940,12 +1164,6 @@
 
   .tbPlaySurface .tbPlayPrimary {
     grid-template-columns: 1fr;
-  }
-
-  .tbSeatAbilityAction {
-    top: var(--ability-mobile-seat-y);
-    left: var(--ability-mobile-seat-x);
-    transform: translate(-50%, -50%) translate(-34px, 26px);
   }
 
   .tbProgressPlayer {

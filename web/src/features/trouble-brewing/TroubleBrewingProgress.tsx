@@ -196,7 +196,19 @@ function TroubleBrewingTask({
   const currentSuggestionFingerprint = suggestionRequestFingerprint(suggestionContextFingerprint, currentConfirmation);
   currentSuggestionFingerprintRef.current = currentSuggestionFingerprint;
   const usesGrimoireSelection = currentStep?.requiredInput.kind === "playerIds"
-    || currentStep?.requiredInput.kind === "setupInfo";
+    || currentStep?.requiredInput.kind === "setupInfo"
+    || currentStep?.requiredInput.kind === "nomination"
+    || currentStep?.requiredInput.kind === "nominationVote";
+  const nominationVoteIsVote = Boolean(
+    currentStep?.requiredInput.kind === "nominationVote"
+      && (currentStep.id.endsWith(":vote") || dayState?.activeNomination),
+  );
+  const needsProgressConfirmation = Boolean(
+    currentStep?.requiredInput.kind === "playerIds"
+      && (currentStep.informationPrompt
+        || (currentStep.requiredInput.mayorDecision
+          && phaseInputDraft.selectedPlayerIds.includes(currentStep.requiredInput.mayorDecision.mayorPlayerId))),
+  );
   const registrationSensitive = Boolean(
     currentStep?.informationPrompt
       && (currentStep.informationPrompt.setupInfoRegistrationOptions.length > 0
@@ -282,7 +294,7 @@ function TroubleBrewingTask({
             <ExecutionStanding players={players} dayState={dayState} />
           ) : null}
           <div className="tbProgressInputs">
-            <StepInputFields
+            {currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
               step={currentStep}
               players={players}
               dayState={dayState}
@@ -312,7 +324,7 @@ function TroubleBrewingTask({
                 onClick: suggestCurrentInput,
               } : undefined}
               hidePlayerInput={usesGrimoireSelection}
-            />
+            />}
             {usesGrimoireSelection && currentStep.requiredInput.supportsRandomSuggestion ? <button
               type="button"
               className="randomSuggestionButton"
@@ -331,10 +343,12 @@ function TroubleBrewingTask({
             <ExecutionDeathActions player={currentPlayer} busy={busy} onConfirm={onConfirm} />
           ) : (
             <div className="snvStepActions">
-              {usesGrimoireSelection ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>← 대상 선택</button> : null}
-              <button type="button" disabled={busy || suggesting || !selectionValid || !targetChoiceReady} onClick={() => onConfirm(currentConfirmation)}>
+              {usesGrimoireSelection ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
+                {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : currentStep.requiredInput.kind === "setupInfo" ? "← 대상 선택" : "대상 선택"}
+              </button> : null}
+              {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button type="button" disabled={busy || suggesting || !selectionValid || !targetChoiceReady} onClick={() => onConfirm(currentConfirmation)}>
                 {confirmationLabel(currentStep, isNightDeathAnnouncement)}
-              </button>
+              </button> : null}
               {currentStep.canSkip ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>지목 종료</button> : null}
             </div>
           )}
