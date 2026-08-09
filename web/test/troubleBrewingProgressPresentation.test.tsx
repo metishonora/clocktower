@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { PhaseOverviewItem, PhaseStep, Player } from "../src/core/types";
 import type { PhaseControlProps } from "../src/features/phase-control/PhaseControl";
@@ -50,6 +51,23 @@ test("uses the accepted S&V target hierarchy while keeping phase order expanded"
   expect(phaseOrder.querySelectorAll(".snvPhaseOverviewAction")).toHaveLength(2);
   expect(screen.queryByRole("button", { name: /단계.*열기/ })).toBeNull();
   expect(screen.queryByText(/현재 \d+\/\d+/)).toBeNull();
+});
+
+test("uses the current Trouble Brewing phase theme for progress character details", async () => {
+  const user = userEvent.setup();
+  const currentStep = step({
+    id: "firstNight:poisoner",
+    phase: "firstNight",
+    character: "poisoner",
+    playerId: "player-4",
+  });
+
+  renderProgress(currentStep, [overview(currentStep, "current")]);
+  await user.click(screen.getByRole("button", { name: "독살범 캐릭터 상세 열기" }));
+
+  const characterRules = screen.getByRole("dialog", { name: "독살범 캐릭터 상세" });
+  expect(characterRules.closest(".characterRulesBackdrop")?.classList.contains("tb-night")).toBe(true);
+  expect(characterRules.closest(".characterRulesBackdrop")?.classList.contains("tb-day")).toBe(false);
 });
 
 test("uses the S&V nomination summary and execution decision shapes", () => {

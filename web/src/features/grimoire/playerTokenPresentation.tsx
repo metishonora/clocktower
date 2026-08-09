@@ -220,7 +220,9 @@ export function PlayerTokenDetailDialog({
           <CharacterDetailButton
             details={characterDetails}
             className="playerTokenCharacterIdentityButton"
-            theme={theme === "day" ? "snv-day" : "snv-night"}
+            theme={appearance === "tb"
+              ? (theme === "day" ? "tb-day" : "tb-night")
+              : (theme === "day" ? "snv-day" : "snv-night")}
             onOpenChange={setCharacterDetailOpen}
           >
             {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}

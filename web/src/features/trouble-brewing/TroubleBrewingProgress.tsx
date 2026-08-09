@@ -53,7 +53,7 @@ export function TroubleBrewingProgress({
           <time className="snvProgressRuntime" aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
         </div>
       </>}
-      currentTask={<TroubleBrewingTask {...control} onGoToGrimoire={onGoToGrimoire} />}
+      currentTask={<TroubleBrewingTask {...control} theme={theme} onGoToGrimoire={onGoToGrimoire} />}
       phaseOrder={<section className="tbProgressOrder" aria-label="단계 개요">
         <ol className="snvPhaseOverview tbPhaseOrder" aria-label={phaseOrderLabel(control.currentStep, phaseLabel)}>
           {control.phaseOverview.length === 0 ? <li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>진행할 단계 없음</strong></span></li> : null}
@@ -100,7 +100,8 @@ function TroubleBrewingTask({
   onEndGame,
   onRequestUndoGameEnd,
   onGoToGrimoire,
-}: PhaseControlProps & { onGoToGrimoire: () => void }) {
+  theme,
+}: PhaseControlProps & { theme: "day" | "night"; onGoToGrimoire: () => void }) {
   const [suggesting, setSuggesting] = useState(false);
   const [suggestionUsed, setSuggestionUsed] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string>();
@@ -410,6 +411,7 @@ function TroubleBrewingTask({
             <CharacterDetailButton
               details={troubleBrewingCharacterDetail(currentStep.character)}
               className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+              theme={theme === "day" ? "tb-day" : "tb-night"}
             >
               <CharacterIcon characterId={currentStep.character} />
               <div>

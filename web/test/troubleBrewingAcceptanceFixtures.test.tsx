@@ -153,7 +153,7 @@ describe("Trouble Brewing acceptance fixtures", () => {
       expect(player.reminderTokens).toEqual(expectedTokens.get(player.seat) ?? []);
       expect(player.automaticReminders).toBeDefined();
       expect(player.automaticReminders?.every((reminder) => reminder.playerId === player.playerId)).toBe(true);
-      for (const token of player.reminderTokens) {
+      for (const token of player.reminderTokens ?? []) {
         expect(player.automaticReminders?.some((reminder) =>
           token === "poisoned"
             ? reminder.characterId === "poisoner" && reminder.tokenId === "poisoned" && reminder.label === "중독"

@@ -43,6 +43,11 @@ test("uses the S&V player-detail hierarchy for Trouble Brewing tokens and Notes"
   expect(within(detail).getByText("다음 낮에 능력 사용을 확인")).toBeTruthy();
   expect(within(detail).queryByRole("button", { name: "토큰 / Notes 편집" })).toBeNull();
   expect(within(detail).queryByLabelText("현재 상태")).toBeNull();
+
+  await user.click(within(detail).getByRole("button", { name: "세탁부 캐릭터 상세 열기" }));
+  const characterRules = screen.getByRole("dialog", { name: "세탁부 캐릭터 상세" });
+  expect(characterRules.closest(".characterRulesBackdrop")?.classList.contains("tb-night")).toBe(true);
+  expect(characterRules.closest(".characterRulesBackdrop")?.classList.contains("snv-night")).toBe(false);
 });
 
 test("uses the S&V center clock layout on the Trouble Brewing grimoire", async () => {
