@@ -827,7 +827,7 @@ body {
 .promoCard--tb .promoLetter {
   top: 36px;
   width: 458px;
-  height: 500px;
+  height: 524px;
   padding: 28px 32px 30px;
   color: #35251e;
   background-color: #e7d5ad;
@@ -861,13 +861,13 @@ body {
   display: block;
   align-content: normal;
   padding: 0;
-  margin-top: 10px;
+  margin-top: 7px;
   transform: none;
 }
 
 .promoCard--tb .promoLetterCopy--tb h1 {
   max-width: none;
-  margin: 0 0 10px;
+  margin: 0 0 7px;
   color: #35251e;
   font: 400 58px/1.1 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
   letter-spacing: -.01em;

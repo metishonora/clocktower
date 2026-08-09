@@ -201,7 +201,8 @@ export function PromoCardPrototype({
                     <p aria-label="정원: 10-15인">{renderInkText("정원: 10-15인", 6)}</p>
                     <p aria-label="날짜: 26년 8월 16일(주일)">{renderInkText("날짜: 26년 8월 16일(주일)", 7)}</p>
                     <p aria-label="시간: 18:00~">{renderInkText("시간: 18:00~", 8)}</p>
-                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 9)}</p>
+                    <p aria-label="장소: 노량진교회">{renderInkText("장소: 노량진교회", 9)}</p>
+                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 10)}</p>
                   </div>
                 </>
               ) : (
