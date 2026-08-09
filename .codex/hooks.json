@@ -1,6 +1,19 @@
 {
-  "description": "Clocktower test-server lifecycle guardrails and cleanup.",
+  "description": "Clocktower test-server and worktree lifecycle guardrails.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git worktree prune --expire now",
+            "timeout": 3,
+            "statusMessage": "Pruning stale Clocktower worktree metadata"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "^Bash$",

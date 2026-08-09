@@ -10,14 +10,15 @@
 
 ## Prototype workflow
 
-- Use prototypes to settle the intended final UI before production implementation, so production work carries the approved design forward instead of redesigning it.
+- Use prototypes to settle material new UI, interaction changes, or unresolved visual decisions before production implementation. Small, explicitly specified copy, layout, or styling changes may proceed directly; validate them visually and interactively without manufacturing failing tests solely to drive them.
 - Keep prototypes visually aligned with the current `develop` app shell, layout, styles, and target viewports so review feedback applies directly to the final experience.
 - Use only the fixture state needed for visual review. Do not create fake behavior that is unnecessary for the decisions being reviewed, and keep review controls outside the production-like screen.
 - Record approved and rejected UI decisions in the issue plan, and retain a reviewable approved prototype reference until production acceptance.
 - Treat the approved prototype as the visual acceptance baseline. Reusing existing components is acceptable only when the resulting production UI remains faithful to that baseline.
 - Before requesting production acceptance, compare the real production UI with the approved prototype for the agreed states and target viewports. Fix unintended differences or obtain explicit approval for necessary deviations.
 - Prototype approval validates UI and interaction decisions only. Production acceptance must use the real production entry and runtime.
-- Skip TDD and full regression suites for isolated prototypes. Run focused checks only when shared production code or configuration changes.
+- Add UI tests only for stable user-observable behavior or regression contracts that should survive copy and layout changes. Assert exact wording only when the wording itself is required behavior.
+- Skip full regression suites for isolated prototypes. Run focused checks only when shared production code or configuration changes.
 
 ## Test server lifecycle
 
@@ -29,9 +30,7 @@
 
 ## Completion
 
-- For code changes, run relevant tests, review the complete diff, commit, and push unless the user asks otherwise or an operation is blocked.
-- Do not apply this workflow to questions, planning, research, prototypes, or documentation-only changes unless explicitly requested.
-- Changes limited to test-server management, hooks, or agent configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
-- When closing a ticket, add the smallest practical regression coverage for changed behavior. State why when none is added.
+- Changes limited to the test-server manager, its lifecycle hooks, or server-operator configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
+- Before closing a ticket, ensure changed behavior has the smallest practical regression coverage or that the evidence gap required by the working agreements is recorded.
 - For Rust changes, run `cargo test --workspace`.
 - For relevant web changes, run `pnpm --dir web test` and `pnpm --dir web build`.
