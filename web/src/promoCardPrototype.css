@@ -861,13 +861,13 @@ body {
   display: block;
   align-content: normal;
   padding: 0;
-  margin-top: 18px;
+  margin-top: 10px;
   transform: none;
 }
 
 .promoCard--tb .promoLetterCopy--tb h1 {
   max-width: none;
-  margin: 0 0 18px;
+  margin: 0 0 10px;
   color: #35251e;
   font: 400 58px/1.1 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
   letter-spacing: -.01em;
@@ -876,7 +876,7 @@ body {
 
 .promoCard--tb .promoEventDetails {
   display: grid;
-  gap: 3px;
+  gap: 1px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -885,7 +885,7 @@ body {
 .promoCard--tb .promoEventDetails p {
   margin: 0;
   color: #4b3328;
-  font: 400 30px/1.2 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
+  font: 400 30px/1.12 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
   letter-spacing: .01em;
   text-shadow: .3px .2px 0 rgba(34, 24, 19, .28);
 }

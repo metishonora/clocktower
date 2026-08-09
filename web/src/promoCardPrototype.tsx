@@ -196,10 +196,12 @@ export function PromoCardPrototype({
                     </span>
                   </h1>
                   <div className="promoEventDetails" role="group" aria-label="초대 일정">
-                    <p className="promoGenre" aria-label="장르: 마피아">{renderInkText("장르: 마피아", 4)}</p>
-                    <p aria-label="날짜: 26년 8월 16일(주일)">{renderInkText("날짜: 26년 8월 16일(주일)", 5)}</p>
-                    <p aria-label="시간: 18:00~">{renderInkText("시간: 18:00~", 6)}</p>
-                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 7)}</p>
+                    <p aria-label="게임 이름: 시계탑에 흐른 피">{renderInkText("게임 이름: 시계탑에 흐른 피", 4)}</p>
+                    <p className="promoGenre" aria-label="장르: 마피아">{renderInkText("장르: 마피아", 5)}</p>
+                    <p aria-label="정원: 10-15인">{renderInkText("정원: 10-15인", 6)}</p>
+                    <p aria-label="날짜: 26년 8월 16일(주일)">{renderInkText("날짜: 26년 8월 16일(주일)", 7)}</p>
+                    <p aria-label="시간: 18:00~">{renderInkText("시간: 18:00~", 8)}</p>
+                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 9)}</p>
                   </div>
                 </>
               ) : (
