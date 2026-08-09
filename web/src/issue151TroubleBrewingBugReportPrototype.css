@@ -1,0 +1,671 @@
+.issue151ReviewRoot {
+  min-height: 100vh;
+  background: #071611;
+}
+
+.issue151ReviewControls {
+  position: relative;
+  z-index: 220;
+  display: grid;
+  padding: 11px max(14px, env(safe-area-inset-right)) 11px max(14px, env(safe-area-inset-left));
+  gap: 10px 16px;
+  color: #f5eddc;
+  border-bottom: 1px solid rgba(212, 181, 121, .22);
+  background: #0a1e17;
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue151ReviewControlsHeading,
+.issue151ReviewGroups,
+.issue151ReviewGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issue151ReviewControlsHeading {
+  justify-content: space-between;
+}
+
+.issue151ReviewControlsHeading strong {
+  color: #d8ba7c;
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
+.issue151ReviewControlsHeading span,
+.issue151ReviewGroup > span {
+  color: #9eb0a3;
+  font-size: .66rem;
+}
+
+.issue151ReviewGroups {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.issue151ReviewGroup {
+  flex-wrap: wrap;
+}
+
+.issue151ReviewGroup > span {
+  margin-right: 2px;
+  color: #c3cbbf;
+  font-weight: 850;
+}
+
+.issue151ReviewControls button {
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid rgba(221, 203, 165, .22);
+  border-radius: 999px;
+  color: #efe7d6;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.issue151ReviewControls button:hover,
+.issue151ReviewControls button:focus-visible {
+  border-color: rgba(226, 201, 143, .62);
+  outline: 0;
+}
+
+.issue151ReviewControls button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: #e2c98f;
+}
+
+.issue151ProductionShell {
+  min-height: calc(100vh - 104px);
+}
+
+.issue151ProductionShell .productionApplicationHeader h1 {
+  max-width: 12ch;
+}
+
+.issue151FixtureSurface {
+  display: grid;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 28px);
+  gap: 18px;
+  border: 1px solid rgba(221, 198, 151, .18);
+  border-radius: 22px;
+  color: #f5eddc;
+  background:
+    radial-gradient(circle at 80% 4%, rgba(95, 137, 90, .18), transparent 31%),
+    rgba(7, 25, 18, .72);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .34);
+}
+
+.issue151FixtureSurfaceHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(221, 198, 151, .13);
+}
+
+.issue151FixtureSurfaceHeader span,
+.issue151StatusCard > span,
+.issue151TokenCard > span {
+  color: #c9af75;
+  font-size: .67rem;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.issue151FixtureSurfaceHeader h2 {
+  margin: 5px 0 0;
+  font: clamp(1.65rem, 4vw, 2.5rem) Georgia, serif;
+}
+
+.issue151FixtureSurfaceHeader > strong {
+  min-width: 3.4rem;
+  padding: 9px 12px;
+  border: 1px solid rgba(226, 201, 143, .34);
+  border-radius: 999px;
+  color: #f0d69d;
+  background: rgba(92, 40, 28, .27);
+  font-size: .72rem;
+  text-align: center;
+}
+
+.issue151FixtureGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(220px, .8fr);
+  gap: 14px;
+}
+
+.issue151StatusCard,
+.issue151TokenCard {
+  display: grid;
+  min-height: 148px;
+  padding: 18px;
+  align-content: start;
+  gap: 10px;
+  border: 1px solid rgba(221, 198, 151, .16);
+  border-radius: 16px;
+  background: rgba(36, 81, 61, .29);
+}
+
+.issue151StatusCard strong {
+  color: #fff8e8;
+  font: 1.27rem Georgia, serif;
+}
+
+.issue151StatusCard p,
+.issue151FixtureCaption {
+  margin: 0;
+  color: #b8c6b7;
+  font-size: .76rem;
+  line-height: 1.5;
+}
+
+.issue151TokenCard > div {
+  display: grid;
+  gap: 5px;
+}
+
+.issue151TokenCard strong {
+  color: #f0d69d;
+  font: 1.1rem Georgia, serif;
+}
+
+.issue151TokenCard small {
+  color: #b8c6b7;
+  font-size: .7rem;
+  line-height: 1.45;
+}
+
+.issue151FixtureCaption {
+  color: #9eb0a3;
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151FixtureSurface {
+  color: #243329;
+  border-color: rgba(67, 89, 62, .19);
+  background:
+    radial-gradient(circle at 78% 3%, rgba(255, 247, 211, .7), transparent 31%),
+    rgba(255, 251, 230, .72);
+  box-shadow: 0 22px 70px rgba(49, 61, 40, .14);
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151FixtureSurfaceHeader {
+  border-bottom-color: rgba(66, 88, 58, .14);
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151FixtureSurfaceHeader span,
+.issue151ProductionShell[data-theme="day"] .issue151StatusCard > span,
+.issue151ProductionShell[data-theme="day"] .issue151TokenCard > span {
+  color: #6c714e;
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151FixtureSurfaceHeader > strong {
+  border-color: rgba(87, 105, 67, .28);
+  color: #98642f;
+  background: rgba(255, 253, 239, .58);
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151StatusCard,
+.issue151ProductionShell[data-theme="day"] .issue151TokenCard {
+  border-color: rgba(66, 88, 58, .16);
+  background: linear-gradient(145deg, rgba(255, 252, 231, .82), rgba(202, 219, 187, .68));
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151StatusCard strong {
+  color: #243329;
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151StatusCard p,
+.issue151ProductionShell[data-theme="day"] .issue151FixtureCaption,
+.issue151ProductionShell[data-theme="day"] .issue151TokenCard small {
+  color: #5f684e;
+}
+
+.issue151ProductionShell[data-theme="day"] .issue151TokenCard strong {
+  color: #98642f;
+}
+
+.issue151BugReportBackdrop {
+  position: fixed;
+  z-index: 480;
+  inset: 0;
+  display: grid;
+  padding: 22px;
+  place-items: center;
+  background: rgba(2, 12, 8, .75);
+  backdrop-filter: blur(7px) saturate(.95);
+}
+
+.issue151BugReportDialog {
+  display: grid;
+  box-sizing: border-box;
+  width: min(660px, 100%);
+  max-height: min(92dvh, 900px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(221, 198, 151, .32);
+  border-radius: 24px;
+  color: #fff8e8;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(95, 137, 90, .21), transparent 31%),
+    linear-gradient(145deg, #173326, #0b2118);
+  box-shadow: 0 30px 100px rgba(1, 10, 6, .7);
+}
+
+.issue151BugReportDialog > header {
+  display: flex;
+  padding: 20px 24px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(221, 198, 151, .14);
+}
+
+.issue151BugReportDialog > header > div {
+  min-width: 0;
+}
+
+.issue151BugReportDialog > header span {
+  display: block;
+  margin-bottom: 6px;
+  color: #d2ad64;
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.issue151BugReportDialog h2 {
+  margin: 0;
+  font: clamp(1.7rem, 5vw, 2.15rem) Georgia, serif;
+}
+
+.issue151BugReportDialog > header button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(255, 255, 255, .05);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.issue151BugReportBody {
+  display: grid;
+  min-height: 0;
+  padding: 20px 24px;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.issue151BugReportDescription {
+  display: grid;
+  gap: 7px;
+}
+
+.issue151BugReportDescription > span {
+  color: #e7d5ad;
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.issue151BugReportDialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 12px;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .055);
+  font: inherit;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.issue151BugReportDialog textarea:focus-visible,
+.issue151BugReportDialog button:focus-visible,
+.issue151BugReportDialog summary:focus-visible,
+.issue151BugReportDialog input:focus-visible {
+  border-color: #d2ad64;
+  outline: 3px solid rgba(210, 173, 100, .18);
+  outline-offset: 1px;
+}
+
+.issue151BugReportPrivacy {
+  display: grid;
+  padding: 12px 14px;
+  gap: 8px;
+  border: 1px solid rgba(210, 173, 100, .2);
+  border-radius: 13px;
+  background: rgba(55, 107, 80, .18);
+}
+
+.issue151BugReportPrivacy div {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.issue151BugReportPrivacy div > span {
+  color: #d2ad64;
+  font-weight: 950;
+}
+
+.issue151BugReportPrivacy p {
+  margin: 0;
+  color: #d8ccb0;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.issue151BugReportPrivacy strong {
+  color: #fff8e8;
+}
+
+.issue151BugReportPreview,
+.issue151BugReportOriginal {
+  overflow: hidden;
+  border: 1px solid rgba(221, 198, 151, .18);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.issue151BugReportPreview summary,
+.issue151BugReportOriginal > summary {
+  display: flex;
+  min-height: 46px;
+  padding: 0 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #fff8e8;
+  font-size: .77rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.issue151BugReportPreview summary small {
+  color: #b8c6b7;
+  font-size: .68rem;
+  text-align: right;
+}
+
+.issue151BugReportPreview pre {
+  max-height: 250px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border-top: 1px solid rgba(221, 198, 151, .14);
+  color: #decfae;
+  background: rgba(5, 2, 8, .34);
+  font: .69rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.issue151BugReportOriginal > label {
+  display: flex;
+  padding: 0 13px 8px;
+  align-items: center;
+  gap: 8px;
+  color: #efdde3;
+  font-size: .76rem;
+  font-weight: 850;
+}
+
+.issue151BugReportOriginal input {
+  width: 18px;
+  height: 18px;
+  accent-color: #a64f35;
+}
+
+.issue151BugReportOriginal p {
+  margin: 0;
+  padding: 0 13px 13px 39px;
+  color: #d4a9a0;
+  font-size: .7rem;
+  line-height: 1.45;
+}
+
+.issue151BugReportRecovery,
+.issue151BugReportSuccess,
+.issue151BugReportFailure {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: .76rem;
+}
+
+.issue151BugReportRecovery {
+  border: 1px solid rgba(244, 194, 76, .4);
+  color: #f8e6b5;
+  background: rgba(143, 95, 13, .2);
+}
+
+.issue151BugReportRecovery p,
+.issue151BugReportFailure p {
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+.issue151BugReportFailure {
+  border: 1px solid rgba(255, 114, 85, .43);
+  color: #ffd9c9;
+  background: rgba(139, 38, 30, .21);
+}
+
+.issue151BugReportSuccess {
+  border: 1px solid rgba(111, 204, 161, .38);
+  color: #cef3df;
+  background: rgba(32, 123, 82, .2);
+}
+
+.issue151BugReportDialog > footer {
+  display: flex;
+  padding: 15px 24px 20px;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid rgba(221, 198, 151, .13);
+}
+
+.issue151BugReportDialog > footer button {
+  min-height: 44px;
+  padding: 9px 13px;
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 11px;
+  color: inherit;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.issue151BugReportDialog > footer button.primary {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] {
+  background: rgba(54, 60, 37, .48);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog {
+  border-color: rgba(67, 89, 62, .25);
+  color: #243329;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(255, 247, 211, .74), transparent 31%),
+    linear-gradient(145deg, #fffced, #dbe5ca);
+  box-shadow: 0 30px 100px rgba(54, 76, 48, .28);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > header,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > footer {
+  border-color: rgba(66, 88, 58, .14);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > header span,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDescription > span {
+  color: #6c714e;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > header button,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > footer button {
+  border-color: rgba(66, 88, 58, .2);
+  color: #304436;
+  background: rgba(255, 255, 255, .45);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog textarea {
+  border-color: rgba(66, 88, 58, .22);
+  color: #243329;
+  background: rgba(255, 255, 255, .46);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPrivacy {
+  border-color: rgba(88, 116, 92, .22);
+  background: rgba(88, 116, 92, .1);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPrivacy p,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPreview summary small {
+  color: #5f684e;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPrivacy strong,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPreview summary,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportOriginal > summary {
+  color: #243329;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPreview,
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportOriginal {
+  border-color: rgba(66, 88, 58, .17);
+  background: rgba(255, 255, 255, .3);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportPreview pre {
+  border-color: rgba(66, 88, 58, .14);
+  color: #465744;
+  background: rgba(248, 247, 226, .74);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportOriginal > label {
+  color: #304436;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportOriginal p {
+  color: #6f6455;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportDialog > footer button.primary {
+  border-color: #58745c;
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportRecovery {
+  color: #6d4c1b;
+  background: rgba(244, 194, 76, .18);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportFailure {
+  color: #7f3024;
+  background: rgba(183, 83, 58, .13);
+}
+
+.issue151BugReportBackdrop[data-theme="day"] .issue151BugReportSuccess {
+  color: #23633f;
+  background: rgba(73, 156, 103, .14);
+}
+
+@media (max-width: 760px) {
+  .issue151ReviewControlsHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .issue151ReviewGroups {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .issue151ReviewGroup {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .issue151ReviewGroup::-webkit-scrollbar {
+    display: none;
+  }
+
+  .issue151ReviewGroup > span {
+    flex: 0 0 auto;
+  }
+
+  .issue151ReviewControls button {
+    flex: 0 0 auto;
+  }
+
+  .issue151ProductionShell {
+    min-height: calc(100vh - 178px);
+  }
+
+  .issue151FixtureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .issue151BugReportBackdrop {
+    padding: 10px;
+    align-items: end;
+  }
+
+  .issue151BugReportDialog {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .issue151BugReportDialog textarea {
+    font-size: 16px;
+  }
+
+  .issue151BugReportDialog > header,
+  .issue151BugReportBody {
+    padding-right: 17px;
+    padding-left: 17px;
+  }
+
+  .issue151BugReportDialog > footer {
+    padding-right: 17px;
+    padding-left: 17px;
+    flex-wrap: wrap;
+  }
+
+  .issue151BugReportDialog > footer button {
+    flex: 1 1 auto;
+  }
+}

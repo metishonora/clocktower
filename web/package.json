@@ -32,6 +32,7 @@
     "prototype:issue-135-inactive-tokens": "vite --host 0.0.0.0",
     "prototype:issue-136-bug-report": "vite --host 0.0.0.0",
     "prototype:issue-148-tb-adaptation": "vite --host 0.0.0.0",
+    "prototype:issue-151-tb-bug-report": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "generate:pwa-assets": "pwa-assets-generator --preset minimal --root public --manifest false assets/icons/app-icon.svg",

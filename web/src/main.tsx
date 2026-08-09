@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
-import type { AutomaticReminder, Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
+import type { AutomaticReminder, GameFile, Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
 import type { GameStoreDependencies } from "./gameStore";
@@ -31,6 +31,7 @@ import {
 import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
 import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBrewingRevealScreen";
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
+import { TroubleBrewingBugReportDialog } from "./features/bug-report/TroubleBrewingBugReportDialog";
 import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
 import {
@@ -41,6 +42,15 @@ import {
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import { phaseStepConfirmation, stepInputReady } from "./features/phase-control/phaseInput";
+import {
+  currentBugReportEnvironment,
+  DEFAULT_BUG_REPORT_EMAIL,
+  type BugReportDelivery,
+} from "./bugReportDelivery";
+import type {
+  TroubleBrewingBugReportContextInput,
+  TroubleBrewingBugReportEnvironment,
+} from "./troubleBrewingBugReport";
 import "./styles.css";
 
 const DevScriptSelectionPrototype = import.meta.env.DEV
@@ -183,15 +193,41 @@ const DevIssue152SpyGrimoirePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue151TroubleBrewingBugReportPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue151TroubleBrewingBugReportPrototype");
+      return { default: module.Issue151TroubleBrewingBugReportPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
   storageDriver: GameStoreDependencies["storage"];
   choiceTokenSource?: ChoiceTokenSource;
   phaseRuntimeClock?: RuntimeClock;
+  bugReportEmail?: string;
+  bugReportDelivery?: BugReportDelivery;
+};
+
+type TroubleBrewingBugReportSnapshot = {
+  gameFile: GameFile;
+  environment: TroubleBrewingBugReportEnvironment;
+  reproductionContext: TroubleBrewingBugReportContextInput;
+  theme: "day" | "night";
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue151TroubleBrewingBugReportPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-151-tb-bug-report"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue151TroubleBrewingBugReportPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue152SpyGrimoirePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-152-spy-grimoire"
@@ -441,6 +477,8 @@ export function ClocktowerApp({
   storageDriver,
   choiceTokenSource = browserCryptoChoiceToken,
   phaseRuntimeClock = browserRuntimeClock,
+  bugReportEmail = import.meta.env.VITE_BUG_REPORT_EMAIL?.trim() || DEFAULT_BUG_REPORT_EMAIL,
+  bugReportDelivery,
 }: ClocktowerAppProps) {
   const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -457,6 +495,10 @@ export function ClocktowerApp({
   const [troubleBrewingHandoff, setTroubleBrewingHandoff] = useState<TroubleBrewingLiveHandoff>();
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
+  const [troubleBrewingBugReportSnapshot, setTroubleBrewingBugReportSnapshot] = useState<
+    TroubleBrewingBugReportSnapshot
+  >();
+  const troubleBrewingBugReportTriggerRef = useRef<HTMLButtonElement>(null);
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
   const preActionRevealKey = gameStore.currentStep?.preActionReveal
     ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
@@ -679,6 +721,40 @@ export function ClocktowerApp({
     setTroubleBrewingStage("play");
   }
 
+  function openTroubleBrewingBugReport(
+    activeTab: TroubleBrewingBugReportContextInput["activeTab"],
+    theme: "day" | "night",
+  ) {
+    setTroubleBrewingBugReportSnapshot({
+      gameFile: gameStore.gameFile,
+      environment: currentBugReportEnvironment(),
+      reproductionContext: {
+        activeTab,
+        replayPhase: gameStore.phase ?? null,
+        currentStepId: gameStore.currentStep?.id ?? null,
+        currentStepType: gameStore.currentStep?.stepType ?? null,
+      },
+      theme,
+    });
+  }
+
+  function closeTroubleBrewingBugReport() {
+    setTroubleBrewingBugReportSnapshot(undefined);
+    window.setTimeout(() => troubleBrewingBugReportTriggerRef.current?.focus(), 0);
+  }
+
+  const troubleBrewingBugReportDialog = troubleBrewingBugReportSnapshot ? (
+    <TroubleBrewingBugReportDialog
+      gameFile={troubleBrewingBugReportSnapshot.gameFile}
+      environment={troubleBrewingBugReportSnapshot.environment}
+      reproductionContext={troubleBrewingBugReportSnapshot.reproductionContext}
+      recipient={bugReportEmail}
+      delivery={bugReportDelivery}
+      theme={troubleBrewingBugReportSnapshot.theme}
+      onClose={closeTroubleBrewingBugReport}
+    />
+  ) : null;
+
   if (scriptId === TROUBLE_BREWING && !gameStore.setupConfirmed) {
     return <>
       <input ref={importInputRef} className="fileInput" type="file" accept="application/json" onChange={importGame} />
@@ -697,7 +773,10 @@ export function ClocktowerApp({
         }}
         onImport={() => importInputRef.current?.click()}
         onReset={gameStore.resetSetup}
+        onBugReport={() => openTroubleBrewingBugReport(gameStore.setupDraft.setupStage ?? "roles", "night")}
+        bugReportTriggerRef={troubleBrewingBugReportTriggerRef}
       />
+      {troubleBrewingBugReportDialog}
     </>;
   }
 
@@ -734,6 +813,11 @@ export function ClocktowerApp({
           onRequestUndo={(trigger) => {
             if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
           }}
+          onBugReport={() => openTroubleBrewingBugReport(
+            troubleBrewingStage,
+            gameStore.phase === "day" ? "day" : "night",
+          )}
+          bugReportTriggerRef={troubleBrewingBugReportTriggerRef}
           grimoire={<TroubleBrewingLiveGrimoire
             players={gameStore.players}
             currentStep={phaseInputStep}
@@ -868,6 +952,7 @@ export function ClocktowerApp({
             </div>
           </section>
         </div> : null}
+        {troubleBrewingBugReportDialog}
       </div>
     );
   }
