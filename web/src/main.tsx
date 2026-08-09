@@ -183,6 +183,13 @@ const DevIssue152SpyGrimoirePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue151TroubleBrewingBugReportPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue151TroubleBrewingBugReportPrototype");
+      return { default: module.Issue151TroubleBrewingBugReportPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -192,6 +199,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue151TroubleBrewingBugReportPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-151-tb-bug-report"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue151TroubleBrewingBugReportPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue152SpyGrimoirePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-152-spy-grimoire"
