@@ -27,6 +27,8 @@
 - Reuse the configured S&V report recipient and delivery policy, including the build-time override.
 - Apply the approved Trouble Brewing forest/parchment/gold/rust visual identity to both Night and Day
   dialog states. Layout, copy hierarchy, and action behavior remain shared with S&V.
+- Treat the mobile 16px editable-control minimum as shared behavior: apply it to the existing S&V
+  dialog and the Trouble Brewing prototype/final dialog so focus never triggers browser auto-zoom.
 
 ## Issue #152 baseline review
 
