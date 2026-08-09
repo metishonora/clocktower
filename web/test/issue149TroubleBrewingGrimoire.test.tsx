@@ -77,6 +77,14 @@ test("presents the spent Virgin ability as the official no-ability token instead
   } : player);
   renderLiveGrimoire(playerRoster, {
     unannouncedNightDeathPlayerIds: [],
+    automaticReminders: [{
+      playerId: "player-1",
+      characterId: "virgin",
+      tokenId: "noAbility",
+      label: "능력 없음",
+      description: "성결자의 능력이 소모되었습니다.",
+      sourceEventId: "event-nomination",
+    }],
     virginAbility: {
       actorPlayerId: "player-1",
       spent: true,
@@ -91,7 +99,7 @@ test("presents the spent Virgin ability as the official no-ability token instead
 
   const detail = screen.getByRole("dialog", { name: "1번 Ada 플레이어 상세" });
   expect(within(detail).getByText("능력 없음")).toBeTruthy();
-  expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 성결자" })).toBeTruthy();
+  expect(within(detail).getByRole("listitem", { name: /자동 규칙 · 능력 없음 · 출처 성결자/ })).toBeTruthy();
 });
 
 test("does not show a dedicated Slayer ability action beside the seat", async () => {
@@ -123,6 +131,13 @@ test("presents the spent Slayer ability as its official no-ability token", async
   } : player);
   renderLiveGrimoire(playerRoster, {
     unannouncedNightDeathPlayerIds: [],
+    automaticReminders: [{
+      playerId: "player-1",
+      characterId: "slayer",
+      tokenId: "noAbility",
+      label: "능력 없음",
+      description: "처단자의 능력이 소모되었습니다.",
+    }],
     slayerAbility: {
       actorPlayerId: "player-1",
       spent: true,
@@ -137,7 +152,7 @@ test("presents the spent Slayer ability as its official no-ability token", async
 
   const detail = screen.getByRole("dialog", { name: "1번 Ada 플레이어 상세" });
   expect(within(detail).getByText("능력 없음")).toBeTruthy();
-  expect(within(detail).getByRole("listitem", { name: "능력 없음 · 출처 처단자" })).toBeTruthy();
+  expect(within(detail).getByRole("listitem", { name: /자동 규칙 · 능력 없음 · 출처 처단자/ })).toBeTruthy();
 });
 
 test("confirms a player target inside the S&V grimoire work panel", async () => {

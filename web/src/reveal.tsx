@@ -254,6 +254,7 @@ function SpyGrimoireReveal({
             "--spy-seat-y": `${position.y}%`,
           } as CSSProperties;
           const character = characterLabel(player.characterId);
+          const reminderTokens = player.reminderTokens ?? [];
           return (
             <article
               key={player.playerId}
@@ -273,9 +274,9 @@ function SpyGrimoireReveal({
                   {player.ghostVoteUsed ? "◉" : "○"}
                 </span>
               </div>
-              {player.reminderTokens.length > 0 ? (
+              {reminderTokens.length > 0 ? (
                 <div className="spyGrimoireTokens">
-                  {player.reminderTokens.map((token) => (
+                  {reminderTokens.map((token) => (
                     <span key={token}>{token === "poisoned" ? "중독" : "보호"}</span>
                   ))}
                 </div>

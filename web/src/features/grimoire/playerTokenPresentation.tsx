@@ -15,6 +15,7 @@ export type PlayerTokenPresentation = Readonly<{
   description?: string;
   count?: number;
   inactiveReason?: string;
+  origin?: "automatic" | "manual";
 }>;
 
 export type PlayerTokensByPlayerId = Readonly<Record<string, readonly PlayerTokenPresentation[]>>;
@@ -78,14 +79,13 @@ export function PlayerTokenList({
     <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
       <ul aria-label={`부착된 토큰 ${visibleTokenCount}개`}>
         {tokens.map((token) => {
+          const originLabel = tokenOriginLabel(token.origin);
           const statusLabel = token.inactiveReason
             ? ` · 현재 효력 없음 · ${token.inactiveReason}`
             : "";
-          const title = token.inactiveReason
-            ? [token.inactiveReason, token.description].filter(Boolean).join(" · ")
-            : token.description;
+          const title = [originLabel, token.inactiveReason, token.description].filter(Boolean).join(" · ") || undefined;
           return token.count === undefined ? (
-            <li aria-label={`${token.label} · 출처 ${token.sourceLabel}${statusLabel}`} key={token.instanceId}>
+            <li aria-label={`${originLabel ? `${originLabel} · ` : ""}${token.label} · 출처 ${token.sourceLabel}${statusLabel}`} key={token.instanceId}>
               <div
                 className={`playerPinnedToken ${token.visualKind}${token.inactiveReason ? " playerInactiveToken" : ""}`}
                 title={title}
@@ -105,7 +105,7 @@ export function PlayerTokenList({
           ) : (
             <li
               className="playerCountedTokenItem"
-              aria-label={`${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
+              aria-label={`${originLabel ? `${originLabel} · ` : ""}${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
               key={token.instanceId}
             >
               {Array.from({ length: Math.max(1, token.count) }, (_, index) => {
@@ -137,6 +137,12 @@ export function PlayerTokenList({
       </ul>
     </section>
   );
+}
+
+function tokenOriginLabel(origin: PlayerTokenPresentation["origin"]): string | undefined {
+  if (origin === "automatic") return "자동 규칙";
+  if (origin === "manual") return "수동 표시";
+  return undefined;
 }
 
 function InactiveTokenX() {

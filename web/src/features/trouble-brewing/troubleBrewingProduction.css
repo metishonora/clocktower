@@ -51,6 +51,92 @@
   background: rgba(92, 40, 28, .48);
 }
 
+.tbProductionShell.tbInteractionLocked .snvScriptHomeLink[aria-disabled="true"] {
+  opacity: .42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.tbProductionShell.tbInteractionLocked .productionApplicationUtilities button:disabled,
+.tbProductionShell.tbInteractionLocked .productionApplicationStages button:disabled {
+  cursor: not-allowed;
+}
+
+.tbSpyRevealEndedShell {
+  display: grid;
+  min-height: calc(100vh - 190px);
+  place-items: center;
+  border: 1px solid rgba(221, 198, 151, .16);
+  border-radius: 22px;
+}
+
+.tbSpyRevealEndedProduction {
+  display: grid;
+  width: min(560px, 100%);
+  margin: 0 auto;
+  padding: clamp(28px, 6vw, 58px);
+  box-sizing: border-box;
+  gap: 14px;
+  border: 1px solid rgba(221, 198, 151, .2);
+  border-radius: 18px;
+  background: rgba(7, 25, 18, .72);
+  box-shadow: 0 24px 76px rgba(2, 10, 7, .44);
+  text-align: center;
+}
+
+.tbSpyRevealEndedProduction > span {
+  color: #d6b675;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.tbSpyRevealEndedProduction h1 {
+  margin: 0;
+  font: clamp(2rem, 5vw, 3.2rem) Georgia, serif;
+}
+
+.tbSpyRevealEndedProduction button {
+  min-width: 180px;
+  min-height: 54px;
+  margin: 0 auto;
+  padding: 11px 18px;
+  border: 1px solid #d2ad64;
+  border-radius: 12px;
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+  box-shadow: 0 10px 28px rgba(4, 20, 13, .4);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tbSpyRevealEndedProduction button:disabled {
+  opacity: .46;
+  cursor: wait;
+}
+
+.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction {
+  border-color: rgba(73, 107, 80, .26);
+  background: rgba(247, 241, 216, .72);
+  box-shadow: 0 18px 54px rgba(49, 61, 40, .16);
+}
+
+.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction > span {
+  color: #6a5730;
+}
+
+.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction h1 {
+  color: #243329;
+}
+
+.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction button {
+  border-color: #496b50;
+  color: #fffdf2;
+  background: linear-gradient(135deg, #68876d, #49664f);
+  box-shadow: 0 8px 22px rgba(49, 82, 57, .24);
+}
+
 .tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
 .tbProductionShell button:focus-visible,
 .tbProductionShell input:focus-visible,

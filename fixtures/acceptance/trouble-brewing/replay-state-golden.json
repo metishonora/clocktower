@@ -1037,7 +1037,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-6",
+          "characterId": "drunk",
+          "tokenId": "isTheDrunk",
+          "label": "주정뱅이임",
+          "description": "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+          "sourceEventId": "setup"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -5898,7 +5908,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-2",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -6558,6 +6578,32 @@
       "redHerringPlayerId": "player-2",
       "unannouncedNightDeathPlayerIds": [
         "player-7"
+      ],
+      "automaticReminders": [
+        {
+          "playerId": "player-2",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-7"
+        },
+        {
+          "playerId": "player-7",
+          "characterId": "imp",
+          "tokenId": "dead",
+          "label": "사망",
+          "description": "임프의 공격으로 사망했지만 아직 밤 사망 발표 전입니다.",
+          "sourceEventId": "phase-step-16"
+        },
+        {
+          "playerId": "player-6",
+          "characterId": "scarletWoman",
+          "tokenId": "isTheDemon",
+          "label": "악마임",
+          "description": "붉은 여인이 임프를 승계해 악마가 되었습니다.",
+          "sourceEventId": "demon-succession-17"
+        }
       ]
     },
     "gameEnd": null
@@ -6876,7 +6922,17 @@
       "butlerVote": {
         "butlerPlayerId": "player-8",
         "restrictionApplies": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -7322,7 +7378,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -7636,7 +7702,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-9"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -7988,7 +8064,25 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -8409,7 +8503,33 @@
       "virginAbility": {
         "actorPlayerId": "player-6",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-9"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-35"
+        },
+        {
+          "playerId": "player-4",
+          "characterId": "monk",
+          "tokenId": "safe",
+          "label": "안전",
+          "description": "수도사의 보호를 받아 악마의 공격으로부터 안전합니다.",
+          "sourceEventId": "phase-step-36"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -8731,7 +8851,25 @@
         "butlerPlayerId": "player-6",
         "masterPlayerId": "player-1",
         "restrictionApplies": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "butler",
+          "tokenId": "master",
+          "label": "주인",
+          "description": "집사가 현재 투표 제한을 따르는 주인입니다.",
+          "sourceEventId": "phase-step-10"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -10038,7 +10176,17 @@
         "sourcePlayerId": "player-6",
         "sourceEventId": "phase-step-14"
       },
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-2",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-14"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -10691,7 +10839,17 @@
         "sourcePlayerId": "player-1",
         "sourceEventId": "phase-step-16"
       },
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-2",
+          "characterId": "monk",
+          "tokenId": "safe",
+          "label": "안전",
+          "description": "수도사의 보호를 받아 악마의 공격으로부터 안전합니다.",
+          "sourceEventId": "phase-step-16"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -11004,7 +11162,17 @@
         "sourcePlayerId": "player-6",
         "sourceEventId": "phase-step-14"
       },
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-3",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-14"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -11519,6 +11687,16 @@
     "ruleState": {
       "unannouncedNightDeathPlayerIds": [
         "player-4"
+      ],
+      "automaticReminders": [
+        {
+          "playerId": "player-4",
+          "characterId": "imp",
+          "tokenId": "dead",
+          "label": "사망",
+          "description": "임프의 공격으로 사망했지만 아직 밤 사망 발표 전입니다.",
+          "sourceEventId": "phase-step-16"
+        }
       ]
     },
     "gameEnd": null
@@ -12286,6 +12464,24 @@
       "redHerringPlayerId": "player-1",
       "unannouncedNightDeathPlayerIds": [
         "player-1"
+      ],
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-7"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "imp",
+          "tokenId": "dead",
+          "label": "사망",
+          "description": "임프의 공격으로 사망했지만 아직 밤 사망 발표 전입니다.",
+          "sourceEventId": "phase-step-19"
+        }
       ]
     },
     "gameEnd": null
@@ -12654,7 +12850,17 @@
       "virginAbility": {
         "actorPlayerId": "player-7",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-10"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -12967,7 +13173,17 @@
         "sourcePlayerId": "player-6",
         "sourceEventId": "phase-step-14"
       },
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-8",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-14"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -13561,7 +13777,17 @@
       "virginAbility": {
         "actorPlayerId": "player-3",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-7"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -13864,7 +14090,17 @@
       "butlerVote": {
         "butlerPlayerId": "player-6",
         "restrictionApplies": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-7"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -14147,7 +14383,25 @@
       "virginAbility": {
         "actorPlayerId": "player-3",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-7"
+        },
+        {
+          "playerId": "player-3",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -14435,7 +14689,17 @@
       "virginAbility": {
         "actorPlayerId": "player-3",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-6"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -14739,7 +15003,17 @@
         "actorPlayerId": "player-1",
         "spent": false,
         "canUseNow": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-9"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -15037,7 +15311,17 @@
         "actorPlayerId": "player-1",
         "spent": false,
         "canUseNow": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -15346,7 +15630,25 @@
         "actorPlayerId": "player-1",
         "spent": false,
         "canUseNow": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-9"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -15655,7 +15957,17 @@
         "actorPlayerId": "player-1",
         "spent": false,
         "canUseNow": true
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-10"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -15952,7 +16264,25 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-6",
+          "characterId": "drunk",
+          "tokenId": "isTheDrunk",
+          "label": "주정뱅이임",
+          "description": "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+          "sourceEventId": "setup"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -16285,7 +16615,33 @@
     "warnings": [],
     "ruleState": {
       "redHerringPlayerId": "player-1",
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-6",
+          "characterId": "drunk",
+          "tokenId": "isTheDrunk",
+          "label": "주정뱅이임",
+          "description": "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+          "sourceEventId": "setup"
+        },
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        },
+        {
+          "playerId": "player-6",
+          "characterId": "undertaker",
+          "tokenId": "diedToday",
+          "label": "오늘 사망",
+          "description": "오늘 낮 처형으로 사망한 플레이어입니다.",
+          "sourceEventId": "execution-death-18"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -16589,7 +16945,17 @@
     "warnings": [],
     "ruleState": {
       "redHerringPlayerId": "player-1",
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -16936,7 +17302,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -17288,7 +17664,25 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        },
+        {
+          "playerId": "player-6",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -17610,7 +18004,17 @@
     "warnings": [],
     "ruleState": {
       "redHerringPlayerId": "player-1",
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -17927,7 +18331,17 @@
     "warnings": [],
     "ruleState": {
       "redHerringPlayerId": "player-1",
-      "unannouncedNightDeathPlayerIds": []
+      "unannouncedNightDeathPlayerIds": [],
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -18322,7 +18736,25 @@
       "virginAbility": {
         "actorPlayerId": "player-7",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-10"
+        },
+        {
+          "playerId": "player-9",
+          "characterId": "poisoner",
+          "tokenId": "poisoned",
+          "label": "중독",
+          "description": "독살범의 능력으로 현재 중독된 상태입니다.",
+          "sourceEventId": "phase-step-4"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -19595,7 +20027,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -19973,7 +20415,17 @@
       "virginAbility": {
         "actorPlayerId": "player-5",
         "spent": false
-      }
+      },
+      "automaticReminders": [
+        {
+          "playerId": "player-1",
+          "characterId": "fortuneTeller",
+          "tokenId": "redHerring",
+          "label": "오답 대상",
+          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "sourceEventId": "phase-step-8"
+        }
+      ]
     },
     "gameEnd": null
   },
@@ -20277,6 +20729,16 @@
     "ruleState": {
       "unannouncedNightDeathPlayerIds": [
         "player-4"
+      ],
+      "automaticReminders": [
+        {
+          "playerId": "player-4",
+          "characterId": "imp",
+          "tokenId": "dead",
+          "label": "사망",
+          "description": "임프의 공격으로 사망했지만 아직 밤 사망 발표 전입니다.",
+          "sourceEventId": "phase-step-16"
+        }
       ]
     },
     "gameEnd": null

@@ -536,10 +536,10 @@ await addCase({
 await addCase({
   id: "spy-grimoire-reveal",
   category: "night-information",
-  characterIds: ["monk", "poisoner", "spy"],
+  characterIds: ["fortuneTeller", "monk", "poisoner", "spy"],
   officialSource: source.spy,
   actionKo: "Spy 단계를 확정해 플레이어 전용 Grimoire 공개 화면을 연다.",
-  expectedKo: "현재 밤의 중독·보호와 실제 직업·생사·유령 투표만 보이고 이전 밤 상태와 수동 토큰·Notes는 숨겨진다.",
+  expectedKo: "현재 canonical 공식 reminder token과 실제 직업·생사·유령 투표만 보이고 수동 토큰·Notes는 숨겨진다.",
   checkpoint: {
     phase: "night",
     currentStepId: "night2:spy",
@@ -553,7 +553,7 @@ await addCase({
         { seat: 4, tokens: ["protected"] },
       ],
       hiddenReminderTokenSeats: [2, 3, 7],
-      excludedText: ["abilitySpent", "redHerring", "safe", "INF-05 비공개 Storyteller Notes"],
+      excludedText: ["abilitySpent", "INF-05 비공개 Storyteller Notes"],
     },
   },
 }, () => {

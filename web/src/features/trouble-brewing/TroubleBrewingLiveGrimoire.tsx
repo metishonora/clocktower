@@ -44,6 +44,8 @@ export function TroubleBrewingLiveGrimoire({
   onCancelSelection,
   selectionReady,
   revealMode,
+  interactionLocked = false,
+  progressActionLabel = "진행 →",
 }: {
   players: Player[];
   currentStep?: PhaseStep;
@@ -83,6 +85,9 @@ export function TroubleBrewingLiveGrimoire({
   revealMode?: {
     onClose: () => void;
   };
+  /** Locks mutation affordances while retaining interactive read-only seat details. */
+  interactionLocked?: boolean;
+  progressActionLabel?: string;
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
@@ -136,7 +141,7 @@ export function TroubleBrewingLiveGrimoire({
   }, [selectionActive]);
 
   function startLongPress(event: PointerEvent<HTMLButtonElement>, player: Player) {
-    if (!onUpdatePlayerAnnotations || busy || gameEnded) return;
+    if (!onUpdatePlayerAnnotations || interactionLocked || busy || gameEnded) return;
     longPressActivated.current = false;
     window.clearTimeout(longPressTimer.current);
     longPressTimer.current = window.setTimeout(() => {
@@ -199,7 +204,7 @@ export function TroubleBrewingLiveGrimoire({
         </GrimoireToolbar>
       ) : (
         <GrimoireToolbar ariaLabel="확정된 마도서 도구">
-          <button type="button" className="snvToolbarBack destructive" disabled={busy} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
+          <button type="button" className="snvToolbarBack destructive" disabled={busy || interactionLocked} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
         </GrimoireToolbar>
       )}
       workspaceClassName={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}${revealMode ? " tbRevealWorkspace" : ""}`}
@@ -334,7 +339,7 @@ export function TroubleBrewingLiveGrimoire({
         center={handoff === "nomination" || handoff === "vote" ? undefined : <>
           <strong>{revealMode ? "첩자 공개" : gameEnded ? "게임 종료" : phaseLabel}</strong>
           {!revealMode && !gameEnded ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time> : null}
-          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" onClick={onGoToProgress}>진행 →</button> : null}
+          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" onClick={onGoToProgress}>{progressActionLabel}</button> : null}
         </>}
       />}
       inspector={handoff ? <TroubleBrewingSelectionPanel

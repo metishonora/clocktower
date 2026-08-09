@@ -149,6 +149,61 @@ test("accepts Philosopher grants and active or inactive automatic reminder token
   throws(() => parseReplayState(missingSource), /코어 응답 형식/);
 });
 
+test("accepts official Trouble Brewing automatic reminder pairs in replay state", () => {
+  parseReplayState({
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-1",
+        characterId: "washerwoman",
+        tokenId: "townsfolk",
+        label: "주민",
+        description: "세탁부에게 보여준 주민입니다.",
+        count: 1,
+        sourceEventId: "setup-1",
+      }],
+    },
+    warnings: [],
+  });
+});
+
+test("rejects mismatched, unofficial, and extra-key Trouble Brewing reminders", () => {
+  const baseReminder = {
+    playerId: "player-1",
+    characterId: "washerwoman",
+    tokenId: "townsfolk",
+    label: "주민",
+    description: "세탁부에게 보여준 주민입니다.",
+    count: 1,
+    sourceEventId: "setup-1",
+  };
+  for (const automaticReminder of [
+    { ...baseReminder, characterId: "monk", tokenId: "townsfolk" },
+    { ...baseReminder, tokenId: "notOfficial" },
+    { ...baseReminder, extra: true },
+  ]) {
+    const replay = {
+      schemaVersion: 3,
+      scriptId: "troubleBrewing",
+      eventCount: 1,
+      phase: "firstNight",
+      players: [],
+      currentStep: null,
+      phaseOverview: [],
+      ruleState: { unannouncedNightDeathPlayerIds: [], automaticReminders: [automaticReminder] },
+      warnings: [],
+    };
+    throws(() => parseReplayState(replay), /코어 응답 형식/);
+  }
+});
+
 test("accepts canonical Vortox and impaired numeric constraints", () => {
   const replay = {
     schemaVersion: 3,

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import type { SetupDistribution } from "../../core/types";
 import { ProductionApplicationShell } from "../../shared-ui/ProductionApplicationShell";
 import {
@@ -31,6 +31,7 @@ export function TroubleBrewingLiveFlow({
   onStageChange,
   onReset,
   onRequestUndo,
+  interactionLocked = false,
 }: {
   draft: SetupDraft;
   expectedCounts?: SetupDistribution;
@@ -47,6 +48,8 @@ export function TroubleBrewingLiveFlow({
   onStageChange: (stage: TroubleBrewingLiveStage) => void;
   onReset: () => void;
   onRequestUndo: (trigger: HTMLButtonElement) => void;
+  /** Locks shell navigation while preserving the normal production presentation. */
+  interactionLocked?: boolean;
 }) {
   const [activeCharacterId, setActiveCharacterId] = useState("imp");
   const selectedIds = setupDraftSelectedCharacterIds(draft);
@@ -54,6 +57,7 @@ export function TroubleBrewingLiveFlow({
   const requiredByKind = toDistribution(expectedCounts);
 
   function navigate(destination: string) {
+    if (interactionLocked) return;
     if (destination === "roles" || destination === "seating" || destination === "play" || destination === "storage") {
       onStageChange(destination);
       return;
@@ -64,6 +68,14 @@ export function TroubleBrewingLiveFlow({
     }
   }
 
+  function blockHomeNavigation(event: MouseEvent<HTMLAnchorElement>) {
+    if (!interactionLocked) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const undoAvailable = canUndo && !interactionLocked;
+
   return (
     <ProductionApplicationShell
       ariaLabel="Trouble Brewing 진행"
@@ -72,17 +84,24 @@ export function TroubleBrewingLiveFlow({
       title="Trouble Brewing"
       eyebrow="STORYTELLER CONSOLE"
       subtitle="5–15명"
-      leading={<a className="snvScriptHomeLink" href="/clocktower/" aria-label="스크립트 선택">←</a>}
+      leading={<a
+        className="snvScriptHomeLink"
+        href="/clocktower/"
+        aria-label="스크립트 선택"
+        aria-disabled={interactionLocked || undefined}
+        tabIndex={interactionLocked ? -1 : undefined}
+        onClick={blockHomeNavigation}
+      >←</a>}
       headerActionsAriaLabel="현재 페이즈와 되돌리기"
       headerActions={<>
         <button
           type="button"
-          className={`snvGlobalUndo ${canUndo ? "" : "empty"}`}
-          data-visual-state={canUndo ? "available" : "muted"}
-          aria-label={canUndo ? "Undo" : undefined}
-          aria-hidden={canUndo ? undefined : true}
-          tabIndex={canUndo ? 0 : -1}
-          disabled={!canUndo || busy}
+          className={`snvGlobalUndo ${undoAvailable ? "" : "empty"}`}
+          data-visual-state={undoAvailable ? "available" : "muted"}
+          aria-label={undoAvailable ? "Undo" : undefined}
+          aria-hidden={undoAvailable ? undefined : true}
+          tabIndex={undoAvailable ? 0 : -1}
+          disabled={!undoAvailable || busy}
           onClick={(event) => onRequestUndo(event.currentTarget)}
         >
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12.2 9.2 6.5 14.8l5.7 5.7" /><path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" /></svg>
@@ -90,20 +109,20 @@ export function TroubleBrewingLiveFlow({
         <span className={`snvPhaseMark tbPhaseMark ${theme}`} role="img" aria-label={theme === "day" ? "낮" : "밤"}>{theme === "day" ? "☀" : "☾"}</span>
       </>}
       utilities={[
-        { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: !storageReady || busy, onSelect: onReset },
-        { id: "storage", label: "저장 / 불러오기", active: activeStage === "storage", disabled: busy },
-        { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger" },
+        { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: interactionLocked || !storageReady || busy, onSelect: onReset },
+        { id: "storage", label: "저장 / 불러오기", active: activeStage === "storage", disabled: interactionLocked || busy },
+        { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger", disabled: interactionLocked },
       ]}
       stages={[
-        { id: "roles", label: "직업", active: activeStage === "roles" },
-        { id: "seating", label: "마도서", active: activeStage === "seating" },
-        { id: "play", label: "진행", active: activeStage === "play" },
+        { id: "roles", label: "직업", active: activeStage === "roles", disabled: interactionLocked },
+        { id: "seating", label: "마도서", active: activeStage === "seating", disabled: interactionLocked },
+        { id: "play", label: "진행", active: activeStage === "play", disabled: interactionLocked },
       ]}
       onNavigate={navigate}
       warning={loadError || warnings.length ? <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">
         <span aria-hidden="true">!</span><div><strong>게임 경고</strong>{loadError ? <p>{loadError}</p> : null}{warnings.map((warning) => <p key={`${warning.code}:${warning.messageKo}`}>{warning.messageKo}</p>)}</div>
       </aside> : undefined}
-      className="tbProductionShell tbLiveShell"
+      className={`tbProductionShell tbLiveShell${interactionLocked ? " tbInteractionLocked" : ""}`}
     >
       {activeStage === "storage" ? storage : activeStage === "roles" ? (
         <TroubleBrewingSetupPresentation
