@@ -56,6 +56,7 @@ export default defineConfig({
         landing: `${webRoot}index.html`,
         troubleBrewing: `${webRoot}trouble-brewing/index.html`,
         sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
+        invitation260816: `${webRoot}invitation/260816/index.html`,
       },
     },
   },
