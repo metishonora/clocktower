@@ -29,6 +29,9 @@ export type SetupDraft = {
   selectedSeat: number;
   seatLayoutPreset: SeatLayoutPreset;
   seatPositions: SeatPositions;
+  selectedCharacterIds?: string[];
+  rosterConfirmed?: boolean;
+  setupStage?: "roles" | "seating";
 };
 
 export type CreateGamePlayerInput = {
@@ -115,6 +118,9 @@ export function createSetupDraft(playerCount = 5): SetupDraft {
     selectedSeat: 1,
     seatLayoutPreset: "circle",
     seatPositions: seatLayoutPositions(players.length, "circle"),
+    selectedCharacterIds: ["imp"],
+    rosterConfirmed: false,
+    setupStage: "roles",
   };
 }
 
@@ -130,6 +136,9 @@ export function createSetupDraftFromConfirmedPlayers(
     seatLayoutPreset: seatLayout?.preset ?? "circle",
     seatPositions:
       seatLayout?.positions ?? seatLayoutPositions(draftPlayers.length || 5, "circle"),
+    selectedCharacterIds: draftPlayers.flatMap((player) => player.actualCharacter ? [player.actualCharacter] : []),
+    rosterConfirmed: true,
+    setupStage: "seating",
   };
 }
 
@@ -157,6 +166,9 @@ export function syncSetupDraftWithConfirmedPlayers(
       (sameSeats
         ? resizeSeatPositions(draft.seatPositions, nextPlayers.length, draft.seatLayoutPreset)
         : seatLayoutPositions(nextPlayers.length, draft.seatLayoutPreset)),
+    selectedCharacterIds: nextPlayers.flatMap((player) => player.actualCharacter ? [player.actualCharacter] : []),
+    rosterConfirmed: true,
+    setupStage: draft.setupStage ?? "seating",
   };
 }
 
@@ -168,11 +180,24 @@ export function resizeSetupDraft(draft: SetupDraft, playerCount: number): SetupD
   ).map((player, index) => ({ ...player, seat: index + 1 }));
 
   return {
+    ...draft,
     players,
     selectedSeat: Math.min(draft.selectedSeat, nextCount),
     seatLayoutPreset: draft.seatLayoutPreset,
     seatPositions: resizeSeatPositions(draft.seatPositions, nextCount, draft.seatLayoutPreset),
+    selectedCharacterIds: setupDraftSelectedCharacterIds(draft).slice(0, nextCount),
   };
+}
+
+export function setupDraftSelectedCharacterIds(draft: SetupDraft): string[] {
+  const stored = draft.selectedCharacterIds?.filter((id, index, ids) => (
+    Boolean(characterKind(id)) && ids.indexOf(id) === index
+  ));
+  if (stored?.length) return stored.includes("imp") ? stored : [...stored, "imp"];
+
+  const assigned = draft.players.flatMap((player) => player.actualCharacter ? [player.actualCharacter] : []);
+  const unique = assigned.filter((id, index) => assigned.indexOf(id) === index);
+  return unique.includes("imp") ? unique : [...unique, "imp"];
 }
 
 export function selectSeat(draft: SetupDraft, selectedSeat: number): SetupDraft {

@@ -1,15 +1,15 @@
 :root { color-scheme: dark; }
 
-.snvFoundationPrototype { position: relative; isolation: isolate; min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; transition: color .72s ease; }
+:is(.snvFoundationPrototype, .productionApplicationShell) { position: relative; isolation: isolate; min-height: 100vh; padding: clamp(20px, 4vw, 56px); overflow-x: hidden; color: #f8f0fb; background: radial-gradient(circle at 78% 4%, rgba(188, 132, 214, .32), transparent 28%), linear-gradient(145deg, #17101d 0%, #2b1836 48%, #110d16 100%); font-family: Inter, Pretendard, system-ui, sans-serif; transition: color .72s ease; }
 .snvScriptHomeLink { position: absolute; z-index: 20; top: 22px; left: 22px; display: grid; width: 44px; min-height: 44px; place-items: center; border: 1px solid rgba(230, 209, 237, .24); border-radius: 50%; color: inherit; background: rgba(17, 9, 23, .28); font-size: 1.2rem; text-decoration: none; }
-.snvFoundationPrototype::before { position: absolute; z-index: -1; inset: 0; opacity: 0; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); content: ""; pointer-events: none; transition: opacity .72s ease; }
-.snvFoundationPrototype.snvDayMode::before { opacity: 1; }
-.snvDayMode .snvScriptHomeLink { border-color: rgba(88, 55, 97, .2); background: rgba(255, 255, 255, .58); }
-.snvPrototypeHeader { display: flex; max-width: 1180px; margin: 0 auto 24px; align-items: center; justify-content: space-between; }
-.snvEyebrow { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
-.snvPrototypeHeader h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
-.snvPrototypeHeader p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
-.snvPhaseActions { display: flex; align-items: center; gap: 12px; }
+:is(.snvFoundationPrototype, .productionApplicationShell)::before { position: absolute; z-index: -1; inset: 0; opacity: 0; background: radial-gradient(circle at 78% 3%, rgba(255, 239, 179, .82), transparent 27%), radial-gradient(circle at 18% 28%, rgba(255, 255, 255, .72), transparent 34%), linear-gradient(145deg, #ead8ee 0%, #f7eef4 48%, #ddc4e3 100%); content: ""; pointer-events: none; transition: opacity .72s ease; }
+:is(.snvFoundationPrototype, .productionApplicationShell):is(.snvDayMode, [data-theme="day"])::before { opacity: 1; }
+:is(.snvDayMode, [data-theme="day"]) .snvScriptHomeLink { border-color: rgba(88, 55, 97, .2); background: rgba(255, 255, 255, .58); }
+:is(.snvPrototypeHeader, .productionApplicationHeader) { display: flex; max-width: 1180px; margin: 0 auto 24px; align-items: center; justify-content: space-between; }
+:is(.snvEyebrow, .productionApplicationEyebrow) { color: #d6addf; font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
+:is(.snvPrototypeHeader, .productionApplicationHeader) h1 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(2.1rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.04em; }
+:is(.snvPrototypeHeader, .productionApplicationHeader) p { margin: 8px 0 0; color: #beaeca; font-weight: 700; }
+:is(.snvPhaseActions, .productionApplicationHeaderActions) { display: flex; align-items: center; gap: 12px; }
 .snvGlobalUndo { position: relative; display: grid; width: 52px; height: 52px; padding: 0; place-items: center; border: 1px solid rgba(255, 116, 133, .52); border-radius: 50%; color: #ff9caa; background: rgba(102, 21, 43, .52); box-shadow: 0 10px 28px rgba(49, 4, 18, .28); cursor: pointer; }
 .snvGlobalUndo svg { width: 27px; height: 27px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .snvGlobalUndo:hover:not(:disabled), .snvGlobalUndo:focus-visible { color: #fff; background: #b73552; box-shadow: 0 0 0 4px rgba(255, 114, 139, .18), 0 12px 30px rgba(63, 8, 25, .38); outline: none; }
@@ -18,21 +18,21 @@
 .snvIconTooltip { position: absolute; z-index: 8; top: calc(100% + 9px); right: 0; width: max-content; padding: 7px 9px; border: 1px solid rgba(235, 216, 240, .18); border-radius: 8px; color: #f8edf9; background: rgba(25, 13, 31, .94); box-shadow: 0 9px 22px rgba(9, 3, 12, .32); font-size: .7rem; font-weight: 850; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
 .snvGlobalUndo:hover .snvIconTooltip, .snvGlobalUndo:focus-visible .snvIconTooltip { opacity: 1; transform: translateY(0); }
 .snvPhaseMark { display: grid; width: 76px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(230, 199, 239, .32); border-radius: 50%; color: #e7c9ee; background: rgba(17, 9, 23, .4); font: 2.8rem Georgia, serif; transition: color .72s ease, background .72s ease, border-color .72s ease, transform .72s ease; }
-.snvUtilityTabs { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; gap: 8px; }
+:is(.snvUtilityTabs, .productionApplicationUtilities) { display: flex; max-width: 1180px; margin: 0 auto 8px; justify-content: flex-end; gap: 8px; }
 .snvAutosaveStatus { width: min(1180px, 100%); margin: -2px auto 8px; color: #c7b8cf; font-size: .76rem; font-weight: 850; text-align: right; }
 .snvAutosaveStatus.error { color: #ffabb8; }
-.snvDayMode .snvAutosaveStatus { color: #5f5263; }
-.snvDayMode .snvAutosaveStatus.error { color: #983c4d; }
-.snvSurfaceTabs { display: flex; max-width: 1180px; margin: 0 auto 22px; gap: 8px; }
-.snvUtilityTabs button, .snvSurfaceTabs button, .snvChoiceRow button, .snvStepActions button, .snvConfirmRoster, .snvBackToRoster { border: 1px solid rgba(230, 209, 237, .2); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-weight: 800; cursor: pointer; }
-.snvUtilityTabs button { padding: 8px 14px; font-size: .72rem; }
-.snvUtilityTabs .snvNewGameTab { border-color: rgba(240, 101, 122, .34); color: #ffdce2; }
-.snvSurfaceTabs button { min-width: 104px; padding: 11px 20px; }
-.snvUtilityTabs button.active, .snvSurfaceTabs button.active, .snvChoiceRow button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; box-shadow: 0 8px 26px rgba(65, 23, 83, .42); }
-.snvSurfaceTabs button:disabled { color: #766d7b; cursor: not-allowed; }
-.snvSetupSurface, .snvManualSurface { display: grid; max-width: 1180px; margin: 0 auto; gap: 22px; }
-.snvSetupSurface { padding-bottom: 196px; grid-template-columns: minmax(300px, .8fr) minmax(420px, 1.2fr); }
-.snvSetupControls, .snvCatalogPreview, .snvManualSurface { border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); backdrop-filter: blur(18px); }
+:is(.snvDayMode, [data-theme="day"]) .snvAutosaveStatus { color: #5f5263; }
+:is(.snvDayMode, [data-theme="day"]) .snvAutosaveStatus.error { color: #983c4d; }
+:is(.snvSurfaceTabs, .productionApplicationStages) { display: flex; max-width: 1180px; margin: 0 auto 22px; gap: 8px; }
+:is(.snvUtilityTabs, .productionApplicationUtilities) button, :is(.snvSurfaceTabs, .productionApplicationStages) button, .snvChoiceRow button, .snvStepActions button, .snvConfirmRoster, .snvBackToRoster { border: 1px solid rgba(230, 209, 237, .2); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-weight: 800; cursor: pointer; }
+:is(.snvUtilityTabs, .productionApplicationUtilities) button { padding: 8px 14px; font-size: .72rem; }
+:is(.snvUtilityTabs, .productionApplicationUtilities) .snvNewGameTab { border-color: rgba(240, 101, 122, .34); color: #ffdce2; }
+:is(.snvSurfaceTabs, .productionApplicationStages) button { min-width: 104px; padding: 11px 20px; }
+:is(.snvUtilityTabs, .productionApplicationUtilities) button.active, :is(.snvSurfaceTabs, .productionApplicationStages) button.active, .snvChoiceRow button[aria-pressed="true"] { border-color: #d6a9e2; background: #82509a; box-shadow: 0 8px 26px rgba(65, 23, 83, .42); }
+:is(.snvSurfaceTabs, .productionApplicationStages) button:disabled { color: #766d7b; cursor: not-allowed; }
+:is(.snvSetupSurface, .setupPresentation), :is(.snvManualSurface, .playPresentation) { display: grid; max-width: 1180px; margin: 0 auto; gap: 22px; }
+:is(.snvSetupSurface, .setupPresentation) { padding-bottom: 196px; grid-template-columns: minmax(300px, .8fr) minmax(420px, 1.2fr); }
+.snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation) { border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); backdrop-filter: blur(18px); }
 .snvSetupControls { padding: 24px; }
 .snvControlCard + .snvControlCard { margin-top: 24px; }
 .snvControlCard > span { display: block; margin-bottom: 10px; color: #c7b4cf; font-size: .78rem; font-weight: 850; letter-spacing: .08em; }
@@ -52,18 +52,18 @@
 .snvConfirmRoster.prominent { min-height: 60px; font-size: 1rem; }
 .snvConfirmRoster.prominent:not(:disabled) { border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
 .snvConfirmRoster:disabled { border-color: rgba(230, 209, 237, .12); color: #766d7b; background: rgba(255, 255, 255, .035); cursor: not-allowed; }
-.snvCatalogPreview { display: grid; padding: 24px; grid-template-rows: 1fr auto; gap: 22px; }
-.snvCatalogGroups { display: grid; align-content: start; grid-auto-rows: max-content; gap: 18px; }
-.snvCatalogPreview article { display: grid; grid-template-columns: 120px 1fr; gap: 16px; }
-.snvCatalogPreview h2 { margin: 3px 0; color: #cfb4d7; font-size: .78rem; }
-.snvCatalogPreview article div { display: flex; flex-wrap: wrap; gap: 7px; }
-.snvCatalogPreview article button { display: flex; box-sizing: border-box; min-height: 48px; padding: 7px 10px; align-items: center; gap: 7px; border: 1px solid rgba(235, 218, 240, .11); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .035); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
-.snvCatalogPreview article button img { width: 30px; height: 30px; flex: 0 0 auto; object-fit: contain; }
-.snvCatalogPreview article button.selected { border-color: rgba(214, 169, 226, .68); background: rgba(130, 80, 154, .36); }
-.snvCatalogPreview.rosterConfirmed article button.selected { border-color: #efd68d; color: #fff; background: linear-gradient(135deg, #76528b, #a47963); box-shadow: 0 0 0 2px rgba(239, 214, 141, .18); }
-.snvCatalogPreview.rosterConfirmed article button:not(.selected) { opacity: .58; }
-.snvCatalogPreview article button:disabled { color: #776b7d; cursor: not-allowed; }
-.snvCatalogPreview article button.selected:disabled { color: #fff; opacity: 1; }
+:is(.snvCatalogPreview, .roleCatalog) { display: grid; padding: 24px; grid-template-rows: 1fr auto; gap: 22px; }
+:is(.snvCatalogGroups, .roleCatalogGroups) { display: grid; align-content: start; grid-auto-rows: max-content; gap: 18px; }
+:is(.snvCatalogPreview, .roleCatalog) article { display: grid; grid-template-columns: 120px 1fr; gap: 16px; }
+:is(.snvCatalogPreview, .roleCatalog) h2 { margin: 3px 0; color: #cfb4d7; font-size: .78rem; }
+:is(.snvCatalogPreview, .roleCatalog) article div { display: flex; flex-wrap: wrap; gap: 7px; }
+:is(.snvCatalogPreview, .roleCatalog) article button { display: flex; box-sizing: border-box; min-height: 48px; padding: 7px 10px; align-items: center; gap: 7px; border: 1px solid rgba(235, 218, 240, .11); border-radius: 10px; color: inherit; background: rgba(255, 255, 255, .035); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+:is(.snvCatalogPreview, .roleCatalog) article button img { width: 30px; height: 30px; flex: 0 0 auto; object-fit: contain; }
+:is(.snvCatalogPreview, .roleCatalog) article button.selected { border-color: rgba(214, 169, 226, .68); background: rgba(130, 80, 154, .36); }
+:is(.snvCatalogPreview, .roleCatalog).rosterConfirmed article button.selected { border-color: #efd68d; color: #fff; background: linear-gradient(135deg, #76528b, #a47963); box-shadow: 0 0 0 2px rgba(239, 214, 141, .18); }
+:is(.snvCatalogPreview, .roleCatalog).rosterConfirmed article button:not(.selected) { opacity: .58; }
+:is(.snvCatalogPreview, .roleCatalog) article button:disabled { color: #776b7d; cursor: not-allowed; }
+:is(.snvCatalogPreview, .roleCatalog) article button.selected:disabled { color: #fff; opacity: 1; }
 .snvRoleDetail { display: grid; box-sizing: border-box; height: 180px; padding: 18px 20px; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; border: 1px solid rgba(214, 169, 226, .3); border-radius: 20px; background: linear-gradient(135deg, rgba(130, 80, 154, .22), rgba(255, 255, 255, .035)); overflow: hidden; }
 .snvRoleDetail.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(860px, calc(100vw - 32px)); margin: 0 auto; box-shadow: 0 18px 52px rgba(7, 3, 10, .72); backdrop-filter: blur(22px); }
 .snvRoleDetailIcon { width: 68px; height: 68px; object-fit: contain; }
@@ -92,43 +92,43 @@
 .snvDetailsBody h3 { margin: 0 0 8px; color: #d9badf; font-size: .76rem; }
 .snvDetailsBody p { margin: 0; color: #d0c4d4; line-height: 1.65; }
 .snvDetailsBody a { justify-self: start; color: #e2bceb; font-weight: 850; }
-.snvSeatingSurface { max-width: 1180px; margin: 0 auto; padding: 28px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
-.snvSeatingSurface.assignmentStarted { padding-bottom: 110px; }
-.snvSeatingSurface > header { display: flex; align-items: flex-end; justify-content: space-between; }
-.snvSeatingSurface > header span { color: #c9b4d1; font-size: .72rem; font-weight: 850; }
-.snvSeatingSurface > header h2 { margin: 6px 0 0; font: 2.2rem Georgia, serif; }
-.snvSeatingSurface > header > strong { color: #dfbee6; font-size: .8rem; }
+:is(.snvSeatingSurface, .grimoirePresentation) { max-width: 1180px; margin: 0 auto; padding: 28px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 28px; background: rgba(20, 12, 26, .58); box-shadow: 0 22px 70px rgba(8, 3, 12, .28); }
+:is(.snvSeatingSurface, .grimoirePresentation).assignmentStarted { padding-bottom: 110px; }
+:is(.snvSeatingSurface, .grimoirePresentation) > header { display: flex; align-items: flex-end; justify-content: space-between; }
+:is(.snvSeatingSurface, .grimoirePresentation) > header span { color: #c9b4d1; font-size: .72rem; font-weight: 850; }
+:is(.snvSeatingSurface, .grimoirePresentation) > header h2 { margin: 6px 0 0; font: 2.2rem Georgia, serif; }
+:is(.snvSeatingSurface, .grimoirePresentation) > header > strong { color: #dfbee6; font-size: .8rem; }
 .snvSeatingToolbar { display: flex; justify-content: flex-end; gap: 8px; }
 .snvSeatingToolbar button { padding: 9px 13px; border: 1px solid rgba(230, 209, 237, .18); border-radius: 999px; color: inherit; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .snvSeatingToolbar .snvToolbarBack { width: 42px; height: 38px; margin-right: auto; padding: 0; font-size: 1.15rem; }
 .snvSeatingToolbar .snvToolbarBack.destructive { border-color: rgba(240, 101, 122, .72); color: #ffdce2; background: rgba(154, 38, 59, .62); box-shadow: 0 8px 24px rgba(112, 19, 38, .3); }
 .snvCurrentActorLegend { display: flex; min-height: 38px; padding: 0 11px; align-items: center; gap: 7px; color: #eadbc0; font-size: .7rem; font-weight: 850; }
 .snvCurrentActorLegend > span { width: 11px; height: 11px; border: 2px solid #f4d275; border-radius: 50%; background: rgba(244, 210, 117, .16); box-shadow: 0 0 12px rgba(244, 210, 117, .55); }
-.snvSeatingWorkspace { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
-.snvGrimoireDraft { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
-.snvGrimoireDraft > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
-.snvGrimoireDraft > button.unassigned { border-color: rgba(225, 197, 234, .36); background: #3a2543; }
-.snvGrimoireDraft > button.assigned { border-color: rgba(214, 169, 226, .3); background: #2d1a35; }
-.snvGrimoireDraft > button.assigned.alignment-good { border-color: rgba(111, 195, 226, .78); background: linear-gradient(145deg, #203847, #28233b); }
-.snvGrimoireDraft > button.assigned.alignment-evil { border-color: rgba(224, 103, 127, .8); background: linear-gradient(145deg, #4a222e, #2b1b31); }
-.snvGrimoireDraft > button.kind-townsfolk { --kind-accent: #6dc5ea; }
-.snvGrimoireDraft > button.kind-outsider { --kind-accent: #b797ed; }
-.snvGrimoireDraft > button.kind-minion { --kind-accent: #e79862; }
-.snvGrimoireDraft > button.kind-demon { --kind-accent: #ed6679; }
-.snvGrimoireDraft > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
-.snvGrimoireDraft > button.selected, .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
-.snvGrimoireDraft > button.assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
-.snvGrimoireDraft > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
-.snvGrimoireDraft > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
-.snvGrimoireDraft > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.snvGrimoireDraft > button small { display: block; max-width: 100%; overflow: hidden; color: #aa98b2; font-size: .58rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
-.snvGrimoireCenter { position: absolute; left: 50%; top: 50%; display: grid; width: 94px; aspect-ratio: 1; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(214, 169, 226, .22); border-radius: 50%; text-align: center; background: rgba(15, 8, 19, .62); }
-.snvGrimoireCenter strong { font: 1.6rem Georgia, serif; }
-.snvGrimoireCenter span { color: #a996af; font-size: .65rem; font-weight: 850; }
-.snvGrimoireCenter.live { width: 126px; border-radius: 24px; aspect-ratio: auto; padding: 16px 8px; }
-.snvGrimoireCenter.live strong { font: 1.15rem Georgia, serif; }
-.snvGrimoireCenter.live span, .snvGrimoireCenter.live time { margin-top: 4px; color: #a996af; font-size: .78rem; font-weight: 850; }
-.snvGrimoireCenter.live button { margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 999px; color: #fff; background: #82509a; font: inherit; font-size: .68rem; font-weight: 900; cursor: pointer; }
+:is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { display: grid; height: var(--grimoire-height, 600px); margin-top: 18px; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: stretch; transition: height .24s ease; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) { position: relative; width: 100%; height: var(--grimoire-height, 600px); border: 1px solid rgba(214, 169, 226, .28); border-radius: 28px; background: radial-gradient(circle, rgba(130, 80, 154, .24), rgba(12, 7, 17, .82)); transition: height .24s ease; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { position: absolute; left: var(--seat-x); top: var(--seat-y); display: grid; box-sizing: border-box; width: 108px; height: 88px; min-height: 0; padding: 5px; place-content: center; gap: 1px; transform: translate(-50%, -50%); border: 1px solid rgba(230, 209, 237, .26); border-radius: 20px; color: #f8f0fb; background: #2b1932; box-shadow: 0 9px 26px rgba(5, 2, 8, .4); font: inherit; cursor: pointer; overflow: hidden; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.unassigned { border-color: rgba(225, 197, 234, .36); background: #3a2543; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned { border-color: rgba(214, 169, 226, .3); background: #2d1a35; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-good { border-color: rgba(111, 195, 226, .78); background: linear-gradient(145deg, #203847, #28233b); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-evil { border-color: rgba(224, 103, 127, .8); background: linear-gradient(145deg, #4a222e, #2b1b31); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-townsfolk { --kind-accent: #6dc5ea; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-outsider { --kind-accent: #b797ed; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-minion { --kind-accent: #e79862; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.kind-demon { --kind-accent: #ed6679; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned::after { position: absolute; right: 10px; bottom: 0; left: 10px; height: 4px; border-radius: 999px 999px 0 0; background: var(--kind-accent); content: ""; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.selected, :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button[aria-pressed="true"] { border-color: #d6a9e2; background: #573368; box-shadow: 0 0 0 3px rgba(214, 169, 226, .16); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.snvCurrentActorSeat { z-index: 2; border-color: #f4d275; box-shadow: 0 0 0 4px rgba(244, 210, 117, .25), 0 0 34px rgba(244, 210, 117, .55); }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button img { width: 46px; height: 46px; margin: 0 auto; object-fit: contain; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatNumber { position: absolute; top: 7px; left: 8px; color: #a998b0; font-size: .58rem; font-weight: 900; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatPlayerName { display: block; max-width: 100%; overflow: hidden; color: #f6edf8; font-size: .7rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+:is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button small { display: block; max-width: 100%; overflow: hidden; color: #aa98b2; font-size: .58rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter) { position: absolute; left: 50%; top: 50%; display: grid; width: 94px; aspect-ratio: 1; place-content: center; transform: translate(-50%, -50%); border: 1px solid rgba(214, 169, 226, .22); border-radius: 50%; text-align: center; background: rgba(15, 8, 19, .62); }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter) strong { font: 1.6rem Georgia, serif; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter) span { color: #a996af; font-size: .65rem; font-weight: 850; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter).live { width: 126px; border-radius: 24px; aspect-ratio: auto; padding: 16px 8px; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter).live strong { font: 1.15rem Georgia, serif; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter).live span, :is(.snvGrimoireCenter, .rectangularGrimoireCenter).live time { margin-top: 4px; color: #a996af; font-size: .78rem; font-weight: 850; }
+:is(.snvGrimoireCenter, .rectangularGrimoireCenter).live button { margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(214, 169, 226, .42); border-radius: 999px; color: #fff; background: #82509a; font: inherit; font-size: .68rem; font-weight: 900; cursor: pointer; }
 .snvSeatingTray { display: grid; box-sizing: border-box; height: auto; padding: 18px; align-self: start; align-content: start; gap: 14px; border: 1px solid rgba(231, 208, 239, .12); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: visible; }
 .snvSeatingTray > header { display: flex; align-items: center; justify-content: space-between; color: #c9b4d1; font-size: .76rem; }
 .snvSelectedRosterTray { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
@@ -153,10 +153,10 @@
 .snvSeatInspector input::placeholder { color: #817486; }
 .snvSeatInspector button { margin-top: auto; padding: 8px 10px; border: 1px solid rgba(230, 209, 237, .16); border-radius: 9px; color: inherit; background: rgba(255, 255, 255, .04); font: inherit; font-size: .68rem; font-weight: 800; cursor: pointer; }
 .snvSeatInspector button:disabled { color: #756a7a; cursor: not-allowed; }
-.snvSeatingActions { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 12px; }
-.snvSeatingActions .snvConfirmRoster { width: auto; min-width: 150px; }
+:is(.snvSeatingActions, .grimoirePresentationActions) { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 12px; }
+:is(.snvSeatingActions, .grimoirePresentationActions) .snvConfirmRoster { width: auto; min-width: 150px; }
 .snvOperationError { max-width: 760px; margin: 0 auto 18px; color: #ffd6dd; font-size: .8rem; font-weight: 800; text-align: center; }
-.snvDayMode .snvOperationError { color: #7b1836; }
+:is(.snvDayMode, [data-theme="day"]) .snvOperationError { color: #7b1836; }
 .snvConfirmSeating.floatingAction { position: fixed; z-index: 40; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); left: 16px; width: min(380px, calc(100vw - 32px)); min-height: 60px; margin: 0 auto; border-color: #f1c66e; color: #241308; background: linear-gradient(135deg, #f5d488, #dca854); box-shadow: 0 14px 34px rgba(205, 143, 45, .34); }
 .snvConfirmSeating.floatingAction:disabled { border-color: rgba(230, 209, 237, .18); color: #887d8d; background: rgba(36, 24, 42, .94); box-shadow: 0 12px 30px rgba(7, 3, 10, .46); }
 .snvLiveSeatDetails { display: grid; box-sizing: border-box; height: 100%; padding: 22px; align-content: start; gap: 22px; border: 1px solid rgba(231, 208, 239, .14); border-radius: 20px; background: rgba(255, 255, 255, .025); overflow: auto; animation: snvPanelSwapIn .24s ease-out; }
@@ -219,14 +219,14 @@
 .snvWarningNotification button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; border: 0; border-radius: 50%; color: #634b18; background: transparent; font-size: 1.25rem; cursor: pointer; }
 .snvWarningNotification button:hover, .snvWarningNotification button:focus-visible { background: rgba(109, 75, 13, .1); }
 .snvBackToRoster { margin-top: 18px; padding: 10px 15px; }
-.snvManualSurface { grid-template-columns: minmax(0, 1fr) 320px; padding: 28px; }
-.snvFirstNightHeader { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
-.snvFirstNightHeader h2 { grid-column: 2; margin: 0; text-align: center; font: clamp(2.4rem, 5vw, 4.4rem)/.95 Georgia, serif; }
-.snvFirstNightHeader button { grid-column: 1; grid-row: 1; justify-self: start; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+:is(.snvManualSurface, .playPresentation) { grid-template-columns: minmax(0, 1fr) 320px; padding: 28px; }
+:is(.snvFirstNightHeader, .playPresentationHeader) { grid-column: 1 / -1; display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid rgba(231, 208, 239, .12); }
+:is(.snvFirstNightHeader, .playPresentationHeader) h2 { grid-column: 2; margin: 0; text-align: center; font: clamp(2.4rem, 5vw, 4.4rem)/.95 Georgia, serif; }
+:is(.snvFirstNightHeader, .playPresentationHeader) button { grid-column: 1; grid-row: 1; justify-self: start; padding: 8px 12px; border: 1px solid rgba(214, 169, 226, .28); border-radius: 999px; color: #f8f0fb; background: rgba(255, 255, 255, .05); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .snvProgressPhaseHeader { grid-column: 2; display: flex; align-items: baseline; justify-content: center; gap: 12px; }
 .snvProgressPhaseHeader h2 { grid-column: auto; font-size: clamp(2rem, 4vw, 3.4rem); white-space: nowrap; }
 .snvProgressRuntime { display: block; min-width: 5ch; color: #d8c1df; font: 800 1.15rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: .05em; }
-.snvFirstNightPrimary { display: grid; gap: 18px; min-width: 0; }
+:is(.snvFirstNightPrimary, .playPresentationPrimary) { display: grid; gap: 18px; min-width: 0; }
 .snvPhaseContext { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(231, 208, 239, .12); padding-bottom: 18px; }
 .snvPhaseContext span { color: #c9b4d1; font-size: .82rem; font-weight: 850; }
 .snvPhaseContext strong { color: #e4bced; font-size: .82rem; }
@@ -261,9 +261,9 @@
 .snvPhaseOverview strong { font-size: .9rem; }
 .snvPhaseOverviewAction { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 8px; }
 .snvPhaseOverviewAction .snvInformationInfluenceBadge { min-height: 20px; padding: 0 7px; font-size: .56rem; }
-.snvManualSurface.snvDaySurface { color: #2f2033; border-color: rgba(116, 77, 126, .24); background: radial-gradient(circle at 72% 5%, rgba(255, 255, 255, .78), transparent 34%), linear-gradient(145deg, rgba(245, 231, 248, .96), rgba(222, 197, 228, .94)); box-shadow: 0 22px 70px rgba(8, 3, 12, .18); }
-.snvDaySurface .snvFirstNightHeader { border-bottom-color: rgba(88, 51, 97, .16); }
-.snvDaySurface .snvFirstNightHeader button { border-color: rgba(88, 51, 97, .2); color: #442b49; background: rgba(255, 255, 255, .48); }
+:is(.snvManualSurface, .playPresentation).snvDaySurface { color: #2f2033; border-color: rgba(116, 77, 126, .24); background: radial-gradient(circle at 72% 5%, rgba(255, 255, 255, .78), transparent 34%), linear-gradient(145deg, rgba(245, 231, 248, .96), rgba(222, 197, 228, .94)); box-shadow: 0 22px 70px rgba(8, 3, 12, .18); }
+.snvDaySurface :is(.snvFirstNightHeader, .playPresentationHeader) { border-bottom-color: rgba(88, 51, 97, .16); }
+.snvDaySurface :is(.snvFirstNightHeader, .playPresentationHeader) button { border-color: rgba(88, 51, 97, .2); color: #442b49; background: rgba(255, 255, 255, .48); }
 .snvDaySurface .snvCurrentStep.snvDayStep { background: linear-gradient(145deg, rgba(255, 253, 249, .82), rgba(230, 209, 235, .76)); box-shadow: inset 0 0 0 1px rgba(100, 61, 110, .09); }
 .snvDaySurface .snvCurrentStep .snvCurrentStepLabel { color: #694c70; }
 .snvDaySurface .snvCurrentStep p { color: #624f67; }
@@ -271,55 +271,55 @@
 .snvDaySurface .snvPhaseOverview li { border-bottom-color: rgba(88, 51, 97, .12); color: #78667c; }
 .snvDaySurface .snvPhaseOverview li.current { color: #321f36; background: rgba(130, 80, 154, .12); }
 .snvDaySurface .snvPhaseOverview li.complete { color: #5f4a64; }
-.snvFoundationPrototype.snvDayMode { color: #302335; }
-.snvDayMode .snvEyebrow { color: #75547d; }
-.snvDayMode .snvPrototypeHeader p { color: #725f77; }
-.snvDayMode .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
-.snvDayMode .snvGlobalUndo { border-color: rgba(156, 40, 65, .34); color: #a52f49; background: rgba(255, 241, 244, .82); box-shadow: 0 10px 26px rgba(114, 36, 56, .16); }
-.snvDayMode .snvGlobalUndo.empty { box-shadow: none; }
-.snvDayMode .snvGlobalUndo:hover:not(:disabled), .snvDayMode .snvGlobalUndo:focus-visible { color: #fff; background: #a52f49; }
-.snvDayMode .snvIconTooltip { border-color: rgba(76, 41, 83, .12); color: #fff; background: rgba(53, 29, 59, .94); }
-.snvDayMode .snvUtilityTabs button, .snvDayMode .snvSurfaceTabs button { border-color: rgba(92, 57, 101, .2); color: #442e49; background: rgba(255, 255, 255, .42); }
-.snvDayMode .snvUtilityTabs .snvNewGameTab { border-color: rgba(170, 50, 75, .34); color: #8f2f43; background: rgba(255, 248, 249, .7); }
-.snvDayMode .snvUtilityTabs button.active, .snvDayMode .snvSurfaceTabs button.active { border-color: #81508f; color: #fff; background: #82509a; box-shadow: 0 8px 26px rgba(88, 49, 101, .2); }
-.snvDayMode .snvSurfaceTabs button:disabled { color: #9b8b9f; }
-.snvDayMode .snvSetupControls, .snvDayMode .snvCatalogPreview, .snvDayMode .snvSeatingSurface, .snvDayMode .snvStorageSurface article { border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .64); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
-.snvDayMode .snvEventLog { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .7); box-shadow: 0 20px 54px rgba(83, 51, 92, .13); }
-.snvDayMode .snvEventLog > header, .snvDayMode .snvScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
-.snvDayMode .snvEventLog > header > strong { color: #70477b; }
-.snvDayMode .snvScrollableEventList li > span { color: #917c96; }
-.snvDayMode .snvControlCard > span, .snvDayMode .snvCatalogPreview h2, .snvDayMode .snvDistributionCard h2, .snvDayMode .snvDistributionCard span, .snvDayMode .snvSeatingSurface > header span, .snvDayMode .snvSeatingSurface > header > strong, .snvDayMode .snvStorageSurface article > span { color: #6e5973; }
-.snvDayMode .snvCatalogPreview article button, .snvDayMode .snvChoiceRow button { border-color: rgba(92, 57, 101, .14); color: #3f3043; background: rgba(255, 255, 255, .48); }
-.snvDayMode .snvCatalogPreview article button.selected, .snvDayMode .snvChoiceRow button[aria-pressed="true"] { border-color: rgba(130, 80, 154, .55); background: rgba(199, 166, 210, .46); }
-.snvDayMode .snvCatalogPreview.rosterConfirmed article button.selected { border-color: #b79245; color: #3f3043; background: linear-gradient(135deg, #f3e4b7, #dec5d8); box-shadow: 0 0 0 2px rgba(151, 111, 35, .14); }
-.snvDayMode .snvModifierNote { color: #684a70; background: rgba(130, 80, 154, .09); }
-.snvDayMode .snvRoleDetail { border-color: rgba(96, 60, 105, .22); background: linear-gradient(135deg, rgba(255, 252, 249, .94), rgba(226, 204, 233, .94)); }
-.snvDayMode .snvRoleDetail h2 { color: #38273d; }
-.snvDayMode .snvRoleDetail p, .snvDayMode .snvRoleDetailCopy > div { color: #6b5970; }
-.snvDayMode .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
-.snvDayMode .snvRoleDetailIdentity:hover { background: rgba(96, 60, 105, .08); }
-.snvDayMode .snvGrimoireDraft { color: #35283a; border-color: rgba(88, 55, 97, .2); background: linear-gradient(145deg, #fffdfb, #eee5f0); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .62); }
-.snvDayMode .snvGrimoireDraft > button { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
-.snvDayMode .snvGrimoireDraft > button.unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
-.snvDayMode .snvGrimoireDraft > button.assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
-.snvDayMode .snvGrimoireDraft > button.assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
-.snvDayMode .snvGrimoireDraft > button.selected, .snvDayMode .snvGrimoireDraft > button[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
-.snvDayMode .snvGrimoireDraft > button.assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
-.snvDayMode .snvGrimoireDraft > button .snvSeatNumber { color: #75637a; }
-.snvDayMode .snvGrimoireDraft > button .snvSeatPlayerName { color: #302535; }
-.snvDayMode .snvGrimoireDraft > button small { color: #6b5a70; }
-.snvDayMode .snvGrimoireCenter { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
-.snvDayMode .snvGrimoireCenter strong { color: #382b3d; }
-.snvDayMode .snvGrimoireCenter span, .snvDayMode .snvGrimoireCenter time { color: #705e75; }
+:is(.snvFoundationPrototype, .productionApplicationShell):is(.snvDayMode, [data-theme="day"]) { color: #302335; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvEyebrow, .productionApplicationEyebrow) { color: #75547d; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvPrototypeHeader, .productionApplicationHeader) p { color: #725f77; }
+:is(.snvDayMode, [data-theme="day"]) .snvPhaseMark { border-color: rgba(157, 111, 30, .28); color: #a66d18; background: rgba(255, 251, 224, .72); box-shadow: 0 14px 38px rgba(179, 126, 31, .18); transform: rotate(18deg); }
+:is(.snvDayMode, [data-theme="day"]) .snvGlobalUndo { border-color: rgba(156, 40, 65, .34); color: #a52f49; background: rgba(255, 241, 244, .82); box-shadow: 0 10px 26px rgba(114, 36, 56, .16); }
+:is(.snvDayMode, [data-theme="day"]) .snvGlobalUndo.empty { box-shadow: none; }
+:is(.snvDayMode, [data-theme="day"]) .snvGlobalUndo:hover:not(:disabled), :is(.snvDayMode, [data-theme="day"]) .snvGlobalUndo:focus-visible { color: #fff; background: #a52f49; }
+:is(.snvDayMode, [data-theme="day"]) .snvIconTooltip { border-color: rgba(76, 41, 83, .12); color: #fff; background: rgba(53, 29, 59, .94); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvUtilityTabs, .productionApplicationUtilities) button, :is(.snvDayMode, [data-theme="day"]) :is(.snvSurfaceTabs, .productionApplicationStages) button { border-color: rgba(92, 57, 101, .2); color: #442e49; background: rgba(255, 255, 255, .42); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvUtilityTabs, .productionApplicationUtilities) .snvNewGameTab { border-color: rgba(170, 50, 75, .34); color: #8f2f43; background: rgba(255, 248, 249, .7); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvUtilityTabs, .productionApplicationUtilities) button.active, :is(.snvDayMode, [data-theme="day"]) :is(.snvSurfaceTabs, .productionApplicationStages) button.active { border-color: #81508f; color: #fff; background: #82509a; box-shadow: 0 8px 26px rgba(88, 49, 101, .2); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvSurfaceTabs, .productionApplicationStages) button:disabled { color: #9b8b9f; }
+:is(.snvDayMode, [data-theme="day"]) .snvSetupControls, :is(.snvDayMode, [data-theme="day"]) :is(.snvCatalogPreview, .roleCatalog), :is(.snvDayMode, [data-theme="day"]) :is(.snvSeatingSurface, .grimoirePresentation), :is(.snvDayMode, [data-theme="day"]) .snvStorageSurface article { border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .64); box-shadow: 0 22px 70px rgba(83, 51, 92, .14); }
+:is(.snvDayMode, [data-theme="day"]) .snvEventLog { color: #39283e; border-color: rgba(96, 60, 105, .16); background: rgba(255, 252, 249, .7); box-shadow: 0 20px 54px rgba(83, 51, 92, .13); }
+:is(.snvDayMode, [data-theme="day"]) .snvEventLog > header, :is(.snvDayMode, [data-theme="day"]) .snvScrollableEventList li { border-color: rgba(96, 60, 105, .11); }
+:is(.snvDayMode, [data-theme="day"]) .snvEventLog > header > strong { color: #70477b; }
+:is(.snvDayMode, [data-theme="day"]) .snvScrollableEventList li > span { color: #917c96; }
+:is(.snvDayMode, [data-theme="day"]) .snvControlCard > span, :is(.snvDayMode, [data-theme="day"]) :is(.snvCatalogPreview, .roleCatalog) h2, :is(.snvDayMode, [data-theme="day"]) .snvDistributionCard h2, :is(.snvDayMode, [data-theme="day"]) .snvDistributionCard span, :is(.snvDayMode, [data-theme="day"]) :is(.snvSeatingSurface, .grimoirePresentation) > header span, :is(.snvDayMode, [data-theme="day"]) :is(.snvSeatingSurface, .grimoirePresentation) > header > strong, :is(.snvDayMode, [data-theme="day"]) .snvStorageSurface article > span { color: #6e5973; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvCatalogPreview, .roleCatalog) article button, :is(.snvDayMode, [data-theme="day"]) .snvChoiceRow button { border-color: rgba(92, 57, 101, .14); color: #3f3043; background: rgba(255, 255, 255, .48); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvCatalogPreview, .roleCatalog) article button.selected, :is(.snvDayMode, [data-theme="day"]) .snvChoiceRow button[aria-pressed="true"] { border-color: rgba(130, 80, 154, .55); background: rgba(199, 166, 210, .46); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvCatalogPreview, .roleCatalog).rosterConfirmed article button.selected { border-color: #b79245; color: #3f3043; background: linear-gradient(135deg, #f3e4b7, #dec5d8); box-shadow: 0 0 0 2px rgba(151, 111, 35, .14); }
+:is(.snvDayMode, [data-theme="day"]) .snvModifierNote { color: #684a70; background: rgba(130, 80, 154, .09); }
+:is(.snvDayMode, [data-theme="day"]) .snvRoleDetail { border-color: rgba(96, 60, 105, .22); background: linear-gradient(135deg, rgba(255, 252, 249, .94), rgba(226, 204, 233, .94)); }
+:is(.snvDayMode, [data-theme="day"]) .snvRoleDetail h2 { color: #38273d; }
+:is(.snvDayMode, [data-theme="day"]) .snvRoleDetail p, :is(.snvDayMode, [data-theme="day"]) .snvRoleDetailCopy > div { color: #6b5970; }
+:is(.snvDayMode, [data-theme="day"]) .snvRoleDetailButton { border-color: rgba(96, 60, 105, .3); color: #3f2d44; background: rgba(255, 255, 255, .46); }
+:is(.snvDayMode, [data-theme="day"]) .snvRoleDetailIdentity:hover { background: rgba(96, 60, 105, .08); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { color: #35283a; border-color: rgba(88, 55, 97, .2); background: linear-gradient(145deg, #fffdfb, #eee5f0); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .62); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { border-color: rgba(88, 55, 97, .2); color: #35283a; background: #f7f1f8; box-shadow: 0 9px 24px rgba(73, 46, 80, .16); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.unassigned { border-color: rgba(88, 55, 97, .22); background: #f1e8f3; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-good { border-color: rgba(52, 143, 177, .64); background: linear-gradient(145deg, #f8fdff, #e3f1f6); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.alignment-evil { border-color: rgba(190, 67, 94, .68); background: linear-gradient(145deg, #fff9fa, #f5dfe4); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.selected, :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button[aria-pressed="true"] { border-color: #82509a; background: #eadcef; box-shadow: 0 0 0 3px rgba(130, 80, 154, .14), 0 9px 24px rgba(73, 46, 80, .14); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button.assigned.snvCurrentActorSeat { border-color: #c59527; box-shadow: 0 0 0 4px rgba(213, 165, 74, .22), 0 0 30px rgba(197, 149, 39, .32); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatNumber { color: #75637a; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button .snvSeatPlayerName { color: #302535; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button small { color: #6b5a70; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) { border-color: rgba(88, 55, 97, .2); background: #f5edf6; box-shadow: 0 8px 22px rgba(73, 46, 80, .12); }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) strong { color: #382b3d; }
+:is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) span, :is(.snvDayMode, [data-theme="day"]) :is(.snvGrimoireCenter, .rectangularGrimoireCenter) time { color: #705e75; }
 .snvDaySurface .snvProgressRuntime { color: #724581; }
-.snvDayMode .snvLiveSeatDetails { border-color: rgba(88, 55, 97, .18); color: #35283a; background: #f8f1f7; box-shadow: none; }
-.snvDayMode .snvLiveSeatDetails > header span { color: #715f76; }
-.snvDayMode .snvLiveIdentity { background: #e8d9eb; }
-.snvDayMode .snvLiveIdentity span { color: #6b5871; }
-.snvDayMode .snvLiveStatuses span { border-color: rgba(88, 55, 97, .18); color: #59475f; background: rgba(130, 80, 154, .08); }
-.snvDayMode .snvLiveSeatDetails.mobileOpen { color: #35283a; background: #f8f1f7; box-shadow: 0 -18px 58px rgba(73, 46, 80, .2); }
-.snvDayMode .snvDetailsBackdrop { background: rgba(43, 32, 47, .5); }
-.snvDayMode .snvHistoryDialogBackdrop { background: rgba(67, 47, 72, .34); backdrop-filter: blur(5px) saturate(.9); }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveSeatDetails { border-color: rgba(88, 55, 97, .18); color: #35283a; background: #f8f1f7; box-shadow: none; }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveSeatDetails > header span { color: #715f76; }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveIdentity { background: #e8d9eb; }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveIdentity span { color: #6b5871; }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveStatuses span { border-color: rgba(88, 55, 97, .18); color: #59475f; background: rgba(130, 80, 154, .08); }
+:is(.snvDayMode, [data-theme="day"]) .snvLiveSeatDetails.mobileOpen { color: #35283a; background: #f8f1f7; box-shadow: 0 -18px 58px rgba(73, 46, 80, .2); }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsBackdrop { background: rgba(43, 32, 47, .5); }
+:is(.snvDayMode, [data-theme="day"]) .snvHistoryDialogBackdrop { background: rgba(67, 47, 72, .34); backdrop-filter: blur(5px) saturate(.9); }
 .snvHistoryDialog[data-theme="day"] { border-color: rgba(91, 58, 99, .2); color: #3b2840; background: linear-gradient(145deg, #fffdf9, #f3eaf4); box-shadow: 0 28px 80px rgba(67, 43, 74, .28); }
 .snvHistoryDialog[data-theme="day"] p { color: #68556d; }
 .snvHistoryDialog[data-theme="day"] .snvUndoLabel { color: #5d3f65; }
@@ -330,50 +330,50 @@
 .snvUndoHistoryDialog[data-theme="day"] button:not(.snvDestructiveAction) { border-color: rgba(91, 58, 99, .28); background: rgba(255, 255, 255, .68); }
 .snvFailureDialog[data-theme="day"] { border-color: rgba(158, 50, 75, .24); }
 .snvFailureDialog[data-theme="day"] h2 { color: #9e324b; }
-.snvDayMode .snvDetailsDialog, .snvDayMode .snvReturnDialog { border-color: rgba(88, 55, 97, .24); color: #35283a; background: #f8f1f7; box-shadow: 0 26px 80px rgba(73, 46, 80, .28); }
-.snvDayMode .snvDetailsDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
-.snvDayMode .snvDetailsDialog > header span, .snvDayMode .snvDetailsBody > div { color: #705e75; }
-.snvDayMode .snvDetailsDialog > header button { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
-.snvDayMode .snvDetailsBody > div strong { color: #79551d; background: rgba(213, 165, 74, .2); }
-.snvDayMode .snvDetailsBody h3 { color: #644d6b; }
-.snvDayMode .snvDetailsBody p { color: #4f4054; }
-.snvDayMode .snvDetailsBody a { color: #70407d; }
-.snvDayMode .snvReturnDialog h2 { color: #35283a; }
-.snvDayMode .snvReturnDialog p { color: #594b5e; }
-.snvDayMode .snvReturnDialog button { border-color: rgba(88, 55, 97, .2); color: #47364c; background: rgba(255, 255, 255, .58); }
-.snvDayMode .snvReturnDialog button:last-child { border-color: #82509a; color: #fff; background: #82509a; }
-.snvDayMode .snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
-.snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsDialog, :is(.snvDayMode, [data-theme="day"]) .snvReturnDialog { border-color: rgba(88, 55, 97, .24); color: #35283a; background: #f8f1f7; box-shadow: 0 26px 80px rgba(73, 46, 80, .28); }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsDialog > header { border-bottom-color: rgba(88, 55, 97, .12); }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsDialog > header span, :is(.snvDayMode, [data-theme="day"]) .snvDetailsBody > div { color: #705e75; }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsDialog > header button { border-color: rgba(88, 55, 97, .18); color: #47364c; background: rgba(130, 80, 154, .08); }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsBody > div strong { color: #79551d; background: rgba(213, 165, 74, .2); }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsBody h3 { color: #644d6b; }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsBody p { color: #4f4054; }
+:is(.snvDayMode, [data-theme="day"]) .snvDetailsBody a { color: #70407d; }
+:is(.snvDayMode, [data-theme="day"]) .snvReturnDialog h2 { color: #35283a; }
+:is(.snvDayMode, [data-theme="day"]) .snvReturnDialog p { color: #594b5e; }
+:is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button { border-color: rgba(88, 55, 97, .2); color: #47364c; background: rgba(255, 255, 255, .58); }
+:is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button:last-child { border-color: #82509a; color: #fff; background: #82509a; }
+:is(.snvDayMode, [data-theme="day"]) .snvReturnDialog button.snvDestructiveAction { border-color: #b6435a; color: #fff; background: #a8344c; }
+:is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { transition: color .72s ease, background-color .72s ease, border-color .72s ease, box-shadow .72s ease; }
 @media (prefers-reduced-motion: reduce) {
-  .snvFoundationPrototype, .snvFoundationPrototype::before, .snvPrototypeHeader, .snvEyebrow, .snvPrototypeHeader p, .snvPhaseMark, .snvSetupControls, .snvCatalogPreview, .snvManualSurface, .snvSeatingSurface, .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, .snvGrimoireDraft, .snvGrimoireDraft > button { transition-duration: 0s; }
+  :is(.snvFoundationPrototype, .productionApplicationShell), :is(.snvFoundationPrototype, .productionApplicationShell)::before, :is(.snvPrototypeHeader, .productionApplicationHeader), :is(.snvEyebrow, .productionApplicationEyebrow), :is(.snvPrototypeHeader, .productionApplicationHeader) p, .snvPhaseMark, .snvSetupControls, :is(.snvCatalogPreview, .roleCatalog), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation), .snvStorageSurface article, .snvRoleDetail, .snvRoleDetailButton, :is(.snvGrimoireDraft, .rectangularGrimoireBoard), :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { transition-duration: 0s; }
 }
 @keyframes snvTabForwardIn { from { opacity: .45; transform: translateX(100vw); } to { opacity: 1; transform: translateX(0); } }
 @keyframes snvTabBackwardIn { from { opacity: .45; transform: translateX(-100vw); } to { opacity: 1; transform: translateX(0); } }
-.snvFoundationPrototype.tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-.snvFoundationPrototype.tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
-@media (max-width: 1040px) { .snvSeatingWorkspace { height: auto; grid-template-columns: 1fr; } .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); } .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
+:is(.snvFoundationPrototype, .productionApplicationShell).tabForward > .snvTabPanel { animation: snvTabForwardIn .32s cubic-bezier(.22, .8, .28, 1); }
+:is(.snvFoundationPrototype, .productionApplicationShell).tabBackward > .snvTabPanel { animation: snvTabBackwardIn .32s cubic-bezier(.22, .8, .28, 1); }
+@media (max-width: 1040px) { :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { height: auto; grid-template-columns: 1fr; } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { height: var(--mobile-grimoire-height, 760px); } :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); } .snvSeatingTray.contentHeight { order: -1; height: auto; } .snvLiveSeatDetails { order: -1; height: var(--mobile-grimoire-height, 520px); animation-name: snvMobilePanelSwapIn; } }
 @media (max-width: 780px) {
-  .snvScriptHomeLink + .snvPrototypeHeader { padding-top: 52px; }
-  .snvSetupSurface, .snvManualSurface, .snvSeatingWorkspace, .snvStorageSurface { grid-template-columns: 1fr; }
-  .snvSetupSurface { padding-bottom: 104px; }
-  .snvManualSurface, .snvSeatingSurface { padding: 18px; }
-  .snvSurfaceTabs { max-width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
-  .snvSurfaceTabs::-webkit-scrollbar { display: none; }
-  .snvSurfaceTabs button { flex: 0 0 auto; scroll-snap-align: center; }
+  .snvScriptHomeLink + :is(.snvPrototypeHeader, .productionApplicationHeader) { padding-top: 52px; }
+  :is(.snvSetupSurface, .setupPresentation), :is(.snvManualSurface, .playPresentation), :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace), .snvStorageSurface { grid-template-columns: 1fr; }
+  :is(.snvSetupSurface, .setupPresentation) { padding-bottom: 104px; }
+  :is(.snvManualSurface, .playPresentation), :is(.snvSeatingSurface, .grimoirePresentation) { padding: 18px; }
+  :is(.snvSurfaceTabs, .productionApplicationStages) { max-width: 100%; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  :is(.snvSurfaceTabs, .productionApplicationStages)::-webkit-scrollbar { display: none; }
+  :is(.snvSurfaceTabs, .productionApplicationStages) button { flex: 0 0 auto; scroll-snap-align: center; }
   .snvPhaseContext { grid-column: 1; }
-  .snvFirstNightHeader { grid-template-columns: 64px minmax(0, 1fr) 64px; }
-  .snvFirstNightHeader h2 { font-size: 2.2rem; }
-  .snvFirstNightHeader button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
+  :is(.snvFirstNightHeader, .playPresentationHeader) { grid-template-columns: 64px minmax(0, 1fr) 64px; }
+  :is(.snvFirstNightHeader, .playPresentationHeader) h2 { font-size: 2.2rem; }
+  :is(.snvFirstNightHeader, .playPresentationHeader) button { grid-column: 1; padding: 7px 9px; font-size: .62rem; }
   .snvProgressPhaseHeader { gap: 7px; }
   .snvProgressPhaseHeader h2 { font-size: 1.7rem; }
   .snvProgressRuntime { font-size: .92rem; }
-  .snvGrimoireCenter.live.issue116PhaseClock { box-sizing: border-box; width: 104px; padding: 12px 6px; }
-  .snvGrimoireCenter.live.issue116PhaseClock strong { font-size: 1rem; }
-  .snvGrimoireCenter.live.issue116PhaseClock button { margin-top: 8px; padding: 6px 8px; }
+  :is(.snvGrimoireCenter, .rectangularGrimoireCenter).live.issue116PhaseClock { box-sizing: border-box; width: 104px; padding: 12px 6px; }
+  :is(.snvGrimoireCenter, .rectangularGrimoireCenter).live.issue116PhaseClock strong { font-size: 1rem; }
+  :is(.snvGrimoireCenter, .rectangularGrimoireCenter).live.issue116PhaseClock button { margin-top: 8px; padding: 6px 8px; }
   .snvCurrentStepIdentity { margin-top: 28px; gap: 12px; }
   .snvCurrentStepIdentity img { width: 64px; height: 64px; }
   .snvFirstNightSurface .snvPhaseOverview { order: 3; }
-  .snvCatalogPreview article { grid-template-columns: 1fr; }
+  :is(.snvCatalogPreview, .roleCatalog) article { grid-template-columns: 1fr; }
   .snvDistributionValues { grid-template-columns: repeat(2, 1fr); }
   .snvRoleDetail { bottom: 10px; z-index: 4; height: auto; min-height: 72px; padding: 10px; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); box-shadow: 0 14px 34px rgba(7, 3, 10, .72); }
   .snvRoleDetailIdentity { grid-template-columns: 46px minmax(0, 1fr); gap: 7px; padding: 4px; }
@@ -386,10 +386,10 @@
   .snvDetailsBackdrop { align-items: flex-end; padding: 0; }
   .snvHistoryDialogBackdrop { align-items: center; padding: 22px; }
   .snvDetailsDialog, .snvReturnDialog { width: 100%; border-radius: 24px 24px 0 0; }
-  .snvSeatingWorkspace { height: auto; }
-  .snvGrimoireDraft { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
-  .snvGrimoireDraft > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
-  .snvGrimoireDraft > button img { width: 38px; height: 38px; }
+  :is(.snvSeatingWorkspace, .grimoirePresentationWorkspace) { height: auto; }
+  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) { height: var(--mobile-grimoire-height, 760px); border-radius: 24px; }
+  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button { left: var(--mobile-seat-x); top: var(--mobile-seat-y); width: 88px; height: 76px; min-height: 0; padding: 5px; gap: 1px; }
+  :is(.snvGrimoireDraft, .rectangularGrimoireBoard) > button img { width: 38px; height: 38px; }
   .snvSeatingTray.mobileCollapsed, .snvLiveSeatDetails.mobileCollapsed { display: none; }
   .snvSeatingTray.mobileOpen, .snvLiveSeatDetails.mobileOpen { position: fixed; z-index: 190; right: 0; bottom: 0; left: 0; display: grid; width: auto; height: auto; max-height: min(430px, calc(100dvh - 20px)); padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); border-radius: 24px 24px 0 0; background: #201426; box-shadow: 0 -22px 70px rgba(0, 0, 0, .58); overflow: auto; animation: snvSeatPanelIn .22s ease-out; }
   .snvSeatingTray > header { display: none; }
@@ -407,7 +407,7 @@
   .snvSeatInspector button { margin-top: 0; padding: 7px 8px; }
   .snvLiveSeatDetails { order: -1; height: 520px; animation-name: snvMobilePanelSwapIn; }
   .snvPhaseMark { width: 58px; }
-  .snvPhaseActions { gap: 8px; }
+  :is(.snvPhaseActions, .productionApplicationHeaderActions) { gap: 8px; }
   .snvGlobalUndo { width: 44px; height: 44px; }
   .snvGlobalUndo svg { width: 24px; height: 24px; }
   .snvEventLog > header { padding: 17px 16px 14px; }

@@ -10,7 +10,7 @@ import {
   type LivePlayer,
 } from "./sectsAndVioletsLivePhase";
 import type { PlayerTokensByPlayerId } from "./features/grimoire/playerTokenPresentation";
-import "./sectsAndVioletsFoundationPrototype.css";
+import "./shared-ui/styles/productionShell.css";
 import "./issue112FangGuJumpPrototype.css";
 
 type Stage = "attack" | "prompt" | "reveal" | "complete";

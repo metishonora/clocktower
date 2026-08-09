@@ -5,6 +5,7 @@ import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
 import { phaseEvent, proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+import { confirmLivePlayerSelection, selectLivePlayers } from "./livePlayTestHelpers";
 
 const players = {
   undertaker: "player-1",
@@ -24,11 +25,9 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
-    const attackInput = screen.getByLabelText("단계 입력");
-    await user.click(within(attackInput).getByRole("button", { name: /Night Victim/ }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await confirmLivePlayerSelection(user, /Night Victim/);
 
-    expect(await screen.findByText("공개하지 않은 밤 사망이 있습니다.")).toBeTruthy();
+    expect((await screen.findAllByText("공개하지 않은 밤 사망이 있습니다.")).length).toBeGreaterThan(0);
     expect(await screen.findByRole("heading", { name: "장의사: 1번 Undertaker" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 1);
     expect(screen.queryByText("코어 응답 형식이 올바르지 않습니다.")).toBeNull();
@@ -47,7 +46,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
 
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     let reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("2번 Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     expect(within(reveal).getByText("요리사")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
@@ -74,13 +73,12 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
-    await user.click(within(screen.getByLabelText("단계 입력")).getByRole("button", { name: /Night Victim/ }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await confirmLivePlayerSelection(user, /Night Victim/);
 
     expect(await screen.findByRole("heading", { name: "까마귀지기: 3번 Night Victim" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 1);
-    expect(screen.getByText("공개하지 않은 밤 사망이 있습니다.")).toBeTruthy();
-    await user.click(within(screen.getByLabelText("단계 입력")).getByRole("button", { name: /Imp/ }));
+    expect(screen.getAllByText("공개하지 않은 밤 사망이 있습니다.").length).toBeGreaterThan(0);
+    await selectLivePlayers(user, /Imp/);
     await user.click(screen.getByRole("button", { name: "확정" }));
 
     let followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
@@ -88,7 +86,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await expectSavedEventCount(storage, beforeAttackCount + 2);
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     let reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Imp")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("5번 Imp")).toBeTruthy();
     expect(within(reveal).getByText("임프")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
@@ -101,7 +99,7 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await expectSavedEventCount(storage, beforeAttackCount + 3);
     await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
     reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("Executed Chef")).toBeTruthy();
+    expect(within(within(reveal).getByLabelText("확인 대상")).getByText("2번 Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     followup = await screen.findByLabelText("확정된 Reveal 후속 조치");

@@ -1,20 +1,24 @@
 import type { CoreAdapter } from "./core/coreAdapter";
-import type { GameStorageDriver } from "./gameStorage";
+import type { CompatibleWebSessionStorage } from "./webSessionStorage";
+import type { SnvPresentation, SnvSetupDraft } from "./sectsAndVioletsGame";
 import {
   SectsAndVioletsGameSurface,
-  SectsAndVioletsFoundationPrototype,
   grimoireHeights,
   rectangularSeatPositions,
 } from "./sectsAndVioletsGame";
 
-export { grimoireHeights, rectangularSeatPositions, SectsAndVioletsFoundationPrototype };
+export { grimoireHeights, rectangularSeatPositions };
+
+export function SectsAndVioletsFoundationPrototype() {
+  return <SectsAndVioletsGameSurface />;
+}
 
 export function SectsAndVioletsFoundation({
   coreAdapter,
   storageDriver,
 }: {
   coreAdapter?: CoreAdapter;
-  storageDriver?: GameStorageDriver;
+  storageDriver?: CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>;
 } = {}) {
   return (
     <SectsAndVioletsGameSurface

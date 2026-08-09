@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "./sectsAndVioletsFoundationPrototype.css";
+import "./shared-ui/styles/productionShell.css";
 import "./issue120EventLogPrototype.css";
 
 type ActiveTab = "roles" | "grimoire" | "play" | "storage";

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
+import type { CharacterDetail } from "../../characterDetails";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import "./playerTokenPresentation.css";
 
@@ -15,6 +15,7 @@ export type PlayerTokenPresentation = Readonly<{
   description?: string;
   count?: number;
   inactiveReason?: string;
+  origin?: "automatic" | "manual";
 }>;
 
 export type PlayerTokensByPlayerId = Readonly<Record<string, readonly PlayerTokenPresentation[]>>;
@@ -78,14 +79,13 @@ export function PlayerTokenList({
     <section className={`playerPinnedTokenArea ${theme}`} aria-label="부착된 토큰">
       <ul aria-label={`부착된 토큰 ${visibleTokenCount}개`}>
         {tokens.map((token) => {
+          const originLabel = tokenOriginLabel(token.origin);
           const statusLabel = token.inactiveReason
             ? ` · 현재 효력 없음 · ${token.inactiveReason}`
             : "";
-          const title = token.inactiveReason
-            ? [token.inactiveReason, token.description].filter(Boolean).join(" · ")
-            : token.description;
+          const title = [originLabel, token.inactiveReason, token.description].filter(Boolean).join(" · ") || undefined;
           return token.count === undefined ? (
-            <li aria-label={`${token.label} · 출처 ${token.sourceLabel}${statusLabel}`} key={token.instanceId}>
+            <li aria-label={`${originLabel ? `${originLabel} · ` : ""}${token.label} · 출처 ${token.sourceLabel}${statusLabel}`} key={token.instanceId}>
               <div
                 className={`playerPinnedToken ${token.visualKind}${token.inactiveReason ? " playerInactiveToken" : ""}`}
                 title={title}
@@ -105,7 +105,7 @@ export function PlayerTokenList({
           ) : (
             <li
               className="playerCountedTokenItem"
-              aria-label={`${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
+              aria-label={`${originLabel ? `${originLabel} · ` : ""}${token.sourceLabel} ${token.label} 토큰 ${token.count}개`}
               key={token.instanceId}
             >
               {Array.from({ length: Math.max(1, token.count) }, (_, index) => {
@@ -139,6 +139,12 @@ export function PlayerTokenList({
   );
 }
 
+function tokenOriginLabel(origin: PlayerTokenPresentation["origin"]): string | undefined {
+  if (origin === "automatic") return "자동 규칙";
+  if (origin === "manual") return "수동 표시";
+  return undefined;
+}
+
 function InactiveTokenX() {
   return (
     <svg className="playerInactiveTokenX" viewBox="0 0 100 100" aria-hidden="true">
@@ -151,13 +157,19 @@ export function PlayerTokenDetailDialog({
   player,
   tokens,
   theme,
+  characterDetails,
+  identityDetails,
   details,
+  appearance = "snv",
   onClose,
 }: {
   player: PlayerTokenDetailIdentity;
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
+  characterDetails?: CharacterDetail;
+  identityDetails?: ReactNode;
   details?: ReactNode;
+  appearance?: "snv" | "tb";
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -194,7 +206,7 @@ export function PlayerTokenDetailDialog({
 
   return createPortal(
     <div
-      className={`playerTokenDetailBackdrop ${theme}`}
+      className={`playerTokenDetailBackdrop ${theme}${appearance === "tb" ? " tbTheme" : ""}`}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
@@ -206,9 +218,11 @@ export function PlayerTokenDetailDialog({
       >
         <header>
           <CharacterDetailButton
-            details={sectsAndVioletsCharacterDetail(player.characterId)}
+            details={characterDetails}
             className="playerTokenCharacterIdentityButton"
-            theme={theme === "day" ? "snv-day" : "snv-night"}
+            theme={appearance === "tb"
+              ? (theme === "day" ? "tb-day" : "tb-night")
+              : (theme === "day" ? "snv-day" : "snv-night")}
             onOpenChange={setCharacterDetailOpen}
           >
             {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
@@ -226,6 +240,7 @@ export function PlayerTokenDetailDialog({
           <button ref={closeRef} className="playerTokenDetailClose" type="button" aria-label="플레이어 상세 닫기" onClick={onClose}>×</button>
         </header>
         <div className="playerTokenDetailBody">
+          {identityDetails}
           <section className="playerTokenCharacterSummary" aria-label="캐릭터 정보">
             <span>캐릭터 능력</span>
             <p>{player.characterAbility}</p>

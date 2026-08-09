@@ -2,11 +2,11 @@ import { useEffect, useRef } from "react";
 import type { GameEvent } from "../../core/types";
 
 export function LiveUndoDialog({
-  event,
+  events,
   onCancel,
   onConfirm,
 }: {
-  event: Pick<GameEvent, "id" | "summary">;
+  events: Pick<GameEvent, "id" | "summary">[];
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -53,7 +53,16 @@ export function LiveUndoDialog({
         aria-labelledby="live-undo-title"
       >
         <h2 id="live-undo-title">최근 확정 행동을 되돌릴까요?</h2>
-        <strong>되돌릴 항목: {event.summary}</strong>
+        {events.length === 1 ? (
+          <strong>되돌릴 항목: {events[0].summary}</strong>
+        ) : (
+          <div>
+            <strong>함께 되돌릴 항목 {events.length}개</strong>
+            <ol>
+              {events.map((event) => <li key={event.id}>{event.summary}</li>)}
+            </ol>
+          </div>
+        )}
         <footer>
           <button ref={cancelRef} type="button" className="secondaryButton" onClick={onCancel}>
             취소

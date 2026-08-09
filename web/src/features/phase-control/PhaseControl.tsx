@@ -37,10 +37,38 @@ import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
 import { NightResultsAnnouncement } from "./NightResultsAnnouncement";
 
-type ConfirmedReveal = {
+export type ConfirmedReveal = {
   payload: RevealPayload;
   step: PhaseStep;
   confirmedEventCount: number;
+};
+
+export type PhaseControlProps = {
+  pendingReveal?: ConfirmedReveal;
+  currentStep?: PhaseStep;
+  phaseOverview: PhaseOverviewItem[];
+  players: Player[];
+  dayState?: DayState;
+  ruleState?: RuleState;
+  latestProposal?: Proposal;
+  nominationDraft: NominationDraft;
+  onNominationDraftChange: (draft: NominationDraft) => void;
+  phaseInputDraft: PhaseInputDraftController;
+  replayReady: boolean;
+  busy: boolean;
+  preActionRevealPending: boolean;
+  onShowPreActionReveal: () => void;
+  onShowReveal: (payload: RevealPayload) => void;
+  onContinue: () => void;
+  onConfirm: (confirmation: PhaseStepConfirmation) => void;
+  onSkip: () => void;
+  onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
+  choiceTokenSource: () => number;
+  suggestionContextFingerprint: string;
+  warnings: CoreWarning[];
+  gameEnd?: GameEndState | null;
+  onEndGame: (winningTeam: "good" | "evil") => void;
+  onRequestUndoGameEnd: (trigger: HTMLButtonElement) => void;
 };
 
 export function PhaseControl({
@@ -69,33 +97,7 @@ export function PhaseControl({
   gameEnd,
   onEndGame,
   onRequestUndoGameEnd,
-}: {
-  pendingReveal?: ConfirmedReveal;
-  currentStep?: PhaseStep;
-  phaseOverview: PhaseOverviewItem[];
-  players: Player[];
-  dayState?: DayState;
-  ruleState?: RuleState;
-  latestProposal?: Proposal;
-  nominationDraft: NominationDraft;
-  onNominationDraftChange: (draft: NominationDraft) => void;
-  phaseInputDraft: PhaseInputDraftController;
-  replayReady: boolean;
-  busy: boolean;
-  preActionRevealPending: boolean;
-  onShowPreActionReveal: () => void;
-  onShowReveal: (payload: RevealPayload) => void;
-  onContinue: () => void;
-  onConfirm: (confirmation: PhaseStepConfirmation) => void;
-  onSkip: () => void;
-  onSuggest: (request: PhaseInputSuggestionRequest) => Promise<CoreResult<PhaseInputSuggestion>>;
-  choiceTokenSource: () => number;
-  suggestionContextFingerprint: string;
-  warnings: CoreWarning[];
-  gameEnd?: GameEndState | null;
-  onEndGame: (winningTeam: "good" | "evil") => void;
-  onRequestUndoGameEnd: (trigger: HTMLButtonElement) => void;
-}) {
+}: PhaseControlProps) {
   if (pendingReveal) {
     return (
       <ConfirmedRevealFollowup
@@ -299,6 +301,9 @@ function CurrentStepPane({
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
+  useEffect(() => () => {
+    activeSuggestionRequestRef.current = undefined;
+  }, []);
   useEffect(() => {
     activeSuggestionRequestRef.current = undefined;
     setSuggesting(false);

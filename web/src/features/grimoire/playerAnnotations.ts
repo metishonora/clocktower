@@ -1,4 +1,6 @@
-import type { Player, ScriptTokenRef, SystemTokenId } from "../../core/types";
+import type { Player, ScriptTokenRef, SystemTokenId } from "../../core/types.js";
+import { characterLabel } from "../../setupDraft.js";
+import { troubleBrewingReminderInventory } from "../../troubleBrewingCharacterMatrix.js";
 
 export const systemTokens: Array<{ id: SystemTokenId; label: string }> = [
   { id: "drunk", label: "술취함" },
@@ -9,24 +11,13 @@ export const systemTokens: Array<{ id: SystemTokenId; label: string }> = [
   { id: "needsFollowUp", label: "후속 처리" },
 ];
 
-export const scriptTokens: Array<ScriptTokenRef & { character: string; label: string }> = [
-  { characterId: "butler", tokenId: "master", character: "집사", label: "주인" },
-  { characterId: "drunk", tokenId: "isTheDrunk", character: "주정뱅이", label: "주정뱅이임" },
-  { characterId: "fortuneTeller", tokenId: "redHerring", character: "점쟁이", label: "오답 대상" },
-  { characterId: "imp", tokenId: "dead", character: "임프", label: "사망" },
-  { characterId: "investigator", tokenId: "minion", character: "수사관", label: "하수인" },
-  { characterId: "investigator", tokenId: "wrong", character: "수사관", label: "오답" },
-  { characterId: "librarian", tokenId: "outsider", character: "사서", label: "외지인" },
-  { characterId: "librarian", tokenId: "wrong", character: "사서", label: "오답" },
-  { characterId: "monk", tokenId: "safe", character: "수도사", label: "안전" },
-  { characterId: "poisoner", tokenId: "poisoned", character: "독살범", label: "중독" },
-  { characterId: "scarletWoman", tokenId: "isTheDemon", character: "탕녀", label: "악마임" },
-  { characterId: "slayer", tokenId: "noAbility", character: "처단자", label: "능력 없음" },
-  { characterId: "undertaker", tokenId: "diedToday", character: "장의사", label: "오늘 사망" },
-  { characterId: "virgin", tokenId: "noAbility", character: "성결자", label: "능력 없음" },
-  { characterId: "washerwoman", tokenId: "townsfolk", character: "세탁부", label: "주민" },
-  { characterId: "washerwoman", tokenId: "wrong", character: "세탁부", label: "오답" },
-];
+export const scriptTokens: Array<ScriptTokenRef & { character: string; label: string }> =
+  troubleBrewingReminderInventory.map(({ characterId, tokenId, label }) => ({
+    characterId,
+    tokenId,
+    character: characterLabel(characterId),
+    label,
+  }));
 
 export function playerAnnotationBadges(player?: Player) {
   if (!player) return [];

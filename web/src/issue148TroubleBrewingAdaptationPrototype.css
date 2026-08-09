@@ -1,0 +1,781 @@
+.issue148ReviewRoot {
+  min-height: 100vh;
+  background: #071611;
+}
+
+.issue148ReviewControls {
+  position: relative;
+  z-index: 220;
+  display: grid;
+  padding: 10px max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  color: #f4ead4;
+  background: #0a1e17;
+  border-bottom: 1px solid rgba(212, 181, 121, .22);
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.issue148ReviewControls > div {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.issue148ReviewControls strong {
+  margin-right: 4px;
+  color: #d8ba7c;
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
+.issue148ReviewControls button {
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid rgba(221, 203, 165, .22);
+  border-radius: 999px;
+  color: #efe7d6;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.issue148ReviewControls button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: #e2c98f;
+}
+
+.issue148TroubleBrewingShell {
+  --tb-night-deep: #071611;
+  --tb-night: #102a20;
+  --tb-forest: #24513d;
+  --tb-moss: #47765c;
+  --tb-parchment: #e7d5ad;
+  --tb-gold: #d2ad64;
+  --tb-rust: #a64f35;
+  --tb-ink: #19251f;
+  color: #f5eddc;
+  background:
+    radial-gradient(circle at 76% 0%, rgba(114, 147, 101, .34), transparent 30%),
+    radial-gradient(circle at 12% 34%, rgba(150, 76, 46, .18), transparent 25%),
+    linear-gradient(145deg, #071611 0%, #153328 52%, #081913 100%);
+}
+
+.issue148TroubleBrewingShell::before {
+  background:
+    radial-gradient(circle at 76% 0%, rgba(255, 247, 211, .9), transparent 27%),
+    radial-gradient(circle at 16% 28%, rgba(142, 177, 128, .24), transparent 36%),
+    linear-gradient(145deg, #d9d8bd 0%, #eee5c9 52%, #c8d1b7 100%);
+}
+
+.issue148TroubleBrewingShell .productionApplicationEyebrow,
+.issue148TroubleBrewingShell .snvControlCard > span,
+.issue148TroubleBrewingShell .roleCatalog h2,
+.issue148TroubleBrewingShell .snvDistributionCard h2,
+.issue148TroubleBrewingShell .snvDistributionCard span {
+  color: #d1b77e;
+}
+
+.issue148TroubleBrewingShell .productionApplicationHeader p {
+  color: #b8c6b7;
+}
+
+.issue148PhaseMark {
+  display: grid;
+  width: 76px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(226, 201, 143, .34);
+  border-radius: 50%;
+  color: #e4ca8d;
+  background: rgba(4, 18, 12, .42);
+  font: 2.65rem Georgia, serif;
+}
+
+.issue148TroubleBrewingShell .snvGlobalUndo {
+  border-color: rgba(166, 79, 53, .5);
+  color: #dc9c83;
+  background: rgba(92, 40, 28, .48);
+}
+
+.issue148TroubleBrewingShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
+.issue148TroubleBrewingShell button:focus-visible,
+.issue148TroubleBrewingShell input:focus-visible,
+.issue148TroubleBrewingShell select:focus-visible {
+  outline: 3px solid rgba(229, 192, 111, .64);
+  outline-offset: 3px;
+}
+
+.issue148TroubleBrewingShell :is(.productionApplicationUtilities, .productionApplicationStages) button[aria-current="page"],
+.issue148TroubleBrewingShell .snvChoiceRow button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #fff8e8;
+  background: #376b50;
+  box-shadow: 0 8px 26px rgba(4, 25, 16, .42);
+}
+
+.issue148TroubleBrewingShell :is(.snvSetupControls, .roleCatalog, .grimoirePresentation, .playPresentation) {
+  border-color: rgba(221, 198, 151, .16);
+  background: rgba(7, 25, 18, .66);
+  box-shadow: 0 22px 70px rgba(2, 10, 7, .34);
+}
+
+.issue148PlayerCounts {
+  max-height: 126px;
+  overflow: auto;
+}
+
+.issue148PinnedDemon {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 66px;
+  padding: 8px 12px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(178, 77, 55, .48);
+  border-radius: 16px;
+  color: #f6dfd4;
+  background: linear-gradient(135deg, rgba(147, 55, 39, .34), rgba(67, 35, 26, .18));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issue148PinnedDemon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.issue148PinnedDemon strong {
+  font-size: .88rem;
+}
+
+.issue148PinnedDemon[aria-pressed="true"] {
+  border-color: #d2ad64;
+  background: linear-gradient(135deg, rgba(147, 55, 39, .62), rgba(91, 76, 38, .48));
+  box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .12);
+}
+
+.issue148TroubleBrewingShell .snvDistributionCard.emphasized {
+  border-color: rgba(210, 173, 100, .48);
+  background: rgba(64, 111, 81, .22);
+}
+
+.issue148TroubleBrewingShell .snvModifierNote.active {
+  color: #f0d799;
+}
+
+.issue148Catalog button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  background: linear-gradient(135deg, rgba(55, 107, 80, .84), rgba(126, 81, 46, .62));
+  box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .14);
+}
+
+.issue148Catalog button:disabled {
+  cursor: default;
+}
+
+.issue148Catalog.rosterConfirmed button:disabled {
+  opacity: .74;
+}
+
+.issue148RoleDetail {
+  border-color: rgba(210, 173, 100, .38);
+  background: linear-gradient(135deg, rgba(30, 77, 55, .96), rgba(43, 38, 25, .96));
+}
+
+.issue148RoleIdentity {
+  cursor: default;
+}
+
+.issue148RoleIdentity:hover {
+  background: transparent;
+}
+
+.issue148TroubleBrewingShell .issue148RoleDetail h2 {
+  color: #fff8e8;
+}
+
+.issue148TroubleBrewingShell .issue148RoleDetail p {
+  color: #d4d5c8;
+}
+
+.issue148TroubleBrewingShell .snvStageForward.prominent {
+  border-color: #d2ad64;
+  color: #102419;
+  background: linear-gradient(135deg, #efd69e, #c6a055);
+  box-shadow: 0 10px 28px rgba(4, 20, 13, .4);
+}
+
+.issue148TroubleBrewingShell .snvStageForward.prominent:disabled {
+  border-color: rgba(213, 199, 166, .16);
+  color: #8f958c;
+  background: #34453c;
+  box-shadow: none;
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard {
+  border-color: rgba(210, 173, 100, .28);
+  background:
+    radial-gradient(circle at center, rgba(63, 102, 75, .36), rgba(5, 22, 15, .92)),
+    linear-gradient(145deg, #0d281d, #081610);
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(75, 147, 184, .74);
+  background: linear-gradient(145deg, #1d4350, #172e29);
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(197, 88, 67, .8);
+  background: linear-gradient(145deg, #542c25, #2b261e);
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.unassigned {
+  border-color: rgba(213, 190, 143, .3);
+  background: #243a2f;
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.selected {
+  border-color: #e2bd6e;
+  background: #3e694f;
+  box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
+  transform: translateX(-6px);
+}
+
+.issue148ShownCharacterToken {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  right: 2px;
+  display: grid;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  padding: 4px;
+  place-items: center;
+  border: 2px solid #72c6e7;
+  border-radius: 50%;
+  color: #fff8e8;
+  background: #173f4c;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .15);
+  font-size: .78rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.issue148ShownCharacterToken.missing {
+  border-color: #d2ad64;
+  background: #3e3520;
+}
+
+.issue148TroubleBrewingShell .issue148GrimoireBoard > button .issue148ShownCharacterToken img {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  object-fit: contain;
+}
+
+.issue148TroubleBrewingShell .snvSeatingTray,
+.issue148TroubleBrewingShell .snvLiveSeatDetails {
+  border-color: rgba(215, 193, 150, .16);
+  background: rgba(255, 255, 255, .025);
+}
+
+.issue148TroubleBrewingShell .snvSelectedRosterTray button[aria-pressed="true"] {
+  border-color: #e1c278;
+  background: #3f7658;
+}
+
+.issue148TroubleBrewingShell .snvSelectedRosterTray button.assigned {
+  border-color: rgba(210, 173, 100, .34);
+  background: rgba(55, 107, 80, .22);
+}
+
+.issue148TroubleBrewingShell .snvSelectedRosterTray button.selectedForSeat {
+  border-color: #efd68d;
+  background: linear-gradient(135deg, #3b7557, #8b593c);
+}
+
+.issue148SeatInspector .snvSeatInspector {
+  height: auto;
+}
+
+.issue148NameField {
+  display: block;
+}
+
+.issue148NameField input,
+.issue148DrunkEditor select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid rgba(219, 199, 158, .2);
+  border-radius: 9px;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+}
+
+.issue148DrunkEditor {
+  display: grid;
+  padding: 9px 10px;
+  border: 1px solid rgba(171, 137, 213, .34);
+  border-radius: 12px;
+  background: rgba(110, 74, 139, .16);
+}
+
+.issue148DrunkEditor label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #e0d0e8;
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.issue148PlayerDetails {
+  display: grid;
+  padding: 0;
+  align-content: start;
+  gap: 0;
+}
+
+.issue148TroubleBrewingShell .issue148PlayerDetails {
+  background: #201426;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, .58);
+}
+
+.issue148PlayerDetailsHeader {
+  display: grid;
+  padding: 18px;
+  grid-template-columns: 54px minmax(0, 1fr) 32px 38px;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(215, 193, 150, .14);
+}
+
+.issue148PlayerHeaderRole {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.issue148PlayerHeaderRole img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.issue148PlayerHeaderRole strong {
+  color: #d7c18f;
+  font-size: .58rem;
+}
+
+.issue148PlayerDetailsHeader > div:nth-child(2) {
+  min-width: 0;
+}
+
+.issue148PlayerDetailsHeader > div:nth-child(2) > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 850;
+}
+
+.issue148PlayerDetailsHeader h2 {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #fff8e8;
+  font: 1.45rem Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue148PlayerAlignment {
+  justify-self: end;
+}
+
+.issue148PlayerDetailsClose {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(215, 193, 150, .22);
+  border-radius: 50%;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .04);
+  font-family: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.issue148PlayerDetailsBody {
+  display: grid;
+  padding: 18px;
+  gap: 22px;
+}
+
+.issue148DrunkIdentities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.issue148DrunkIdentities article {
+  display: grid;
+  min-width: 0;
+  padding: 10px;
+  gap: 7px;
+  border: 1px solid rgba(182, 151, 237, .28);
+  border-radius: 14px;
+  background: rgba(115, 82, 151, .13);
+}
+
+.issue148DrunkIdentities article.shown {
+  border-color: rgba(90, 177, 213, .34);
+  background: rgba(43, 123, 151, .13);
+}
+
+.issue148DrunkIdentities article > span,
+.issue148CharacterAbility > span {
+  color: #bcae8d;
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.issue148DrunkIdentities article > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.issue148DrunkIdentities img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.issue148DrunkIdentities strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f6edda;
+  font-size: .72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue148CharacterAbility p {
+  margin: 9px 0 0;
+  color: #d4d5c8;
+  font-size: .76rem;
+  line-height: 1.65;
+}
+
+.issue148PlaySurface .issue148PlayPrimary {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.issue148PlayHeader .snvProgressRuntime {
+  color: #cdb477;
+}
+
+.issue148CurrentTask {
+  display: flex;
+  min-height: 370px;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(174, 87, 57, .22), transparent 28%),
+    linear-gradient(145deg, rgba(45, 91, 67, .58), rgba(38, 31, 22, .68));
+}
+
+.issue148ProgressActor {
+  margin-bottom: 4px;
+}
+
+.issue148ProgressPlayer {
+  margin-left: 110px;
+  color: #d3c6a7;
+  font-size: .86rem;
+}
+
+.issue148CurrentTask .issue148ProgressAbility {
+  max-width: 560px;
+  margin-top: 28px;
+  color: #e0d4b9;
+  font-size: .86rem;
+  line-height: 1.55;
+}
+
+.issue148CurrentTask .snvStepActions {
+  margin-top: auto;
+  padding-top: 30px;
+}
+
+.issue148CurrentTask .snvStepActions button {
+  border-color: #7fa58a;
+  color: #fff8e8;
+  background: #3f6f55;
+}
+
+.issue148PhaseOrder {
+  min-width: 0;
+}
+
+.issue148TroubleBrewingShell .issue148PhaseOrder li.current {
+  color: #fff8e8;
+  background: rgba(55, 118, 83, .34);
+}
+
+.issue148TroubleBrewingShell .issue148PhaseOrder li.complete {
+  color: #cfc29e;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] {
+  color: #213128;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .productionApplicationEyebrow,
+.issue148TroubleBrewingShell[data-theme="day"] .productionApplicationHeader p,
+.issue148TroubleBrewingShell[data-theme="day"] .snvControlCard > span,
+.issue148TroubleBrewingShell[data-theme="day"] .roleCatalog h2,
+.issue148TroubleBrewingShell[data-theme="day"] .snvDistributionCard h2,
+.issue148TroubleBrewingShell[data-theme="day"] .snvDistributionCard span {
+  color: #5f6c4e;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseMark {
+  border-color: rgba(87, 105, 67, .28);
+  color: #98642f;
+  background: rgba(255, 253, 239, .58);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] :is(.snvSetupControls, .roleCatalog, .grimoirePresentation, .playPresentation) {
+  border-color: rgba(67, 89, 62, .17);
+  color: #213128;
+  background: rgba(255, 251, 230, .72);
+  box-shadow: 0 22px 70px rgba(49, 61, 40, .14);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148RoleDetail {
+  border-color: rgba(99, 111, 70, .28);
+  color: #26342a;
+  background: linear-gradient(135deg, rgba(250, 243, 212, .97), rgba(201, 216, 183, .97));
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148RoleDetail h2 {
+  color: #203126;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148RoleDetail p {
+  color: #526154;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard {
+  border-color: rgba(81, 103, 69, .22);
+  background: linear-gradient(145deg, #f7f2d8, #d9e2c8);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(52, 129, 163, .62);
+  color: #20343d;
+  background: linear-gradient(145deg, #f8fdff, #dceef0);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(168, 71, 52, .66);
+  color: #472921;
+  background: linear-gradient(145deg, #fff8ef, #efd9ca);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard > button .snvSeatPlayerName {
+  color: #25352b;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148GrimoireBoard > button small {
+  color: #58645b;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetails {
+  border-color: rgba(76, 100, 65, .18);
+  color: #243329;
+  background: #fbf6df;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader {
+  border-bottom-color: rgba(76, 100, 65, .14);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerHeaderRole strong,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader > div:nth-child(2) > span,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article > span,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility > span {
+  color: #627057;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsHeader h2 {
+  color: #203126;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayerDetailsClose {
+  border-color: rgba(76, 100, 65, .24);
+  color: #294034;
+  background: rgba(255, 255, 255, .5);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article {
+  border-color: rgba(121, 89, 154, .22);
+  background: rgba(206, 192, 219, .34);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities article.shown {
+  border-color: rgba(45, 126, 157, .24);
+  background: rgba(182, 216, 222, .4);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148DrunkIdentities strong,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CharacterAbility p {
+  color: #38483d;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask {
+  color: #243329;
+  background: linear-gradient(145deg, rgba(255, 252, 231, .9), rgba(202, 219, 187, .82));
+  box-shadow: inset 0 0 0 1px rgba(66, 88, 58, .09);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PlayHeader button {
+  border-color: rgba(57, 83, 55, .28);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .7);
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseOrder li {
+  border-bottom-color: rgba(57, 83, 55, .14);
+  color: #5d6758;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseOrder li.complete {
+  color: #425849;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148PhaseOrder li.current {
+  color: #fffdf2;
+  background: #58745c;
+}
+
+.issue148TroubleBrewingShell[data-theme="day"] .issue148ProgressPlayer,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask p,
+.issue148TroubleBrewingShell[data-theme="day"] .issue148CurrentTask .snvCurrentStepLabel {
+  color: #5f684e;
+}
+
+@media (max-width: 1040px) {
+  .issue148ReviewControls {
+    grid-template-columns: 1fr;
+  }
+
+  .issue148PlayerCounts {
+    max-height: none;
+  }
+
+  .issue148SeatInspector .snvSeatInspector {
+    height: auto;
+  }
+}
+
+@media (max-width: 780px) {
+  .issue148ReviewControls {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  .issue148ReviewControls > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .issue148ReviewControls strong,
+  .issue148ReviewControls button {
+    flex: 0 0 auto;
+  }
+
+  .issue148TroubleBrewingShell {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .issue148PhaseMark {
+    width: 52px;
+    font-size: 1.8rem;
+  }
+
+  .issue148SeatInspector.snvSeatingTray.mobileOpen {
+    background: #10271d;
+  }
+
+  .issue148TroubleBrewingShell .issue148GrimoireBoard > button.character-drunk > img {
+    transform: translateX(-12px);
+  }
+
+  .issue148DrunkEditor label,
+  .issue148NameField {
+    grid-template-columns: 1fr;
+  }
+
+  .issue148PlaySurface .issue148PlayPrimary {
+    grid-template-columns: 1fr;
+  }
+
+  .issue148ProgressPlayer {
+    margin-left: 88px;
+  }
+
+}
+
+@media (max-width: 390px) {
+  .issue148ReviewControls {
+    gap: 6px;
+  }
+
+  .issue148TroubleBrewingShell .productionApplicationHeader h1 {
+    font-size: 2rem;
+  }
+
+  .issue148TroubleBrewingShell .productionApplicationHeader p {
+    font-size: .74rem;
+  }
+
+  .issue148TroubleBrewingShell .productionApplicationStages button {
+    min-width: 0;
+    flex: 1 1 0;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue148TroubleBrewingShell *,
+  .issue148TroubleBrewingShell *::before,
+  .issue148TroubleBrewingShell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}

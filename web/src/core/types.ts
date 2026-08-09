@@ -4,6 +4,7 @@ export type GameFile = {
   schemaVersion: 3;
   ui?: {
     seatLayout?: SeatLayoutState;
+    /** @deprecated Imported for schema tolerance only; runtime session state is stored separately. */
     sectsAndVioletsSession?: SectsAndVioletsSessionState;
   };
   game: {
@@ -16,8 +17,10 @@ export type GameFile = {
   };
 };
 
+/** @deprecated Runtime S&V presentation state no longer belongs to GameFile. */
 export type SectsAndVioletsTab = "roles" | "seating" | "play" | "storage";
 
+/** @deprecated Runtime S&V presentation state no longer belongs to GameFile. */
 export type SectsAndVioletsPhaseCheckpoint = {
   id: string;
   eventIds?: string[];
@@ -27,6 +30,7 @@ export type SectsAndVioletsPhaseCheckpoint = {
   activeTab: SectsAndVioletsTab;
 };
 
+/** @deprecated Runtime S&V setup state no longer belongs to GameFile. */
 export type SectsAndVioletsSetupSession = {
   playerCount: number;
   demon: "fangGu" | "vigormortis" | "noDashii" | "vortox";
@@ -38,6 +42,7 @@ export type SectsAndVioletsSetupSession = {
   seatingConfirmed: boolean;
 };
 
+/** @deprecated Imported only to discard obsolete metadata. */
 export type SectsAndVioletsSessionState = {
   version: 1;
   activeTab: SectsAndVioletsTab;
@@ -113,6 +118,7 @@ export type InformationResult =
         alive?: boolean;
         ghostVoteUsed?: boolean;
         reminderTokens?: SpyReminderToken[];
+        automaticReminders?: AutomaticReminder[];
       }>;
     };
 
@@ -402,6 +408,8 @@ export type PendingDeathConsequence = {
 export type GameEndCause =
   | "demonAbsent"
   | "twoLivingPlayers"
+  | "saintExecution"
+  | "mayorNoExecution"
   | "klutzChoice"
   | "evilTwinExecution"
   | "vortoxNoExecution";
@@ -472,16 +480,7 @@ export type RuleState = {
   butlerVote?: ButlerVoteState;
   activeImpairments?: ActiveImpairment[];
   abilityGrants?: AbilityGrant[];
-  automaticReminders?: Array<{
-    playerId: string;
-    characterId: string;
-    tokenId: string;
-    label: string;
-    description: string;
-    count?: number;
-    sourceEventId?: string;
-    inactiveReason?: string;
-  }>;
+  automaticReminders?: AutomaticReminder[];
   activeWitchCurse?: ActiveWitchCurse;
   evilTwinRelationships?: EvilTwinRelationship[];
 };
@@ -561,6 +560,17 @@ export type TextRevealPayload = {
 
 export type SpyReminderToken = "poisoned" | "protected";
 
+export type AutomaticReminder = {
+  playerId: string;
+  characterId: string;
+  tokenId: string;
+  label: string;
+  description: string;
+  count?: number;
+  sourceEventId?: string;
+  inactiveReason?: string;
+};
+
 export type SpyGrimoireRevealPayload = {
   kind: "spyGrimoire";
   players: Array<{
@@ -570,7 +580,8 @@ export type SpyGrimoireRevealPayload = {
     characterId: string;
     alive: boolean;
     ghostVoteUsed: boolean;
-    reminderTokens: SpyReminderToken[];
+    reminderTokens?: SpyReminderToken[];
+    automaticReminders?: AutomaticReminder[];
   }>;
 };
 
@@ -974,7 +985,7 @@ export type GameEvent = EventCommon &
         type: "gameEnded";
         payload: {
           winningTeam: "good" | "evil";
-          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
+          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "saintExecution" | "mayorNoExecution" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
         };
       }
   );

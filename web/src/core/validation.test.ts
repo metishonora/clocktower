@@ -149,6 +149,61 @@ test("accepts Philosopher grants and active or inactive automatic reminder token
   throws(() => parseReplayState(missingSource), /코어 응답 형식/);
 });
 
+test("accepts official Trouble Brewing automatic reminder pairs in replay state", () => {
+  parseReplayState({
+    schemaVersion: 3,
+    scriptId: "troubleBrewing",
+    eventCount: 1,
+    phase: "firstNight",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      automaticReminders: [{
+        playerId: "player-1",
+        characterId: "washerwoman",
+        tokenId: "townsfolk",
+        label: "주민",
+        description: "세탁부에게 보여준 주민입니다.",
+        count: 1,
+        sourceEventId: "setup-1",
+      }],
+    },
+    warnings: [],
+  });
+});
+
+test("rejects mismatched, unofficial, and extra-key Trouble Brewing reminders", () => {
+  const baseReminder = {
+    playerId: "player-1",
+    characterId: "washerwoman",
+    tokenId: "townsfolk",
+    label: "주민",
+    description: "세탁부에게 보여준 주민입니다.",
+    count: 1,
+    sourceEventId: "setup-1",
+  };
+  for (const automaticReminder of [
+    { ...baseReminder, characterId: "monk", tokenId: "townsfolk" },
+    { ...baseReminder, tokenId: "notOfficial" },
+    { ...baseReminder, extra: true },
+  ]) {
+    const replay = {
+      schemaVersion: 3,
+      scriptId: "troubleBrewing",
+      eventCount: 1,
+      phase: "firstNight",
+      players: [],
+      currentStep: null,
+      phaseOverview: [],
+      ruleState: { unannouncedNightDeathPlayerIds: [], automaticReminders: [automaticReminder] },
+      warnings: [],
+    };
+    throws(() => parseReplayState(replay), /코어 응답 형식/);
+  }
+});
+
 test("accepts canonical Vortox and impaired numeric constraints", () => {
   const replay = {
     schemaVersion: 3,
@@ -998,6 +1053,14 @@ test("validates win warnings and the canonical game-ended contract", () => {
     createdAt: "2026-07-16T00:00:00.000Z",
   };
   equal(parseGameEvent(event).type, "gameEnded");
+  const rulesOwnedEvent = {
+    ...event,
+    payload: {
+      ...event.payload,
+      source: { kind: "saintExecution", sourceEventId: "saint-death-11" },
+    },
+  };
+  equal(parseGameEvent(rulesOwnedEvent).type, "gameEnded");
 
   const replay = {
     schemaVersion: 3,
@@ -1017,6 +1080,17 @@ test("validates win warnings and the canonical game-ended contract", () => {
     gameEnd: { eventId: "game-ended-12", winningTeam: "evil" },
   };
   deepEqual<unknown>(parseReplayState(replay), replay);
+  const rulesOwnedReplay = {
+    ...structuredClone(replay),
+    gameEnd: {
+      eventId: "game-ended-12",
+      winningTeam: "evil",
+      sourceEventId: "saint-death-11",
+      cause: "saintExecution",
+      reasonKo: "성자 처형 사망",
+    },
+  };
+  deepEqual<unknown>(parseReplayState(rulesOwnedReplay), rulesOwnedReplay);
 
   const malformedEvent = structuredClone(event);
   malformedEvent.payload.winningTeam = "neither";

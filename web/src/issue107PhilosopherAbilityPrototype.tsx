@@ -5,9 +5,10 @@ import {
   type PlayerTokenPresentation,
 } from "./features/grimoire/playerTokenPresentation";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
+import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
-import "./sectsAndVioletsFoundationPrototype.css";
+import "./shared-ui/styles/productionShell.css";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
 import "./issue107PhilosopherAbilityPrototype.css";
 
@@ -298,6 +299,7 @@ function GrimoireSurface({
       </div>
       {detailsPlayer && detailsCharacterId && detailsCharacter ? (
         <PlayerTokenDetailDialog
+          characterDetails={sectsAndVioletsCharacterDetail(detailsCharacterId)}
           player={{
             characterId: detailsCharacterId,
             seat: detailsPlayer.seat,

@@ -8,7 +8,7 @@ test("live Undo dialog starts on the safe action, traps focus, and cancels with 
   const user = userEvent.setup();
   render(
     <LiveUndoDialog
-      event={{ id: "event-chef", summary: "요리사 정보 확정 · 1쌍 공개" }}
+      events={[{ id: "event-chef", summary: "요리사 정보 확정 · 1쌍 공개" }]}
       onCancel={onCancel}
       onConfirm={vi.fn()}
     />,
@@ -24,4 +24,20 @@ test("live Undo dialog starts on the safe action, traps focus, and cancels with 
   expect(document.activeElement).toBe(cancel);
   await user.keyboard("{Escape}");
   expect(onCancel).toHaveBeenCalledTimes(1);
+});
+
+test("live Undo dialog lists every event in a canonical action group", () => {
+  render(
+    <LiveUndoDialog
+      events={[
+        { id: "nomination", summary: "지명" },
+        { id: "vote", summary: "투표" },
+      ]}
+      onCancel={vi.fn()}
+      onConfirm={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("함께 되돌릴 항목 2개")).toBeTruthy();
+  expect(screen.getByText("지명")).toBeTruthy();
+  expect(screen.getByText("투표")).toBeTruthy();
 });

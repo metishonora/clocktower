@@ -30,7 +30,7 @@ use crate::{
         StepType,
     },
     phase::validate_required_input,
-    replay::{pending_demon_succession, replay_phase_state, replay_players, replay_rule_state},
+    replay::{replay_rule_state, trouble_brewing_replay_context, TbReplayContext},
     setup::{
         normalized_setup_player_for_script, player_from_setup_input_for_script,
         validate_setup_inputs_for_script, validate_setup_warnings_for_script,
@@ -39,18 +39,13 @@ use crate::{
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
-    crate::characters::rules(game_file.script_id).validate_command(&command)?;
+    let rules = crate::characters::rules(game_file.script_id);
+    rules.validate_command(&command)?;
     if command
         .expected_event_count()
         .is_some_and(|expected| expected != game_file.game.events.len())
     {
         return Err(ErrorKind::StaleCommand.into_error());
-    }
-    if game_file.script_id == crate::contracts::ScriptId::SectsAndViolets {
-        return match command {
-            Command::CreateGame { payload } => propose_create_game(&game_file, payload),
-            command => crate::characters::propose_snv_phase_command(&game_file, command),
-        };
     }
     if game_file
         .game
@@ -60,6 +55,14 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
     {
         return Err(ErrorKind::GameAlreadyEnded.into_error());
     }
+    rules.propose(&game_file, command)
+}
+
+pub(crate) fn propose_trouble_brewing(
+    game_file: &GameFile,
+    command: Command,
+) -> Result<Proposal, CoreError> {
+    let context = trouble_brewing_replay_context(&game_file.game.events)?;
     match command {
         Command::Smoke => Ok(Proposal {
             event: GameEvent {
@@ -78,13 +81,15 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
             preview: smoke_preview(),
             reveal_payload: None,
         }),
-        Command::CreateGame { payload } => propose_create_game(&game_file, payload),
-        Command::ConfirmStep { payload } => propose_phase_step(&game_file, payload, false),
-        Command::SkipStep { payload } => propose_phase_step(&game_file, payload, true),
+        Command::CreateGame { .. } => unreachable!("createGame is dispatched by ScriptRules"),
+        Command::ConfirmStep { payload } => propose_phase_step(game_file, &context, payload, false),
+        Command::SkipStep { payload } => propose_phase_step(game_file, &context, payload, true),
         Command::ResolveManualStep { .. } => {
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
-        Command::UseSlayerAbility { payload } => propose_slayer_ability(&game_file, payload),
+        Command::UseSlayerAbility { payload } => {
+            propose_slayer_ability(game_file, &context, payload)
+        }
         Command::RecordDayAction { .. } => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
         Command::RecordMadnessCheck { .. } | Command::ExecuteMadness { .. } => {
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
@@ -97,23 +102,24 @@ pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal,
         | Command::ResolveKlutzConsequence { .. } => {
             Err(ErrorKind::CommandNotSupportedByScript.into_error())
         }
-        Command::EndGame { payload } => propose_end_game(&game_file, payload),
+        Command::EndGame { payload } => propose_end_game(game_file, &context, payload),
         Command::UpdatePlayerAnnotations { payload } => {
-            propose_player_annotations(&game_file, payload)
+            propose_player_annotations(game_file, &context, payload)
         }
     }
 }
 
 fn propose_player_annotations(
     game_file: &GameFile,
+    context: &TbReplayContext,
     payload: UpdatePlayerAnnotationsCommandPayload,
 ) -> Result<Proposal, CoreError> {
     if payload.expected_event_count != game_file.game.events.len() {
         return Err(ErrorKind::StaleCommand.into_error());
     }
-    let players = replay_players(&game_file.game.events)?;
+    let players = &context.players;
     crate::annotations::validate_player_annotations(
-        &players,
+        players,
         &payload.player_id,
         &payload.system_token_ids,
         &payload.script_tokens,
@@ -129,7 +135,7 @@ fn propose_player_annotations(
     {
         return Err(ErrorKind::InvalidPlayerAnnotations.into_error());
     }
-    let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
+    let phase = context.phase_state.phase;
     let token_count = payload.system_token_ids.len() + payload.script_tokens.len();
     let summary = format!(
         "플레이어 표시 수정: {}번 {} · 수동 토큰 {token_count}개 · Notes {}",
@@ -169,6 +175,7 @@ fn propose_player_annotations(
 
 fn propose_end_game(
     game_file: &GameFile,
+    context: &TbReplayContext,
     payload: EndGameCommandPayload,
 ) -> Result<Proposal, CoreError> {
     if payload.expected_event_count != game_file.game.events.len() {
@@ -177,19 +184,23 @@ fn propose_end_game(
     if game_file.game.events.is_empty() {
         return Err(ErrorKind::NoCurrentStep.into_error());
     }
-    let players = replay_players(&game_file.game.events)?;
-    let phase = replay_phase_state(&players, &game_file.game.events)?.phase;
+    let phase = context.phase_state.phase;
     let team_label = match payload.winning_team {
         Alignment::Good => "선한 팀",
         Alignment::Evil => "악한 팀",
     };
+    let source = context
+        .rules_owned_game_ends
+        .iter()
+        .find(|candidate| candidate.winning_team == payload.winning_team)
+        .map(|candidate| candidate.source.clone());
     Ok(Proposal {
         event: GameEvent {
             id: format!("game-ended-{}", game_file.game.events.len() + 1),
             kind: GameEventKind::GameEnded {
                 payload: GameEndedPayload {
                     winning_team: payload.winning_team,
-                    source: None,
+                    source,
                 },
             },
             phase,
@@ -209,14 +220,14 @@ fn propose_end_game(
 
 fn propose_slayer_ability(
     game_file: &GameFile,
+    context: &TbReplayContext,
     payload: UseSlayerAbilityCommandPayload,
 ) -> Result<Proposal, CoreError> {
     if payload.expected_event_count != game_file.game.events.len() {
         return Err(ErrorKind::StaleCommand.into_error());
     }
-    let players = replay_players(&game_file.game.events)?;
-    let phase = replay_phase_state(&players, &game_file.game.events)?;
-    let Some(step) = phase.current_step else {
+    let players = &context.players;
+    let Some(step) = context.phase_state.current_step.as_ref() else {
         return Err(ErrorKind::SlayerWrongPhase.into_error());
     };
     if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
@@ -244,7 +255,7 @@ fn propose_slayer_ability(
         .ok_or_else(|| ErrorKind::InvalidSlayerTarget.into_error())?;
     let registration_context =
         crate::characters::slayer_registration(target, &payload.target_registration)?;
-    let rule_state = replay_rule_state(&game_file.game.events, &players);
+    let rule_state = &context.rule_state;
     let impairment_context = rule_state
         .active_poison
         .as_ref()
@@ -369,12 +380,12 @@ pub(crate) fn propose_create_game(
 
 pub(crate) fn propose_phase_step(
     game_file: &GameFile,
+    context: &TbReplayContext,
     payload: PhaseStepCommandPayload,
     skip: bool,
 ) -> Result<Proposal, CoreError> {
-    let players = replay_players(&game_file.game.events)?;
-    let phase_state = replay_phase_state(&players, &game_file.game.events)?;
-    let Some(current_step) = phase_state.current_step else {
+    let players = &context.players;
+    let Some(current_step) = context.phase_state.current_step.as_ref() else {
         return Err(ErrorKind::NoCurrentStep.into_error());
     };
 
@@ -385,7 +396,7 @@ pub(crate) fn propose_phase_step(
         return Err(ErrorKind::StepCannotBeSkipped.into_error());
     }
     if skip && current_step.step_type == StepType::Nomination {
-        return propose_nomination_closed(game_file, &current_step);
+        return propose_nomination_closed(game_file, current_step);
     }
     if skip && (payload.delivered_result.is_some() || !payload.registration_judgments.is_empty()) {
         return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
@@ -403,26 +414,32 @@ pub(crate) fn propose_phase_step(
         return Err(ErrorKind::InvalidButlerMaster.into_error());
     }
     if !skip && current_step.required_input.kind != RequiredInputKind::SetupInfo {
-        validate_required_input(&current_step.required_input, &payload.input, &players)?;
+        validate_required_input(&current_step.required_input, &payload.input, players)?;
     }
     if !skip && current_step.required_input.kind == RequiredInputKind::Nomination {
         return propose_nomination_started(
             game_file,
-            &current_step,
-            &players,
+            current_step,
+            players,
             payload.input,
             payload.registration_judgments,
             crate::contracts::WitchNominationResolution::NotApplicable,
         );
     }
     if !skip && current_step.required_input.kind == RequiredInputKind::NominationVote {
-        return propose_nomination_vote(game_file, &current_step, &players, payload.input);
+        return propose_nomination_vote(game_file, current_step, players, payload.input);
     }
     if !skip && current_step.step_type == StepType::DemonSuccession {
-        return propose_demon_succession(game_file, &current_step, &players, payload.input);
+        return propose_demon_succession(
+            game_file,
+            current_step,
+            players,
+            context.pending_demon_succession.as_ref(),
+            payload.input,
+        );
     }
     if !skip && current_step.step_type == StepType::Execution {
-        return propose_execution_decision(game_file, &current_step, &players, payload.input);
+        return propose_execution_decision(game_file, current_step, players, payload.input);
     }
     if !skip
         && matches!(
@@ -430,7 +447,7 @@ pub(crate) fn propose_phase_step(
             StepType::ExecutionDeath | StepType::SlayerDeath
         )
     {
-        return propose_execution_death(game_file, &current_step, &players, payload.input);
+        return propose_execution_death(game_file, current_step, players, payload.input);
     }
     if !skip
         && current_step.step_type == StepType::Announcement
@@ -461,10 +478,10 @@ pub(crate) fn propose_phase_step(
             })
             .filter(|id| !announced.contains(id))
             .collect::<Vec<_>>();
-        let summary = night_deaths_summary(&players, &player_ids);
+        let summary = night_deaths_summary(players, &player_ids);
         return Ok(simple_typed_proposal(
             game_file,
-            &current_step,
+            current_step,
             GameEventKind::NightDeathsAnnounced {
                 payload: NightDeathsAnnouncedPayload {
                     step_id: current_step.id.clone(),
@@ -489,13 +506,13 @@ pub(crate) fn propose_phase_step(
             current_step
                 .player_id
                 .as_deref()
-                .map(|actor| player_ability_label(&players, actor, "fortuneTeller"))
+                .map(|actor| player_ability_label(players, actor, "fortuneTeller"))
                 .unwrap_or_else(|| "점쟁이".to_string()),
-            player_verbose_label(&players, &player_id)
+            player_verbose_label(players, &player_id)
         );
         return Ok(simple_typed_proposal(
             game_file,
-            &current_step,
+            current_step,
             GameEventKind::RedHerringAssigned {
                 payload: RedHerringAssignedPayload {
                     step_id: current_step.id.clone(),
@@ -527,7 +544,7 @@ pub(crate) fn propose_phase_step(
             .iter()
             .find(|p| p.id == actor)
             .map(|p| p.actual_character.as_str());
-        let impaired = actor_is_impaired(&current_step, &players, &game_file.game.events);
+        let impaired = actor_is_impaired(current_step, players, &game_file.game.events);
         let resolution = match current_step.character.as_deref() {
             Some("poisoner") => {
                 let applied = actual == Some("poisoner") && !impaired;
@@ -555,11 +572,11 @@ pub(crate) fn propose_phase_step(
             }
             Some("imp") => {
                 let active_poison =
-                    crate::night::active_night_poison(&game_file.game.events, &players);
+                    crate::night::active_night_poison(&game_file.game.events, players);
                 let active_protection =
-                    crate::night::active_night_protection(&game_file.game.events, &players);
+                    crate::night::active_night_protection(&game_file.game.events, players);
                 crate::characters::resolve_imp_attack(
-                    &players,
+                    players,
                     &actor,
                     &target,
                     payload
@@ -574,8 +591,8 @@ pub(crate) fn propose_phase_step(
         };
         return Ok(night_action_proposal(
             game_file,
-            &current_step,
-            &players,
+            current_step,
+            players,
             actor,
             resolution,
         ));
@@ -586,8 +603,8 @@ pub(crate) fn propose_phase_step(
         None
     } else {
         confirmed_information(
-            &current_step,
-            &players,
+            current_step,
+            players,
             &game_file.game.events,
             &payload.input,
             payload.delivered_result,
@@ -596,8 +613,8 @@ pub(crate) fn propose_phase_step(
     };
     let event_input = if skip { None } else { Some(payload.input) };
     let summary = phase_step_event_summary(
-        &current_step,
-        &players,
+        current_step,
+        players,
         event_input.as_ref().unwrap_or(&None),
         information.as_ref(),
         skip,
@@ -630,11 +647,10 @@ pub(crate) fn propose_phase_step(
             .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string()),
     };
     let reveal_payload = match &event.kind {
-        GameEventKind::PhaseStepConfirmed { payload } => {
-            payload.information.as_ref().and_then(|information| {
-                phase_step_reveal_payload(&current_step, information, &players)
-            })
-        }
+        GameEventKind::PhaseStepConfirmed { payload } => payload
+            .information
+            .as_ref()
+            .and_then(|information| phase_step_reveal_payload(current_step, information, players)),
         _ => None,
     };
 
@@ -1027,10 +1043,10 @@ fn propose_demon_succession(
     game_file: &GameFile,
     current_step: &PhaseStep,
     players: &[Player],
+    pending: Option<&crate::replay::PendingDemonSuccession>,
     input: StepInput,
 ) -> Result<Proposal, CoreError> {
-    let pending = pending_demon_succession(&game_file.game.events)?
-        .ok_or_else(|| ErrorKind::StaleStep.into_error())?;
+    let pending = pending.ok_or_else(|| ErrorKind::StaleStep.into_error())?;
     if current_step.id != format!("{}:demonSuccession", pending.trigger_event_id) {
         return Err(ErrorKind::StaleStep.into_error());
     }
@@ -1060,9 +1076,9 @@ fn propose_demon_succession(
             id: format!("demon-succession-{event_count}"),
             kind: GameEventKind::DemonSuccessionConfirmed {
                 payload: DemonSuccessionConfirmedPayload {
-                    trigger_imp_death_event_id: pending.trigger_event_id,
+                    trigger_imp_death_event_id: pending.trigger_event_id.clone(),
                     death_cause: pending.death_cause,
-                    previous_imp_player_id: pending.previous_imp_player_id,
+                    previous_imp_player_id: pending.previous_imp_player_id.clone(),
                     successor_player_id: successor.id.clone(),
                     successor_previous_actual_character: successor.actual_character.clone(),
                     new_character: "imp".into(),

@@ -13,7 +13,7 @@ export function CharacterDetailButton({
   details?: CharacterDetail;
   children: ReactNode;
   className?: string;
-  theme?: "light" | "snv-day" | "snv-night";
+  theme?: "light" | "snv-day" | "snv-night" | "tb-day" | "tb-night";
   onOpenChange?: (open: boolean) => void;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);

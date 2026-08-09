@@ -1515,8 +1515,8 @@ fn insert_acquired_ability_steps(
     prefix: &str,
     players: &[Player],
     events: &[GameEvent],
+    ability_state: &SnvAbilityState,
 ) {
-    let ability_state = SnvAbilityState::build(players, events);
     let acquisitions = players
         .iter()
         .filter_map(|player| {
@@ -1533,7 +1533,7 @@ fn insert_acquired_ability_steps(
         if character == "witch" && players.iter().filter(|player| player.alive).count() == 3 {
             continue;
         }
-        if !acquired_ability_is_available(player, character, prefix, &ability_state, events) {
+        if !acquired_ability_is_available(player, character, prefix, ability_state, events) {
             continue;
         }
         let metadata = SnvCharacterId::parse(character)
@@ -1667,7 +1667,7 @@ fn insert_acquired_ability_steps(
                 &actor,
                 &grant.character_id,
                 prefix,
-                &ability_state,
+                ability_state,
                 events,
             )
             || metadata.once_per_ability_instance
@@ -1741,8 +1741,8 @@ fn insert_evil_twin_repair_steps(
     prefix: &str,
     players: &[Player],
     events: &[GameEvent],
+    ability_state: &SnvAbilityState,
 ) {
-    let ability_state = SnvAbilityState::build(players, events);
     let mut latest =
         HashMap::<AbilityInstanceId, (&GameEvent, &EvilTwinPairAssignedPayload)>::new();
     for event in events {
@@ -1940,11 +1940,15 @@ fn pit_hag_arbitrary_deaths_step(
     })
 }
 
-fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> Vec<PhaseStep> {
+fn later_night_steps(
+    players: &[Player],
+    events: &[GameEvent],
+    cycle: usize,
+    ability_state: &SnvAbilityState,
+) -> Vec<PhaseStep> {
     #[cfg(test)]
     PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let prefix = crate::phase::phase_prefix("night", cycle);
-    let ability_state = SnvAbilityState::build(players, events);
     let mut steps = Vec::new();
     let mut scheduled_characters = SnvCharacterId::ALL
         .iter()
@@ -2056,8 +2060,22 @@ fn later_night_steps(players: &[Player], events: &[GameEvent], cycle: usize) -> 
         "toDay",
         crate::model::RequiredInputKind::Day,
     ));
-    insert_acquired_ability_steps(&mut steps, Phase::Night, &prefix, players, events);
-    insert_evil_twin_repair_steps(&mut steps, Phase::Night, &prefix, players, events);
+    insert_acquired_ability_steps(
+        &mut steps,
+        Phase::Night,
+        &prefix,
+        players,
+        events,
+        ability_state,
+    );
+    insert_evil_twin_repair_steps(
+        &mut steps,
+        Phase::Night,
+        &prefix,
+        players,
+        events,
+        ability_state,
+    );
     if let Some(step) = pit_hag_arbitrary_deaths_step(players, events, &prefix) {
         let insert_at = steps
             .iter()
@@ -2076,6 +2094,7 @@ fn current_phase_steps(
     events: &[GameEvent],
     max_cycles: usize,
     statuses: &HashMap<String, PhaseStepStatus>,
+    ability_state: &SnvAbilityState,
 ) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
     let current_in = |phase, steps: Vec<PhaseStep>| {
         if steps
@@ -2091,7 +2110,10 @@ fn current_phase_steps(
         Some((phase, steps, current))
     };
 
-    if let Some(current) = current_in(Phase::FirstNight, first_night_steps(players, events)) {
+    if let Some(current) = current_in(
+        Phase::FirstNight,
+        first_night_steps(players, events, ability_state),
+    ) {
         return Some(current);
     }
     for cycle in 1..=max_cycles.max(1) {
@@ -2110,14 +2132,21 @@ fn current_phase_steps(
         ) {
             return Some(current);
         }
-        if let Some(current) = current_in(Phase::Night, later_night_steps(players, events, cycle)) {
+        if let Some(current) = current_in(
+            Phase::Night,
+            later_night_steps(players, events, cycle, ability_state),
+        ) {
             return Some(current);
         }
     }
     None
 }
 
-fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep> {
+fn first_night_steps(
+    players: &[Player],
+    events: &[GameEvent],
+    ability_state: &SnvAbilityState,
+) -> Vec<PhaseStep> {
     #[cfg(test)]
     PHASE_STEP_BUILD_COUNT.with(|count| count.set(count.get() + 1));
     let mut steps = Vec::new();
@@ -2207,7 +2236,14 @@ fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec<PhaseStep>
         "toDay",
         crate::model::RequiredInputKind::Day,
     ));
-    insert_acquired_ability_steps(&mut steps, Phase::FirstNight, "firstNight", players, events);
+    insert_acquired_ability_steps(
+        &mut steps,
+        Phase::FirstNight,
+        "firstNight",
+        players,
+        events,
+        ability_state,
+    );
     steps
 }
 
@@ -3443,8 +3479,12 @@ fn apply_player_event(
                             .as_ref()
                             .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
                         let candidates = nearest_townsfolk_neighbors(players, &target.id);
-                        if effect.minion_player_id != target.id
-                            || effect.source_ability_instance_id != actor.ability_instance.id
+                        let expected_effect = resolved_vigormortis_effect(
+                            actor,
+                            target,
+                            effect.poison_target_player_id.clone(),
+                        );
+                        if effect != &expected_effect
                             || (candidates.is_empty() && effect.poison_target_player_id.is_some())
                             || (!candidates.is_empty()
                                 && !effect
@@ -3489,22 +3529,13 @@ fn apply_player_event(
                     source_ability_instance_id,
                     identity_transition,
                 } => {
-                    let expected_transition = PlayerIdentityTransition {
-                        player_id: target.id.clone(),
-                        before: identity_state(target),
-                        after: IdentityState {
-                            actual_character: "fangGu".into(),
-                            shown_character: "fangGu".into(),
-                            alignment: Alignment::Evil,
-                        },
-                    };
-                    let expected_death = NightDeath {
-                        player_id: actor.id.clone(),
-                        cause: NightDeathCause::DemonAttack {
-                            actor_player_id: actor.id.clone(),
-                            actor_character_id: "fangGu".into(),
-                            target_player_id: target.id.clone(),
-                        },
+                    let DemonAttackOutcome::FangGuJump {
+                        death: expected_death,
+                        source_ability_instance_id: expected_source_ability_instance_id,
+                        identity_transition: expected_transition,
+                    } = fang_gu_jump_outcome(actor, target)
+                    else {
+                        unreachable!();
                     };
                     let jump_already_used = events[..event_index].iter().any(|event| {
                         matches!(
@@ -3528,7 +3559,7 @@ fn apply_player_event(
                         || character_kind(&target.actual_character) != Some(CharacterKind::Outsider)
                         || pit_hag_demon_creation(&events[..event_index], phase_prefix).is_some()
                         || jump_already_used
-                        || source_ability_instance_id != &actor.ability_instance.id
+                        || source_ability_instance_id != &expected_source_ability_instance_id
                         || death != &expected_death
                         || identity_transition != &expected_transition
                     {
@@ -3722,77 +3753,25 @@ fn apply_player_event(
             ) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            let actor_before = identity_state(actor);
-            let actor_alignment = actor.alignment;
             let Some(target) = players
                 .iter()
                 .find(|player| player.id == payload.target_player_id && player.alive)
             else {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
-            let target_before = identity_state(target);
-            let target_alignment = target.alignment;
             let actor_impaired = SnvAbilityState::build(players, &events[..event_index])
                 .is_impaired(&payload.actor_player_id);
-            let target_is_demon =
-                character_kind(&target.actual_character) == Some(CharacterKind::Demon);
-
-            if !target_is_demon {
-                if payload.outcome
-                    != (SnakeCharmerActionOutcome::NoSwap {
-                        reason: SnakeCharmerNoSwapReason::TargetNotDemon,
-                    })
-                {
-                    return Err(ErrorKind::ReplayFailed.into_error());
-                }
-                return Ok(());
-            }
-            if actor_impaired {
-                if payload.outcome
-                    != (SnakeCharmerActionOutcome::NoSwap {
-                        reason: SnakeCharmerNoSwapReason::ActorImpaired,
-                    })
-                {
-                    return Err(ErrorKind::ReplayFailed.into_error());
-                }
-                return Ok(());
-            }
-
-            let transitions = vec![
-                PlayerIdentityTransition {
-                    player_id: payload.actor_player_id.clone(),
-                    before: actor_before.clone(),
-                    after: IdentityState {
-                        actual_character: target_before.actual_character.clone(),
-                        shown_character: target_before.shown_character.clone(),
-                        alignment: target_alignment,
-                    },
-                },
-                PlayerIdentityTransition {
-                    player_id: payload.target_player_id.clone(),
-                    before: target_before.clone(),
-                    after: IdentityState {
-                        actual_character: actor_before.actual_character.clone(),
-                        shown_character: actor_before.shown_character.clone(),
-                        alignment: actor_alignment,
-                    },
-                },
-            ];
-            let impairment = ActiveImpairment {
-                kind: ImpairmentKind::Poisoned,
-                player_id: payload.target_player_id.clone(),
-                source_event_id: event.id.clone(),
-                source_character_id: "snakeCharmer".into(),
-                expires: ImpairmentExpiry::Never,
-            };
-            if payload.outcome
-                != (SnakeCharmerActionOutcome::Swap {
-                    identity_transitions: transitions.clone(),
-                    impairment: impairment.clone(),
-                })
-            {
+            let expected = snake_charmer_outcome(&event.id, actor, target, actor_impaired);
+            if payload.outcome != expected {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
+            let SnakeCharmerActionOutcome::Swap {
+                identity_transitions: transitions,
+                impairment,
+            } = expected
+            else {
+                return Ok(());
+            };
             for transition in transitions {
                 let Some(player) = players
                     .iter_mut()
@@ -3838,7 +3817,6 @@ fn apply_player_event(
                 .iter()
                 .find(|player| player.id == payload.target_player_id)
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?;
-            let target_before = identity_state(target);
             if character_kind(&payload.character_id).is_none() {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
@@ -3847,34 +3825,13 @@ fn apply_player_event(
                 .any(|player| player.actual_character == payload.character_id);
             let actor_impaired = SnvAbilityState::build(players, &events[..event_index])
                 .is_impaired(&payload.actor_player_id);
-            let expected = if character_already_in_play {
-                PitHagTransformationOutcome::NoChange {
-                    reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
-                }
-            } else if actor.actual_character != "pitHag" {
-                PitHagTransformationOutcome::NoChange {
-                    reason: PitHagNoChangeReason::NotActualCharacter,
-                }
-            } else if actor_impaired {
-                PitHagTransformationOutcome::NoChange {
-                    reason: PitHagNoChangeReason::ActorImpaired,
-                }
-            } else {
-                PitHagTransformationOutcome::Changed {
-                    identity_transition: PlayerIdentityTransition {
-                        player_id: target.id.clone(),
-                        before: target_before.clone(),
-                        after: IdentityState {
-                            actual_character: payload.character_id.clone(),
-                            shown_character: payload.character_id.clone(),
-                            alignment: target.alignment,
-                        },
-                    },
-                    created_demon: character_kind(&target.actual_character)
-                        != Some(CharacterKind::Demon)
-                        && character_kind(&payload.character_id) == Some(CharacterKind::Demon),
-                }
-            };
+            let expected = pit_hag_transformation_outcome(
+                actor,
+                target,
+                &payload.character_id,
+                character_already_in_play,
+                actor_impaired,
+            );
             if payload.outcome != expected {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
@@ -3970,6 +3927,7 @@ thread_local! {
     static PLAYER_REPLAY_PASS_COUNT: Cell<usize> = const { Cell::new(0) };
     static EVENT_APPLICATION_COUNT: Cell<usize> = const { Cell::new(0) };
     static PHASE_STEP_BUILD_COUNT: Cell<usize> = const { Cell::new(0) };
+    static ABILITY_STATE_BUILD_COUNT: Cell<usize> = const { Cell::new(0) };
 }
 
 #[cfg(test)]
@@ -4000,6 +3958,16 @@ pub(crate) fn reset_phase_step_build_count() {
 #[cfg(test)]
 pub(crate) fn phase_step_build_count() -> usize {
     PHASE_STEP_BUILD_COUNT.with(Cell::get)
+}
+
+#[cfg(test)]
+pub(crate) fn reset_ability_state_build_count() {
+    ABILITY_STATE_BUILD_COUNT.with(|count| count.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn ability_state_build_count() -> usize {
+    ABILITY_STATE_BUILD_COUNT.with(Cell::get)
 }
 
 fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
@@ -4214,9 +4182,7 @@ fn philosopher_owned_ability_grants(players: &[Player], events: &[GameEvent]) ->
             else {
                 return None;
             };
-            if philosopher_source_player(players, &payload.actor).is_none() {
-                return None;
-            }
+            philosopher_source_player(players, &payload.actor)?;
             Some(AbilityGrant {
                 owner_player_id: payload.actor.owner_player_id.clone(),
                 character_id: payload.selected_character_id.clone()?,
@@ -4416,6 +4382,19 @@ struct SnvAbilityState {
 
 impl SnvAbilityState {
     fn build(players: &[Player], events: &[GameEvent]) -> Self {
+        #[cfg(test)]
+        ABILITY_STATE_BUILD_COUNT.with(|count| count.set(count.get() + 1));
+        let mut event_positions = HashMap::with_capacity(events.len());
+        let mut latest_vigormortis_targets = HashMap::<&str, String>::new();
+        for (index, event) in events.iter().enumerate() {
+            event_positions.insert(event.id.as_str(), index);
+            if let GameEventKind::VigormortisPoisonTargetChanged { payload } = &event.kind {
+                latest_vigormortis_targets.insert(
+                    payload.source_event_id.as_str(),
+                    payload.target_player_id.clone(),
+                );
+            }
+        }
         let base_impairments = base_snv_impairments(events);
         let mut active_impairments = base_impairments.clone();
         let mut retained_minion_player_ids = HashSet::new();
@@ -4496,17 +4475,9 @@ impl SnvAbilityState {
             }) else {
                 continue;
             };
-            let current_target = events
-                .iter()
-                .filter_map(|event| match &event.kind {
-                    GameEventKind::VigormortisPoisonTargetChanged { payload }
-                        if payload.source_event_id == source_event.id =>
-                    {
-                        Some(payload.target_player_id.clone())
-                    }
-                    _ => None,
-                })
-                .next_back()
+            let current_target = latest_vigormortis_targets
+                .get(source_event.id.as_str())
+                .cloned()
                 .or_else(|| effect.poison_target_player_id.clone());
             let allowed_player_ids = nearest_townsfolk_neighbors(players, &minion.id);
             if current_target
@@ -4561,9 +4532,9 @@ impl SnvAbilityState {
                 });
             }
 
-            let acquisition_index = events
-                .iter()
-                .position(|event| event.id == minion.ability_instance.source_event_id);
+            let acquisition_index = event_positions
+                .get(minion.ability_instance.source_event_id.as_str())
+                .copied();
             if source_event_index >= acquisition_index.map_or(0, |index| index + 1) {
                 if source_impaired {
                     inactive_reminders.push(AutomaticReminder {
@@ -5200,27 +5171,51 @@ fn pending_game_end(
     })
 }
 
-fn apply_replay_player_event(
-    players: &mut [Player],
-    active_impairments: &mut Vec<ActiveImpairment>,
-    events: &[GameEvent],
-    event_index: usize,
-    event: &GameEvent,
-    players_before: &[Player],
-    death_triggers: &[PendingDeathConsequence],
-    first_game_end: &mut Option<PendingGameEnd>,
-) -> Result<(), CoreError> {
-    apply_player_event(players, active_impairments, events, event_index, event)?;
-    if first_game_end.is_none() {
-        *first_game_end = pending_game_end(
-            &events[..event_index],
-            event,
-            players_before,
+struct SnvReplayMachine {
+    initial_players: Vec<Player>,
+    players: Vec<Player>,
+    active_impairments: Vec<ActiveImpairment>,
+    death_triggers: Vec<PendingDeathConsequence>,
+    pending_game_end: Option<PendingGameEnd>,
+}
+
+impl SnvReplayMachine {
+    fn new(events: &[GameEvent]) -> Result<Self, CoreError> {
+        let players = setup_players(events)?;
+        Ok(Self {
+            initial_players: players.clone(),
             players,
-            death_triggers,
-        );
+            active_impairments: vec![],
+            death_triggers: vec![],
+            pending_game_end: None,
+        })
     }
-    Ok(())
+
+    fn apply_event(
+        &mut self,
+        events: &[GameEvent],
+        event_index: usize,
+        event: &GameEvent,
+        players_before: &[Player],
+    ) -> Result<(), CoreError> {
+        apply_player_event(
+            &mut self.players,
+            &mut self.active_impairments,
+            events,
+            event_index,
+            event,
+        )?;
+        if self.pending_game_end.is_none() {
+            self.pending_game_end = pending_game_end(
+                &events[..event_index],
+                event,
+                players_before,
+                &self.players,
+                &self.death_triggers,
+            );
+        }
+        Ok(())
+    }
 }
 
 fn game_end_source(pending: &PendingGameEnd) -> GameEndSource {
@@ -5228,6 +5223,8 @@ fn game_end_source(pending: &PendingGameEnd) -> GameEndSource {
     match pending.cause {
         GameEndCause::DemonAbsent => GameEndSource::DemonAbsent { source_event_id },
         GameEndCause::TwoLivingPlayers => GameEndSource::TwoLivingPlayers { source_event_id },
+        GameEndCause::SaintExecution => GameEndSource::SaintExecution { source_event_id },
+        GameEndCause::MayorNoExecution => GameEndSource::MayorNoExecution { source_event_id },
         GameEndCause::KlutzChoice => GameEndSource::KlutzChoice { source_event_id },
         GameEndCause::EvilTwinExecution => GameEndSource::EvilTwinExecution { source_event_id },
         GameEndCause::VortoxNoExecution => GameEndSource::VortoxNoExecution { source_event_id },
@@ -5817,8 +5814,9 @@ fn replay_phase_steps(
     statuses: &HashMap<String, PhaseStepStatus>,
     audit_index: &MathematicianAuditIndex,
 ) -> Option<(Phase, Vec<PhaseStep>, Option<PhaseStep>)> {
+    let ability_state = SnvAbilityState::build(players, events);
     let (phase, steps, mut current) =
-        current_phase_steps(players, events, next_event_count, statuses)?;
+        current_phase_steps(players, events, next_event_count, statuses, &ability_state)?;
     if let Some(step) = current
         .as_mut()
         .filter(|step| step.character.as_deref() == Some("mathematician"))
@@ -5848,23 +5846,19 @@ struct SnvReplayContext {
 fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
     #[cfg(test)]
     PLAYER_REPLAY_PASS_COUNT.with(|count| count.set(count.get() + 1));
-    let mut players = setup_players(events)?;
-    let initial_players = players.clone();
-    let mut active_impairments = Vec::<ActiveImpairment>::new();
+    let mut machine = SnvReplayMachine::new(events)?;
     let mut day_role_actions = DayRoleActionIndex::default();
     let mut statuses = HashMap::new();
     let mut pending_madness_overview: Option<(PendingMadnessExecution, Phase, Vec<PhaseStep>)> =
         None;
-    let mut death_triggers = Vec::<PendingDeathConsequence>::new();
-    let mut pending_game_end = None;
     let mut mathematician_audit = MathematicianAuditIndex::default();
 
     for (event_index, event) in events.iter().enumerate().skip(1) {
-        let players_before_event = players.clone();
+        let players_before_event = machine.players.clone();
         let players_at_event = players_before_event.as_slice();
         day_role_actions.record(event, players_at_event)?;
         record_death_triggers(
-            &mut death_triggers,
+            &mut machine.death_triggers,
             players_at_event,
             &events[..event_index],
             event,
@@ -5891,7 +5885,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
             let pending = unresolved_death_consequences(
-                &death_triggers,
+                &machine.death_triggers,
                 &events[..event_index],
                 players_at_event,
                 current.as_ref(),
@@ -5929,16 +5923,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             if current.as_ref().is_some_and(|step| step.id == *step_id) {
                 statuses.insert(step_id.clone(), PhaseStepStatus::Complete);
             }
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let GameEventKind::PlayerAnnotationsUpdated { payload } = &event.kind {
@@ -5949,16 +5934,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             )) {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let GameEventKind::VigormortisPoisonTargetChanged { payload } = &event.kind {
@@ -5984,16 +5960,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let GameEventKind::MadnessCheckRecorded { payload } = &event.kind {
@@ -6030,16 +5997,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             {
                 return Err(ErrorKind::ReplayFailed.into_error());
             }
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let GameEventKind::MadnessExecutionConfirmed { payload } = &event.kind {
@@ -6108,16 +6066,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 phase,
                 steps,
             ));
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let Some((pending, phase, _)) = pending_madness_overview.as_ref() {
@@ -6136,16 +6085,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     return Err(ErrorKind::ReplayFailed.into_error());
                 }
                 pending_madness_overview = None;
-                apply_replay_player_event(
-                    &mut players,
-                    &mut active_impairments,
-                    events,
-                    event_index,
-                    event,
-                    players_at_event,
-                    &death_triggers,
-                    &mut pending_game_end,
-                )?;
+                machine.apply_event(events, event_index, event, players_at_event)?;
                 continue;
             }
             return Err(ErrorKind::ReplayFailed.into_error());
@@ -6168,16 +6108,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 &events[..event_index],
             )
             .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         if let GameEventKind::ManualPhaseStepResolved { payload } = &event.kind {
@@ -6213,16 +6144,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 }
                 statuses.insert(format!("{prefix}:nomination:1"), PhaseStepStatus::Skipped);
                 statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
-                apply_replay_player_event(
-                    &mut players,
-                    &mut active_impairments,
-                    events,
-                    event_index,
-                    event,
-                    players_at_event,
-                    &death_triggers,
-                    &mut pending_game_end,
-                )?;
+                machine.apply_event(events, event_index, event, players_at_event)?;
                 continue;
             }
         }
@@ -6367,16 +6289,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 }
             }
             statuses.insert(event_step_id.clone(), status);
-            apply_replay_player_event(
-                &mut players,
-                &mut active_impairments,
-                events,
-                event_index,
-                event,
-                players_at_event,
-                &death_triggers,
-                &mut pending_game_end,
-            )?;
+            machine.apply_event(events, event_index, event, players_at_event)?;
             continue;
         }
         let legacy_manual_demon =
@@ -6726,16 +6639,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             let prefix = step_prefix(&payload.step_id)?;
             statuses.insert(format!("{prefix}:executionDeath"), PhaseStepStatus::Skipped);
         }
-        apply_replay_player_event(
-            &mut players,
-            &mut active_impairments,
-            events,
-            event_index,
-            event,
-            players_at_event,
-            &death_triggers,
-            &mut pending_game_end,
-        )?;
+        machine.apply_event(events, event_index, event, players_at_event)?;
     }
 
     if let Some((pending, phase, steps)) = pending_madness_overview {
@@ -6805,41 +6709,41 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             },
         );
         return Ok(SnvReplayContext {
-            initial_players,
-            players,
+            initial_players: machine.initial_players,
+            players: machine.players,
             phase,
             current_step: Some(death_step),
             phase_overview: overview,
             day_role_actions,
-            death_triggers,
-            pending_game_end,
+            death_triggers: machine.death_triggers,
+            pending_game_end: machine.pending_game_end,
             mathematician_audit,
         });
     }
 
     let Some((phase, steps, mut current)) = replay_phase_steps(
-        &players,
+        &machine.players,
         events,
         events.len() + 2,
         &statuses,
         &mathematician_audit,
     ) else {
         return Ok(SnvReplayContext {
-            initial_players,
-            players,
+            initial_players: machine.initial_players,
+            players: machine.players,
             phase: Phase::Night,
             current_step: None,
             phase_overview: vec![],
             day_role_actions,
-            death_triggers,
-            pending_game_end,
+            death_triggers: machine.death_triggers,
+            pending_game_end: machine.pending_game_end,
             mathematician_audit,
         });
     };
     if let Some(step) = current.as_mut() {
         if step.character.as_deref() != Some("mathematician") {
             step.information_prompt =
-                snv_information_prompt(step, &players, events, &day_role_actions)?;
+                snv_information_prompt(step, &machine.players, events, &day_role_actions)?;
         }
     }
     let current_id = current.as_ref().map(|step| step.id.as_str());
@@ -6853,12 +6757,12 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     if step.character.as_deref() == Some("mathematician") {
                         Some(mathematician_information_prompt(
                             &step,
-                            &players,
+                            &machine.players,
                             events,
                             &mathematician_audit,
                         ))
                     } else {
-                        snv_information_prompt(&step, &players, events, &day_role_actions)?
+                        snv_information_prompt(&step, &machine.players, events, &day_role_actions)?
                     }
                 } else {
                     None
@@ -6887,14 +6791,14 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             .collect::<Result<Vec<_>, _>>()?
     };
     Ok(SnvReplayContext {
-        initial_players,
-        players,
+        initial_players: machine.initial_players,
+        players: machine.players,
         phase,
         current_step: current,
         phase_overview: overview,
         day_role_actions,
-        death_triggers,
-        pending_game_end,
+        death_triggers: machine.death_triggers,
+        pending_game_end: machine.pending_game_end,
         mathematician_audit,
     })
 }
@@ -8693,6 +8597,133 @@ fn propose_madness_execution(
     })
 }
 
+fn snake_charmer_outcome(
+    event_id: &str,
+    actor: &Player,
+    target: &Player,
+    actor_impaired: bool,
+) -> SnakeCharmerActionOutcome {
+    if character_kind(&target.actual_character) != Some(CharacterKind::Demon) {
+        SnakeCharmerActionOutcome::NoSwap {
+            reason: SnakeCharmerNoSwapReason::TargetNotDemon,
+        }
+    } else if actor_impaired {
+        SnakeCharmerActionOutcome::NoSwap {
+            reason: SnakeCharmerNoSwapReason::ActorImpaired,
+        }
+    } else {
+        SnakeCharmerActionOutcome::Swap {
+            identity_transitions: vec![
+                PlayerIdentityTransition {
+                    player_id: actor.id.clone(),
+                    before: identity_state(actor),
+                    after: IdentityState {
+                        actual_character: target.actual_character.clone(),
+                        shown_character: target.shown_character.clone(),
+                        alignment: target.alignment,
+                    },
+                },
+                PlayerIdentityTransition {
+                    player_id: target.id.clone(),
+                    before: identity_state(target),
+                    after: IdentityState {
+                        actual_character: actor.actual_character.clone(),
+                        shown_character: actor.shown_character.clone(),
+                        alignment: actor.alignment,
+                    },
+                },
+            ],
+            impairment: ActiveImpairment {
+                kind: ImpairmentKind::Poisoned,
+                player_id: target.id.clone(),
+                source_event_id: event_id.into(),
+                source_character_id: "snakeCharmer".into(),
+                expires: ImpairmentExpiry::Never,
+            },
+        }
+    }
+}
+
+fn pit_hag_transformation_outcome(
+    actor: &Player,
+    target: &Player,
+    character_id: &str,
+    character_already_in_play: bool,
+    actor_impaired: bool,
+) -> PitHagTransformationOutcome {
+    if character_already_in_play {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
+        }
+    } else if actor.actual_character != "pitHag" {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::NotActualCharacter,
+        }
+    } else if actor_impaired {
+        PitHagTransformationOutcome::NoChange {
+            reason: PitHagNoChangeReason::ActorImpaired,
+        }
+    } else {
+        PitHagTransformationOutcome::Changed {
+            identity_transition: PlayerIdentityTransition {
+                player_id: target.id.clone(),
+                before: identity_state(target),
+                after: IdentityState {
+                    actual_character: character_id.into(),
+                    shown_character: character_id.into(),
+                    alignment: target.alignment,
+                },
+            },
+            created_demon: character_kind(&target.actual_character) != Some(CharacterKind::Demon)
+                && character_kind(character_id) == Some(CharacterKind::Demon),
+        }
+    }
+}
+
+fn demon_attack_death(
+    actor: &Player,
+    actor_character_id: &str,
+    target: &Player,
+    killed: &Player,
+) -> NightDeath {
+    NightDeath {
+        player_id: killed.id.clone(),
+        cause: NightDeathCause::DemonAttack {
+            actor_player_id: actor.id.clone(),
+            actor_character_id: actor_character_id.into(),
+            target_player_id: target.id.clone(),
+        },
+    }
+}
+
+fn fang_gu_jump_outcome(actor: &Player, target: &Player) -> DemonAttackOutcome {
+    DemonAttackOutcome::FangGuJump {
+        death: demon_attack_death(actor, "fangGu", target, actor),
+        source_ability_instance_id: actor.ability_instance.id.clone(),
+        identity_transition: PlayerIdentityTransition {
+            player_id: target.id.clone(),
+            before: identity_state(target),
+            after: IdentityState {
+                actual_character: "fangGu".into(),
+                shown_character: "fangGu".into(),
+                alignment: Alignment::Evil,
+            },
+        },
+    }
+}
+
+fn resolved_vigormortis_effect(
+    actor: &Player,
+    target: &Player,
+    poison_target_player_id: Option<String>,
+) -> VigormortisEffect {
+    VigormortisEffect {
+        minion_player_id: target.id.clone(),
+        source_ability_instance_id: actor.ability_instance.id.clone(),
+        poison_target_player_id,
+    }
+}
+
 fn propose_snake_charmer_action(
     game_file: &GameFile,
     step: &PhaseStep,
@@ -8730,46 +8761,7 @@ fn propose_snake_charmer_action(
     let event_id = format!("snake-charmer-{}", game_file.game.events.len() + 1);
     let actor_impaired =
         SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
-    let target_is_demon = character_kind(&target.actual_character) == Some(CharacterKind::Demon);
-    let outcome = if !target_is_demon {
-        SnakeCharmerActionOutcome::NoSwap {
-            reason: SnakeCharmerNoSwapReason::TargetNotDemon,
-        }
-    } else if actor_impaired {
-        SnakeCharmerActionOutcome::NoSwap {
-            reason: SnakeCharmerNoSwapReason::ActorImpaired,
-        }
-    } else {
-        SnakeCharmerActionOutcome::Swap {
-            identity_transitions: vec![
-                PlayerIdentityTransition {
-                    player_id: actor.id.clone(),
-                    before: identity_state(actor),
-                    after: IdentityState {
-                        actual_character: target.actual_character.clone(),
-                        shown_character: target.shown_character.clone(),
-                        alignment: target.alignment,
-                    },
-                },
-                PlayerIdentityTransition {
-                    player_id: target.id.clone(),
-                    before: identity_state(target),
-                    after: IdentityState {
-                        actual_character: actor.actual_character.clone(),
-                        shown_character: actor.shown_character.clone(),
-                        alignment: actor.alignment,
-                    },
-                },
-            ],
-            impairment: ActiveImpairment {
-                kind: ImpairmentKind::Poisoned,
-                player_id: target.id.clone(),
-                source_event_id: event_id.clone(),
-                source_character_id: "snakeCharmer".into(),
-                expires: ImpairmentExpiry::Never,
-            },
-        }
-    };
+    let outcome = snake_charmer_outcome(&event_id, actor, target, actor_impaired);
     let summary = match outcome {
         SnakeCharmerActionOutcome::Swap { .. } => "뱀 조련사 교환 확정",
         SnakeCharmerActionOutcome::NoSwap { .. } => "뱀 조련사 선택 확정",
@@ -8864,33 +8856,13 @@ fn propose_pit_hag_transformation(
         .any(|player| player.actual_character == character_id);
     let actor_impaired =
         SnvAbilityState::build(players, &game_file.game.events).is_impaired(&actor.id);
-    let outcome = if character_already_in_play {
-        PitHagTransformationOutcome::NoChange {
-            reason: PitHagNoChangeReason::CharacterAlreadyInPlay,
-        }
-    } else if actor.actual_character != "pitHag" {
-        PitHagTransformationOutcome::NoChange {
-            reason: PitHagNoChangeReason::NotActualCharacter,
-        }
-    } else if actor_impaired {
-        PitHagTransformationOutcome::NoChange {
-            reason: PitHagNoChangeReason::ActorImpaired,
-        }
-    } else {
-        PitHagTransformationOutcome::Changed {
-            identity_transition: PlayerIdentityTransition {
-                player_id: target.id.clone(),
-                before: identity_state(target),
-                after: IdentityState {
-                    actual_character: character_id.clone(),
-                    shown_character: character_id.clone(),
-                    alignment: target.alignment,
-                },
-            },
-            created_demon: character_kind(&target.actual_character) != Some(CharacterKind::Demon)
-                && character_kind(&character_id) == Some(CharacterKind::Demon),
-        }
-    };
+    let outcome = pit_hag_transformation_outcome(
+        actor,
+        target,
+        &character_id,
+        character_already_in_play,
+        actor_impaired,
+    );
     let summary = match outcome {
         PitHagTransformationOutcome::Changed { .. } => "마귀할멈 직업 변경 확정",
         PitHagTransformationOutcome::NoChange { .. } => "마귀할멈 선택 확정 · 변경 없음",
@@ -8980,11 +8952,11 @@ fn propose_demon_attack(
         {
             return Err(ErrorKind::InvalidStepInput.into_error());
         }
-        Some(VigormortisEffect {
-            minion_player_id: target.id.clone(),
-            source_ability_instance_id: actor.ability_instance.id.clone(),
+        Some(resolved_vigormortis_effect(
+            actor,
+            target,
             poison_target_player_id,
-        })
+        ))
     } else {
         if selected_player_ids.len() != 1 {
             return Err(ErrorKind::InvalidStepInput.into_error());
@@ -9013,40 +8985,19 @@ fn propose_demon_attack(
         && automatic_fang_gu_reminder(&game_file.game.events).is_empty()
     {
         (
-            DemonAttackOutcome::FangGuJump {
-                death: NightDeath {
-                    player_id: actor_player_id.clone(),
-                    cause: NightDeathCause::DemonAttack {
-                        actor_player_id: actor_player_id.clone(),
-                        actor_character_id: actor_character_id.clone(),
-                        target_player_id: target_player_id.clone(),
-                    },
-                },
-                source_ability_instance_id: actor.ability_instance.id.clone(),
-                identity_transition: PlayerIdentityTransition {
-                    player_id: target_player_id.clone(),
-                    before: identity_state(target),
-                    after: IdentityState {
-                        actual_character: "fangGu".into(),
-                        shown_character: "fangGu".into(),
-                        alignment: Alignment::Evil,
-                    },
-                },
-            },
+            fang_gu_jump_outcome(actor, target),
             "팡 구 이동 · 기존 팡 구 사망",
             vec![],
         )
     } else if target.alive {
         (
             DemonAttackOutcome::Deaths {
-                deaths: vec![NightDeath {
-                    player_id: target_player_id.clone(),
-                    cause: NightDeathCause::DemonAttack {
-                        actor_player_id: actor_player_id.clone(),
-                        actor_character_id: actor_character_id.clone(),
-                        target_player_id: target_player_id.clone(),
-                    },
-                }],
+                deaths: vec![demon_attack_death(
+                    actor,
+                    &actor_character_id,
+                    target,
+                    target,
+                )],
                 vigormortis_effect,
             },
             "사망",
@@ -9473,7 +9424,8 @@ mod tests {
             player.alive = false;
         }
 
-        let steps = later_night_steps(&players, &events, 1);
+        let ability_state = SnvAbilityState::build(&players, &events);
+        let steps = later_night_steps(&players, &events, 1, &ability_state);
 
         assert_eq!(players.iter().filter(|player| player.alive).count(), 3);
         assert!(steps

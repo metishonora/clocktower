@@ -59,19 +59,22 @@ test("warning confirmation ends the game and protected Undo restores the live st
   await user.click(within(dialog).getByRole("button", { name: "게임 종료" }));
 
   expect(await screen.findByRole("heading", { name: "선한 팀 승리" })).not.toBeNull();
-  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
   expect(within(grimoire).getByText("게임 종료")).toBeTruthy();
   expect(within(grimoire).queryByLabelText(/경과 시간/)).toBeNull();
   expect(screen.queryByLabelText("단계 입력")).toBeNull();
   const endedSeat = within(grimoire).getByRole("button", { name: /1번 Ada 좌석 선택/ });
-  expect(endedSeat.getAttribute("aria-disabled")).toBe("true");
+  expect((endedSeat as HTMLButtonElement).disabled).toBe(true);
   await user.click(endedSeat);
   expect(core.propose).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: "진행" }));
   await user.click(screen.getByRole("button", { name: "게임 종료 되돌리기" }));
   const undo = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
   await user.click(within(undo).getByRole("button", { name: "되돌리기" }));
 
   await waitFor(() => expect(screen.getByRole("region", { name: "현재 단계" })).not.toBeNull());
-  expect(within(grimoire).getByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
   expect(screen.getByRole("region", { name: "승리 조건 경고" })).not.toBeNull();
+  await user.click(screen.getByRole("button", { name: "마도서" }));
+  expect(within(await screen.findByLabelText("라이브 마도서 좌석 맵")).getByLabelText("2일차 낮 경과 시간 00:00")).toBeTruthy();
 });

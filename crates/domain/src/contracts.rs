@@ -8,6 +8,8 @@ use crate::model::{
     StepInput, SystemTokenId,
 };
 
+pub(crate) use crate::model::AutomaticReminder;
+
 pub(crate) struct GameFile {
     pub(crate) schema_version: u32,
     pub(crate) script_id: ScriptId,
@@ -411,6 +413,8 @@ pub(crate) struct PendingGameEnd {
 pub(crate) enum GameEndCause {
     DemonAbsent,
     TwoLivingPlayers,
+    SaintExecution,
+    MayorNoExecution,
     KlutzChoice,
     EvilTwinExecution,
     VortoxNoExecution,
@@ -561,22 +565,6 @@ pub(crate) struct EvilTwinRelationship {
     pub(crate) ability_owner_player_id: String,
     pub(crate) twin_player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
-}
-
-#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct AutomaticReminder {
-    pub(crate) player_id: String,
-    pub(crate) character_id: String,
-    pub(crate) token_id: String,
-    pub(crate) label: String,
-    pub(crate) description: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) count: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) source_event_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) inactive_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -1148,6 +1136,8 @@ pub(crate) struct GameEndedPayload {
 pub(crate) enum GameEndSource {
     DemonAbsent { source_event_id: String },
     TwoLivingPlayers { source_event_id: String },
+    SaintExecution { source_event_id: String },
+    MayorNoExecution { source_event_id: String },
     KlutzChoice { source_event_id: String },
     WitchCurseDeath { source_event_id: String },
     EvilTwinExecution { source_event_id: String },

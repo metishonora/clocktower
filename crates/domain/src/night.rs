@@ -1,7 +1,7 @@
 use crate::{
     characters::{
         character_kind, character_steps, first_night_order, legal_demon_bluff_character_ids,
-        night_order,
+        night_order, TbPhaseKey, TbSemanticStep, TbStepKey,
     },
     contracts::{
         ActiveRuleEffect, GameEvent, GameEventKind, ImpAttackOutcome, NightActionResolution,
@@ -50,7 +50,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
         Phase::FirstNight,
         "firstNight",
         players,
-        first_night_order(),
+        &first_night_order(),
     );
     enrich_targets(&mut character_steps, players, events);
     if let Some(index) = character_steps.iter().position(|step| {
@@ -139,7 +139,7 @@ pub(crate) fn night_steps(
     cycle: usize,
 ) -> Vec<PhaseStep> {
     let prefix = phase_prefix("night", cycle);
-    let mut steps = character_steps(Phase::Night, &prefix, players, night_order());
+    let mut steps = character_steps(Phase::Night, &prefix, players, &night_order());
     steps.retain(|step| {
         step.player_id
             .as_ref()
@@ -222,7 +222,10 @@ pub(crate) fn night_steps(
     let executed_dead = previous_executed_death(events, cycle);
     steps.retain(|step| step.character.as_deref() != Some("undertaker") || executed_dead.is_some());
     let raven_id = events.iter().find_map(|event| match &event.kind {
-        GameEventKind::NightActionResolved { payload } if payload.step_id.starts_with(&prefix) => {
+        GameEventKind::NightActionResolved { payload }
+            if TbStepKey::parse(&payload.step_id, event.phase)
+                .is_ok_and(|key| key.phase == TbPhaseKey::Night { cycle }) =>
+        {
             match &payload.resolution {
                 NightActionResolution::ImpAttack {
                     outcome: ImpAttackOutcome::Death { player_id },
@@ -276,13 +279,9 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
 }
 
 fn attach_day_succession_reveal(steps: &mut [PhaseStep], events: &[GameEvent], cycle: usize) {
-    let day_prefix = phase_prefix("day", cycle);
     let night_imp_step_id = format!("{}:imp", phase_prefix("night", cycle));
-    let Some((succession_index, succession_event, payload)) = events
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(index, event)| {
+    let Some((succession_index, succession_event, payload)) =
+        events.iter().enumerate().rev().find_map(|(index, event)| {
             let GameEventKind::DemonSuccessionConfirmed { payload } = &event.kind else {
                 return None;
             };
@@ -291,9 +290,9 @@ fn attach_day_succession_reveal(steps: &mut [PhaseStep], events: &[GameEvent], c
                     && matches!(
                         &candidate.kind,
                         GameEventKind::DeathConfirmed { payload: death }
-                            if death.step_id.as_ref().is_some_and(|step_id| {
-                                step_id == &day_prefix || step_id.starts_with(&format!("{day_prefix}:"))
-                            })
+                            if death.step_id.as_ref().is_some_and(|step_id|
+                                TbStepKey::parse(step_id, candidate.phase)
+                                    .is_ok_and(|key| key.phase == TbPhaseKey::Day { cycle }))
                     )
             });
             (event.phase == Phase::Day && payload.new_character == "imp" && triggered_this_day)
@@ -349,7 +348,7 @@ fn imp_succeeded_during_night(events: &[GameEvent], prefix: &str) -> bool {
 }
 
 pub(crate) fn previous_executed_death(events: &[GameEvent], cycle: usize) -> Option<String> {
-    let prefix = phase_prefix("day", cycle);
+    let prefix = TbPhaseKey::Day { cycle }.prefix();
     let normal_execution = events.iter().find_map(|e| match &e.kind {
         GameEventKind::ExecutionConfirmed { payload }
             if payload.step_id == format!("{prefix}:execution") =>
@@ -368,14 +367,13 @@ pub(crate) fn previous_executed_death(events: &[GameEvent], cycle: usize) -> Opt
         let GameEventKind::NominationStarted { payload } = &event.kind else {
             return None;
         };
-        if !payload
-            .step_id
-            .starts_with(format!("{prefix}:nomination:").as_str())
-            || !matches!(
-                payload.virgin_resolution,
-                crate::contracts::VirginResolution::SpentAndNominatorExecuted { .. }
-            )
-        {
+        if !TbStepKey::parse(&payload.step_id, event.phase).is_ok_and(|key| {
+            key.phase == TbPhaseKey::Day { cycle }
+                && matches!(key.semantic, TbSemanticStep::Nomination { .. })
+        }) || !matches!(
+            payload.virgin_resolution,
+            crate::contracts::VirginResolution::SpentAndNominatorExecuted { .. }
+        ) {
             return None;
         }
         let death_step_id = format!("{}:virginDeath", payload.step_id);
@@ -431,7 +429,9 @@ pub(crate) fn active_night_poison(
     let last_to_night = events.iter().rposition(|event| {
         matches!(
             &event.kind,
-            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")
+            GameEventKind::PhaseStepConfirmed { payload }
+                if TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == TbSemanticStep::ToNight)
         )
     });
     events
@@ -473,13 +473,17 @@ pub(crate) fn active_night_protection(
     let last_to_night = events.iter().rposition(|event| {
         matches!(
             &event.kind,
-            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toNight")
+            GameEventKind::PhaseStepConfirmed { payload }
+                if TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == TbSemanticStep::ToNight)
         )
     });
     let last_to_day = events.iter().rposition(|event| {
         matches!(
             &event.kind,
-            GameEventKind::PhaseStepConfirmed { payload } if payload.step_id.ends_with(":toDay")
+            GameEventKind::PhaseStepConfirmed { payload }
+                if TbStepKey::parse(&payload.step_id, event.phase)
+                    .is_ok_and(|key| key.semantic == TbSemanticStep::ToDay)
         )
     });
     events

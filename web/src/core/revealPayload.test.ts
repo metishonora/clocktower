@@ -184,3 +184,56 @@ test("RevealPayload accepts only the narrow structured Spy grimoire contract", (
     equal(isRevealPayload(invalid), false);
   }
 });
+
+test("accepts canonical Trouble Brewing automatic reminders in a Spy payload", () => {
+  equal(isRevealPayload({
+    kind: "spyGrimoire",
+    players: [{
+      playerId: "player-1",
+      seat: 1,
+      name: "Ada",
+      characterId: "washerwoman",
+      alive: true,
+      ghostVoteUsed: false,
+      automaticReminders: [{
+        playerId: "player-1",
+        characterId: "washerwoman",
+        tokenId: "townsfolk",
+        label: "주민",
+        description: "세탁부에게 보여준 주민입니다.",
+        count: 1,
+        sourceEventId: "setup-1",
+      }],
+    }],
+  }), true);
+});
+
+test("rejects mismatched, unofficial, and extra-key Trouble Brewing Spy reminders", () => {
+  const reminder = {
+    playerId: "player-1",
+    characterId: "washerwoman",
+    tokenId: "townsfolk",
+    label: "주민",
+    description: "세탁부에게 보여준 주민입니다.",
+    count: 1,
+    sourceEventId: "setup-1",
+  };
+  for (const automaticReminder of [
+    { ...reminder, characterId: "monk", tokenId: "townsfolk" },
+    { ...reminder, tokenId: "notOfficial" },
+    { ...reminder, extra: true },
+  ]) {
+    equal(isRevealPayload({
+      kind: "spyGrimoire",
+      players: [{
+        playerId: "player-1",
+        seat: 1,
+        name: "Ada",
+        characterId: "washerwoman",
+        alive: true,
+        ghostVoteUsed: false,
+        automaticReminders: [automaticReminder],
+      }],
+    }), false);
+  }
+});

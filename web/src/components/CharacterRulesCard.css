@@ -40,6 +40,28 @@
   --character-detail-accent: #765281;
 }
 
+.characterRulesBackdrop.tb-night {
+  --character-detail-bg: #0b2118;
+  --character-detail-surface: #153328;
+  --character-detail-line: rgba(210, 173, 100, 0.28);
+  --character-detail-ink: #f5eddc;
+  --character-detail-muted: #bcae8d;
+  --character-detail-accent: #d1b77e;
+  --character-detail-link: #efd69e;
+  background: rgba(3, 14, 10, 0.72);
+}
+
+.characterRulesBackdrop.tb-day {
+  --character-detail-bg: #f7f2dc;
+  --character-detail-surface: #dfe8ce;
+  --character-detail-line: rgba(73, 107, 80, 0.25);
+  --character-detail-ink: #213128;
+  --character-detail-muted: #627057;
+  --character-detail-accent: #49664f;
+  --character-detail-link: #385c42;
+  background: rgba(43, 52, 38, 0.5);
+}
+
 .characterRulesCard {
   width: min(440px, 100%);
   height: 100%;

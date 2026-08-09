@@ -1,0 +1,296 @@
+.snvInformationRevealBackdrop:has(.tbInformationReveal) {
+  color: #fff8e8;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(76, 118, 79, .32), transparent 38%),
+    #071611;
+}
+
+.snvInformationReveal.tbInformationReveal {
+  box-sizing: border-box;
+  border-color: rgba(226, 201, 143, .34);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(95, 137, 90, .34), transparent 42%),
+    linear-gradient(145deg, rgba(21, 51, 40, .98), rgba(7, 22, 17, .99));
+  box-shadow: 0 30px 100px rgba(1, 10, 6, .72);
+}
+
+.snvInformationReveal.tbInformationReveal > .tbRevealIcon {
+  width: clamp(54px, 10vw, 82px);
+  height: clamp(54px, 10vw, 82px);
+  margin: 0 auto 8px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .24));
+}
+
+.snvInformationReveal.tbInformationReveal > .tbRevealEyebrow {
+  color: #d2ad64;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.snvInformationReveal.tbInformationReveal > h2 {
+  margin: 18px 0 12px;
+  color: #fff8e8;
+  font: clamp(2rem, 7vw, 4.2rem)/1.08 Georgia, "Noto Serif KR", serif;
+  letter-spacing: -.035em;
+}
+
+.snvInformationReveal.tbInformationReveal .tbRevealDescription {
+  max-width: 640px;
+  color: #d8ccb0;
+  font-size: clamp(.96rem, 2.3vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.tbRevealPlayerPair,
+.tbRevealCharacterPair,
+.tbRevealTwinPair {
+  display: grid;
+  width: min(620px, 100%);
+  margin: 22px auto 0;
+  position: relative;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 10px;
+}
+
+.tbRevealPlayerPair {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.tbRevealPlayerCard,
+.tbRevealCharacterCard {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 86px;
+  padding: 14px 12px;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid rgba(221, 198, 151, .22);
+  border-radius: 18px;
+  color: #fff8e8;
+  background: linear-gradient(145deg, rgba(55, 107, 80, .34), rgba(126, 81, 46, .15));
+  text-align: center;
+}
+
+.tbRevealPlayerCard > span {
+  color: #b8c7ad;
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.tbRevealPlayerCard > strong,
+.tbRevealCharacterCard > strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: clamp(.82rem, 1.8vw, 1rem);
+}
+
+.tbRevealPlayerPair > b,
+.tbRevealCharacterPair > b,
+.tbRevealTwinPair > b {
+  color: #d2ad64;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.tbRevealPlayerPair {
+  position: relative;
+}
+
+.tbRevealValue {
+  display: block;
+  margin: 28px auto 0;
+  color: #e7d5ad;
+  font: 900 clamp(2rem, 7vw, 4.1rem)/1 Georgia, "Noto Serif KR", serif;
+}
+
+.tbRevealValue.no { color: #c7bfae; }
+
+.tbRevealAlignment {
+  display: inline-grid;
+  min-width: 52px;
+  min-height: 30px;
+  margin: 10px auto;
+  padding: 0 14px;
+  place-items: center;
+  border: 1px solid rgba(226, 201, 143, .35);
+  border-radius: 999px;
+  color: #e7d5ad;
+  background: rgba(126, 81, 46, .22);
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.tbRevealAlignment.evil { color: #f0b0a1; border-color: rgba(189, 99, 76, .46); }
+
+.tbRevealCharacterName { color: #fff8e8; font-size: 1.25rem; }
+
+.tbRevealCharacterPair .tbRevealCharacterCard,
+.tbRevealTwinPair article {
+  min-height: 120px;
+}
+
+.tbRevealCharacterCard > span {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid rgba(226, 201, 143, .34);
+  border-radius: 50%;
+  background: rgba(126, 81, 46, .22);
+}
+
+.tbRevealCharacterCard img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.snvInformationReveal.tbEvilInformationReveal {
+  width: min(940px, 100%);
+  min-height: min(620px, calc(100dvh - 40px));
+  padding: clamp(22px, 3vw, 34px);
+  gap: clamp(18px, 2.5vw, 28px);
+}
+
+.tbEvilInformationHeading {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.tbEvilInformationHeading > span {
+  color: #d2ad64;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.tbEvilInformationHeading h1 {
+  margin: 0;
+  color: #fff8e8;
+  font: clamp(2.1rem, 5vw, 4rem)/1.04 Georgia, "Noto Serif KR", serif;
+  letter-spacing: -.035em;
+}
+
+.tbRevealSection {
+  display: grid;
+  gap: 12px;
+}
+
+.tbRevealSection > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tbRevealSection > header > span {
+  color: #d2ad64;
+  font: 800 .72rem Georgia, serif;
+  letter-spacing: .08em;
+}
+
+.tbRevealSection h2 {
+  margin: 0;
+  color: #fff8e8;
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.tbRevealIdentityCards,
+.tbRevealCharacterCards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(92px, 16vw, 148px);
+  justify-content: center;
+  gap: 12px;
+}
+
+.tbRevealIdentityCards > article,
+.tbRevealCharacterCards > .tbRevealCharacterCard {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 10px;
+  aspect-ratio: 1;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  border: 1px solid rgba(221, 198, 151, .22);
+  border-radius: 20px;
+  color: #fff8e8;
+  background: linear-gradient(145deg, rgba(55, 107, 80, .34), rgba(126, 81, 46, .15));
+  text-align: center;
+  overflow: hidden;
+}
+
+.tbRevealIdentityCards > article > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(226, 201, 143, .34);
+  border-radius: 50%;
+  color: #f1d99e;
+  background: rgba(126, 81, 46, .22);
+  font: 800 1.05rem Georgia, serif;
+}
+
+.tbRevealIdentityCards strong,
+.tbRevealCharacterCards strong {
+  max-width: 100%;
+  color: #fff;
+  font-size: clamp(.72rem, 1.4vw, 1rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tbRevealCharacterCards .tbRevealCharacterCard > span { width: clamp(46px, 46%, 66px); height: auto; aspect-ratio: 1; }
+
+.tbRevealEmpty { color: #d8ccb0; }
+
+.snvInformationReveal.tbInformationReveal > button {
+  justify-self: center;
+  min-height: 44px;
+  margin-top: 34px;
+  padding: 10px 24px;
+  border-color: rgba(226, 201, 143, .5);
+  border-radius: 999px;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+  box-shadow: 0 10px 28px rgba(80, 52, 16, .32);
+  font-weight: 900;
+}
+
+.snvInformationReveal.tbEvilInformationReveal > button { margin-top: 0; }
+
+.tbRevealTwinPair { width: min(700px, 100%); }
+.tbRevealTwinPair article { position: relative; display: grid; min-width: 0; padding: 16px 12px; place-items: center; align-content: center; gap: 7px; border: 1px solid rgba(221, 198, 151, .22); border-radius: 18px; background: linear-gradient(145deg, rgba(55, 107, 80, .34), rgba(126, 81, 46, .15)); }
+.tbRevealTwinPair article > span { color: #d8ccb0; font-size: .72rem; }
+.tbRevealTwinPair article img { width: 58px; height: 58px; object-fit: contain; }
+.tbRevealTwinPair article strong { color: #fff8e8; overflow-wrap: anywhere; }
+.tbRevealTwinPair article small { color: #d2ad64; font-weight: 900; }
+
+@media (max-width: 620px) {
+  .snvInformationRevealBackdrop:has(.tbInformationReveal) { padding: 12px; }
+  .snvInformationReveal.tbInformationReveal { min-height: calc(100dvh - 24px); padding: 24px 14px; border-radius: 24px; }
+  .tbRevealPlayerPair,
+  .tbRevealCharacterPair,
+  .tbRevealTwinPair { gap: 7px; }
+  .tbRevealPlayerCard { min-height: 76px; padding: 10px 6px; }
+  .tbRevealIdentityCards,
+  .tbRevealCharacterCards { grid-auto-columns: minmax(82px, 27vw); gap: 8px; }
+  .tbRevealIdentityCards > article,
+  .tbRevealCharacterCards > .tbRevealCharacterCard { padding: 9px 4px; }
+  .snvInformationReveal.tbEvilInformationReveal { padding: 22px 12px; }
+}

@@ -2,9 +2,10 @@ use std::collections::HashSet;
 
 use crate::{
     characters::{
-        reset_snv_event_application_count, reset_snv_phase_step_build_count,
-        reset_snv_replay_player_pass_count, snv_event_application_count,
-        snv_phase_step_build_count, snv_replay_player_pass_count,
+        reset_snv_ability_state_build_count, reset_snv_event_application_count,
+        reset_snv_phase_step_build_count, reset_snv_replay_player_pass_count,
+        snv_ability_state_build_count, snv_event_application_count, snv_phase_step_build_count,
+        snv_replay_player_pass_count,
     },
     propose_json, replay_json,
 };
@@ -289,6 +290,7 @@ fn long_session_replay_keeps_current_operation_budgets_at_one_three_and_six_cycl
         reset_snv_replay_player_pass_count();
         reset_snv_event_application_count();
         reset_snv_phase_step_build_count();
+        reset_snv_ability_state_build_count();
 
         let replayed = replay(&events);
 
@@ -310,6 +312,12 @@ fn long_session_replay_keeps_current_operation_budgets_at_one_three_and_six_cycl
             snv_phase_step_build_count() <= events.len() * 4,
             "cycle {cycle} built {} phase sequences for {} events",
             snv_phase_step_build_count(),
+            events.len(),
+        );
+        assert!(
+            snv_ability_state_build_count() <= events.len() * 4,
+            "cycle {cycle} built ability state {} times for {} events",
+            snv_ability_state_build_count(),
             events.len(),
         );
     }

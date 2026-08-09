@@ -1,9 +1,10 @@
-import { characterAsset } from "./characterAssets";
-import { characterRulesFor } from "./characterRules";
-import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
-import { sectsAndVioletsRulesFor } from "./sectsAndVioletsCharacterRules";
-import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
-import { characterKind, kindLabels } from "./setupDraft";
+import { characterAsset } from "./characterAssets.js";
+import { characterRulesFor } from "./characterRules.js";
+import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets.js";
+import { sectsAndVioletsRulesFor } from "./sectsAndVioletsCharacterRules.js";
+import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters.js";
+import { characterKind, kindLabels } from "./setupDraft.js";
+import { troubleBrewingCharacterMatrixFor } from "./troubleBrewingCharacterMatrix.js";
 
 export type CharacterDetailReminder = Readonly<{
   label: string;
@@ -27,6 +28,8 @@ export type CharacterDetail = Readonly<{
 export function troubleBrewingCharacterDetail(characterId?: string): CharacterDetail | undefined {
   const rules = characterRulesFor(characterId);
   if (!rules) return undefined;
+  const matrix = troubleBrewingCharacterMatrixFor(rules.id);
+  if (!matrix) return undefined;
   const kind = characterKind(rules.id);
   return {
     id: rules.id,
@@ -36,7 +39,7 @@ export function troubleBrewingCharacterDetail(characterId?: string): CharacterDe
     ability: rules.ability,
     rulings: rules.rulings,
     howToRun: rules.howToRun,
-    reminders: [],
+    reminders: matrix.reminders.map(({ label, count, description }) => ({ label, count, description })),
     examples: rules.examples.map((text, index) => ({ id: `${rules.id}-example-${index + 1}`, text })),
     sourceUrl: rules.sourceUrl,
   };

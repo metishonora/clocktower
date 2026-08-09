@@ -6,9 +6,28 @@ const characterIds = new Set([
   ...characters.map((character) => character.id),
   ...sectsAndVioletsCharacters.map((character) => character.id),
 ]);
+const troubleBrewingAutomaticReminderPairs = new Set([
+  "butler:master",
+  "drunk:isTheDrunk",
+  "fortuneTeller:redHerring",
+  "imp:dead",
+  "investigator:minion",
+  "investigator:wrong",
+  "librarian:outsider",
+  "librarian:wrong",
+  "monk:safe",
+  "poisoner:poisoned",
+  "scarletWoman:isTheDemon",
+  "slayer:noAbility",
+  "undertaker:diedToday",
+  "virgin:noAbility",
+  "washerwoman:townsfolk",
+  "washerwoman:wrong",
+]);
 const spyPayloadKeys = ["kind", "players"];
 const spyPlayerKeys = [
   "alive",
+  "automaticReminders",
   "characterId",
   "ghostVoteUsed",
   "name",
@@ -172,7 +191,7 @@ export function isSpyGrimoireRevealPayload(value: unknown): value is SpyGrimoire
   return payload.players.every((value) => {
     if (!value || typeof value !== "object") return false;
     const player = value as Record<string, unknown>;
-    if (!hasExactKeys(player, spyPlayerKeys)) return false;
+    if (!hasOnlyKeys(player, spyPlayerKeys)) return false;
     if (
       !nonEmptyString(player.playerId) ||
       playerIds.has(player.playerId) ||
@@ -183,7 +202,11 @@ export function isSpyGrimoireRevealPayload(value: unknown): value is SpyGrimoire
       !characterIds.has(player.characterId) ||
       typeof player.alive !== "boolean" ||
       typeof player.ghostVoteUsed !== "boolean" ||
-      !isOrderedReminderTokens(player.reminderTokens)
+      (player.reminderTokens !== undefined && !isOrderedReminderTokens(player.reminderTokens)) ||
+      (player.automaticReminders !== undefined && (
+        !Array.isArray(player.automaticReminders) ||
+        !player.automaticReminders.every((reminder) => isSpyAutomaticReminder(reminder, player.playerId as string))
+      ))
     ) {
       return false;
     }
@@ -191,6 +214,39 @@ export function isSpyGrimoireRevealPayload(value: unknown): value is SpyGrimoire
     priorSeat = player.seat as number;
     return true;
   });
+}
+
+function isSpyAutomaticReminder(value: unknown, playerId: string): boolean {
+  if (!isAutomaticReminderShape(value)) return false;
+  const reminder = value as Record<string, unknown>;
+  return reminder.playerId === playerId &&
+    troubleBrewingAutomaticReminderPairs.has(`${reminder.characterId}:${reminder.tokenId}`);
+}
+
+function isAutomaticReminderShape(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const reminder = value as Record<string, unknown>;
+  return hasOnlyKeys(reminder, [
+    "playerId",
+    "characterId",
+    "tokenId",
+    "label",
+    "description",
+    "count",
+    "sourceEventId",
+    "inactiveReason",
+  ]) &&
+    nonEmptyString(reminder.playerId) &&
+    nonEmptyString(reminder.characterId) &&
+    nonEmptyString(reminder.tokenId) &&
+    nonEmptyString(reminder.label) &&
+    nonEmptyString(reminder.description) &&
+    (reminder.count === undefined || (Number.isInteger(reminder.count) && Number(reminder.count) >= 0)) &&
+    (reminder.sourceEventId === undefined || nonEmptyString(reminder.sourceEventId)) &&
+    (reminder.inactiveReason === undefined || (
+      nonEmptyString(reminder.inactiveReason) &&
+      nonEmptyString(reminder.sourceEventId)
+    ));
 }
 
 function isOrderedReminderTokens(value: unknown): boolean {
@@ -208,6 +264,11 @@ function isOrderedReminderTokens(value: unknown): boolean {
 function hasExactKeys(value: Record<string, unknown>, expected: string[]): boolean {
   const keys = Object.keys(value).sort();
   return keys.length === expected.length && keys.every((key, index) => key === expected[index]);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, expected: string[]): boolean {
+  const allowed = new Set(expected);
+  return Object.keys(value).every((key) => allowed.has(key));
 }
 
 function nonEmptyString(value: unknown): value is string {

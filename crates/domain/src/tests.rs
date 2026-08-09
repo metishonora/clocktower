@@ -17,6 +17,8 @@ mod issue129_ability_instance_scenarios;
 mod issue130_architecture_scenarios;
 mod issue133_ability_validity_scenarios;
 mod issue134_evil_information_scenarios;
+mod issue140_trouble_brewing_lifecycle_scenarios;
+mod issue152_automatic_reminders_scenarios;
 mod issue86_fortune_teller_former_imp_scenarios;
 mod issue88_butler_vote_scenarios;
 mod issue89_execution_succession_scenarios;

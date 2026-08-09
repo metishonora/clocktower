@@ -103,9 +103,9 @@ fn advance_to_pit_hag(events: &mut Vec<Value>) -> Value {
             return state;
         }
         let step_id = step["id"].as_str().expect("step id");
-        let command = if step["character"] == "philosopher" {
-            json!({ "type": "skipStep", "payload": { "stepId": step_id } })
-        } else if step["requiredInput"]["kind"] == "nomination" {
+        let command = if step["character"] == "philosopher"
+            || step["requiredInput"]["kind"] == "nomination"
+        {
             json!({ "type": "skipStep", "payload": { "stepId": step_id } })
         } else if step["requiredInput"]["kind"] == "executionDecision" {
             json!({ "type": "confirmStep", "payload": { "stepId": step_id, "input": { "execute": false } } })

@@ -27,6 +27,10 @@ pub(crate) fn game_end_reason_ko(cause: GameEndCause) -> &'static str {
     match cause {
         GameEndCause::DemonAbsent => "살아 있는 악마가 없습니다.",
         GameEndCause::TwoLivingPlayers => "생존자가 2명 이하로 남았습니다.",
+        GameEndCause::SaintExecution => "성자가 처형되어 사망했습니다.",
+        GameEndCause::MayorNoExecution => {
+            "시장과 3명 이상이 생존한 낮에 아무도 처형되지 않았습니다."
+        }
         GameEndCause::KlutzChoice => "얼뜨기가 악한 팀을 선택했습니다.",
         GameEndCause::EvilTwinExecution => "선한 쌍둥이가 처형되었습니다.",
         GameEndCause::VortoxNoExecution => "보르톡스가 존재하지만 낮에 아무도 처형되지 않았습니다.",

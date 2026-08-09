@@ -90,6 +90,39 @@ const scriptTokenKeys = new Set([
   "washerwoman:townsfolk",
   "washerwoman:wrong",
 ]);
+const troubleBrewingAutomaticReminderPairs = new Set([
+  "butler:master",
+  "drunk:isTheDrunk",
+  "fortuneTeller:redHerring",
+  "imp:dead",
+  "investigator:minion",
+  "investigator:wrong",
+  "librarian:outsider",
+  "librarian:wrong",
+  "monk:safe",
+  "poisoner:poisoned",
+  "scarletWoman:isTheDemon",
+  "slayer:noAbility",
+  "undertaker:diedToday",
+  "virgin:noAbility",
+  "washerwoman:townsfolk",
+  "washerwoman:wrong",
+]);
+const sectsAndVioletsAutomaticReminderCharacters = new Set([
+  "flowergirl",
+  "townCrier",
+  "mathematician",
+  "philosopher",
+  "vigormortis",
+  "noDashii",
+  "fangGu",
+  "witch",
+  "evilTwin",
+  "seamstress",
+  "artist",
+  "juggler",
+  "barber",
+]);
 
 export function parseCoreResult<T>(
   value: unknown,
@@ -335,7 +368,7 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.source !== undefined && !(
           isRecord(payload.source) &&
           hasExactKeys(payload.source, ["kind", "sourceEventId"]) &&
-          (["demonAbsent", "twoLivingPlayers", "klutzChoice", "witchCurseDeath", "evilTwinExecution", "vortoxNoExecution"]
+          (["demonAbsent", "twoLivingPlayers", "saintExecution", "mayorNoExecution", "klutzChoice", "witchCurseDeath", "evilTwinExecution", "vortoxNoExecution"]
             .includes(String(payload.source.kind))) &&
           typeof payload.source.sourceEventId === "string"
         ))
@@ -505,7 +538,7 @@ function isPendingDeathConsequence(value: unknown): boolean {
 }
 
 function isGameEndCause(value: unknown): boolean {
-  return ["demonAbsent", "twoLivingPlayers", "klutzChoice", "evilTwinExecution", "vortoxNoExecution"]
+  return ["demonAbsent", "twoLivingPlayers", "saintExecution", "mayorNoExecution", "klutzChoice", "evilTwinExecution", "vortoxNoExecution"]
     .includes(String(value));
 }
 
@@ -913,6 +946,16 @@ function isSpyGrimoirePlayer(value: unknown): boolean {
   if (
     !(
       isRecord(value) &&
+      hasOnlyKeys(value, [
+        "playerId",
+        "seat",
+        "name",
+        "characterId",
+        "alive",
+        "ghostVoteUsed",
+        "reminderTokens",
+        "automaticReminders",
+      ]) &&
       typeof value.playerId === "string" &&
       typeof value.seat === "number" &&
       Number.isInteger(value.seat) &&
@@ -927,12 +970,24 @@ function isSpyGrimoirePlayer(value: unknown): boolean {
     typeof value.alive === "boolean" &&
     typeof value.ghostVoteUsed === "boolean" &&
     Array.isArray(value.reminderTokens) &&
-    value.reminderTokens.every((token) => token === "poisoned" || token === "protected");
+    value.reminderTokens.every((token) => token === "poisoned" || token === "protected") &&
+    (value.automaticReminders === undefined || (
+      Array.isArray(value.automaticReminders) &&
+      value.automaticReminders.every((reminder) => isTroubleBrewingSpyReminder(reminder, value.playerId as string))
+    ));
   const isLegacy =
     value.alive === undefined &&
     value.ghostVoteUsed === undefined &&
-    value.reminderTokens === undefined;
+    value.reminderTokens === undefined &&
+    value.automaticReminders === undefined;
   return hasSnapshotFields || isLegacy;
+}
+
+function isTroubleBrewingSpyReminder(value: unknown, playerId: string): boolean {
+  return isAutomaticReminder(value) &&
+    isRecord(value) &&
+    value.playerId === playerId &&
+    troubleBrewingAutomaticReminderPairs.has(`${value.characterId}:${value.tokenId}`);
 }
 
 function isDeliveryContext(value: unknown): boolean {
@@ -1171,8 +1226,9 @@ function isAutomaticReminder(value: unknown): boolean {
   return isRecord(value) &&
     hasOnlyKeys(value, ["playerId", "characterId", "tokenId", "label", "description", "count", "sourceEventId", "inactiveReason"]) &&
     typeof value.playerId === "string" &&
-    ["flowergirl", "townCrier", "mathematician", "philosopher", "vigormortis", "noDashii", "fangGu", "witch", "evilTwin", "seamstress", "artist", "juggler", "barber"].includes(String(value.characterId)) &&
     typeof value.tokenId === "string" &&
+    (sectsAndVioletsAutomaticReminderCharacters.has(String(value.characterId)) ||
+      troubleBrewingAutomaticReminderPairs.has(`${value.characterId}:${value.tokenId}`)) &&
     typeof value.label === "string" &&
     typeof value.description === "string" &&
     (value.count === undefined || (Number.isInteger(value.count) && Number(value.count) >= 0)) &&

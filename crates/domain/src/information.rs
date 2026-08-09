@@ -218,7 +218,13 @@ fn spy_information_result(
     } else {
         Vec::new()
     };
-    Some(spy_grimoire_result(players, &poisoned, &protected))
+    let automatic_reminders = crate::characters::automatic_reminders(players, events);
+    Some(spy_grimoire_result(
+        players,
+        &poisoned,
+        &protected,
+        &automatic_reminders,
+    ))
 }
 
 fn is_normal_night_prefix(prefix: &str) -> bool {
@@ -482,7 +488,7 @@ fn legacy_spy_information_is_valid(
     {
         return false;
     }
-    let expected = spy_grimoire_result(players, &[], &[]);
+    let expected = spy_grimoire_result(players, &[], &[], &[]);
     information
         .computed_result
         .as_ref()

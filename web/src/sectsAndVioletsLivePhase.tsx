@@ -9,9 +9,9 @@ import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets"
 import { sectsAndVioletsCharacterDetail } from "./characterDetails";
 import { CharacterDetailButton } from "./components/CharacterRulesCard";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
-import { centeredArrowPoints, grimoireHeights, inwardSelfNominationPath, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
+import { grimoireHeights, rectangularSeatPositions } from "./sectsAndVioletsGrimoireLayout";
 import "./features/phase-control/sectsAndVioletsInformationTask.css";
-import "./issue116PhaseHandoffPrototype.css";
+import { PlayPresentation } from "./shared-ui/PlayPresentation";
 import "./features/grimoire/sectsAndVioletsSeatStates.css";
 import { DayActionRecordHistory } from "./features/day-actions/DayActionDock";
 import {
@@ -25,6 +25,9 @@ import {
 } from "./features/pitHag/PitHagSelectionPanel";
 import { NightResultsAnnouncement } from "./features/phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadges";
+import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
+import { NominationArrow } from "./shared-ui/NominationArrow";
+import { GrimoireToolbar } from "./shared-ui/GrimoireToolbar";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -108,8 +111,12 @@ export function SectsAndVioletsLiveProgress({
   />;
 
   return (
-    <section className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`} aria-label={isDay ? "공개 토론" : "이후 밤 진행"}>
-      <header className="snvFirstNightHeader">
+    <PlayPresentation
+      className={`snvManualSurface snvTabPanel ${isDay ? "snvDaySurface" : "snvNightSurface"}`}
+      ariaLabel={isDay ? "공개 토론" : "이후 밤 진행"}
+      headerClassName="snvFirstNightHeader"
+      primaryClassName="snvFirstNightPrimary"
+      phaseHeader={<>
         <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
         <div className="snvProgressPhaseHeader">
           <h2>{phaseLabel}</h2>
@@ -120,9 +127,8 @@ export function SectsAndVioletsLiveProgress({
             {phaseRuntime}
           </time>
         </div>
-      </header>
-      <div className="snvFirstNightPrimary">
-        {priorityPanel ?? (step?.requiredInput.kind === "nomination" ? (
+      </>}
+      currentTask={priorityPanel ?? (step?.requiredInput.kind === "nomination" ? (
           <article className="snvCurrentStep issue116CurrentStep">
             <h3>지명 및 투표</h3>
             <div className="issue116CandidateSummary" aria-label="현재 최고 득표">
@@ -303,9 +309,8 @@ export function SectsAndVioletsLiveProgress({
             </div>
           </article>
         ) : null)}
-      </div>
-      {priorityPanelPlayerSafe ? null : <PhaseOverview replayState={replayState} />}
-    </section>
+      phaseOrder={priorityPanelPlayerSafe ? null : <PhaseOverview replayState={replayState} />}
+    />
   );
 }
 
@@ -454,21 +459,19 @@ export function SectsAndVioletsLiveGrimoire({
   return (
     <section className={`snvSeatingSurface snvTabPanel issue116GrimoireSurface${modeClass}`} aria-label={readOnly ? "종료된 게임의 읽기 전용 마도서" : currentStep?.phase === "day" ? "낮 마도서" : "밤 마도서"}>
       {handoff ? (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구">
-          <span className="issue116PhaseChip">{phaseLabel}</span>
-          {actorId ? <div className="snvCurrentActorLegend" aria-label="현재 행동자 안내"><span aria-hidden="true" />현재 행동자</div> : null}
+        <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorId)}>
           {!handoff.complete && (handoff.kind === "nomination" || handoff.kind === "vote") ? (
             <button type="button" disabled={operationBusy} onClick={onCancelDayHandoff}>{handoff.kind === "nomination" ? "돌아가기 →" : "투표 취소 →"}</button>
           ) : !handoff.complete && (handoff.kind === "pitHag" || handoff.kind === "evilTwin" || handoff.kind === "witch" || isDeathConsequenceHandoff(handoff)) ? (
             <button type="button" disabled={operationBusy} onClick={onReturn}>선택 취소 →</button>
           ) : null}
-        </div>
+        </GrimoireToolbar>
       ) : readOnly ? (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구"><span className="issue116PhaseChip">읽기 전용</span></div>
+        <GrimoireToolbar phaseLabel="읽기 전용" />
       ) : (
-        <div className="snvSeatingToolbar" aria-label="마도서 도구">
+        <GrimoireToolbar>
           <button type="button" className="snvToolbarBack destructive" aria-label="배치로 돌아가기" onClick={onReturnToSetup}><span aria-hidden="true">←</span></button>
-        </div>
+        </GrimoireToolbar>
       )}
       <div className={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}`} style={sizeStyle}>
         <div className="snvGrimoireDraft rectangular" aria-label={`${players.length}자리 그리모어`} style={sizeStyle}>
@@ -696,6 +699,7 @@ export function SectsAndVioletsLiveGrimoire({
       </div>
       {!handoff && detailsPlayer && detailsCharacter ? (
         <PlayerTokenDetailDialog
+          characterDetails={sectsAndVioletsCharacterDetail(detailsPlayer.seatCharacterId ?? detailsPlayer.actualCharacter)}
           player={{
             characterId: detailsPlayer.seatCharacterId ?? detailsPlayer.actualCharacter,
             seat: detailsPlayer.seat,
@@ -866,36 +870,4 @@ function isDemonCharacter(character?: string) {
 
 function isDeathConsequenceHandoff(handoff?: LiveHandoff) {
   return handoff?.kind === "sweetheart" || handoff?.kind === "barber" || handoff?.kind === "klutz";
-}
-
-function NominationArrow({ nominatorIndex, nomineeIndex, label, desktopPositions, mobilePositions }: {
-  nominatorIndex: number;
-  nomineeIndex: number;
-  label: string;
-  desktopPositions: { x: number; y: number }[];
-  mobilePositions: { x: number; y: number }[];
-}) {
-  return <><ArrowGraphic className="desktop" label={label} start={desktopPositions[nominatorIndex]} end={desktopPositions[nomineeIndex]} /><ArrowGraphic className="mobile" start={mobilePositions[nominatorIndex]} end={mobilePositions[nomineeIndex]} /></>;
-}
-
-function ArrowGraphic({ className, label, start, end }: { className: string; label?: string; start: { x: number; y: number }; end: { x: number; y: number } }) {
-  const selfNomination = start.x === end.x && start.y === end.y;
-  return (
-    <svg className={`issue116NominationArrow ${className}${selfNomination ? " issue116SelfNominationArrow" : ""}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={label} aria-hidden={label ? undefined : true}>
-      <defs><marker id={`snvLiveArrow-${className}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
-      {selfNomination ? <path d={inwardSelfNominationPath(start)} markerEnd={`url(#snvLiveArrow-${className})`} /> : <polyline points={centeredArrowPoints(start, end)} markerEnd={`url(#snvLiveArrow-${className})`} />}
-    </svg>
-  );
-}
-
-function FuneralIcon() {
-  return <span className="snvFuneralIcon" aria-hidden="true"><svg viewBox="0 0 40 52"><path d="M4 2h32v46L20 39 4 48Z" /><path className="snvFuneralMark" d="M20 12v19M13 20h14" /></svg></span>;
-}
-
-function GhostVoteIcon() {
-  return (
-    <svg className="snvGhostVoteIcon" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M14 50V30C14 18 21 10 32 10s18 8 18 20v20l-6-5-6 5-6-5-6 5-6-5-6 5Z" />
-    </svg>
-  );
 }

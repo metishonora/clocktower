@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { SectsAndVioletsGameSurface } from "./sectsAndVioletsGame";
+import {
+  SectsAndVioletsGameSurface,
+  type SnvPresentation,
+  type SnvSetupDraft,
+} from "./sectsAndVioletsGame";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { wasmCoreAdapter } from "./core/wasmClient";
 import { SECTS_AND_VIOLETS } from "./core/scripts";
-import { IndexedDbGameStorageDriver, type GameStorageDriver } from "./gameStorage";
+import {
+  IndexedDbWebSessionStorageDriver,
+  type CompatibleWebSessionStorage,
+} from "./webSessionStorage";
 import {
   DEFAULT_BUG_REPORT_EMAIL,
   type BugReportDelivery,
@@ -16,12 +23,13 @@ export function SectsAndVioletsApp({
   bugReportDelivery,
 }: {
   coreAdapter?: CoreAdapter;
-  storageDriver?: GameStorageDriver;
+  storageDriver?: CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>;
   bugReportEmail?: string;
   bugReportDelivery?: BugReportDelivery;
 } = {}) {
-  const [storage] = useState<GameStorageDriver>(
-    () => storageDriver ?? new IndexedDbGameStorageDriver(SECTS_AND_VIOLETS),
+  const [storage] = useState<CompatibleWebSessionStorage<SnvSetupDraft, SnvPresentation>>(
+    () => storageDriver
+      ?? new IndexedDbWebSessionStorageDriver<SnvSetupDraft, SnvPresentation>(SECTS_AND_VIOLETS),
   );
   return (
     <SectsAndVioletsGameSurface

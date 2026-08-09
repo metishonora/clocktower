@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter.js";
+import {
+  CanonicalSessionController,
+  replayMatches,
+  type CanonicalReplaySnapshot,
+} from "./core/canonicalSessionController.js";
 import type {
   CoreResult,
   GameEvent,
@@ -11,7 +16,6 @@ import type {
   PlayerAnnotationsInput,
   Proposal,
   RevealPayload,
-  ReplayState,
   SeatLayoutState,
   SetupDistribution,
 } from "./core/types.js";
@@ -19,18 +23,25 @@ import { scriptDisplayName, type ScriptId } from "./core/scripts.js";
 import {
   exportGameFileJson,
   importGameFileJson,
-  loadLatestGame,
-  saveLatestGame,
-  type GameStorageDriver,
 } from "./gameStorage.js";
 import { proposalRevealPayload } from "./core/revealPayload.js";
+import {
+  latestCanonicalUndoUnit,
+} from "./core/canonicalUndo.js";
 import { syncSetupDraftFromReplayState } from "./gameStoreSync.js";
 import {
   createSetupDraft,
   createSetupDraftFromConfirmedPlayers,
+  setupDraftSelectedCharacterIds,
   toCreateGamePlayers,
   type SetupDraft,
 } from "./setupDraft.js";
+import {
+  loadCompatibleWebSession,
+  saveCompatibleWebSession,
+  type CompatibleWebSessionStorage,
+  type WebSessionSnapshot,
+} from "./webSessionStorage.js";
 
 export function createGameFile(scriptId: ScriptId, events: GameEvent[] = []): GameFile {
   const now = new Date().toISOString();
@@ -51,8 +62,10 @@ export function createGameFile(scriptId: ScriptId, events: GameEvent[] = []): Ga
 export type GameStoreDependencies = {
   scriptId: ScriptId;
   core: CoreAdapter;
-  storage: GameStorageDriver;
+  storage: CompatibleWebSessionStorage<SetupDraft, TbSessionPresentation>;
 };
+
+export type TbSessionPresentation = Record<string, never>;
 
 export type PendingConfirmedReveal = {
   payload: RevealPayload;
@@ -61,10 +74,16 @@ export type PendingConfirmedReveal = {
 };
 
 export function useGameStore({ scriptId, core, storage }: GameStoreDependencies) {
-  const [storageDriver] = useState<GameStorageDriver>(() => storage);
+  const [storageDriver] = useState<CompatibleWebSessionStorage<SetupDraft, TbSessionPresentation>>(
+    () => storage,
+  );
+  const canonicalSession = useMemo(
+    () => new CanonicalSessionController(scriptId, core),
+    [core, scriptId],
+  );
   const [gameFile, setGameFile] = useState<GameFile>(() => createGameFile(scriptId));
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(() => createSetupDraft());
-  const [replayResult, setReplayResult] = useState<CoreResult<ReplayState>>();
+  const [replayResult, setReplayResult] = useState<CoreResult<CanonicalReplaySnapshot>>();
   const [proposalResult, setProposalResult] = useState<CoreResult<Proposal>>();
   const [pendingConfirmedReveal, setPendingConfirmedReveal] = useState<PendingConfirmedReveal>();
   const [asyncSetupExpectedCounts, setAsyncSetupExpectedCounts] = useState<{
@@ -73,7 +92,6 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   }>();
   const [busy, setBusy] = useState(false);
   const [undoReplayPending, setUndoReplayPending] = useState(false);
-  const undoReplayTargetEventCount = useRef<number | undefined>(undefined);
   const [loadError, setLoadError] = useState<string>();
   const [storageReady, setStorageReady] = useState(false);
   const [autosaveRecoveryError, setAutosaveRecoveryError] = useState<string>();
@@ -83,27 +101,34 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   useEffect(() => {
     let cancelled = false;
 
-    loadLatestGame(storageDriver)
-      .then(async (storedGameFile) => {
+    loadCompatibleWebSession(
+      storageDriver,
+      (canonical) => createTbSessionSnapshot(
+        scriptId,
+        canonical ?? createGameFile(scriptId),
+        createSetupDraft(),
+      ),
+    )
+      .then(async (storedSession) => {
         if (cancelled) return;
-        if (storedGameFile) {
-          const storedReplay = await core.replay(storedGameFile);
-          if (cancelled) return;
-          if (!storedReplay.ok) {
-            setAutosaveRecoveryError(storedReplay.error.messageKo);
-            setStorageReady(true);
-            return;
+        const storedReplay = await canonicalSession.replay(storedSession.canonical);
+        if (cancelled) return;
+        if (!storedReplay.ok) {
+          if (storedReplay.error.code === "STALE_REPLAY") {
+            setGameFile(storedSession.canonical);
+            setSetupDraft(storedSession.setupDraft);
           }
-          setSetupDraft((current) =>
-            syncSetupDraftFromReplayState(
-              current,
-              storedReplay.value,
-              storedGameFile.ui?.seatLayout,
-            ),
-          );
-          setReplayResult(storedReplay);
-          setGameFile(storedGameFile);
+          setAutosaveRecoveryError(storedReplay.error.messageKo);
+          setStorageReady(true);
+          return;
         }
+        setSetupDraft(syncSetupDraftFromReplayState(
+          storedSession.setupDraft,
+          storedReplay.value,
+          storedSession.canonical.ui?.seatLayout,
+        ));
+        setReplayResult(storedReplay);
+        setGameFile(storedSession.canonical);
         setStorageReady(true);
       })
       .catch((error: unknown) => {
@@ -115,44 +140,39 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     return () => {
       cancelled = true;
     };
-  }, [core, storageDriver]);
+  }, [canonicalSession, scriptId, storageDriver]);
 
   useEffect(() => {
-    if (!storageReady || autosaveRecoveryError || storageWriteError) return;
+    if (!storageReady || autosaveRecoveryError) return;
 
-    saveLatestGame(gameFile, storageDriver)
+    saveCompatibleWebSession(
+      createTbSessionSnapshot(scriptId, gameFile, setupDraft),
+      storageDriver,
+    )
       .then(() => setStorageWriteError(undefined))
       .catch((error: unknown) => {
         setStorageWriteError(error instanceof Error ? error.message : "게임 자동 저장 실패");
       });
-  }, [autosaveRecoveryError, gameFile, storageDriver, storageReady, storageWriteError]);
+  }, [autosaveRecoveryError, gameFile, scriptId, setupDraft, storageDriver, storageReady]);
 
   useEffect(() => {
+    if (replayResult?.ok && replayMatches(gameFile, replayResult.value)) return;
     let cancelled = false;
 
-    core.replay(gameFile)
+    canonicalSession.replay(gameFile)
       .then((result) => {
         if (cancelled) return;
         setReplayResult(result);
-        if (
-          undoReplayTargetEventCount.current !== undefined &&
-          (!result.ok || result.value.eventCount === undoReplayTargetEventCount.current)
-        ) {
-          undoReplayTargetEventCount.current = undefined;
-          setUndoReplayPending(false);
-        }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        undoReplayTargetEventCount.current = undefined;
-        setUndoReplayPending(false);
         setLoadError(error instanceof Error ? error.message : "앱 상태 로드 실패");
       });
 
     return () => {
       cancelled = true;
     };
-  }, [core, gameFile]);
+  }, [canonicalSession, gameFile, replayResult]);
 
   const hasConfirmedEvents = gameFile.game.events.length > 0;
   const replayState = replayResult?.ok ? replayResult.value : undefined;
@@ -165,10 +185,14 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   const gameEnd = replayState?.gameEnd;
   const setupConfirmed = players.length > 0;
   const transitionBusy = busy || undoReplayPending;
-  const replayCaughtUp = replayState?.eventCount === gameFile.game.events.length;
+  const replayCaughtUp = replayMatches(gameFile, replayState);
   const latestEvent = gameFile.game.events.at(-1);
-  const latestLiveUndoEvent = latestEvent && latestEvent.type !== "setupConfirmed"
-    ? { id: latestEvent.id, summary: latestEvent.summary }
+  const latestUndoUnit = latestCanonicalUndoUnit(gameFile);
+  const latestLiveUndoEvent = latestUndoUnit
+    ? {
+        ...latestUndoUnit,
+        events: gameFile.game.events.filter((event) => latestUndoUnit.eventIds.includes(event.id)),
+      }
     : undefined;
   const canUndoLatestLiveEvent = Boolean(latestLiveUndoEvent) && !transitionBusy && replayCaughtUp;
   const canRecoverConfirmedSetup =
@@ -181,11 +205,9 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     () => ({
       scriptId,
       playerCount: setupDraft.players.length,
-      actualCharacters: setupDraft.players.flatMap((player) =>
-        player.actualCharacter ? [player.actualCharacter] : [],
-      ),
+      actualCharacters: setupDraftSelectedCharacterIds(setupDraft),
     }),
-    [scriptId, setupDraft.players],
+    [scriptId, setupDraft],
   );
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {
@@ -244,7 +266,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     }
 
     let cancelled = false;
-    core.propose(gameFile, {
+    canonicalSession.propose(gameFile, replayState, {
       type: "createGame",
       payload: { players: createGamePlayers },
     })
@@ -265,7 +287,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     return () => {
       cancelled = true;
     };
-  }, [core, createGamePlayers, gameFile, hasConfirmedEvents]);
+  }, [canonicalSession, createGamePlayers, gameFile, hasConfirmedEvents, replayState]);
 
   async function confirmSetup() {
     if (autosaveRecoveryError) return;
@@ -284,26 +306,17 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     setBusy(true);
     setLoadError(undefined);
 
-    const result = await core.propose(gameFile, {
-      type: "createGame",
-      payload: { players: createGamePlayers },
-    }).catch((error: unknown): CoreResult<Proposal> => ({
-      ok: false,
-      error: {
-        code: "WASM_LOAD_FAILED",
-        messageKo: error instanceof Error ? error.message : "앱 상태 로드 실패",
+    const result = await executeCommand(
+      { type: "createGame", payload: { players: createGamePlayers } },
+      {
+        preset: setupDraft.seatLayoutPreset,
+        positions: structuredClone(setupDraft.seatPositions),
       },
-    }));
+      true,
+    );
 
     setProposalResult(result);
     setBusy(false);
-
-    if (!result.ok) return;
-
-    appendProposalEvent(result.value, {
-      preset: setupDraft.seatLayoutPreset,
-      positions: structuredClone(setupDraft.seatPositions),
-    });
   }
 
   async function confirmCurrentStep(confirmation: PhaseStepConfirmation = {}) {
@@ -315,7 +328,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     if (!currentStep || !ability) return;
     setBusy(true);
     setLoadError(undefined);
-    const result = await core.propose(gameFile, {
+    const result = await executeCommand({
       type: "useSlayerAbility",
       payload: {
         discussionStepId: currentStep.id,
@@ -324,32 +337,24 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
         targetPlayerId,
         targetRegistration,
       },
-    }).catch((error: unknown): CoreResult<Proposal> => ({ ok: false, error: { code: "WASM_LOAD_FAILED", messageKo: error instanceof Error ? error.message : "처단자 능력 확정 실패" } }));
+    });
     setProposalResult(result);
     setBusy(false);
-    if (result.ok) appendProposalEvent(result.value);
   }
 
   async function endGame(winningTeam: "good" | "evil") {
     if (!setupConfirmed || gameEnd) return;
     setBusy(true);
     setLoadError(undefined);
-    const result = await core.propose(gameFile, {
+    const result = await executeCommand({
       type: "endGame",
       payload: {
         winningTeam,
         expectedEventCount: gameFile.game.events.length,
       },
-    }).catch((error: unknown): CoreResult<Proposal> => ({
-      ok: false,
-      error: {
-        code: "WASM_LOAD_FAILED",
-        messageKo: error instanceof Error ? error.message : "게임 종료 확정 실패",
-      },
-    }));
+    });
     setProposalResult(result);
     setBusy(false);
-    if (result.ok) appendProposalEvent(result.value);
   }
 
   async function updatePlayerAnnotations(
@@ -359,23 +364,16 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     if (!setupConfirmed || gameEnd || transitionBusy) return undefined;
     setBusy(true);
     setLoadError(undefined);
-    const result = await core.propose(gameFile, {
+    const result = await executeCommand({
       type: "updatePlayerAnnotations",
       payload: {
         playerId,
         expectedEventCount: gameFile.game.events.length,
         ...annotations,
       },
-    }).catch((error: unknown): CoreResult<Proposal> => ({
-      ok: false,
-      error: {
-        code: "WASM_LOAD_FAILED",
-        messageKo: error instanceof Error ? error.message : "플레이어 표시 수정 실패",
-      },
-    }));
+    });
     setProposalResult(result);
     setBusy(false);
-    if (result.ok) appendProposalEvent(result.value);
     return result;
   }
 
@@ -420,92 +418,134 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
             },
           }
         : { type: "skipStep" as const, payload: { stepId: currentStep.id, input: null as null } };
-    const result = await core.propose(gameFile, command).catch((error: unknown): CoreResult<Proposal> => ({
-      ok: false,
-      error: {
-        code: "WASM_LOAD_FAILED",
-        messageKo: error instanceof Error ? error.message : "앱 상태 로드 실패",
-      },
-    }));
+    const result = await executeCommand(command, undefined, false, (proposed) => {
+      if (commandType !== "confirmStep") return;
+      const payload = proposalRevealPayload(proposed);
+      if (!payload) return;
+      setPendingConfirmedReveal({
+        payload,
+        step: currentStep,
+        confirmedEventCount: gameFile.game.events.length + 1,
+      });
+    });
 
     setProposalResult(result);
     setBusy(false);
 
-    if (!result.ok) return;
-    if (commandType === "confirmStep") {
-      const payload = proposalRevealPayload(result.value);
-      if (payload) {
-        setPendingConfirmedReveal({
-          payload,
-          step: currentStep,
-          confirmedEventCount: gameFile.game.events.length + 1,
-        });
-      }
-    }
-    appendProposalEvent(result.value);
   }
 
-  function appendProposalEvent(proposal: Proposal, seatLayout?: SeatLayoutState) {
-    setGameFile((current) => ({
-      ...current,
-      ...(seatLayout ? { ui: { seatLayout } } : {}),
-      game: {
-        ...current.game,
-        updatedAt: new Date().toISOString(),
-        events: [...current.game.events, proposal.event],
-      },
-    }));
+  async function executeCommand(
+    command: import("./core/types.js").Command,
+    seatLayout?: SeatLayoutState,
+    durable = false,
+    onProposed?: (proposal: Proposal) => void,
+  ): Promise<CoreResult<Proposal>> {
+    const executed = await canonicalSession.execute(gameFile, replayState, command, onProposed);
+    if (!executed.ok) return executed;
+    const nextGameFile = seatLayout
+      ? { ...executed.value.gameFile, ui: { seatLayout } }
+      : executed.value.gameFile;
+    if (durable) {
+      try {
+        await saveCompatibleWebSession(
+          createTbSessionSnapshot(scriptId, nextGameFile, setupDraft),
+          storageDriver,
+        );
+        setStorageWriteError(undefined);
+      } catch (error) {
+        const messageKo = error instanceof Error ? error.message : "게임 자동 저장 실패";
+        setStorageWriteError(messageKo);
+        return { ok: false, error: { code: "STORAGE_WRITE_FAILED", messageKo } };
+      }
+    }
+    setReplayResult({ ok: true, value: executed.value.replayState });
+    setGameFile(nextGameFile);
+    return { ok: true, value: executed.value.proposal };
   }
 
   function resetSetup() {
-    if (hasConfirmedEvents && !window.confirm("현재 확정된 이벤트를 새 게임으로 교체할까요?")) {
-      return;
-    }
-
-    undoReplayTargetEventCount.current = undefined;
     setUndoReplayPending(false);
     setAutosaveRecoveryError(undefined);
     setStorageWriteError(undefined);
     setLoadError(undefined);
+    setReplayResult(undefined);
     setGameFile(createGameFile(scriptId));
+    setGameSessionRevision((current) => current + 1);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
     setSetupDraft(createSetupDraft());
   }
 
+  function returnToConfirmedSetup() {
+    if (!setupConfirmed || transitionBusy || players.length === 0) return;
+    const preservedDraft = createSetupDraftFromConfirmedPlayers(players, gameFile.ui?.seatLayout);
+    setUndoReplayPending(false);
+    setAutosaveRecoveryError(undefined);
+    setStorageWriteError(undefined);
+    setLoadError(undefined);
+    setReplayResult(undefined);
+    setGameFile(createGameFile(scriptId));
+    setGameSessionRevision((current) => current + 1);
+    setProposalResult(undefined);
+    setPendingConfirmedReveal(undefined);
+    setSetupDraft({ ...preservedDraft, rosterConfirmed: true, setupStage: "seating" });
+  }
+
   function removeLatestEvent(expectedEventId: string, expectedType: "live" | "setup"): boolean {
     const currentLatestEvent = gameFile.game.events.at(-1);
+    const currentUndoUnit = expectedType === "live" ? latestCanonicalUndoUnit(gameFile) : undefined;
     const typeMatches = expectedType === "setup"
       ? currentLatestEvent?.type === "setupConfirmed" && gameFile.game.events.length === 1
-      : currentLatestEvent?.type !== "setupConfirmed";
+      : currentUndoUnit !== undefined;
+    const currentTargetId = expectedType === "setup" ? currentLatestEvent?.id : currentUndoUnit?.id;
     if (
       transitionBusy ||
       !replayCaughtUp ||
       !currentLatestEvent ||
-      currentLatestEvent.id !== expectedEventId ||
+      currentTargetId !== expectedEventId ||
       !typeMatches
     ) {
       setLoadError("최근 행동이 변경되어 되돌리지 않았습니다.");
       return false;
     }
 
-    const nextEventCount = gameFile.game.events.length - 1;
-    undoReplayTargetEventCount.current = nextEventCount;
     setUndoReplayPending(true);
     setStorageWriteError(undefined);
     setLoadError(undefined);
     setProposalResult(undefined);
     setPendingConfirmedReveal(undefined);
-    setGameFile((current) => {
-      const nextGame = {
-        ...current.game,
-        updatedAt: new Date().toISOString(),
-        events: current.game.events.slice(0, -1),
+    if (expectedType === "live") {
+      const prepared = canonicalSession.prepareUndo(gameFile, replayState, expectedEventId);
+      if (!prepared.ok) {
+        setLoadError(prepared.error.messageKo);
+        setUndoReplayPending(false);
+        return false;
+      }
+      setGameFile(prepared.value.gameFile);
+      void canonicalSession.replay(prepared.value.gameFile).then((result) => {
+        if (!result.ok) setLoadError(result.error.messageKo);
+        else setReplayResult(result);
+        setUndoReplayPending(false);
+      });
+    } else {
+      const nextGameFile: GameFile = {
+        schemaVersion: 3,
+        game: {
+          ...gameFile.game,
+          updatedAt: new Date().toISOString(),
+          events: gameFile.game.events.slice(0, -1),
+        },
       };
-      return expectedType === "setup"
-        ? { schemaVersion: 3, game: nextGame }
-        : { ...current, game: nextGame };
-    });
+      void canonicalSession.replay(nextGameFile).then((result) => {
+        if (!result.ok) {
+          setLoadError(result.error.messageKo);
+        } else {
+          setGameFile(nextGameFile);
+          setReplayResult(result);
+        }
+        setUndoReplayPending(false);
+      });
+    }
     return true;
   }
 
@@ -535,7 +575,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     setLoadError(undefined);
     try {
       const importedGameFile = importGameFileJson(json, scriptId);
-      const importedReplay = await core.replay(importedGameFile);
+      const importedReplay = await canonicalSession.replay(importedGameFile);
       if (!importedReplay.ok) {
         setLoadError(importedReplay.error.messageKo);
         return;
@@ -553,7 +593,6 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
       );
       setAutosaveRecoveryError(undefined);
       setStorageWriteError(undefined);
-      undoReplayTargetEventCount.current = undefined;
       setUndoReplayPending(false);
       setGameFile(importedGameFile);
       setGameSessionRevision((current) => current + 1);
@@ -603,11 +642,27 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     endGame,
     updatePlayerAnnotations,
     resetSetup,
+    returnToConfirmedSetup,
     undoLatestLiveEvent,
     recoverConfirmedSetup,
     clearProposalResult,
     continueAfterConfirmedReveal,
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
+  };
+}
+
+function createTbSessionSnapshot(
+  scriptId: ScriptId,
+  canonical: GameFile,
+  setupDraft: SetupDraft,
+): WebSessionSnapshot<SetupDraft, TbSessionPresentation> {
+  return {
+    version: 1,
+    scriptId,
+    savedAt: new Date().toISOString(),
+    canonical,
+    setupDraft,
+    presentation: {},
   };
 }

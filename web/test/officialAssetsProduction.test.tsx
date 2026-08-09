@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver, createCoreHarness, event, gameFile, proposal, replayState, step } from "./clocktowerAppHarness";
@@ -13,8 +14,9 @@ test("production setup renders bundled official icons without the landing-only C
 
   render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(undefined)} />);
 
-  const pool = await screen.findByLabelText("Trouble Brewing 캐릭터 풀");
-  const washerwoman = within(pool).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" });
+  const pool = await screen.findByLabelText("Trouble Brewing 직업 선택 패널");
+  const washerwoman = within(pool).getByRole("button", { name: "세탁부" }).querySelector("img");
+  if (!washerwoman) throw new Error("세탁부 공식 캐릭터 아이콘이 렌더링되지 않았습니다.");
   expect(washerwoman.getAttribute("src")).toMatch(/\/assets\/characters\/tb\/washerwoman_g\.webp$/);
   expect(washerwoman.getAttribute("src")).not.toContain("release.botc.app");
 
@@ -33,7 +35,8 @@ test("production live play renders official icons without the landing-only CCC n
 
   const actor = await screen.findByLabelText("현재 행동자");
   expect(within(actor).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
-  const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
-  expect(within(grimoire).getByRole("img", { name: "세탁부 공식 캐릭터 아이콘" })).toBeTruthy();
+  await userEvent.setup().click(screen.getByRole("button", { name: "마도서" }));
+  const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
+  expect(grimoire.querySelector('img[src*="washerwoman_g.webp"]')).toBeTruthy();
   expect(screen.queryByLabelText("Community Created Content 안내")).toBeNull();
 });

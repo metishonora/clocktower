@@ -45,6 +45,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,webmanifest,wasm,png,svg,webp}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
       },
     }),
@@ -55,6 +56,7 @@ export default defineConfig({
         landing: `${webRoot}index.html`,
         troubleBrewing: `${webRoot}trouble-brewing/index.html`,
         sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
+        invitation260816: `${webRoot}invitation/260816/index.html`,
       },
     },
   },

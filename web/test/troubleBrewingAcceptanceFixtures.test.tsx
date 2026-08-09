@@ -6,6 +6,7 @@ import { importGameFileJson } from "../src/gameStorage";
 import { isSpyGrimoireRevealPayload } from "../src/core/revealPayload";
 import { RevealScreen } from "../src/reveal";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
+import type { ReplayState } from "../src/core/types";
 
 type AcceptanceManifest = {
   schemaVersion: 1;
@@ -61,6 +62,7 @@ const checklist = readFileSync(
 const manifest = JSON.parse(
   readFileSync(resolve(fixtureRoot, "manifest.json"), "utf8"),
 ) as AcceptanceManifest;
+const replayGoldenPath = resolve(fixtureRoot, "replay-state-golden.json");
 
 const allCharacterIds = [
   "washerwoman",
@@ -113,6 +115,21 @@ describe("Trouble Brewing acceptance fixtures", () => {
     }
   });
 
+  it("matches the full canonical ReplayState golden for all 55 immutable inputs", async () => {
+    const actual: Record<string, ReplayState> = {};
+    for (const acceptanceCase of manifest.cases) {
+      const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
+      const gameFile = importGameFileJson(json);
+      const immutableInput = structuredClone(gameFile);
+      actual[acceptanceCase.id] = await replayOrThrow(gameFile);
+      expect(gameFile).toEqual(immutableInput);
+      expect(readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8")).toBe(json);
+    }
+    const expected = JSON.parse(readFileSync(replayGoldenPath, "utf8")) as Record<string, ReplayState>;
+    expect(Object.keys(expected)).toHaveLength(55);
+    expect(actual).toEqual(expected);
+  });
+
   it("INF-05 exposes only current Spy reminder tokens and safe player state", async () => {
     const acceptanceCase = manifest.cases.find(({ id }) => id === "spy-grimoire-reveal");
     expect(acceptanceCase).toBeDefined();
@@ -134,8 +151,18 @@ describe("Trouble Brewing acceptance fixtures", () => {
     );
     for (const player of proposal.revealPayload.players) {
       expect(player.reminderTokens).toEqual(expectedTokens.get(player.seat) ?? []);
+      expect(player.automaticReminders).toBeDefined();
+      expect(player.automaticReminders?.every((reminder) => reminder.playerId === player.playerId)).toBe(true);
+      for (const token of player.reminderTokens ?? []) {
+        expect(player.automaticReminders?.some((reminder) =>
+          token === "poisoned"
+            ? reminder.characterId === "poisoner" && reminder.tokenId === "poisoned" && reminder.label === "중독"
+            : reminder.characterId === "monk" && reminder.tokenId === "safe" && reminder.label === "안전",
+        )).toBe(true);
+      }
       expect(Object.keys(player).sort()).toEqual([
         "alive",
+        "automaticReminders",
         "characterId",
         "ghostVoteUsed",
         "name",
@@ -148,6 +175,16 @@ describe("Trouble Brewing acceptance fixtures", () => {
       expect(proposal.revealPayload.players.find((player) => player.seat === seat)?.reminderTokens)
         .toEqual([]);
     }
+    const canonicalPairs = proposal.revealPayload.players.flatMap((player) =>
+      (player.automaticReminders ?? []).map((reminder) =>
+        `${reminder.characterId}:${reminder.tokenId}:${reminder.label}`,
+      ),
+    );
+    expect(canonicalPairs).toEqual(expect.arrayContaining([
+      "fortuneTeller:redHerring:오답 대상",
+      "poisoner:poisoned:중독",
+      "monk:safe:안전",
+    ]));
     expect(proposal.revealPayload.players.filter(({ alive }) => !alive).map(({ playerId }) => playerId))
       .toEqual(acceptanceCase.checkpoint.deadPlayerIds);
     expect(proposal.revealPayload.players.filter(({ ghostVoteUsed }) => ghostVoteUsed).map(({ playerId }) => playerId))

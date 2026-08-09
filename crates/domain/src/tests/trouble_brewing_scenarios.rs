@@ -846,11 +846,11 @@ fn spy_step_reveals_grimoire_only_through_reveal_payload() {
         .unwrap()
         .contains("현재 단계를 확정합니다."));
     let expected_players = json!([
-        { "playerId": "player-1", "seat": 1, "name": "Ada", "characterId": "chef", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
-        { "playerId": "player-2", "seat": 2, "name": "Bert", "characterId": "empath", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
-        { "playerId": "player-3", "seat": 3, "name": "Cora", "characterId": "fortuneTeller", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
-        { "playerId": "player-4", "seat": 4, "name": "Dev", "characterId": "spy", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] },
-        { "playerId": "player-5", "seat": 5, "name": "Eve", "characterId": "imp", "alive": true, "ghostVoteUsed": false, "reminderTokens": [] }
+        { "playerId": "player-1", "seat": 1, "name": "Ada", "characterId": "chef", "alive": true, "ghostVoteUsed": false, "reminderTokens": [], "automaticReminders": [] },
+        { "playerId": "player-2", "seat": 2, "name": "Bert", "characterId": "empath", "alive": true, "ghostVoteUsed": false, "reminderTokens": [], "automaticReminders": [] },
+        { "playerId": "player-3", "seat": 3, "name": "Cora", "characterId": "fortuneTeller", "alive": true, "ghostVoteUsed": false, "reminderTokens": [], "automaticReminders": [] },
+        { "playerId": "player-4", "seat": 4, "name": "Dev", "characterId": "spy", "alive": true, "ghostVoteUsed": false, "reminderTokens": [], "automaticReminders": [] },
+        { "playerId": "player-5", "seat": 5, "name": "Eve", "characterId": "imp", "alive": true, "ghostVoteUsed": false, "reminderTokens": [], "automaticReminders": [] }
     ]);
     assert_eq!(
         actual["value"]["revealPayload"],
