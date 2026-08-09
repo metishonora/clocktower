@@ -928,11 +928,16 @@ body {
   position: relative;
   z-index: 0;
   display: inline-block;
+  color: inherit;
   font-weight: var(--glyph-weight);
   -webkit-text-stroke: var(--glyph-stroke) currentColor;
   transform: translateY(var(--glyph-y)) rotate(var(--glyph-rotate)) scale(var(--glyph-scale-x), var(--glyph-scale-y));
   opacity: var(--glyph-opacity);
-  filter: url("#promo-ink-distress");
+  /* Keep the primary ink layer independent from an external SVG filter.
+     Safari can clip filtered inline glyphs to the hidden 1px filter source,
+     making the entire letter appear blank. Per-glyph transforms, strokes and
+     the blurred duplicate below retain the handwritten ink variation. */
+  filter: none;
   text-shadow:
     .35px .3px .45px rgba(44, 24, 18, .42),
     0 0 1.2px rgba(74, 40, 27, .24);
