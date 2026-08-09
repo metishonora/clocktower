@@ -31,6 +31,16 @@ test("allows the managed test-server command and injects its session owner", () 
   );
 });
 
+test("allows the direct Node manager entry point and injects its session owner", () => {
+  const command = "node scripts/test-server-manager.mjs status";
+
+  assert.equal(classifyBashCommand(command), "manager");
+  assert.equal(
+    commandWithSession(command, "session-149"),
+    "node scripts/test-server-manager.mjs status --session-id session-149",
+  );
+});
+
 test("does not inject a duplicate session owner", () => {
   const command = "pnpm test-server status --session-id existing";
 

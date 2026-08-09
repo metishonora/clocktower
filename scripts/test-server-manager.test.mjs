@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   allocateAvailablePort,
   assessProcessOwnership,
+  buildChildEnvironment,
   buildPnpmArgs,
   derivePreferredPort,
   parseCliArgs,
@@ -106,6 +107,17 @@ test("passes Vite options through pnpm without a literal argument separator", ()
       "--port",
       "10042",
     ],
+  );
+});
+
+test("prevents the detached pnpm runner from starting an implicit install", () => {
+  assert.deepEqual(
+    buildChildEnvironment({ PATH: "/bin" }, "server-id"),
+    {
+      PATH: "/bin",
+      CLOCKTOWER_TEST_SERVER_ID: "server-id",
+      pnpm_config_verify_deps_before_run: "false",
+    },
   );
 });
 

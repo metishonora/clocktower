@@ -15,8 +15,9 @@ Do not edit application, test, prototype, configuration, hook, or instruction
 files. Do not run Vite, pnpm dev, screen, nohup, kill, pkill, killall, or
 lsof-based termination commands directly.
 
-Use only `pnpm test-server` for start, status, stop, keep, release, and
-reconcile operations. The lifecycle hook supplies the owning Codex session id.
+Use only `node scripts/test-server-manager.mjs` for start, status, stop, keep,
+release, and reconcile operations. The lifecycle hook supplies the owning
+Codex session id.
 
 For start operations, require the manager to allocate and record a
 worktree-specific port, bind to 0.0.0.0 with strict-port handling, run detached,

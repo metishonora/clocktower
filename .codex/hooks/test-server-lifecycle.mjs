@@ -113,11 +113,11 @@ async function main() {
     const command = input.tool_input?.command;
     const classification = classifyBashCommand(command);
     if (classification === "direct-server") {
-      deny("Use `pnpm test-server` for Clocktower test-server startup.");
+      deny("Use `node scripts/test-server-manager.mjs` for Clocktower test-server startup.");
       return;
     }
     if (classification === "unsafe-stop") {
-      deny("Use `pnpm test-server stop`; never terminate an unrecorded test-server process.");
+      deny("Use `node scripts/test-server-manager.mjs stop`; never terminate an unrecorded test-server process.");
       return;
     }
     if (classification === "manager") {

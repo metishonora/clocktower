@@ -22,7 +22,7 @@
 ## Test server lifecycle
 
 - For requested Clocktower test servers, use `clocktower_server_operator` when available; otherwise invoke the repository test-server manager directly. Agent unavailability must not block server operations.
-- Use only `pnpm test-server` for test-server start, status, keep, release, reconcile, and stop operations. Do not improvise Vite, screen, detached-process, port-selection, or process-termination commands.
+- Use only `node scripts/test-server-manager.mjs` for test-server start, status, keep, release, reconcile, and stop operations. `pnpm test-server` is a manual convenience alias, not the agent entry point. Do not improvise Vite, screen, detached-process, port-selection, or process-termination commands.
 - The manager owns worktree-specific port allocation, `0.0.0.0` binding, strict-port handling, detached execution, process ownership, logs, HTTP verification, and the Tailscale IPv4 URL.
 - Never terminate a process not recorded and verified by the manager.
 - By default, stop the session-owned server on the next user turn. Preserve it when the user explicitly requests continued operation.

@@ -104,6 +104,14 @@ export function buildPnpmArgs(packageScript, viteArgs, port) {
   ];
 }
 
+export function buildChildEnvironment(baseEnvironment, serverId) {
+  return {
+    ...baseEnvironment,
+    CLOCKTOWER_TEST_SERVER_ID: serverId,
+    pnpm_config_verify_deps_before_run: "false",
+  };
+}
+
 export function parseCliArgs(argv) {
   const [command, ...rest] = argv;
   if (!ALLOWED_COMMANDS.has(command)) {
@@ -291,7 +299,7 @@ async function startServer(context, { script, sessionId }) {
     child = spawn("pnpm", pnpmArgs, {
       cwd: context.canonicalWorktree,
       detached: true,
-      env: { ...process.env, CLOCKTOWER_TEST_SERVER_ID: reservation.id },
+      env: buildChildEnvironment(process.env, reservation.id),
       stdio: ["ignore", logHandle, logHandle],
     });
     const spawnFailure = new Promise((_, reject) => {
