@@ -11,6 +11,8 @@
     "generate:acceptance:snv": "pnpm build:wasm && node scripts/generate-sects-and-violets-acceptance-fixtures.mjs",
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
-    "test:web": "pnpm --dir web test"
+    "test:web": "pnpm --dir web test",
+    "test-server": "node scripts/test-server-manager.mjs",
+    "test:test-server": "node --test scripts/test-server-manager.test.mjs .codex/hooks/test-server-lifecycle.test.mjs"
   }
 }

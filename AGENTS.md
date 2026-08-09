@@ -21,17 +21,17 @@
 
 ## Test server lifecycle
 
-- Reserve port `5173` for the `develop` worktree. For issue worktrees, use port `10000 + issue number`; choose and record an unused port for other worktrees or necessary exceptions.
-- If the assigned port is occupied by anything other than the server recorded for the current worktree, do not stop it; use and record an alternate port.
-- Run requested test servers detached from the tool session, bound to `0.0.0.0`, and record their PID, port, log, and worktree so they remain available after the response.
-- Stop only a recorded server after verifying its PID and command belong to the current worktree. Never terminate an unknown process merely because it occupies the desired port.
-- Verify the process and server response, then provide a clickable Tailscale IPv4 URL.
-- At the start of the next user turn, stop only the server recorded for that worktree unless the user explicitly asks to keep it running.
+- For requested Clocktower test servers, use `clocktower_server_operator` when available; otherwise invoke the repository test-server manager directly. Agent unavailability must not block server operations.
+- Use only `pnpm test-server` for test-server start, status, keep, release, reconcile, and stop operations. Do not improvise Vite, screen, detached-process, port-selection, or process-termination commands.
+- The manager owns worktree-specific port allocation, `0.0.0.0` binding, strict-port handling, detached execution, process ownership, logs, HTTP verification, and the Tailscale IPv4 URL.
+- Never terminate a process not recorded and verified by the manager.
+- By default, stop the session-owned server on the next user turn. Preserve it when the user explicitly requests continued operation.
 
 ## Completion
 
 - For code changes, run relevant tests, review the complete diff, commit, and push unless the user asks otherwise or an operation is blocked.
 - Do not apply this workflow to questions, planning, research, prototypes, or documentation-only changes unless explicitly requested.
+- Changes limited to test-server management, hooks, or agent configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
 - When closing a ticket, add the smallest practical regression coverage for changed behavior. State why when none is added.
 - For Rust changes, run `cargo test --workspace`.
 - For relevant web changes, run `pnpm --dir web test` and `pnpm --dir web build`.
