@@ -15,58 +15,14 @@ const systemTokenVisualKinds: Record<SystemTokenId, PlayerTokenVisualKind> = {
 
 export function troubleBrewingPlayerTokens(
   player: Player,
-  players: readonly Player[],
+  _players: readonly Player[],
   ruleState?: RuleState,
 ): PlayerTokenPresentation[] {
   const tokens: PlayerTokenPresentation[] = [];
 
-  if (ruleState?.activePoison?.playerId === player.id) {
-    tokens.push(automaticToken(
-      "active-poison",
-      "중독",
-      "poisoner",
-      ruleState.activePoison.sourcePlayerId,
-      players,
-      "impairment",
-      "독살범의 능력으로 현재 중독된 대상입니다.",
-    ));
-  }
-  if (ruleState?.activeProtection?.playerId === player.id) {
-    tokens.push(automaticToken(
-      "active-protection",
-      "보호",
-      "monk",
-      ruleState.activeProtection.sourcePlayerId,
-      players,
-      "assignment",
-      "수도사의 능력으로 현재 보호받는 대상입니다.",
-    ));
-  }
-  if (
-    ruleState?.virginAbility?.actorPlayerId === player.id
-    && ruleState.virginAbility.spent
-  ) {
-    tokens.push({
-      instanceId: "virgin-no-ability",
-      label: "능력 없음",
-      sourceLabel: "성결자",
-      sourceIconSrc: characterAsset("virgin")?.src,
-      visualKind: "usage",
-      description: "성결자의 능력이 지목으로 소모되었습니다.",
-    });
-  }
-  if (
-    ruleState?.slayerAbility?.actorPlayerId === player.id
-    && ruleState.slayerAbility.spent
-  ) {
-    tokens.push({
-      instanceId: "slayer-no-ability",
-      label: "능력 없음",
-      sourceLabel: "처단자",
-      sourceIconSrc: characterAsset("slayer")?.src,
-      visualKind: "usage",
-      description: "처단자의 게임당 한 번인 능력이 소모되었습니다.",
-    });
+  for (const reminder of ruleState?.automaticReminders ?? []) {
+    if (reminder.playerId !== player.id) continue;
+    tokens.push(automaticToken(reminder));
   }
 
   player.systemTokenIds.forEach((tokenId, index) => {
@@ -76,6 +32,7 @@ export function troubleBrewingPlayerTokens(
       sourceLabel: "이야기꾼",
       visualKind: systemTokenVisualKinds[tokenId],
       description: "이야기꾼이 수동으로 부착한 System Token입니다.",
+      origin: "manual",
     });
   });
 
@@ -90,6 +47,7 @@ export function troubleBrewingPlayerTokens(
       sourceIconSrc: characterAsset(reference.characterId)?.src,
       visualKind: reference.tokenId === "poisoned" ? "impairment" : "assignment",
       description: "이야기꾼이 수동으로 부착한 Script Token입니다.",
+      origin: "manual",
     });
   });
 
@@ -97,22 +55,26 @@ export function troubleBrewingPlayerTokens(
 }
 
 function automaticToken(
-  instanceId: string,
-  label: string,
-  fallbackCharacterId: string,
-  sourcePlayerId: string,
-  players: readonly Player[],
-  visualKind: PlayerTokenVisualKind,
-  description: string,
+  reminder: NonNullable<RuleState["automaticReminders"]>[number],
 ): PlayerTokenPresentation {
-  const sourceCharacterId = players.find((player) => player.id === sourcePlayerId)?.actualCharacter
-    ?? fallbackCharacterId;
   return {
-    instanceId,
-    label,
-    sourceLabel: characterLabel(sourceCharacterId),
-    sourceIconSrc: characterAsset(sourceCharacterId)?.src,
-    visualKind,
-    description,
+    instanceId: reminder.sourceEventId
+      ? `canonical-${reminder.sourceEventId}-${reminder.tokenId}-${reminder.playerId}`
+      : `canonical-${reminder.characterId}-${reminder.tokenId}-${reminder.playerId}`,
+    label: reminder.label,
+    sourceLabel: characterLabel(reminder.characterId),
+    sourceIconSrc: characterAsset(reminder.characterId)?.src,
+    visualKind: automaticTokenVisualKind(reminder.tokenId),
+    description: reminder.description,
+    count: reminder.count,
+    inactiveReason: reminder.inactiveReason,
+    origin: "automatic",
   };
+}
+
+function automaticTokenVisualKind(tokenId: string): PlayerTokenVisualKind {
+  if (tokenId === "poisoned") return "impairment";
+  if (tokenId === "noAbility") return "usage";
+  if (tokenId === "master") return "relationship";
+  return "assignment";
 }

@@ -18,9 +18,10 @@ pub(crate) use sects_and_violets::{
 pub(crate) use trouble_brewing::step_key::{TbPhaseKey, TbSemanticStep, TbStepKey};
 pub(crate) use trouble_brewing::TbCharacterId;
 pub(crate) use trouble_brewing::{
-    butler_vote_state, character_can_target_self, character_kind, character_required_input,
-    character_steps, computed_information_result, demon_dead_without_successor, first_night_order,
-    has_actual_outsider, imp_self_kill_successor_ids, is_townsfolk, is_valid_script_token,
+    active_rule_effects, automatic_reminders, butler_vote_state, character_can_target_self,
+    character_kind, character_required_input, character_steps, computed_information_result,
+    demon_dead_without_successor, first_night_order, has_actual_outsider,
+    imp_self_kill_successor_ids, is_townsfolk, is_valid_script_token,
     legal_demon_bluff_character_ids, legal_number_choices, mayor_decision_prompt,
     mayor_win_eligible, night_order, number_result_with_registration_judgments,
     registration_candidate_player_ids, resolve_imp_attack, scarlet_woman_successor,

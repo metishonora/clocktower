@@ -118,6 +118,7 @@ export type InformationResult =
         alive?: boolean;
         ghostVoteUsed?: boolean;
         reminderTokens?: SpyReminderToken[];
+        automaticReminders?: AutomaticReminder[];
       }>;
     };
 
@@ -479,16 +480,7 @@ export type RuleState = {
   butlerVote?: ButlerVoteState;
   activeImpairments?: ActiveImpairment[];
   abilityGrants?: AbilityGrant[];
-  automaticReminders?: Array<{
-    playerId: string;
-    characterId: string;
-    tokenId: string;
-    label: string;
-    description: string;
-    count?: number;
-    sourceEventId?: string;
-    inactiveReason?: string;
-  }>;
+  automaticReminders?: AutomaticReminder[];
   activeWitchCurse?: ActiveWitchCurse;
   evilTwinRelationships?: EvilTwinRelationship[];
 };
@@ -568,6 +560,17 @@ export type TextRevealPayload = {
 
 export type SpyReminderToken = "poisoned" | "protected";
 
+export type AutomaticReminder = {
+  playerId: string;
+  characterId: string;
+  tokenId: string;
+  label: string;
+  description: string;
+  count?: number;
+  sourceEventId?: string;
+  inactiveReason?: string;
+};
+
 export type SpyGrimoireRevealPayload = {
   kind: "spyGrimoire";
   players: Array<{
@@ -577,7 +580,8 @@ export type SpyGrimoireRevealPayload = {
     characterId: string;
     alive: boolean;
     ghostVoteUsed: boolean;
-    reminderTokens: SpyReminderToken[];
+    reminderTokens?: SpyReminderToken[];
+    automaticReminders?: AutomaticReminder[];
   }>;
 };
 

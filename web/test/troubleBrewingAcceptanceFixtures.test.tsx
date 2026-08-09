@@ -151,8 +151,18 @@ describe("Trouble Brewing acceptance fixtures", () => {
     );
     for (const player of proposal.revealPayload.players) {
       expect(player.reminderTokens).toEqual(expectedTokens.get(player.seat) ?? []);
+      expect(player.automaticReminders).toBeDefined();
+      expect(player.automaticReminders?.every((reminder) => reminder.playerId === player.playerId)).toBe(true);
+      for (const token of player.reminderTokens ?? []) {
+        expect(player.automaticReminders?.some((reminder) =>
+          token === "poisoned"
+            ? reminder.characterId === "poisoner" && reminder.tokenId === "poisoned" && reminder.label === "중독"
+            : reminder.characterId === "monk" && reminder.tokenId === "safe" && reminder.label === "안전",
+        )).toBe(true);
+      }
       expect(Object.keys(player).sort()).toEqual([
         "alive",
+        "automaticReminders",
         "characterId",
         "ghostVoteUsed",
         "name",
@@ -165,6 +175,16 @@ describe("Trouble Brewing acceptance fixtures", () => {
       expect(proposal.revealPayload.players.find((player) => player.seat === seat)?.reminderTokens)
         .toEqual([]);
     }
+    const canonicalPairs = proposal.revealPayload.players.flatMap((player) =>
+      (player.automaticReminders ?? []).map((reminder) =>
+        `${reminder.characterId}:${reminder.tokenId}:${reminder.label}`,
+      ),
+    );
+    expect(canonicalPairs).toEqual(expect.arrayContaining([
+      "fortuneTeller:redHerring:오답 대상",
+      "poisoner:poisoned:중독",
+      "monk:safe:안전",
+    ]));
     expect(proposal.revealPayload.players.filter(({ alive }) => !alive).map(({ playerId }) => playerId))
       .toEqual(acceptanceCase.checkpoint.deadPlayerIds);
     expect(proposal.revealPayload.players.filter(({ ghostVoteUsed }) => ghostVoteUsed).map(({ playerId }) => playerId))

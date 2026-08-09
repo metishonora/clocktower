@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
-import type { Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
+import type { AutomaticReminder, Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
 import type { GameStoreDependencies } from "./gameStore";
@@ -176,6 +176,13 @@ const DevIssue150TroubleBrewingProgressPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue152SpyGrimoirePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue152SpyGrimoirePrototype");
+      return { default: module.Issue152SpyGrimoirePrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -185,6 +192,16 @@ export type ClocktowerAppProps = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue152SpyGrimoirePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-152-spy-grimoire"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue152SpyGrimoirePrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue150TroubleBrewingProgressPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-150-tb-progress"
@@ -428,6 +445,7 @@ export function ClocktowerApp({
   const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
+  const [spyRevealEnded, setSpyRevealEnded] = useState(false);
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
   const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
   const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
@@ -508,6 +526,7 @@ export function ClocktowerApp({
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
       setActiveRevealPayload(undefined);
+      setSpyRevealEnded(false);
     }
   }, [gameStore.pendingConfirmedReveal]);
 
@@ -539,6 +558,7 @@ export function ClocktowerApp({
   }
 
   function showReveal(payload: RevealPayload) {
+    setSpyRevealEnded(false);
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
   }
@@ -581,6 +601,18 @@ export function ClocktowerApp({
       setAcknowledgedPreActionRevealKey(activePreActionRevealKey);
       setActivePreActionRevealKey(undefined);
     }
+    setActiveRevealPayload(undefined);
+  }
+
+  function finishSpyReveal() {
+    if (!activeSpyRevealPayload) return;
+    setSpyRevealEnded(true);
+  }
+
+  function continueAfterSpyReveal() {
+    if (!gameStore.pendingConfirmedRevealReady) return;
+    gameStore.continueAfterConfirmedReveal();
+    setSpyRevealEnded(false);
     setActiveRevealPayload(undefined);
   }
 
@@ -841,24 +873,51 @@ export function ClocktowerApp({
   }
 
   if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && activeSpyRevealPayload && revealPlayers) {
+    const revealTheme = gameStore.phase === "day" ? "day" : "night";
+    const revealPhaseLabel = numberedPhase?.label ?? (gameStore.phase === "day" ? "낮" : "밤");
+    if (spyRevealEnded) {
+      return (
+        <SpyRevealEndedProduction
+          theme={revealTheme}
+          ready={gameStore.pendingConfirmedRevealReady}
+          onContinue={continueAfterSpyReveal}
+        />
+      );
+    }
     return (
-      <div className="clocktowerApp tbSharedLivePlay spyRevealActive" data-testid="clocktower-app">
-        <main
-          className="productionApplicationShell tbProductionShell tbSpyRevealShell"
-          data-theme="night"
-          aria-label="플레이어 공개 화면"
-        >
-          <TroubleBrewingLiveGrimoire
+      <div
+        className="clocktowerApp tbSharedLivePlay spyRevealActive"
+        data-testid="clocktower-app"
+        data-theme={revealTheme}
+      >
+        <TroubleBrewingLiveFlow
+          draft={gameStore.setupDraft}
+          activeStage="seating"
+          theme={revealTheme}
+          busy={gameStore.busy}
+          storageReady={gameStore.storageReady}
+          warnings={gameStore.shownWarnings}
+          loadError={gameStore.loadError}
+          canUndo={false}
+          interactionLocked
+          onStageChange={() => undefined}
+          onReset={() => undefined}
+          onRequestUndo={() => undefined}
+          grimoire={<TroubleBrewingLiveGrimoire
             players={revealPlayers}
-            phaseLabel="첩자 공개"
-            phaseRuntime=""
-            theme="night"
+            phaseLabel={revealPhaseLabel}
+            phaseRuntime={phaseRuntime ?? "00:00"}
+            theme={revealTheme}
             busy={false}
             gameEnded={false}
             ruleState={revealRuleState}
-            revealMode={{ onClose: closeActiveReveal }}
-          />
-        </main>
+            interactionLocked
+            progressActionLabel="열람 종료"
+            onGoToProgress={finishSpyReveal}
+          />}
+          progress={<span aria-hidden="true" />}
+          storage={<span aria-hidden="true" />}
+        />
       </div>
     );
   }
@@ -1071,19 +1130,65 @@ function playersForSpyReveal(payload: SpyGrimoireRevealPayload): Player[] {
 }
 
 function ruleStateForSpyReveal(payload: SpyGrimoireRevealPayload): RuleState {
-  const poisonedPlayer = payload.players.find((player) => player.reminderTokens.includes("poisoned"));
-  const protectedPlayer = payload.players.find((player) => player.reminderTokens.includes("protected"));
+  const legacyPoisonedPlayers = payload.players.filter((player) =>
+    player.automaticReminders === undefined && (player.reminderTokens ?? []).includes("poisoned"),
+  );
+  const legacyProtectedPlayers = payload.players.filter((player) =>
+    player.automaticReminders === undefined && (player.reminderTokens ?? []).includes("protected"),
+  );
+  const legacyReminders = payload.players.flatMap((player) => {
+    if (player.automaticReminders !== undefined) return [];
+    return (player.reminderTokens ?? []).flatMap((token) => [legacyReminder(player, token)]);
+  });
+  const automaticReminders = payload.players.flatMap((player) => player.automaticReminders ?? []).concat(legacyReminders);
   return {
-    activePoison: poisonedPlayer ? {
-      playerId: poisonedPlayer.playerId,
-      sourcePlayerId: "spy-reveal",
-      sourceEventId: "spy-reveal",
+    automaticReminders: automaticReminders.length ? automaticReminders : undefined,
+    activePoison: legacyPoisonedPlayers[0] ? {
+      playerId: legacyPoisonedPlayers[0].playerId,
+      sourcePlayerId: "spy-reveal-legacy",
+      sourceEventId: `spy-reveal-legacy:${legacyPoisonedPlayers[0].playerId}`,
     } : undefined,
-    activeProtection: protectedPlayer ? {
-      playerId: protectedPlayer.playerId,
-      sourcePlayerId: "spy-reveal",
-      sourceEventId: "spy-reveal",
+    activeProtection: legacyProtectedPlayers[0] ? {
+      playerId: legacyProtectedPlayers[0].playerId,
+      sourcePlayerId: "spy-reveal-legacy",
+      sourceEventId: `spy-reveal-legacy:${legacyProtectedPlayers[0].playerId}`,
     } : undefined,
     unannouncedNightDeathPlayerIds: [],
   };
+}
+
+function legacyReminder(
+  player: SpyGrimoireRevealPayload["players"][number],
+  token: "poisoned" | "protected",
+): AutomaticReminder {
+  return {
+    playerId: player.playerId,
+    characterId: token === "poisoned" ? "poisoner" : "monk",
+    tokenId: token === "poisoned" ? "poisoned" : "safe",
+    label: token === "poisoned" ? "중독" : "안전",
+    description: token === "poisoned" ? "이전 Spy Reveal의 중독 상태입니다." : "이전 Spy Reveal의 수도사 보호 상태입니다.",
+    sourceEventId: `spy-reveal-legacy:${player.playerId}`,
+  };
+}
+
+function SpyRevealEndedProduction({
+  theme,
+  ready,
+  onContinue,
+}: {
+  theme: "day" | "night";
+  ready: boolean;
+  onContinue: () => void;
+}) {
+  return <main
+    className="productionApplicationShell tbProductionShell tbSpyRevealEndedShell"
+    data-theme={theme}
+    aria-label="첩자 공개 종료"
+  >
+    <section className="tbSpyRevealEndedProduction" aria-label="첩자 공개 종료 안내">
+      <span>SPY REVEAL</span>
+      <h1>열람을 종료했습니다</h1>
+      <button type="button" disabled={!ready} onClick={onContinue}>진행</button>
+    </section>
+  </main>;
 }

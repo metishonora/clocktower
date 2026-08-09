@@ -5,12 +5,11 @@ use std::collections::HashMap;
 use crate::{
     characters::{TbCharacterId, TbPhaseKey, TbSemanticStep, TbStepKey},
     contracts::{
-        ActiveRuleEffect, DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource,
-        GameEndCause, GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile,
-        ImpAttackOutcome, MayorAttackContext, NightActionNoEffectReason, NightActionResolution,
-        ReplayState, RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext,
-        SlayerNoEffectReason, SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration,
-        VirginResolution,
+        DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource, GameEndCause,
+        GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile, ImpAttackOutcome,
+        MayorAttackContext, NightActionNoEffectReason, NightActionResolution, ReplayState,
+        RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason,
+        SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -1527,79 +1526,8 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         GameEventKind::RedHerringAssigned { payload } => Some(payload.player_id.clone()),
         _ => None,
     });
-    let last_to_night = events.iter().rposition(|event| {
-        matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload }
-            if TbStepKey::parse(&payload.step_id, event.phase)
-                .is_ok_and(|key| key.semantic == TbSemanticStep::ToNight))
-    });
-    let last_to_day = events.iter().rposition(|event| {
-        matches!(&event.kind, GameEventKind::PhaseStepConfirmed { payload }
-            if TbStepKey::parse(&payload.step_id, event.phase)
-                .is_ok_and(|key| key.semantic == TbSemanticStep::ToDay))
-    });
-    let active_poison = events
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(i, e)| match &e.kind {
-            GameEventKind::NightActionResolved { payload }
-                if matches!(
-                    payload.resolution,
-                    NightActionResolution::Poison { applied: true, .. }
-                ) && last_to_night.is_none_or(|boundary| i > boundary) =>
-            {
-                let NightActionResolution::Poison {
-                    target_player_id, ..
-                } = &payload.resolution
-                else {
-                    unreachable!()
-                };
-                players
-                    .iter()
-                    .any(|p| {
-                        p.id == payload.actor_player_id
-                            && p.alive
-                            && p.actual_character == "poisoner"
-                    })
-                    .then(|| ActiveRuleEffect {
-                        player_id: target_player_id.clone(),
-                        source_player_id: payload.actor_player_id.clone(),
-                        source_event_id: e.id.clone(),
-                    })
-            }
-            _ => None,
-        });
-    let active_protection = events
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(i, e)| match &e.kind {
-            GameEventKind::NightActionResolved { payload }
-                if matches!(
-                    payload.resolution,
-                    NightActionResolution::MonkProtection { applied: true, .. }
-                ) && last_to_night.is_some_and(|boundary| i > boundary)
-                    && last_to_day.is_none_or(|boundary| i > boundary) =>
-            {
-                let NightActionResolution::MonkProtection {
-                    target_player_id, ..
-                } = &payload.resolution
-                else {
-                    unreachable!()
-                };
-                players
-                    .iter()
-                    .any(|p| {
-                        p.id == payload.actor_player_id && p.alive && p.actual_character == "monk"
-                    })
-                    .then(|| ActiveRuleEffect {
-                        player_id: target_player_id.clone(),
-                        source_player_id: payload.actor_player_id.clone(),
-                        source_event_id: e.id.clone(),
-                    })
-            }
-            _ => None,
-        });
+    let (active_poison, active_protection) =
+        crate::characters::active_rule_effects(players, events);
     let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
     let announced = events
         .iter()
@@ -1622,7 +1550,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         })
         .filter(|id| !announced.contains(id))
         .collect();
-    RuleState {
+    let mut rule_state = RuleState {
         red_herring_player_id,
         active_poison,
         active_protection,
@@ -1636,7 +1564,9 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         automatic_reminders: vec![],
         active_witch_curse: None,
         evil_twin_relationships: vec![],
-    }
+    };
+    rule_state.automatic_reminders = crate::characters::automatic_reminders(players, events);
+    rule_state
 }
 
 fn validate_replayed_required_input(
