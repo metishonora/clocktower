@@ -32,5 +32,6 @@
 
 - Changes limited to the test-server manager, its lifecycle hooks, or server-operator configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
 - Before closing a ticket, ensure changed behavior has the smallest practical regression coverage or that the evidence gap required by the working agreements is recorded.
+- Close a GitHub issue only when the user explicitly asks to close that specific issue. Implementation completion, acceptance, merge, or push does not imply permission to close it.
 - For Rust changes, run `cargo test --workspace`.
 - For relevant web changes, run `pnpm --dir web test` and `pnpm --dir web build`.
