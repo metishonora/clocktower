@@ -1,7 +1,4 @@
-import type {
-  SectsAndVioletsBugReport,
-  SectsAndVioletsBugReportEnvironment,
-} from "./sectsAndVioletsBugReport.js";
+import type { GameBugReportEnvironment } from "./gameBugReport.js";
 
 export const DEFAULT_BUG_REPORT_EMAIL = "metishonora@icloud.com";
 export const MAX_BUG_REPORT_MAILTO_LENGTH = 24_000;
@@ -16,18 +13,32 @@ export type BugReportDelivery = {
 
 export function bugReportMailto(
   recipient: string,
-  report: Pick<SectsAndVioletsBugReport, "subject" | "body">,
+  report: { subject: string; body: string },
 ) {
   return `mailto:${encodeURIComponent(recipient.trim())}?subject=${encodeURIComponent(report.subject)}&body=${encodeURIComponent(report.body)}`;
 }
 
-export function bugReportMetadataMailto(
+export function bugReportMetadataMailto<Report extends {
+  subject: string;
+  metadata: {
+    reportSchemaVersion: number;
+    schemaVersion: number;
+    scriptId: string;
+    appVersion: string;
+    buildCommit: string;
+    pageUrl: string;
+    viewport: string;
+    gameUpdatedAt: string;
+    eventCount: number;
+  };
+}>(
   recipient: string,
-  report: SectsAndVioletsBugReport,
+  report: Report,
+  heading = "Clocktower S&V 버그 제보",
 ) {
   const metadata = report.metadata;
   const body = [
-    "# Clocktower S&V 버그 제보",
+    `# ${heading}`,
     "",
     "저장한 JSON 보고서 파일을 이 메일에 첨부해 주세요.",
     "",
@@ -54,7 +65,7 @@ export function bugReportEmailAvailability(
   return mailtoUrl.length <= maxLength ? "ready" : "oversized";
 }
 
-export function currentBugReportEnvironment(): SectsAndVioletsBugReportEnvironment {
+export function currentBugReportEnvironment(): GameBugReportEnvironment {
   const buildCommit = import.meta.env.VITE_BUILD_COMMIT?.trim() || "development";
   return {
     appVersion: import.meta.env.VITE_APP_VERSION?.trim() || buildCommit.slice(0, 12),

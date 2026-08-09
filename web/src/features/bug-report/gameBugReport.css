@@ -1,0 +1,322 @@
+/* Shared layout and interaction primitives. Script themes supply the color layer. */
+.gameBugReportBackdrop {
+  position: fixed;
+  z-index: 180;
+  inset: 0;
+  display: grid;
+  padding: 22px;
+  place-items: center;
+  background: rgba(17, 9, 22, .72);
+  backdrop-filter: blur(7px);
+}
+
+.gameBugReportDialog {
+  display: grid;
+  box-sizing: border-box;
+  width: min(640px, 100%);
+  max-height: min(92dvh, 880px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.gameBugReportDialog > header {
+  display: flex;
+  padding: 22px 24px 17px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gameBugReportDialog > header > div { min-width: 0; }
+.gameBugReportDialog h2 { margin: 0; }
+
+.gameBugReportDialog > header button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.gameBugReportBody {
+  display: grid;
+  min-height: 0;
+  padding: 20px 24px;
+  align-content: start;
+  grid-auto-rows: max-content;
+  gap: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gameBugReportDescription { display: grid; gap: 7px; }
+
+.gameBugReportDialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  padding: 11px 12px;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.gameBugReportPrivacy {
+  display: grid;
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+.gameBugReportPrivacy div {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.gameBugReportPrivacy p { margin: 0; line-height: 1.45; }
+
+.gameBugReportPreview,
+.gameBugReportOriginal {
+  overflow: hidden;
+}
+
+.gameBugReportPreview summary,
+.gameBugReportOriginal > summary {
+  display: flex;
+  min-height: 46px;
+  padding: 0 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.gameBugReportPreview summary small { font-size: .68rem; }
+
+.gameBugReportPreview pre {
+  max-height: 230px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  font: .69rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gameBugReportOriginal > label {
+  display: flex;
+  padding: 0 13px 8px;
+  align-items: center;
+  gap: 8px;
+}
+
+.gameBugReportOriginal input { width: 18px; height: 18px; }
+.gameBugReportOriginal p { margin: 0; padding: 0 13px 13px 39px; line-height: 1.45; }
+
+.gameBugReportRecovery,
+.gameBugReportSuccess,
+.gameBugReportFailure {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.gameBugReportRecovery p { margin: 4px 0 0; line-height: 1.45; }
+
+.gameBugReportDialog > footer {
+  display: flex;
+  padding: 15px 24px 20px;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.gameBugReportDialog > footer button {
+  min-height: 44px;
+  padding: 9px 13px;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Issue #151 Trouble Brewing forest/parchment theme. */
+.tbBugReportBackdrop {
+  z-index: 480;
+  background: rgba(2, 12, 8, .75);
+  backdrop-filter: blur(7px) saturate(.95);
+}
+
+.tbBugReportDialog {
+  width: min(660px, 100%);
+  max-height: min(92dvh, 900px);
+  border: 1px solid rgba(221, 198, 151, .32);
+  color: #fff8e8;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(95, 137, 90, .21), transparent 31%),
+    linear-gradient(145deg, #173326, #0b2118);
+  box-shadow: 0 30px 100px rgba(1, 10, 6, .7);
+  font-family: Inter, Pretendard, system-ui, sans-serif;
+}
+
+.tbBugReportDialog > header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(221, 198, 151, .14);
+}
+
+.tbBugReportDialog > header span {
+  display: block;
+  margin-bottom: 6px;
+  color: #d2ad64;
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.tbBugReportDialog h2 { font: clamp(1.7rem, 5vw, 2.15rem) Georgia, serif; }
+
+.tbBugReportDialog > header button {
+  border: 1px solid rgba(221, 198, 151, .24);
+  color: inherit;
+  background: rgba(255, 255, 255, .05);
+}
+
+.tbBugReportBody { color: #fff8e8; }
+.tbBugReportDescription > span { color: #e7d5ad; font-size: .78rem; font-weight: 850; }
+
+.tbBugReportDialog textarea {
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 12px;
+  color: #fff8e8;
+  background: rgba(255, 255, 255, .055);
+  font-size: .82rem;
+}
+
+.tbBugReportDialog textarea:focus-visible,
+.tbBugReportDialog button:focus-visible,
+.tbBugReportDialog summary:focus-visible,
+.tbBugReportDialog input:focus-visible {
+  border-color: #d2ad64;
+  outline: 3px solid rgba(210, 173, 100, .18);
+  outline-offset: 1px;
+}
+
+.tbBugReportPrivacy {
+  border: 1px solid rgba(210, 173, 100, .2);
+  border-radius: 13px;
+  background: rgba(55, 107, 80, .18);
+}
+
+.tbBugReportPrivacy div > span { color: #d2ad64; font-weight: 950; }
+.tbBugReportPrivacy p { color: #d8ccb0; font-size: .76rem; }
+.tbBugReportPrivacy strong { color: #fff8e8; }
+
+.tbBugReportPreview,
+.tbBugReportOriginal {
+  border: 1px solid rgba(221, 198, 151, .18);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.tbBugReportPreview summary,
+.tbBugReportOriginal > summary {
+  color: #f4ead7;
+  font-size: .77rem;
+  font-weight: 850;
+}
+
+.tbBugReportPreview summary small { color: #b5c1ae; }
+.tbBugReportPreview pre { max-height: 250px; border-top: 1px solid rgba(221, 198, 151, .14); color: #decfae; background: rgba(5, 2, 8, .34); }
+.tbBugReportOriginal > label { color: #f2e8d3; font-size: .76rem; font-weight: 850; }
+.tbBugReportOriginal input { accent-color: #a8503b; }
+.tbBugReportOriginal p { color: #cab99f; font-size: .7rem; }
+
+.tbBugReportRecovery {
+  border: 1px solid rgba(226, 201, 143, .38);
+  color: #fae9bc;
+  background: rgba(124, 81, 16, .22);
+  font-size: .76rem;
+}
+
+.tbBugReportSuccess {
+  border: 1px solid rgba(111, 204, 161, .36);
+  color: #cef3df;
+  background: rgba(32, 123, 82, .18);
+  font-size: .76rem;
+}
+
+.tbBugReportFailure {
+  border: 1px solid rgba(255, 135, 103, .44);
+  color: #ffe0d5;
+  background: rgba(139, 51, 36, .22);
+  font-size: .76rem;
+}
+
+.tbBugReportDialog > footer {
+  border-top: 1px solid rgba(221, 198, 151, .14);
+}
+
+.tbBugReportDialog > footer button {
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 11px;
+  color: inherit;
+  background: rgba(255, 255, 255, .06);
+  font-size: .76rem;
+  font-weight: 850;
+}
+
+.tbBugReportDialog > footer button.primary {
+  border-color: #d2ad64;
+  color: #10271e;
+  background: linear-gradient(135deg, #ead49e, #d2ad64);
+}
+
+.tbBugReportBackdrop[data-theme="day"] {
+  background: rgba(54, 60, 37, .48);
+}
+
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog {
+  border-color: rgba(67, 89, 62, .25);
+  color: #243329;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(255, 247, 211, .74), transparent 31%),
+    linear-gradient(145deg, #fffced, #dbe5ca);
+  box-shadow: 0 30px 100px rgba(54, 76, 48, .28);
+}
+
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > header,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > footer { border-color: rgba(66, 88, 58, .14); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > header span,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDescription > span { color: #6c714e; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > header button,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > footer button { border-color: rgba(66, 88, 58, .2); color: #304436; background: rgba(255, 255, 255, .45); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog textarea { border-color: rgba(66, 88, 58, .22); color: #243329; background: rgba(255, 255, 255, .46); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPrivacy { border-color: rgba(88, 116, 92, .22); background: rgba(88, 116, 92, .1); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPrivacy p,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPreview summary small { color: #5f684e; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPrivacy strong,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPreview summary,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportOriginal > summary { color: #243329; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPreview,
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportOriginal { border-color: rgba(66, 88, 58, .17); background: rgba(255, 255, 255, .3); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportPreview pre { border-color: rgba(66, 88, 58, .14); color: #465744; background: rgba(248, 247, 226, .74); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportOriginal > label { color: #304436; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportOriginal p { color: #6f6455; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportDialog > footer button.primary { border-color: #58745c; color: #fffdf2; background: #58745c; }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportRecovery { color: #6d4c1b; background: rgba(244, 194, 76, .18); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportFailure { color: #7f3024; background: rgba(183, 83, 58, .13); }
+.tbBugReportBackdrop[data-theme="day"] .tbBugReportSuccess { color: #23633f; background: rgba(73, 156, 103, .14); }
+
+@media (max-width: 760px) {
+  .gameBugReportBackdrop { padding: 10px; align-items: end; }
+  .gameBugReportDialog { width: 100%; max-height: 94dvh; border-radius: 24px 24px 0 0; }
+  .gameBugReportDialog textarea { font-size: 16px; }
+  .gameBugReportDialog > header,
+  .gameBugReportBody { padding-right: 17px; padding-left: 17px; }
+  .gameBugReportDialog > footer { padding-right: 17px; padding-left: 17px; flex-wrap: wrap; }
+  .gameBugReportDialog > footer button { flex: 1 1 auto; }
+}

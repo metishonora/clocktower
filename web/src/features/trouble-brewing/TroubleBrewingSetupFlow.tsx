@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import type { SetupDistribution } from "../../core/types";
 import { ProductionApplicationShell } from "../../shared-ui/ProductionApplicationShell";
 import {
@@ -35,6 +35,8 @@ export function TroubleBrewingSetupFlow({
   onConfirm,
   onImport,
   onReset,
+  onBugReport,
+  bugReportTriggerRef,
 }: {
   draft: SetupDraft;
   expectedCounts?: SetupDistribution;
@@ -47,6 +49,8 @@ export function TroubleBrewingSetupFlow({
   onConfirm: () => void | Promise<void>;
   onImport: () => void;
   onReset: () => void;
+  onBugReport?: () => void;
+  bugReportTriggerRef?: Ref<HTMLButtonElement>;
 }) {
   const [activeCharacterId, setActiveCharacterId] = useState("imp");
   const [pendingCharacterId, setPendingCharacterId] = useState<string>();
@@ -161,9 +165,6 @@ export function TroubleBrewingSetupFlow({
     }
     if (destination === "new-game") onReset();
     if (destination === "storage") onImport();
-    if (destination === "bug-report") {
-      window.open("https://github.com/metishonora/clocktower/issues/new", "_blank", "noopener,noreferrer");
-    }
   }
 
   return (
@@ -185,7 +186,13 @@ export function TroubleBrewingSetupFlow({
       utilities={[
         { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: !storageReady || busy },
         { id: "storage", label: "저장 / 불러오기", disabled: busy },
-        { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger" },
+        {
+          id: "bug-report",
+          label: "버그 제보",
+          className: "snvBugReportTrigger",
+          buttonRef: bugReportTriggerRef,
+          onSelect: onBugReport,
+        },
       ]}
       stages={[
         { id: "roles", label: "직업", active: activeStage === "roles" },

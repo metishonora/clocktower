@@ -32,6 +32,7 @@
     "src/webSessionStorage.test.ts",
     "src/sectsAndVioletsBugReport.ts",
     "src/sectsAndVioletsBugReport.test.ts",
+    "src/troubleBrewingBugReport.test.ts",
     "src/bugReportDelivery.ts",
     "src/bugReportDelivery.test.ts",
     "src/core/validation.test.ts",

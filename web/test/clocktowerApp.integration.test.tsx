@@ -45,6 +45,43 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.getByRole("button", { name: "임프 직업 요약 보기" }).getAttribute("aria-pressed")).toBe("true");
   });
 
+  test("opens the in-app Trouble Brewing bug report from setup without collecting the setup draft", async () => {
+    const currentStep = step({ id: "unused" });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const openedMailto: string[] = [];
+    const delivery = {
+      openEmail: (url: string) => openedMailto.push(url),
+      copyReport: vi.fn(async () => undefined),
+      downloadReport: vi.fn(),
+    };
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp
+      coreAdapter={core}
+      storageDriver={new MemoryGameStorageDriver(undefined)}
+      bugReportEmail="bugs@example.com"
+      bugReportDelivery={delivery}
+    />);
+
+    await user.click(await screen.findByRole("button", { name: "버그 제보" }));
+    const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+    expect(dialog.closest("[data-theme=night]")).toBeTruthy();
+    await user.type(within(dialog).getByRole("textbox"), "설정 중 문제가 생겼습니다.");
+    await user.click(within(dialog).getByRole("button", { name: "이메일 작성" }));
+
+    const mailto = new URL(openedMailto[0]);
+    const subject = mailto.searchParams.get("subject") ?? "";
+    const body = mailto.searchParams.get("body") ?? "";
+    expect(subject).toBe("[Clocktower Trouble Brewing] 버그 제보");
+    expect(body).toContain('"activeTab": "roles"');
+    expect(body).toContain('"eventCount": 0');
+    expect(body).not.toContain("setupDraft");
+  });
+
   test("restores an unfinished shared-shell role roster from the script-keyed draft session", async () => {
     const currentStep = step({ id: "unused" });
     const core = createCoreHarness({
@@ -145,6 +182,72 @@ describe("ClocktowerApp live-play integration", () => {
     });
     expect(screen.getByRole("main", { name: "Trouble Brewing 진행" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
+  });
+
+  test("opens the in-app Trouble Brewing bug report from live play and restores trigger focus", async () => {
+    const currentStep = step({
+      id: "firstNight:washerwoman",
+      character: "washerwoman",
+      playerId: "player-1",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const delivery = {
+      openEmail: vi.fn(),
+      copyReport: vi.fn(async () => undefined),
+      downloadReport: vi.fn(),
+    };
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp
+      coreAdapter={core}
+      storageDriver={new MemoryGameStorageDriver(gameFile())}
+      bugReportEmail="bugs@example.com"
+      bugReportDelivery={delivery}
+    />);
+
+    await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
+    const trigger = screen.getByRole("button", { name: "버그 제보" });
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+    expect(dialog.closest("[data-theme=night]")).toBeTruthy();
+    await user.click(within(dialog).getByRole("button", { name: "이메일 작성" }));
+    const mailto = new URL(vi.mocked(delivery.openEmail).mock.calls[0][0]);
+    const body = mailto.searchParams.get("body") ?? "";
+    expect(body).toContain('"activeTab": "play"');
+    expect(body).toContain('"replayPhase": "firstNight"');
+    expect(body).toContain('"currentStepId": "firstNight:washerwoman"');
+    await user.click(within(dialog).getByRole("button", { name: "버그 제보 닫기" }));
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  test("uses the live Trouble Brewing day theme for the in-app bug report", async () => {
+    const currentStep = step({
+      id: "day:discussion",
+      stepType: "discussion",
+      phase: "day",
+    });
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep }),
+      replayAfterProposal: replayState({ currentStep, eventCount: 2 }),
+      proposal: proposal(event("unused", "unused")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp
+      coreAdapter={core}
+      storageDriver={new MemoryGameStorageDriver(gameFile())}
+      bugReportEmail="bugs@example.com"
+    />);
+
+    await waitFor(() => expect(screen.getByRole("img", { name: "낮" })).toBeTruthy());
+    await user.click(screen.getByRole("button", { name: "버그 제보" }));
+    const dialog = screen.getByRole("dialog", { name: "버그 제보" });
+    expect(dialog.getAttribute("data-theme")).toBe("day");
+    expect(dialog.closest("[data-theme=day]")).toBeTruthy();
   });
 
   test("uses the supported player range and the approved SnV-style progress structure", async () => {
@@ -1705,6 +1808,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect((within(revealScreen).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(revealScreen).getByRole("button", { name: "새 게임" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(revealScreen).getByRole("button", { name: "저장 / 불러오기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(revealScreen).getByRole("button", { name: "버그 제보" }) as HTMLButtonElement).disabled).toBe(true);
     expect(within(revealScreen).getByRole("link", { name: "스크립트 선택" }).getAttribute("aria-disabled")).toBe("true");
     expect((within(revealScreen).getByRole("button", { name: /2번 좌석/ }) as HTMLButtonElement).disabled).toBe(false);
     expect(within(revealScreen).queryByText(/보여준 캐릭터/)).toBeNull();

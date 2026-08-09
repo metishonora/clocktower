@@ -47,6 +47,10 @@ Issue #152 is merged into `develop` at `98c2424` and is part of the Issue #151 b
 
 ## Prototype review scope
 
+Prototype approved on 2026-08-10. The approved baseline includes the Trouble Brewing Night/Day
+palette, desktop dialog and mobile bottom sheet, all delivery recovery specimens, and the mobile 16px
+editable-control minimum. Production must preserve these decisions for the agreed viewports.
+
 - Development-only route: `?prototype=issue-151-tb-bug-report`.
 - Review the production-aligned `설정 · 밤`, `라이브 · 밤`, and `라이브 · 낮` specimens.
 - Review the approved normal flow plus email-unavailable, oversized, copy-failure, and download-failure
