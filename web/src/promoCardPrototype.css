@@ -1,0 +1,477 @@
+:root {
+  background: #080912;
+}
+
+@font-face {
+  font-family: "Promo Pen";
+  src: url("./assets/fonts/NanumPenScript-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 0;
+  margin: 0;
+  background: #080912;
+}
+
+.promoPrototype {
+  display: grid;
+  min-height: 100dvh;
+  padding: 24px;
+  place-items: center;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(58, 48, 92, .24), transparent 38%),
+    #080912;
+}
+
+.promoCardFrame {
+  position: relative;
+  width: min(640px, calc(100vw - 48px));
+  aspect-ratio: 1;
+}
+
+.promoCard {
+  position: relative;
+  width: 640px;
+  height: 640px;
+  overflow: hidden;
+  color: #ece5d8;
+  background:
+    radial-gradient(circle at 50% 54%, rgba(77, 38, 44, .15), transparent 43%),
+    linear-gradient(145deg, #15131c 0%, #090b13 62%, #101018 100%);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .5);
+  transform-origin: top left;
+  isolation: isolate;
+}
+
+.promoCard::before {
+  position: absolute;
+  z-index: 1;
+  inset: 18px;
+  border: 1px solid rgba(233, 226, 216, .1);
+  content: "";
+  pointer-events: none;
+}
+
+.promoLetter {
+  position: absolute;
+  z-index: 2;
+  top: 48px;
+  left: 50%;
+  display: grid;
+  width: 446px;
+  height: 466px;
+  padding: 25px 30px 31px;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  color: #211a22;
+  background-image:
+    radial-gradient(ellipse at 18% 5%, rgba(255, 255, 246, .25), transparent 38%),
+    radial-gradient(ellipse at 88% 94%, rgba(119, 73, 42, .08), transparent 43%),
+    linear-gradient(116deg, rgba(255, 253, 238, .18), rgba(169, 119, 73, .05)),
+    var(--letter-texture);
+  background-position: center, center, center, center;
+  background-size: auto, auto, auto, cover;
+  background-blend-mode: screen, multiply, soft-light, normal;
+  box-shadow:
+    inset 0 0 28px rgba(114, 71, 37, .08),
+    inset 0 1px rgba(255, 255, 247, .5),
+    0 10px 0 rgba(5, 4, 10, .18);
+  opacity: 0;
+  transform: translateX(-50%) translateY(270px);
+  transition:
+    transform 780ms cubic-bezier(.2, .72, .18, 1) 430ms,
+    opacity 220ms ease 390ms;
+}
+
+.promoCard.isOpen .promoLetter {
+  z-index: 8;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-18px);
+}
+
+.promoLetter::before {
+  position: absolute;
+  top: -63px;
+  right: -62px;
+  width: 174px;
+  height: 174px;
+  border: 1px solid rgba(77, 39, 57, .14);
+  border-radius: 50%;
+  content: "";
+}
+
+.promoLetterRule {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px;
+  width: 2px;
+  background: #783044;
+}
+
+.promoLetterHeader,
+.promoLetterFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  font: 700 8px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .18em;
+}
+
+.promoLetterHeader {
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(45, 31, 41, .19);
+}
+
+.promoLetterHeader p { margin: 0; }
+.promoLetterCopy {
+  display: grid;
+  align-content: center;
+  padding: 13px 0 24px;
+  transform: translateY(-20px);
+}
+
+.promoKicker {
+  margin: 0 0 7px;
+  color: #742f42;
+  font: 400 25px/1.15 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: .015em;
+  text-shadow: .35px .25px 0 rgba(72, 22, 38, .34);
+}
+
+.promoLetterCopy h1 {
+  margin: 0;
+  color: #211a24;
+  font: 400 52px/1.06 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: -.025em;
+  text-shadow:
+    .45px .25px 0 rgba(19, 13, 24, .55),
+    0 0 .35px rgba(38, 20, 33, .34);
+  word-break: keep-all;
+}
+
+.promoBody {
+  margin: 19px 0 0;
+  color: #40343b;
+  font: 400 22px/1.34 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: .005em;
+  text-shadow: .3px .2px 0 rgba(34, 24, 29, .34);
+}
+
+.promoLetterFooter {
+  padding-top: 13px;
+  border-top: 1px solid rgba(45, 31, 41, .19);
+  color: #776d71;
+}
+
+.promoEnvelope {
+  position: absolute;
+  z-index: 4;
+  top: 215px;
+  left: 64px;
+  width: 512px;
+  height: 278px;
+  filter:
+    drop-shadow(0 3px 2px rgba(231, 171, 111, .08))
+    drop-shadow(0 24px 28px rgba(2, 2, 7, .42));
+  transition: transform 720ms cubic-bezier(.2, .72, .18, 1) 460ms;
+}
+
+.promoEnvelopeBase,
+.promoEnvelopeThroat,
+.promoEnvelopeTear,
+.promoEnvelopeFlap {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.promoEnvelopeBase {
+  overflow: hidden;
+  border: 1px solid rgba(188, 122, 72, .42);
+  border-radius: 8px 6px 10px 7px;
+  background-image:
+    radial-gradient(ellipse at 18% 7%, rgba(255, 219, 165, .15), transparent 38%),
+    radial-gradient(ellipse at 84% 95%, rgba(20, 3, 5, .35), transparent 48%),
+    linear-gradient(154deg, rgba(107, 49, 44, .18), rgba(36, 12, 14, .44)),
+    var(--envelope-texture);
+  background-position: center, center, center, center 42%;
+  background-size: auto, auto, auto, 112% auto;
+  background-blend-mode: screen, multiply, multiply, normal;
+  clip-path: polygon(.4% 1.1%, 13% .3%, 27% .9%, 43% .2%, 58% .8%, 74% .1%, 88% .7%, 99.5% 1.3%, 100% 33%, 99.6% 66%, 100% 98.1%, 84% 99.4%, 69% 98.9%, 51% 99.7%, 33% 99%, 16% 99.6%, .3% 98.4%, 0 66%, .4% 32%);
+  box-shadow:
+    inset 0 0 42px rgba(19, 4, 6, .45),
+    inset 0 2px rgba(255, 222, 170, .15),
+    inset 0 -2px 2px rgba(17, 3, 5, .42);
+}
+
+.promoEnvelopeBase::before,
+.promoEnvelopeBase::after {
+  position: absolute;
+  content: "";
+}
+
+.promoEnvelopeBase::before {
+  inset: 11px 12px 12px;
+  border: 1px solid rgba(196, 137, 75, .24);
+  border-radius: 5px 4px 7px 5px;
+  box-shadow:
+    inset 0 0 0 1px rgba(28, 8, 10, .31),
+    0 1px rgba(255, 221, 169, .035);
+}
+
+.promoEnvelopeBase::after {
+  inset: 0;
+  opacity: .68;
+  background:
+    linear-gradient(34deg, transparent 0 35%, rgba(18, 3, 6, .23) 35.3%, rgba(224, 153, 98, .08) 35.8%, transparent 36.4%),
+    linear-gradient(-34deg, transparent 0 35%, rgba(18, 3, 6, .23) 35.3%, rgba(224, 153, 98, .08) 35.8%, transparent 36.4%),
+    radial-gradient(ellipse at 50% 102%, rgba(218, 146, 91, .08), transparent 39%);
+  mix-blend-mode: soft-light;
+}
+
+.promoEnvelopeThroat {
+  top: 9px;
+  right: 10px;
+  left: 10px;
+  height: 78px;
+  border-radius: 7px 7px 42% 42% / 7px 7px 55% 55%;
+  background-image:
+    radial-gradient(ellipse at 50% -16%, rgba(7, 3, 4, .95), rgba(28, 10, 12, .82) 63%, rgba(68, 28, 27, .74)),
+    var(--envelope-texture);
+  background-position: center, center 80%;
+  background-size: auto, 110% auto;
+  background-blend-mode: multiply, normal;
+  box-shadow:
+    inset 0 -1px rgba(224, 157, 93, .22),
+    0 4px 8px rgba(17, 3, 5, .2);
+}
+
+.promoEnvelopeTear {
+  z-index: 4;
+  top: -3px;
+  right: 2px;
+  bottom: auto;
+  left: 2px;
+  height: 33px;
+  opacity: 0;
+  background-image:
+    linear-gradient(180deg, rgba(120, 54, 47, .14), rgba(28, 8, 10, .42)),
+    var(--envelope-texture);
+  background-position: center, center top;
+  background-size: auto, 110% auto;
+  background-blend-mode: multiply, normal;
+  clip-path: polygon(0 0, 100% 0, 100% 47%, 97% 68%, 94% 43%, 90% 72%, 87% 48%, 83% 76%, 79% 45%, 75% 69%, 71% 49%, 67% 78%, 63% 44%, 59% 70%, 55% 50%, 51% 76%, 47% 46%, 43% 73%, 39% 48%, 35% 79%, 31% 45%, 27% 72%, 23% 50%, 19% 76%, 15% 46%, 11% 71%, 7% 49%, 3% 77%, 0 55%);
+  filter: drop-shadow(0 4px 2px rgba(8, 1, 3, .5));
+  transform-origin: 18% top;
+}
+
+.promoEnvelopeTear::before,
+.promoEnvelopeTear::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.promoEnvelopeTear::before {
+  right: 0;
+  bottom: 5px;
+  left: 0;
+  height: 4px;
+  opacity: .56;
+  background: repeating-linear-gradient(91deg, rgba(238, 190, 128, .78) 0 4px, transparent 4px 9px);
+  filter: blur(.35px);
+}
+
+.promoEnvelopeTear::after {
+  right: 0;
+  bottom: 1px;
+  left: 0;
+  height: 8px;
+  opacity: .48;
+  background: linear-gradient(180deg, transparent, rgba(246, 197, 133, .28) 42%, rgba(27, 5, 8, .52));
+}
+
+.promoEnvelopeFlap {
+  z-index: 3;
+  top: 1px;
+  right: 2px;
+  left: 2px;
+  height: 185px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(215, 151, 91, .4);
+  border-radius: 3px 3px 49% 49% / 3px 3px 94% 94%;
+  background-image:
+    radial-gradient(ellipse at 28% 8%, rgba(255, 218, 162, .17), transparent 39%),
+    radial-gradient(ellipse at 74% 84%, rgba(24, 4, 7, .28), transparent 43%),
+    linear-gradient(161deg, rgba(121, 53, 48, .1), rgba(39, 11, 14, .34)),
+    var(--envelope-texture);
+  background-position: center, center, center, center 14%;
+  background-size: auto, auto, auto, 110% auto;
+  background-blend-mode: screen, multiply, multiply, normal;
+  box-shadow:
+    inset 0 -16px 24px rgba(24, 5, 8, .24),
+    inset 0 1px rgba(255, 222, 170, .14),
+    0 9px 15px rgba(25, 5, 8, .2);
+  transform-origin: 49% 67%;
+}
+
+.promoEnvelopeFlap::before,
+.promoEnvelopeFlap::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.promoEnvelopeFlap::before {
+  inset: 8px 10px 12px;
+  border: 1px solid rgba(204, 139, 79, .2);
+  border-top-color: rgba(239, 185, 122, .12);
+  border-radius: 2px 2px 48% 48% / 2px 2px 91% 91%;
+}
+
+.promoEnvelopeFlap::after {
+  inset: 0;
+  opacity: .52;
+  background:
+    linear-gradient(101deg, transparent 0 21%, rgba(255, 228, 185, .05) 22%, transparent 23% 71%, rgba(20, 3, 6, .08) 73%, transparent 75%),
+    radial-gradient(ellipse at 49% 105%, rgba(244, 178, 113, .11), transparent 34%);
+  mix-blend-mode: soft-light;
+}
+
+.promoSeal {
+  position: absolute;
+  z-index: 6;
+  top: 131px;
+  left: 50%;
+  display: block;
+  width: 94px;
+  height: 94px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 9px rgba(23, 3, 6, .34));
+  transform: translateX(-50%);
+}
+
+.promoCard.isOpen .promoEnvelope {
+  transform: translateY(92px) scale(.96);
+}
+
+.promoCard.isOpen .promoEnvelopeTear {
+  animation: promoTopStripTear 520ms cubic-bezier(.22, .72, .31, 1) 40ms both;
+}
+
+.promoCard.isOpen .promoEnvelopeFlap {
+  animation: promoFlapRelease 470ms cubic-bezier(.28, .68, .3, 1) 260ms both;
+}
+
+.promoCard.isOpen .promoSeal {
+  animation: promoSealRelease 450ms cubic-bezier(.3, .62, .3, 1) 280ms both;
+}
+
+@keyframes promoTopStripTear {
+  0% {
+    opacity: 0;
+    transform: translateY(2px) rotate(0);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translateY(1px) rotate(0);
+  }
+
+  58% {
+    opacity: 1;
+    transform: translateY(-5px) rotate(-.28deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-21px) rotate(-.8deg);
+  }
+}
+
+@keyframes promoFlapRelease {
+  0%, 24% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(2px, 12px) rotate(.45deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(4px, 34px) rotate(.9deg) scale(.99);
+  }
+}
+
+@keyframes promoSealRelease {
+  0%, 24% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) rotate(0) scale(1);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(12px) rotate(2deg) scale(.98);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(28px) rotate(4deg) scale(.94);
+  }
+}
+
+.promoOpenTrigger {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.promoOpenTrigger:focus-visible {
+  outline: 3px solid rgba(213, 162, 143, .9);
+  outline-offset: -8px;
+}
+
+.promoCard.isOpen .promoOpenTrigger { cursor: default; }
+.promoCard.isOpen .promoOpenTrigger:focus-visible { outline: 0; }
+
+@media (max-width: 687px) {
+  .promoPrototype { padding: 0; }
+  .promoCardFrame { width: min(640px, 100vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promoLetter,
+  .promoEnvelope,
+  .promoEnvelopeFlap,
+  .promoSeal {
+    transition: none;
+  }
+
+  .promoCard.isOpen .promoEnvelopeTear { animation: none; }
+
+  .promoCard.isOpen .promoEnvelopeFlap,
+  .promoCard.isOpen .promoSeal {
+    animation: none;
+    opacity: 0;
+  }
+}
