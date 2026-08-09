@@ -52,6 +52,8 @@ Issue #152 is merged into `develop` at `98c2424` and is part of the Issue #151 b
   persistence behavior.
 - Review desktop/iPad and 360/390px mobile bottom-sheet layout. Header and actions stay fixed while the
   dialog body scrolls.
+- On mobile, keep editable controls at a computed font size of at least 16px so focusing the symptom
+  field does not trigger browser auto-zoom and the fixed close control remains reachable.
 - The prototype settles Trouble Brewing visual adaptation only. It does not approve new fields,
   collection sources, delivery behavior, or a second implementation of the report contract.
 - Retain the approved prototype route as the visual baseline until production acceptance. Record the

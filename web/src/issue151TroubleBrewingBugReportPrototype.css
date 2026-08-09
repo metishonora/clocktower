@@ -649,6 +649,10 @@
     border-radius: 24px 24px 0 0;
   }
 
+  .issue151BugReportDialog textarea {
+    font-size: 16px;
+  }
+
   .issue151BugReportDialog > header,
   .issue151BugReportBody {
     padding-right: 17px;
