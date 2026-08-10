@@ -24,6 +24,7 @@ export type PromoCardVariant = "sample" | "trouble-brewing";
 type PromoCardPrototypeProps = {
   variant?: PromoCardVariant;
   design?: PromoCardDesign;
+  idleGlowHint?: boolean;
 };
 
 function renderInkGlyphs(text: string, seedOffset = 0) {
@@ -80,6 +81,7 @@ function renderInkText(text: string, seedOffset = 0) {
 export function PromoCardPrototype({
   variant = "sample",
   design = "vellum",
+  idleGlowHint = false,
 }: PromoCardPrototypeProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -157,6 +159,7 @@ export function PromoCardPrototype({
             "promoCard",
             isTroubleBrewing ? "promoCard--tb" : "",
             tbDesign ? `promoCard--tb-${tbDesign}` : "",
+            idleGlowHint ? "hasIdleGlowHint" : "",
             opened ? "isOpen" : "",
           ].filter(Boolean).join(" ")}
           aria-label={opened ? "뜯어진 봉투 속 초대장" : "밀봉된 초대장 봉투"}

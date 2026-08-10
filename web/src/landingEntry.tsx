@@ -33,7 +33,11 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     {promoCardRequested && promoCardRoute ? (
       <React.Suspense fallback={null}>
-        <PromoCardPrototypeEntry variant={promoCardRoute} design={promoCardDesign} />
+        <PromoCardPrototypeEntry
+          variant={promoCardRoute}
+          design={promoCardDesign}
+          idleGlowHint={promoCardRoute === "trouble-brewing"}
+        />
       </React.Suspense>
     ) : (
       <ScriptLanding />

@@ -386,6 +386,32 @@ body {
   animation: promoSealRelease 450ms cubic-bezier(.3, .62, .3, 1) 280ms both;
 }
 
+/* After the sealed invitation rests for a few seconds, the packet edge and
+   wax catch a restrained, candle-like glow. */
+.promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope {
+  animation: promoEnvelopeIdleGlow 8s linear 3.5s infinite;
+}
+
+.promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope::before {
+  position: absolute;
+  z-index: 5;
+  inset: -12px;
+  border: 1px solid rgba(231, 213, 173, .78);
+  border-radius: 13px;
+  box-shadow:
+    0 0 14px rgba(210, 173, 100, .52),
+    0 0 38px rgba(210, 173, 100, .3),
+    inset 0 0 12px rgba(231, 213, 173, .22);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  animation: promoEnvelopeHalo 8s linear 3.5s infinite;
+}
+
+.promoCard.hasIdleGlowHint:not(.isOpen) .promoSeal {
+  animation: promoSealIdleGlow 8s linear 3.5s infinite;
+}
+
 /* Trouble Brewing keeps the approved envelope and letter structure, but shifts
    its atmosphere to the script's deep-night, forest, parchment, gold, and
    rust palette. All overrides are scoped so the sample stays unchanged. */
@@ -1256,6 +1282,107 @@ body {
   }
 }
 
+@keyframes promoEnvelopeIdleGlow {
+  0%, 12%, 100% {
+    filter:
+      brightness(1)
+      drop-shadow(0 3px 2px rgba(210, 173, 100, .1))
+      drop-shadow(0 0 0 rgba(210, 173, 100, 0))
+      drop-shadow(0 24px 28px rgba(2, 12, 8, .5));
+  }
+
+  38% {
+    filter:
+      brightness(1.048)
+      drop-shadow(0 2px 3px rgba(231, 213, 173, .34))
+      drop-shadow(0 0 24px rgba(210, 173, 100, .44))
+      drop-shadow(0 24px 30px rgba(2, 12, 8, .54));
+  }
+
+  52% {
+    filter:
+      brightness(1.052)
+      drop-shadow(0 2px 3px rgba(231, 213, 173, .36))
+      drop-shadow(0 0 26px rgba(210, 173, 100, .46))
+      drop-shadow(0 24px 30px rgba(2, 12, 8, .54));
+  }
+
+  72% {
+    filter:
+      brightness(1.028)
+      drop-shadow(0 2.5px 2.5px rgba(231, 213, 173, .23))
+      drop-shadow(0 0 16px rgba(210, 173, 100, .28))
+      drop-shadow(0 24px 29px rgba(2, 12, 8, .52));
+  }
+
+  88% {
+    filter:
+      brightness(1.008)
+      drop-shadow(0 3px 2px rgba(210, 173, 100, .13))
+      drop-shadow(0 0 7px rgba(210, 173, 100, .1))
+      drop-shadow(0 24px 28px rgba(2, 12, 8, .5));
+  }
+}
+
+@keyframes promoEnvelopeHalo {
+  0%, 12%, 100% {
+    opacity: 0;
+  }
+
+  38% {
+    opacity: .72;
+  }
+
+  52% {
+    opacity: .82;
+  }
+
+  72% {
+    opacity: .48;
+  }
+
+  88% {
+    opacity: .14;
+  }
+}
+
+@keyframes promoSealIdleGlow {
+  0%, 12%, 100% {
+    filter:
+      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
+      drop-shadow(0 0 0 rgba(210, 173, 100, 0));
+    transform: translateX(-50%) scale(1);
+  }
+
+  38% {
+    filter:
+      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
+      drop-shadow(0 0 20px rgba(210, 173, 100, .62));
+    transform: translateX(-50%) scale(1.032);
+  }
+
+  52% {
+    filter:
+      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
+      drop-shadow(0 0 22px rgba(210, 173, 100, .66));
+    transform: translateX(-50%) scale(1.035);
+  }
+
+  72% {
+    filter:
+      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
+      drop-shadow(0 0 14px rgba(210, 173, 100, .42));
+    transform: translateX(-50%) scale(1.021);
+  }
+
+  88% {
+    filter:
+      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
+      drop-shadow(0 0 6px rgba(210, 173, 100, .14));
+    transform: translateX(-50%) scale(1.006);
+  }
+}
+
 .promoOpenTrigger {
   position: absolute;
   z-index: 20;
@@ -1299,5 +1426,11 @@ body {
   .promoCard.isOpen .promoSeal {
     animation: none;
     opacity: 0;
+  }
+
+  .promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope,
+  .promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope::before,
+  .promoCard.hasIdleGlowHint:not(.isOpen) .promoSeal {
+    animation: none;
   }
 }
