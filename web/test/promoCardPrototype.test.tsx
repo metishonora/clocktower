@@ -67,7 +67,7 @@ test("renders the Sects & Violets prototype with its own seal and date", async (
 
   await user.click(screen.getByRole("button", { name: "봉투 열기" }));
   expect(screen.getByText("날짜: 26년 8월 13일(목)")).toBeTruthy();
-  expect(screen.queryByRole("link", { name: "초대 수락" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
 });
 
 test("renders the event invitation copy only for the Trouble Brewing variant", async () => {
@@ -138,12 +138,12 @@ test("adds the exact acceptance link only to the opened Trouble Brewing letter",
   const user = userEvent.setup();
 
   const sampleView = render(<PromoCardPrototype />);
-  expect(screen.queryByRole("link", { name: "초대 수락" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
 
   sampleView.unmount();
   render(<PromoCardPrototype variant="trouble-brewing" />);
-  expect(screen.queryByRole("link", { name: "초대 수락" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "봉투 열기" }));
-  const acceptanceLink = screen.getByRole("link", { name: "초대 수락" });
+  const acceptanceLink = screen.getByRole("link", { name: "초대 수락하기" });
   expect(acceptanceLink.getAttribute("href")).toBe("https://invite.kakao.com/tc/bA5MLDMhPD");
 });

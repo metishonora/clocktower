@@ -248,9 +248,9 @@ export function PromoCardPrototype({
               <a
                 className="promoAcceptanceLink"
                 href="https://invite.kakao.com/tc/bA5MLDMhPD"
-                aria-label="초대 수락"
+                aria-label="초대 수락하기"
               >
-                <span>초대 수락</span>
+                <span>초대 수락하기</span>
               </a>
             ) : null}
 
