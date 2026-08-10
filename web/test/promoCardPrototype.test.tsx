@@ -51,6 +51,25 @@ test("renders the Trouble Brewing seal and modifier without changing the sample 
   expect(tbSeal?.getAttribute("src")).toContain("wax-seal-tb.png");
 });
 
+test("renders the Sects & Violets prototype with its own seal and date", async () => {
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+  const user = userEvent.setup();
+
+  const { container } = render(
+    <PromoCardPrototype variant="sects-and-violets" design="vellum" idleGlowHint />,
+  );
+  const card = container.querySelector(".promoCard");
+  const seal = container.querySelector(".promoSeal");
+  expect(card?.classList.contains("promoCard--snv")).toBe(true);
+  expect(card?.classList.contains("hasIdleGlowHint")).toBe(true);
+  expect(card?.getAttribute("data-promo-variant")).toBe("sects-and-violets");
+  expect(seal?.getAttribute("src")).toContain("wax-seal-snv.png");
+
+  await user.click(screen.getByRole("button", { name: "봉투 열기" }));
+  expect(screen.getByText("날짜: 26년 8월 13일(목)")).toBeTruthy();
+  expect(screen.queryByRole("link", { name: "초대 수락" })).toBeNull();
+});
+
 test("renders the event invitation copy only for the Trouble Brewing variant", async () => {
   globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
 

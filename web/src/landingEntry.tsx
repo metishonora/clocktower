@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import { ScriptLanding } from "./features/script-selection/ScriptLanding";
 import {
-  isPromoCardProductionRequest,
   resolvePromoCardDesign,
+  resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
 } from "./promoCardPrototypeRoute";
 
@@ -15,19 +15,19 @@ const PromoCardPrototypeEntry = React.lazy(async () => {
   return { default: module.PromoCardPrototype };
 });
 
-const productionPromoCardRequested = isPromoCardProductionRequest(window.location);
-const devPromoCardRoute = !productionPromoCardRequested && import.meta.env.DEV
+const productionPromoCardRoute = resolvePromoCardProductionRoute(window.location);
+const devPromoCardRoute = !productionPromoCardRoute && import.meta.env.DEV
   ? resolvePromoCardRoute(window.location)
   : undefined;
-const promoCardRoute = productionPromoCardRequested
-  ? "trouble-brewing"
-  : devPromoCardRoute;
-const promoCardDesign = productionPromoCardRequested
+const promoCardRoute = productionPromoCardRoute ?? devPromoCardRoute;
+const promoCardDesign = productionPromoCardRoute
   ? "vellum"
   : promoCardRoute === "trouble-brewing"
     ? resolvePromoCardDesign(window.location)
+    : promoCardRoute === "sects-and-violets"
+      ? "vellum"
     : undefined;
-const promoCardRequested = productionPromoCardRequested || Boolean(devPromoCardRoute);
+const promoCardRequested = Boolean(productionPromoCardRoute || devPromoCardRoute);
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -36,7 +36,7 @@ createRoot(document.getElementById("root")!).render(
         <PromoCardPrototypeEntry
           variant={promoCardRoute}
           design={promoCardDesign}
-          idleGlowHint={promoCardRoute === "trouble-brewing"}
+          idleGlowHint={promoCardRoute !== "sample"}
         />
       </React.Suspense>
     ) : (

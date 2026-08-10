@@ -396,12 +396,12 @@ body {
   position: absolute;
   z-index: 5;
   inset: -12px;
-  border: 1px solid rgba(231, 213, 173, .78);
+  border: 1px solid rgba(var(--promo-glow-light-rgb), .78);
   border-radius: 13px;
   box-shadow:
-    0 0 14px rgba(210, 173, 100, .52),
-    0 0 38px rgba(210, 173, 100, .3),
-    inset 0 0 12px rgba(231, 213, 173, .22);
+    0 0 14px rgba(var(--promo-glow-rgb), .52),
+    0 0 38px rgba(var(--promo-glow-rgb), .3),
+    inset 0 0 12px rgba(var(--promo-glow-light-rgb), .22);
   content: "";
   opacity: 0;
   pointer-events: none;
@@ -416,6 +416,10 @@ body {
    its atmosphere to the script's deep-night, forest, parchment, gold, and
    rust palette. All overrides are scoped so the sample stays unchanged. */
 .promoCard--tb {
+  --promo-glow-rgb: 210, 173, 100;
+  --promo-glow-light-rgb: 231, 213, 173;
+  --promo-glow-shadow-rgb: 2, 12, 8;
+  --promo-seal-shadow-rgb: 23, 3, 6;
   --tb-deep-night: #071611;
   --tb-night: #102a20;
   --tb-forest: #24513d;
@@ -1226,6 +1230,81 @@ body {
   background-color: #cec3a8;
 }
 
+/* Sects & Violets prototype: keep the approved historical letter packet and
+   interaction, while shifting only atmosphere, ink accents, band, and seal. */
+.promoCard--snv {
+  --promo-glow-rgb: 188, 132, 214;
+  --promo-glow-light-rgb: 235, 216, 242;
+  --promo-glow-shadow-rgb: 23, 11, 29;
+  --promo-seal-shadow-rgb: 20, 5, 25;
+  background:
+    radial-gradient(circle at 50% 54%, rgba(136, 105, 154, .28), transparent 43%),
+    linear-gradient(145deg, #2b1836 0%, #17101d 62%, #24182c 100%);
+}
+
+.promoCard--snv::before {
+  border-color: rgba(188, 132, 214, .32);
+}
+
+.promoCard--snv .promoLetter {
+  color: #38253d;
+  background-color: #e2d4c0;
+  background-image:
+    radial-gradient(ellipse at 18% 8%, rgba(247, 235, 249, .24), transparent 38%),
+    radial-gradient(ellipse at 86% 92%, rgba(136, 105, 154, .1), transparent 42%),
+    linear-gradient(112deg, rgba(76, 52, 91, .08), rgba(231, 213, 173, .06)),
+    var(--letter-texture);
+  background-blend-mode: screen, multiply, soft-light, normal;
+  box-shadow:
+    inset 0 0 26px rgba(76, 52, 91, .11),
+    inset 0 1px rgba(247, 235, 249, .5),
+    0 10px 0 rgba(23, 11, 29, .24);
+}
+
+.promoCard--snv .promoLetterCopy--tb h1 {
+  color: #36223b;
+  font-size: 46px;
+  letter-spacing: -.025em;
+}
+
+.promoCard--snv .promoEventDetails p {
+  color: #5c4561;
+}
+
+.promoCard--snv .promoAcceptanceLink {
+  color: #70477b;
+}
+
+.promoCard--snv .promoEnvelope {
+  filter:
+    drop-shadow(0 3px 2px rgba(188, 132, 214, .12))
+    drop-shadow(0 24px 28px rgba(23, 11, 29, .54));
+}
+
+.promoCard--snv .promoEnvelope--packet .promoEnvelopeBase {
+  border-color: rgba(112, 71, 123, .62);
+  background-color: #d8cbb8;
+  background-image:
+    linear-gradient(90deg, transparent 49.5%, rgba(76, 52, 91, .15) 49.8%, rgba(247, 235, 249, .18) 50.2%, transparent 50.6%),
+    linear-gradient(180deg, transparent 53%, rgba(76, 52, 91, .13) 53.3%, rgba(247, 235, 249, .16) 53.7%, transparent 54.1%),
+    radial-gradient(ellipse at 20% 8%, rgba(247, 235, 249, .2), transparent 36%),
+    var(--letter-texture);
+}
+
+.promoCard--snv .promoEnvelope--packet .promoEnvelopeTear,
+.promoCard--snv .promoEnvelope--packet .promoEnvelopeFlap {
+  border-color: rgba(188, 132, 214, .42);
+  background-color: #4c345b;
+  background-image:
+    linear-gradient(180deg, rgba(235, 216, 242, .12), rgba(23, 11, 29, .3)),
+    var(--envelope-texture);
+  box-shadow: inset 0 1px rgba(235, 216, 242, .14), 0 4px 9px rgba(23, 11, 29, .28);
+}
+
+.promoCard--snv .promoOpenTrigger:focus-visible {
+  outline-color: rgba(188, 132, 214, .95);
+}
+
 @keyframes promoTopStripTear {
   0% {
     opacity: 0;
@@ -1286,41 +1365,41 @@ body {
   0%, 12%, 100% {
     filter:
       brightness(1)
-      drop-shadow(0 3px 2px rgba(210, 173, 100, .1))
-      drop-shadow(0 0 0 rgba(210, 173, 100, 0))
-      drop-shadow(0 24px 28px rgba(2, 12, 8, .5));
+      drop-shadow(0 3px 2px rgba(var(--promo-glow-rgb), .1))
+      drop-shadow(0 0 0 rgba(var(--promo-glow-rgb), 0))
+      drop-shadow(0 24px 28px rgba(var(--promo-glow-shadow-rgb), .5));
   }
 
   38% {
     filter:
       brightness(1.048)
-      drop-shadow(0 2px 3px rgba(231, 213, 173, .34))
-      drop-shadow(0 0 24px rgba(210, 173, 100, .44))
-      drop-shadow(0 24px 30px rgba(2, 12, 8, .54));
+      drop-shadow(0 2px 3px rgba(var(--promo-glow-light-rgb), .34))
+      drop-shadow(0 0 24px rgba(var(--promo-glow-rgb), .44))
+      drop-shadow(0 24px 30px rgba(var(--promo-glow-shadow-rgb), .54));
   }
 
   52% {
     filter:
       brightness(1.052)
-      drop-shadow(0 2px 3px rgba(231, 213, 173, .36))
-      drop-shadow(0 0 26px rgba(210, 173, 100, .46))
-      drop-shadow(0 24px 30px rgba(2, 12, 8, .54));
+      drop-shadow(0 2px 3px rgba(var(--promo-glow-light-rgb), .36))
+      drop-shadow(0 0 26px rgba(var(--promo-glow-rgb), .46))
+      drop-shadow(0 24px 30px rgba(var(--promo-glow-shadow-rgb), .54));
   }
 
   72% {
     filter:
       brightness(1.028)
-      drop-shadow(0 2.5px 2.5px rgba(231, 213, 173, .23))
-      drop-shadow(0 0 16px rgba(210, 173, 100, .28))
-      drop-shadow(0 24px 29px rgba(2, 12, 8, .52));
+      drop-shadow(0 2.5px 2.5px rgba(var(--promo-glow-light-rgb), .23))
+      drop-shadow(0 0 16px rgba(var(--promo-glow-rgb), .28))
+      drop-shadow(0 24px 29px rgba(var(--promo-glow-shadow-rgb), .52));
   }
 
   88% {
     filter:
       brightness(1.008)
-      drop-shadow(0 3px 2px rgba(210, 173, 100, .13))
-      drop-shadow(0 0 7px rgba(210, 173, 100, .1))
-      drop-shadow(0 24px 28px rgba(2, 12, 8, .5));
+      drop-shadow(0 3px 2px rgba(var(--promo-glow-rgb), .13))
+      drop-shadow(0 0 7px rgba(var(--promo-glow-rgb), .1))
+      drop-shadow(0 24px 28px rgba(var(--promo-glow-shadow-rgb), .5));
   }
 }
 
@@ -1349,36 +1428,36 @@ body {
 @keyframes promoSealIdleGlow {
   0%, 12%, 100% {
     filter:
-      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
-      drop-shadow(0 0 0 rgba(210, 173, 100, 0));
+      drop-shadow(0 8px 9px rgba(var(--promo-seal-shadow-rgb), .34))
+      drop-shadow(0 0 0 rgba(var(--promo-glow-rgb), 0));
     transform: translateX(-50%) scale(1);
   }
 
   38% {
     filter:
-      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
-      drop-shadow(0 0 20px rgba(210, 173, 100, .62));
+      drop-shadow(0 8px 9px rgba(var(--promo-seal-shadow-rgb), .34))
+      drop-shadow(0 0 20px rgba(var(--promo-glow-rgb), .62));
     transform: translateX(-50%) scale(1.032);
   }
 
   52% {
     filter:
-      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
-      drop-shadow(0 0 22px rgba(210, 173, 100, .66));
+      drop-shadow(0 8px 9px rgba(var(--promo-seal-shadow-rgb), .34))
+      drop-shadow(0 0 22px rgba(var(--promo-glow-rgb), .66));
     transform: translateX(-50%) scale(1.035);
   }
 
   72% {
     filter:
-      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
-      drop-shadow(0 0 14px rgba(210, 173, 100, .42));
+      drop-shadow(0 8px 9px rgba(var(--promo-seal-shadow-rgb), .34))
+      drop-shadow(0 0 14px rgba(var(--promo-glow-rgb), .42));
     transform: translateX(-50%) scale(1.021);
   }
 
   88% {
     filter:
-      drop-shadow(0 8px 9px rgba(23, 3, 6, .34))
-      drop-shadow(0 0 6px rgba(210, 173, 100, .14));
+      drop-shadow(0 8px 9px rgba(var(--promo-seal-shadow-rgb), .34))
+      drop-shadow(0 0 6px rgba(var(--promo-glow-rgb), .14));
     transform: translateX(-50%) scale(1.006);
   }
 }
