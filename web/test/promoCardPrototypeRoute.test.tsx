@@ -3,6 +3,7 @@ import {
   isPromoCardSampleRequest,
   isPromoCardProductionRequest,
   resolvePromoCardDesign,
+  resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
 } from "../src/promoCardPrototypeRoute";
 
@@ -51,19 +52,43 @@ describe("promo card sample route", () => {
   });
 
   test.each([
+    "/invitation/sects-and-violets",
+    "/invitation/sects-and-violets/",
+    "/clocktower/invitation/sects-and-violets",
+    "/clocktower/invitation/sects-and-violets/",
+  ])("matches the extensionless Sects & Violets prototype path %s", (pathname) => {
+    expect(resolvePromoCardRoute({ pathname, search: "" })).toBe("sects-and-violets");
+  });
+
+  test.each([
+    "/invitation/260813",
+    "/invitation/260813/",
+    "/clocktower/invitation/260813",
+    "/clocktower/invitation/260813/",
+  ])("matches the Sects & Violets production invitation path %s", (pathname) => {
+    expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBe("sects-and-violets");
+    expect(isPromoCardProductionRequest({ pathname, search: "" })).toBe(true);
+  });
+
+  test.each([
     "/invitation/260816",
     "/invitation/260816/",
     "/clocktower/invitation/260816",
     "/clocktower/invitation/260816/",
   ])("matches the production invitation path %s", (pathname) => {
+    expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBe("trouble-brewing");
     expect(isPromoCardProductionRequest({ pathname, search: "" })).toBe(true);
   });
 
   test.each([
     "/invitation/260816.html",
+    "/invitation/260813.html",
     "/clocktower/invitation/260816-other",
+    "/clocktower/invitation/260813/extra",
     "/clocktower/invitation/260816/extra",
+    "/clocktower/invitation/sects-and-violets.html",
   ])("does not match another production invitation path %s", (pathname) => {
+    expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
     expect(isPromoCardProductionRequest({ pathname, search: "" })).toBe(false);
   });
 
