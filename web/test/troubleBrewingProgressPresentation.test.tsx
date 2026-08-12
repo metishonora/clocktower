@@ -274,6 +274,7 @@ test("presents a drunk actor as the primary identity with a nested Washerwoman a
   const drunkWasherwoman = drunkWasherwomanStep();
   renderProgress(drunkWasherwoman, [overview(drunkWasherwoman, "current")], undefined, {
     players: drunkPlayers,
+    ruleState: drunkRuleState(),
   });
 
   const task = screen.getByRole("region", { name: "현재 단계" });
@@ -281,7 +282,9 @@ test("presents a drunk actor as the primary identity with a nested Washerwoman a
   const shownAbility = within(task).getByRole("region", { name: "보여준 직업 · 세탁부" });
   expect(within(shownAbility).getByRole("heading", { name: "세탁부" })).toBeTruthy();
   expect(within(shownAbility).getByText(/게임 시작 시.*특정 주민/)).toBeTruthy();
-  expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+  expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
+  expect(within(within(task).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
+  expect(within(screen.getByLabelText("주정뱅이 · 세탁부 행동자 상태")).getByText("취함", { exact: true })).toBeTruthy();
   expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
   expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
   expect(screen.getByRole("list", { name: "첫날 밤 순서" }).textContent).toContain("주정뱅이 · 세탁부");
@@ -291,6 +294,7 @@ test("keeps the drunk identity hierarchy in the Washerwoman Reveal follow-up", (
   const drunkWasherwoman = drunkWasherwomanStep();
   renderProgress(drunkWasherwoman, [overview(drunkWasherwoman, "needsFollowUp")], undefined, {
     players: drunkPlayers,
+    ruleState: drunkRuleState(),
     pendingReveal: {
       step: drunkWasherwoman,
       confirmedEventCount: 18,
@@ -312,7 +316,8 @@ test("keeps the drunk identity hierarchy in the Washerwoman Reveal follow-up", (
   const shownAbility = within(task).getByRole("region", { name: "보여준 직업 · 세탁부" });
   expect(within(shownAbility).getByRole("heading", { name: "세탁부" })).toBeTruthy();
   expect(within(shownAbility).getByText(/게임 시작 시.*특정 주민/)).toBeTruthy();
-  expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+  expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
+  expect(within(within(task).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
   expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
   expect(within(task).getByRole("button", { name: "취한 정보 공개" })).toBeTruthy();
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
@@ -621,6 +626,19 @@ function drunkWasherwomanStep(): PhaseStep {
     },
     informationPrompt: informationPrompt([{ type: "drunk" }]),
   });
+}
+
+function drunkRuleState(): NonNullable<PhaseControlProps["ruleState"]> {
+  return {
+    unannouncedNightDeathPlayerIds: [],
+    activeImpairments: [{
+      kind: "drunk",
+      playerId: "player-6",
+      sourceEventId: "setup",
+      sourceCharacterId: "drunk",
+      expires: "never",
+    }],
+  };
 }
 
 function informationPrompt(activeReasons: NonNullable<PhaseStep["informationPrompt"]>["activeReasons"]): NonNullable<PhaseStep["informationPrompt"]> {

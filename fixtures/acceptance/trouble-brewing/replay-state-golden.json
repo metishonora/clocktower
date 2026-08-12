@@ -1038,6 +1038,15 @@
         "actorPlayerId": "player-5",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "drunk",
+          "playerId": "player-6",
+          "sourceEventId": "setup",
+          "sourceCharacterId": "drunk",
+          "expires": "never"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-6",
@@ -16366,6 +16375,15 @@
         "actorPlayerId": "player-5",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "drunk",
+          "playerId": "player-6",
+          "sourceEventId": "setup",
+          "sourceCharacterId": "drunk",
+          "expires": "never"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-6",
@@ -16717,6 +16735,15 @@
     "ruleState": {
       "redHerringPlayerId": "player-1",
       "unannouncedNightDeathPlayerIds": [],
+      "activeImpairments": [
+        {
+          "kind": "drunk",
+          "playerId": "player-6",
+          "sourceEventId": "setup",
+          "sourceCharacterId": "drunk",
+          "expires": "never"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-6",

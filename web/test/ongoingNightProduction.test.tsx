@@ -212,8 +212,18 @@ describe("ongoing-night production UI", () => {
       },
     );
     const nextStep = step({ id: "night1:undertaker", phase: "night", character: "undertaker", playerId: "player-2" });
+    const drunkReplay = replayWithRuleState(replayState({ currentStep, playerRoster }), {
+      unannouncedNightDeathPlayerIds: [],
+      activeImpairments: [{
+        kind: "drunk",
+        playerId: "player-1",
+        sourceEventId: "setup",
+        sourceCharacterId: "drunk",
+        expires: "never",
+      }],
+    });
     const core = createCoreHarness({
-      initialReplay: replayState({ currentStep, playerRoster }),
+      initialReplay: drunkReplay,
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-ft", "점쟁이 정보 확정", "night"), {
         kind: "fortuneTellerInformation",
@@ -232,7 +242,8 @@ describe("ongoing-night production UI", () => {
     expect(within(currentTask).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
     const shownAbility = within(currentTask).getByRole("region", { name: "보여준 직업 · 점쟁이" });
     expect(within(shownAbility).getByRole("heading", { name: "점쟁이" })).toBeTruthy();
-    expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+    expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
+    expect(within(within(currentTask).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
     expect(within(currentTask).queryByText("실제 주정뱅이")).toBeNull();
     await selectLivePlayers(user, /서연/, /하린/);
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
@@ -527,6 +538,7 @@ function replayWithRuleState(
     redHerringPlayerId?: string;
     activePoison?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
     activeProtection?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
+    activeImpairments?: ReplayState["ruleState"]["activeImpairments"];
     unannouncedNightDeathPlayerIds: string[];
     unannouncedNightResurrectionPlayerIds?: string[];
   },

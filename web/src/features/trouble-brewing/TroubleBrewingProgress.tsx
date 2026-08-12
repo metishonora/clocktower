@@ -477,9 +477,6 @@ function TroubleBrewingTask({
               actorPlayerNode={<strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>}
               actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
               abilityNameNode={<span className="tbProgressShownName" role="heading" aria-level={4}>{characterLabel(currentAbilityRelation.abilityCharacterId)}</span>}
-              abilityStatusNode={currentAbilityRelation.kind === "shown"
-                ? <span className="snvInformationInfluenceBadges" aria-label="능력 상태"><em className="snvInformationInfluenceBadge drunk">취함</em></span>
-                : null}
               abilityClassName="tbProgressShownIdentity interactive"
               abilityRegionClassName="tbProgressShownAbility"
               abilitySummary={currentCharacter?.abilitySummary}
@@ -755,9 +752,6 @@ function TroubleBrewingInformationFollowUp({
         actorPlayerNode={<strong className="tbProgressPlayer">{actor.seat}번 {actor.name}</strong>}
         actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
         abilityNameNode={<span className="tbProgressShownName" role="heading" aria-level={4}>{characterLabel(abilityRelation.abilityCharacterId)}</span>}
-        abilityStatusNode={abilityRelation.kind === "shown"
-          ? <span className="snvInformationInfluenceBadges" aria-label="능력 상태"><em className="snvInformationInfluenceBadge drunk">취함</em></span>
-          : null}
         abilityClassName="tbProgressShownIdentity interactive"
         abilityRegionClassName="tbProgressShownAbility"
         abilitySummary={character?.abilitySummary}

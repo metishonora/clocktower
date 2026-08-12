@@ -110,6 +110,16 @@ fn first_night_keeps_duplicate_shown_character_actors_as_distinct_steps() {
         2
     );
     assert_eq!(first_steps, second_steps);
+    assert_eq!(
+        first["value"]["ruleState"]["activeImpairments"],
+        json!([{
+            "kind": "drunk",
+            "playerId": "player-2",
+            "sourceEventId": "setup",
+            "sourceCharacterId": "drunk",
+            "expires": "never"
+        }])
+    );
 
     let mut events = vec![
         setup,

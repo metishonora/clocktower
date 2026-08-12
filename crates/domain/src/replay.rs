@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use crate::{
     characters::{TbCharacterId, TbPhaseKey, TbSemanticStep, TbStepKey},
     contracts::{
-        ActiveImpairment, DemonDeathCause, DemonSuccessionConfirmedPayload,
-        DemonSuccessionSource, GameEndCause, GameEndSource, GameEndState, GameEvent, GameEventKind,
-        GameFile, ImpAttackOutcome, ImpairmentExpiry, ImpairmentKind, MayorAttackContext,
+        ActiveImpairment, DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource,
+        GameEndCause, GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile,
+        ImpAttackOutcome, ImpairmentExpiry, ImpairmentKind, MayorAttackContext,
         NightActionNoEffectReason, NightActionResolution, ReplayState, RuleState,
         SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
         SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
@@ -1529,15 +1529,27 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
     });
     let (active_poison, active_protection) =
         crate::characters::active_rule_effects(players, events);
-    let active_impairments = active_poison.as_ref().map(|poison| {
-        vec![ActiveImpairment {
+    let mut active_impairments = players
+        .iter()
+        .filter(|player| player.actual_character == "drunk")
+        .map(|player| ActiveImpairment {
+            kind: ImpairmentKind::Drunk,
+            player_id: player.id.clone(),
+            source_event_id: player.ability_instance.source_event_id.clone(),
+            source_character_id: "drunk".into(),
+            expires: ImpairmentExpiry::Never,
+        })
+        .collect::<Vec<_>>();
+    if let Some(poison) = active_poison.as_ref() {
+        active_impairments.push(ActiveImpairment {
             kind: ImpairmentKind::Poisoned,
             player_id: poison.player_id.clone(),
             source_event_id: poison.source_event_id.clone(),
             source_character_id: "poisoner".into(),
             expires: ImpairmentExpiry::WhileSourceAbilityActive,
-        }]
-    });
+        });
+    }
+    let active_impairments = (!active_impairments.is_empty()).then_some(active_impairments);
     let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
     let announced = events
         .iter()
