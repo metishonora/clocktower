@@ -995,6 +995,67 @@
   box-shadow: 0 12px 30px rgba(112, 49, 145, .36);
 }
 
+.tbConfirmedInformation {
+  display: grid;
+  width: min(620px, 100%);
+  gap: 18px;
+}
+
+.tbConfirmedInformation .snvInformationValues {
+  width: 100%;
+  margin: 0;
+}
+
+.tbConfirmedInformation .snvInformationValues > div {
+  border-color: var(--tb-ui-panel-border);
+  background: color-mix(in srgb, var(--tb-ui-panel) 72%, transparent);
+}
+
+.tbConfirmedInformation .snvInformationValues dt {
+  color: var(--tb-ui-muted);
+}
+
+.tbConfirmedInformation .snvInformationValues dd {
+  color: var(--tb-ui-action-text);
+}
+
+.tbCurrentTask .tbConfirmedRevealActions {
+  margin-top: 0;
+  padding-top: 0;
+  justify-content: flex-end;
+}
+
+.tbCurrentTask .tbConfirmedRevealActions > button {
+  min-width: 156px;
+}
+
+.tbScalarInformationResult {
+  width: min(620px, 100%);
+  margin: 0;
+}
+
+.tbScalarInformationResult dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tbScalarInformationResult input {
+  width: 118px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--tb-ui-action-border);
+  border-radius: 10px;
+  color: var(--tb-ui-action-text);
+  background: color-mix(in srgb, var(--tb-ui-panel) 82%, #000 18%);
+  font: 850 .82rem system-ui, sans-serif;
+}
+
+.tbScalarInformationResult dd > span {
+  color: var(--tb-ui-muted);
+  font: 850 .72rem system-ui, sans-serif;
+}
+
 .tbCurrentTask.snvEvilInformationTask {
   min-height: 0;
   padding: clamp(22px, 3vw, 34px);
@@ -1806,6 +1867,21 @@
 
   .tbCurrentTask .snvEvilInformationTaskActions .prominent {
     flex: 1;
+  }
+
+  .tbCurrentTask > .snvStepActions:has(.informationReveal) {
+    flex-wrap: wrap;
+  }
+
+  .tbCurrentTask > .snvStepActions:has(.informationReveal) > button {
+    min-width: 0;
+    flex: 1 1 calc(50% - 5px);
+    white-space: nowrap;
+  }
+
+  .tbCurrentTask > .snvStepActions > .informationReveal {
+    order: 2;
+    flex-basis: 100%;
   }
 
 }

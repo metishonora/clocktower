@@ -332,8 +332,13 @@ test.each([
     characterKind: character === "librarian" ? "Outsider" : "Minion",
   }));
 
-  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
-    .getByRole("button", { name: /대상 선택/ }));
+  const currentTask = await screen.findByRole("region", { name: "현재 단계" });
+  if (character === "librarian") {
+    expect(within(currentTask).getByRole("group", { name: "정보 결과" }).textContent).toContain("외지인 없음");
+    expect(within(currentTask).queryByRole("button", { name: /대상 선택/ })).toBeNull();
+    return;
+  }
+  await user.click(within(currentTask).getByRole("button", { name: /대상 선택/ }));
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });

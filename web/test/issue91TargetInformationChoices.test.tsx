@@ -51,7 +51,9 @@ describe("issue #91 target-information selected choices", () => {
     expect(within(registeredChef).getByText("✓").getAttribute("aria-hidden")).toBe("true");
     expect(within(delivery).getAllByText("✓")).toHaveLength(1);
 
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
+    const reveal = await screen.findByLabelText("플레이어 공개 화면");
+    await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     await screen.findByLabelText("확정된 Reveal 후속 조치");
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
@@ -97,7 +99,7 @@ describe("issue #91 target-information selected choices", () => {
     delivery = screen.getByLabelText("전달 정보");
     expect(within(delivery).queryByText("✓")).toBeNull();
     expect(within(delivery).queryAllByRole("button", { pressed: true })).toHaveLength(0);
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
 
     const registeredImp = within(delivery).getByRole("button", { name: "임프" });
     await user.click(registeredImp);

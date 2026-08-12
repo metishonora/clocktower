@@ -7,10 +7,15 @@ import type {
   RevealPlayer,
   RoleInformationRevealPayload,
 } from "../../core/types.js";
-import { scalarInformationLabel, scalarInformationValueLabel } from "../../core/informationPresentation.js";
+import {
+  scalarInformationLabel,
+  scalarInformationValueLabel,
+  type ScalarInformationCharacterId,
+} from "../../core/informationPresentation.js";
 import { CharacterIcon } from "../../components/CharacterIcon.js";
 import { characterLabel } from "../../setupDraft.js";
 import { SectsAndVioletsReveal } from "../reveal/SectsAndVioletsReveal.js";
+import "../identity-change/characterChangeReveal.css";
 import "./troubleBrewingRevealScreen.css";
 
 const CLOSE_LABEL = "확인했으면 눈을 감으세요";
@@ -47,6 +52,25 @@ export function TroubleBrewingRevealScreen({
   if (payload.kind === "minionInformation" || payload.kind === "demonInformation") {
     return <EvilInformationReveal payload={payload} onClose={onClose} />;
   }
+  if (payload.kind === "characterChange") {
+    const alignment = payload.alignment === "good" ? "선" : "악";
+    return (
+      <SectsAndVioletsReveal
+        dialogLabel="직업 변경 공개 1/1"
+        backdropAriaLabel="플레이어 공개 화면"
+        className={`snakeCharmerReveal ${payload.alignment}`}
+        closeLabel={CLOSE_LABEL}
+        onClose={onClose}
+      >
+        <div className="snakeCharmerRevealIdentity">
+          <h1>당신의 직업이 변경되었습니다</h1>
+          <CharacterIcon characterId={payload.characterId} />
+          <h2>{displayCharacterLabel(payload.characterId, payload.alignment)}</h2>
+          <span className="snakeCharmerRevealAlignment" aria-label={`현재 진영 · ${alignment}`}>{alignment}</span>
+        </div>
+      </SectsAndVioletsReveal>
+    );
+  }
 
   return (
     <SectsAndVioletsReveal
@@ -61,7 +85,7 @@ export function TroubleBrewingRevealScreen({
   );
 }
 
-function InformationContent({ payload }: { payload: Exclude<RevealPayload, { kind: "spyGrimoire" | "evilTwinPair" | "minionInformation" | "demonInformation" }> }) {
+function InformationContent({ payload }: { payload: Exclude<RevealPayload, { kind: "spyGrimoire" | "evilTwinPair" | "minionInformation" | "demonInformation" | "characterChange" }> }) {
   if (!("kind" in payload)) return <TextContent payload={payload} />;
 
   switch (payload.kind) {
@@ -72,10 +96,10 @@ function InformationContent({ payload }: { payload: Exclude<RevealPayload, { kin
     case "numericInformation":
       return (
         <>
-          <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
           <span className="tbRevealEyebrow">{characterLabel(payload.characterId)} 정보</span>
+          <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
+          <p className="tbRevealDescription">{numericInformationPrompt(payload.characterId)}</p>
           <h2>{scalarInformationValueLabel(payload.characterId, payload.value)}</h2>
-          <p className="tbRevealDescription">{scalarInformationLabel(payload.characterId)}</p>
         </>
       );
     case "booleanInformation":
@@ -88,13 +112,13 @@ function InformationContent({ payload }: { payload: Exclude<RevealPayload, { kin
         </>
       );
     case "characterInformation":
+      const revealedCharacter = characterLabel(payload.revealedCharacterId);
       return (
         <>
-          <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
           <span className="tbRevealEyebrow">{characterLabel(payload.characterId)} 정보</span>
-          <h2>{characterLabel(payload.revealedCharacterId)}</h2>
+          <RevealSeatCards players={[payload.targetPlayer]} ariaLabel="확인 대상" />
           <p className="tbRevealDescription">이 자의 직업은…</p>
-          <RevealPlayers players={[payload.targetPlayer]} ariaLabel="확인 대상" />
+          <RevealedCharacter characterId={payload.revealedCharacterId} label={revealedCharacter} />
         </>
       );
     case "dreamerInformation":
@@ -129,18 +153,6 @@ function InformationContent({ payload }: { payload: Exclude<RevealPayload, { kin
           <RevealPlayers players={payload.candidatePlayers} ariaLabel="악마 후보" separator="또는" />
         </>
       );
-    case "characterChange":
-      return (
-        <>
-          <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
-          <span className="tbRevealEyebrow">역할 변경</span>
-          <h2>당신의 역할이 변경되었습니다.</h2>
-          <p className={`tbRevealAlignment ${payload.alignment}`} aria-label={`현재 진영 · ${payload.alignment === "good" ? "선" : "악"}`}>
-            {payload.alignment === "good" ? "선" : "악"}
-          </p>
-          <strong className="tbRevealCharacterName">{displayCharacterLabel(payload.characterId, payload.alignment)}</strong>
-        </>
-      );
     default:
       return <TextContent payload={payload} />;
   }
@@ -151,10 +163,8 @@ function SetupInformationContent({ payload }: { payload: Extract<RoleInformation
   if (payload.zeroOutsiders) {
     return (
       <>
-        <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
         <span className="tbRevealEyebrow">{role} 정보</span>
-        <h2>외지인은 없습니다.</h2>
-        <p className="tbRevealDescription">게임에 참여하는 외지인이 없습니다.</p>
+        <h2>외지인이 없습니다</h2>
       </>
     );
   }
@@ -162,11 +172,10 @@ function SetupInformationContent({ payload }: { payload: Extract<RoleInformation
   const revealed = characterLabel(payload.revealedCharacterId);
   return (
     <>
-      <CharacterIcon characterId={payload.characterId} className="tbRevealIcon" />
       <span className="tbRevealEyebrow">{role} 정보</span>
-      <h2>{revealed}</h2>
-      <p className="tbRevealDescription">다음 두 플레이어 중 한 명이 {revealed}입니다.</p>
-      <RevealPlayers players={payload.candidatePlayers} ariaLabel={`${revealed} 후보`} separator="또는" />
+      <RevealSeatCards players={payload.candidatePlayers} ariaLabel="후보 좌석" />
+      <p className="tbRevealDescription">둘 중 한 명은</p>
+      <RevealedCharacter characterId={payload.revealedCharacterId} label={revealed} />
     </>
   );
 }
@@ -199,9 +208,14 @@ function EvilInformationReveal({ payload, onClose }: { payload: EvilInformationR
       </header>
 
       {minion ? (
-        <RevealSection label="악마는">
-          <IdentityCards players={payload.demonPlayers} />
-        </RevealSection>
+        <>
+          <RevealSection number="01" label="악마는">
+            <IdentityCards players={payload.demonPlayers} />
+          </RevealSection>
+          <RevealSection number="02" label="동료 하수인">
+            <IdentityCards players={payload.minionPlayers} />
+          </RevealSection>
+        </>
       ) : (
         <>
           <RevealSection number="01" label="당신의 하수인">
@@ -255,6 +269,28 @@ function RevealPlayers({ players, ariaLabel, separator }: { players: readonly Re
         </div>
         {separator && index < players.length - 1 ? <b aria-hidden="true">{separator}</b> : null}
       </Fragment>)}
+    </div>
+  );
+}
+
+function RevealSeatCards({ players, ariaLabel }: { players: readonly RevealPlayer[]; ariaLabel: string }) {
+  return (
+    <div className="tbRevealSeatCards" role="group" aria-label={ariaLabel}>
+      {players.map((player) => (
+        <article key={player.playerId} aria-label={`${player.seat}번 ${player.name} 좌석`}>
+          <span>{player.seat}</span>
+          <strong>{player.seat}번 {player.name}</strong>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function RevealedCharacter({ characterId, label }: { characterId: string; label: string }) {
+  return (
+    <div className="tbRevealCharacterIdentity" role="group" aria-label={`공개 직업 ${label}`}>
+      <CharacterIcon characterId={characterId} decorative />
+      <h2>{label}</h2>
     </div>
   );
 }
@@ -326,4 +362,9 @@ function dialogLabel(payload: Exclude<RevealPayload, { kind: "spyGrimoire" | "ev
 function displayCharacterLabel(characterId: string, alignment?: "good" | "evil") {
   if (alignment === "good" && characterId === "evilTwin") return "쌍둥이";
   return characterLabel(characterId);
+}
+
+function numericInformationPrompt(characterId: ScalarInformationCharacterId) {
+  if (characterId === "empath") return "양옆 이웃 중 악한 팀";
+  return scalarInformationLabel(characterId);
 }

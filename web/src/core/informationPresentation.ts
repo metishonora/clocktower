@@ -17,7 +17,7 @@ type ScalarInformationPresentation = Readonly<{
 
 const scalarInformationPresentations = {
   chef: { label: "서로 이웃한 악한 팀", unit: "쌍" },
-  empath: { label: "살아있는 양옆 이웃 중 악한 팀", unit: "명" },
+  empath: { label: "양옆 이웃 중 악한 팀", unit: "명" },
   clockmaker: { label: "악마와 하수인의 거리", unit: "칸" },
   mathematician: { label: "비정상적으로 작동한 능력", unit: "개" },
   oracle: { label: "죽은 악한 플레이어", unit: "명" },

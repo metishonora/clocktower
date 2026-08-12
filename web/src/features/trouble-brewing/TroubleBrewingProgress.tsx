@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
-import type { PhaseStep, Player, Proposal } from "../../core/types";
+import type { DeliveryReason, PhaseStep, Player, Proposal, RevealPayload } from "../../core/types";
+import { scalarInformationLabel, scalarInformationValueLabel } from "../../core/informationPresentation";
 import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
-import { RevealPreview } from "../../reveal";
 import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { characterLabel, characters } from "../../setupDraft";
 import { GameEndControls } from "../game-end/GameEndControls";
@@ -20,6 +20,7 @@ import {
   targetCheckForSelection,
 } from "../phase-control/phaseInput";
 import { NightResultsAnnouncement } from "../phase-control/NightResultsAnnouncement";
+import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
 import { suggestionRequestFingerprint } from "../phase-control/randomSuggestion";
 
 export function TroubleBrewingProgress({
@@ -107,6 +108,7 @@ function TroubleBrewingTask({
   const [suggestionError, setSuggestionError] = useState<string>();
   const activeSuggestionRequestRef = useRef<symbol | undefined>(undefined);
   const currentSuggestionFingerprintRef = useRef("");
+  const autoRevealStepRef = useRef<string | undefined>(undefined);
 
   useEffect(() => () => {
     activeSuggestionRequestRef.current = undefined;
@@ -117,6 +119,11 @@ function TroubleBrewingTask({
     setSuggestionUsed(false);
     setSuggestionError(undefined);
   }, [currentStep?.id, suggestionContextFingerprint]);
+  useEffect(() => {
+    if (!pendingReveal || !replayReady || autoRevealStepRef.current !== pendingReveal.step.id) return;
+    autoRevealStepRef.current = undefined;
+    onShowReveal(pendingReveal.payload);
+  }, [pendingReveal, replayReady, onShowReveal]);
 
   if (pendingReveal) {
     const actor = pendingReveal.step.playerId
@@ -125,12 +132,18 @@ function TroubleBrewingTask({
     const directReveal = isSpyGrimoireRevealPayload(pendingReveal.payload)
       || ("kind" in pendingReveal.payload
         && (pendingReveal.payload.kind === "minionInformation" || pendingReveal.payload.kind === "demonInformation"));
+    const informationInfluence = primaryInformationInfluence(pendingReveal.step.informationPrompt?.activeReasons ?? []);
     return <article className="snvCurrentStep tbCurrentTask" aria-label="확정된 Reveal 후속 조치">
-      <p className="snvCurrentStepLabel">Reveal 후속 조치</p>
+      <p className="snvCurrentStepLabel">공개할 정보</p>
       <h3>{stepTitle(pendingReveal.step, actor)}</h3>
       <div className="tbProgressInputs">
         {directReveal ? <button type="button" className="primaryButton" onClick={() => onShowReveal(pendingReveal.payload)} disabled={busy}>플레이어에게 공개</button> : (
-          <RevealPreview payload={pendingReveal.payload} onShow={() => onShowReveal(pendingReveal.payload)} disabled={busy} />
+          <TroubleBrewingRevealSummary
+            payload={pendingReveal.payload}
+            influence={informationInfluence}
+            onShow={() => onShowReveal(pendingReveal.payload)}
+            disabled={busy}
+          />
         )}
       </div>
       <div className="snvStepActions">
@@ -171,6 +184,11 @@ function TroubleBrewingTask({
   const resultSubject = currentStep?.stepType === "executionDeath" || currentStep?.stepType === "slayerDeath";
   const isNightDeathAnnouncement = currentStep?.stepType === "announcement" && currentStep.id.endsWith(":announceDeaths");
   const actionPrompt = currentStep ? currentActionPrompt(currentStep) : undefined;
+  const immediateScalarInformation = currentStep ? immediateScalarInformationStep(currentStep) : false;
+  const zeroOutsiderInformation = Boolean(
+    currentStep?.requiredInput.kind === "setupInfo" && phaseInputDraft.zeroOutsiders,
+  );
+  const isInformationConfirmation = Boolean(currentStep?.informationPrompt || zeroOutsiderInformation);
   const selectedTargetCheck = currentStep
     ? targetCheckForSelection(currentStep, phaseInputDraft.selectedPlayerIds)
     : undefined;
@@ -179,7 +197,7 @@ function TroubleBrewingTask({
     selectedTargetCheck
       && (selectedTargetCheck.choices.length === 1 || phaseInputDraft.selectedTargetChoice),
   );
-  const selectionValid = currentStep ? stepInputReady(
+  const selectionValid = currentStep ? immediateScalarInformation || zeroOutsiderInformation || stepInputReady(
     currentStep,
     phaseInputDraft.selectedPlayerIds.length,
     phaseInputDraft.selectedCharacterIds.length,
@@ -192,12 +210,22 @@ function TroubleBrewingTask({
     phaseInputDraft.selectedPlayerIds,
   ) : false;
   const currentConfirmation = currentStep
-    ? phaseStepConfirmation(currentStep, phaseInputDraft, nominationDraft)
+    ? phaseStepConfirmation(
+        currentStep,
+        immediateScalarInformation
+          ? {
+              ...phaseInputDraft,
+              selectedNumberChoice: phaseInputDraft.selectedNumberChoice
+                ?? defaultScalarInformationChoice(currentStep),
+            }
+          : phaseInputDraft,
+        nominationDraft,
+      )
     : {};
   const currentSuggestionFingerprint = suggestionRequestFingerprint(suggestionContextFingerprint, currentConfirmation);
   currentSuggestionFingerprintRef.current = currentSuggestionFingerprint;
   const usesGrimoireSelection = currentStep?.requiredInput.kind === "playerIds"
-    || currentStep?.requiredInput.kind === "setupInfo"
+    || (currentStep?.requiredInput.kind === "setupInfo" && !zeroOutsiderInformation)
     || currentStep?.requiredInput.kind === "nomination"
     || currentStep?.requiredInput.kind === "nominationVote";
   const nominationVoteIsVote = Boolean(
@@ -422,6 +450,11 @@ function TroubleBrewingTask({
                     aria-level={3}
                     aria-label={stepTitle(currentStep, currentPlayer)}
                   >{currentCharacter?.label ?? currentStep.character}</span>
+                  <PlayerImpairmentBadges
+                    activeImpairments={ruleState?.activeImpairments}
+                    playerId={currentPlayer.id}
+                    label="정보 영향"
+                  />
                 </span>
                 <strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>
               </div>
@@ -441,12 +474,19 @@ function TroubleBrewingTask({
               {resultEffectDescription(currentStep) ? <p>{resultEffectDescription(currentStep)}</p> : null}
             </div>
           ) : null}
-          {actionPrompt ? <p className="tbProgressPrompt" aria-label="필요한 입력">{actionPrompt}</p> : null}
+          {actionPrompt && !immediateScalarInformation && !zeroOutsiderInformation ? <p className="tbProgressPrompt" aria-label="필요한 입력">{actionPrompt}</p> : null}
           {currentStep.stepType === "nomination" && dayState ? (
             <ExecutionStanding players={players} dayState={dayState} />
           ) : null}
           <div className="tbProgressInputs">
-            {currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
+            {immediateScalarInformation ? <ScalarInformationResult
+              step={currentStep}
+              selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
+              busy={busy || suggesting}
+              onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
+            /> : zeroOutsiderInformation ? <dl className="snvInformationValues" role="group" aria-label="정보 결과">
+              <div><dt>대상</dt><dd>외지인 없음</dd></div>
+            </dl> : currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
               step={currentStep}
               players={players}
               dayState={dayState}
@@ -493,8 +533,18 @@ function TroubleBrewingTask({
               {usesGrimoireSelection ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
                 {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : currentStep.requiredInput.kind === "setupInfo" ? "← 대상 선택" : "대상 선택"}
               </button> : null}
-              {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button type="button" disabled={busy || suggesting || !selectionValid || !targetChoiceReady} onClick={() => onConfirm(currentConfirmation)}>
-                {confirmationLabel(currentStep, isNightDeathAnnouncement)}
+              {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button
+                type="button"
+                className={isInformationConfirmation ? `informationReveal prominent${primaryInformationInfluence(currentStep.informationPrompt?.activeReasons ?? []) ? ` ${primaryInformationInfluence(currentStep.informationPrompt?.activeReasons ?? [])}` : ""}` : undefined}
+                disabled={busy || suggesting || !selectionValid || !targetChoiceReady}
+                onClick={() => {
+                  if (isInformationConfirmation) autoRevealStepRef.current = currentStep.id;
+                  onConfirm(currentConfirmation);
+                }}
+              >
+                {isInformationConfirmation
+                  ? informationRevealActionLabel(currentStep.informationPrompt?.activeReasons ?? [])
+                  : confirmationLabel(currentStep, isNightDeathAnnouncement)}
               </button> : null}
               {currentStep.canSkip ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>
                 {currentStep.stepType === "nomination" ? "지명 종료" : "건너뛰기"}
@@ -504,6 +554,167 @@ function TroubleBrewingTask({
       </article>
     </GameEndControls>
   </div>;
+}
+
+function ScalarInformationResult({
+  step,
+  selectedNumberChoice,
+  busy,
+  onNumberChoiceChange,
+}: {
+  step: PhaseStep;
+  selectedNumberChoice: PhaseControlProps["phaseInputDraft"]["selectedNumberChoice"];
+  busy: boolean;
+  onNumberChoiceChange: PhaseControlProps["phaseInputDraft"]["setSelectedNumberChoice"];
+}) {
+  const characterId = step.character === "empath" ? "empath" : "chef";
+  const truth = step.informationPrompt?.computedResult?.kind === "number"
+    ? step.informationPrompt.computedResult.value
+    : 0;
+  const constraint = step.informationPrompt?.numberConstraint;
+  const delivered = selectedNumberChoice?.value ?? 0;
+  return <dl className="snvInformationValues tbScalarInformationResult" role="group" aria-label="정보 결과">
+    <div><dt>진실</dt><dd>{scalarInformationValueLabel(characterId, truth)}</dd></div>
+    {constraint ? <div>
+      <dt>전달</dt>
+      <dd>
+        <input
+          type="number"
+          min={constraint.min}
+          max={constraint.max}
+          step="1"
+          inputMode="numeric"
+          aria-label="전달할 숫자"
+          value={delivered}
+          disabled={busy}
+          onChange={(event) => {
+            const value = Number(event.target.value);
+            const valid = event.target.value !== ""
+              && Number.isSafeInteger(value)
+              && value >= constraint.min
+              && value <= constraint.max
+              && !constraint.excludedValues.includes(value);
+            onNumberChoiceChange(valid ? { value, isComputed: value === truth, registrationJudgments: [] } : undefined);
+          }}
+        />
+        <span>{characterId === "chef" ? "쌍" : "명"}</span>
+      </dd>
+    </div> : null}
+  </dl>;
+}
+
+function immediateScalarInformationStep(step: PhaseStep) {
+  if (step.character !== "chef" && step.character !== "empath") return false;
+  const prompt = step.informationPrompt;
+  return Boolean(
+    prompt?.numberConstraint
+      || (prompt?.deliveryMode === "fixed"
+        && prompt.numberChoices.length === 1
+        && prompt.numberChoices[0]?.isComputed),
+  );
+}
+
+function defaultScalarInformationChoice(step: PhaseStep) {
+  const prompt = step.informationPrompt;
+  if (!prompt) return undefined;
+  if (prompt.numberConstraint) {
+    const value = Math.max(0, prompt.numberConstraint.min);
+    return { value, isComputed: prompt.computedResult?.kind === "number" && prompt.computedResult.value === value, registrationJudgments: [] };
+  }
+  return prompt.numberChoices.find((choice) => choice.isComputed);
+}
+
+function informationRevealActionLabel(reasons: DeliveryReason[]) {
+  const influence = primaryInformationInfluence(reasons);
+  if (influence === "poisoned") return "중독 정보 공개";
+  if (influence === "drunk") return "취한 정보 공개";
+  return "정보 공개";
+}
+
+function TroubleBrewingRevealSummary({
+  payload,
+  influence,
+  onShow,
+  disabled,
+}: {
+  payload: RevealPayload;
+  influence?: "poisoned" | "drunk";
+  onShow: () => void;
+  disabled: boolean;
+}) {
+  const rows = revealSummaryRows(payload);
+  const actionLabel = influence === "poisoned"
+    ? "중독 정보 공개"
+    : influence === "drunk"
+      ? "취한 정보 공개"
+      : "정보 공개";
+  return <section className="tbConfirmedInformation">
+    <dl className="snvInformationValues" role="group" aria-label="공개할 정보">
+      {rows.map(([label, value]) => <div key={label}>
+        <dt>{label}</dt>
+        <dd>{value}</dd>
+      </div>)}
+    </dl>
+    <div className="snvStepActions tbConfirmedRevealActions">
+      <button
+        type="button"
+        className={`informationReveal prominent${influence ? ` ${influence}` : ""}`}
+        onClick={onShow}
+        disabled={disabled}
+      >{actionLabel}</button>
+    </div>
+  </section>;
+}
+
+function revealSummaryRows(payload: RevealPayload): Array<[string, string]> {
+  if (!("kind" in payload)) return [[payload.labelKo?.trim() || "정보", payload.valueKo?.trim() || payload.previewMessageKo || payload.messageKo]];
+  switch (payload.kind) {
+    case "setupInformation":
+      if (payload.zeroOutsiders) return [["대상", "외지인 없음"]];
+      return [
+        ["대상", payload.candidatePlayers.map(revealPlayerLabel).join(" · ")],
+        ["보여줄 캐릭터", characterLabel(payload.revealedCharacterId)],
+      ];
+    case "numericInformation":
+    case "booleanInformation":
+      return [["진실", scalarInformationValueLabel(payload.characterId, payload.value)]];
+    case "fortuneTellerInformation":
+      return [
+        ["대상", payload.targetPlayers.map(revealPlayerLabel).join(" · ")],
+        ["결과", payload.hasDemon ? "있음" : "없음"],
+      ];
+    case "characterInformation":
+      return [
+        ["대상", revealPlayerLabel(payload.targetPlayer)],
+        ["보여줄 캐릭터", characterLabel(payload.revealedCharacterId)],
+      ];
+    case "dreamerInformation":
+      return [["보여줄 캐릭터", payload.characterIds.map(characterLabel).join(" · ")]];
+    case "seamstressInformation":
+      return [
+        ["대상", payload.targetPlayers.map(revealPlayerLabel).join(" · ")],
+        ["결과", payload.sameAlignment ? "같은 진영" : "다른 진영"],
+      ];
+    case "sageInformation":
+      return [["대상", payload.candidatePlayers.map(revealPlayerLabel).join(" · ")]];
+    case "characterChange":
+      return [["변경 직업", characterLabel(payload.characterId)]];
+    case "evilTwinPair":
+      return [["쌍둥이", payload.players.map(revealPlayerLabel).join(" · ")]];
+    case "minionInformation":
+    case "demonInformation":
+    case "spyGrimoire":
+      return [];
+  }
+}
+
+function revealPlayerLabel(player: { seat: number; name: string }) {
+  return `${player.seat}번 ${player.name}`;
+}
+
+function primaryInformationInfluence(reasons: DeliveryReason[]): "poisoned" | "drunk" | undefined {
+  if (reasons.some((reason) => reason.type === "poisoned")) return "poisoned";
+  return reasons.some((reason) => reason.type === "drunk") ? "drunk" : undefined;
 }
 
 function ExecutionStanding({ players, dayState }: { players: Player[]; dayState: NonNullable<PhaseControlProps["dayState"]> }) {

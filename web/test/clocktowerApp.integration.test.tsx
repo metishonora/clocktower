@@ -700,7 +700,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
 
     const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    await user.click(within(followup).getByRole("button", { name: "정보 공개" }));
     const revealScreen = screen.getByLabelText("플레이어 공개 화면");
     expect(within(revealScreen).queryByText(/실제:/)).toBeNull();
     expect(within(revealScreen).queryByText(/본인 인식:/)).toBeNull();
@@ -784,7 +784,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
 
     const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+    await user.click(within(followup).getByRole("button", { name: "정보 공개" }));
     expect(within(screen.getByLabelText("플레이어 공개 화면")).getByText(/2번 Bert 또는 3번 Cy/)).toBeTruthy();
   });
 
@@ -970,9 +970,9 @@ describe("ClocktowerApp live-play integration", () => {
       <ClocktowerApp coreAdapter={librarianCore} storageDriver={new MemoryGameStorageDriver(gameFile())} choiceTokenSource={() => 1} />,
     );
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
-    await user.click(screen.getByRole("button", { name: "무작위 추천" }));
-    expect((screen.getByRole("checkbox", { name: "외지인 0명" }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText("외지인 없음")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole("button", { name: "무작위 추천" })).toBeNull();
     expect(librarianCore.propose).not.toHaveBeenCalled();
     librarianView.unmount();
 
@@ -1149,10 +1149,9 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
-    const zeroOutsiders = screen.getByRole("checkbox", { name: "외지인 0명" }) as HTMLInputElement;
-    expect(zeroOutsiders.disabled).toBe(false);
-    await user.click(zeroOutsiders);
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    expect(screen.queryByRole("checkbox", { name: "외지인 0명" })).toBeNull();
+    expect(screen.getByText("외지인 없음")).toBeTruthy();
+    const confirm = screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
     await user.click(confirm);
 
@@ -1213,7 +1212,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(characterSelect).getByRole("option", { name: "주정뱅이" })).toBeTruthy();
     expect(within(characterSelect).queryByRole("option", { name: "요리사" })).toBeNull();
     await user.selectOptions(characterSelect, "saint");
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "중독 정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1260,7 +1259,7 @@ describe("ClocktowerApp live-play integration", () => {
       (within(grimoire).getByRole("button", { name: /Bert/ }) as HTMLButtonElement).disabled,
     ).toBe(true);
     await returnToLiveProgress(user);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "취한 정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1309,7 +1308,7 @@ describe("ClocktowerApp live-play integration", () => {
     const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
     expect(within(characterSelect).getByRole("option", { name: "남작" })).toBeTruthy();
     await user.selectOptions(characterSelect, "baron");
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "취한 정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1372,7 +1371,7 @@ describe("ClocktowerApp live-play integration", () => {
     const characterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
     await user.selectOptions(characterSelect, "poisoner");
     expect(screen.getAllByRole("combobox", { name: "보여줄 캐릭터" })).toHaveLength(1);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1386,7 +1385,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("renders a fixed computed number as a truth button and submits no redundant delivery", async () => {
+  test("renders a fixed computed number as truth and reveals without a redundant selection", async () => {
     const currentStep = step({
       id: "firstNight:chef",
       character: "chef",
@@ -1412,15 +1411,10 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
-    expect(screen.getByText("전달할 악한 팀 이웃 쌍의 수를 선택하세요.")).toBeTruthy();
-    const delivery = screen.getByLabelText("전달 정보");
-    const truth = within(delivery).getByRole("button", { name: /진실.*0/ });
-    expect(within(delivery).queryByRole("spinbutton")).toBeNull();
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
-    await user.click(truth);
-    expect(confirm.disabled).toBe(false);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    const information = screen.getByRole("group", { name: "정보 결과" });
+    expect(within(information).getByText("진실").nextElementSibling?.textContent).toBe("0쌍");
+    expect(within(information).queryByRole("spinbutton")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1485,7 +1479,7 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
     await screen.findByRole("heading", { name: "초공감자: 3번 Cy" });
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
+    const confirm = screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
 
     const choices = screen.getByLabelText("전달할 숫자");
@@ -1544,10 +1538,10 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
-    const confirm = screen.getByRole("button", { name: "확정" }) as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
-    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "100");
+    const confirm = screen.getByRole("button", { name: "중독 정보 공개" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(false);
+    await user.clear(screen.getByRole("spinbutton", { name: "전달할 숫자" }));
+    await user.type(screen.getByRole("spinbutton", { name: "전달할 숫자" }), "100");
     await user.click(confirm);
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -1609,7 +1603,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(choices).getByRole("button", { name: /거짓.*1/ })).toBeTruthy();
     expect(within(choices).getByRole("button", { name: /거짓.*2/ })).toBeTruthy();
     await user.click(within(choices).getByRole("button", { name: /거짓.*1/ }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -1655,8 +1649,8 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.getByRole("heading", { name: "요리사: 2번 Bert" })).toBeTruthy();
     expect(within(followup).queryByText(/확정됨|리플레이|다시 열|숨김/)).toBeNull();
     expect(screen.queryByRole("heading", { name: "초공감자: 3번 Cy" })).toBeNull();
-    const preview = within(followup).getByLabelText("Reveal 미리보기");
-    expect(within(preview).getByText("악한 팀 이웃 수를 공개합니다.")).toBeTruthy();
+    const preview = within(followup).getByRole("group", { name: "공개할 정보" });
+    expect(within(preview).getByText("서로 이웃한 악한 팀 쌍").nextElementSibling?.textContent).toBe("1쌍");
 
     await waitFor(() => {
       const continueButton = within(followup).getByRole("button", { name: "다음 단계로 계속" }) as HTMLButtonElement;
@@ -1666,7 +1660,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
     const replayCallsAfterConfirm = vi.mocked(core.replay).mock.calls.length;
 
-    await user.click(within(preview).getByRole("button", { name: "플레이어에게 공개" }));
+    await user.click(within(followup).getByRole("button", { name: "정보 공개" }));
     const revealScreen = screen.getByLabelText("플레이어 공개 화면");
     expect(within(revealScreen).getByRole("heading", { name: "서로 이웃한 악한 팀 쌍" })).toBeTruthy();
     expect(within(revealScreen).getByText("1쌍")).toBeTruthy();
@@ -1678,7 +1672,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.getByLabelText("확정된 Reveal 후속 조치")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "초공감자: 3번 Cy" })).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
     const reopenedReveal = screen.getByLabelText("플레이어 공개 화면");
     await user.click(within(reopenedReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 

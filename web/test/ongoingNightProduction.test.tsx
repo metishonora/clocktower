@@ -230,14 +230,9 @@ describe("ongoing-night production UI", () => {
 
     expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
     await selectLivePlayers(user, /서연/, /하린/);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
-    const result = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(result).getByText("점쟁이 정보")).toBeTruthy();
-    expect(within(result).getByRole("button", { name: "플레이어에게 공개" })).toBeTruthy();
-    expect(within(result).queryByText(/정보 전달|계산값|2명/)).toBeNull();
-    await user.click(within(result).getByRole("button", { name: "플레이어에게 공개" }));
-    const reveal = screen.getByLabelText("플레이어 공개 화면");
+    const reveal = await screen.findByLabelText("플레이어 공개 화면");
     expect(within(reveal).getByText("이 중에 악마는…")).toBeTruthy();
     expect(within(reveal).getByText("있음")).toBeTruthy();
     const targets = within(reveal).getByLabelText("확인한 플레이어");
@@ -404,7 +399,7 @@ describe("ongoing-night production UI", () => {
     const choices = screen.getByLabelText("전달 정보");
     expect(within(choices).getByRole("button", { name: "첩자" })).toBeTruthy();
     await user.click(within(choices).getByRole("button", { name: "사서" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -457,7 +452,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await selectLivePlayers(user, /지우/, /민준/);
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test("clears an in-progress selection when an imported game reaches the same step id", async () => {

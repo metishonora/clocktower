@@ -8,6 +8,7 @@ import type {
   RegistrationJudgment,
   TargetCheck,
 } from "../../core/types";
+import { characterKind } from "../../setupDraft";
 import {
   mayorDecisionApplies,
   setupInfoCharacterOptions,
@@ -65,18 +66,34 @@ export function usePhaseInputDraft(
     () => setupInfoZeroOutsidersAvailable(players, step),
     [players, step],
   );
+  const actualOutsidersAbsent = useMemo(
+    () => players.every((player) => characterKind(player.actualCharacter) !== "Outsider"),
+    [players],
+  );
 
   useEffect(() => {
     setDraft(emptyDraft());
   }, [step?.id, contextFingerprint, resetRevision]);
 
   useEffect(() => {
-    if (!zeroOutsidersAvailable) {
+    const autoZeroOutsiders = step?.character === "librarian"
+      && step.requiredInput.kind === "setupInfo"
+      && zeroOutsidersAvailable
+      && actualOutsidersAbsent
+      && !step.informationPrompt?.activeReasons.some(
+        (reason) => reason.type === "poisoned" || reason.type === "drunk",
+      );
+    if (autoZeroOutsiders) {
+      setDraft((current) => current.zeroOutsiders ? current : {
+        ...emptyDraft(),
+        zeroOutsiders: true,
+      });
+    } else if (!zeroOutsidersAvailable) {
       setDraft((current) =>
         current.zeroOutsiders ? { ...current, zeroOutsiders: false } : current,
       );
     }
-  }, [zeroOutsidersAvailable]);
+  }, [actualOutsidersAbsent, step, zeroOutsidersAvailable]);
 
   function setSelectedPlayerIds(playerIds: string[]) {
     setDraft((current) => updatePlayerSelection(current, playerIds, step, players));

@@ -94,14 +94,11 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
     await user.click(demon);
     expect(demon.getAttribute("aria-pressed")).toBe("true");
     await returnToLiveProgress(user);
-    const confirm = screen.getByRole("button", { name: "확정" });
+    const confirm = screen.getByRole("button", { name: "정보 공개" });
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
-    await user.dblClick(confirm);
+    await user.click(confirm);
 
-    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(followup).getByText("점쟁이 정보")).toBeTruthy();
-    await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
-    expect(within(screen.getByLabelText("플레이어 공개 화면")).getByText("있음")).toBeTruthy();
+    expect(within(await screen.findByLabelText("플레이어 공개 화면")).getByText("있음")).toBeTruthy();
 
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);

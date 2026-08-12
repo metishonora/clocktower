@@ -1,9 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { PhaseOverviewItem, PhaseStep, Player } from "../src/core/types";
 import type { PhaseControlProps } from "../src/features/phase-control/PhaseControl";
-import type { PhaseInputDraftController } from "../src/features/phase-control/usePhaseInputDraft";
+import { usePhaseInputDraft, type PhaseInputDraftController } from "../src/features/phase-control/usePhaseInputDraft";
 import { TroubleBrewingProgress } from "../src/features/trouble-brewing/TroubleBrewingProgress";
 
 const players: Player[] = [
@@ -146,26 +146,243 @@ test("uses the S&V evil-information task shape for Demon bluffs", () => {
   expect(within(task).getByRole("button", { name: "정보 확정" })).toBeTruthy();
 });
 
+test("shows an impaired actor badge before choosing information targets", () => {
+  const washerwoman = step({
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    character: "washerwoman",
+    playerId: "player-1",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      allowedPlayerIds: players.map(({ id }) => id),
+      allowedCharacterIds: ["chef"],
+      optional: false,
+    },
+    informationPrompt: informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+  });
+
+  renderProgress(washerwoman, [overview(washerwoman, "current")], undefined, {
+    ruleState: {
+      unannouncedNightDeathPlayerIds: [],
+      activeImpairments: [{
+        kind: "poisoned",
+        playerId: "player-1",
+        sourceEventId: "poison-1",
+        sourceCharacterId: "poisoner",
+        expires: "whileSourceAbilityActive",
+      }],
+    },
+  });
+
+  const actor = screen.getByLabelText("현재 행동자");
+  expect(within(actor).getByLabelText("정보 영향").textContent).toBe("중독");
+  expect(screen.getByRole("button", { name: /대상 선택/ })).toBeTruthy();
+});
+
+test("summarizes confirmed setup information and marks the first poisoned reveal action", () => {
+  const washerwoman = step({
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    character: "washerwoman",
+    playerId: "player-1",
+    informationPrompt: informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+  });
+  const onShowReveal = vi.fn();
+  renderProgress(washerwoman, [overview(washerwoman, "needsFollowUp")], undefined, {
+    pendingReveal: {
+      step: washerwoman,
+      confirmedEventCount: 12,
+      payload: {
+        kind: "setupInformation",
+        characterId: "washerwoman",
+        candidatePlayers: [
+          { playerId: "player-2", seat: 2, name: "서연" },
+          { playerId: "player-7", seat: 7, name: "현우" },
+        ],
+        revealedCharacterId: "chef",
+        zeroOutsiders: false,
+      },
+    },
+    replayReady: false,
+    onShowReveal,
+  });
+
+  const followup = screen.getByLabelText("확정된 Reveal 후속 조치");
+  const summary = within(followup).getByRole("group", { name: "공개할 정보" });
+  expect(within(summary).getByText("대상").nextElementSibling?.textContent).toBe("2번 서연 · 7번 현우");
+  expect(within(summary).getByText("보여줄 캐릭터").nextElementSibling?.textContent).toBe("요리사");
+  const reveal = within(followup).getByRole("button", { name: "중독 정보 공개" });
+  expect(reveal.classList.contains("poisoned")).toBe(true);
+});
+
+test("summarizes Librarian zero outsiders as a target without requiring target selection", () => {
+  const librarian = step({
+    id: "firstNight:librarian",
+    phase: "firstNight",
+    character: "librarian",
+    playerId: "player-2",
+  });
+  renderProgress(librarian, [overview(librarian, "needsFollowUp")], undefined, {
+    pendingReveal: {
+      step: librarian,
+      confirmedEventCount: 14,
+      payload: { kind: "setupInformation", characterId: "librarian", candidatePlayers: [], zeroOutsiders: true },
+    },
+  });
+
+  const summary = screen.getByRole("group", { name: "공개할 정보" });
+  expect(within(summary).getByText("대상").nextElementSibling?.textContent).toBe("외지인 없음");
+  expect(within(summary).queryByText("진실")).toBeNull();
+  expect(screen.getByRole("button", { name: "정보 공개" })).toBeTruthy();
+});
+
+test("offers a fixed Chef truth for immediate information reveal without a truth-selection click", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const chef = step({
+    id: "firstNight:chef",
+    phase: "firstNight",
+    character: "chef",
+    playerId: "player-2",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    informationPrompt: {
+      ...informationPrompt([]),
+      computedResult: { kind: "number", value: 2 },
+      numberChoices: [{ value: 2, isComputed: true, registrationJudgments: [] }],
+    },
+  });
+  renderProgress(chef, [overview(chef, "current")], undefined, { onConfirm });
+
+  const truth = screen.getByRole("group", { name: "정보 결과" });
+  expect(within(truth).getByText("진실").nextElementSibling?.textContent).toBe("2쌍");
+  expect(screen.queryByLabelText("전달 정보")).toBeNull();
+  const reveal = screen.getByRole("button", { name: "정보 공개" });
+  expect((reveal as HTMLButtonElement).disabled).toBe(false);
+  await user.click(reveal);
+  expect(onConfirm).toHaveBeenCalledWith({ input: null });
+});
+
+test("shows poisoned Chef truth separately and defaults free-form delivery to zero", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const chef = step({
+    id: "firstNight:chef",
+    phase: "firstNight",
+    character: "chef",
+    playerId: "player-2",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    informationPrompt: {
+      ...informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+      computedResult: { kind: "number", value: 1 },
+      numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [] },
+    },
+  });
+  renderProgress(chef, [overview(chef, "current")], undefined, { onConfirm });
+
+  const information = screen.getByRole("group", { name: "정보 결과" });
+  expect(within(information).getByText("진실").nextElementSibling?.textContent).toBe("1쌍");
+  expect((within(information).getByRole("spinbutton", { name: "전달할 숫자" }) as HTMLInputElement).value).toBe("0");
+  const reveal = screen.getByRole("button", { name: "중독 정보 공개" });
+  expect(reveal.classList.contains("poisoned")).toBe(true);
+  await user.click(reveal);
+  expect(onConfirm).toHaveBeenCalledWith({ input: null, deliveredResult: { kind: "number", value: 0 } });
+});
+
+test("skips target selection for a Librarian zero-outsider result", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const librarian = step({
+    id: "firstNight:librarian",
+    phase: "firstNight",
+    character: "librarian",
+    playerId: "player-2",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      allowedPlayerIds: players.map(({ id }) => id),
+      allowedCharacterIds: ["recluse"],
+      zeroAllowed: true,
+      optional: false,
+    },
+    informationPrompt: informationPrompt([]),
+  });
+  renderProgress(librarian, [overview(librarian, "current")], undefined, {
+    phaseInputDraft: { ...emptyPhaseInputDraft(), zeroOutsiders: true, zeroOutsidersAvailable: true },
+    onConfirm,
+  });
+
+  const information = screen.getByRole("group", { name: "정보 결과" });
+  expect(within(information).getByText("대상").nextElementSibling?.textContent).toBe("외지인 없음");
+  expect(screen.queryByRole("button", { name: /대상 선택/ })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "정보 공개" }));
+  expect(onConfirm).toHaveBeenCalledWith({ input: { zeroOutsiders: true } });
+});
+
+test("defaults a healthy Librarian to zero outsiders only when the actual roster has none", async () => {
+  const librarian = step({
+    id: "firstNight:librarian",
+    character: "librarian",
+    playerId: "player-2",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      zeroAllowed: true,
+      optional: false,
+    },
+    informationPrompt: informationPrompt([]),
+  });
+  const { result } = renderHook(() => usePhaseInputDraft(librarian, players));
+  await waitFor(() => expect(result.current.zeroOutsiders).toBe(true));
+
+  const rosterWithOutsider = players.map((candidate) => candidate.id === "player-7"
+    ? { ...candidate, actualCharacter: "recluse", shownCharacter: "recluse" }
+    : candidate);
+  const poisoned = { ...librarian, informationPrompt: informationPrompt([{ type: "poisoned" as const, poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]) };
+  const poisonedDraft = renderHook(() => usePhaseInputDraft(poisoned, rosterWithOutsider));
+  await waitFor(() => expect(poisonedDraft.result.current.zeroOutsidersAvailable).toBe(true));
+  expect(poisonedDraft.result.current.zeroOutsiders).toBe(false);
+});
+
 function renderProgress(
   currentStep: PhaseStep,
   phaseOverview: PhaseOverviewItem[],
   dayState?: PhaseControlProps["dayState"],
+  overrides?: Partial<PhaseControlProps>,
 ) {
-  return render(progress(currentStep, phaseOverview, dayState));
+  return render(progress(currentStep, phaseOverview, dayState, overrides));
 }
 
 function progress(
   currentStep: PhaseStep,
   phaseOverview: PhaseOverviewItem[],
   dayState?: PhaseControlProps["dayState"],
+  overrides?: Partial<PhaseControlProps>,
 ) {
   return <TroubleBrewingProgress
     {...controlProps(currentStep, phaseOverview, dayState)}
+    {...overrides}
     phaseLabel={currentStep.phase === "day" ? "1일차 낮" : "1일차 밤"}
     phaseRuntime="03:12"
     theme={currentStep.phase === "day" ? "day" : "night"}
     onGoToGrimoire={vi.fn()}
   />;
+}
+
+function informationPrompt(activeReasons: NonNullable<PhaseStep["informationPrompt"]>["activeReasons"]): NonNullable<PhaseStep["informationPrompt"]> {
+  return {
+    deliveryMode: activeReasons.length ? "selectable" : "fixed",
+    activeReasons,
+    registrationCandidatePlayerIds: [],
+    numberChoices: [],
+    setupInfoRegistrationOptions: [],
+  };
 }
 
 function controlProps(

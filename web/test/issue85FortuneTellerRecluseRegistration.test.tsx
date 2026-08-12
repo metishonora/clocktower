@@ -58,14 +58,11 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     const delivery = screen.getByLabelText("전달 정보");
     await user.click(within(delivery).getByRole("button", { name: resultButton }));
-    const confirm = screen.getByRole("button", { name: "확정" });
+    const confirm = screen.getByRole("button", { name: "정보 공개" });
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
-    await user.dblClick(confirm);
+    await user.click(confirm);
 
-    const revealFollowup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(revealFollowup).getByText("점쟁이 정보")).toBeTruthy();
-    await user.click(within(revealFollowup).getByRole("button", { name: "플레이어에게 공개" }));
-    const reveal = screen.getByLabelText("플레이어 공개 화면");
+    const reveal = await screen.findByLabelText("플레이어 공개 화면");
     expect(within(reveal).getByText(revealValue)).toBeTruthy();
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
@@ -114,17 +111,17 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     await selectLivePlayers(user, /플레이어 6/);
     expect(screen.queryByLabelText("전달 정보")).toBeNull();
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
 
     await selectLivePlayers(user, /플레이어 6/);
     delivery = screen.getByLabelText("전달 정보");
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
     expect(within(delivery).getByRole("button", { name: "악마 없음" }).getAttribute("aria-pressed")).toBe("false");
     expect(within(delivery).getByRole("button", { name: "악마 있음" }).getAttribute("aria-pressed")).toBe("false");
     expect(within(delivery).queryByText("✓")).toBeNull();
 
     await user.click(within(delivery).getByRole("button", { name: "악마 없음" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events.at(-1)).toMatchObject({
@@ -165,11 +162,11 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await returnToLiveProgress(user);
     expect(screen.queryByLabelText("전달 정보")).toBeNull();
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
 
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events.at(-1)).toMatchObject({
@@ -198,7 +195,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await screen.findByText("확인할 플레이어 2명을 선택하세요.");
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
     await waitFor(() => {
       expect(latestSavedGame(firstStorage).game.events).toHaveLength(initialEventCount + 1);
     });
@@ -221,7 +218,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 없음" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     await waitFor(() => {
       const saved = latestSavedGame(reloadedStorage);

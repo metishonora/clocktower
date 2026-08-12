@@ -100,7 +100,7 @@ test("requires the new Imp role reveal before showing the next-night attack cont
   expect(await screen.findByRole("heading", { name: "새 임프 직업 변경 안내" })).toBeTruthy();
   expect(screen.queryByText("오늘 밤 공격할 플레이어 1명을 선택하세요.")).toBeNull();
   await user.click(screen.getByRole("button", { name: "플레이어에게 공개" }));
-  expect(screen.getByRole("heading", { name: "당신의 역할이 변경되었습니다." })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "당신의 직업이 변경되었습니다" })).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(await screen.findByRole("heading", { name: "임프: 5번 Eun" })).toBeTruthy();
   expect(screen.getByText("오늘 밤 공격할 플레이어 1명을 선택하세요.")).toBeTruthy();

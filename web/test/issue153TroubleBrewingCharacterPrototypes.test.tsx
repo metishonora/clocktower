@@ -408,7 +408,7 @@ test("keeps a Fortune Teller Recluse judgment inside the Grimoire selection pane
   expect(within(panel).getByText("이번 판정의 은둔자 취급", { exact: true })).toBeTruthy();
   const confirm = within(panel).getByRole("button", { name: "선택 확정" });
   expect((confirm as HTMLButtonElement).disabled).toBe(true);
-  await user.click(within(panel).getByRole("button", { name: "악마로 취급", exact: true }));
+  await user.click(within(panel).getByRole("button", { name: "악마로 취급" }));
   await user.click(within(grimoire).getByRole("button", { name: /3번 좌석, 준호/ }));
   expect((confirm as HTMLButtonElement).disabled).toBe(false);
   await user.click(confirm);
@@ -434,7 +434,7 @@ test("puts an Empath Recluse judgment directly on Progress and removes it while 
   expect(within(task).getByText("이번 판정의 은둔자 취급", { exact: true })).toBeTruthy();
   const reveal = within(task).getByRole("button", { name: "정보 공개" });
   expect((reveal as HTMLButtonElement).disabled).toBe(true);
-  await user.click(within(task).getByRole("button", { name: "악한 팀으로 취급", exact: true }));
+  await user.click(within(task).getByRole("button", { name: "악한 팀으로 취급" }));
   expect(within(task).getByRole("group", { name: "초공감자 진실" }).textContent).toContain("1명");
   expect((reveal as HTMLButtonElement).disabled).toBe(false);
 
