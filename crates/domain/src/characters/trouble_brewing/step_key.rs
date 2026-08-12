@@ -106,6 +106,11 @@ impl TbStepKey {
             [_, "discussion", "slayerDeath"] => TbSemanticStep::SlayerDeath,
             [_, "toDay"] => TbSemanticStep::ToDay,
             [_, "toNight"] => TbSemanticStep::ToNight,
+            [_, character, actor_id] if valid_actor_suffix(actor_id) => {
+                TbCharacterId::parse(character)
+                    .map(TbSemanticStep::Character)
+                    .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?
+            }
             [_, character] => TbCharacterId::parse(character)
                 .map(TbSemanticStep::Character)
                 .ok_or_else(|| ErrorKind::ReplayFailed.into_error())?,
@@ -155,6 +160,29 @@ fn parse_sequence(value: &str) -> Result<usize, CoreError> {
         .ok_or_else(|| ErrorKind::ReplayFailed.into_error())
 }
 
+fn valid_actor_suffix(value: &str) -> bool {
+    !value.is_empty()
+        && !matches!(
+            value,
+            "minionInfo"
+                | "demonInfo"
+                | "fortuneTellerRedHerring"
+                | "announceDeaths"
+                | "whisper"
+                | "discussion"
+                | "nomination"
+                | "nominationVote"
+                | "vote"
+                | "execution"
+                | "executionDeath"
+                | "virginDeath"
+                | "slayerDeath"
+                | "toDay"
+                | "toNight"
+                | "demonSuccession"
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,6 +215,12 @@ mod tests {
                 TbSemanticStep::Character(TbCharacterId::FortuneTeller),
             ),
             (
+                "firstNight:washerwoman:player-2",
+                Phase::FirstNight,
+                TbPhaseKey::FirstNight,
+                TbSemanticStep::Character(TbCharacterId::Washerwoman),
+            ),
+            (
                 "day:discussion:slayerDeath",
                 Phase::Day,
                 TbPhaseKey::Day { cycle: 1 },
@@ -207,6 +241,9 @@ mod tests {
             ("night0:imp", Phase::Night),
             ("night:unknown", Phase::Night),
             ("day:discussion", Phase::Night),
+            ("night:washerwoman:", Phase::Night),
+            ("night:washerwoman:player-1:extra", Phase::Night),
+            ("night:washerwoman:toDay", Phase::Night),
         ] {
             assert!(TbStepKey::parse(raw, phase).is_err(), "accepted {raw}");
         }

@@ -5,6 +5,7 @@ import type { PhaseOverviewItem, PhaseStep, Player } from "../src/core/types";
 import type { PhaseControlProps } from "../src/features/phase-control/PhaseControl";
 import { usePhaseInputDraft, type PhaseInputDraftController } from "../src/features/phase-control/usePhaseInputDraft";
 import { TroubleBrewingProgress } from "../src/features/trouble-brewing/TroubleBrewingProgress";
+import { abilityPresentationForStep } from "../src/features/phase-control/actingRoleContext";
 
 const players: Player[] = [
   player("player-1", 1, "민지", "washerwoman"),
@@ -13,6 +14,22 @@ const players: Player[] = [
   player("player-5", 5, "하린", "imp"),
   player("player-7", 7, "현우", "spy"),
 ];
+
+const drunkPlayers: Player[] = [
+  ...players,
+  { ...player("player-6", 6, "도윤", "drunk"), shownCharacter: "washerwoman" },
+];
+
+test("resolves shown ability only for the step's actor and a changed identity", () => {
+  const drunkWasherwoman = drunkWasherwomanStep();
+  const drunk = drunkPlayers.find((candidate) => candidate.id === "player-6")!;
+  expect(abilityPresentationForStep(drunkWasherwoman, drunk)).toEqual({
+    kind: "shown",
+    abilityCharacterId: "washerwoman",
+  });
+  expect(abilityPresentationForStep(drunkWasherwoman, { ...drunk, id: "other" })).toBeUndefined();
+  expect(abilityPresentationForStep(drunkWasherwoman, { ...drunk, shownCharacter: "drunk" })).toBeUndefined();
+});
 
 test("uses the accepted S&V target hierarchy while keeping phase order expanded", () => {
   const currentStep = step({
@@ -251,6 +268,54 @@ test("shows an impaired actor badge before choosing information targets", () => 
   expect(screen.queryByText("등록 판정")).toBeNull();
   expect(screen.queryByRole("button", { name: "무작위 추천" })).toBeNull();
   expect(screen.queryByLabelText("필요한 입력")).toBeNull();
+});
+
+test("presents a drunk actor as the primary identity with a nested Washerwoman ability", () => {
+  const drunkWasherwoman = drunkWasherwomanStep();
+  renderProgress(drunkWasherwoman, [overview(drunkWasherwoman, "current")], undefined, {
+    players: drunkPlayers,
+  });
+
+  const task = screen.getByRole("region", { name: "현재 단계" });
+  expect(within(task).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
+  const shownAbility = within(task).getByRole("region", { name: "보여준 직업 · 세탁부" });
+  expect(within(shownAbility).getByRole("heading", { name: "세탁부" })).toBeTruthy();
+  expect(within(shownAbility).getByText(/게임 시작 시.*특정 주민/)).toBeTruthy();
+  expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+  expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
+  expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
+  expect(screen.getByRole("list", { name: "첫날 밤 순서" }).textContent).toContain("주정뱅이 · 세탁부");
+});
+
+test("keeps the drunk identity hierarchy in the Washerwoman Reveal follow-up", () => {
+  const drunkWasherwoman = drunkWasherwomanStep();
+  renderProgress(drunkWasherwoman, [overview(drunkWasherwoman, "needsFollowUp")], undefined, {
+    players: drunkPlayers,
+    pendingReveal: {
+      step: drunkWasherwoman,
+      confirmedEventCount: 18,
+      payload: {
+        kind: "setupInformation",
+        characterId: "washerwoman",
+        candidatePlayers: [
+          { playerId: "player-2", seat: 2, name: "서연" },
+          { playerId: "player-7", seat: 7, name: "현우" },
+        ],
+        revealedCharacterId: "chef",
+        zeroOutsiders: false,
+      },
+    },
+  });
+
+  const task = screen.getByRole("region", { name: "세탁부 정보" });
+  expect(within(task).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
+  const shownAbility = within(task).getByRole("region", { name: "보여준 직업 · 세탁부" });
+  expect(within(shownAbility).getByRole("heading", { name: "세탁부" })).toBeTruthy();
+  expect(within(shownAbility).getByText(/게임 시작 시.*특정 주민/)).toBeTruthy();
+  expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+  expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
+  expect(within(task).getByRole("button", { name: "취한 정보 공개" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
 
 test("keeps the Washerwoman information follow-up compact after a poisoned Reveal", () => {
@@ -537,6 +602,25 @@ function progress(
     theme={currentStep.phase === "day" ? "day" : "night"}
     onGoToGrimoire={vi.fn()}
   />;
+}
+
+function drunkWasherwomanStep(): PhaseStep {
+  return step({
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    character: "washerwoman",
+    playerId: "player-6",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      allowedPlayerIds: drunkPlayers.map(({ id }) => id),
+      allowedCharacterIds: ["chef"],
+      optional: false,
+    },
+    informationPrompt: informationPrompt([{ type: "drunk" }]),
+  });
 }
 
 function informationPrompt(activeReasons: NonNullable<PhaseStep["informationPrompt"]>["activeReasons"]): NonNullable<PhaseStep["informationPrompt"]> {

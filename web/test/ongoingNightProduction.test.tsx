@@ -228,7 +228,12 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
+    const currentTask = await screen.findByRole("region", { name: "현재 단계" });
+    expect(within(currentTask).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
+    const shownAbility = within(currentTask).getByRole("region", { name: "보여준 직업 · 점쟁이" });
+    expect(within(shownAbility).getByRole("heading", { name: "점쟁이" })).toBeTruthy();
+    expect(within(shownAbility).getByText("취함", { exact: true })).toBeTruthy();
+    expect(within(currentTask).queryByText("실제 주정뱅이")).toBeNull();
     await selectLivePlayers(user, /서연/, /하린/);
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 

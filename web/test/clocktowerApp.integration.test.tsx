@@ -1132,7 +1132,8 @@ describe("ClocktowerApp live-play integration", () => {
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
-    await screen.findByRole("heading", { name: "수사관: 1번 Ada" });
+    await screen.findByRole("heading", { name: "주정뱅이" });
+    expect(screen.getByRole("region", { name: "보여준 직업 · 수사관" })).toBeTruthy();
     expect(screen.getAllByRole("combobox", { name: "보여줄 캐릭터" })).toHaveLength(1);
     const grimoire = await openLiveGrimoire(user);
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));

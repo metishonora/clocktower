@@ -1302,6 +1302,35 @@
         "status": "waiting"
       },
       {
+        "id": "firstNight:washerwoman:player-1",
+        "phase": "firstNight",
+        "stepType": "character",
+        "character": "washerwoman",
+        "playerId": "player-1",
+        "requiredInput": {
+          "kind": "setupInfo",
+          "target": "players",
+          "minSelections": 2,
+          "maxSelections": 2,
+          "setupInfo": "washerwoman",
+          "characterKind": "Townsfolk",
+          "allowedPlayerIds": [
+            "player-1",
+            "player-2",
+            "player-3",
+            "player-4",
+            "player-5",
+            "player-6",
+            "player-7"
+          ],
+          "supportsRandomSuggestion": true,
+          "optional": false
+        },
+        "canSkip": true,
+        "support": "automated",
+        "status": "waiting"
+      },
+      {
         "id": "firstNight:chef",
         "phase": "firstNight",
         "stepType": "character",

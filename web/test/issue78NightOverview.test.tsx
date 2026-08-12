@@ -124,12 +124,13 @@ test("uses the acting shown role for a Drunk and keeps actorless night operation
 
   renderLiveOverview(drunkAction, phaseOverview, playerRoster);
 
-  await screen.findByRole("heading", { name: "점쟁이: 3번 Cy" });
+  await screen.findByRole("heading", { name: "주정뱅이" });
+  expect(screen.getByRole("region", { name: "보여준 직업 · 점쟁이" })).toBeTruthy();
   const overview = screen.getByRole("region", { name: "단계 개요" });
-  expect(within(overview).getByText("점쟁이", { exact: true })).toBeTruthy();
+  expect(within(overview).getByText("주정뱅이 · 점쟁이", { exact: true })).toBeTruthy();
   expect(within(overview).getByText("사망 발표")).toBeTruthy();
   expect(within(overview).getByText("낮 시작")).toBeTruthy();
-  expect(within(overview).queryByText(/Cy|주정뱅이/)).toBeNull();
+  expect(within(overview).queryByText(/Cy/)).toBeNull();
 });
 
 test.each([

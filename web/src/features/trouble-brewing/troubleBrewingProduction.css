@@ -1055,20 +1055,83 @@
   font-size: 1rem;
 }
 
-.tbProgressActorTags {
-  display: flex;
-  margin: 6px 0 0 102px;
-  gap: 7px;
+.tbProgressShownAbility {
+  display: grid;
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 14px 16px;
+  gap: 8px;
+  border: 1px solid rgba(221, 198, 151, .25);
+  border-radius: 16px;
+  background: rgba(7, 35, 22, .42);
 }
 
-.tbProgressActorTags em {
-  padding: 4px 9px;
-  border: 1px solid rgba(216, 190, 122, .32);
-  border-radius: 999px;
-  color: #ead9a9;
-  background: rgba(8, 28, 18, .44);
-  font-size: .72rem;
-  font-style: normal;
+.tbProgressShownIdentity > span {
+  grid-column: 1 / -1;
+  color: #d8bd77;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.tbProgressShownIdentity {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.tbProgressShownIdentity > img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.tbProgressShownIdentity > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.tbProgressShownName {
+  color: #fff3c7;
+  font: 1.45rem Georgia, serif;
+}
+
+.tbProgressShownIdentity p {
+  margin: 0;
+  color: #c8d1bf;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownAbility {
+  border-color: rgba(51, 94, 62, .22);
+  background: rgba(34, 103, 66, .08);
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownIdentity > span {
+  color: #80601f;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownName {
+  color: #173f2a;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownIdentity p {
+  color: #536451;
+}
+
+.tbProgressShownIdentity .snvInformationInfluenceBadges {
+  margin-top: 2px;
 }
 
 .tbCurrentTask .tbProgressAbility {
@@ -1941,10 +2004,6 @@
 
   .tbProgressPlayerStandalone {
     margin-left: 0;
-  }
-
-  .tbProgressActorTags {
-    margin-left: 76px;
   }
 
   .tbCurrentTask .snvBluffCandidateGrid {

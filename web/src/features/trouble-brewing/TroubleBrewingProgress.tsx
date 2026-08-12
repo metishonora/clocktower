@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { characterAsset } from "../../characterAssets";
 import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
@@ -11,6 +12,11 @@ import { GameEndControls } from "../game-end/GameEndControls";
 import type { PhaseControlProps } from "../phase-control/PhaseControl";
 import { StepInputFields } from "../phase-control/StepInputs";
 import {
+  AbilityPresentation,
+  type CharacterPresentationResolver,
+} from "../phase-control/acquiredAbilityPresentation";
+import { abilityPresentationForStep } from "../phase-control/actingRoleContext";
+import {
   currentActionPrompt,
   phaseOverviewTitle,
   phaseStepConfirmation,
@@ -22,6 +28,17 @@ import {
 import { NightResultsAnnouncement } from "../phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
 import { suggestionRequestFingerprint } from "../phase-control/randomSuggestion";
+
+const troubleBrewingCharacterPresentation: CharacterPresentationResolver = (characterId) => {
+  const character = characters.find((candidate) => candidate.id === characterId);
+  if (!character) return undefined;
+  return {
+    label: character.label,
+    details: troubleBrewingCharacterDetail(characterId),
+    icon: characterAsset(characterId),
+    ability: character.abilitySummary,
+  };
+};
 
 export function TroubleBrewingProgress({
   phaseLabel,
@@ -209,6 +226,9 @@ function TroubleBrewingTask({
     : undefined;
   const currentCharacter = currentStep?.character
     ? characters.find((character) => character.id === currentStep.character)
+    : undefined;
+  const currentAbilityRelation = currentStep && currentPlayer
+    ? abilityPresentationForStep(currentStep, currentPlayer)
     : undefined;
   const resultSubject = currentStep?.stepType === "executionDeath" || currentStep?.stepType === "slayerDeath";
   const isNightDeathAnnouncement = currentStep?.stepType === "announcement" && currentStep.id.endsWith(":announceDeaths");
@@ -441,33 +461,54 @@ function TroubleBrewingTask({
             />
           ) : null}
           {currentPlayer && !resultSubject && currentStep.stepType !== "demonSuccession" ? <section className="tbProgressActorBlock issue116ActorIdentity" aria-label="현재 행동자">
-            <CharacterDetailButton
-              details={troubleBrewingCharacterDetail(currentStep.character)}
-              className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+            {currentAbilityRelation ? <AbilityPresentation
+              actor={currentPlayer}
+              relation={currentAbilityRelation}
+              characterPresentation={troubleBrewingCharacterPresentation}
               theme={theme === "day" ? "tb-day" : "tb-night"}
-            >
-              <CharacterIcon characterId={currentStep.character} />
-              <div>
-                <span className="snvInformationRoleLine">
-                  <span
-                    className="snvCurrentStepRoleName"
-                    role="heading"
-                    aria-level={3}
-                    aria-label={stepTitle(currentStep, currentPlayer)}
-                  >{currentCharacter?.label ?? currentStep.character}</span>
-                  <PlayerImpairmentBadges
-                    activeImpairments={ruleState?.activeImpairments}
-                    playerId={currentPlayer.id}
-                    label="정보 영향"
-                  />
-                </span>
-                <strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>
-              </div>
-            </CharacterDetailButton>
-            {currentPlayer.actualCharacter === "drunk" ? <div className="tbProgressActorTags">
-              {currentPlayer.actualCharacter === "drunk" ? <em>실제 주정뱅이</em> : null}
-            </div> : null}
-            {currentCharacter?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{currentCharacter.abilitySummary}</p> : null}
+              actorRoleNode={<span className="snvInformationRoleLine">
+                <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{characterLabel(currentPlayer.actualCharacter)}</span>
+                <PlayerImpairmentBadges
+                  activeImpairments={ruleState?.activeImpairments}
+                  playerId={currentPlayer.id}
+                  label="정보 영향"
+                />
+              </span>}
+              actorPlayerNode={<strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>}
+              actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+              abilityNameNode={<span className="tbProgressShownName" role="heading" aria-level={4}>{characterLabel(currentAbilityRelation.abilityCharacterId)}</span>}
+              abilityStatusNode={currentAbilityRelation.kind === "shown"
+                ? <span className="snvInformationInfluenceBadges" aria-label="능력 상태"><em className="snvInformationInfluenceBadge drunk">취함</em></span>
+                : null}
+              abilityClassName="tbProgressShownIdentity interactive"
+              abilityRegionClassName="tbProgressShownAbility"
+              abilitySummary={currentCharacter?.abilitySummary}
+            /> : <>
+              <CharacterDetailButton
+                details={troubleBrewingCharacterDetail(currentStep.character)}
+                className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+                theme={theme === "day" ? "tb-day" : "tb-night"}
+              >
+                <CharacterIcon characterId={currentStep.character} />
+                <div>
+                  <span className="snvInformationRoleLine">
+                    <span
+                      className="snvCurrentStepRoleName"
+                      role="heading"
+                      aria-level={3}
+                      aria-label={stepTitle(currentStep, currentPlayer)}
+                    >{currentCharacter?.label ?? currentStep.character}</span>
+                    <PlayerImpairmentBadges
+                      activeImpairments={ruleState?.activeImpairments}
+                      playerId={currentPlayer.id}
+                      label="정보 영향"
+                    />
+                  </span>
+                  <strong className="tbProgressPlayer">{currentPlayer.seat}번 {currentPlayer.name}</strong>
+                </div>
+              </CharacterDetailButton>
+              {currentCharacter?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{currentCharacter.abilitySummary}</p> : null}
+            </>}
           </section> : (
             <h3>{currentStep.stepType === "slayerDeath" ? "사망 확인" : stepTitle(currentStep, currentPlayer)}</h3>
           )}
@@ -689,6 +730,7 @@ function TroubleBrewingInformationFollowUp({
     : undefined;
   const title = character?.label ?? "정보";
   const influence = primaryInformationInfluence(step.informationPrompt?.activeReasons ?? []);
+  const abilityRelation = actor ? abilityPresentationForStep(step, actor) : undefined;
 
   return <article
     className="snvCurrentStep tbCurrentTask issue116CurrentStep"
@@ -697,31 +739,54 @@ function TroubleBrewingInformationFollowUp({
   >
     <p className="snvCurrentStepLabel">현재 할 일</p>
     {actor && step.character ? <section className="tbProgressActorBlock issue116ActorIdentity" aria-label="현재 행동자">
-      <CharacterDetailButton
-        details={troubleBrewingCharacterDetail(step.character)}
-        className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+      {abilityRelation ? <AbilityPresentation
+        actor={actor}
+        relation={abilityRelation}
+        characterPresentation={troubleBrewingCharacterPresentation}
         theme={theme === "day" ? "tb-day" : "tb-night"}
-      >
-        <CharacterIcon characterId={step.character} />
-        <div>
-          <span className="snvInformationRoleLine">
-            <span
-              className="snvCurrentStepRoleName"
-              role="heading"
-              aria-level={3}
-              aria-label={stepTitle(step, actor)}
-            >{title}</span>
-            <PlayerImpairmentBadges
-              activeImpairments={ruleState?.activeImpairments}
-              playerId={actor.id}
-              label="정보 영향"
-            />
-          </span>
-          <strong className="tbProgressPlayer">{actor.seat}번 {actor.name}</strong>
-        </div>
-      </CharacterDetailButton>
-      {actor.actualCharacter === "drunk" ? <div className="tbProgressActorTags"><em>실제 주정뱅이</em></div> : null}
-      {character?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{character.abilitySummary}</p> : null}
+        actorRoleNode={<span className="snvInformationRoleLine">
+          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{characterLabel(actor.actualCharacter)}</span>
+          <PlayerImpairmentBadges
+            activeImpairments={ruleState?.activeImpairments}
+            playerId={actor.id}
+            label="정보 영향"
+          />
+        </span>}
+        actorPlayerNode={<strong className="tbProgressPlayer">{actor.seat}번 {actor.name}</strong>}
+        actorIdentityClassName="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+        abilityNameNode={<span className="tbProgressShownName" role="heading" aria-level={4}>{characterLabel(abilityRelation.abilityCharacterId)}</span>}
+        abilityStatusNode={abilityRelation.kind === "shown"
+          ? <span className="snvInformationInfluenceBadges" aria-label="능력 상태"><em className="snvInformationInfluenceBadge drunk">취함</em></span>
+          : null}
+        abilityClassName="tbProgressShownIdentity interactive"
+        abilityRegionClassName="tbProgressShownAbility"
+        abilitySummary={character?.abilitySummary}
+      /> : <>
+        <CharacterDetailButton
+          details={troubleBrewingCharacterDetail(step.character)}
+          className="snvCurrentStepIdentity interactive snvInformationIdentity tbProgressActor"
+          theme={theme === "day" ? "tb-day" : "tb-night"}
+        >
+          <CharacterIcon characterId={step.character} />
+          <div>
+            <span className="snvInformationRoleLine">
+              <span
+                className="snvCurrentStepRoleName"
+                role="heading"
+                aria-level={3}
+                aria-label={stepTitle(step, actor)}
+              >{title}</span>
+              <PlayerImpairmentBadges
+                activeImpairments={ruleState?.activeImpairments}
+                playerId={actor.id}
+                label="정보 영향"
+              />
+            </span>
+            <strong className="tbProgressPlayer">{actor.seat}번 {actor.name}</strong>
+          </div>
+        </CharacterDetailButton>
+        {character?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{character.abilitySummary}</p> : null}
+      </>}
     </section> : <h3>{title}</h3>}
     <div className="snvStepActions">
       <button

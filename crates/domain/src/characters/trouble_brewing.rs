@@ -1867,48 +1867,67 @@ pub(crate) fn character_steps(
     players: &[Player],
     order: &[&str],
 ) -> Vec<PhaseStep> {
-    let waking_characters = players
-        .iter()
-        .fold(HashMap::new(), |mut waking_characters, player| {
-            let character = awakening_character(player);
-            let replace = waking_characters
-                .get(character)
-                .is_none_or(|current: &&Player| player.alive || !current.alive);
-            if replace {
-                waking_characters.insert(character, player);
-            }
-            waking_characters
-        });
-    let mut emitted = HashSet::new();
+    let mut actors_by_character: HashMap<&str, Vec<&Player>> = HashMap::new();
+    for player in players {
+        actors_by_character
+            .entry(awakening_character(player))
+            .or_default()
+            .push(player);
+    }
 
     order
         .iter()
         .filter_map(|character| {
-            if !waking_characters.contains_key(character) || !emitted.insert(*character) {
-                return None;
-            }
-
             let metadata = TbCharacterId::parse(character)?.metadata();
-            let actor = waking_characters.get(character)?;
-            Some(PhaseStep {
-                id: format!("{id_prefix}:{character}"),
-                phase,
-                step_type: StepType::Character,
-                character: Some((*character).to_string()),
-                player_id: Some(actor.id.clone()),
-                ability_use: None,
-                ability_origin: None,
-                required_input: character_required_input(character),
-                can_skip: metadata.activity != TbActivityRequirement::Always,
-                support: if metadata.automated {
-                    crate::model::PhaseStepSupport::Automated
-                } else {
-                    crate::model::PhaseStepSupport::Manual
-                },
-                information_prompt: None,
-                pre_action_reveal: None,
-            })
+            let mut actors = actors_by_character.remove(*character)?;
+            actors.sort_by_key(|player| player.seat);
+
+            // Keep the actor that the legacy one-step projection would have
+            // selected on the unsuffixed ID: the last living actor in seat
+            // order, or the last actor when everyone is dead. Additional
+            // actors receive a stable player-qualified ID so the legacy step
+            // reference keeps its actor while every additional ability remains
+            // independently addressable.
+            let legacy_actor_index = actors
+                .iter()
+                .rposition(|player| player.alive)
+                .unwrap_or_else(|| actors.len().saturating_sub(1));
+            let mut ordered_actors = Vec::with_capacity(actors.len());
+            ordered_actors.push(actors.remove(legacy_actor_index));
+            ordered_actors.extend(actors);
+
+            Some(
+                ordered_actors
+                    .into_iter()
+                    .enumerate()
+                    .map(move |(index, actor)| {
+                        let id = if index == 0 {
+                            format!("{id_prefix}:{character}")
+                        } else {
+                            format!("{id_prefix}:{character}:{}", actor.id)
+                        };
+                        PhaseStep {
+                            id,
+                            phase,
+                            step_type: StepType::Character,
+                            character: Some((*character).to_string()),
+                            player_id: Some(actor.id.clone()),
+                            ability_use: None,
+                            ability_origin: None,
+                            required_input: character_required_input(character),
+                            can_skip: metadata.activity != TbActivityRequirement::Always,
+                            support: if metadata.automated {
+                                crate::model::PhaseStepSupport::Automated
+                            } else {
+                                crate::model::PhaseStepSupport::Manual
+                            },
+                            information_prompt: None,
+                            pre_action_reveal: None,
+                        }
+                    }),
+            )
         })
+        .flatten()
         .collect()
 }
 

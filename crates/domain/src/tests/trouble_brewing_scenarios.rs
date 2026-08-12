@@ -3,6 +3,169 @@ use crate::*;
 use serde_json::{json, Value};
 
 #[test]
+fn first_night_keeps_duplicate_shown_character_actors_as_distinct_steps() {
+    let setup = setup_event_with_players(json!([
+        {
+            "id": "player-1",
+            "seat": 1,
+            "name": "Ada",
+            "actualCharacter": "washerwoman",
+            "shownCharacter": "washerwoman"
+        },
+        {
+            "id": "player-2",
+            "seat": 2,
+            "name": "Bert",
+            "actualCharacter": "drunk",
+            "shownCharacter": "washerwoman"
+        },
+        {
+            "id": "player-3",
+            "seat": 3,
+            "name": "Cora",
+            "actualCharacter": "chef",
+            "shownCharacter": "chef"
+        },
+        {
+            "id": "player-4",
+            "seat": 4,
+            "name": "Dev",
+            "actualCharacter": "empath",
+            "shownCharacter": "empath"
+        },
+        {
+            "id": "player-5",
+            "seat": 5,
+            "name": "Eve",
+            "actualCharacter": "imp",
+            "shownCharacter": "imp"
+        }
+    ]));
+    let game = game_with_events(json!([setup.clone()]));
+
+    let first: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    let second: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(first["ok"], true, "{first:#}");
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-1")
+            .unwrap()["actualCharacter"],
+        "washerwoman"
+    );
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-2")
+            .unwrap()["actualCharacter"],
+        "drunk"
+    );
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-2")
+            .unwrap()["shownCharacter"],
+        "washerwoman"
+    );
+
+    let washerwoman_steps = |state: &Value| {
+        state["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|step| step["character"] == "washerwoman")
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    let first_steps = washerwoman_steps(&first);
+    let second_steps = washerwoman_steps(&second);
+    assert_eq!(first_steps.len(), 2, "{first:#}");
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["playerId"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["player-2", "player-1"]
+    );
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["firstNight:washerwoman", "firstNight:washerwoman:player-1"]
+    );
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["id"].as_str().unwrap())
+            .collect::<std::collections::HashSet<_>>()
+            .len(),
+        2
+    );
+    assert_eq!(first_steps, second_steps);
+
+    let mut events = vec![
+        setup,
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+    ];
+    let first_actor = serde_json::from_str::<Value>(&replay_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        first_actor["value"]["currentStep"]["id"],
+        "firstNight:washerwoman"
+    );
+    assert_eq!(first_actor["value"]["currentStep"]["playerId"], "player-2");
+
+    let confirm_first = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:washerwoman",
+            "input": { "playerIds": ["player-1", "player-3"], "characterId": "chef" }
+        }
+    });
+    let first_proposal: Value = serde_json::from_str(&propose_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+        &confirm_first.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(first_proposal["ok"], true, "{first_proposal:#}");
+    events.push(first_proposal["value"]["event"].clone());
+
+    let second_actor: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        second_actor["value"]["currentStep"]["id"],
+        "firstNight:washerwoman:player-1"
+    );
+    assert_eq!(second_actor["value"]["currentStep"]["playerId"], "player-1");
+
+    let confirm_second = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:washerwoman:player-1",
+            "input": { "playerIds": ["player-1", "player-3"], "characterId": "chef" }
+        }
+    });
+    let second_proposal: Value = serde_json::from_str(&propose_json(
+        &game_with_events(Value::Array(events)).to_string(),
+        &confirm_second.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(second_proposal["ok"], true, "{second_proposal:#}");
+}
+
+#[test]
 fn replay_returns_required_input_shape_for_player_selection_steps() {
     let game = game_with_events(json!([
         setup_event(),
@@ -578,17 +741,18 @@ fn active_tb_poison_is_projected_as_an_impairment_for_the_current_actor() {
             "input": { "playerIds": ["player-1"] }
         }
     });
-    let poison_proposal: Value = serde_json::from_str(
-        &propose_json(&game.to_string(), &poison_command.to_string()),
-    )
+    let poison_proposal: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &poison_command.to_string(),
+    ))
     .unwrap();
     assert_eq!(poison_proposal["ok"], true, "{poison_proposal:#}");
     let mut events = game["game"]["events"].as_array().unwrap().clone();
     events.push(poison_proposal["value"]["event"].clone());
 
-    let actual: Value = serde_json::from_str(
-        &replay_json(&game_with_events(Value::Array(events)).to_string()),
-    )
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
     .unwrap();
 
     assert_eq!(actual["ok"], true, "{actual:#}");

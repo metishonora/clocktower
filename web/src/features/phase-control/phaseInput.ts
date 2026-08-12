@@ -18,6 +18,7 @@ import {
   type CharacterKind,
 } from "../../setupDraft.js";
 import type { NominationDraft } from "../voting/useNominationDraft.js";
+import { abilityPresentationForStep } from "./actingRoleContext.js";
 
 export function phaseLabel(phase: Phase): string {
   if (phase === "firstNight") return "첫 밤";
@@ -37,6 +38,10 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
     return step.requiredInput.demonSuccession?.kind === "fixed" ? "탕녀 승계" : "새 임프 선택";
   }
   if (step.character) {
+    const relation = abilityPresentationForStep(step, player);
+    if (relation && player) {
+      return `${characterLabel(player.actualCharacter)} · ${characterLabel(relation.abilityCharacterId)}`;
+    }
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
   }
@@ -64,6 +69,11 @@ export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[], i
     return includeSeats ? factionOverviewTitle("악마", "Demon", players) : "악마";
   }
   if (step.character) {
+    const relation = abilityPresentationForStep(step, player);
+    if (relation && player) {
+      const layered = `${characterLabel(player.actualCharacter)} · ${characterLabel(relation.abilityCharacterId)}`;
+      return includeSeats ? `${layered} (${player.seat})` : layered;
+    }
     const label = characterLabel(step.character);
     return includeSeats && player ? `${label} (${player.seat})` : label;
   }
