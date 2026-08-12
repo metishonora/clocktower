@@ -53,7 +53,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
 
     const delivery = screen.getByLabelText("전달 정보");
@@ -94,7 +94,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
 
     let delivery = screen.getByLabelText("전달 정보");
@@ -143,7 +143,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
 
@@ -157,7 +157,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     );
 
     expect(confirmImport).toHaveBeenCalled();
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     let input = await openLiveGrimoire(user);
     expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await returnToLiveProgress(user);
@@ -192,7 +192,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     const user = userEvent.setup();
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={firstStorage} />);
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
@@ -210,7 +210,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(undo);
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     const input = await openLiveGrimoire(user);
     expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await returnToLiveProgress(user);

@@ -43,7 +43,7 @@ test("uses the accepted S&V target hierarchy while keeping phase order expanded"
   expect(within(task).getByRole("heading", { name: "독살범: 4번 지우" })).toBeTruthy();
   expect(within(task).getByText("4번 지우")).toBeTruthy();
   expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
-  expect(within(task).getByRole("button", { name: "건너뛰기" })).toBeTruthy();
+  expect(within(task).queryByRole("button", { name: "건너뛰기" })).toBeNull();
   expect(within(task).queryByRole("button", { name: "지명 종료" })).toBeNull();
   expect(within(task).queryByRole("button", { name: "확정" })).toBeNull();
   expect(screen.queryByRole("button", { name: "수동 게임 종료" })).toBeNull();
@@ -216,7 +216,10 @@ test("shows an impaired actor badge before choosing information targets", () => 
       allowedCharacterIds: ["chef"],
       optional: false,
     },
-    informationPrompt: informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+    informationPrompt: {
+      ...informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+      setupInfoRegistrationOptions: [{ playerId: "player-7", registeredAs: "townsfolk", characterIds: ["chef"] }],
+    },
   });
 
   renderProgress(washerwoman, [overview(washerwoman, "current")], undefined, {
@@ -234,7 +237,12 @@ test("shows an impaired actor badge before choosing information targets", () => 
 
   const actor = screen.getByLabelText("현재 행동자");
   expect(within(actor).getByLabelText("정보 영향").textContent).toBe("중독");
+  expect(screen.getByLabelText("세탁부 행동자 상태").textContent).toBe("중독");
   expect(screen.getByRole("button", { name: /대상 선택/ })).toBeTruthy();
+  expect(screen.getByRole("combobox", { name: "보여줄 캐릭터" })).toBeTruthy();
+  expect(screen.queryByText("등록 판정")).toBeNull();
+  expect(screen.queryByRole("button", { name: "무작위 추천" })).toBeNull();
+  expect(screen.queryByLabelText("필요한 입력")).toBeNull();
 });
 
 test("summarizes confirmed setup information and marks the first poisoned reveal action", () => {
@@ -243,7 +251,19 @@ test("summarizes confirmed setup information and marks the first poisoned reveal
     phase: "firstNight",
     character: "washerwoman",
     playerId: "player-1",
-    informationPrompt: informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      optional: false,
+    },
+    informationPrompt: {
+      ...informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+      setupInfoRegistrationOptions: [{ playerId: "player-7", registeredAs: "townsfolk", characterIds: ["chef"] }],
+    },
   });
   const onShowReveal = vi.fn();
   renderProgress(washerwoman, [overview(washerwoman, "needsFollowUp")], undefined, {
@@ -265,12 +285,13 @@ test("summarizes confirmed setup information and marks the first poisoned reveal
     onShowReveal,
   });
 
-  const followup = screen.getByLabelText("확정된 Reveal 후속 조치");
-  const summary = within(followup).getByRole("group", { name: "공개할 정보" });
-  expect(within(summary).getByText("대상").nextElementSibling?.textContent).toBe("2번 서연 · 7번 현우");
-  expect(within(summary).getByText("보여줄 캐릭터").nextElementSibling?.textContent).toBe("요리사");
-  const reveal = within(followup).getByRole("button", { name: "중독 정보 공개" });
+  const task = screen.getByRole("region", { name: "세탁부 정보" });
+  expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+  expect(within(task).getByText("2번 서연 · 7번 현우")).toBeTruthy();
+  expect(within(task).getByRole("group", { name: "전달할 정보" }).textContent).toContain("요리사");
+  const reveal = within(task).getByRole("button", { name: "중독 정보 공개" });
   expect(reveal.classList.contains("poisoned")).toBe(true);
+  expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
 
 test("summarizes Librarian zero outsiders as a target without requiring target selection", () => {
@@ -288,7 +309,7 @@ test("summarizes Librarian zero outsiders as a target without requiring target s
     },
   });
 
-  const summary = screen.getByRole("group", { name: "공개할 정보" });
+  const summary = screen.getByRole("group", { name: "전달할 정보" });
   expect(within(summary).getByText("대상").nextElementSibling?.textContent).toBe("외지인 없음");
   expect(within(summary).queryByText("진실")).toBeNull();
   expect(screen.getByRole("button", { name: "정보 공개" })).toBeTruthy();

@@ -54,7 +54,10 @@ describe("issue #91 target-information selected choices", () => {
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
     const reveal = await screen.findByLabelText("플레이어 공개 화면");
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
-    await screen.findByLabelText("확정된 Reveal 후속 조치");
+    const informationTask = await screen.findByRole("region", { name: "까마귀지기 정보" });
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(within(informationTask).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+    expect(within(informationTask).getByRole("button", { name: "다음 단계" })).toBeTruthy();
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
     });

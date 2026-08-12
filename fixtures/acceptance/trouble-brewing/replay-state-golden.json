@@ -7379,6 +7379,15 @@
         "actorPlayerId": "player-5",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-1",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -8065,6 +8074,15 @@
         "actorPlayerId": "player-5",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-1",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -8504,6 +8522,15 @@
         "actorPlayerId": "player-6",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-1",
+          "sourceEventId": "phase-step-35",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -10177,6 +10204,15 @@
         "sourceEventId": "phase-step-14"
       },
       "unannouncedNightDeathPlayerIds": [],
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-2",
+          "sourceEventId": "phase-step-14",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-2",
@@ -11163,6 +11199,15 @@
         "sourceEventId": "phase-step-14"
       },
       "unannouncedNightDeathPlayerIds": [],
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-3",
+          "sourceEventId": "phase-step-14",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-3",
@@ -13174,6 +13219,15 @@
         "sourceEventId": "phase-step-14"
       },
       "unannouncedNightDeathPlayerIds": [],
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-8",
+          "sourceEventId": "phase-step-14",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-8",
@@ -14384,6 +14438,15 @@
         "actorPlayerId": "player-3",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-3",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -15631,6 +15694,15 @@
         "spent": false,
         "canUseNow": true
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-1",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -17665,6 +17737,15 @@
         "actorPlayerId": "player-5",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-6",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",
@@ -18737,6 +18818,15 @@
         "actorPlayerId": "player-7",
         "spent": false
       },
+      "activeImpairments": [
+        {
+          "kind": "poisoned",
+          "playerId": "player-9",
+          "sourceEventId": "phase-step-4",
+          "sourceCharacterId": "poisoner",
+          "expires": "whileSourceAbilityActive"
+        }
+      ],
       "automaticReminders": [
         {
           "playerId": "player-1",

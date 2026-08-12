@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use crate::{
     characters::{TbCharacterId, TbPhaseKey, TbSemanticStep, TbStepKey},
     contracts::{
-        DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource, GameEndCause,
-        GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile, ImpAttackOutcome,
-        MayorAttackContext, NightActionNoEffectReason, NightActionResolution, ReplayState,
-        RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason,
-        SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
+        ActiveImpairment, DemonDeathCause, DemonSuccessionConfirmedPayload,
+        DemonSuccessionSource, GameEndCause, GameEndSource, GameEndState, GameEvent, GameEventKind,
+        GameFile, ImpAttackOutcome, ImpairmentExpiry, ImpairmentKind, MayorAttackContext,
+        NightActionNoEffectReason, NightActionResolution, ReplayState, RuleState,
+        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
+        SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -1528,6 +1529,15 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
     });
     let (active_poison, active_protection) =
         crate::characters::active_rule_effects(players, events);
+    let active_impairments = active_poison.as_ref().map(|poison| {
+        vec![ActiveImpairment {
+            kind: ImpairmentKind::Poisoned,
+            player_id: poison.player_id.clone(),
+            source_event_id: poison.source_event_id.clone(),
+            source_character_id: "poisoner".into(),
+            expires: ImpairmentExpiry::WhileSourceAbilityActive,
+        }]
+    });
     let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
     let announced = events
         .iter()
@@ -1559,7 +1569,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,
-        active_impairments: None,
+        active_impairments,
         ability_grants: None,
         automatic_reminders: vec![],
         active_witch_curse: None,

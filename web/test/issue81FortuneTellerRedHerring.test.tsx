@@ -46,7 +46,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     expect(confirm.disabled).toBe(false);
     await user.dblClick(confirm);
 
-    expect(await screen.findByText("확인할 플레이어 2명을 선택하세요.")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "대상 선택" })).toBeTruthy();
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
     });
@@ -69,7 +69,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     firstRender.unmount();
     const reloadedStorage = new MemoryGameStorageDriver(saved);
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={reloadedStorage} />);
-    expect(await screen.findByText("확인할 플레이어 2명을 선택하세요.")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "대상 선택" })).toBeTruthy();
 
     const undo = screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement;
     await waitFor(() => expect(undo.disabled).toBe(false));

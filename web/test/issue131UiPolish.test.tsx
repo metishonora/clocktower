@@ -12,6 +12,7 @@ import {
 
 const setupCss = readFileSync(resolve("src/shared-ui/styles/productionShell.css"), "utf8");
 const evilTwinCss = readFileSync(resolve("src/features/evil-twin/evilTwinReveal.css"), "utf8");
+const troubleBrewingCss = readFileSync(resolve("src/features/trouble-brewing/troubleBrewingProduction.css"), "utf8");
 
 test("uses the Korean character label in the phase overview", () => {
   const currentStep = characterStep("night2:noDashii", "noDashii", "player-2");
@@ -111,6 +112,12 @@ test("gives the Evil Twin center prompt a dedicated safe layer and compact width
   expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*z-index:\s*7/s);
   expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*width:\s*min\(220px, 40%\)/s);
   expect(setupCss).toMatch(/:is\(\.snvCatalogPreview, \.roleCatalog\)\.rosterConfirmed article button\.selected/);
+});
+
+test("keeps selected Trouble Brewing setup roles in the forest and gold palette", () => {
+  expect(troubleBrewingCss).toMatch(/\.tbProductionShell \.tbCatalog article button\.selected,[\s\S]*?background: linear-gradient\(135deg, rgba\(55, 107, 80, \.84\), rgba\(126, 81, 46, \.62\)\)/);
+  expect(troubleBrewingCss).toMatch(/\.tbProductionShell \.tbCatalog\.rosterConfirmed article button\.selected,[\s\S]*?background: linear-gradient\(135deg, #376b50, #7e512e\)/);
+  expect(troubleBrewingCss).toMatch(/\.tbProductionShell\[data-theme="day"\] \.tbCatalog article button\.selected,[\s\S]*?background: linear-gradient\(135deg, #d8e4c8, #ead8aa\)/);
 });
 
 function renderProgress(state: ReplayState) {

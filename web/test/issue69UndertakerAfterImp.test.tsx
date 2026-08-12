@@ -48,15 +48,17 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     expect(within(reveal).getByText("요리사")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
 
-    let currentFollowup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(currentFollowup).getByText("대상").nextElementSibling?.textContent).toBe("2번 Executed Chef");
-    await user.click(within(currentFollowup).getByRole("button", { name: "정보 공개" }));
+    let informationTask = await screen.findByRole("region", { name: "장의사 정보" });
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(within(informationTask).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+    await user.click(within(informationTask).getByRole("button", { name: "정보 공개" }));
     reveal = await screen.findByLabelText("플레이어 공개 화면");
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     await expectSavedEventCount(storage, beforeAttackCount + 2);
 
-    currentFollowup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    await user.click(within(currentFollowup).getByRole("button", { name: "다음 단계로 계속" }));
+    informationTask = await screen.findByRole("region", { name: "장의사 정보" });
+    expect(within(informationTask).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+    await user.click(within(informationTask).getByRole("button", { name: "다음 단계" }));
     expect(await screen.findByRole("heading", { name: "낮 시작" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 2);
     expect(screen.queryByText("코어 응답 형식이 올바르지 않습니다.")).toBeNull();
@@ -84,9 +86,10 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     expect(within(within(reveal).getByLabelText("확인 대상")).getByText("5번 Imp")).toBeTruthy();
     expect(within(reveal).getByText("임프")).toBeTruthy();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
-    let followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(followup).getByText("대상").nextElementSibling?.textContent).toBe("5번 Imp");
-    await user.click(within(followup).getByRole("button", { name: "다음 단계로 계속" }));
+    let informationTask = await screen.findByRole("region", { name: "까마귀지기 정보" });
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(within(informationTask).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+    await user.click(within(informationTask).getByRole("button", { name: "다음 단계" }));
 
     expect(await screen.findByRole("heading", { name: "장의사: 1번 Undertaker" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
@@ -95,9 +98,10 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     expect(within(within(reveal).getByLabelText("확인 대상")).getByText("2번 Executed Chef")).toBeTruthy();
     expect(within(reveal).queryByText("Night Victim")).toBeNull();
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
-    followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(followup).getByText("대상").nextElementSibling?.textContent).toBe("2번 Executed Chef");
-    await user.click(within(followup).getByRole("button", { name: "다음 단계로 계속" }));
+    informationTask = await screen.findByRole("region", { name: "장의사 정보" });
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(within(informationTask).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+    await user.click(within(informationTask).getByRole("button", { name: "다음 단계" }));
     expect(await screen.findByRole("heading", { name: "낮 시작" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 3);
     expect(screen.queryByText("코어 응답 형식이 올바르지 않습니다.")).toBeNull();

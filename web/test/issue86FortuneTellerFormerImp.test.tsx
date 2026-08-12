@@ -65,7 +65,7 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
     const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("확인할 플레이어 2명을 선택하세요.");
+    await screen.findByRole("button", { name: "대상 선택" });
     const selectionSurface = await openLiveGrimoire(user);
     const fortuneTeller = within(selectionSurface).getByRole("button", {
       name: /5번 플레이어 5 좌석 선택/,

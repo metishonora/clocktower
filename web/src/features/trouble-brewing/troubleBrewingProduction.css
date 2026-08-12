@@ -247,10 +247,20 @@
   color: #f0d799;
 }
 
-.tbCatalog button[aria-pressed="true"] {
+.tbProductionShell .tbCatalog article button.selected,
+.tbProductionShell .tbCatalog article button[aria-pressed="true"] {
   border-color: #d2ad64;
+  color: #fff8e8;
   background: linear-gradient(135deg, rgba(55, 107, 80, .84), rgba(126, 81, 46, .62));
   box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .14);
+}
+
+.tbProductionShell .tbCatalog.rosterConfirmed article button.selected,
+.tbProductionShell .tbCatalog.rosterConfirmed article button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #376b50, #7e512e);
+  box-shadow: 0 0 0 2px rgba(244, 222, 174, .14), 0 8px 22px rgba(4, 25, 16, .26);
 }
 
 .tbCatalog button:disabled {
@@ -1102,38 +1112,26 @@
   box-shadow: 0 12px 30px rgba(112, 49, 145, .36);
 }
 
-.tbConfirmedInformation {
-  display: grid;
+.tbProductionShell .tbCurrentTask .snvInformationValues {
   width: min(620px, 100%);
-  gap: 18px;
-}
-
-.tbConfirmedInformation .snvInformationValues {
-  width: 100%;
   margin: 0;
 }
 
-.tbConfirmedInformation .snvInformationValues > div {
+.tbProductionShell .tbCurrentTask .snvInformationValues > div {
   border-color: var(--tb-ui-panel-border);
   background: color-mix(in srgb, var(--tb-ui-panel) 72%, transparent);
 }
 
-.tbConfirmedInformation .snvInformationValues dt {
+.tbProductionShell .tbCurrentTask .snvInformationValues dt {
   color: var(--tb-ui-muted);
 }
 
-.tbConfirmedInformation .snvInformationValues dd {
-  color: var(--tb-ui-action-text);
+.tbProductionShell .tbCurrentTask .snvInformationValues dd {
+  color: var(--tb-ui-heading);
 }
 
-.tbCurrentTask .tbConfirmedRevealActions {
-  margin-top: 0;
-  padding-top: 0;
-  justify-content: flex-end;
-}
-
-.tbCurrentTask .tbConfirmedRevealActions > button {
-  min-width: 156px;
+.tbDeliveredInformation {
+  margin-top: 24px !important;
 }
 
 .tbScalarInformationResult {
@@ -1647,6 +1645,16 @@
 
 .tbProductionShell[data-theme="day"] .tbRoleDetail p {
   color: #526154;
+}
+
+.tbProductionShell[data-theme="day"] .tbCatalog article button.selected,
+.tbProductionShell[data-theme="day"] .tbCatalog article button[aria-pressed="true"],
+.tbProductionShell[data-theme="day"] .tbCatalog.rosterConfirmed article button.selected,
+.tbProductionShell[data-theme="day"] .tbCatalog.rosterConfirmed article button[aria-pressed="true"] {
+  border-color: #b79245;
+  color: #243329;
+  background: linear-gradient(135deg, #d8e4c8, #ead8aa);
+  box-shadow: 0 0 0 2px rgba(151, 111, 35, .14), 0 8px 22px rgba(49, 61, 40, .14);
 }
 
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard {

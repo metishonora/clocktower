@@ -564,6 +564,49 @@ fn poisoned_chef_requires_explicit_delivery_and_reveal_uses_only_delivered_value
 }
 
 #[test]
+fn active_tb_poison_is_projected_as_an_impairment_for_the_current_actor() {
+    let game = game_with_events(json!([
+        setup_event_with_minion(),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+    ]));
+
+    let poison_command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:poisoner",
+            "input": { "playerIds": ["player-1"] }
+        }
+    });
+    let poison_proposal: Value = serde_json::from_str(
+        &propose_json(&game.to_string(), &poison_command.to_string()),
+    )
+    .unwrap();
+    assert_eq!(poison_proposal["ok"], true, "{poison_proposal:#}");
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(poison_proposal["value"]["event"].clone());
+
+    let actual: Value = serde_json::from_str(
+        &replay_json(&game_with_events(Value::Array(events)).to_string()),
+    )
+    .unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    assert_eq!(
+        actual["value"]["ruleState"]["activeImpairments"],
+        json!([
+            {
+                "kind": "poisoned",
+                "playerId": "player-1",
+                "sourceEventId": "phase-step-4",
+                "sourceCharacterId": "poisoner",
+                "expires": "whileSourceAbilityActive"
+            }
+        ])
+    );
+}
+
+#[test]
 fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
