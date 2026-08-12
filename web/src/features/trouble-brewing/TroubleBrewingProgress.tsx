@@ -3,7 +3,7 @@ import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
 import type { DeliveryReason, PhaseStep, Player, Proposal, RevealPayload } from "../../core/types";
-import { scalarInformationLabel, scalarInformationValueLabel } from "../../core/informationPresentation";
+import { scalarInformationValueLabel } from "../../core/informationPresentation";
 import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
 import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { characterLabel, characters } from "../../setupDraft";
@@ -170,7 +170,6 @@ function TroubleBrewingTask({
     return <div className="tbProgressTaskColumn">
       <TroubleBrewingInformationFollowUp
         step={pendingReveal.step}
-        payload={pendingReveal.payload}
         players={players}
         ruleState={ruleState}
         theme={theme}
@@ -230,6 +229,21 @@ function TroubleBrewingTask({
     selectedTargetCheck
       && (selectedTargetCheck.choices.length === 1 || phaseInputDraft.selectedTargetChoice),
   );
+  const setupInformationTargetsSelected = Boolean(
+    currentStep?.requiredInput.kind === "setupInfo"
+      && !zeroOutsiderInformation
+      && typeof currentStep.requiredInput.minSelections === "number"
+      && phaseInputDraft.selectedPlayerIds.length >= currentStep.requiredInput.minSelections,
+  );
+  const informationTargetsSelected = Boolean(
+    isInformationStep && (setupInformationTargetsSelected || selectedTargetCheck),
+  );
+  const selectedInformationTargetLabels = informationTargetsSelected
+    ? phaseInputDraft.selectedPlayerIds.flatMap((playerId) => {
+      const player = players.find((candidate) => candidate.id === playerId);
+      return player ? [`${player.seat}번 ${player.name}`] : [];
+    })
+    : [];
   const selectionValid = currentStep ? immediateScalarInformation || zeroOutsiderInformation || stepInputReady(
     currentStep,
     phaseInputDraft.selectedPlayerIds.length,
@@ -469,6 +483,9 @@ function TroubleBrewingTask({
             <ExecutionStanding players={players} dayState={dayState} />
           ) : null}
           <div className="tbProgressInputs">
+            {selectedInformationTargetLabels.length ? <p className="snvInformationTargetSummary tbInformationTargetSummary" aria-label="선택한 대상">
+              <span>대상 ·</span><strong>{selectedInformationTargetLabels.join(" · ")}</strong>
+            </p> : null}
             {immediateScalarInformation ? <ScalarInformationResult
               step={currentStep}
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
@@ -520,8 +537,8 @@ function TroubleBrewingTask({
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
           </div>
           <div className={`snvStepActions${currentStep.stepType === "nomination" ? " issue116NominationActions" : ""}`}>
-              {usesGrimoireSelection ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
-                {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : currentStep.requiredInput.kind === "setupInfo" ? "← 대상 선택" : "대상 선택"}
+              {usesGrimoireSelection && !informationTargetsSelected ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
+                {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : "대상 선택"}
               </button> : null}
               {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button
                 type="button"
@@ -647,7 +664,6 @@ function isEvilInformationReveal(payload: RevealPayload): payload is Extract<Rev
 
 function TroubleBrewingInformationFollowUp({
   step,
-  payload,
   players,
   ruleState,
   theme,
@@ -657,7 +673,6 @@ function TroubleBrewingInformationFollowUp({
   onContinue,
 }: {
   step: PhaseStep;
-  payload: RevealPayload;
   players: Player[];
   ruleState: PhaseControlProps["ruleState"];
   theme: "day" | "night";
@@ -674,7 +689,6 @@ function TroubleBrewingInformationFollowUp({
     : undefined;
   const title = character?.label ?? "정보";
   const influence = primaryInformationInfluence(step.informationPrompt?.activeReasons ?? []);
-  const rows = revealSummaryRows(payload);
 
   return <article
     className="snvCurrentStep tbCurrentTask issue116CurrentStep"
@@ -709,12 +723,6 @@ function TroubleBrewingInformationFollowUp({
       {actor.actualCharacter === "drunk" ? <div className="tbProgressActorTags"><em>실제 주정뱅이</em></div> : null}
       {character?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{character.abilitySummary}</p> : null}
     </section> : <h3>{title}</h3>}
-    {rows.length > 0 ? <dl className="snvInformationValues tbDeliveredInformation" role="group" aria-label="전달할 정보">
-      {rows.map(([label, value]) => <div key={label}>
-        <dt>{label}</dt>
-        <dd>{value}</dd>
-      </div>)}
-    </dl> : null}
     <div className="snvStepActions">
       <button
         type="button"
@@ -801,52 +809,6 @@ function informationRevealActionLabel(reasons: DeliveryReason[]) {
   if (influence === "poisoned") return "중독 정보 공개";
   if (influence === "drunk") return "취한 정보 공개";
   return "정보 공개";
-}
-
-function revealSummaryRows(payload: RevealPayload): Array<[string, string]> {
-  if (!("kind" in payload)) return [[payload.labelKo?.trim() || "정보", payload.valueKo?.trim() || payload.previewMessageKo || payload.messageKo]];
-  switch (payload.kind) {
-    case "setupInformation":
-      if (payload.zeroOutsiders) return [["대상", "외지인 없음"]];
-      return [
-        ["대상", payload.candidatePlayers.map(revealPlayerLabel).join(" · ")],
-        ["보여줄 캐릭터", characterLabel(payload.revealedCharacterId)],
-      ];
-    case "numericInformation":
-    case "booleanInformation":
-      return [["진실", scalarInformationValueLabel(payload.characterId, payload.value)]];
-    case "fortuneTellerInformation":
-      return [
-        ["대상", payload.targetPlayers.map(revealPlayerLabel).join(" · ")],
-        ["결과", payload.hasDemon ? "있음" : "없음"],
-      ];
-    case "characterInformation":
-      return [
-        ["대상", revealPlayerLabel(payload.targetPlayer)],
-        ["보여줄 캐릭터", characterLabel(payload.revealedCharacterId)],
-      ];
-    case "dreamerInformation":
-      return [["보여줄 캐릭터", payload.characterIds.map(characterLabel).join(" · ")]];
-    case "seamstressInformation":
-      return [
-        ["대상", payload.targetPlayers.map(revealPlayerLabel).join(" · ")],
-        ["결과", payload.sameAlignment ? "같은 진영" : "다른 진영"],
-      ];
-    case "sageInformation":
-      return [["대상", payload.candidatePlayers.map(revealPlayerLabel).join(" · ")]];
-    case "characterChange":
-      return [["변경 직업", characterLabel(payload.characterId)]];
-    case "evilTwinPair":
-      return [["쌍둥이", payload.players.map(revealPlayerLabel).join(" · ")]];
-    case "minionInformation":
-    case "demonInformation":
-    case "spyGrimoire":
-      return [];
-  }
-}
-
-function revealPlayerLabel(player: { seat: number; name: string }) {
-  return `${player.seat}번 ${player.name}`;
 }
 
 function primaryInformationInfluence(reasons: DeliveryReason[]): "poisoned" | "drunk" | undefined {

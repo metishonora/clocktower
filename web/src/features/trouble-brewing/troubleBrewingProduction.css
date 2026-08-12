@@ -1130,8 +1130,21 @@
   color: var(--tb-ui-heading);
 }
 
-.tbDeliveredInformation {
-  margin-top: 24px !important;
+.tbProductionShell .tbCurrentTask .tbInformationTargetSummary {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--tb-ui-muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.tbProductionShell .tbCurrentTask .tbInformationTargetSummary strong {
+  color: var(--tb-ui-heading);
+  font-size: .94rem;
+  overflow-wrap: anywhere;
 }
 
 .tbScalarInformationResult {

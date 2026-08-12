@@ -238,14 +238,14 @@ test("shows an impaired actor badge before choosing information targets", () => 
   const actor = screen.getByLabelText("현재 행동자");
   expect(within(actor).getByLabelText("정보 영향").textContent).toBe("중독");
   expect(screen.getByLabelText("세탁부 행동자 상태").textContent).toBe("중독");
-  expect(screen.getByRole("button", { name: /대상 선택/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "대상 선택" })).toBeTruthy();
   expect(screen.getByRole("combobox", { name: "보여줄 캐릭터" })).toBeTruthy();
   expect(screen.queryByText("등록 판정")).toBeNull();
   expect(screen.queryByRole("button", { name: "무작위 추천" })).toBeNull();
   expect(screen.queryByLabelText("필요한 입력")).toBeNull();
 });
 
-test("summarizes confirmed setup information and marks the first poisoned reveal action", () => {
+test("keeps the Washerwoman information follow-up compact after a poisoned Reveal", () => {
   const washerwoman = step({
     id: "firstNight:washerwoman",
     phase: "firstNight",
@@ -287,14 +287,15 @@ test("summarizes confirmed setup information and marks the first poisoned reveal
 
   const task = screen.getByRole("region", { name: "세탁부 정보" });
   expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
-  expect(within(task).getByText("2번 서연 · 7번 현우")).toBeTruthy();
-  expect(within(task).getByRole("group", { name: "전달할 정보" }).textContent).toContain("요리사");
+  expect(within(task).queryByRole("group", { name: "전달할 정보" })).toBeNull();
+  expect(within(task).queryByText("2번 서연 · 7번 현우")).toBeNull();
+  expect(within(task).queryByText("요리사")).toBeNull();
   const reveal = within(task).getByRole("button", { name: "중독 정보 공개" });
   expect(reveal.classList.contains("poisoned")).toBe(true);
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
 
-test("summarizes Librarian zero outsiders as a target without requiring target selection", () => {
+test("keeps the Librarian zero-outsider follow-up compact after Reveal", () => {
   const librarian = step({
     id: "firstNight:librarian",
     phase: "firstNight",
@@ -309,10 +310,89 @@ test("summarizes Librarian zero outsiders as a target without requiring target s
     },
   });
 
-  const summary = screen.getByRole("group", { name: "전달할 정보" });
-  expect(within(summary).getByText("대상").nextElementSibling?.textContent).toBe("외지인 없음");
-  expect(within(summary).queryByText("진실")).toBeNull();
-  expect(screen.getByRole("button", { name: "정보 공개" })).toBeTruthy();
+  const task = screen.getByRole("region", { name: "사서 정보" });
+  expect(within(task).queryByRole("group", { name: "전달할 정보" })).toBeNull();
+  expect(within(task).queryByText("외지인 없음")).toBeNull();
+  expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+});
+
+test("keeps the Fortune Teller information follow-up compact after a poisoned Reveal", () => {
+  const fortuneTeller = step({
+    id: "firstNight:fortuneTeller",
+    phase: "firstNight",
+    character: "fortuneTeller",
+    playerId: "player-2",
+    requiredInput: {
+      kind: "playerIds",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      allowedPlayerIds: players.map(({ id }) => id),
+      optional: false,
+    },
+    informationPrompt: informationPrompt([{ type: "poisoned", poisonerPlayerId: "player-4", poisonEventId: "poison-1" }]),
+  });
+
+  renderProgress(fortuneTeller, [overview(fortuneTeller, "needsFollowUp")], undefined, {
+    pendingReveal: {
+      step: fortuneTeller,
+      confirmedEventCount: 16,
+      payload: {
+        kind: "fortuneTellerInformation",
+        targetPlayers: [
+          { playerId: "player-3", seat: 3, name: "서연" },
+          { playerId: "player-5", seat: 5, name: "하린" },
+        ],
+        hasDemon: true,
+      },
+    },
+  });
+
+  const task = screen.getByRole("region", { name: "점쟁이 정보" });
+  expect(within(task).queryByRole("group", { name: "전달할 정보" })).toBeNull();
+  expect(within(task).queryByText("3번 서연 · 5번 하린", { exact: true })).toBeNull();
+  expect(within(task).queryByText("있음", { exact: true })).toBeNull();
+  expect(within(task).getByRole("button", { name: "중독 정보 공개" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+});
+
+test("hides the Washerwoman Grimoire target button after two valid targets are selected", () => {
+  const washerwoman = step({
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    character: "washerwoman",
+    playerId: "player-1",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      optional: false,
+    },
+    informationPrompt: {
+      ...informationPrompt([]),
+      setupInfoRegistrationOptions: [{ playerId: "player-7", registeredAs: "townsfolk", characterIds: ["chef"] }],
+    },
+  });
+
+  renderProgress(washerwoman, [overview(washerwoman, "current")], undefined, {
+    phaseInputDraft: {
+      ...emptyPhaseInputDraft(),
+      selectedPlayerIds: ["player-2", "player-7"],
+      selectedCharacterId: "chef",
+    },
+  });
+
+  const task = screen.getByRole("region", { name: "현재 단계" });
+  expect(within(task).queryByRole("button", { name: "← 대상 선택" })).toBeNull();
+  const selectedTargets = within(task).getByLabelText("선택한 대상");
+  expect(selectedTargets.textContent).toContain("2번 서연");
+  expect(selectedTargets.textContent).toContain("7번 현우");
+  expect(within(task).getByRole("combobox", { name: "보여줄 캐릭터" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
 });
 
 test("offers a fixed Chef truth for immediate information reveal without a truth-selection click", async () => {

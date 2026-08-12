@@ -72,7 +72,7 @@ test("omits the input-kind badge from a numeric-information current step", async
 
   await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
   expect(screen.getByRole("heading", { name: "1일차 밤" })).toBeTruthy();
-  expect(screen.getByText("전달할 악한 팀 이웃 쌍의 수를 선택하세요.")).toBeTruthy();
+  expect(screen.queryByText("전달할 악한 팀 이웃 쌍의 수를 선택하세요.")).toBeNull();
   expect(screen.getByLabelText("전달할 숫자")).toBeTruthy();
   expect(screen.queryByText("숫자")).toBeNull();
   expect(within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "진행" }).getAttribute("aria-current")).toBe("page");
