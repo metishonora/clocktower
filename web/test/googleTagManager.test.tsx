@@ -24,4 +24,18 @@ describe("Google Tag Manager", () => {
     expect(noscript).toBeLessThan(appRoot);
     expect(html.match(/GTM-PH8JJ6QB/g)).toHaveLength(2);
   });
+
+  test.each(htmlInputs)("loads Google Analytics in %s", (relativePath) => {
+    const html = readFileSync(resolve(relativePath), "utf8");
+    const headStart = html.indexOf("<head>");
+    const headEnd = html.indexOf("</head>");
+    const loader = html.indexOf("https://www.googletagmanager.com/gtag/js?id=G-TG5GJV79BL");
+    const config = html.indexOf("gtag('config', 'G-TG5GJV79BL')");
+
+    expect(loader).toBeGreaterThan(headStart);
+    expect(loader).toBeLessThan(headEnd);
+    expect(config).toBeGreaterThan(loader);
+    expect(config).toBeLessThan(headEnd);
+    expect(html.match(/G-TG5GJV79BL/g)).toHaveLength(2);
+  });
 });
