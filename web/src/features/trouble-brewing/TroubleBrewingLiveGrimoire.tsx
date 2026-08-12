@@ -22,6 +22,26 @@ import "../grimoire/sectsAndVioletsSeatStates.css";
 
 export type TroubleBrewingLiveHandoff = "target" | "nomination" | "vote";
 
+export type TroubleBrewingCompletedSelection = {
+  title: string;
+  actionLabel?: string;
+  summary?: Array<{ label: string; value: string }>;
+  onContinue: () => void;
+};
+
+export type TroubleBrewingSelectionChoices = {
+  label: string;
+  selectedId?: string;
+  options: Array<{ id: string; label: string }>;
+  onChange: (id: string) => void;
+};
+
+export type TroubleBrewingSeatMarker = {
+  playerId: string;
+  label: string;
+  className: string;
+};
+
 export function TroubleBrewingLiveGrimoire({
   players,
   currentStep,
@@ -43,6 +63,9 @@ export function TroubleBrewingLiveGrimoire({
   onResetSelection,
   onCancelSelection,
   selectionReady,
+  selectionChoices,
+  seatMarkers = [],
+  completedSelection,
   revealMode,
   interactionLocked = false,
   progressActionLabel = "진행 →",
@@ -82,6 +105,9 @@ export function TroubleBrewingLiveGrimoire({
   onResetSelection?: () => void;
   onCancelSelection?: () => void;
   selectionReady?: boolean;
+  selectionChoices?: TroubleBrewingSelectionChoices;
+  seatMarkers?: TroubleBrewingSeatMarker[];
+  completedSelection?: TroubleBrewingCompletedSelection;
   revealMode?: {
     onClose: () => void;
   };
@@ -110,6 +136,7 @@ export function TroubleBrewingLiveGrimoire({
     ? characters.find((candidate) => candidate.id === detailsPlayer.shownCharacter)
     : undefined;
   const selectionActive = !revealMode && Boolean(handoff);
+  const selectionComplete = Boolean(completedSelection);
   const nominatorId = nominationVoting?.draft.nominatorId || dayState?.activeNomination?.nominatorId;
   const nomineeId = nominationVoting?.draft.nomineeId || dayState?.activeNomination?.nomineeId;
   const nominator = players.find((player) => player.id === nominatorId);
@@ -200,7 +227,7 @@ export function TroubleBrewingLiveGrimoire({
         <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
       </div> : handoff ? (
         <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
-          <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button>
+          {!selectionComplete ? <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
         </GrimoireToolbar>
       ) : (
         <GrimoireToolbar ariaLabel="확정된 마도서 도구">
@@ -225,11 +252,12 @@ export function TroubleBrewingLiveGrimoire({
           const selfNominee = handoff === "nomination"
             && player.id === nominatorId
             && player.id === nomineeId;
+          const seatMarker = seatMarkers.find((marker) => marker.playerId === player.id);
           const targetRole = targetSelectionSeatLabel(currentStep);
           const selectionRole = handoff === "nomination"
             ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
             : handoff === "vote" && nominationVoting?.draft.voterIds.includes(player.id) ? "투표"
-              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? targetRole : undefined;
+              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? targetRole : seatMarker?.label;
           const selected = handoff === "nomination"
             ? player.id === nominatorId || player.id === nomineeId
             : handoff === "vote"
@@ -267,6 +295,7 @@ export function TroubleBrewingLiveGrimoire({
             ruleState?.activePoison?.playerId === player.id ? "중독" : undefined,
             ruleState?.activeProtection?.playerId === player.id ? "보호" : undefined,
           ].filter((label): label is string => Boolean(label));
+          const additionalAutomaticTokenLabels = automaticTokenLabels.filter((label) => label !== selectionRole);
           const identityLabel = player.actualCharacter === "drunk"
             ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
             : characterLabel(player.actualCharacter);
@@ -278,6 +307,7 @@ export function TroubleBrewingLiveGrimoire({
           const targetSelected = selected && handoff === "target";
           const genericSelected = selected && !targetSelected;
           const voteSelected = selected && handoff === "vote";
+          const settledOther = selectionComplete && !actor && !targetSelected && !seatMarker;
           const nominationClass = selfNominee
             ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
             : selectionRole === "지명자" ? " issue116NominatorSeat"
@@ -291,10 +321,10 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
-            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${automaticTokenLabels.length ? `, ${automaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
+            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${additionalAutomaticTokenLabels.length ? `, ${additionalAutomaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
-            disabled: gameEnded || (selectionActive ? disabled : false),
+            disabled: gameEnded || selectionComplete || (selectionActive ? disabled : false),
             onSelect: () => selectPlayer(player, disabled),
             onPointerDown: (event) => startLongPress(event, player),
             onPointerUp: cancelLongPress,
@@ -353,6 +383,8 @@ export function TroubleBrewingLiveGrimoire({
         executionVoteThreshold={dayState?.executionVoteThreshold ?? 0}
         busy={busy}
         ready={Boolean(selectionReady)}
+        selectionChoices={selectionChoices}
+        completedSelection={completedSelection}
         onReset={onResetSelection}
         onConfirm={onConfirmSelection}
       /> : undefined}
@@ -401,6 +433,8 @@ function TroubleBrewingSelectionPanel({
   executionVoteThreshold,
   busy,
   ready,
+  selectionChoices,
+  completedSelection,
   onReset,
   onConfirm,
 }: {
@@ -414,6 +448,8 @@ function TroubleBrewingSelectionPanel({
   executionVoteThreshold: number;
   busy: boolean;
   ready: boolean;
+  selectionChoices?: TroubleBrewingSelectionChoices;
+  completedSelection?: TroubleBrewingCompletedSelection;
   onReset?: () => void;
   onConfirm?: () => void;
 }) {
@@ -429,25 +465,29 @@ function TroubleBrewingSelectionPanel({
     : 0;
   const numberedTargetCount = setupInformationTargetCount || (playerTargetCount > 1 ? playerTargetCount : 0);
   const target = targets[0];
-  const targetLabel = target ? `${target.seat}번 ${target.name}` : "선택 전";
-  const title = handoff === "nomination"
+  const targetLabel = target
+    ? `${target.seat}번 ${target.name}${completedSelection ? ` · ${target.alive ? "생존" : "사망"}` : ""}`
+    : "선택 전";
+  const title = completedSelection?.title ?? (handoff === "nomination"
     ? "지명 선택"
     : handoff === "vote"
       ? "투표 집계"
-      : targetSelectionTitle(currentStep);
+      : targetSelectionTitle(currentStep));
   const confirmLabel = handoff === "nomination"
     ? nominator && nominee ? `${nominator.seat}번 → ${nominee.seat}번 지명 확정` : "지명자와 피지명자를 선택하세요"
     : handoff === "vote" ? `${voterIds.length}표로 투표 확정`
       : target ? "선택 확정" : "대상을 선택하세요";
 
-  return <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
+  return <aside className={`issue116SelectionPanel${completedSelection ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
     <header className="issue116SelectionHeader">
       <h2>{title}</h2>
-      <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
+      {!completedSelection ? <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
         {handoff === "nomination" ? "지명 초기화 X" : handoff === "vote" ? "투표 초기화 X" : setupInformationTargetCount > 0 ? "초기화" : "선택 초기화 X"}
-      </button>
+      </button> : null}
     </header>
-    {handoff === "nomination" ? <dl>
+    {completedSelection?.summary ? <dl>
+      {completedSelection.summary.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
+    </dl> : handoff === "nomination" ? <dl>
       <div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div>
       <div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div>
     </dl> : handoff === "vote" ? <dl className="issue116VoteSummary">
@@ -460,7 +500,22 @@ function TroubleBrewingSelectionPanel({
     </dl> : <dl>
       <div><dt>{targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
-    <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+    {selectionChoices ? <fieldset className="tbSelectionChoices">
+      <legend>{selectionChoices.label}</legend>
+      {selectionChoices.options.map((option) => <button
+        type="button"
+        className={selectionChoices.selectedId === option.id ? "selected" : ""}
+        aria-pressed={selectionChoices.selectedId === option.id}
+        disabled={busy}
+        onClick={() => selectionChoices.onChange(option.id)}
+        key={option.id}
+      >{option.label}</button>)}
+    </fieldset> : null}
+    {completedSelection ? (
+      <button type="button" className="issue116PrimaryAction issue116NextAction" disabled={busy} onClick={completedSelection.onContinue}>{completedSelection.actionLabel ?? "다음 →"}</button>
+    ) : (
+      <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+    )}
   </aside>;
 }
 
@@ -476,7 +531,9 @@ function targetOrdinal(index: number) {
 
 function targetSelectionTitle(step?: PhaseStep) {
   if (!step) return "대상 선택";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상 지정";
   if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상 지정";
+  if (step.id.endsWith(":mayorBounce")) return "시장 능력";
   if (step.character === "washerwoman") return "세탁부 능력";
   if (step.character === "librarian") return "사서 능력";
   if (step.character === "investigator") return "수사관 능력";
@@ -491,7 +548,9 @@ function targetSelectionTitle(step?: PhaseStep) {
 
 function targetSelectionFieldLabel(step?: PhaseStep) {
   if (!step) return "선택 대상";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상";
   if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":mayorBounce")) return "대신 사망 대상";
   if (step.character === "poisoner") return "중독 대상";
   if (step.character === "monk") return "보호 대상";
   if (step.character === "imp") return "공격 대상";
@@ -502,7 +561,9 @@ function targetSelectionFieldLabel(step?: PhaseStep) {
 
 function targetSelectionSeatLabel(step?: PhaseStep) {
   if (!step) return "선택";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상";
   if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":mayorBounce")) return "대신 사망";
   if (step.character === "poisoner") return "중독";
   if (step.character === "monk") return "보호";
   if (step.character === "imp") return "공격";
@@ -511,6 +572,8 @@ function targetSelectionSeatLabel(step?: PhaseStep) {
 }
 
 function targetSelectionStateClass(step?: PhaseStep) {
+  if (step?.id.endsWith(":fortuneTellerDecoy")) return "tbSeatStateDecoy";
+  if (step?.id.endsWith(":mayorBounce")) return "tbSeatStateMayorBounce";
   if (step?.character === "poisoner") return "tbSeatStatePoison";
   if (step?.character === "imp") return "tbSeatStateAttack";
   return "tbSeatStateSelection";

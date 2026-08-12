@@ -7,6 +7,23 @@
   --tb-gold: #d2ad64;
   --tb-rust: #a64f35;
   --tb-ink: #19251f;
+  --tb-ui-accent: var(--tb-gold);
+  --tb-ui-action: #3f6f55;
+  --tb-ui-action-border: #7fa58a;
+  --tb-ui-action-text: #fff8e8;
+  --tb-ui-heading: #fff8e8;
+  --tb-ui-primary: #e6cb89;
+  --tb-ui-primary-border: var(--tb-gold);
+  --tb-ui-primary-text: var(--tb-ink);
+  --tb-ui-muted: #d1b77e;
+  --tb-ui-copy-muted: #e0d4b9;
+  --tb-ui-panel: rgba(7, 25, 18, .72);
+  --tb-ui-panel-border: rgba(221, 198, 151, .18);
+  --tb-ui-row: rgba(255, 255, 255, .045);
+  --tb-ui-hover: rgba(55, 107, 80, .24);
+  --tb-ui-disabled: rgba(255, 255, 255, .035);
+  --tb-ui-disabled-border: rgba(221, 198, 151, .17);
+  --tb-ui-disabled-text: #8f958c;
   color: #f5eddc;
   background:
     radial-gradient(circle at 76% 0%, rgba(114, 147, 101, .34), transparent 30%),
@@ -143,6 +160,30 @@
 .tbProductionShell select:focus-visible {
   outline: 3px solid rgba(229, 192, 111, .64);
   outline-offset: 3px;
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button,
+.tbProductionShell .snvSeatingToolbar button {
+  border-color: var(--tb-ui-panel-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
+}
+
+.tbProductionShell .snvCurrentStepIdentity.interactive:hover,
+.tbProductionShell .snvCurrentStepIdentity.interactive:focus-visible {
+  border-color: color-mix(in srgb, var(--tb-ui-accent) 46%, transparent);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .snvCurrentStepIdentity.interactive:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tb-ui-accent) 64%, transparent);
+  outline-offset: 2px;
 }
 
 .tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button[aria-current="page"],
@@ -361,6 +402,98 @@
   color: #c5cbbd;
 }
 
+.tbProductionShell .issue116PhaseChip {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .tbGrimoireBoard > button .snvSeatNumber {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .tbGrimoireBoard > button {
+  color: var(--tb-ui-heading);
+}
+
+.tbProductionShell .tbGrimoireBoard > button .snvSeatPlayerName {
+  color: var(--tb-ui-heading);
+}
+
+.tbProductionShell .tbGrimoireBoard > button small,
+.tbProductionShell .snvCurrentActorLegend {
+  color: var(--tb-ui-copy-muted);
+}
+
+.tbProductionShell .issue116SelectionPanel {
+  border-color: var(--tb-ui-panel-border);
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell .issue116SelectionPanel dl > div {
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell .issue116SelectionHeader button,
+.tbProductionShell .issue116SelectionPanel :is(dt, p) {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .issue116SelectionHeader button:hover:not(:disabled) {
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .tbSelectionChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+}
+
+.tbProductionShell .tbSelectionChoices legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--tb-ui-muted);
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.tbProductionShell .tbSelectionChoices button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 11px;
+  color: var(--tb-ui-copy-muted);
+  background: var(--tb-ui-row);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.tbProductionShell .tbSelectionChoices button.selected {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
+.tbProductionShell .issue116SelectionPanel .issue116PrimaryAction.issue116NextAction {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--tb-ui-action) 38%, transparent);
+}
+
+.tbProductionShell .issue116SelectionPanel .issue116PrimaryAction:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
+}
+
 .tbProductionShell[data-theme="day"] .issue116PhaseClock button {
   border-color: #496b50;
   color: #fffdf2;
@@ -400,6 +533,12 @@
   filter: brightness(1.1) saturate(1.18);
 }
 
+.tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateMayorBounce {
+  border-color: #66c59c;
+  box-shadow: 0 0 0 7px rgba(76, 174, 130, .48), 0 0 46px rgba(45, 145, 104, .72);
+  filter: brightness(1.12) saturate(1.08);
+}
+
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateSelection {
   border-color: #b73668;
   box-shadow: 0 0 0 6px rgba(183, 54, 104, .26), 0 0 30px rgba(183, 54, 104, .4);
@@ -413,6 +552,11 @@
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
   border-color: #c93434;
   box-shadow: 0 0 0 6px rgba(201, 52, 52, .28), 0 0 30px rgba(201, 52, 52, .44);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateMayorBounce {
+  border-color: #2f835e;
+  box-shadow: 0 0 0 6px rgba(47, 131, 94, .27), 0 0 30px rgba(47, 131, 94, .42);
 }
 
 .tbProductionShell .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
@@ -818,15 +962,37 @@
   line-height: 1.55;
 }
 
+.tbProductionShell .tbCurrentTask :is(.snvCurrentStepLabel, p) {
+  color: var(--tb-ui-copy-muted);
+}
+
+.tbProductionShell .tbPlayHeader {
+  border-bottom-color: var(--tb-ui-panel-border);
+}
+
 .tbCurrentTask .snvStepActions {
   margin-top: auto;
   padding-top: 30px;
 }
 
 .tbCurrentTask .snvStepActions button {
-  border-color: #7fa58a;
-  color: #fff8e8;
-  background: #3f6f55;
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.prominent {
+  border-color: var(--tb-ui-primary-border);
+  color: var(--tb-ui-primary-text);
+  background: var(--tb-ui-primary);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--tb-ui-primary-border) 32%, transparent);
+}
+
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.poisoned {
+  border-color: #9d59bd;
+  color: #fff;
+  background: linear-gradient(135deg, #a95bd2, #71378f);
+  box-shadow: 0 12px 30px rgba(112, 49, 145, .36);
 }
 
 .tbCurrentTask.snvEvilInformationTask {
@@ -1259,6 +1425,23 @@
 }
 
 .tbProductionShell[data-theme="day"] {
+  --tb-ui-accent: #98642f;
+  --tb-ui-action: #58745c;
+  --tb-ui-action-border: #496b50;
+  --tb-ui-action-text: #fffdf2;
+  --tb-ui-heading: #243329;
+  --tb-ui-primary: #58745c;
+  --tb-ui-primary-border: #496b50;
+  --tb-ui-primary-text: #fffdf2;
+  --tb-ui-muted: #5f684e;
+  --tb-ui-copy-muted: #5f684e;
+  --tb-ui-panel: rgba(255, 253, 238, .64);
+  --tb-ui-panel-border: rgba(57, 83, 55, .2);
+  --tb-ui-row: rgba(57, 83, 55, .07);
+  --tb-ui-hover: rgba(73, 107, 80, .12);
+  --tb-ui-disabled: rgba(57, 83, 55, .06);
+  --tb-ui-disabled-border: rgba(57, 83, 55, .14);
+  --tb-ui-disabled-text: #748074;
   color: #213128;
 }
 
@@ -1303,6 +1486,10 @@
   background: linear-gradient(145deg, #f7f2d8, #d9e2c8);
 }
 
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button {
+  box-shadow: 0 9px 24px rgba(49, 61, 40, .16);
+}
+
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard > button.assigned.alignment-good {
   border-color: rgba(52, 129, 163, .62);
   color: #20343d;
@@ -1321,6 +1508,32 @@
 
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard > button small {
   color: #58645b;
+}
+
+.tbProductionShell[data-theme="day"] .issue116PhaseChip,
+.tbProductionShell[data-theme="day"] .issue116SelectionHeader button,
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel :is(dt, p) {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel {
+  border-color: var(--tb-ui-panel-border);
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel dl > div {
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionHeader button:hover:not(:disabled) {
+  color: var(--tb-ui-heading);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel .issue116PrimaryAction:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
 }
 
 .playerTokenDetailBackdrop.day .tbDrunkIdentities article > span,

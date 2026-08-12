@@ -200,6 +200,146 @@ const DevIssue151TroubleBrewingBugReportPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue153TroubleBrewingCharacterPrototypes = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153TroubleBrewingCharacterPrototypes };
+    })
+  : undefined;
+
+const DevIssue153LibrarianPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153LibrarianPrototype };
+    })
+  : undefined;
+
+const DevIssue153InvestigatorPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153InvestigatorPrototype };
+    })
+  : undefined;
+
+const DevIssue153ChefPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ChefPrototype };
+    })
+  : undefined;
+
+const DevIssue153EmpathPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153EmpathPrototype };
+    })
+  : undefined;
+
+const DevIssue153FortuneTellerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153FortuneTellerPrototype };
+    })
+  : undefined;
+
+const DevIssue153UndertakerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153UndertakerPrototype };
+    })
+  : undefined;
+
+const DevIssue153MonkPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153MonkPrototype };
+    })
+  : undefined;
+
+const DevIssue153RavenkeeperPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153RavenkeeperPrototype };
+    })
+  : undefined;
+
+const DevIssue153VirginPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153VirginPrototype };
+    })
+  : undefined;
+
+const DevIssue153SlayerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SlayerPrototype };
+    })
+  : undefined;
+
+const DevIssue153SoldierPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SoldierPrototype };
+    })
+  : undefined;
+
+const DevIssue153MayorPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153MayorPrototype };
+    })
+  : undefined;
+
+const DevIssue153ButlerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ButlerPrototype };
+    })
+  : undefined;
+
+const DevIssue153DrunkPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153DrunkPrototype };
+    })
+  : undefined;
+
+const DevIssue153ReclusePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ReclusePrototype };
+    })
+  : undefined;
+
+const DevIssue153SaintPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SaintPrototype };
+    })
+  : undefined;
+
+const DevIssue153PoisonerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153PoisonerPrototype };
+    })
+  : undefined;
+
+const DevIssue153SpyPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SpyPrototype };
+    })
+  : undefined;
+
+const DevIssue153ScarletWomanPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ScarletWomanPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
@@ -218,6 +358,206 @@ type TroubleBrewingBugReportSnapshot = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue153ScarletWomanPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-scarlet-woman"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ScarletWomanPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SpyPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-spy"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SpyPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153PoisonerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-poisoner"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153PoisonerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SaintPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-saint"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SaintPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ReclusePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-recluse"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ReclusePrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153DrunkPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-drunk"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153DrunkPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ButlerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-butler"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ButlerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153MayorPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-mayor"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153MayorPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SoldierPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-soldier"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SoldierPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SlayerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-slayer"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SlayerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153VirginPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-virgin"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153VirginPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153RavenkeeperPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-ravenkeeper"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153RavenkeeperPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153MonkPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-monk"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153MonkPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153UndertakerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-undertaker"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153UndertakerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153FortuneTellerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-fortune-teller"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153FortuneTellerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153EmpathPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-empath"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153EmpathPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ChefPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-chef"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ChefPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153InvestigatorPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-investigator"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153InvestigatorPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153LibrarianPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-librarian"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153LibrarianPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153TroubleBrewingCharacterPrototypes &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-characters"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153TroubleBrewingCharacterPrototypes />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue151TroubleBrewingBugReportPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-151-tb-bug-report"
