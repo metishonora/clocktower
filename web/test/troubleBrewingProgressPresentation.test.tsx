@@ -236,8 +236,16 @@ test("shows an impaired actor badge before choosing information targets", () => 
   });
 
   const actor = screen.getByLabelText("현재 행동자");
-  expect(within(actor).getByLabelText("정보 영향").textContent).toBe("중독");
-  expect(screen.getByLabelText("세탁부 행동자 상태").textContent).toBe("중독");
+  const actorInfluence = within(actor).getByLabelText("정보 영향");
+  const actorBadge = within(actorInfluence).getByText("중독", { exact: true });
+  expect(actorBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(actorBadge.classList.contains("poisoned")).toBe(true);
+
+  const phaseOverview = screen.getByRole("list", { name: "첫날 밤 순서" });
+  const overviewInfluence = within(phaseOverview).getByLabelText("세탁부 행동자 상태");
+  const overviewBadge = within(overviewInfluence).getByText("중독", { exact: true });
+  expect(overviewBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(overviewBadge.classList.contains("poisoned")).toBe(true);
   expect(screen.getByRole("button", { name: "대상 선택" })).toBeTruthy();
   expect(screen.getByRole("combobox", { name: "보여줄 캐릭터" })).toBeTruthy();
   expect(screen.queryByText("등록 판정")).toBeNull();
