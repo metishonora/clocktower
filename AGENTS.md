@@ -17,7 +17,6 @@
 - Treat the approved prototype as the visual acceptance baseline. Reusing existing components is acceptable only when the resulting production UI remains faithful to that baseline.
 - Before requesting production acceptance, compare the real production UI with the approved prototype for the agreed states and target viewports. Fix unintended differences or obtain explicit approval for necessary deviations.
 - Prototype approval validates UI and interaction decisions only. Production acceptance must use the real production entry and runtime.
-- Add UI tests only for stable user-observable behavior or regression contracts that should survive copy and layout changes. Assert exact wording only when the wording itself is required behavior.
 - Skip full regression suites for isolated prototypes. Run focused checks only when shared production code or configuration changes.
 
 ## Test server lifecycle
@@ -31,7 +30,6 @@
 ## Completion
 
 - Changes limited to the test-server manager, its lifecycle hooks, or server-operator configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
-- Before closing a ticket, ensure changed behavior has the smallest practical regression coverage or that the evidence gap required by the working agreements is recorded.
 - Close a GitHub issue only when the user explicitly asks to close that specific issue. Implementation completion, acceptance, merge, or push does not imply permission to close it.
 - For Rust changes, run `cargo test --workspace`.
 - For relevant web changes, run `pnpm --dir web test` and `pnpm --dir web build`.

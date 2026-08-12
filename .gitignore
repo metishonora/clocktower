@@ -3,6 +3,8 @@
 /node_modules/
 /web/node_modules/
 /web/dist/
+/web/playwright-report/
+/web/test-results/
 /web/tsconfig.tsbuildinfo
 /web/src/generated/clocktower_wasm/
 /.codex-tmp/

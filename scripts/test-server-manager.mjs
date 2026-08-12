@@ -79,6 +79,17 @@ export function resolveServerScript(requestedScript, scripts) {
     };
   }
 
+  if (requestedScript === "preview") {
+    if (!scripts.preview) {
+      throw new Error("The required web script `preview` was not found.");
+    }
+    return {
+      requestedScript,
+      packageScript: "preview",
+      args: ["--host", "0.0.0.0", "--strictPort"],
+    };
+  }
+
   if (!/^prototype:[A-Za-z0-9_-]+$/.test(requestedScript ?? "")) {
     throw new Error(`Test-server script is not allowed: ${requestedScript ?? "<missing>"}`);
   }
@@ -142,7 +153,7 @@ export function parseCliArgs(argv) {
   }
 
   if (parsed.command === "start" && !parsed.script) {
-    throw new Error("`start` requires `--script dev` or an existing `prototype:*` script.");
+    throw new Error("`start` requires `--script dev`, `--script preview`, or an existing `prototype:*` script.");
   }
   if (parsed.transientOnly && parsed.command !== "stop") {
     throw new Error("`--transient-only` is valid only with `stop`.");
@@ -320,12 +331,12 @@ async function startServer(context, { script, sessionId }) {
     };
     await replaceRecord(context.paths, processRecord);
     await Promise.race([waitForHealthyServer(processRecord), spawnFailure]);
-    const tailscaleIp = await resolveTailscaleIpv4();
+    const publicIp = await resolvePublicIpv4();
     const runningRecord = {
       ...processRecord,
       state: "running",
       startedAt: new Date().toISOString(),
-      url: `http://${tailscaleIp}:${processRecord.port}${HEALTH_PATH}`,
+      url: `http://${publicIp}:${processRecord.port}${HEALTH_PATH}`,
     };
     await replaceRecord(context.paths, runningRecord);
     removeSignalHandlers();
@@ -687,9 +698,20 @@ async function waitForHealthyServer(record) {
   throw new Error(`The test server did not answer ${localUrl} within ${START_TIMEOUT_MS / 1000} seconds.`);
 }
 
-async function resolveTailscaleIpv4() {
+export async function resolvePublicIpv4(
+  environment = process.env,
+  { exec = execFileAsync } = {},
+) {
+  const override = environment.CLOCKTOWER_TEST_SERVER_PUBLIC_IPV4?.trim();
+  if (override) {
+    if (!net.isIPv4(override)) {
+      throw new Error("CLOCKTOWER_TEST_SERVER_PUBLIC_IPV4 must be an IPv4 address.");
+    }
+    return override;
+  }
+
   try {
-    const { stdout } = await execFileAsync("tailscale", ["ip", "-4"], {
+    const { stdout } = await exec("tailscale", ["ip", "-4"], {
       encoding: "utf8",
       timeout: 5_000,
     });

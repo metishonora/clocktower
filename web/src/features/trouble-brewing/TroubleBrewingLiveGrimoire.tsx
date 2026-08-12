@@ -91,7 +91,7 @@ export function TroubleBrewingLiveGrimoire({
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const longPressTimer = useRef<number | undefined>(undefined);
   const longPressActivated = useRef(false);
   const seatRefs = useRef(new Map<string, HTMLButtonElement>());
   const playerCount = players.length;

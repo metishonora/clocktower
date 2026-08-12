@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import type { PhaseStep, Player, ReplayState } from "../src/core/types";
 import { EvilTwinRevealPrompt } from "../src/features/evil-twin/EvilTwinReveal";
@@ -9,9 +7,6 @@ import {
   SectsAndVioletsLiveProgress,
   type LivePlayer,
 } from "../src/sectsAndVioletsLivePhase";
-
-const setupCss = readFileSync(resolve("src/shared-ui/styles/productionShell.css"), "utf8");
-const evilTwinCss = readFileSync(resolve("src/features/evil-twin/evilTwinReveal.css"), "utf8");
 
 test("uses the Korean character label in the phase overview", () => {
   const currentStep = characterStep("night2:noDashii", "noDashii", "player-2");
@@ -78,8 +73,9 @@ test.each([
   expect(within(decision).getByText("꿈꾸는 자")).toBeTruthy();
 });
 
-test("gives the Evil Twin center prompt a dedicated safe layer and compact width", () => {
+test("exposes the Evil Twin pair and reveal action from the live Grimoire", () => {
   const players = livePlayers();
+  const onReveal = vi.fn();
   const payload = {
     kind: "evilTwinPair" as const,
     players: [
@@ -93,7 +89,7 @@ test("gives the Evil Twin center prompt a dedicated safe layer and compact width
       phaseLabel="첫 밤"
       currentStep={characterStep("firstNight:evilTwin", "evilTwin", "player-2")}
       voterIds={[]}
-      centerPrompt={<EvilTwinRevealPrompt payload={payload} onReveal={vi.fn()} />}
+      centerPrompt={<EvilTwinRevealPrompt payload={payload} onReveal={onReveal} />}
       centerPromptClassName="evilTwinCenterPrompt"
       operationBusy={false}
       onSeatClick={vi.fn()}
@@ -106,11 +102,11 @@ test("gives the Evil Twin center prompt a dedicated safe layer and compact width
     />,
   );
 
-  const prompt = screen.getByRole("dialog", { name: "쌍둥이 확인 안내" }).closest(".snvGrimoireCenter");
-  expect(prompt?.classList.contains("evilTwinCenterPrompt")).toBe(true);
-  expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*z-index:\s*7/s);
-  expect(evilTwinCss).toMatch(/\.evilTwinCenterPrompt[^}]*width:\s*min\(220px, 40%\)/s);
-  expect(setupCss).toMatch(/:is\(\.snvCatalogPreview, \.roleCatalog\)\.rosterConfirmed article button\.selected/);
+  const prompt = screen.getByRole("dialog", { name: "쌍둥이 확인 안내" });
+  expect(within(prompt).getByText("[1번 가람]")).toBeTruthy();
+  expect(within(prompt).getByText("[2번 나래]")).toBeTruthy();
+  fireEvent.click(within(prompt).getByRole("button", { name: "공개" }));
+  expect(onReveal).toHaveBeenCalledOnce();
 });
 
 function renderProgress(state: ReplayState) {
