@@ -532,9 +532,9 @@
 }
 
 .tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
-  border-color: #a989f0;
-  box-shadow: 0 0 0 7px rgba(151, 112, 226, .52), 0 0 46px rgba(128, 80, 217, .76);
-  filter: brightness(1.12) saturate(1.12);
+  border-color: #e1b4ff;
+  box-shadow: 0 0 0 7px rgba(199, 111, 255, .76), 0 0 54px rgba(174, 66, 247, .92);
+  filter: brightness(1.18) saturate(1.2);
 }
 
 .tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
@@ -555,8 +555,8 @@
 }
 
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
-  border-color: #7650bf;
-  box-shadow: 0 0 0 6px rgba(118, 80, 191, .28), 0 0 30px rgba(118, 80, 191, .42);
+  border-color: #9c4ee5;
+  box-shadow: 0 0 0 6px rgba(166, 78, 239, .42), 0 0 34px rgba(146, 56, 221, .56);
 }
 
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
