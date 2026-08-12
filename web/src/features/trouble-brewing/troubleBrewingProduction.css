@@ -757,6 +757,113 @@
   background: #a8344c;
 }
 
+/* Live Undo follows the SnV history dialog structure while staying in TB's green/gold system. */
+.tbSharedLivePlay .tbLiveUndoDialogBackdrop {
+  background: rgba(4, 14, 10, .76);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog {
+  border-color: rgba(210, 173, 100, .42);
+  color: #f5eddc;
+  background: linear-gradient(145deg, #163929, #0b1e15);
+  box-shadow: 0 28px 90px rgba(1, 9, 6, .64);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog h2 {
+  color: #fff8e8;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoLabel {
+  color: #e6cb89;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack {
+  border-color: rgba(210, 173, 100, .36);
+  background: rgba(55, 107, 80, .2);
+  scrollbar-color: rgba(210, 173, 100, .58) transparent;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li {
+  border-color: rgba(210, 173, 100, .16);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li > span {
+  color: #e6cb89;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li p {
+  color: #f5eddc;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoNotice {
+  color: #c7cbbd;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog footer button {
+  border-color: rgba(221, 198, 151, .24);
+  color: #f5eddc;
+  background: rgba(255, 255, 255, .055);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog footer button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialogBackdrop {
+  background: rgba(43, 52, 38, .48);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog {
+  border-color: rgba(67, 89, 62, .24);
+  color: #213128;
+  background: linear-gradient(145deg, #f7f2dc, #dfe8ce);
+  box-shadow: 0 26px 80px rgba(49, 61, 40, .28);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog h2 {
+  color: #213128;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoLabel {
+  color: #6a5730;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack {
+  border-color: rgba(73, 107, 80, .26);
+  background: rgba(73, 107, 80, .08);
+  scrollbar-color: rgba(73, 107, 80, .48) transparent;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li {
+  border-color: rgba(73, 107, 80, .14);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li > span {
+  color: #7c652e;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li p {
+  color: #38483d;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoNotice {
+  color: #526154;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog footer button {
+  border-color: rgba(67, 89, 62, .22);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .72);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog footer button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
+}
+
 .tbProductionShell .snvSelectedRosterTray button[aria-pressed="true"] {
   border-color: #e1c278;
   background: #3f7658;

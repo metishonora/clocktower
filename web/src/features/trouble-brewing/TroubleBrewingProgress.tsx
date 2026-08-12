@@ -126,12 +126,27 @@ function TroubleBrewingTask({
   }, [pendingReveal, replayReady, onShowReveal]);
 
   if (pendingReveal) {
+    if (isEvilInformationReveal(pendingReveal.payload)) {
+      return <div className="tbProgressTaskColumn">
+        <TroubleBrewingEvilInformationTask
+          step={pendingReveal.step}
+          players={players}
+          selectedCharacterIds={pendingReveal.payload.kind === "demonInformation"
+            ? pendingReveal.payload.bluffCharacterIds
+            : []}
+          busy={busy}
+          suggesting={false}
+          revealed={true}
+          canContinue={replayReady}
+          onReveal={() => onShowReveal(pendingReveal.payload)}
+          onContinue={onContinue}
+        />
+      </div>;
+    }
     const actor = pendingReveal.step.playerId
       ? players.find((player) => player.id === pendingReveal.step.playerId)
       : undefined;
-    const directReveal = isSpyGrimoireRevealPayload(pendingReveal.payload)
-      || ("kind" in pendingReveal.payload
-        && (pendingReveal.payload.kind === "minionInformation" || pendingReveal.payload.kind === "demonInformation"));
+    const directReveal = isSpyGrimoireRevealPayload(pendingReveal.payload);
     const informationInfluence = primaryInformationInfluence(pendingReveal.step.informationPrompt?.activeReasons ?? []);
     return <article className="snvCurrentStep tbCurrentTask" aria-label="확정된 Reveal 후속 조치">
       <p className="snvCurrentStepLabel">공개할 정보</p>
@@ -342,20 +357,6 @@ function TroubleBrewingTask({
   }
 
   if (currentStep && (currentStep.id.endsWith(":minionInfo") || currentStep.id.endsWith(":demonInfo"))) {
-    const demonInformation = currentStep.id.endsWith(":demonInfo");
-    const wakePlayers = players.filter((player) => {
-      const kind = characters.find((character) => character.id === player.actualCharacter)?.kind;
-      return kind === (demonInformation ? "Demon" : "Minion");
-    });
-    const selectedCharacterIds = phaseInputDraft.selectedCharacterIds;
-    const allowedCharacterIds = currentStep.requiredInput.kind === "characterIds"
-      ? currentStep.requiredInput.allowedCharacterIds ?? []
-      : [];
-    const maxSelections = currentStep.requiredInput.kind === "characterIds"
-      ? currentStep.requiredInput.maxSelections ?? 3
-      : 0;
-    const complete = selectedCharacterIds.length === maxSelections;
-
     return <div className="tbProgressTaskColumn">
       <GameEndControls
         warnings={warnings}
@@ -364,56 +365,27 @@ function TroubleBrewingTask({
         onEndGame={onEndGame}
         onRequestUndo={onRequestUndoGameEnd}
       >
-        <article
-          className={`snvCurrentStep tbCurrentTask snvEvilInformationTask ${demonInformation ? "snvDemonInformationTask" : "snvMinionInformationTask"}`}
-          role="region"
-          aria-label="현재 단계"
-        >
-          <header>
-            <div><p className="snvCurrentStepLabel">현재 할 일</p><h3>{demonInformation ? "악마 정보" : "하수인 정보"}</h3></div>
-            {demonInformation ? <span className={complete ? "complete" : undefined}>{selectedCharacterIds.length} / {maxSelections}</span> : null}
-          </header>
-          <p className="snvEvilInformationWakeInstruction"><strong>{wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ")}</strong>를 깨웁니다.</p>
-          {demonInformation ? <div className="snvBluffCandidateGrid" aria-label="사용 가능한 속임수">
-            {allowedCharacterIds.map((characterId) => {
-              const selected = selectedCharacterIds.includes(characterId);
-              return <button
-                type="button"
-                className={selected ? "selected" : undefined}
-                aria-pressed={selected}
-                aria-label={`${characterLabel(characterId)}${selected ? ", 선택됨" : ""}`}
-                disabled={busy || suggesting || (!selected && complete)}
-                onClick={() => phaseInputDraft.setSelectedCharacterIds(selected
-                  ? selectedCharacterIds.filter((id) => id !== characterId)
-                  : [...selectedCharacterIds, characterId])}
-                key={characterId}
-              >
-                <CharacterIcon characterId={characterId} />
-                <strong>{characterLabel(characterId)}</strong>
-                {selected ? <small>선택됨</small> : null}
-              </button>;
-            })}
-          </div> : null}
-          {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
-          <div className="snvEvilInformationTaskActions">
-            {demonInformation && currentStep.requiredInput.supportsRandomSuggestion ? <button
-              type="button"
-              className="snvBluffShuffle"
-              aria-label="속임수 무작위 추천"
-              title={suggestionUsed ? "다시 추천" : "무작위 추천"}
-              disabled={busy || suggesting}
-              onClick={() => { void suggestCurrentInput(); }}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h2.3c4.2 0 4.7 10 9.2 10H20" /><path d="m17 14 3 3-3 3" /><path d="M4 17h2.3c1.8 0 2.9-1.8 4-4" /><path d="M15.5 7H20" /><path d="m17 4 3 3-3 3" /></svg>
-            </button> : null}
-            <button
-              type="button"
-              className="prominent"
-              disabled={busy || suggesting || !selectionValid}
-              onClick={() => onConfirm(currentConfirmation)}
-            >정보 확정</button>
-          </div>
-        </article>
+        <TroubleBrewingEvilInformationTask
+          step={currentStep}
+          players={players}
+          selectedCharacterIds={phaseInputDraft.selectedCharacterIds}
+          busy={busy}
+          suggesting={suggesting}
+          onToggle={(characterId) => {
+            const selected = phaseInputDraft.selectedCharacterIds.includes(characterId);
+            phaseInputDraft.setSelectedCharacterIds(selected
+              ? phaseInputDraft.selectedCharacterIds.filter((id) => id !== characterId)
+              : [...phaseInputDraft.selectedCharacterIds, characterId]);
+          }}
+          onShuffle={currentStep.requiredInput.supportsRandomSuggestion
+            ? () => { void suggestCurrentInput(); }
+            : undefined}
+          onReveal={() => {
+            autoRevealStepRef.current = currentStep.id;
+            onConfirm(currentConfirmation);
+          }}
+        />
+        {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
       </GameEndControls>
     </div>;
   }
@@ -559,6 +531,105 @@ function TroubleBrewingTask({
       </article>
     </GameEndControls>
   </div>;
+}
+
+function TroubleBrewingEvilInformationTask({
+  step,
+  players,
+  selectedCharacterIds,
+  busy,
+  suggesting,
+  revealed = false,
+  canContinue = false,
+  onToggle,
+  onShuffle,
+  onReveal,
+  onContinue,
+}: {
+  step: PhaseStep;
+  players: Player[];
+  selectedCharacterIds: string[];
+  busy: boolean;
+  suggesting: boolean;
+  revealed?: boolean;
+  canContinue?: boolean;
+  onToggle?: (characterId: string) => void;
+  onShuffle?: () => void;
+  onReveal: () => void;
+  onContinue?: () => void;
+}) {
+  const demonInformation = step.id.endsWith(":demonInfo");
+  const wakePlayers = players.filter((player) => {
+    const kind = characters.find((character) => character.id === player.actualCharacter)?.kind;
+    return kind === (demonInformation ? "Demon" : "Minion");
+  });
+  const allowedCharacterIds = step.requiredInput.kind === "characterIds"
+    ? step.requiredInput.allowedCharacterIds ?? []
+    : [];
+  const maxSelections = step.requiredInput.kind === "characterIds"
+    ? step.requiredInput.maxSelections ?? 3
+    : 0;
+  const complete = !demonInformation || selectedCharacterIds.length === maxSelections;
+
+  return <article
+    className={`snvCurrentStep tbCurrentTask snvEvilInformationTask ${demonInformation ? "snvDemonInformationTask" : "snvMinionInformationTask"}`}
+    role="region"
+    aria-label="현재 단계"
+  >
+    <header>
+      <div><p className="snvCurrentStepLabel">현재 할 일</p><h3>{demonInformation ? "악마 정보" : "하수인 정보"}</h3></div>
+      {demonInformation ? <span className={complete ? "complete" : undefined}>{selectedCharacterIds.length} / {maxSelections}</span> : null}
+    </header>
+    <p className="snvEvilInformationWakeInstruction"><strong>{wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ")}</strong>를 깨웁니다.</p>
+    {demonInformation ? <div className="snvBluffCandidateGrid" aria-label="사용 가능한 속임수">
+      {allowedCharacterIds.map((characterId) => {
+        const selected = selectedCharacterIds.includes(characterId);
+        return <button
+          type="button"
+          className={selected ? "selected" : undefined}
+          aria-pressed={selected}
+          aria-label={`${characterLabel(characterId)}${selected ? ", 선택됨" : ""}`}
+          disabled={busy || suggesting || revealed || (!selected && complete)}
+          onClick={() => onToggle?.(characterId)}
+          key={characterId}
+        >
+          <CharacterIcon characterId={characterId} />
+          <strong>{characterLabel(characterId)}</strong>
+          {selected ? <small>선택됨</small> : null}
+        </button>;
+      })}
+    </div> : null}
+    <div className="snvEvilInformationTaskActions">
+      {demonInformation && onShuffle ? <button
+        type="button"
+        className="snvBluffShuffle"
+        aria-label="속임수 무작위 추천"
+        title="무작위 추천"
+        disabled={busy || suggesting || revealed}
+        onClick={onShuffle}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h2.3c4.2 0 4.7 10 9.2 10H20" /><path d="m17 14 3 3-3 3" /><path d="M4 17h2.3c1.8 0 2.9-1.8 4-4" /><path d="M15.5 7H20" /><path d="m17 4 3 3-3 3" /></svg>
+      </button> : null}
+      <button
+        type="button"
+        className="prominent"
+        disabled={busy || suggesting || !complete}
+        onClick={onReveal}
+      >정보 공개</button>
+      {revealed && onContinue ? <button
+        type="button"
+        className="snvEvilInformationNext"
+        disabled={busy || !canContinue}
+        onClick={onContinue}
+      >다음으로</button> : null}
+    </div>
+  </article>;
+}
+
+function isEvilInformationReveal(payload: RevealPayload): payload is Extract<RevealPayload, {
+  kind: "minionInformation" | "demonInformation";
+}> {
+  return "kind" in payload && (payload.kind === "minionInformation" || payload.kind === "demonInformation");
 }
 
 function ScalarInformationResult({

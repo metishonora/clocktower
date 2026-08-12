@@ -121,7 +121,7 @@ test("uses the S&V nomination summary and execution decision shapes", () => {
   expect(within(executionTask).getByRole("button", { name: "처형 없음" })).toBeTruthy();
 });
 
-test("uses the S&V evil-information task shape for Demon bluffs", () => {
+test("uses the S&V evil-information task shape and Reveal action for Demon bluffs", () => {
   const demonInformation = step({
     id: "firstNight:demonInfo",
     phase: "firstNight",
@@ -147,7 +147,58 @@ test("uses the S&V evil-information task shape for Demon bluffs", () => {
   expect(task.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toContain("5번 하린");
   expect(task.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toContain("깨웁니다");
   expect(within(task).getByRole("button", { name: "속임수 무작위 추천" })).toBeTruthy();
-  expect(within(task).getByRole("button", { name: "정보 확정" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+  expect(within(task).queryByRole("button", { name: "정보 확정" })).toBeNull();
+});
+
+test("opens evil-team information immediately, then returns to the compact S&V Reveal controls", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const onShowReveal = vi.fn();
+  const onContinue = vi.fn();
+  const minionInformation = step({
+    id: "firstNight:minionInfo",
+    phase: "firstNight",
+    stepType: "evilInfo",
+    requiredInput: { kind: "none", optional: false },
+  });
+  const overviewItems = [overview(minionInformation, "current")];
+  const view = renderProgress(minionInformation, overviewItems, undefined, {
+    onConfirm,
+    onShowReveal,
+    onContinue,
+  });
+
+  await user.click(screen.getByRole("button", { name: "정보 공개" }));
+  expect(onConfirm).toHaveBeenCalledWith({ input: null });
+
+  const payload = {
+    kind: "minionInformation" as const,
+    demonPlayers: [{ seat: 5, name: "하린" }],
+    minionPlayers: [{ seat: 4, name: "지우" }],
+  };
+  view.rerender(progress(minionInformation, overviewItems, undefined, {
+    onConfirm,
+    onShowReveal,
+    onContinue,
+    replayReady: true,
+    pendingReveal: {
+      step: minionInformation,
+      confirmedEventCount: 2,
+      payload,
+    },
+  }));
+
+  await waitFor(() => expect(onShowReveal).toHaveBeenCalledWith(payload));
+  expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+  const task = screen.getByRole("region", { name: "현재 단계" });
+  expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
+  expect(within(task).getByRole("button", { name: "다음으로" })).toBeTruthy();
+
+  await user.click(within(task).getByRole("button", { name: "정보 공개" }));
+  expect(onShowReveal).toHaveBeenCalledTimes(2);
+  await user.click(within(task).getByRole("button", { name: "다음으로" }));
+  expect(onContinue).toHaveBeenCalledTimes(1);
 });
 
 test("shows an impaired actor badge before choosing information targets", () => {

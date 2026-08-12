@@ -70,7 +70,7 @@ test("warning confirmation ends the game and protected Undo restores the live st
   expect(core.propose).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "진행" }));
   await user.click(screen.getByRole("button", { name: "게임 종료 되돌리기" }));
-  const undo = screen.getByRole("dialog", { name: "최근 확정 행동을 되돌릴까요?" });
+  const undo = screen.getByRole("dialog", { name: "Undo" });
   await user.click(within(undo).getByRole("button", { name: "되돌리기" }));
 
   await waitFor(() => expect(screen.getByRole("region", { name: "현재 단계" })).not.toBeNull());
