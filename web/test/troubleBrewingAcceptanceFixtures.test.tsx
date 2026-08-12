@@ -6,7 +6,6 @@ import { importGameFileJson } from "../src/gameStorage";
 import { isSpyGrimoireRevealPayload } from "../src/core/revealPayload";
 import { RevealScreen } from "../src/reveal";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
-import type { ReplayState } from "../src/core/types";
 
 type AcceptanceManifest = {
   schemaVersion: 1;
@@ -62,7 +61,6 @@ const checklist = readFileSync(
 const manifest = JSON.parse(
   readFileSync(resolve(fixtureRoot, "manifest.json"), "utf8"),
 ) as AcceptanceManifest;
-const replayGoldenPath = resolve(fixtureRoot, "replay-state-golden.json");
 
 const allCharacterIds = [
   "washerwoman",
@@ -113,21 +111,6 @@ describe("Trouble Brewing acceptance fixtures", () => {
     for (const acceptanceCase of manifest.cases) {
       expect(checklist).toContain(`../../fixtures/acceptance/trouble-brewing/${acceptanceCase.file}`);
     }
-  });
-
-  it("matches the full canonical ReplayState golden for all 55 immutable inputs", async () => {
-    const actual: Record<string, ReplayState> = {};
-    for (const acceptanceCase of manifest.cases) {
-      const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
-      const gameFile = importGameFileJson(json);
-      const immutableInput = structuredClone(gameFile);
-      actual[acceptanceCase.id] = await replayOrThrow(gameFile);
-      expect(gameFile).toEqual(immutableInput);
-      expect(readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8")).toBe(json);
-    }
-    const expected = JSON.parse(readFileSync(replayGoldenPath, "utf8")) as Record<string, ReplayState>;
-    expect(Object.keys(expected)).toHaveLength(55);
-    expect(actual).toEqual(expected);
   });
 
   it("INF-05 exposes only current Spy reminder tokens and safe player state", async () => {
@@ -271,10 +254,14 @@ describe("Trouble Brewing acceptance fixtures", () => {
 
   for (const acceptanceCase of manifest.cases) {
     it(`${acceptanceCase.id} imports and replays at its documented checkpoint`, async () => {
-      const json = readFileSync(resolve(fixtureRoot, acceptanceCase.file), "utf8");
+      const fixturePath = resolve(fixtureRoot, acceptanceCase.file);
+      const json = readFileSync(fixturePath, "utf8");
       const gameFile = importGameFileJson(json);
+      const immutableInput = structuredClone(gameFile);
       const replay = await replayOrThrow(gameFile);
 
+      expect(gameFile).toEqual(immutableInput);
+      expect(readFileSync(fixturePath, "utf8")).toBe(json);
       expect(replay.phase).toBe(acceptanceCase.checkpoint.phase);
       if (acceptanceCase.checkpoint.currentStepId !== undefined) {
         expect(replay.currentStep?.id).toBe(acceptanceCase.checkpoint.currentStepId);

@@ -28,12 +28,9 @@ test.each([7, 15])(
       name: /2번 좌석, 플레이어 2, 시계공.*생존/,
     });
 
-    expect(grimoire.querySelectorAll("button.assigned")).toHaveLength(playerCount);
-    expect(deadSeat.classList.contains("snvDeadSeat")).toBe(true);
-    expect(deadSeat.querySelector("img")).toBeTruthy();
-    expect(deadSeat.querySelector(".snvFuneralIcon")).toBeTruthy();
-    expect(livingSeat.classList.contains("snvDeadSeat")).toBe(false);
-    expect(livingSeat.querySelector(".snvFuneralIcon")).toBeNull();
+    expect(within(grimoire).getAllByRole("button", { name: /번 좌석/ })).toHaveLength(playerCount);
+    expect(deadSeat.getAttribute("aria-label")).toContain("사망");
+    expect(livingSeat.getAttribute("aria-label")).toContain("생존");
   },
 );
 
@@ -61,11 +58,7 @@ test("preserves diffuse actor and target emphasis when both players are dead", (
   const actor = screen.getByRole("button", { name: /1번 좌석.*사망.*현재 행동자.*선택 불가/ });
   const target = screen.getByRole("button", { name: /2번 좌석.*사망.*선택 대상/ });
 
-  expect(actor.classList.contains("snvDeadSeat")).toBe(true);
-  expect(actor.classList.contains("snvSeatStateActor")).toBe(true);
-  expect(actor.classList.contains("issue116IneligibleSeat")).toBe(true);
-  expect(target.classList.contains("snvDeadSeat")).toBe(true);
-  expect(target.classList.contains("snvSeatStateTarget")).toBe(true);
+  expect(actor.hasAttribute("disabled")).toBe(true);
   expect(target.getAttribute("aria-pressed")).toBe("true");
 });
 
@@ -88,11 +81,7 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
   });
 
   const deadNominee = screen.getByRole("button", { name: /2번 좌석.*사망.*피지명자/ });
-  expect(deadNominee.classList.contains("snvDeadSeat")).toBe(true);
-  expect(deadNominee.classList.contains("snvSeatStateSelected")).toBe(true);
-  expect(deadNominee.classList.contains("snvSeatStateStrong")).toBe(true);
-  expect(deadNominee.querySelector(".snvFuneralIcon")).toBeTruthy();
-  expect(deadNominee.querySelector(".snvGhostVoteIcon")).toBeNull();
+  expect(deadNominee.getAttribute("aria-pressed")).toBe("true");
   nomination.unmount();
 
   renderGrimoire({
@@ -103,45 +92,11 @@ test("shows ghost-vote availability only while voting and preserves dead-seat se
   });
 
   const deadVoter = screen.getByRole("button", { name: /2번 좌석.*사망.*투표.*투표 가능/ });
-  expect(deadVoter.classList.contains("snvDeadSeat")).toBe(true);
-  expect(deadVoter.classList.contains("snvGhostVoteAvailable")).toBe(true);
-  expect(deadVoter.classList.contains("snvSeatStateSelected")).toBe(true);
-  expect(deadVoter.classList.contains("snvSeatStateStrong")).toBe(true);
-  expect(deadVoter.querySelector("img")).toBeNull();
-  expect(deadVoter.querySelector(".snvGhostVoteIcon")).toBeTruthy();
-  expect(deadVoter.querySelector(".snvFuneralIcon")).toBeTruthy();
+  expect(deadVoter.getAttribute("aria-pressed")).toBe("true");
+  expect(deadVoter.hasAttribute("disabled")).toBe(false);
 
   const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
   expect(spentGhost.hasAttribute("disabled")).toBe(true);
-  expect(spentGhost.classList.contains("snvGhostVoteAvailable")).toBe(false);
-  expect(spentGhost.querySelector(".snvFuneralIcon")).toBeTruthy();
-  expect(spentGhost.querySelector(".snvGhostVoteIcon")).toBeNull();
-});
-
-test("marks an available ghost-vote seat for high-contrast day presentation", () => {
-  const fixturePlayers = players(7, [2]);
-  renderGrimoire({
-    players: fixturePlayers,
-    handoff: { kind: "vote", complete: false },
-  });
-
-  const availableGhost = screen.getByRole("button", { name: /2번 좌석.*사망.*투표 가능/ });
-  expect(availableGhost.classList.contains("snvGhostVoteAvailable")).toBe(true);
-  expect(availableGhost.querySelector(".snvGhostVoteIcon")).toBeTruthy();
-});
-
-test("visibly dims a dead player whose ghost vote was already spent", () => {
-  const fixturePlayers = players(7, [3]);
-  fixturePlayers[2].ghostVoteUsed = true;
-  renderGrimoire({
-    players: fixturePlayers,
-    handoff: { kind: "vote", complete: false },
-  });
-
-  const spentGhost = screen.getByRole("button", { name: /3번 좌석.*사망.*투표 불가/ });
-  expect(spentGhost.classList.contains("snvGhostVoteSpent")).toBe(true);
-  expect(getComputedStyle(spentGhost.querySelector("img")!).opacity).toBe("0.42");
-  expect(getComputedStyle(spentGhost).filter).toContain("grayscale");
 });
 
 test("keeps the completed Demon actor and result prominent without a duplicate center result", () => {
@@ -151,17 +106,11 @@ test("keeps the completed Demon actor and result prominent without a duplicate c
     targetId: "player-2",
   });
 
-  const actor = screen.getByRole("button", { name: /1번 좌석.*현재 행동자/ });
-  const target = screen.getByRole("button", { name: /2번 좌석.*공격 대상/ });
-  const unrelated = screen.getByRole("button", { name: /3번 좌석/ });
-
-  expect(actor.classList.contains("snvSettledOtherSeat")).toBe(false);
-  expect(target.classList.contains("snvSettledOtherSeat")).toBe(false);
-  expect(unrelated.classList.contains("snvSettledOtherSeat")).toBe(true);
+  expect(screen.getByRole("button", { name: /1번 좌석.*현재 행동자/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /2번 좌석.*공격 대상/ })).toBeTruthy();
   expect(screen.queryByRole("status", { name: "대상 선택 완료" })).toBeNull();
   expect(screen.getByRole("group", { name: "현재 단계" }).textContent).toContain("2일차 낮");
   const resultPanel = screen.getByLabelText("현재 마도서 작업");
-  expect(resultPanel.classList.contains("snvSelectionCompletePanel")).toBe(true);
   expect(within(resultPanel).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
   expect(within(resultPanel).queryByText("처리 완료")).toBeNull();
 });

@@ -250,7 +250,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(dialog.closest("[data-theme=day]")).toBeTruthy();
   });
 
-  test("uses the supported player range and the approved SnV-style progress structure", async () => {
+  test("shows the supported player range and current phase order in live play", async () => {
     const currentStep = step({
       id: "firstNight:washerwoman",
       character: "washerwoman",
@@ -266,18 +266,11 @@ describe("ClocktowerApp live-play integration", () => {
 
     const main = await screen.findByRole("main", { name: "Trouble Brewing 진행" });
     const progress = within(main).getByRole("region", { name: "Trouble Brewing 진행" });
-    const applicationHeader = main.querySelector(".productionApplicationHeader");
-    if (!applicationHeader) throw new Error("application header was not rendered");
-    expect(within(applicationHeader as HTMLElement).getByText("5–15명")).toBeTruthy();
-    expect(progress.querySelector(".snvCurrentStep.tbCurrentTask")).toBeTruthy();
+    expect(within(main).getByText("5–15명")).toBeTruthy();
     expect(within(progress).getByRole("list", { name: "첫날 밤 순서" })).toBeTruthy();
-    expect(progress.querySelector(".phasePanelContent")).toBeNull();
-    expect(progress.querySelector(".currentStepCard")).toBeNull();
-    expect(progress.querySelector(".playerStepInput")).toBeNull();
-    expect(progress.querySelector(".tbLiveAuxiliary")).toBeNull();
   });
 
-  test("uses the approved prototype Grimoire for confirmed Trouble Brewing play", async () => {
+  test("opens the production Grimoire and player detail from confirmed play", async () => {
     const currentStep = step({
       id: "firstNight:washerwoman",
       character: "washerwoman",
@@ -295,9 +288,6 @@ describe("ClocktowerApp live-play integration", () => {
     fireEvent.click(within(stages).getByRole("button", { name: "마도서" }));
 
     const grimoire = await screen.findByRole("region", { name: "Trouble Brewing 마도서 검토" });
-    expect(grimoire.querySelector(".snvGrimoireDraft.rectangular")).toBeTruthy();
-    expect(grimoire.querySelector(".seatMap, .confirmedSeatMap")).toBeNull();
-    expect(within(grimoire).queryByLabelText("현재 행동자 안내")).toBeNull();
     expect(within(grimoire).getByRole("button", { name: /1번 좌석.*현재 행동자/ })).toBeTruthy();
     expect(within(grimoire).getByRole("group", { name: "현재 단계" })).toBeTruthy();
 

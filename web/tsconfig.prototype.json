@@ -6,12 +6,8 @@
   "include": [
     "src/node-test.d.ts",
     "src/vite-env.d.ts",
-    "test/**/*.ts",
-    "test/**/*.tsx",
-    "vitest.config.ts"
-  ],
-  "exclude": [
     "test/**/*Prototype.test.tsx",
-    "test/browser/**"
+    "test/setup.ts",
+    "vitest.prototype.config.ts"
   ]
 }

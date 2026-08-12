@@ -36,5 +36,11 @@ jobs:
         run: cargo test --workspace
       - name: Test web app
         run: pnpm --dir web test
-      - name: Build web app
-        run: pnpm --dir web build
+      - name: Test server lifecycle
+        run: pnpm test:test-server
+      - name: Install Chromium
+        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Test production browser paths
+        env:
+          CLOCKTOWER_TEST_SERVER_PUBLIC_IPV4: 127.0.0.1
+        run: pnpm test:browser

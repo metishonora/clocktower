@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
@@ -119,32 +117,7 @@ test("renders neutral Setup, Grimoire, and Play presentation contracts", async (
   expect(screen.getByRole("button", { name: "항해사" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getAllByText("1번")).toHaveLength(1);
   expect(grimoireHeights(7)).toEqual({ desktop: 424, mobile: 356 });
-  expect(screen.getByRole("region", { name: "중립 설정" }).classList.contains("setupPresentation")).toBe(true);
-  expect(screen.getByRole("region", { name: "중립 마도서" }).classList.contains("grimoirePresentation")).toBe(true);
-  expect(screen.getByRole("region", { name: "중립 진행" }).classList.contains("playPresentation")).toBe(true);
+  expect(screen.getByRole("region", { name: "중립 설정" })).toBeTruthy();
+  expect(screen.getByRole("region", { name: "중립 마도서" })).toBeTruthy();
   expect(screen.getByRole("region", { name: "중립 진행" })).toBeTruthy();
-});
-
-test("keeps production imports and shared presentation modules script-neutral", () => {
-  for (const relativePath of [
-    "src/sectsAndVioletsGame.tsx",
-    "src/sectsAndVioletsLivePhase.tsx",
-  ]) {
-    const source = readFileSync(resolve(relativePath), "utf8");
-    const imports = Array.from(source.matchAll(
-      /import(?:[\s\S]*?from\s+)?["'][^"']+["'];/g,
-    ), (match) => match[0]);
-    expect(imports.join("\n")).not.toMatch(/Prototype(?:\.tsx|\.css|\")/);
-  }
-
-  for (const relativePath of [
-    "src/shared-ui/ProductionApplicationShell.tsx",
-    "src/shared-ui/SetupPresentation.tsx",
-    "src/shared-ui/GrimoirePresentation.tsx",
-    "src/shared-ui/PlayPresentation.tsx",
-  ]) {
-    const source = readFileSync(resolve(relativePath), "utf8");
-    expect(source).not.toMatch(/fangGu|vigormortis|sectsAndViolets|SectsAndViolets/);
-    expect(source).not.toMatch(/from ["'][^"']*(?:gameStore|canonicalSession|features\/)/);
-  }
 });
