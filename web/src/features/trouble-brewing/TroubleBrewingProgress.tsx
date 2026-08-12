@@ -66,7 +66,7 @@ export function TroubleBrewingProgress({
               ref={step.status === "current" ? currentOverviewItemRef : undefined}
             >
               <span>{stepStatusLabel(step.status)}</span>
-              <span className="snvPhaseOverviewAction"><strong>{phaseOverviewTitle(step, control.players)}</strong></span>
+              <span className="snvPhaseOverviewAction"><strong>{phaseOverviewTitle(step, control.players, false)}</strong></span>
             </li>
           ))}
         </ol>
@@ -170,6 +170,7 @@ function TroubleBrewingTask({
       warnings={warnings}
       gameEnd={gameEnd}
       busy={busy}
+      showManualEnd={false}
       onEndGame={onEndGame}
       onRequestUndo={onRequestUndoGameEnd}
     /></div>;
@@ -255,6 +256,7 @@ function TroubleBrewingTask({
       <GameEndControls
         warnings={warnings}
         busy={busy}
+        showManualEnd={false}
         onEndGame={onEndGame}
         onRequestUndo={onRequestUndoGameEnd}
       >
@@ -291,6 +293,7 @@ function TroubleBrewingTask({
       <GameEndControls
         warnings={warnings}
         busy={busy}
+        showManualEnd={false}
         onEndGame={onEndGame}
         onRequestUndo={onRequestUndoGameEnd}
       >
@@ -357,6 +360,7 @@ function TroubleBrewingTask({
       <GameEndControls
         warnings={warnings}
         busy={busy}
+        showManualEnd={false}
         onEndGame={onEndGame}
         onRequestUndo={onRequestUndoGameEnd}
       >
@@ -418,6 +422,7 @@ function TroubleBrewingTask({
     <GameEndControls
       warnings={warnings}
       busy={busy}
+      showManualEnd={false}
       onEndGame={onEndGame}
       onRequestUndo={onRequestUndoGameEnd}
     >

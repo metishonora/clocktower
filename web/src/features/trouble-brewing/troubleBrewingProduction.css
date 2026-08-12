@@ -267,11 +267,11 @@
 }
 
 .tbRoleIdentity {
-  cursor: default;
+  cursor: pointer;
 }
 
 .tbRoleIdentity:hover {
-  background: transparent;
+  background: rgba(225, 202, 146, .08);
 }
 
 .tbProductionShell .tbRoleDetail h2 {

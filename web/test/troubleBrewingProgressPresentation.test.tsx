@@ -46,9 +46,13 @@ test("uses the accepted S&V target hierarchy while keeping phase order expanded"
   expect(within(task).getByRole("button", { name: "건너뛰기" })).toBeTruthy();
   expect(within(task).queryByRole("button", { name: "지명 종료" })).toBeNull();
   expect(within(task).queryByRole("button", { name: "확정" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "수동 게임 종료" })).toBeNull();
 
   const phaseOrder = screen.getByRole("list", { name: "첫날 밤 순서" });
   expect(phaseOrder.querySelectorAll(".snvPhaseOverviewAction")).toHaveLength(2);
+  expect(within(phaseOrder).getByText("독살범", { exact: true })).toBeTruthy();
+  expect(within(phaseOrder).getByText("세탁부", { exact: true })).toBeTruthy();
+  expect(within(phaseOrder).queryByText(/\(\d+(?:,\s*\d+)*\)/)).toBeNull();
   expect(screen.queryByRole("button", { name: /단계.*열기/ })).toBeNull();
   expect(screen.queryByText(/현재 \d+\/\d+/)).toBeNull();
 });

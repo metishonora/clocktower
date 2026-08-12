@@ -54,7 +54,8 @@ test("renders the long phase order before the action and brings the current step
   expect(currentAction.compareDocumentPosition(overview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(within(overview).getAllByRole("listitem")).toHaveLength(12);
   expect(overview.closest("details")).toBeNull();
-  expect(overview.querySelector('li[aria-current="step"]')?.textContent).toContain("임프 (5)");
+  expect(overview.querySelector('li[aria-current="step"]')?.textContent).toContain("임프");
+  expect(overview.querySelector('li[aria-current="step"]')?.textContent).not.toMatch(/\(\d+\)/);
   await waitFor(() =>
     expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "center" }),
   );

@@ -43,6 +43,15 @@ describe("ClocktowerApp live-play integration", () => {
     expect((within(stages).getByRole("button", { name: "마도서" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(stages).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("button", { name: "임프 직업 요약 보기" }).getAttribute("aria-pressed")).toBe("true");
+
+    const catalog = screen.getByRole("region", { name: "Trouble Brewing 직업 선택 패널" });
+    const demonGroup = within(catalog).getByRole("heading", { name: "악마 · 1/1" }).closest("article");
+    if (!demonGroup) throw new Error("악마 직업 그룹을 찾지 못했습니다.");
+    expect(within(demonGroup).getByRole("button", { name: "임프" }).getAttribute("aria-pressed")).toBe("true");
+
+    const detail = screen.getByRole("complementary", { name: "직업 설명" });
+    await userEvent.setup().click(within(detail).getByRole("button", { name: "임프 캐릭터 상세 열기" }));
+    expect(screen.getByRole("dialog", { name: "임프 캐릭터 상세" })).toBeTruthy();
   });
 
   test("opens the in-app Trouble Brewing bug report from setup without collecting the setup draft", async () => {
@@ -1042,7 +1051,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "악마 정보" });
     const phaseOverview = screen.getByRole("region", { name: "단계 개요" });
-    expect(within(phaseOverview).getByText("악마 (5)")).toBeTruthy();
+    expect(within(phaseOverview).getByText("악마", { exact: true })).toBeTruthy();
     const characterInput = await screen.findByLabelText("사용 가능한 속임수");
     expect(within(characterInput).getByRole("button", { name: /사서/ })).toBeTruthy();
     expect(within(characterInput).getByRole("button", { name: /장의사/ })).toBeTruthy();

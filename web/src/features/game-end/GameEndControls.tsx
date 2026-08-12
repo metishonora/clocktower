@@ -10,6 +10,7 @@ export function GameEndControls({
   busy,
   onEndGame,
   onRequestUndo,
+  showManualEnd = true,
   children,
 }: {
   warnings: CoreWarning[];
@@ -17,6 +18,7 @@ export function GameEndControls({
   busy: boolean;
   onEndGame: (winningTeam: WinningTeam) => void;
   onRequestUndo: (trigger: HTMLButtonElement) => void;
+  showManualEnd?: boolean;
   children?: ReactNode;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,9 +77,9 @@ export function GameEndControls({
 
       {children}
 
-      <button type="button" className="manualGameEndButton" disabled={busy} onClick={openDialog}>
+      {showManualEnd ? <button type="button" className="manualGameEndButton" disabled={busy} onClick={openDialog}>
         수동 게임 종료
-      </button>
+      </button> : null}
 
       {dialogOpen ? (
         <div className="gameEndDialogBackdrop">

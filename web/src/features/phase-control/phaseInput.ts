@@ -50,7 +50,7 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   return step.id;
 }
 
-export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): string {
+export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[], includeSeats = true): string {
   const player = step.playerId
     ? players.find((candidate) => candidate.id === step.playerId)
     : undefined;
@@ -58,14 +58,14 @@ export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): 
     return stepTitle(step, player);
   }
   if (step.id.endsWith(":minionInfo")) {
-    return factionOverviewTitle("하수인", "Minion", players);
+    return includeSeats ? factionOverviewTitle("하수인", "Minion", players) : "하수인";
   }
   if (step.id.endsWith(":demonInfo")) {
-    return factionOverviewTitle("악마", "Demon", players);
+    return includeSeats ? factionOverviewTitle("악마", "Demon", players) : "악마";
   }
   if (step.character) {
     const label = characterLabel(step.character);
-    return player ? `${label} (${player.seat})` : label;
+    return includeSeats && player ? `${label} (${player.seat})` : label;
   }
   return stepTitle(step, player);
 }

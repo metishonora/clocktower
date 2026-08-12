@@ -77,10 +77,10 @@ test("condenses a multi-Minion night overview while preserving status, detail, a
   const overview = screen.getByRole("region", { name: "단계 개요" });
   expect(overview.closest("details")).toBeNull();
 
-  expect(within(overview).getByText("하수인 (4, 6)")).toBeTruthy();
-  expect(within(overview).getByText("악마 (5)")).toBeTruthy();
-  expect(within(overview).getByText("독살범 (4)")).toBeTruthy();
-  expect(within(overview).getByText("임프 (5)")).toBeTruthy();
+  expect(within(overview).getByText("하수인", { exact: true })).toBeTruthy();
+  expect(within(overview).getByText("악마", { exact: true })).toBeTruthy();
+  expect(within(overview).getByText("독살범", { exact: true })).toBeTruthy();
+  expect(within(overview).getByText("임프", { exact: true })).toBeTruthy();
   expect(within(overview).getByText("낮 시작")).toBeTruthy();
   expect(within(overview).queryByText(/Dae|Eun|Faye|깨우기|블러프/)).toBeNull();
 
@@ -126,7 +126,7 @@ test("uses the acting shown role for a Drunk and keeps actorless night operation
 
   await screen.findByRole("heading", { name: "점쟁이: 3번 Cy" });
   const overview = screen.getByRole("region", { name: "단계 개요" });
-  expect(within(overview).getByText("점쟁이 (3)")).toBeTruthy();
+  expect(within(overview).getByText("점쟁이", { exact: true })).toBeTruthy();
   expect(within(overview).getByText("사망 발표")).toBeTruthy();
   expect(within(overview).getByText("낮 시작")).toBeTruthy();
   expect(within(overview).queryByText(/Cy|주정뱅이/)).toBeNull();
@@ -153,8 +153,8 @@ test.each([
 
   await screen.findByRole("heading", { name: "하수인 정보" });
   const overview = screen.getByRole("region", { name: "단계 개요" });
-  expect(within(overview).getByText("하수인 (4)")).toBeTruthy();
-  expect(within(overview).getByText("악마 (5)")).toBeTruthy();
+  expect(within(overview).getByText("하수인", { exact: true })).toBeTruthy();
+  expect(within(overview).getByText("악마", { exact: true })).toBeTruthy();
 });
 
 function renderLiveOverview(
