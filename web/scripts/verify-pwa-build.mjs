@@ -38,9 +38,30 @@ assert.equal(
   false,
   "multi-page script routes must not be replaced by the landing page navigation fallback",
 );
+const precacheUrls = extractPrecacheUrls(serviceWorker);
+for (const page of ["index.html", "trouble-brewing/index.html", "sects-and-violets/index.html"]) {
+  assert.equal(
+    precacheUrls.some((url) => url === `/clocktower/${page}` || url === page),
+    false,
+    `HTML entry must not be precached: ${page}`,
+  );
+}
+
+const navigationRoute = findCallContaining(serviceWorker, "registerRoute", /NetworkFirst/);
+assert.ok(navigationRoute, "navigation NetworkFirst route is missing");
+assert.match(navigationRoute, /NetworkFirst/);
+assert.match(navigationRoute, /clocktower-pages/, "navigation route must use the explicit page cache");
+assert.match(
+  navigationRoute,
+  /(?:\bmode\s*={2,3}\s*["']navigate["']|["']navigate["']\s*={2,3}\s*[\w$]+\.mode)/,
+  "page cache route must be limited to navigation requests",
+);
+assert.match(
+  navigationRoute,
+  /(?:pathname|url)[\s\S]*startsWith\s*\(["']\/clocktower\/["']\)/,
+  "page cache route must be limited to the /clocktower/ path",
+);
 for (const requiredAsset of [
-  "trouble-brewing/index.html",
-  "sects-and-violets/index.html",
   "assets/scripts/trouble-brewing.png",
   "assets/scripts/sects-and-violets.png",
   ".wasm",
@@ -77,4 +98,64 @@ function walk(directory) {
     const path = join(directory, entry.name);
     return entry.isDirectory() ? walk(path) : [path];
   });
+}
+
+function extractPrecacheUrls(source) {
+  const callStart = source.search(/\bprecacheAndRoute\s*\(/);
+  assert.notEqual(callStart, -1, "generated Service Worker precache call is missing");
+  const manifestStart = source.indexOf("[", callStart);
+  assert.notEqual(manifestStart, -1, "generated Service Worker precache manifest is missing");
+  const manifestEnd = findMatchingDelimiter(source, manifestStart, "[", "]");
+  assert.notEqual(manifestEnd, -1, "generated Service Worker precache manifest is malformed");
+
+  const manifest = source.slice(manifestStart, manifestEnd + 1);
+  return [...manifest.matchAll(/(?:["']?url["']?)\s*:\s*"((?:\\.|[^"\\])*)"/g)].map(
+    ([, encodedUrl]) => JSON.parse(`"${encodedUrl}"`),
+  );
+}
+
+function findCallContaining(source, functionName, requiredPattern) {
+  let searchFrom = 0;
+  while (true) {
+    const match = source.slice(searchFrom).match(new RegExp(`\\b${functionName}\\s*\\(`));
+    if (!match) return null;
+    const callStart = searchFrom + match.index;
+    const openParen = source.indexOf("(", callStart);
+    const closeParen = findMatchingDelimiter(source, openParen, "(", ")");
+    if (closeParen !== -1) {
+      const call = source.slice(callStart, closeParen + 1);
+      if (requiredPattern.test(call)) return call;
+      searchFrom = closeParen + 1;
+    } else {
+      return null;
+    }
+  }
+}
+
+function findMatchingDelimiter(source, openIndex, opening, closing) {
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+  for (let index = openIndex; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+    } else if (character === opening) {
+      depth += 1;
+    } else if (character === closing) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return -1;
 }

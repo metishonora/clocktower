@@ -44,9 +44,19 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,webmanifest,wasm,png,svg,webp}"],
+        globPatterns: ["**/*.{js,css,wasm,png,svg,webp}"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) =>
+              request.mode === "navigate" && url.pathname.startsWith("/clocktower/"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "clocktower-pages",
+            },
+          },
+        ],
       },
     }),
   ],
