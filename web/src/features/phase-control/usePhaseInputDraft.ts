@@ -13,6 +13,8 @@ import {
   mayorDecisionApplies,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
+  setupInfoSelectablePlayerIds,
+  setupInfoSelectionCanComplete,
   setupInfoZeroOutsidersAvailable,
 } from "./phaseInput";
 
@@ -29,6 +31,7 @@ export type PhaseInputDraft = {
 
 export type PhaseInputDraftController = PhaseInputDraft & {
   zeroOutsidersAvailable: boolean;
+  setupInfoSelectablePlayerIds?: string[];
   setSelectedPlayerIds: (playerIds: string[]) => void;
   togglePlayer: (playerId: string) => void;
   setSelectedCharacterId: (characterId: string) => void;
@@ -70,6 +73,12 @@ export function usePhaseInputDraft(
     () => players.every((player) => characterKind(player.actualCharacter) !== "Outsider"),
     [players],
   );
+  const selectableSetupInfoPlayerIds = useMemo(
+    () => step?.requiredInput.kind === "setupInfo"
+      ? setupInfoSelectablePlayerIds(step, draft.selectedPlayerIds, players)
+      : undefined,
+    [draft.selectedPlayerIds, players, step],
+  );
 
   useEffect(() => {
     setDraft(emptyDraft());
@@ -96,7 +105,19 @@ export function usePhaseInputDraft(
   }, [actualOutsidersAbsent, step, zeroOutsidersAvailable]);
 
   function setSelectedPlayerIds(playerIds: string[]) {
-    setDraft((current) => updatePlayerSelection(current, playerIds, step, players));
+    setDraft((current) => {
+      const removesOnly = playerIds.length < current.selectedPlayerIds.length
+        && playerIds.every((playerId) => current.selectedPlayerIds.includes(playerId));
+      if (
+        step?.requiredInput.kind === "setupInfo"
+        && playerIds.length > 0
+        && !removesOnly
+        && !setupInfoSelectionCanComplete(step, playerIds, players)
+      ) {
+        return current;
+      }
+      return updatePlayerSelection(current, playerIds, step, players);
+    });
   }
 
   function togglePlayer(playerId: string) {
@@ -171,6 +192,7 @@ export function usePhaseInputDraft(
   return {
     ...draft,
     zeroOutsidersAvailable,
+    setupInfoSelectablePlayerIds: selectableSetupInfoPlayerIds,
     setSelectedPlayerIds,
     togglePlayer,
     setSelectedCharacterId,

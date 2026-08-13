@@ -20,6 +20,7 @@ import {
   currentActionPrompt,
   phaseOverviewTitle,
   phaseStepConfirmation,
+  setupInfoSelectionIsComplete,
   stepInputReady,
   stepStatusLabel,
   stepTitle,
@@ -252,8 +253,11 @@ function TroubleBrewingTask({
   const setupInformationTargetsSelected = Boolean(
     currentStep?.requiredInput.kind === "setupInfo"
       && !zeroOutsiderInformation
-      && typeof currentStep.requiredInput.minSelections === "number"
-      && phaseInputDraft.selectedPlayerIds.length >= currentStep.requiredInput.minSelections,
+      && setupInfoSelectionIsComplete(
+        currentStep,
+        phaseInputDraft.selectedPlayerIds,
+        players,
+      ),
   );
   const informationTargetsSelected = Boolean(
     isInformationStep && (setupInformationTargetsSelected || selectedTargetCheck),
@@ -275,6 +279,7 @@ function TroubleBrewingTask({
     phaseInputDraft.zeroOutsidersAvailable,
     phaseInputDraft.mayorDecision,
     phaseInputDraft.selectedPlayerIds,
+    players,
   ) : false;
   const currentConfirmation = currentStep
     ? phaseStepConfirmation(

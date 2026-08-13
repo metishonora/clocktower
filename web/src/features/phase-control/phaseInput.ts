@@ -250,6 +250,7 @@ export function stepInputReady(
   zeroOutsidersAvailable = true,
   mayorDecision?: MayorDecisionInput,
   selectedPlayerIds: string[] = [],
+  players: Player[] = [],
 ): boolean {
   if (step.requiredInput.kind === "nomination") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
@@ -288,7 +289,20 @@ export function stepInputReady(
     if (step.requiredInput.zeroAllowed && zeroOutsiders) {
       return zeroOutsidersAvailable && selectedCount === 0;
     }
-    return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
+    if (
+      selectedCount !== (step.requiredInput.maxSelections ?? 0)
+      || selectedPlayerIds.length !== selectedCount
+      || !selectedCharacterId
+      || !setupInfoSelectionIsComplete(step, selectedPlayerIds, players)
+    ) {
+      return false;
+    }
+    return setupInfoCharacterOptions(
+      step.requiredInput.characterKind,
+      selectedPlayerIds,
+      players,
+      step,
+    ).some((character) => character.id === selectedCharacterId);
   }
   if (step.requiredInput.target === "characters") {
     return requiredSelectionCountValid(step, selectedCharacterCount);
@@ -375,6 +389,104 @@ export function setupInfoCharacterOptions(
     if (kind && character.kind !== kind) return false;
     return selectedActualCharacters.has(character.id) || registeredCharacterIds.has(character.id);
   });
+}
+
+/**
+ * Whether a partial setup-information target selection can still be extended
+ * to a valid full delivery. Grimoire availability and confirmation both use
+ * this policy so an impossible pair cannot cross between the two surfaces.
+ */
+export function setupInfoSelectionCanComplete(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): boolean {
+  if (step.requiredInput.kind !== "setupInfo") return false;
+
+  const rosterPlayerIds = new Set(players.map((player) => player.id));
+  const uniqueSelectedPlayerIds = new Set(selectedPlayerIds);
+  if (
+    uniqueSelectedPlayerIds.size !== selectedPlayerIds.length
+    || selectedPlayerIds.some((playerId) => !rosterPlayerIds.has(playerId))
+  ) {
+    return false;
+  }
+
+  const selectionSize = step.requiredInput.maxSelections ?? 0;
+  if (selectedPlayerIds.length > selectionSize) return false;
+
+  const remainingPlayerIds = players
+    .map((player) => player.id)
+    .filter((playerId) => !uniqueSelectedPlayerIds.has(playerId));
+  const remainingSelections = selectionSize - selectedPlayerIds.length;
+  if (remainingPlayerIds.length < remainingSelections) return false;
+
+  return setupInfoCompletionExists(
+    step,
+    players,
+    selectedPlayerIds,
+    remainingPlayerIds,
+    remainingSelections,
+    0,
+  );
+}
+
+export function setupInfoSelectionIsComplete(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): boolean {
+  return step.requiredInput.kind === "setupInfo"
+    && selectedPlayerIds.length === (step.requiredInput.maxSelections ?? 0)
+    && setupInfoSelectionCanComplete(step, selectedPlayerIds, players);
+}
+
+export function setupInfoSelectablePlayerIds(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): string[] {
+  if (step.requiredInput.kind !== "setupInfo") return [];
+  const selected = new Set(selectedPlayerIds);
+  return players.flatMap((player) => {
+    if (selected.has(player.id)) return [player.id];
+    return setupInfoSelectionCanComplete(step, [...selectedPlayerIds, player.id], players)
+      ? [player.id]
+      : [];
+  });
+}
+
+function setupInfoCompletionExists(
+  step: PhaseStep,
+  players: Player[],
+  selectedPlayerIds: string[],
+  remainingPlayerIds: string[],
+  remainingSelections: number,
+  nextIndex: number,
+): boolean {
+  if (remainingSelections === 0) {
+    return setupInfoCharacterOptions(
+      step.requiredInput.characterKind,
+      selectedPlayerIds,
+      players,
+      step,
+    ).length > 0;
+  }
+  if (remainingPlayerIds.length - nextIndex < remainingSelections) return false;
+
+  for (let index = nextIndex; index < remainingPlayerIds.length; index += 1) {
+    if (setupInfoCompletionExists(
+      step,
+      players,
+      [...selectedPlayerIds, remainingPlayerIds[index]],
+      remainingPlayerIds,
+      remainingSelections - 1,
+      index + 1,
+    )) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function characterInputOptions(allowedCharacterIds?: string[]): typeof characters {

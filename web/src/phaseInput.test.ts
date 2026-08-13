@@ -7,6 +7,8 @@ import {
   phaseStepConfirmation,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
+  setupInfoSelectablePlayerIds,
+  setupInfoSelectionIsComplete,
   setupInfoZeroOutsidersAvailable,
   stepTitle,
   stepInputPayload,
@@ -229,6 +231,71 @@ test("setup information options use candidate Actual Characters in catalog order
       (character) => character.id,
     ),
     ["chef"],
+  );
+});
+
+test("setup information target feasibility and final readiness share one rule boundary", () => {
+  const step: PhaseStep = {
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    stepType: "character",
+    character: "washerwoman",
+    playerId: "washerwoman",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const roster = [
+    player("chef", "chef"),
+    player("poisoner", "poisoner"),
+    player("imp", "imp"),
+  ];
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
+  deepEqual(
+    setupInfoSelectablePlayerIds(step, ["imp"], roster),
+    ["chef", "imp"],
+  );
+  equal(setupInfoSelectionIsComplete(step, ["imp", "poisoner"], roster), false);
+  equal(setupInfoSelectionIsComplete(step, ["imp", "chef"], roster), true);
+  equal(
+    stepInputReady(
+      step,
+      2,
+      0,
+      "chef",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      undefined,
+      ["imp", "poisoner"],
+      roster,
+    ),
+    false,
+  );
+  equal(
+    stepInputReady(
+      step,
+      2,
+      0,
+      "chef",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      undefined,
+      ["imp", "chef"],
+      roster,
+    ),
+    true,
   );
 });
 

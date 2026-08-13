@@ -86,6 +86,7 @@ export function TroubleBrewingLiveGrimoire({
   };
   setupInformationSelection?: {
     selectedPlayerIds: string[];
+    allowedPlayerIds?: string[];
     disabled: boolean;
     onTogglePlayer: (playerId: string) => void;
   };
@@ -269,6 +270,8 @@ export function TroubleBrewingLiveGrimoire({
                 : detailsPlayerId === player.id;
           const allowed = !phasePlayerSelection?.allowedPlayerIds
             || phasePlayerSelection.allowedPlayerIds.includes(player.id);
+          const setupInformationAllowed = !setupInformationSelection?.allowedPlayerIds
+            || setupInformationSelection.allowedPlayerIds.includes(player.id);
           const voteStatus = handoff === "vote" && nominationVoting
             ? voteStatusForPlayer(player, selected, nominationVoting.draft.voterIds, ruleState?.butlerVote)
             : undefined;
@@ -281,7 +284,9 @@ export function TroubleBrewingLiveGrimoire({
           const disabled = busy
             || nominationIneligible
             || Boolean(handoff === "vote" && voteStatus?.disabled)
-            || Boolean(setupInformationSelection?.disabled)
+            || Boolean(setupInformationSelection && (
+              !setupInformationAllowed || setupInformationSelection.disabled
+            ))
             || Boolean(phasePlayerSelection && (!allowed || phasePlayerSelection.disabled));
           const actor = actorPlayerId === player.id;
           const playerTokens = tokensByPlayerId[player.id] ?? [];

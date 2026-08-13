@@ -36,6 +36,7 @@ export function Grimoire({
   };
   setupInformationSelection?: {
     selectedPlayerIds: string[];
+    allowedPlayerIds?: string[];
     disabled: boolean;
     onTogglePlayer: (playerId: string) => void;
   };
@@ -137,7 +138,14 @@ export function Grimoire({
             : undefined;
           const votingDisabled = busy || !playerId || Boolean(voteStatus?.disabled);
           const setupInformationDisabled =
-            busy || !playerId || Boolean(setupInformationSelection?.disabled);
+            busy
+            || !playerId
+            || Boolean(setupInformationSelection?.disabled)
+            || Boolean(
+              setupInformationSelection?.allowedPlayerIds
+              && playerId
+              && !setupInformationSelection.allowedPlayerIds.includes(playerId),
+            );
           const phaseSelectionDisabled = busy || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
           const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
           const automaticEdge = position.x < 50 ? "edgeLeft" : "edgeRight";

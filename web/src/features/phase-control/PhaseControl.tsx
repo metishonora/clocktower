@@ -353,6 +353,7 @@ function CurrentStepPane({
         phaseInputDraft.zeroOutsidersAvailable,
         phaseInputDraft.mayorDecision,
         phaseInputDraft.selectedPlayerIds,
+        players,
       )
     : false;
   const selectionValid = baseSelectionValid;

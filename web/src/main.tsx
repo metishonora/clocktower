@@ -41,7 +41,11 @@ import {
 } from "./features/phase-control/phaseRuntime";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
-import { phaseStepConfirmation, stepInputReady } from "./features/phase-control/phaseInput";
+import {
+  phaseStepConfirmation,
+  setupInfoSelectionIsComplete,
+  stepInputReady,
+} from "./features/phase-control/phaseInput";
 import {
   currentBugReportEnvironment,
   DEFAULT_BUG_REPORT_EMAIL,
@@ -865,7 +869,11 @@ export function ClocktowerApp({
     ? phaseInputStep.requiredInput.kind === "setupInfo"
       ? phaseInputDraft.zeroOutsiders
         ? phaseInputDraft.zeroOutsidersAvailable && phaseInputDraft.selectedPlayerIds.length === 0
-        : phaseInputDraft.selectedPlayerIds.length === (phaseInputStep.requiredInput.maxSelections ?? 0)
+        : setupInfoSelectionIsComplete(
+            phaseInputStep,
+            phaseInputDraft.selectedPlayerIds,
+            gameStore.players,
+          )
       : stepInputReady(
           phaseInputStep,
           phaseInputDraft.selectedPlayerIds.length,
@@ -877,6 +885,7 @@ export function ClocktowerApp({
           phaseInputDraft.zeroOutsidersAvailable,
           phaseInputDraft.mayorDecision,
           phaseInputDraft.selectedPlayerIds,
+          gameStore.players,
         )
     : false;
   const troubleBrewingNeedsProgressConfirmation = Boolean(
@@ -1175,6 +1184,7 @@ export function ClocktowerApp({
               troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "setupInfo"
                 ? {
                     selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                    allowedPlayerIds: phaseInputDraft.setupInfoSelectablePlayerIds,
                     disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
                     onTogglePlayer: phaseInputDraft.togglePlayer,
                   }
@@ -1399,6 +1409,7 @@ export function ClocktowerApp({
                   !activeSpyRevealPayload && !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
                     ? {
                         selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                        allowedPlayerIds: phaseInputDraft.setupInfoSelectablePlayerIds,
                         disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
                         onTogglePlayer: phaseInputDraft.togglePlayer,
                       }
