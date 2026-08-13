@@ -150,11 +150,13 @@ describe("ClocktowerApp live-play integration", () => {
     const drunkSeat = within(seatMap).getByRole("button", {
       name: /4번 좌석.*실제 주정뱅이, 표시 점쟁이/,
     });
-    expect(within(drunkSeat).getByText("점쟁이", { exact: true })).toBeTruthy();
-    expect(within(drunkSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
+    expect(within(drunkSeat).getByText("주정뱅이", { exact: true })).toBeTruthy();
+    expect(within(drunkSeat).queryByText("점쟁이", { exact: true })).toBeNull();
     expect(within(drunkSeat).queryByText("표시 · 점쟁이", { exact: true })).toBeNull();
-    expect(drunkSeat.querySelector("img")?.getAttribute("src")).toBe(characterAsset("fortuneTeller")?.src);
-    expect(within(drunkSeat).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
+    expect(drunkSeat.classList.contains("kind-outsider")).toBe(true);
+    expect(drunkSeat.querySelector(":scope > img")?.getAttribute("src")).toBe(characterAsset("drunk")?.src);
+    const shownCharacterToken = within(drunkSeat).getByRole("img", { name: "보여준 직업 점쟁이 토큰" });
+    expect(shownCharacterToken.querySelector("img")?.getAttribute("src")).toBe(characterAsset("fortuneTeller")?.src);
     expect(confirmButton.disabled).toBe(false);
   });
 

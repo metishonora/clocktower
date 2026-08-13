@@ -343,9 +343,12 @@ semantics.
   the `취함` badge on that actual identity. A nested `보여준 직업` card presents
   only the chosen character and its ability text, matching the Philosopher's
   owner/acting-ability hierarchy.
-- The ordinary reference Grimoire displays the player-facing shown character
-  as the seat identity. The actual identity is represented by the canonical
-  `주정뱅이임` reminder token and is available through the shared token detail.
+- During setup, the Grimoire keeps the actual `주정뱅이` as the seat identity
+  and overlays the selected shown Townsfolk as a small secondary icon. After
+  setup, the ordinary reference Grimoire displays the player-facing shown
+  character as the seat identity. The actual identity is represented by the
+  canonical `주정뱅이임` reminder token and is available through the shared
+  token detail.
 - Production should schedule and render the shown character's approved action
   flow with the Drunk as ability owner and permanent `취함` context. This
   focused prototype reviews that identity boundary rather than duplicating all

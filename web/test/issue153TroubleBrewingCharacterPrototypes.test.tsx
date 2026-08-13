@@ -366,7 +366,7 @@ test("keeps a Drunk distinct when their shown character matches a real Townsfolk
   render(<Issue153DrunkPrototype />);
   const fixture = screen.getByRole("main", { name: "주정뱅이 전체 흐름 fixture" });
   let grimoire = within(fixture).getByLabelText("6자리 Trouble Brewing 마도서");
-  const drunkSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 주정뱅이/ });
+  const drunkSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이/ });
   await user.click(drunkSeat);
 
   const shownCharacter = within(fixture).getByRole("combobox", { name: "보여준 직업" });
@@ -375,8 +375,9 @@ test("keeps a Drunk distinct when their shown character matches a real Townsfolk
   expect((confirm as HTMLButtonElement).disabled).toBe(true);
   await user.selectOptions(shownCharacter, "chef");
   const shownSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이, 표시 요리사/ });
-  expect(within(shownSeat).getByText("요리사", { exact: true })).toBeTruthy();
-  expect(within(shownSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
+  expect(within(shownSeat).getByText("주정뱅이", { exact: true })).toBeTruthy();
+  expect(within(shownSeat).queryByText("요리사", { exact: true })).toBeNull();
+  expect(within(shownSeat).getByRole("img", { name: "보여준 직업 요리사 토큰" })).toBeTruthy();
   expect(within(grimoire).getByRole("button", { name: /2번 좌석, 서연, 요리사/ })).toBeTruthy();
   expect((confirm as HTMLButtonElement).disabled).toBe(false);
   await user.click(confirm);

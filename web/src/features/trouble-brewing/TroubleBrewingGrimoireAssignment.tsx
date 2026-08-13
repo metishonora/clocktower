@@ -7,7 +7,6 @@ import {
   rectangularSeatPositions,
 } from "../../shared-ui/GrimoirePresentation";
 import { characters, type SetupDraft } from "../../setupDraft";
-import { troubleBrewingSeatPresentation } from "./troubleBrewingSeatPresentation";
 
 export function TroubleBrewingGrimoireAssignment({
   draft,
@@ -73,28 +72,36 @@ export function TroubleBrewingGrimoireAssignment({
         style={sizeStyle}
         seats={draft.players.map((player, index) => {
           const assignedCharacter = characters.find((candidate) => candidate.id === player.actualCharacter);
-          const presentation = player.actualCharacter
-            ? troubleBrewingSeatPresentation(player.actualCharacter, player.shownCharacter)
+          const shownCharacter = assignedCharacter?.id === "drunk"
+            ? characters.find((candidate) => candidate.id === player.shownCharacter)
             : undefined;
-          const displayedCharacter = characters.find((candidate) => candidate.id === presentation?.displayedCharacterId);
           const identityLabel = assignedCharacter
-            ? presentation?.hasHiddenActualIdentity && displayedCharacter
-              ? `실제 ${assignedCharacter.label}, 표시 ${displayedCharacter.label}`
+            ? assignedCharacter.id === "drunk"
+              ? `실제 ${assignedCharacter.label}, 표시 ${shownCharacter?.label ?? "미선택"}`
               : assignedCharacter.label
             : "미할당";
           return {
             id: `seat-${player.seat}`,
             position: desktopPositions[index],
             mobilePosition: mobilePositions[index],
-            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${displayedCharacter ? `assigned alignment-${alignmentFor(displayedCharacter.kind)} kind-${displayedCharacter.kind.toLowerCase()} character-${displayedCharacter.id}` : "unassigned"}`,
+            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter.kind)} kind-${assignedCharacter.kind.toLowerCase()} character-${assignedCharacter.id}` : "unassigned"}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}`,
             pressed: draft.selectedSeat === player.seat,
             onSelect: () => onSeatSelect(player.seat),
             content: <>
               <span className="snvSeatNumber">{player.seat}</span>
-              {displayedCharacter && characterAsset(displayedCharacter.id) ? <img src={characterAsset(displayedCharacter.id)?.src} alt="" /> : null}
+              {assignedCharacter && characterAsset(assignedCharacter.id) ? <img src={characterAsset(assignedCharacter.id)?.src} alt="" /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
-              <small>{displayedCharacter?.label ?? "미할당"}</small>
+              <small>{assignedCharacter?.label ?? "미할당"}</small>
+              {assignedCharacter?.id === "drunk" ? <span
+                className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
+                role="img"
+                aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
+              >
+                {shownCharacter && characterAsset(shownCharacter.id)
+                  ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
+                  : <span aria-hidden="true">?</span>}
+              </span> : null}
             </>,
           };
         })}
