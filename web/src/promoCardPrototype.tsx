@@ -18,6 +18,7 @@ type PromoCardPrototypeProps = {
   design?: PromoCardDesign;
   idleGlowHint?: boolean;
   hideDateAndPlace?: boolean;
+  hideAcceptanceLink?: boolean;
 };
 
 function renderInkGlyphs(text: string, seedOffset = 0) {
@@ -76,6 +77,7 @@ export function PromoCardPrototype({
   design = "vellum",
   idleGlowHint = false,
   hideDateAndPlace = false,
+  hideAcceptanceLink = false,
 }: PromoCardPrototypeProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -226,7 +228,7 @@ export function PromoCardPrototype({
               )}
             </div>
 
-            {isTroubleBrewing && opened ? (
+            {isTroubleBrewing && opened && !hideAcceptanceLink ? (
               <a
                 className="promoAcceptanceLink"
                 href="https://invite.kakao.com/tc/bA5MLDMhPD"

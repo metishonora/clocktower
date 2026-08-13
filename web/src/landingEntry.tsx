@@ -53,6 +53,7 @@ createRoot(document.getElementById("root")!).render(
           design={promoCardDesign}
           idleGlowHint={promoCardRoute !== "sample"}
           hideDateAndPlace={publishedSampleRequested}
+          hideAcceptanceLink={publishedSampleRequested}
         />
       </React.Suspense>
     ) : (

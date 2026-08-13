@@ -67,6 +67,21 @@ test("renders a reusable Trouble Brewing sample with only date and place hidden"
   expect(screen.queryByLabelText("장소: 노량진교회")).toBeNull();
 });
 
+test("can omit the acceptance link from the reusable Trouble Brewing sample", async () => {
+  const user = userEvent.setup();
+  render(
+    <PromoCardPrototype
+      variant="trouble-brewing"
+      hideDateAndPlace
+      hideAcceptanceLink
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "봉투 열기" }));
+
+  expect(screen.queryByRole("link", { name: "초대 수락하기" })).toBeNull();
+});
+
 test("renders the Sects & Violets prototype with its own seal and date", async () => {
   globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
   const user = userEvent.setup();
