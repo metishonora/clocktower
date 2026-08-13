@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   isPromoCardSampleRequest,
+  isPublishedPromoCardSampleRequest,
   isPromoCardProductionRequest,
   resolvePromoCardDesign,
   resolveExpiredInvitationPrototypeRoute,
@@ -28,6 +29,19 @@ describe("promo card sample route", () => {
 
   test("preserves a custom deployment base before the sample suffix", () => {
     expect(isPromoCardSampleRequest({ pathname: "/custom-base/invitation/sample/", search: "" })).toBe(true);
+  });
+
+  test.each([
+    "/invitation/sample",
+    "/invitation/sample/",
+    "/clocktower/invitation/sample",
+    "/custom-base/invitation/sample/",
+  ])("publishes the sample path independently of the development query alias: %s", (pathname) => {
+    expect(isPublishedPromoCardSampleRequest({ pathname, search: "" })).toBe(true);
+  });
+
+  test("does not publish the query-only sample alias", () => {
+    expect(isPublishedPromoCardSampleRequest({ pathname: "/clocktower/", search: "?prototype=promo-card" })).toBe(false);
   });
 
   test("keeps the existing query link as a compatibility alias", () => {
