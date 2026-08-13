@@ -1,6 +1,7 @@
 type LocationLike = Pick<Location, "pathname" | "search">;
 
 export type PromoCardRoute = "sample" | "trouble-brewing" | "sects-and-violets";
+export type PromoCardProductionRoute = Exclude<PromoCardRoute, "sample">;
 export type PromoCardDesign = "vellum" | "chancery" | "rag-paper";
 
 const PROMO_CARD_DESIGNS: readonly PromoCardDesign[] = [
@@ -21,8 +22,9 @@ const ROUTE_PATHS: Record<PromoCardRoute, readonly string[]> = {
   ],
 };
 
-const PRODUCTION_INVITATION_PATHS: Partial<
-  Record<PromoCardRoute, readonly string[]>
+const PRODUCTION_INVITATION_PATHS: Record<
+  PromoCardProductionRoute,
+  readonly string[]
 > = {
   "trouble-brewing": [
     "/invitation/260816",
@@ -31,6 +33,20 @@ const PRODUCTION_INVITATION_PATHS: Partial<
   "sects-and-violets": [
     "/invitation/260813",
     "/clocktower/invitation/260813",
+  ],
+};
+
+const EXPIRED_INVITATION_PROTOTYPE_PATHS: Record<
+  Exclude<PromoCardRoute, "sample">,
+  readonly string[]
+> = {
+  "trouble-brewing": [
+    "/invitation/expired/trouble-brewing",
+    "/clocktower/invitation/expired/trouble-brewing",
+  ],
+  "sects-and-violets": [
+    "/invitation/expired/sects-and-violets",
+    "/clocktower/invitation/expired/sects-and-violets",
   ],
 };
 
@@ -62,11 +78,30 @@ export function resolvePromoCardRoute(
 
 export function resolvePromoCardProductionRoute(
   location: LocationLike,
-): PromoCardRoute | undefined {
+): PromoCardProductionRoute | undefined {
   const pathname = normalizePathname(location.pathname);
 
   for (const [route, paths] of Object.entries(PRODUCTION_INVITATION_PATHS) as [
-    PromoCardRoute,
+    PromoCardProductionRoute,
+    readonly string[],
+  ][]) {
+    if (paths.includes(pathname)) return route;
+  }
+
+  return undefined;
+}
+
+/**
+ * Development-only review paths for the discarded, already-open invitation
+ * state. Production date routes intentionally do not pass through here.
+ */
+export function resolveExpiredInvitationPrototypeRoute(
+  location: LocationLike,
+): Exclude<PromoCardRoute, "sample"> | undefined {
+  const pathname = normalizePathname(location.pathname);
+
+  for (const [route, paths] of Object.entries(EXPIRED_INVITATION_PROTOTYPE_PATHS) as [
+    Exclude<PromoCardRoute, "sample">,
     readonly string[],
   ][]) {
     if (paths.includes(pathname)) return route;

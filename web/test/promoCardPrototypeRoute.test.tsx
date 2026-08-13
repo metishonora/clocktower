@@ -3,6 +3,7 @@ import {
   isPromoCardSampleRequest,
   isPromoCardProductionRequest,
   resolvePromoCardDesign,
+  resolveExpiredInvitationPrototypeRoute,
   resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
 } from "../src/promoCardPrototypeRoute";
@@ -58,6 +59,25 @@ describe("promo card sample route", () => {
     "/clocktower/invitation/sects-and-violets/",
   ])("matches the extensionless Sects & Violets prototype path %s", (pathname) => {
     expect(resolvePromoCardRoute({ pathname, search: "" })).toBe("sects-and-violets");
+  });
+
+  test.each([
+    ["/invitation/expired/trouble-brewing", "trouble-brewing"],
+    ["/invitation/expired/trouble-brewing/", "trouble-brewing"],
+    ["/clocktower/invitation/expired/trouble-brewing", "trouble-brewing"],
+    ["/invitation/expired/sects-and-violets", "sects-and-violets"],
+    ["/clocktower/invitation/expired/sects-and-violets/", "sects-and-violets"],
+  ] as const)("matches the expired invitation prototype path %s", (pathname, variant) => {
+    expect(resolveExpiredInvitationPrototypeRoute({ pathname, search: "" })).toBe(variant);
+  });
+
+  test.each([
+    "/invitation/260816",
+    "/clocktower/invitation/260813",
+    "/invitation/expired/trouble-brewing.html",
+    "/invitation/expired/sects-and-violets/extra",
+  ])("keeps production and non-exact paths out of expired prototypes: %s", (pathname) => {
+    expect(resolveExpiredInvitationPrototypeRoute({ pathname, search: "" })).toBeUndefined();
   });
 
   test.each([

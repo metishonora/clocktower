@@ -1,0 +1,468 @@
+@font-face {
+  font-family: "Promo Pen";
+  src: url("./assets/fonts/NanumPenScript-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.expiredInvitationPrototype {
+  display: grid;
+  min-height: 100dvh;
+  padding: 24px;
+  place-items: center;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(65, 50, 60, .2), transparent 40%),
+    #080912;
+}
+
+.expiredInvitationFrame {
+  position: relative;
+  width: min(640px, calc(100vw - 48px));
+  aspect-ratio: 1;
+}
+
+.expiredInvitation {
+  --discarded-room: #111018;
+  --discarded-room-light: #2a252d;
+  --discarded-packet: #4a2727;
+  --discarded-packet-edge: #c79a72;
+  --discarded-stain: 78, 45, 31;
+  position: relative;
+  width: 640px;
+  height: 640px;
+  overflow: hidden;
+  isolation: isolate;
+  perspective: 760px;
+  perspective-origin: 50% 12%;
+  color: #3a2a20;
+  background:
+    radial-gradient(ellipse at 34% 18%, rgba(255, 239, 204, .09), transparent 27%),
+    radial-gradient(ellipse at 62% 70%, rgba(0, 0, 0, .24), transparent 46%),
+    linear-gradient(151deg, var(--discarded-room-light), var(--discarded-room) 51%, #08090d);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .55);
+  transform-origin: top left;
+}
+
+.expiredInvitation::before,
+.expiredInvitation::after {
+  display: none;
+}
+
+.expiredInvitation__room {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 54% 79%, rgba(0, 0, 0, .5), transparent 45%),
+    radial-gradient(ellipse at 18% 84%, rgba(var(--discarded-stain), .2), transparent 32%),
+    radial-gradient(ellipse at 78% 19%, rgba(255, 255, 235, .08), transparent 26%);
+}
+
+.expiredInvitation__room::before,
+.expiredInvitation__room::after {
+  display: none;
+}
+
+.expiredInvitation__debris {
+  display: none;
+}
+
+.expiredInvitation__discardedStack {
+  position: absolute;
+  z-index: 2;
+  top: 86px;
+  left: 66px;
+  width: 508px;
+  height: 468px;
+  transform: rotateX(54deg) rotateZ(-8deg) translateY(24px) scale(.96);
+  transform-origin: 50% 96%;
+  transform-style: preserve-3d;
+}
+
+.expiredInvitation__discardedStack::after {
+  position: absolute;
+  z-index: 0;
+  right: 58px;
+  bottom: 1px;
+  left: 58px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .5);
+  content: "";
+  filter: blur(2px);
+  transform: translateZ(-1px) translate(2px, 2px) scaleY(.52);
+}
+
+.expiredInvitation__packet {
+  position: absolute;
+  z-index: 4;
+  top: 220px;
+  left: 40px;
+  width: 428px;
+  height: 248px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--discarded-packet-edge) 53%, transparent);
+  background:
+    linear-gradient(90deg, transparent 49.4%, rgba(4, 10, 7, .22) 49.8%, rgba(245, 225, 180, .08) 50.15%, transparent 50.6%),
+    linear-gradient(180deg, transparent 53%, rgba(4, 10, 7, .18) 53.35%, rgba(245, 225, 180, .07) 53.75%, transparent 54.2%),
+    radial-gradient(ellipse at 13% 12%, rgba(255, 231, 178, .15), transparent 34%),
+    radial-gradient(ellipse at 85% 96%, rgba(0, 0, 0, .38), transparent 49%),
+    linear-gradient(151deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .28)),
+    var(--expired-envelope-texture),
+    var(--discarded-packet);
+  background-position: center, center, center, center, center, center 42%, center;
+  background-size: auto, auto, auto, auto, auto, 116% auto, auto;
+  background-blend-mode: multiply, multiply, screen, multiply, multiply, luminosity, normal;
+  box-shadow:
+    inset 0 0 34px rgba(0, 0, 0, .4),
+    inset 0 2px rgba(255, 234, 190, .14),
+    inset 0 -2px 2px rgba(0, 0, 0, .35),
+    1px 2px 2px rgba(0, 0, 0, .36),
+    2px 3px 3px rgba(0, 0, 0, .13);
+  clip-path: polygon(.4% 1.1%, 10% .2%, 23% .9%, 35% .3%, 49% 1%, 62% .2%, 76% .7%, 89% .25%, 99.5% 1.2%, 100% 31%, 99.4% 63%, 100% 98.4%, 83% 99.3%, 68% 98.8%, 51% 99.6%, 34% 99%, 17% 99.6%, .4% 98.4%, 0 64%, .5% 32%);
+  transform: translateZ(5px) rotate(1.2deg);
+}
+
+.expiredInvitation__packet::before,
+.expiredInvitation__packet::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.expiredInvitation__packet::before {
+  z-index: 2;
+  top: 0;
+  right: 7px;
+  left: 7px;
+  height: 58px;
+  border-top: 2px solid rgba(5, 5, 7, .42);
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(0, 0, 0, .7), rgba(0, 0, 0, .28) 45%, transparent 76%),
+    linear-gradient(180deg, rgba(0, 0, 0, .35), transparent 84%);
+  clip-path: polygon(0 0, 7% 12%, 14% 3%, 22% 15%, 31% 4%, 42% 14%, 51% 2%, 62% 16%, 73% 4%, 84% 14%, 92% 3%, 100% 11%, 100% 100%, 0 100%);
+}
+
+.expiredInvitation__packet::after {
+  inset: 0;
+  opacity: .74;
+  background:
+    linear-gradient(34deg, transparent 0 35%, rgba(0, 0, 0, .3) 35.25%, rgba(255, 233, 183, .09) 35.7%, transparent 36.35%),
+    linear-gradient(-34deg, transparent 0 35%, rgba(0, 0, 0, .3) 35.25%, rgba(255, 233, 183, .09) 35.7%, transparent 36.35%),
+    radial-gradient(ellipse at 52% 102%, rgba(232, 198, 139, .08), transparent 39%),
+    repeating-linear-gradient(102deg, transparent 0 47px, rgba(255, 246, 213, .018) 48px, transparent 49px 83px);
+  mix-blend-mode: soft-light;
+}
+
+.expiredInvitation__packetFlap {
+  position: absolute;
+  z-index: 1;
+  top: 58px;
+  left: 58px;
+  width: 392px;
+  height: 252px;
+  opacity: .88;
+  border: 1px solid color-mix(in srgb, var(--discarded-packet-edge) 44%, transparent);
+  background:
+    radial-gradient(ellipse at 31% 9%, rgba(255, 232, 181, .15), transparent 35%),
+    radial-gradient(ellipse at 76% 86%, rgba(0, 0, 0, .24), transparent 44%),
+    linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .28)),
+    var(--expired-envelope-texture),
+    var(--discarded-packet);
+  background-position: center, center, center, center 14%, center;
+  background-size: auto, auto, auto, 114% auto, auto;
+  background-blend-mode: screen, multiply, multiply, luminosity, normal;
+  box-shadow:
+    inset 0 -28px 34px rgba(0, 0, 0, .31),
+    inset 0 1px rgba(255, 232, 187, .13),
+    1px 2px 3px rgba(0, 0, 0, .24);
+  clip-path: polygon(.5% 5%, 10% 1%, 21% 4%, 33% .5%, 45% 3%, 57% 0, 69% 4%, 80% .7%, 91% 4%, 99.5% 1%, 99% 21%, 86% 49%, 71% 74%, 56% 98%, 49% 93%, 42% 100%, 29% 76%, 14% 52%, 1% 23%);
+  transform: translateZ(1px) rotate(3.8deg) skewX(-1.5deg);
+}
+
+.expiredInvitation__packetFlap::after {
+  position: absolute;
+  inset: 12px 15px 17px;
+  border: 1px solid color-mix(in srgb, var(--discarded-packet-edge) 23%, transparent);
+  background:
+    linear-gradient(104deg, transparent 19%, rgba(255, 244, 210, .04) 20%, transparent 21% 70%, rgba(0, 0, 0, .1) 72%, transparent 74%),
+    radial-gradient(ellipse at 50% 94%, rgba(0, 0, 0, .2), transparent 37%),
+    repeating-linear-gradient(81deg, transparent 0 42px, rgba(255, 244, 210, .025) 43px, transparent 44px 76px);
+  clip-path: inherit;
+  content: "";
+}
+
+.expiredInvitation__waxRemnant {
+  position: absolute;
+  z-index: 6;
+  top: 330px;
+  left: 397px;
+  width: 51px;
+  height: 62px;
+  opacity: .62;
+  background-image: var(--expired-seal);
+  background-repeat: no-repeat;
+  background-position: 30% 55%;
+  background-size: 105px 105px;
+  filter: saturate(.62) brightness(.68) drop-shadow(1px 1px 1px rgba(0, 0, 0, .4));
+  clip-path: polygon(0 9%, 52% 0, 88% 18%, 57% 34%, 81% 51%, 60% 100%, 9% 84%, 26% 58%, 3% 39%);
+  transform: translateZ(9px) rotate(18deg);
+}
+
+.expiredInvitation__waxRemnant::after {
+  position: absolute;
+  top: -48px;
+  left: 1px;
+  width: 47px;
+  height: 54px;
+  background-image: var(--expired-seal);
+  background-position: 71% 43%;
+  background-size: 103px 103px;
+  content: "";
+  filter: brightness(.68) drop-shadow(0 3px 3px rgba(0, 0, 0, .35));
+  clip-path: polygon(26% 0, 91% 14%, 100% 57%, 72% 100%, 39% 73%, 8% 88%, 22% 48%, 0 26%);
+  transform: rotate(-22deg);
+}
+
+.expiredInvitation__letter {
+  position: absolute;
+  z-index: 5;
+  top: 92px;
+  left: 84px;
+  width: 288px;
+  height: 304px;
+  overflow: hidden;
+  color: #39271d;
+  background:
+    radial-gradient(ellipse 72px 88px at 94% 13%, rgba(18, 9, 5, .99) 0 10%, rgba(48, 22, 12, .96) 14%, rgba(108, 48, 21, .82) 27%, rgba(181, 94, 38, .5) 42%, rgba(204, 132, 63, .16) 59%, transparent 72%),
+    radial-gradient(ellipse 61px 82px at 4% 85%, rgba(20, 10, 6, .98) 0 9%, rgba(55, 25, 13, .94) 14%, rgba(121, 53, 22, .78) 29%, rgba(188, 100, 41, .46) 44%, rgba(207, 139, 67, .14) 60%, transparent 73%),
+    radial-gradient(ellipse at 15% 10%, rgba(255, 253, 233, .19), transparent 34%),
+    radial-gradient(ellipse at 83% 91%, rgba(var(--discarded-stain), .16), transparent 40%),
+    linear-gradient(109deg, rgba(71, 40, 27, .11), rgba(255, 245, 211, .07)),
+    var(--expired-letter-texture);
+  background-position: center;
+  background-size: auto, auto, auto, auto, auto, cover;
+  background-blend-mode: multiply, multiply, screen, multiply, multiply, normal;
+  box-shadow:
+    inset 0 0 32px rgba(68, 39, 26, .19),
+    inset 0 1px rgba(255, 251, 224, .55),
+    1px 2px 3px rgba(0, 0, 0, .26),
+    3px 4px 5px rgba(0, 0, 0, .13);
+  clip-path: polygon(.8% 0, 8% .65%, 18% 0, 29% .75%, 40% .1%, 52% .6%, 64% 0, 72% .8%, 78% 0, 83% 2%, 86% 1%, 85% 5%, 90% 8%, 87% 12%, 92% 16%, 89% 21%, 95% 24%, 92% 29%, 97% 32%, 100% 38%, 99.25% 51%, 100% 66%, 99.15% 80%, 100% 99.2%, 85% 99.45%, 69% 98.9%, 53% 99.65%, 38% 99%, 22% 99.55%, 14% 98%, 10% 95%, 12% 91%, 7% 88%, 10% 83%, 4% 80%, 7% 74%, 2% 70%, 0 64%, .65% 53%, .7% 39%, 0 24%, .55% 11%);
+  clip-path: path("M 2 0 L 219 2 C 225 0 229 1 233 4 C 230 8 236 10 234 14 C 241 16 239 22 244 25 C 240 30 248 34 245 39 C 252 42 249 49 255 53 C 252 59 261 64 259 71 L 287 116 L 286 302 L 244 303 L 198 301 L 153 303 L 109 301 L 64 303 L 42 302 C 37 299 31 301 28 296 C 32 291 25 289 27 283 C 21 279 27 273 21 269 C 25 264 18 260 20 255 C 15 250 20 244 15 240 C 18 234 11 230 13 224 L 1 196 L 2 158 L 0 118 L 2 73 L 0 34 Z");
+  transform: translateZ(7px) rotate(-11deg) skewX(-1.2deg);
+}
+
+.expiredInvitation__letter::before,
+.expiredInvitation__letter::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.expiredInvitation__letter::before {
+  opacity: .92;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(8, 5, 3, .88) 0 2px, transparent 3px),
+    radial-gradient(circle at 91% 23%, rgba(18, 10, 6, .76) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 8% 78%, rgba(13, 7, 4, .82) 0 2px, transparent 3px),
+    radial-gradient(circle at 5% 91%, rgba(22, 11, 6, .72) 0 1.5px, transparent 2.5px),
+    linear-gradient(91deg, transparent 20%, rgba(84, 55, 38, .1) 20.3%, rgba(255, 250, 225, .12) 20.8%, transparent 21.25%),
+    linear-gradient(178deg, transparent 57%, rgba(91, 60, 41, .16) 57.35%, rgba(255, 251, 225, .14) 57.8%, transparent 58.25%),
+    radial-gradient(ellipse at 25% 65%, rgba(var(--discarded-stain), .16), transparent 18%),
+    radial-gradient(ellipse at 75% 30%, rgba(94, 63, 44, .11), transparent 22%);
+  mix-blend-mode: multiply;
+}
+
+.expiredInvitation__letter::after {
+  opacity: .46;
+  background:
+    repeating-linear-gradient(12deg, transparent 0 22px, rgba(92, 64, 46, .045) 23px 24px, transparent 25px 53px),
+    repeating-linear-gradient(101deg, transparent 0 37px, rgba(255, 255, 242, .08) 38px 39px, transparent 40px 74px);
+  mix-blend-mode: soft-light;
+}
+
+.expiredInvitation__edge {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  left: 0;
+  height: 13px;
+  opacity: .74;
+  background: linear-gradient(180deg, rgba(54, 29, 18, .32), rgba(255, 242, 201, .1));
+}
+
+.expiredInvitation__edge--top {
+  top: -2px;
+  clip-path: polygon(0 62%, 5% 25%, 11% 54%, 17% 18%, 23% 48%, 30% 15%, 37% 56%, 44% 20%, 51% 52%, 58% 16%, 65% 58%, 73% 23%, 81% 49%, 89% 14%, 95% 51%, 100% 23%, 100% 0, 0 0);
+}
+
+.expiredInvitation__edge--bottom {
+  bottom: -2px;
+  transform: rotate(180deg);
+  clip-path: polygon(0 62%, 5% 25%, 11% 54%, 17% 18%, 23% 48%, 30% 15%, 37% 56%, 44% 20%, 51% 52%, 58% 16%, 65% 58%, 73% 23%, 81% 49%, 89% 14%, 95% 51%, 100% 23%, 100% 0, 0 0);
+}
+
+.expiredInvitation__burnHole {
+  position: absolute;
+  z-index: 4;
+  top: 42px;
+  right: 20px;
+  width: 34px;
+  height: 39px;
+  background: radial-gradient(ellipse at 48% 52%,
+    color-mix(in srgb, var(--discarded-packet) 78%, #080504) 0 30%,
+    #100906 34% 47%,
+    #49200f 52% 62%,
+    rgba(147, 65, 24, .72) 66% 73%,
+    rgba(206, 125, 54, .24) 77%,
+    transparent 84%);
+  clip-path: polygon(44% 0, 72% 8%, 91% 29%, 85% 53%, 100% 76%, 72% 96%, 47% 88%, 24% 100%, 8% 70%, 16% 49%, 0 27%, 25% 12%);
+  filter: drop-shadow(0 0 5px rgba(92, 38, 14, .42));
+  transform: rotate(13deg);
+}
+
+.expiredInvitation__details {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: 100%;
+  padding: 27px 30px 25px;
+  flex-direction: column;
+  align-items: flex-start;
+  filter: blur(1.25px) saturate(.58);
+  opacity: .31;
+  transform: translate(-3px, 1px) skewX(-1.4deg);
+  user-select: none;
+}
+
+.expiredInvitation__scrawl {
+  display: block;
+  width: 74%;
+  height: 27px;
+  overflow: hidden;
+  color: rgba(54, 35, 25, .9);
+  font: 400 30px/1 "Promo Pen", "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: -.08em;
+  text-shadow:
+    .6px .4px 1px rgba(50, 27, 17, .36),
+    0 0 2px rgba(70, 38, 22, .2);
+  transform: rotate(-.5deg) scaleX(1.08);
+  transform-origin: left center;
+  white-space: nowrap;
+}
+
+.expiredInvitation__scrawl + .expiredInvitation__scrawl {
+  margin-top: 8px;
+}
+
+.expiredInvitation__scrawl--short {
+  width: 33%;
+  margin-bottom: 13px;
+  opacity: .68;
+}
+
+.expiredInvitation__scrawl--title {
+  width: 88%;
+  height: 38px;
+  margin-bottom: 10px;
+  font-size: 43px;
+  opacity: .9;
+  transform: rotate(.45deg) scaleX(1.04);
+}
+
+.expiredInvitation__scrawl--long {
+  width: 94%;
+  transform: rotate(.7deg) scaleX(1.12);
+}
+
+.expiredInvitation__scrawl--medium {
+  width: 63%;
+  transform: rotate(-.8deg) scaleX(1.03);
+}
+
+.expiredInvitation__scrawl--faded {
+  width: 70%;
+  opacity: .48;
+  transform: rotate(.35deg) scaleX(1.1);
+}
+
+.expiredInvitation__notice {
+  position: absolute;
+  z-index: 8;
+  top: 112px;
+  right: 30px;
+  left: 30px;
+  margin: 0;
+  color: #fff;
+  font: 600 31px/1.25 "AppleMyungjo", "Nanum Myeongjo", Georgia, serif;
+  letter-spacing: -.015em;
+  text-align: center;
+  text-shadow:
+    0 2px 2px rgba(0, 0, 0, .92),
+    0 0 14px rgba(0, 0, 0, .82),
+    0 0 34px rgba(0, 0, 0, .42);
+  white-space: nowrap;
+}
+
+.expiredInvitation--trouble-brewing {
+  --discarded-room: #071611;
+  --discarded-room-light: #173126;
+  --discarded-packet: #31523e;
+  --discarded-packet-edge: #c8a464;
+  --discarded-stain: 126, 73, 46;
+}
+
+.expiredInvitation--trouble-brewing .expiredInvitation__notice {
+  text-shadow:
+    0 2px 2px rgba(0, 0, 0, .94),
+    0 0 16px rgba(2, 17, 10, .98),
+    0 0 34px rgba(0, 0, 0, .52);
+}
+
+.expiredInvitation--sects-and-violets {
+  --discarded-room: #160b19;
+  --discarded-room-light: #382039;
+  --discarded-packet: #542e4d;
+  --discarded-packet-edge: #d2a4bf;
+  --discarded-stain: 101, 45, 75;
+}
+
+.expiredInvitation--sects-and-violets .expiredInvitation__packetFlap {
+  transform: translateZ(1px) rotate(-4.2deg) skewX(1.4deg);
+}
+
+.expiredInvitation--sects-and-violets .expiredInvitation__discardedStack {
+  transform: rotateX(56deg) rotateZ(7deg) translateY(23px) scale(.95);
+}
+
+.expiredInvitation--sects-and-violets .expiredInvitation__letter {
+  background-image:
+    radial-gradient(ellipse 72px 88px at 94% 13%, rgba(18, 9, 5, .99) 0 10%, rgba(48, 22, 12, .96) 14%, rgba(108, 48, 21, .82) 27%, rgba(181, 94, 38, .5) 42%, rgba(204, 132, 63, .16) 59%, transparent 72%),
+    radial-gradient(ellipse 61px 82px at 4% 85%, rgba(20, 10, 6, .98) 0 9%, rgba(55, 25, 13, .94) 14%, rgba(121, 53, 22, .78) 29%, rgba(188, 100, 41, .46) 44%, rgba(207, 139, 67, .14) 60%, transparent 73%),
+    radial-gradient(ellipse at 15% 10%, rgba(255, 247, 248, .18), transparent 34%),
+    radial-gradient(ellipse at 83% 91%, rgba(101, 45, 75, .18), transparent 40%),
+    linear-gradient(109deg, rgba(74, 35, 58, .12), rgba(255, 239, 236, .07)),
+    var(--expired-letter-texture);
+  top: 88px;
+  left: 136px;
+  transform: translateZ(7px) rotate(10deg) skewX(1deg);
+}
+
+.expiredInvitation--sects-and-violets .expiredInvitation__waxRemnant {
+  filter: saturate(.78) brightness(.84) drop-shadow(1px 1px 1px rgba(0, 0, 0, .38));
+}
+
+@media (max-width: 480px) {
+  .expiredInvitationPrototype {
+    padding: 16px;
+  }
+
+  .expiredInvitationFrame {
+    width: min(640px, calc(100vw - 32px));
+  }
+}
