@@ -485,12 +485,16 @@ test("shows Drunk actual and shown identities in the shared detail and restores 
     ...player,
     actualCharacter: "drunk",
     shownCharacter: "fortuneTeller",
+    systemTokenIds: ["abilitySpent" as const],
   } : player);
   renderLiveGrimoire(playerRoster);
 
   const grimoire = await openLiveGrimoire(user);
   const seat = within(grimoire).getByRole("button", { name: /3번 좌석, Cy, 실제 주정뱅이, 표시 점쟁이/ });
-  expect(within(seat).getByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeTruthy();
+  const shownIdentity = within(seat).getByText("표시 · 점쟁이", { exact: true });
+  expect(shownIdentity.classList.contains("tbSeatShownIdentity")).toBe(true);
+  expect(within(seat).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
+  expect(within(grimoire).getByText("+1", { exact: true })).toBeTruthy();
   await user.click(seat);
 
   const detail = screen.getByRole("dialog", { name: "3번 Cy 플레이어 상세" });

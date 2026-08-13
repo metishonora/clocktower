@@ -334,55 +334,33 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
-.tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
-  transform: translateX(-6px);
+.tbProductionShell .tbGrimoireBoard > button.tbSeatHasShownIdentity {
+  gap: 0;
 }
 
-.tbShownCharacterToken {
-  position: absolute;
-  z-index: 3;
-  top: 4px;
-  right: 2px;
+.tbProductionShell .tbGrimoireBoard > button.tbSeatHasShownIdentity > img {
+  width: 40px;
+  height: 40px;
+}
+
+.tbProductionShell .tbGrimoireBoard > button .tbSeatIdentityStack {
   display: grid;
-  box-sizing: border-box;
-  width: 34px;
-  height: 34px;
-  padding: 4px;
-  place-items: center;
-  border: 2px solid #72c6e7;
-  border-radius: 50%;
-  color: #fff8e8;
-  background: #173f4c;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .48), 0 0 0 3px rgba(114, 198, 231, .15);
-  font-size: .78rem;
+  gap: 1px;
+  overflow: visible;
+  line-height: 1;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.tbProductionShell .tbGrimoireBoard > button .tbSeatShownIdentity {
+  color: #8fd3e8;
+  font-size: .49rem;
   font-weight: 900;
-  pointer-events: none;
+  letter-spacing: -.01em;
 }
 
-.tbShownCharacterToken.missing {
-  border-color: #d2ad64;
-  background: #3e3520;
-}
-
-.tbProductionShell[data-theme="day"] .tbShownCharacterToken {
-  border-color: #3481a3;
-  color: #20343d;
-  background: #e7f4f7;
-  box-shadow: 0 5px 14px rgba(38, 73, 82, .2), 0 0 0 3px rgba(52, 129, 163, .14);
-}
-
-.tbProductionShell[data-theme="day"] .tbShownCharacterToken.missing {
-  border-color: #a8782c;
-  color: #4b3719;
-  background: #f3e4b7;
-  box-shadow: 0 5px 14px rgba(89, 67, 30, .16), 0 0 0 3px rgba(168, 120, 44, .12);
-}
-
-.tbProductionShell .tbGrimoireBoard > button .tbShownCharacterToken img {
-  width: 24px;
-  height: 24px;
-  margin: 0;
-  object-fit: contain;
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button .tbSeatShownIdentity {
+  color: #246f8d;
 }
 
 .tbProductionShell .snvSeatingTray,
@@ -1983,10 +1961,6 @@
 
   .tbSeatInspector.snvSeatingTray.mobileOpen {
     background: #10271d;
-  }
-
-  .tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
-    transform: translateX(-12px);
   }
 
   .tbDrunkEditor label,

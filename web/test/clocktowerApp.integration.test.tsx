@@ -144,9 +144,10 @@ describe("ClocktowerApp live-play integration", () => {
 
     const confirmButton = screen.getByRole("button", { name: "배치 확정" }) as HTMLButtonElement;
     expect(confirmButton.disabled).toBe(true);
-    await user.click(within(seatMap).getByRole("button", { name: /4번 좌석.*실제 주정뱅이/ }));
+    await user.click(within(seatMap).getByRole("button", { name: /4번 좌석.*주정뱅이/ }));
     await user.selectOptions(screen.getByLabelText("보여준 직업"), "fortuneTeller");
-    expect(screen.getByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeTruthy();
+    expect(within(seatMap).getByText("표시 · 점쟁이", { exact: true })).toBeTruthy();
+    expect(within(seatMap).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
     expect(confirmButton.disabled).toBe(false);
   });
 

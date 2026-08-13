@@ -18,6 +18,7 @@ import { PlayerTokenCountBadge, PlayerTokenDetailDialog } from "../grimoire/play
 import { currentActionPrompt } from "../phase-control/phaseInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { troubleBrewingPlayerTokens } from "./troubleBrewingPlayerTokenPresentation";
+import { TroubleBrewingSeatIdentity } from "./TroubleBrewingSeatIdentity";
 import "../grimoire/sectsAndVioletsSeatStates.css";
 
 export type TroubleBrewingLiveHandoff = "target" | "nomination" | "vote";
@@ -132,7 +133,7 @@ export function TroubleBrewingLiveGrimoire({
   const detailsPlayer = players.find((player) => player.id === detailsPlayerId);
   const editingPlayer = players.find((player) => player.id === editingPlayerId);
   const detailsCharacter = characters.find((candidate) => candidate.id === detailsPlayer?.actualCharacter);
-  const detailsShownCharacter = detailsPlayer?.actualCharacter === "drunk"
+  const detailsShownCharacter = detailsPlayer?.shownCharacter && detailsPlayer.shownCharacter !== detailsPlayer.actualCharacter
     ? characters.find((candidate) => candidate.id === detailsPlayer.shownCharacter)
     : undefined;
   const selectionActive = !revealMode && Boolean(handoff);
@@ -245,7 +246,7 @@ export function TroubleBrewingLiveGrimoire({
         seats={players.map((player, index) => {
           const position = desktopPositions[index];
           const mobilePosition = mobilePositions[index];
-          const shownCharacter = player.actualCharacter === "drunk"
+          const shownCharacter = player.shownCharacter !== player.actualCharacter
             ? characters.find((candidate) => candidate.id === player.shownCharacter)
             : undefined;
           const asset = characterAsset(player.actualCharacter);
@@ -296,9 +297,10 @@ export function TroubleBrewingLiveGrimoire({
             ruleState?.activeProtection?.playerId === player.id ? "보호" : undefined,
           ].filter((label): label is string => Boolean(label));
           const additionalAutomaticTokenLabels = automaticTokenLabels.filter((label) => label !== selectionRole);
-          const identityLabel = player.actualCharacter === "drunk"
-            ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
-            : characterLabel(player.actualCharacter);
+          const actualCharacterLabel = characterLabel(player.actualCharacter);
+          const identityLabel = shownCharacter
+            ? `실제 ${actualCharacterLabel}, 표시 ${shownCharacter.label}`
+            : actualCharacterLabel;
           const deadVoteState = (handoff === "nomination" || handoff === "vote") && !player.alive
             ? player.ghostVoteUsed ? "spent" : "available"
             : undefined;
@@ -321,7 +323,7 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${shownCharacter ? " tbSeatHasShownIdentity" : ""}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${additionalAutomaticTokenLabels.length ? `, ${additionalAutomaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
             disabled: gameEnded || selectionComplete || (selectionActive ? disabled : false),
@@ -339,16 +341,10 @@ export function TroubleBrewingLiveGrimoire({
               /> : null}
               {!player.alive ? <FuneralIcon /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
-              <small>{selectionRole ?? characterLabel(player.actualCharacter)}</small>
-              {player.actualCharacter === "drunk" ? <span
-                className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
-                role="img"
-                aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
-              >
-                {shownCharacter && characterAsset(shownCharacter.id)
-                  ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
-                  : <span aria-hidden="true">?</span>}
-              </span> : null}
+              <TroubleBrewingSeatIdentity
+                actualLabel={selectionRole ?? characterLabel(player.actualCharacter)}
+                shownLabel={selectionRole ? undefined : shownCharacter?.label}
+              />
               {revealMode && automaticTokenLabels.length ? <span className="tbRevealTokenList" aria-label="적용 토큰">
                 {automaticTokenLabels.map((label) => <span key={label}>{label}</span>)}
               </span> : null}
@@ -403,8 +399,8 @@ export function TroubleBrewingLiveGrimoire({
         alignment: detailsPlayer.alignment,
       }}
       tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
-      identityDetails={detailsCharacter.id === "drunk" && detailsShownCharacter ? <section className="tbDrunkIdentities" aria-label="주정뱅이 아이덴티티">
-        <article><span>실제 직업</span><div>{characterAsset("drunk") ? <img src={characterAsset("drunk")?.src} alt="" /> : null}<strong>주정뱅이</strong></div></article>
+      identityDetails={detailsShownCharacter ? <section className="tbDrunkIdentities" aria-label={`${detailsCharacter.label} 아이덴티티`}>
+        <article><span>실제 직업</span><div>{characterAsset(detailsCharacter.id) ? <img src={characterAsset(detailsCharacter.id)?.src} alt="" /> : null}<strong>{detailsCharacter.label}</strong></div></article>
         <article className="shown"><span>보여준 직업</span><div>{characterAsset(detailsShownCharacter.id) ? <img src={characterAsset(detailsShownCharacter.id)?.src} alt="" /> : null}<strong>{detailsShownCharacter.label}</strong></div></article>
       </section> : null}
       details={<>

@@ -7,6 +7,7 @@ import {
   rectangularSeatPositions,
 } from "../../shared-ui/GrimoirePresentation";
 import { characters, type SetupDraft } from "../../setupDraft";
+import { TroubleBrewingSeatIdentity } from "./TroubleBrewingSeatIdentity";
 
 export function TroubleBrewingGrimoireAssignment({
   draft,
@@ -72,19 +73,19 @@ export function TroubleBrewingGrimoireAssignment({
         style={sizeStyle}
         seats={draft.players.map((player, index) => {
           const assignedCharacter = characters.find((candidate) => candidate.id === player.actualCharacter);
-          const shownCharacter = assignedCharacter?.id === "drunk"
+          const shownCharacter = player.shownCharacter && player.shownCharacter !== player.actualCharacter
             ? characters.find((candidate) => candidate.id === player.shownCharacter)
             : undefined;
           const identityLabel = assignedCharacter
-            ? assignedCharacter.id === "drunk"
-              ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
+            ? shownCharacter
+              ? `실제 ${assignedCharacter.label}, 표시 ${shownCharacter.label}`
               : assignedCharacter.label
             : "미할당";
           return {
             id: `seat-${player.seat}`,
             position: desktopPositions[index],
             mobilePosition: mobilePositions[index],
-            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter.kind)} kind-${assignedCharacter.kind.toLowerCase()} character-${assignedCharacter.id}` : "unassigned"}`,
+            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter.kind)} kind-${assignedCharacter.kind.toLowerCase()} character-${assignedCharacter.id}${shownCharacter ? " tbSeatHasShownIdentity" : ""}` : "unassigned"}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}`,
             pressed: draft.selectedSeat === player.seat,
             onSelect: () => onSeatSelect(player.seat),
@@ -92,18 +93,10 @@ export function TroubleBrewingGrimoireAssignment({
               <span className="snvSeatNumber">{player.seat}</span>
               {assignedCharacter && characterAsset(assignedCharacter.id) ? <img src={characterAsset(assignedCharacter.id)?.src} alt="" /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
-              <small>{assignedCharacter?.label ?? "미할당"}</small>
-              {assignedCharacter?.id === "drunk" ? (
-                <span
-                  className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
-                  role="img"
-                  aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
-                >
-                  {shownCharacter && characterAsset(shownCharacter.id)
-                    ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
-                    : <span aria-hidden="true">?</span>}
-                </span>
-              ) : null}
+              <TroubleBrewingSeatIdentity
+                actualLabel={assignedCharacter?.label ?? "미할당"}
+                shownLabel={shownCharacter?.label}
+              />
             </>,
           };
         })}
