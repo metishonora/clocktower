@@ -353,6 +353,44 @@ test("visually distinguishes the roster after character selection is confirmed",
   expect(within(catalog).getByRole("button", { name: "시계공" }).classList.contains("selected")).toBe(true);
 });
 
+test("keeps the confirmed roster immutable while catalog clicks update only role details", async () => {
+  const user = userEvent.setup();
+  render(<SectsAndVioletsApp storageDriver={new MemorySectsAndVioletsStorageDriver()} />);
+  const app = await screen.findByRole("main", { name: "Sects & Violets 게임" });
+
+  for (const character of ["시계공", "꿈꾸는 자", "뱀 조련사", "수학자", "변종", "사악한 쌍둥이"]) {
+    await user.click(within(app).getByRole("button", { name: character }));
+  }
+  await user.click(within(app).getByRole("button", { name: "직업 선택 확정" }));
+  await user.click(within(app).getByRole("button", { name: "직업" }));
+
+  const catalog = within(app).getByRole("region", { name: "직업 선택 패널" });
+  const detail = within(app).getByRole("complementary", { name: "직업 설명" });
+  const selectedBefore = Array.from(catalog.querySelectorAll("button[aria-pressed='true']"))
+    .map((button) => button.textContent?.trim());
+  const countsBefore = Array.from(catalog.querySelectorAll("article > h2"))
+    .map((heading) => heading.textContent);
+
+  expect(within(app).getByRole("button", { name: "직업 선택 확정" }).hasAttribute("disabled")).toBe(true);
+
+  const roleNames = ["시계공", "화가", "팡 구", "비고르모르티스", "노 다시", "보르톡스"];
+  for (const roleName of roleNames) {
+    const roleButton = within(catalog).getByRole("button", { name: new RegExp(`^${roleName}`) });
+    expect(roleButton.hasAttribute("disabled")).toBe(false);
+    await user.click(roleButton);
+    expect(within(detail).getByRole("heading", { name: roleName })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: `${roleName} 캐릭터 상세` })).toBeNull();
+  }
+
+  expect(Array.from(catalog.querySelectorAll("button[aria-pressed='true']"))
+    .map((button) => button.textContent?.trim())).toEqual(selectedBefore);
+  expect(Array.from(catalog.querySelectorAll("article > h2"))
+    .map((heading) => heading.textContent)).toEqual(countsBefore);
+
+  await user.click(within(detail).getByRole("button", { name: "보르톡스 캐릭터 상세 열기" }));
+  expect(screen.getByRole("dialog", { name: "보르톡스 캐릭터 상세" })).toBeTruthy();
+});
+
 test("does not expose a confirmed Grimoire until the canonical setup is durably saved", async () => {
   const storage = new MemorySectsAndVioletsStorageDriver();
   const user = userEvent.setup();

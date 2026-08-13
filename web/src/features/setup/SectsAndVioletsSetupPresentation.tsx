@@ -114,9 +114,11 @@ export function SectsAndVioletsSetupPresentation({
               id: character.id,
               label: character.name,
               selected,
-              disabled: storageLoading || demonLocked || capacityReached,
+              disabled: storageLoading || (!rosterConfirmed && (demonLocked || capacityReached)),
               ariaLabel: demonLocked
-                ? character.id === demon ? `${character.name} 고정됨` : `${character.name} 악마 선택에서 변경`
+                ? rosterConfirmed
+                  ? `${character.name} 설명 보기`
+                  : character.id === demon ? `${character.name} 고정됨` : `${character.name} 악마 선택에서 변경`
                 : character.name,
             };
           }),
@@ -154,7 +156,7 @@ export function SectsAndVioletsSetupPresentation({
           <button
             type="button"
             className="snvConfirmRoster snvStageForward prominent"
-            disabled={storageLoading || !rosterComplete}
+            disabled={storageLoading || rosterConfirmed || !rosterComplete}
             onClick={onConfirmRoster}
           >
             <span>직업 선택 확정</span><small aria-hidden="true">마도서 →</small>
