@@ -17,6 +17,7 @@ type PromoCardPrototypeProps = {
   variant?: PromoCardVariant;
   design?: PromoCardDesign;
   idleGlowHint?: boolean;
+  hideDateAndPlace?: boolean;
 };
 
 function renderInkGlyphs(text: string, seedOffset = 0) {
@@ -74,6 +75,7 @@ export function PromoCardPrototype({
   variant = "sample",
   design = "vellum",
   idleGlowHint = false,
+  hideDateAndPlace = false,
 }: PromoCardPrototypeProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -87,6 +89,8 @@ export function PromoCardPrototype({
     ? invitation.letterTextures[design]
     : letterTextureUrl;
   const sealUrl = invitation?.sealUrl ?? waxSealUrl;
+  const invitationDate = hideDateAndPlace ? "날짜: -" : invitation?.date ?? "";
+  const invitationPlace = hideDateAndPlace ? "장소: -" : invitation?.place ?? "";
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -199,9 +203,9 @@ export function PromoCardPrototype({
                     <p aria-label={invitation.gameName}>{renderInkText(invitation.gameName, 4)}</p>
                     <p className="promoGenre" aria-label={invitation.genre}>{renderInkText(invitation.genre, 5)}</p>
                     <p aria-label={invitation.capacity}>{renderInkText(invitation.capacity, 6)}</p>
-                    <p aria-label={invitation.date}>{renderInkText(invitation.date, 7)}</p>
+                    <p aria-label={invitationDate}>{renderInkText(invitationDate, 7)}</p>
                     <p aria-label={invitation.time}>{renderInkText(invitation.time, 8)}</p>
-                    <p aria-label={invitation.place}>{renderInkText(invitation.place, 9)}</p>
+                    <p aria-label={invitationPlace}>{renderInkText(invitationPlace, 9)}</p>
                     <p aria-label={invitation.runtime}>{renderInkText(invitation.runtime, 10)}</p>
                   </div>
                 </>

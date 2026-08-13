@@ -118,6 +118,12 @@ export function isPromoCardSampleRequest(location: LocationLike): boolean {
   return resolvePromoCardRoute(location) === "sample";
 }
 
+export function isPublishedPromoCardSampleRequest(
+  location: LocationLike,
+): boolean {
+  return normalizePathname(location.pathname).endsWith("/invitation/sample");
+}
+
 export function resolvePromoCardDesign(
   location: LocationLike,
 ): PromoCardDesign {
