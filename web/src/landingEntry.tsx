@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import { ScriptLanding } from "./features/script-selection/ScriptLanding";
 import {
+  resolveExpiredInvitationPrototypeRoute,
   resolvePromoCardDesign,
   resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
@@ -15,23 +16,34 @@ const PromoCardPrototypeEntry = React.lazy(async () => {
   return { default: module.PromoCardPrototype };
 });
 
+const ExpiredInvitationPrototypeEntry = React.lazy(async () => {
+  const module = await import("./expiredInvitationPrototype");
+  return { default: module.ExpiredInvitationPrototype };
+});
+
 const productionPromoCardRoute = resolvePromoCardProductionRoute(window.location);
-const devPromoCardRoute = !productionPromoCardRoute && import.meta.env.DEV
+const devExpiredInvitationRoute = !productionPromoCardRoute && import.meta.env.DEV
+  ? resolveExpiredInvitationPrototypeRoute(window.location)
+  : undefined;
+const expiredInvitationRoute = productionPromoCardRoute ?? devExpiredInvitationRoute;
+const devPromoCardRoute = !expiredInvitationRoute && import.meta.env.DEV
   ? resolvePromoCardRoute(window.location)
   : undefined;
-const promoCardRoute = productionPromoCardRoute ?? devPromoCardRoute;
-const promoCardDesign = productionPromoCardRoute
-  ? "vellum"
-  : promoCardRoute === "trouble-brewing"
+const promoCardRoute = devPromoCardRoute;
+const promoCardDesign = promoCardRoute === "trouble-brewing"
     ? resolvePromoCardDesign(window.location)
     : promoCardRoute === "sects-and-violets"
       ? "vellum"
     : undefined;
-const promoCardRequested = Boolean(productionPromoCardRoute || devPromoCardRoute);
+const promoCardRequested = Boolean(devPromoCardRoute);
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {promoCardRequested && promoCardRoute ? (
+    {expiredInvitationRoute ? (
+      <React.Suspense fallback={null}>
+        <ExpiredInvitationPrototypeEntry variant={expiredInvitationRoute} />
+      </React.Suspense>
+    ) : promoCardRequested && promoCardRoute ? (
       <React.Suspense fallback={null}>
         <PromoCardPrototypeEntry
           variant={promoCardRoute}

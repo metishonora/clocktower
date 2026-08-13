@@ -1,28 +1,17 @@
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 import envelopeTextureUrl from "./assets/promo/envelope-texture-v1.webp";
 import letterTextureUrl from "./assets/promo/letter-texture-v1.webp";
-import letterVellumTextureUrl from "./assets/promo/letter-vellum-calfskin-v1.jpg";
-import letterChanceryTextureUrl from "./assets/promo/letter-parchment-sheepskin-v1.jpg";
-import letterRagTextureUrl from "./assets/promo/letter-rag-paper-v1.jpg";
 import waxSealUrl from "./assets/promo/wax-seal.png";
-import waxSealSnvUrl from "./assets/promo/wax-seal-snv.png";
-import waxSealTbUrl from "./assets/promo/wax-seal-tb.png";
+import {
+  INVITATION_ORIGINALS,
+  type InvitationOriginalVariant,
+} from "./promoCardOriginals";
 import type { PromoCardDesign } from "./promoCardPrototypeRoute";
 import "./promoCardPrototype.css";
 
 const PROMO_CARD_SIZE = 640;
-const TB_HEADING = "밤이 깃든 마을로 여러분을 초대합니다.";
-const TB_HEADING_LINES = ["밤이 깃든 마을로", "여러분을 초대합니다."] as const;
-const SNV_HEADING = "뒤엉킨 진실 속으로, 여러분을 다시 한 번 초대합니다.";
-const SNV_HEADING_LINES = ["뒤엉킨 진실 속으로,", "여러분을 다시 한 번 초대합니다."] as const;
 
-const TB_LETTER_TEXTURES: Record<PromoCardDesign, string> = {
-  vellum: letterVellumTextureUrl,
-  chancery: letterChanceryTextureUrl,
-  "rag-paper": letterRagTextureUrl,
-};
-
-export type PromoCardVariant = "sample" | "trouble-brewing" | "sects-and-violets";
+export type PromoCardVariant = "sample" | InvitationOriginalVariant;
 
 type PromoCardPrototypeProps = {
   variant?: PromoCardVariant;
@@ -91,24 +80,13 @@ export function PromoCardPrototype({
   const [opened, setOpened] = useState(false);
   const isTroubleBrewing = variant === "trouble-brewing";
   const isSectsAndViolets = variant === "sects-and-violets";
-  const isThemedInvitation = isTroubleBrewing || isSectsAndViolets;
-  const themedDesign = isThemedInvitation ? design : undefined;
-  const letterTexture = isThemedInvitation
-    ? TB_LETTER_TEXTURES[design]
+  const invitation = variant === "sample" ? undefined : INVITATION_ORIGINALS[variant];
+  const isThemedInvitation = Boolean(invitation);
+  const themedDesign = invitation ? design : undefined;
+  const letterTexture = invitation
+    ? invitation.letterTextures[design]
     : letterTextureUrl;
-  const sealUrl = isSectsAndViolets
-    ? waxSealSnvUrl
-    : isTroubleBrewing
-      ? waxSealTbUrl
-      : waxSealUrl;
-  const invitationDate = isSectsAndViolets
-    ? "날짜: 26년 8월 13일(목)"
-    : "날짜: 26년 8월 16일(주일)";
-  const invitationPlace = isSectsAndViolets
-    ? "장소: 삼성사옥 1층 회의실"
-    : "장소: 노량진교회";
-  const invitationHeading = isSectsAndViolets ? SNV_HEADING : TB_HEADING;
-  const invitationHeadingLines = isSectsAndViolets ? SNV_HEADING_LINES : TB_HEADING_LINES;
+  const sealUrl = invitation?.sealUrl ?? waxSealUrl;
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -197,20 +175,20 @@ export function PromoCardPrototype({
           >
             <span className="promoLetterRule" aria-hidden="true" />
             <header className="promoLetterHeader">
-              {isThemedInvitation ? (
+              {invitation ? (
                 <p aria-label="From 이야기꾼">{renderInkText("From 이야기꾼", 1)}</p>
               ) : (
                 <p>AN INVITATION AFTER DARK</p>
               )}
             </header>
 
-            <div className={isThemedInvitation ? "promoLetterCopy promoLetterCopy--tb" : "promoLetterCopy"}>
-              {isThemedInvitation ? (
+            <div className={invitation ? "promoLetterCopy promoLetterCopy--tb" : "promoLetterCopy"}>
+              {invitation ? (
                 <>
-                  <h1 aria-label={invitationHeading}>
-                    <span className="promoInkAccessible">{invitationHeading}</span>
+                  <h1 aria-label={invitation.heading}>
+                    <span className="promoInkAccessible">{invitation.heading}</span>
                     <span className="promoInkVisual" aria-hidden="true">
-                      {invitationHeadingLines.map((line, index) => (
+                      {invitation.headingLines.map((line, index) => (
                         <span className="promoInkLine" key={line}>
                           {renderInkGlyphs(line, index + 2)}
                         </span>
@@ -218,13 +196,13 @@ export function PromoCardPrototype({
                     </span>
                   </h1>
                   <div className="promoEventDetails" role="group" aria-label="초대 일정">
-                    <p aria-label="게임 이름: 시계탑에 흐른 피">{renderInkText("게임 이름: 시계탑에 흐른 피", 4)}</p>
-                    <p className="promoGenre" aria-label="장르: 마피아">{renderInkText("장르: 마피아", 5)}</p>
-                    <p aria-label="정원: 10-15인">{renderInkText("정원: 10-15인", 6)}</p>
-                    <p aria-label={invitationDate}>{renderInkText(invitationDate, 7)}</p>
-                    <p aria-label="시간: 18:00~">{renderInkText("시간: 18:00~", 8)}</p>
-                    <p aria-label={invitationPlace}>{renderInkText(invitationPlace, 9)}</p>
-                    <p aria-label="예상 런타임: 3시간">{renderInkText("예상 런타임: 3시간", 10)}</p>
+                    <p aria-label={invitation.gameName}>{renderInkText(invitation.gameName, 4)}</p>
+                    <p className="promoGenre" aria-label={invitation.genre}>{renderInkText(invitation.genre, 5)}</p>
+                    <p aria-label={invitation.capacity}>{renderInkText(invitation.capacity, 6)}</p>
+                    <p aria-label={invitation.date}>{renderInkText(invitation.date, 7)}</p>
+                    <p aria-label={invitation.time}>{renderInkText(invitation.time, 8)}</p>
+                    <p aria-label={invitation.place}>{renderInkText(invitation.place, 9)}</p>
+                    <p aria-label={invitation.runtime}>{renderInkText(invitation.runtime, 10)}</p>
                   </div>
                 </>
               ) : (
