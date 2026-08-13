@@ -2531,6 +2531,14 @@ function DrunkPrototype() {
   const drunkLivePlayer = livePlayers.find((player) => player.actualCharacter === "drunk");
   const ruleState: RuleState = {
     unannouncedNightDeathPlayerIds: [],
+    automaticReminders: drunkLivePlayer ? [{
+      playerId: drunkLivePlayer.id,
+      characterId: "drunk",
+      tokenId: "isTheDrunk",
+      label: "주정뱅이임",
+      description: "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+      sourceEventId: "issue153-drunk-identity",
+    }] : [],
     activeImpairments: drunkLivePlayer ? [{
       kind: "drunk",
       playerId: drunkLivePlayer.id,
@@ -2656,7 +2664,7 @@ function DrunkPrototype() {
             primaryClassName="snvFirstNightPrimary tbPlayPrimary issue153PlayPrimary"
             phaseHeader={<PhaseHeader phaseLabel="첫날 밤" />}
             currentTask={<DrunkShownCharacterTask character={shownCharacter} playerLabel={`${drunkDraftPlayer.seat}번 ${drunkDraftPlayer.name}`} theme={theme} />}
-            phaseOrder={<ol className="snvPhaseOverview issue153PhaseOrder" aria-label="주정뱅이 단계 순서"><li className="current"><span>현재</span><strong>{shownCharacter.label} 단계</strong></li></ol>}
+            phaseOrder={<ol className="snvPhaseOverview issue153PhaseOrder" aria-label="주정뱅이 단계 순서"><li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>주정뱅이 · {shownCharacter.label}</strong><ImpairmentBadges impairments={["drunk"]} label={`주정뱅이 · ${shownCharacter.label} 행동자 상태`} /></span></li></ol>}
           />
         ) : null}
       </ProductionApplicationShell>
@@ -2675,7 +2683,10 @@ function DrunkShownCharacterTask({ character, playerLabel, theme }: { character:
       >
         <CharacterIcon characterId={drunk.id} />
         <div>
-          <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{drunk.label}</span>
+          <span className="snvInformationRoleLine">
+            <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{drunk.label}</span>
+            <ImpairmentBadges impairments={["drunk"]} label="정보 영향" />
+          </span>
           <strong>{playerLabel}</strong>
         </div>
       </CharacterDetailButton>
@@ -2688,10 +2699,7 @@ function DrunkShownCharacterTask({ character, playerLabel, theme }: { character:
         >
           <CharacterIcon characterId={character.id} />
           <div>
-            <span className="snvInformationRoleLine">
-              <span className="issue153DrunkShownName" role="heading" aria-level={4}>{character.label}</span>
-              <ImpairmentBadges impairments={["drunk"]} label="능력 상태" />
-            </span>
+            <span className="issue153DrunkShownName" role="heading" aria-level={4}>{character.label}</span>
             <p>{character.abilitySummary}</p>
           </div>
         </CharacterDetailButton>

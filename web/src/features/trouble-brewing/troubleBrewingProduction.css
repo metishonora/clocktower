@@ -334,35 +334,6 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
-.tbProductionShell .tbGrimoireBoard > button.tbSeatHasShownIdentity {
-  gap: 0;
-}
-
-.tbProductionShell .tbGrimoireBoard > button.tbSeatHasShownIdentity > img {
-  width: 40px;
-  height: 40px;
-}
-
-.tbProductionShell .tbGrimoireBoard > button .tbSeatIdentityStack {
-  display: grid;
-  gap: 1px;
-  overflow: visible;
-  line-height: 1;
-  text-overflow: clip;
-  white-space: normal;
-}
-
-.tbProductionShell .tbGrimoireBoard > button .tbSeatShownIdentity {
-  color: #8fd3e8;
-  font-size: .49rem;
-  font-weight: 900;
-  letter-spacing: -.01em;
-}
-
-.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button .tbSeatShownIdentity {
-  color: #246f8d;
-}
-
 .tbProductionShell .snvSeatingTray,
 .tbProductionShell .snvLiveSeatDetails {
   border-color: rgba(215, 193, 150, .16);
@@ -606,15 +577,9 @@
   box-shadow: inset 0 0 0 1px rgba(210, 173, 100, .09), inset 0 14px 38px rgba(0, 0, 0, .24);
 }
 
-.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article,
 .playerTokenDetailBackdrop.tbTheme .tbPlayerNotes {
   border-color: rgba(210, 173, 100, .14);
   background: rgba(255, 255, 255, .035);
-}
-
-.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article.shown {
-  border-color: rgba(90, 177, 213, .34);
-  background: rgba(43, 123, 151, .13);
 }
 
 .playerTokenDetailBackdrop.tbTheme.day {
@@ -654,8 +619,7 @@
 }
 
 .playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterSummary p,
-.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes p,
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities strong {
+.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes p {
   color: #38483d;
 }
 
@@ -664,15 +628,9 @@
   box-shadow: inset 0 0 0 1px rgba(73, 107, 80, .12), inset 0 14px 38px rgba(49, 61, 40, .08);
 }
 
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article,
 .playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes {
   border-color: rgba(73, 107, 80, .14);
   background: rgba(73, 107, 80, .05);
-}
-
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article.shown {
-  border-color: rgba(45, 126, 157, .24);
-  background: rgba(182, 216, 222, .4);
 }
 
 .tbSharedLivePlay .snvDetailsBackdrop {
@@ -905,56 +863,6 @@
   font-weight: 850;
 }
 
-.tbDrunkIdentities {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.tbDrunkIdentities article {
-  display: grid;
-  min-width: 0;
-  padding: 10px;
-  gap: 7px;
-  border: 1px solid rgba(182, 151, 237, .28);
-  border-radius: 14px;
-  background: rgba(115, 82, 151, .13);
-}
-
-.tbDrunkIdentities article.shown {
-  border-color: rgba(90, 177, 213, .34);
-  background: rgba(43, 123, 151, .13);
-}
-
-.tbDrunkIdentities article > span {
-  color: #bcae8d;
-  font-size: .6rem;
-  font-weight: 900;
-  letter-spacing: .05em;
-}
-
-.tbDrunkIdentities article > div {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.tbDrunkIdentities img {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-
-.tbDrunkIdentities strong {
-  min-width: 0;
-  overflow: hidden;
-  color: #f6edda;
-  font-size: .72rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .tbPlayerNotes {
   display: grid;
   padding: 16px;
@@ -1026,6 +934,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.tbProductionShell .tbProgressActor .snvInformationInfluenceBadge {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: .74rem;
+}
+
+.tbProductionShell .snvPhaseOverviewAction .snvInformationInfluenceBadge {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: .62rem;
 }
 
 .tbProgressPlayerStandalone {
@@ -1762,22 +1682,10 @@
   background: var(--tb-ui-disabled);
 }
 
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article > span,
 .playerTokenDetailBackdrop.day .tbPlayerNotes > span {
   color: #627057;
 }
 
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article {
-  border-color: rgba(121, 89, 154, .22);
-  background: rgba(206, 192, 219, .34);
-}
-
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article.shown {
-  border-color: rgba(45, 126, 157, .24);
-  background: rgba(182, 216, 222, .4);
-}
-
-.playerTokenDetailBackdrop.day .tbDrunkIdentities strong,
 .playerTokenDetailBackdrop.day .tbPlayerNotes p {
   color: #38483d;
 }

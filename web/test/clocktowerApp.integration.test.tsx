@@ -4,6 +4,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { GameFile, ReplayState, RevealPayload } from "../src/core/types";
 import { IndexedDbGameStorageDriver } from "../src/gameStorage";
+import { characterAsset } from "../src/characterAssets";
 import type { TbSessionPresentation } from "../src/gameStore";
 import { ClocktowerApp } from "../src/main";
 import { seatLayoutPositions, type SetupDraft } from "../src/setupDraft";
@@ -146,8 +147,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(confirmButton.disabled).toBe(true);
     await user.click(within(seatMap).getByRole("button", { name: /4번 좌석.*주정뱅이/ }));
     await user.selectOptions(screen.getByLabelText("보여준 직업"), "fortuneTeller");
-    expect(within(seatMap).getByText("표시 · 점쟁이", { exact: true })).toBeTruthy();
-    expect(within(seatMap).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
+    const drunkSeat = within(seatMap).getByRole("button", {
+      name: /4번 좌석.*실제 주정뱅이, 표시 점쟁이/,
+    });
+    expect(within(drunkSeat).getByText("점쟁이", { exact: true })).toBeTruthy();
+    expect(within(drunkSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
+    expect(within(drunkSeat).queryByText("표시 · 점쟁이", { exact: true })).toBeNull();
+    expect(drunkSeat.querySelector("img")?.getAttribute("src")).toBe(characterAsset("fortuneTeller")?.src);
+    expect(within(drunkSeat).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
     expect(confirmButton.disabled).toBe(false);
   });
 
@@ -688,7 +695,8 @@ describe("ClocktowerApp live-play integration", () => {
     const grimoireAda = within(grimoire).getByRole("button", { name: /Ada/ });
     const grimoireCy = within(grimoire).getByRole("button", { name: /Cy.*실제 주정뱅이.*표시 사서/ });
     expect(grimoireAda.classList.contains("kind-townsfolk")).toBe(true);
-    expect(grimoireCy.classList.contains("kind-outsider")).toBe(true);
+    expect(grimoireCy.classList.contains("kind-townsfolk")).toBe(true);
+    expect(within(grimoireCy).getByText("사서", { exact: true })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
     await user.click(grimoireAda);
     expect(grimoireAda.getAttribute("aria-pressed")).toBe("true");

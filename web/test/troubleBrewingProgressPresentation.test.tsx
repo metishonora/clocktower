@@ -283,8 +283,13 @@ test("presents a drunk actor as the primary identity with a nested Washerwoman a
   expect(within(shownAbility).getByRole("heading", { name: "세탁부" })).toBeTruthy();
   expect(within(shownAbility).getByText(/게임 시작 시.*특정 주민/)).toBeTruthy();
   expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
-  expect(within(within(task).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
-  expect(within(screen.getByLabelText("주정뱅이 · 세탁부 행동자 상태")).getByText("취함", { exact: true })).toBeTruthy();
+  const actorBadge = within(within(task).getByLabelText("정보 영향")).getByText("취함", { exact: true });
+  expect(actorBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(actorBadge.classList.contains("drunk")).toBe(true);
+  const overviewBadge = within(screen.getByLabelText("주정뱅이 · 세탁부 행동자 상태"))
+    .getByText("취함", { exact: true });
+  expect(overviewBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(overviewBadge.classList.contains("drunk")).toBe(true);
   expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
   expect(within(task).getByRole("button", { name: "대상 선택" })).toBeTruthy();
   expect(screen.getByRole("list", { name: "첫날 밤 순서" }).textContent).toContain("주정뱅이 · 세탁부");

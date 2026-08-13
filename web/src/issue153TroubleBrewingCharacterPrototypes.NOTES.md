@@ -339,13 +339,13 @@ semantics.
 - Setup assigns the actual `주정뱅이` and separately chooses one Townsfolk
   under `보여준 직업`. The shown character may match another player's real
   character; actual and shown identities remain separate data.
-- Progress keeps the large acting identity as `주정뱅이 · 1번 민지`. A nested
-  `보여준 직업` card presents the chosen character, its ability text, and the
-  `취함` state, matching the Philosopher's owner/acting-ability hierarchy.
-- The ordinary reference Grimoire keeps the player-facing shown character on
-  the seat while the Storyteller-only player detail exposes `실제 직업`,
-  `보여준 직업`. No redundant `주정뱅이임` reminder token is added because
-  the actual identity already carries that information.
+- Progress keeps the large acting identity as `주정뱅이 · 1번 민지` and puts
+  the `취함` badge on that actual identity. A nested `보여준 직업` card presents
+  only the chosen character and its ability text, matching the Philosopher's
+  owner/acting-ability hierarchy.
+- The ordinary reference Grimoire displays the player-facing shown character
+  as the seat identity. The actual identity is represented by the canonical
+  `주정뱅이임` reminder token and is available through the shared token detail.
 - Production should schedule and render the shown character's approved action
   flow with the Drunk as ability owner and permanent `취함` context. This
   focused prototype reviews that identity boundary rather than duplicating all

@@ -374,29 +374,33 @@ test("keeps a Drunk distinct when their shown character matches a real Townsfolk
   const confirm = within(fixture).getByRole("button", { name: "배치 확정" });
   expect((confirm as HTMLButtonElement).disabled).toBe(true);
   await user.selectOptions(shownCharacter, "chef");
-  expect(within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이, 표시 요리사/ })).toBeTruthy();
+  const shownSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이, 표시 요리사/ });
+  expect(within(shownSeat).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(shownSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
   expect(within(grimoire).getByRole("button", { name: /2번 좌석, 서연, 요리사/ })).toBeTruthy();
-  expect(within(drunkSeat).getByText("표시 · 요리사", { exact: true })).toBeTruthy();
-  expect(within(drunkSeat).queryByRole("img", { name: "보여준 직업 요리사 토큰" })).toBeNull();
   expect((confirm as HTMLButtonElement).disabled).toBe(false);
   await user.click(confirm);
 
   const task = within(fixture).getByRole("article", { name: "주정뱅이 표시 직업 진행" });
   expect(within(task).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
+  expect(within(within(task).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
   const shownAbility = within(task).getByRole("region", { name: "보여준 직업 · 요리사" });
   expect(within(shownAbility).getByRole("heading", { name: "요리사" })).toBeTruthy();
-  expect(within(shownAbility).getByLabelText("능력 상태").textContent).toBe("취함");
+  expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
   expect(within(shownAbility).getByText(/서로 이웃하게 앉은 악한 플레이어가 몇 쌍 있는지/)).toBeTruthy();
+  expect(within(fixture).getByLabelText("주정뱅이 · 요리사 행동자 상태").textContent).toBe("취함");
 
   const stages = within(fixture).getByRole("navigation", { name: "작업 단계" });
   await user.click(within(stages).getByRole("button", { name: "마도서" }));
   grimoire = within(fixture).getByLabelText("라이브 마도서 좌석 맵");
-  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이, 표시 요리사.*토큰 없음/ }));
+  const liveDrunkSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 민지, 실제 주정뱅이, 표시 요리사.*토큰 1개/ });
+  expect(within(liveDrunkSeat).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(liveDrunkSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
+  await user.click(liveDrunkSeat);
   const details = screen.getByRole("dialog", { name: "1번 민지 플레이어 상세" });
-  const identities = within(details).getByLabelText("주정뱅이 아이덴티티");
-  expect(within(identities).getByText("실제 직업")).toBeTruthy();
-  expect(within(identities).getByText("보여준 직업")).toBeTruthy();
-  expect(within(details).queryByLabelText("부착된 토큰")).toBeNull();
+  expect(within(details).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(details).queryByLabelText("주정뱅이 아이덴티티")).toBeNull();
+  expect(within(details).getByRole("listitem", { name: /자동 규칙 · 주정뱅이임 · 출처 주정뱅이/ })).toBeTruthy();
 });
 
 test("keeps a Fortune Teller Recluse judgment inside the Grimoire selection panel", async () => {

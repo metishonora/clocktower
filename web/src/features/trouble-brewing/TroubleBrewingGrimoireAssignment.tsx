@@ -7,7 +7,7 @@ import {
   rectangularSeatPositions,
 } from "../../shared-ui/GrimoirePresentation";
 import { characters, type SetupDraft } from "../../setupDraft";
-import { TroubleBrewingSeatIdentity } from "./TroubleBrewingSeatIdentity";
+import { troubleBrewingSeatPresentation } from "./troubleBrewingSeatPresentation";
 
 export function TroubleBrewingGrimoireAssignment({
   draft,
@@ -73,30 +73,28 @@ export function TroubleBrewingGrimoireAssignment({
         style={sizeStyle}
         seats={draft.players.map((player, index) => {
           const assignedCharacter = characters.find((candidate) => candidate.id === player.actualCharacter);
-          const shownCharacter = player.shownCharacter && player.shownCharacter !== player.actualCharacter
-            ? characters.find((candidate) => candidate.id === player.shownCharacter)
+          const presentation = player.actualCharacter
+            ? troubleBrewingSeatPresentation(player.actualCharacter, player.shownCharacter)
             : undefined;
+          const displayedCharacter = characters.find((candidate) => candidate.id === presentation?.displayedCharacterId);
           const identityLabel = assignedCharacter
-            ? shownCharacter
-              ? `실제 ${assignedCharacter.label}, 표시 ${shownCharacter.label}`
+            ? presentation?.hasHiddenActualIdentity && displayedCharacter
+              ? `실제 ${assignedCharacter.label}, 표시 ${displayedCharacter.label}`
               : assignedCharacter.label
             : "미할당";
           return {
             id: `seat-${player.seat}`,
             position: desktopPositions[index],
             mobilePosition: mobilePositions[index],
-            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${assignedCharacter ? `assigned alignment-${alignmentFor(assignedCharacter.kind)} kind-${assignedCharacter.kind.toLowerCase()} character-${assignedCharacter.id}${shownCharacter ? " tbSeatHasShownIdentity" : ""}` : "unassigned"}`,
+            className: `fixedSize ${draft.selectedSeat === player.seat ? "selected " : ""}${displayedCharacter ? `assigned alignment-${alignmentFor(displayedCharacter.kind)} kind-${displayedCharacter.kind.toLowerCase()} character-${displayedCharacter.id}` : "unassigned"}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}`,
             pressed: draft.selectedSeat === player.seat,
             onSelect: () => onSeatSelect(player.seat),
             content: <>
               <span className="snvSeatNumber">{player.seat}</span>
-              {assignedCharacter && characterAsset(assignedCharacter.id) ? <img src={characterAsset(assignedCharacter.id)?.src} alt="" /> : null}
+              {displayedCharacter && characterAsset(displayedCharacter.id) ? <img src={characterAsset(displayedCharacter.id)?.src} alt="" /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
-              <TroubleBrewingSeatIdentity
-                actualLabel={assignedCharacter?.label ?? "미할당"}
-                shownLabel={shownCharacter?.label}
-              />
+              <small>{displayedCharacter?.label ?? "미할당"}</small>
             </>,
           };
         })}

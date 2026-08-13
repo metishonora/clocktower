@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
+import { characterAsset } from "../src/characterAssets";
 import type { GameFile, Player, ReplayState, RuleState } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -484,25 +485,37 @@ test("shows Drunk actual and shown identities in the shared detail and restores 
   const playerRoster = players().map((player) => player.id === "player-3" ? {
     ...player,
     actualCharacter: "drunk",
-    shownCharacter: "fortuneTeller",
-    systemTokenIds: ["abilitySpent" as const],
+    shownCharacter: "chef",
   } : player);
-  renderLiveGrimoire(playerRoster);
+  renderLiveGrimoire(playerRoster, {
+    unannouncedNightDeathPlayerIds: [],
+    automaticReminders: [{
+      playerId: "player-3",
+      characterId: "drunk",
+      tokenId: "isTheDrunk",
+      label: "주정뱅이임",
+      description: "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+      sourceEventId: "setup-event",
+    }],
+  });
 
   const grimoire = await openLiveGrimoire(user);
-  const seat = within(grimoire).getByRole("button", { name: /3번 좌석, Cy, 실제 주정뱅이, 표시 점쟁이/ });
-  const shownIdentity = within(seat).getByText("표시 · 점쟁이", { exact: true });
-  expect(shownIdentity.classList.contains("tbSeatShownIdentity")).toBe(true);
-  expect(within(seat).queryByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeNull();
+  const seat = within(grimoire).getByRole("button", { name: /3번 좌석, Cy, 실제 주정뱅이, 표시 요리사/ });
+  expect(within(seat).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(seat).queryByText("주정뱅이", { exact: true })).toBeNull();
+  expect(within(seat).queryByText("표시 · 요리사", { exact: true })).toBeNull();
+  expect(seat.querySelector("img")?.getAttribute("src")).toBe(characterAsset("chef")?.src);
+  expect(within(seat).queryByRole("img", { name: "보여준 직업 요리사 토큰" })).toBeNull();
   expect(within(grimoire).getByText("+1", { exact: true })).toBeTruthy();
   await user.click(seat);
 
   const detail = screen.getByRole("dialog", { name: "3번 Cy 플레이어 상세" });
-  const identities = within(detail).getByRole("region", { name: "주정뱅이 아이덴티티" });
-  expect(within(identities).getByText("실제 직업")).toBeTruthy();
-  expect(within(identities).getByText("보여준 직업")).toBeTruthy();
-  expect(within(identities).getByText("주정뱅이")).toBeTruthy();
-  expect(within(identities).getByText("점쟁이")).toBeTruthy();
+  expect(within(detail).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(detail).queryByRole("region", { name: "주정뱅이 아이덴티티" })).toBeNull();
+  const tokenList = within(detail).getByRole("list", { name: "부착된 토큰 1개" });
+  expect(within(tokenList).getByRole("listitem", {
+    name: /자동 규칙 · 주정뱅이임 · 출처 주정뱅이/,
+  })).toBeTruthy();
 
   await user.click(within(detail).getByRole("button", { name: "플레이어 상세 닫기" }));
   await waitFor(() => expect(document.activeElement).toBe(seat));
