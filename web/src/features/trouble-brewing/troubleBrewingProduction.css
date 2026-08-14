@@ -1121,21 +1121,66 @@
 }
 
 .tbProductionShell .tbCurrentTask .snvInformationValues {
+  display: grid;
   width: min(620px, 100%);
   margin: 0;
+  gap: 8px;
 }
 
 .tbProductionShell .tbCurrentTask .snvInformationValues > div {
+  display: grid;
+  min-height: 58px;
+  padding: 10px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid;
+  border-radius: 13px;
   border-color: var(--tb-ui-panel-border);
   background: color-mix(in srgb, var(--tb-ui-panel) 72%, transparent);
 }
 
 .tbProductionShell .tbCurrentTask .snvInformationValues dt {
   color: var(--tb-ui-muted);
+  font-size: .68rem;
+  font-weight: 850;
 }
 
 .tbProductionShell .tbCurrentTask .snvInformationValues dd {
+  margin: 0;
   color: var(--tb-ui-heading);
+  font: 1.18rem Georgia, serif;
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select {
+  width: min(100%, 300px);
+  min-height: 44px;
+  padding: 9px 30px 9px 11px;
+  border: 1px solid rgba(210, 173, 100, .42);
+  border-radius: 10px;
+  color: var(--tb-ui-heading);
+  background: #173c29;
+  font: 850 .78rem system-ui, sans-serif;
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select:focus-visible {
+  outline: 3px solid rgba(210, 173, 100, .28);
+  outline-offset: 2px;
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select:disabled {
+  border-color: rgba(221, 198, 151, .16);
+  color: var(--tb-ui-copy-muted);
+  background: rgba(8, 28, 18, .48);
+  opacity: 1;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbSetupInformationEditor select {
+  background: #f7f1d9;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbSetupInformationEditor select:disabled {
+  background: rgba(255, 253, 238, .72);
 }
 
 .tbProductionShell .tbCurrentTask .tbInformationTargetSummary {

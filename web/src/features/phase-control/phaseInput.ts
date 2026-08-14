@@ -514,7 +514,11 @@ export function setupInfoRegistrationJudgments(
   selectedCharacterId: string,
   players: Player[],
 ): RegistrationJudgment[] {
-  if (step.requiredInput.kind !== "setupInfo" || !selectedCharacterId) return [];
+  if (
+    step.requiredInput.kind !== "setupInfo"
+    || !selectedCharacterId
+    || setupInfoDeliveryIsImpaired(step)
+  ) return [];
   const representedByActualCharacter = players.some(
     (player) =>
       selectedPlayerIds.includes(player.id) && player.actualCharacter === selectedCharacterId,
@@ -562,7 +566,11 @@ export function phaseStepConfirmation(
     ),
   };
 
-  if (step.requiredInput.kind === "setupInfo" && draft.registrationJudgments.length) {
+  if (
+    step.requiredInput.kind === "setupInfo"
+    && !setupInfoDeliveryIsImpaired(step)
+    && draft.registrationJudgments.length
+  ) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
   if (step.requiredInput.kind !== "setupInfo" && draft.registrationJudgments.length) {

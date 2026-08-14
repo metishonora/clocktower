@@ -331,6 +331,7 @@ test.each([
     maxSelections: 2,
     setupInfo: character,
     characterKind: character === "librarian" ? "Outsider" : "Minion",
+    zeroAllowed: character === "librarian",
   }));
 
   const currentTask = await screen.findByRole("region", { name: "현재 단계" });

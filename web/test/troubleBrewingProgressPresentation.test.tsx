@@ -328,7 +328,7 @@ test("keeps the drunk identity hierarchy in the Washerwoman Reveal follow-up", (
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
 
-test("keeps the Washerwoman information follow-up compact after a poisoned Reveal", () => {
+test("keeps the Washerwoman information context visible and locked after a poisoned Reveal", () => {
   const washerwoman = step({
     id: "firstNight:washerwoman",
     phase: "firstNight",
@@ -371,19 +371,30 @@ test("keeps the Washerwoman information follow-up compact after a poisoned Revea
   const task = screen.getByRole("region", { name: "세탁부 정보" });
   expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
   expect(within(task).queryByRole("group", { name: "전달할 정보" })).toBeNull();
-  expect(within(task).queryByText("2번 서연 · 7번 현우")).toBeNull();
-  expect(within(task).queryByText("요리사")).toBeNull();
+  expect(within(task).getByText("2번 서연 · 7번 현우")).toBeTruthy();
+  const picker = within(task).getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement;
+  expect(picker.value).toBe("chef");
+  expect(picker.disabled).toBe(true);
   const reveal = within(task).getByRole("button", { name: "중독 정보 공개" });
   expect(reveal.classList.contains("poisoned")).toBe(true);
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
 
-test("keeps the Librarian zero-outsider follow-up compact after Reveal", () => {
+test("keeps the Librarian zero-outsider context visible and locked after Reveal", () => {
   const librarian = step({
     id: "firstNight:librarian",
     phase: "firstNight",
     character: "librarian",
     playerId: "player-2",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "setupInfo",
+      minSelections: 2,
+      maxSelections: 2,
+      characterKind: "Outsider",
+      zeroAllowed: true,
+      optional: false,
+    },
   });
   renderProgress(librarian, [overview(librarian, "needsFollowUp")], undefined, {
     pendingReveal: {
@@ -395,7 +406,11 @@ test("keeps the Librarian zero-outsider follow-up compact after Reveal", () => {
 
   const task = screen.getByRole("region", { name: "사서 정보" });
   expect(within(task).queryByRole("group", { name: "전달할 정보" })).toBeNull();
-  expect(within(task).queryByText("외지인 없음")).toBeNull();
+  const result = within(task).getByRole("group", { name: "정보 결과" });
+  expect(within(result).getByText("외지인 없음")).toBeTruthy();
+  const picker = within(task).getByRole("combobox", { name: "보여줄 캐릭터" }) as HTMLSelectElement;
+  expect(picker.value).toBe("__zero_outsiders__");
+  expect(picker.disabled).toBe(true);
   expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
 });
@@ -572,6 +587,7 @@ test("defaults a healthy Librarian to zero outsiders only when the actual roster
       target: "setupInfo",
       minSelections: 2,
       maxSelections: 2,
+      characterKind: "Outsider",
       zeroAllowed: true,
       optional: false,
     },

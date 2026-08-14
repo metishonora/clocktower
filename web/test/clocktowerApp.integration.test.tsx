@@ -928,7 +928,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
 
-  test("treats Drunk as an Actual Outsider for Librarian choices and disables zero Outsiders", async () => {
+  test("treats Drunk as an Actual Outsider for Librarian choices and omits zero Outsiders", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-3"
         ? { ...player, actualCharacter: "drunk", shownCharacter: "chef" }
@@ -956,9 +956,9 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
-    const zeroOutsiders = screen.getByRole("checkbox", { name: "외지인 0명" }) as HTMLInputElement;
-    expect(zeroOutsiders.disabled).toBe(true);
-    expect(screen.getByText("실제 외지인이 있어 0명을 선택할 수 없습니다.")).toBeTruthy();
+    expect(screen.queryByRole("checkbox", { name: "외지인 0명" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /외지인 (?:0명|없음)/ })).toBeNull();
+    expect(screen.queryByText("실제 외지인이 있어 0명을 선택할 수 없습니다.")).toBeNull();
 
     const grimoire = await openLiveGrimoire(user);
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
@@ -1045,7 +1045,8 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
-    expect((screen.getByRole("checkbox", { name: "외지인 0명" }) as HTMLInputElement).disabled).toBe(false);
+    const initialCharacterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    expect(within(initialCharacterSelect).getByRole("option", { name: "외지인 없음" })).toBeTruthy();
     const grimoire = await openLiveGrimoire(user);
     expect(within(grimoire).getByRole("button", { name: /Cy.*실제 주정뱅이.*표시 점쟁이/ })).toBeTruthy();
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
@@ -1096,8 +1097,8 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
-    const zero = screen.getByRole("checkbox", { name: "외지인 0명" });
-    await user.click(zero);
+    const zero = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
+    await user.selectOptions(zero, "__zero_outsiders__");
     const grimoire = await openLiveGrimoire(user);
     expect(
       (within(grimoire).getByRole("button", { name: /Bert/ }) as HTMLButtonElement).disabled,

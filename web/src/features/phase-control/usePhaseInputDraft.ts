@@ -79,16 +79,23 @@ export function usePhaseInputDraft(
       : undefined,
     [draft.selectedPlayerIds, players, step],
   );
+  const setupInfoCandidatePathAvailable = useMemo(
+    () => step?.requiredInput.kind === "setupInfo"
+      ? setupInfoSelectionCanComplete(step, [], players)
+      : false,
+    [players, step],
+  );
 
   useEffect(() => {
     setDraft(emptyDraft());
   }, [step?.id, contextFingerprint, resetRevision]);
 
   useEffect(() => {
-    const autoZeroOutsiders = step?.character === "librarian"
-      && step.requiredInput.kind === "setupInfo"
+    const autoZeroOutsiders = step?.requiredInput.kind === "setupInfo"
+      && Boolean(step.requiredInput.zeroAllowed)
       && zeroOutsidersAvailable
       && actualOutsidersAbsent
+      && !setupInfoCandidatePathAvailable
       && !step.informationPrompt?.activeReasons.some(
         (reason) => reason.type === "poisoned" || reason.type === "drunk",
       );
@@ -102,7 +109,7 @@ export function usePhaseInputDraft(
         current.zeroOutsiders ? { ...current, zeroOutsiders: false } : current,
       );
     }
-  }, [actualOutsidersAbsent, step, zeroOutsidersAvailable]);
+  }, [actualOutsidersAbsent, setupInfoCandidatePathAvailable, step, zeroOutsidersAvailable]);
 
   function setSelectedPlayerIds(playerIds: string[]) {
     setDraft((current) => {
@@ -138,6 +145,7 @@ export function usePhaseInputDraft(
   function setSelectedCharacterId(characterId: string) {
     setDraft((current) => ({
       ...current,
+      zeroOutsiders: false,
       selectedCharacterId: characterId,
       registrationJudgments: step
         ? setupInfoRegistrationJudgments(

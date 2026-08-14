@@ -365,7 +365,7 @@ test("impaired setup information exposes every ability-shaped Character and zero
   equal(setupInfoZeroOutsidersAvailable([player("drunk", "drunk")], step), true);
 });
 
-test("setup registration expands one editor and builds a concrete judgment", () => {
+test("setup registration emits a witness only while the information is healthy", () => {
   const step: PhaseStep = {
     id: "firstNight:investigator",
     phase: "firstNight",
@@ -397,6 +397,20 @@ test("setup registration expands one editor and builds a concrete judgment", () 
     },
   };
   const roster = [player("chef", "chef"), player("recluse", "recluse")];
+  const judgment = {
+    playerId: "recluse",
+    registeredAs: "minion" as const,
+    characterId: "poisoner",
+  };
+  const draft = {
+    selectedPlayerIds: ["chef", "recluse"],
+    selectedCharacterId: "poisoner",
+    selectedCharacterIds: [],
+    zeroOutsiders: false,
+    registrationJudgments: [judgment],
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
   deepEqual(
     setupInfoCharacterOptions("Minion", ["chef", "recluse"], roster, step).map(
       (character) => character.id,
@@ -405,8 +419,46 @@ test("setup registration expands one editor and builds a concrete judgment", () 
   );
   deepEqual(
     setupInfoRegistrationJudgments(step, ["chef", "recluse"], "poisoner", roster),
-    [{ playerId: "recluse", registeredAs: "minion", characterId: "poisoner" }],
+    [judgment],
   );
+  deepEqual(
+    phaseStepConfirmation(step, draft, nominationDraft),
+    {
+      input: { playerIds: ["chef", "recluse"], characterId: "poisoner" },
+      registrationJudgments: [judgment],
+    },
+  );
+
+  const impairedReasonSets: Array<
+    NonNullable<PhaseStep["informationPrompt"]>["activeReasons"]
+  > = [
+    [{ type: "drunk" }],
+    [{ type: "poisoned", poisonerPlayerId: "poisoner", poisonEventId: "poison-event" }],
+  ];
+  for (const activeReasons of impairedReasonSets) {
+    const impairedStep: PhaseStep = {
+      ...step,
+      informationPrompt: step.informationPrompt
+        ? { ...step.informationPrompt, activeReasons }
+        : undefined,
+    };
+
+    deepEqual(
+      setupInfoRegistrationJudgments(
+        impairedStep,
+        ["chef", "recluse"],
+        "poisoner",
+        roster,
+      ),
+      [],
+    );
+    deepEqual(
+      phaseStepConfirmation(impairedStep, draft, nominationDraft),
+      {
+        input: { playerIds: ["chef", "recluse"], characterId: "poisoner" },
+      },
+    );
+  }
 });
 
 test("numeric confirmation submits Rust witness only for an alternate choice", () => {

@@ -21,6 +21,8 @@ import {
   phaseOverviewTitle,
   phaseStepConfirmation,
   setupInfoSelectionIsComplete,
+  setupInfoSelectionCanComplete,
+  setupInfoDeliveryIsImpaired,
   stepInputReady,
   stepStatusLabel,
   stepTitle,
@@ -29,6 +31,7 @@ import {
 import { NightResultsAnnouncement } from "../phase-control/NightResultsAnnouncement";
 import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
 import { suggestionRequestFingerprint } from "../phase-control/randomSuggestion";
+import { TroubleBrewingSetupInformationEditor } from "./TroubleBrewingSetupInformationEditor";
 
 const troubleBrewingCharacterPresentation: CharacterPresentationResolver = (characterId) => {
   const character = characters.find((candidate) => candidate.id === characterId);
@@ -54,10 +57,12 @@ export function TroubleBrewingProgress({
   onGoToGrimoire: () => void;
 }) {
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
+  const visibleCurrentStep = control.pendingReveal?.step ?? control.currentStep;
+  const visiblePhaseOverview = phaseOverviewWithPendingReveal(control.phaseOverview, control.pendingReveal?.step);
 
   useEffect(() => {
     currentOverviewItemRef.current?.scrollIntoView?.({ block: "nearest", inline: "center" });
-  }, [control.currentStep?.id]);
+  }, [visibleCurrentStep?.id]);
 
   return (
     <PlayPresentation
@@ -74,9 +79,9 @@ export function TroubleBrewingProgress({
       </>}
       currentTask={<TroubleBrewingTask {...control} theme={theme} onGoToGrimoire={onGoToGrimoire} />}
       phaseOrder={<section className="tbProgressOrder" aria-label="단계 개요">
-        <ol className="snvPhaseOverview tbPhaseOrder" aria-label={phaseOrderLabel(control.currentStep, phaseLabel)}>
-          {control.phaseOverview.length === 0 ? <li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>진행할 단계 없음</strong></span></li> : null}
-          {control.phaseOverview.map((step) => (
+        <ol className="snvPhaseOverview tbPhaseOrder" aria-label={phaseOrderLabel(visibleCurrentStep, phaseLabel)}>
+          {visiblePhaseOverview.length === 0 ? <li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>진행할 단계 없음</strong></span></li> : null}
+          {visiblePhaseOverview.map((step) => (
             <li
               key={step.id}
               className={overviewClass(step.status)}
@@ -188,6 +193,7 @@ function TroubleBrewingTask({
     return <div className="tbProgressTaskColumn">
       <TroubleBrewingInformationFollowUp
         step={pendingReveal.step}
+        payload={pendingReveal.payload}
         players={players}
         ruleState={ruleState}
         theme={theme}
@@ -238,6 +244,16 @@ function TroubleBrewingTask({
   const zeroOutsiderInformation = Boolean(
     currentStep?.requiredInput.kind === "setupInfo" && phaseInputDraft.zeroOutsiders,
   );
+  const setupInfoCandidatePathAvailable = Boolean(
+    currentStep?.requiredInput.kind === "setupInfo"
+      && setupInfoSelectionCanComplete(currentStep, [], players),
+  );
+  const autoZeroOutsiderInformation = Boolean(
+    zeroOutsiderInformation
+      && currentStep
+      && !setupInfoDeliveryIsImpaired(currentStep)
+      && !setupInfoCandidatePathAvailable,
+  );
   const isInformationConfirmation = Boolean(currentStep?.informationPrompt || zeroOutsiderInformation);
   const isInformationStep = Boolean(
     currentStep?.informationPrompt || currentStep?.requiredInput.kind === "setupInfo",
@@ -268,7 +284,7 @@ function TroubleBrewingTask({
       return player ? [`${player.seat}번 ${player.name}`] : [];
     })
     : [];
-  const selectionValid = currentStep ? immediateScalarInformation || zeroOutsiderInformation || stepInputReady(
+  const selectionValid = currentStep ? immediateScalarInformation || stepInputReady(
     currentStep,
     phaseInputDraft.selectedPlayerIds.length,
     phaseInputDraft.selectedCharacterIds.length,
@@ -534,9 +550,22 @@ function TroubleBrewingTask({
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
               busy={busy || suggesting}
               onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
-            /> : zeroOutsiderInformation ? <dl className="snvInformationValues" role="group" aria-label="정보 결과">
-              <div><dt>대상</dt><dd>외지인 없음</dd></div>
-            </dl> : currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
+            /> : currentStep.requiredInput.kind === "setupInfo" ? <>
+              {zeroOutsiderInformation ? <dl className="snvInformationValues" role="group" aria-label="정보 결과">
+                <div><dt>대상</dt><dd>외지인 없음</dd></div>
+              </dl> : null}
+              {!autoZeroOutsiderInformation ? <TroubleBrewingSetupInformationEditor
+                step={currentStep}
+                players={players}
+                selectedPlayerIds={phaseInputDraft.selectedPlayerIds}
+                selectedCharacterId={phaseInputDraft.selectedCharacterId}
+                zeroOutsiders={phaseInputDraft.zeroOutsiders}
+                zeroOutsidersAvailable={phaseInputDraft.zeroOutsidersAvailable}
+                disabled={busy || suggesting}
+                onCharacterChange={phaseInputDraft.setSelectedCharacterId}
+                onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
+              /> : null}
+            </> : currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
               step={currentStep}
               players={players}
               dayState={dayState}
@@ -707,6 +736,7 @@ function isEvilInformationReveal(payload: RevealPayload): payload is Extract<Rev
 
 function TroubleBrewingInformationFollowUp({
   step,
+  payload,
   players,
   ruleState,
   theme,
@@ -716,6 +746,7 @@ function TroubleBrewingInformationFollowUp({
   onContinue,
 }: {
   step: PhaseStep;
+  payload: RevealPayload;
   players: Player[];
   ruleState: PhaseControlProps["ruleState"];
   theme: "day" | "night";
@@ -733,6 +764,13 @@ function TroubleBrewingInformationFollowUp({
   const title = character?.label ?? "정보";
   const influence = primaryInformationInfluence(step.informationPrompt?.activeReasons ?? []);
   const abilityRelation = actor ? abilityPresentationForStep(step, actor) : undefined;
+  const setupInformation = "kind" in payload && payload.kind === "setupInformation"
+    ? payload
+    : undefined;
+  const setupInformationPlayerIds = setupInformation?.candidatePlayers.map((candidate) => candidate.playerId) ?? [];
+  const setupInformationTargetLabels = setupInformation?.candidatePlayers.map(
+    (candidate) => `${candidate.seat}번 ${candidate.name}`,
+  ) ?? [];
 
   return <article
     className="snvCurrentStep tbCurrentTask issue116CurrentStep"
@@ -787,6 +825,23 @@ function TroubleBrewingInformationFollowUp({
         {character?.abilitySummary ? <p className="tbProgressAbility issue116AbilitySummary">{character.abilitySummary}</p> : null}
       </>}
     </section> : <h3>{title}</h3>}
+    {setupInformationTargetLabels.length ? <p className="snvInformationTargetSummary tbInformationTargetSummary" aria-label="선택한 대상">
+      <span>대상 ·</span><strong>{setupInformationTargetLabels.join(" · ")}</strong>
+    </p> : null}
+    {setupInformation?.zeroOutsiders ? <dl className="snvInformationValues" role="group" aria-label="정보 결과">
+      <div><dt>대상</dt><dd>외지인 없음</dd></div>
+    </dl> : null}
+    {setupInformation ? <TroubleBrewingSetupInformationEditor
+      step={step}
+      players={players}
+      selectedPlayerIds={setupInformationPlayerIds}
+      selectedCharacterId={"revealedCharacterId" in setupInformation ? setupInformation.revealedCharacterId : ""}
+      zeroOutsiders={setupInformation.zeroOutsiders}
+      zeroOutsidersAvailable={setupInformation.zeroOutsiders || setupInfoDeliveryIsImpaired(step)}
+      disabled
+      onCharacterChange={() => undefined}
+      onZeroOutsidersChange={() => undefined}
+    /> : null}
     <div className="snvStepActions">
       <button
         type="button"
@@ -929,6 +984,18 @@ function overviewClass(status: PhaseControlProps["phaseOverview"][number]["statu
   if (status === "complete" || status === "skipped" || status === "manualComplete" || status === "notApplicable") return "complete";
   if (status === "current" || status === "needsFollowUp" || status === "interrupted") return "current";
   return "";
+}
+
+function phaseOverviewWithPendingReveal(
+  phaseOverview: PhaseControlProps["phaseOverview"],
+  pendingStep: PhaseStep | undefined,
+): PhaseControlProps["phaseOverview"] {
+  if (!pendingStep) return phaseOverview;
+  return phaseOverview.map((step) => {
+    if (step.id === pendingStep.id) return { ...step, status: "current" };
+    if (step.status === "current") return { ...step, status: "waiting" };
+    return step;
+  });
 }
 
 function phaseOrderLabel(step: PhaseStep | undefined, label: string) {
