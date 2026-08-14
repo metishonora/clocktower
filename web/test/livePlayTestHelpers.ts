@@ -27,8 +27,14 @@ export async function returnToLiveProgress(user: User) {
   await user.click(button);
 }
 
+export async function startLiveTargetSelection(user: User) {
+  const currentStep = await screen.findByLabelText("현재 단계");
+  await user.click(within(currentStep).getByRole("button", { name: "대상 선택" }));
+  return screen.findByLabelText("라이브 마도서 좌석 맵");
+}
+
 export async function selectLivePlayers(user: User, ...names: RegExp[]) {
-  const grimoire = await openLiveGrimoire(user);
+  const grimoire = await startLiveTargetSelection(user);
   for (const name of names) {
     await user.click(within(grimoire).getByRole("button", { name }));
   }
@@ -37,7 +43,7 @@ export async function selectLivePlayers(user: User, ...names: RegExp[]) {
 }
 
 export async function confirmLivePlayerSelection(user: User, ...names: RegExp[]) {
-  const grimoire = await openLiveGrimoire(user);
+  const grimoire = await startLiveTargetSelection(user);
   for (const name of names) {
     await user.click(within(grimoire).getByRole("button", { name }));
   }

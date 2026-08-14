@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 import type { GameEvent, GameFile, SetupPlayerInput } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { openLiveGrimoire } from "./livePlayTestHelpers";
+import { startLiveTargetSelection } from "./livePlayTestHelpers";
 import { phaseEvent, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const playerIds = {
@@ -30,7 +30,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
     await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.");
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     const goodTarget = within(input).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement;
     const spy = within(input).getByRole("button", { name: /Spy/ }) as HTMLButtonElement;
     const imp = within(input).getByRole("button", { name: /Imp/ }) as HTMLButtonElement;
@@ -77,7 +77,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
     expect(await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.")).toBeTruthy();
-    const restoredInput = await openLiveGrimoire(user);
+    const restoredInput = await startLiveTargetSelection(user);
     expect((within(restoredInput).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Spy/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Imp/ }) as HTMLButtonElement).disabled).toBe(true);

@@ -12,6 +12,7 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
+import { startLiveTargetSelection } from "./livePlayTestHelpers";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 describe("Issue 153 setup-information flow regressions", () => {
@@ -174,8 +175,7 @@ describe("Issue 153 setup-information flow regressions", () => {
     />);
     await screen.findByRole("heading", { name: "수사관: 1번 플레이어 1" });
 
-    await user.click(liveStageButton("마도서"));
-    const grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
+    const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /6번 좌석, 플레이어 6/ }));
     await user.click(within(grimoire).getByRole("button", { name: /7번 좌석, 플레이어 7/ }));
     await user.click(liveStageButton("진행"));

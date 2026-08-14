@@ -20,7 +20,13 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
-import { confirmLivePlayerSelection, openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
+import {
+  confirmLivePlayerSelection,
+  openLiveGrimoire,
+  returnToLiveProgress,
+  selectLivePlayers,
+  startLiveTargetSelection,
+} from "./livePlayTestHelpers";
 
 describe("ongoing-night production UI", () => {
   test("renders replay-derived poison and protection as distinct read-only Grimoire badges", async () => {
@@ -103,7 +109,7 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     const spy = within(input).getByRole("button", { name: /도윤/ }) as HTMLButtonElement;
     const disallowedImp = within(input).getByRole("button", { name: /하린/ }) as HTMLButtonElement;
     expect(spy.disabled).toBe(false);
@@ -504,7 +510,7 @@ describe("ongoing-night production UI", () => {
       <ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />,
     );
 
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     const firstPlayer = within(input).getByRole("button", { name: /지우/ });
     await user.click(firstPlayer);
     expect(firstPlayer.getAttribute("aria-pressed")).toBe("true");
@@ -517,7 +523,7 @@ describe("ongoing-night production UI", () => {
 
     await returnToLiveProgress(user);
     await screen.findByRole("heading", { name: "점쟁이: 1번 지우-새게임" });
-    await openLiveGrimoire(user);
+    await startLiveTargetSelection(user);
     await waitFor(() => {
       expect(
         within(screen.getByLabelText("라이브 마도서 좌석 맵")).getByRole("button", { name: /지우-새게임/ }).getAttribute("aria-pressed"),

@@ -19,6 +19,7 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
+import { startLiveTargetSelection } from "./livePlayTestHelpers";
 
 const originalCreateObjectURL = URL.createObjectURL;
 const originalRevokeObjectURL = URL.revokeObjectURL;
@@ -663,6 +664,50 @@ describe("ClocktowerApp live-play integration", () => {
     );
   });
 
+  test("keeps top-tab Grimoire review separate from an explicit night target handoff", async () => {
+    const currentStep = step({
+      id: "firstNight:poisoner",
+      character: "poisoner",
+      playerId: "player-4",
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+    });
+    const replay = replayState({ currentStep });
+    const core = createCoreHarness({
+      initialReplay: replay,
+      replayAfterProposal: replay,
+      proposal: proposal(event("unused", "unused")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "독살범: 4번 Dae" });
+    const referenceGrimoire = await openLiveGrimoire(user);
+    const referenceToolbar = screen.getByLabelText("확정된 마도서 도구");
+    expect(within(referenceToolbar).getByRole("button", { name: "배치로 돌아가기" })).toBeTruthy();
+    expect(within(referenceToolbar).queryByText("1일차 밤")).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "현재 마도서 작업" })).toBeNull();
+    expect((within(referenceGrimoire).getByRole("button", { name: /1번 좌석, Ada/ }) as HTMLButtonElement).disabled)
+      .toBe(false);
+    expect(core.propose).not.toHaveBeenCalled();
+
+    await returnToLiveProgress(user);
+    expect(screen.getByRole("heading", { name: "독살범: 4번 Dae" })).toBeTruthy();
+    await user.click(within(screen.getByLabelText("현재 단계")).getByRole("button", { name: "대상 선택" }));
+    const targetGrimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
+    const handoffToolbar = screen.getByLabelText("마도서 도구");
+    expect(within(handoffToolbar).getByText("1일차 밤")).toBeTruthy();
+    expect(within(handoffToolbar).getByLabelText("현재 행동자 안내")).toBeTruthy();
+    expect(within(handoffToolbar).getByRole("button", { name: "선택 취소 →" })).toBeTruthy();
+    expect(within(handoffToolbar).queryByRole("button", { name: "배치로 돌아가기" })).toBeNull();
+    const target = within(targetGrimoire).getByRole("button", { name: /1번 좌석, Ada/ });
+    await user.click(target);
+    expect(target.getAttribute("aria-pressed")).toBe("true");
+  });
+
   test("constrains setup-information context and character choices to candidate Actual Characters", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-3"
@@ -693,7 +738,7 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     const grimoireAda = within(grimoire).getByRole("button", { name: /Ada/ });
     const grimoireCy = within(grimoire).getByRole("button", { name: /Cy.*실제 주정뱅이.*표시 사서/ });
     expect(grimoireAda.classList.contains("kind-townsfolk")).toBe(true);
@@ -763,7 +808,7 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "세탁부: 1번 Ada" });
 
     expect(screen.queryByRole("button", { name: "무작위 추천" })).toBeNull();
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /Ada/ }));
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
     await returnToLiveProgress(user);
@@ -960,7 +1005,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByRole("button", { name: /외지인 (?:0명|없음)/ })).toBeNull();
     expect(screen.queryByText("실제 외지인이 있어 0명을 선택할 수 없습니다.")).toBeNull();
 
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
     await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
     await returnToLiveProgress(user);
@@ -1047,7 +1092,7 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
     const initialCharacterSelect = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
     expect(within(initialCharacterSelect).getByRole("option", { name: "외지인 없음" })).toBeTruthy();
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     expect(within(grimoire).getByRole("button", { name: /Cy.*실제 주정뱅이.*표시 점쟁이/ })).toBeTruthy();
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
     await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
@@ -1099,11 +1144,6 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "사서: 1번 Ada" });
     const zero = screen.getByRole("combobox", { name: "보여줄 캐릭터" });
     await user.selectOptions(zero, "__zero_outsiders__");
-    const grimoire = await openLiveGrimoire(user);
-    expect(
-      (within(grimoire).getByRole("button", { name: /Bert/ }) as HTMLButtonElement).disabled,
-    ).toBe(true);
-    await returnToLiveProgress(user);
     await user.click(screen.getByRole("button", { name: "취한 정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
@@ -1147,7 +1187,7 @@ describe("ClocktowerApp live-play integration", () => {
     await screen.findByRole("heading", { name: "주정뱅이" });
     expect(screen.getByRole("region", { name: "보여준 직업 · 수사관" })).toBeTruthy();
     expect(screen.getAllByRole("combobox", { name: "보여줄 캐릭터" })).toHaveLength(1);
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
     await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
     await returnToLiveProgress(user);
@@ -1210,7 +1250,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
     await screen.findByRole("heading", { name: "수사관: 1번 Ada" });
-    const grimoire = await openLiveGrimoire(user);
+    const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /Bert/ }));
     await user.click(within(grimoire).getByRole("button", { name: /Cy/ }));
     await returnToLiveProgress(user);

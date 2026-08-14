@@ -7,7 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { openLiveGrimoire, returnToLiveProgress } from "./livePlayTestHelpers";
+import { returnToLiveProgress, startLiveTargetSelection } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -65,8 +65,7 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
     const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByRole("button", { name: "대상 선택" });
-    const selectionSurface = await openLiveGrimoire(user);
+    const selectionSurface = await startLiveTargetSelection(user);
     const fortuneTeller = within(selectionSurface).getByRole("button", {
       name: /5번 플레이어 5 좌석 선택/,
     });

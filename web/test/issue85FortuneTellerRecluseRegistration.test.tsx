@@ -7,7 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
+import { returnToLiveProgress, selectLivePlayers, startLiveTargetSelection } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -53,7 +53,6 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
 
     const delivery = screen.getByLabelText("전달 정보");
@@ -94,12 +93,23 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByRole("button", { name: "대상 선택" });
-    await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
+    const grimoire = await startLiveTargetSelection(user);
+    await user.click(within(grimoire).getByRole("button", { name: /플레이어 6/ }));
+    await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
+    await user.click(within(grimoire).getByRole("button", { name: /플레이어 6/ }));
+    await returnToLiveProgress(user);
+    expect(screen.queryByLabelText("전달 정보")).toBeNull();
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
 
-    let delivery = screen.getByLabelText("전달 정보");
+    await selectLivePlayers(user, /플레이어 6/);
+    const delivery = screen.getByLabelText("전달 정보");
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
     const demonPresent = within(delivery).getByRole("button", { name: "악마 있음" });
     const demonAbsent = within(delivery).getByRole("button", { name: "악마 없음" });
+    expect(demonAbsent.getAttribute("aria-pressed")).toBe("false");
+    expect(demonPresent.getAttribute("aria-pressed")).toBe("false");
+    expect(within(delivery).queryByText("✓")).toBeNull();
+
     await user.click(demonPresent);
     expect(within(demonPresent).getByText("✓").getAttribute("aria-hidden")).toBe("true");
     expect(within(demonAbsent).queryByText("✓")).toBeNull();
@@ -108,19 +118,6 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     expect(within(demonAbsent).getByText("✓").getAttribute("aria-hidden")).toBe("true");
     expect(within(demonPresent).queryByText("✓")).toBeNull();
     expect(within(delivery).getAllByText("✓")).toHaveLength(1);
-
-    await selectLivePlayers(user, /플레이어 6/);
-    expect(screen.queryByLabelText("전달 정보")).toBeNull();
-    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
-
-    await selectLivePlayers(user, /플레이어 6/);
-    delivery = screen.getByLabelText("전달 정보");
-    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(within(delivery).getByRole("button", { name: "악마 없음" }).getAttribute("aria-pressed")).toBe("false");
-    expect(within(delivery).getByRole("button", { name: "악마 있음" }).getAttribute("aria-pressed")).toBe("false");
-    expect(within(delivery).queryByText("✓")).toBeNull();
-
-    await user.click(within(delivery).getByRole("button", { name: "악마 없음" }));
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     await waitFor(() => {
@@ -143,7 +140,6 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
     render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
 
@@ -157,8 +153,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     );
 
     expect(confirmImport).toHaveBeenCalled();
-    await screen.findByRole("button", { name: "대상 선택" });
-    let input = await openLiveGrimoire(user);
+    let input = await startLiveTargetSelection(user);
     expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await returnToLiveProgress(user);
     expect(screen.queryByLabelText("전달 정보")).toBeNull();
@@ -192,7 +187,6 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     const user = userEvent.setup();
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={firstStorage} />);
 
-    await screen.findByRole("button", { name: "대상 선택" });
     await selectLivePlayers(user, /플레이어 6/, /플레이어 3/);
     await user.click(within(screen.getByLabelText("전달 정보")).getByRole("button", { name: "악마 있음" }));
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
@@ -210,8 +204,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(undo);
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
-    await screen.findByRole("button", { name: "대상 선택" });
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await returnToLiveProgress(user);
     expect(screen.queryByLabelText("전달 정보")).toBeNull();

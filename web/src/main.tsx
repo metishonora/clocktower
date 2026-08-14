@@ -1156,7 +1156,7 @@ export function ClocktowerApp({
           canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
           onStageChange={(stage) => {
             setTroubleBrewingStage(stage);
-            setTroubleBrewingHandoff(stage === "seating" ? currentTroubleBrewingHandoff() : undefined);
+            setTroubleBrewingHandoff(undefined);
           }}
           onReset={() => setNewGameConfirmOpen(true)}
           onRequestUndo={(trigger) => {

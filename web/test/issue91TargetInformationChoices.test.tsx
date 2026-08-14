@@ -7,7 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { selectLivePlayers } from "./livePlayTestHelpers";
+import { openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -85,7 +85,7 @@ describe("issue #91 target-information selected choices", () => {
     });
   });
 
-  test("clears the selected check and draft when the REG-06 target changes", async () => {
+  test("keeps a completed REG-06 target and delivery draft while the reference Grimoire is inspected", async () => {
     const game = loadFixture();
     const storage = new MemoryGameStorageDriver(game);
     const user = userEvent.setup();
@@ -98,16 +98,21 @@ describe("issue #91 target-information selected choices", () => {
     await user.click(registeredChef);
     expect(within(registeredChef).getByText("✓")).toBeTruthy();
 
-    await selectLivePlayers(user, /플레이어 6/);
-    delivery = screen.getByLabelText("전달 정보");
-    expect(within(delivery).queryByText("✓")).toBeNull();
-    expect(within(delivery).queryAllByRole("button", { pressed: true })).toHaveLength(0);
-    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
+    const currentStep = screen.getByLabelText("현재 단계");
+    expect(within(currentStep).queryByRole("button", { name: "대상 선택" })).toBeNull();
 
-    const registeredImp = within(delivery).getByRole("button", { name: "임프" });
-    await user.click(registeredImp);
-    expect(registeredImp.getAttribute("aria-pressed")).toBe("true");
-    expect(within(registeredImp).getByText("✓").getAttribute("aria-hidden")).toBe("true");
+    const referenceGrimoire = await openLiveGrimoire(user);
+    expect(screen.queryByLabelText("현재 마도서 작업")).toBeNull();
+    expect(screen.getByLabelText("확정된 마도서 도구")).toBeTruthy();
+    expect(within(referenceGrimoire).getByRole("button", { name: /플레이어 6/ }).getAttribute("aria-pressed"))
+      .toBe("false");
+    await returnToLiveProgress(user);
+
+    expect(within(screen.getByLabelText("선택한 대상")).getByText("8번 플레이어 8")).toBeTruthy();
+    delivery = screen.getByLabelText("전달 정보");
+    const preservedChef = within(delivery).getByRole("button", { name: "요리사" });
+    expect(preservedChef.getAttribute("aria-pressed")).toBe("true");
+    expect(within(preservedChef).getByText("✓").getAttribute("aria-hidden")).toBe("true");
     expect(within(delivery).getAllByText("✓")).toHaveLength(1);
   });
 });
