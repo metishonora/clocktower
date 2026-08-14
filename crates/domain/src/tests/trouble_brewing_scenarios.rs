@@ -1327,7 +1327,7 @@ fn confirming_player_selection_step_requires_matching_input_shape() {
 }
 
 #[test]
-fn chef_prompt_enumerates_sorted_registration_results_including_two_pairs() {
+fn chef_prompt_preserves_every_spy_and_recluse_treatment_combination() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
             { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
@@ -1346,21 +1346,135 @@ fn chef_prompt_enumerates_sorted_registration_results_including_two_pairs() {
 
     assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:chef");
     assert_eq!(
-        choices
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|choice| choice["value"].as_u64().unwrap())
-            .collect::<Vec<_>>(),
-        vec![0, 1, 2]
+        choices,
+        &json!([
+            {
+                "value": 0,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "good" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 1,
+                "isComputed": true,
+                "registrationJudgments": []
+            },
+            {
+                "value": 1,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 2,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "evil" }
+                ]
+            }
+        ])
     );
-    assert_eq!(choices[1]["isComputed"], true);
-    assert_eq!(choices[0]["isComputed"], false);
-    assert_eq!(choices[2]["isComputed"], false);
-    assert!(!choices[2]["registrationJudgments"]
-        .as_array()
-        .unwrap()
-        .is_empty());
+
+    let same_result_alternate = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": 1 },
+            "registrationJudgments": [
+                { "playerId": "player-2", "registeredAs": "evil" },
+                { "playerId": "player-4", "registeredAs": "good" }
+            ]
+        }
+    });
+    let accepted: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &same_result_alternate.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(accepted["ok"], true, "{accepted}");
+    assert_eq!(
+        accepted["value"]["event"]["payload"]["information"]["deliveryContext"],
+        json!({
+            "type": "discretionary",
+            "reasons": [{
+                "type": "registrationJudgment",
+                "judgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            }]
+        })
+    );
+
+    let mismatched_witness = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": 1 },
+            "registrationJudgments": [
+                { "playerId": "player-2", "registeredAs": "evil" }
+            ]
+        }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &mismatched_witness.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(rejected["ok"], false, "{rejected}");
+    assert_eq!(rejected["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+}
+
+#[test]
+fn chef_prompt_keeps_duplicate_legacy_player_ids_replayable() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "chef", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "shared", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "imp", "seat": 3, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "shared", "seat": 4, "name": "Spy", "actualCharacter": "spy", "shownCharacter": "spy" },
+            { "id": "empath", "seat": 5, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+    ]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:chef");
+    assert_eq!(
+        actual["value"]["currentStep"]["informationPrompt"]["registrationCandidatePlayerIds"],
+        json!(["shared"])
+    );
+    assert_eq!(
+        actual["value"]["currentStep"]["informationPrompt"]["numberChoices"],
+        json!([
+            {
+                "value": 0,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "shared", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 1,
+                "isComputed": true,
+                "registrationJudgments": []
+            },
+            {
+                "value": 2,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "shared", "registeredAs": "evil" }
+                ]
+            }
+        ])
+    );
 }
 
 #[test]

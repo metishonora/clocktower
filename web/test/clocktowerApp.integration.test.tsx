@@ -1271,7 +1271,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("renders a fixed computed number as truth and reveals without a redundant selection", async () => {
+  test("renders a fixed computed number as the result and reveals without a redundant selection", async () => {
     const currentStep = step({
       id: "firstNight:chef",
       character: "chef",
@@ -1298,7 +1298,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
     const information = screen.getByRole("group", { name: "정보 결과" });
-    expect(within(information).getByText("진실").nextElementSibling?.textContent).toBe("0쌍");
+    expect(within(information).getByText("결과").nextElementSibling?.textContent).toBe("0쌍");
     expect(within(information).queryByRole("spinbutton")).toBeNull();
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
@@ -1308,7 +1308,16 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("submits the exact hidden witness attached to a selected numeric choice", async () => {
+  test("submits the exact registration witness selected through scalar treatments", async () => {
+    const playerRoster = players().map((player) => {
+      if (player.id === "player-4") {
+        return { ...player, actualCharacter: "recluse", shownCharacter: "recluse", alignment: "good" as const };
+      }
+      if (player.id === "player-5") {
+        return { ...player, actualCharacter: "spy", shownCharacter: "spy", alignment: "evil" as const };
+      }
+      return player;
+    });
     const currentStep = step({
       id: "firstNight:empath",
       character: "empath",
@@ -1325,7 +1334,7 @@ describe("ClocktowerApp live-play integration", () => {
             value: 1,
             isComputed: false,
             registrationJudgments: [
-              { playerId: "player-4", registeredAs: "good" },
+              { playerId: "player-4", registeredAs: "evil" },
               { playerId: "player-5", registeredAs: "evil" },
             ],
           },
@@ -1347,7 +1356,7 @@ describe("ClocktowerApp live-play integration", () => {
           {
             type: "registrationJudgment",
             judgments: [
-              { playerId: "player-4", registeredAs: "good" },
+              { playerId: "player-4", registeredAs: "evil" },
               { playerId: "player-5", registeredAs: "evil" },
             ],
           },
@@ -1356,8 +1365,8 @@ describe("ClocktowerApp live-play integration", () => {
     };
     const storage = new MemoryGameStorageDriver(gameFile());
     const core = createCoreHarness({
-      initialReplay: replayState({ currentStep }),
-      replayAfterProposal: replayState({ currentStep: nextStep, eventCount: 2 }),
+      initialReplay: replayState({ currentStep, playerRoster }),
+      replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(canonicalEvent),
     });
     const user = userEvent.setup();
@@ -1368,10 +1377,11 @@ describe("ClocktowerApp live-play integration", () => {
     const confirm = screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
 
-    const choices = screen.getByLabelText("전달할 숫자");
-    expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
-    expect(within(choices).queryAllByText("거짓", { exact: true })).toHaveLength(0);
-    await user.click(within(choices).getByRole("button", { name: /취급.*1/ }));
+    const recluse = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
+    const spy = screen.getByRole("group", { name: "이번 판정의 첩자 취급" });
+    await user.click(within(recluse).getByRole("button", { name: "악한 팀으로 취급" }));
+    await user.click(within(spy).getByRole("button", { name: "악한 팀으로 취급" }));
+    expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("1명")).toBeTruthy();
     expect(confirm.disabled).toBe(false);
     await user.click(confirm);
 
@@ -1382,7 +1392,7 @@ describe("ClocktowerApp live-play integration", () => {
         input: null,
         deliveredResult: { kind: "number", value: 1 },
         registrationJudgments: [
-          { playerId: "player-4", registeredAs: "good" },
+          { playerId: "player-4", registeredAs: "evil" },
           { playerId: "player-5", registeredAs: "evil" },
         ],
       },
@@ -1441,7 +1451,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("shows a Recluse and adjacent Demon before truthful Chef registration treatments", async () => {
+  test("shows only the Recluse treatment and its resulting Chef count", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-4"
         ? { ...player, actualCharacter: "recluse", shownCharacter: "recluse", alignment: "good" as const }
@@ -1464,11 +1474,6 @@ describe("ClocktowerApp live-play integration", () => {
             isComputed: false,
             registrationJudgments: [{ playerId: "player-4", registeredAs: "evil" }],
           },
-          {
-            value: 2,
-            isComputed: false,
-            registrationJudgments: [{ playerId: "player-4", registeredAs: "evil" }],
-          },
         ],
         setupInfoRegistrationOptions: [],
       },
@@ -1482,15 +1487,11 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
     await screen.findByRole("heading", { name: "요리사: 2번 Bert" });
-    const neighbors = screen.getByLabelText("이웃 관계");
-    expect(within(neighbors).getByText("은둔자")).toBeTruthy();
-    expect(within(neighbors).getByText("임프")).toBeTruthy();
-    const choices = screen.getByLabelText("전달할 숫자");
-    expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
-    expect(within(choices).queryAllByText("거짓", { exact: true })).toHaveLength(0);
-    expect(within(choices).getByRole("button", { name: /취급.*1/ })).toBeTruthy();
-    expect(within(choices).getByRole("button", { name: /취급.*2/ })).toBeTruthy();
-    await user.click(within(choices).getByRole("button", { name: /취급.*1/ }));
+    expect(screen.queryByLabelText("이웃 관계")).toBeNull();
+    expect(screen.queryByLabelText("전달할 숫자")).toBeNull();
+    const treatment = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
+    await user.click(within(treatment).getByRole("button", { name: "악한 팀으로 취급" }));
+    expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("1쌍")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {

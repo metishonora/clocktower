@@ -308,6 +308,9 @@ fn confirmed_number_information(
         let InformationResult::Number { value } = delivered else {
             return Err(ErrorKind::InvalidDeliveredInformation.into_error());
         };
+        // A Spy/Recluse treatment can legitimately produce the same number as the
+        // canonical alignments. The registration witness, not numeric inequality
+        // from `computed_result`, identifies an alternate choice.
         let valid = choices.iter().any(|choice| {
             !choice.is_computed
                 && choice.value == value

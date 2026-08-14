@@ -3920,7 +3920,7 @@
           "kind": "number",
           "value": 1
         },
-        "deliveryMode": "fixed",
+        "deliveryMode": "selectable",
         "activeReasons": [],
         "registrationCandidatePlayerIds": [
           "player-2"
@@ -3930,6 +3930,16 @@
             "value": 1,
             "isComputed": true,
             "registrationJudgments": []
+          },
+          {
+            "value": 1,
+            "isComputed": false,
+            "registrationJudgments": [
+              {
+                "playerId": "player-2",
+                "registeredAs": "evil"
+              }
+            ]
           }
         ],
         "setupInfoRegistrationOptions": []

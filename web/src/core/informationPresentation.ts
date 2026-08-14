@@ -44,6 +44,11 @@ export function scalarInformationLabel(characterId: ScalarInformationCharacterId
   return scalarInformationPresentations[characterId].label;
 }
 
+export function scalarInformationUnit(characterId: ScalarInformationCharacterId): string {
+  const presentation: ScalarInformationPresentation = scalarInformationPresentations[characterId];
+  return presentation.unit ?? "";
+}
+
 export function scalarInformationValueLabel(
   characterId: ScalarInformationCharacterId,
   value: number | boolean,

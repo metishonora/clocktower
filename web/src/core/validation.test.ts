@@ -1273,6 +1273,17 @@ test("validates typed confirmed information and derived information prompts", ()
   };
   deepEqual<unknown>(parseReplayState(replay).currentStep, replay.currentStep);
 
+  const sameResultWithDistinctRegistrationTreatment = structuredClone(replay);
+  sameResultWithDistinctRegistrationTreatment.currentStep.informationPrompt.numberChoices.push({
+    value: 0,
+    isComputed: false,
+    registrationJudgments: [{ playerId: "player-5", registeredAs: "good" }],
+  });
+  deepEqual<unknown>(
+    parseReplayState(sameResultWithDistinctRegistrationTreatment).currentStep,
+    sameResultWithDistinctRegistrationTreatment.currentStep,
+  );
+
   const invalidNumber = structuredClone(proposal);
   invalidNumber.event.payload.information.deliveredResult.value = -1;
   throws(() => parseProposal(invalidNumber), /이벤트 형식/);

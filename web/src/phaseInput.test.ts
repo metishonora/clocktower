@@ -527,6 +527,75 @@ test("numeric confirmation submits Rust witness only for an alternate choice", (
   );
 });
 
+test("numeric registration choices use their exact treatment witness when results match", () => {
+  const computedChoice = { value: 1, isComputed: true, registrationJudgments: [] };
+  const treatedChoice = {
+    value: 1,
+    isComputed: false,
+    registrationJudgments: [{ playerId: "spy", registeredAs: "good" as const }],
+  };
+  const step: PhaseStep = {
+    id: "firstNight:chef",
+    phase: "firstNight",
+    stepType: "character",
+    character: "chef",
+    playerId: "chef",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    canSkip: false,
+    informationPrompt: {
+      computedResult: { kind: "number", value: 1 },
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["spy"],
+      numberChoices: [computedChoice, treatedChoice],
+      setupInfoRegistrationOptions: [],
+    },
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+  const baseDraft = {
+    selectedPlayerIds: [],
+    selectedCharacterId: "",
+    selectedCharacterIds: [],
+    zeroOutsiders: false,
+    registrationJudgments: [],
+  };
+
+  equal(
+    stepInputReady(step, 0, 0, "", nominationDraft, false, treatedChoice),
+    true,
+  );
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: treatedChoice },
+      nominationDraft,
+    ),
+    {
+      input: null,
+      deliveredResult: { kind: "number", value: 1 },
+      registrationJudgments: treatedChoice.registrationJudgments,
+    },
+  );
+
+  const unknownChoice = {
+    value: 1,
+    isComputed: false,
+    registrationJudgments: [{ playerId: "spy", registeredAs: "evil" as const }],
+  };
+  equal(
+    stepInputReady(step, 0, 0, "", nominationDraft, false, unknownChoice),
+    false,
+  );
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: unknownChoice },
+      nominationDraft,
+    ),
+    { input: null },
+  );
+});
+
 test("target-check confirmation persists the selected typed result and its exact witness", () => {
   const witness = [{ playerId: "recluse", registeredAs: "demon" as const }];
   const alternate = {

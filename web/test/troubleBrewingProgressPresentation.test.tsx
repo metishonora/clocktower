@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import type { PhaseOverviewItem, PhaseStep, Player } from "../src/core/types";
+import type { NumberChoice, PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment } from "../src/core/types";
 import type { PhaseControlProps } from "../src/features/phase-control/PhaseControl";
 import { usePhaseInputDraft, type PhaseInputDraftController } from "../src/features/phase-control/usePhaseInputDraft";
 import { TroubleBrewingProgress } from "../src/features/trouble-brewing/TroubleBrewingProgress";
 import { abilityPresentationForStep } from "../src/features/phase-control/actingRoleContext";
+import { TroubleBrewingScalarInformationEditor } from "../src/features/trouble-brewing/TroubleBrewingScalarInformationEditor";
 
 const players: Player[] = [
   player("player-1", 1, "민지", "washerwoman"),
@@ -29,6 +31,49 @@ test("resolves shown ability only for the step's actor and a changed identity", 
   });
   expect(abilityPresentationForStep(drunkWasherwoman, { ...drunk, id: "other" })).toBeUndefined();
   expect(abilityPresentationForStep(drunkWasherwoman, { ...drunk, shownCharacter: "drunk" })).toBeUndefined();
+});
+
+test("uses the domain treatment choice when a legacy duplicate player id makes the visible alignment ambiguous", async () => {
+  const user = userEvent.setup();
+  const sharedPlayers = [
+    player("chef", 1, "Chef", "chef"),
+    player("shared", 2, "Recluse", "recluse"),
+    player("imp", 3, "Imp", "imp"),
+    player("shared", 4, "Spy", "spy"),
+    player("empath", 5, "Empath", "empath"),
+  ];
+  const chef = step({
+    id: "firstNight:chef",
+    character: "chef",
+    playerId: "chef",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    informationPrompt: {
+      computedResult: { kind: "number", value: 1 },
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["shared"],
+      numberChoices: [
+        {
+          value: 0,
+          isComputed: false,
+          registrationJudgments: [{ playerId: "shared", registeredAs: "good" }],
+        },
+        { value: 1, isComputed: true, registrationJudgments: [] },
+        {
+          value: 2,
+          isComputed: false,
+          registrationJudgments: [{ playerId: "shared", registeredAs: "evil" }],
+        },
+      ],
+      setupInfoRegistrationOptions: [],
+    },
+  });
+
+  render(<ScalarEditorHarness stepValue={chef} playerRoster={sharedPlayers} />);
+  await user.click(within(screen.getByRole("group", { name: "이번 판정의 은둔자 취급" }))
+    .getByRole("button", { name: "악한 팀으로 취급하지 않음" }));
+
+  expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("0쌍")).toBeTruthy();
 });
 
 test("uses the accepted S&V target hierarchy while keeping phase order expanded", () => {
@@ -493,7 +538,7 @@ test("hides the Washerwoman Grimoire target button after two valid targets are s
   expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
 });
 
-test("offers a fixed Chef truth for immediate information reveal without a truth-selection click", async () => {
+test("offers a fixed Chef result for immediate information reveal without a selection click", async () => {
   const user = userEvent.setup();
   const onConfirm = vi.fn();
   const chef = step({
@@ -510,8 +555,8 @@ test("offers a fixed Chef truth for immediate information reveal without a truth
   });
   renderProgress(chef, [overview(chef, "current")], undefined, { onConfirm });
 
-  const truth = screen.getByRole("group", { name: "정보 결과" });
-  expect(within(truth).getByText("진실").nextElementSibling?.textContent).toBe("2쌍");
+  const result = screen.getByRole("group", { name: "정보 결과" });
+  expect(within(result).getByText("결과").nextElementSibling?.textContent).toBe("2쌍");
   expect(screen.queryByLabelText("전달 정보")).toBeNull();
   const reveal = screen.getByRole("button", { name: "정보 공개" });
   expect((reveal as HTMLButtonElement).disabled).toBe(false);
@@ -612,6 +657,26 @@ function renderProgress(
   overrides?: Partial<PhaseControlProps>,
 ) {
   return render(progress(currentStep, phaseOverview, dayState, overrides));
+}
+
+function ScalarEditorHarness({
+  stepValue,
+  playerRoster,
+}: {
+  stepValue: PhaseStep;
+  playerRoster: Player[];
+}) {
+  const [selectedNumberChoice, setSelectedNumberChoice] = useState<NumberChoice>();
+  const [registrationJudgments, setRegistrationJudgments] = useState<RegistrationJudgment[]>([]);
+  return <TroubleBrewingScalarInformationEditor
+    step={stepValue}
+    players={playerRoster}
+    selectedNumberChoice={selectedNumberChoice}
+    registrationJudgments={registrationJudgments}
+    busy={false}
+    onNumberChoiceChange={setSelectedNumberChoice}
+    onRegistrationJudgmentsChange={setRegistrationJudgments}
+  />;
 }
 
 function progress(

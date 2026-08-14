@@ -13,7 +13,7 @@ use crate::model::{
     RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind, SetupInfoKind,
     SetupInfoRegistrationOption, SpyReminderToken, StepInput, StepInputFields, StepType,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum TbCharacterId {
@@ -1699,6 +1699,7 @@ pub(crate) fn registration_candidate_player_ids(
         _ => return Vec::new(),
     };
 
+    let mut seen = HashSet::new();
     players
         .iter()
         .filter(|player| {
@@ -1706,6 +1707,7 @@ pub(crate) fn registration_candidate_player_ids(
                 && matches!(player.actual_character.as_str(), "spy" | "recluse")
         })
         .map(|player| player.id.clone())
+        .filter(|player_id| seen.insert(player_id.clone()))
         .collect()
 }
 
@@ -1797,39 +1799,57 @@ pub(crate) fn legal_number_choices(
     }
 
     let candidates = registration_candidate_player_ids(step, players);
-    let mut by_value = BTreeMap::<u64, Vec<RegistrationJudgment>>::new();
-    by_value.insert(computed, Vec::new());
+    let mut choices = vec![NumberInformationChoice {
+        value: computed,
+        is_computed: true,
+        registration_judgments: Vec::new(),
+    }];
+    choices.reserve(1usize << candidates.len());
     for mask in 0..(1usize << candidates.len()) {
         let judgments = candidates
             .iter()
             .enumerate()
-            .map(|(index, player_id)| RegistrationJudgment {
-                player_id: player_id.clone(),
-                registered_as: if mask & (1 << index) == 0 {
+            .map(|(index, player_id)| {
+                let registered_as = if mask & (1 << index) == 0 {
                     RegistrationValue::Good
                 } else {
                     RegistrationValue::Evil
-                },
-                character_id: None,
+                };
+                RegistrationJudgment {
+                    player_id: player_id.clone(),
+                    registered_as,
+                    character_id: None,
+                }
             })
             .collect::<Vec<_>>();
         let Some(value) = number_result_with_registration_judgments(step, players, &judgments)
         else {
             continue;
         };
-        if value as u64 != computed {
-            by_value.entry(value as u64).or_insert(judgments);
+        let is_default = judgments.iter().all(|judgment| {
+            players
+                .iter()
+                .filter(|player| player.id == judgment.player_id)
+                .all(|player| {
+                    matches!(
+                        (judgment.registered_as, player.alignment),
+                        (RegistrationValue::Good, Alignment::Good)
+                            | (RegistrationValue::Evil, Alignment::Evil)
+                    )
+                })
+        });
+        if is_default {
+            continue;
         }
+        choices.push(NumberInformationChoice {
+            value: value as u64,
+            is_computed: false,
+            registration_judgments: judgments,
+        });
     }
 
-    by_value
-        .into_iter()
-        .map(|(value, registration_judgments)| NumberInformationChoice {
-            value,
-            is_computed: value == computed,
-            registration_judgments,
-        })
-        .collect()
+    choices.sort_by_key(|choice| (choice.value, !choice.is_computed));
+    choices
 }
 
 pub(crate) fn alive_neighbor_indexes(players: &[&Player], index: usize) -> Vec<usize> {

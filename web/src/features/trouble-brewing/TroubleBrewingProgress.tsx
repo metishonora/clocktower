@@ -4,7 +4,6 @@ import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
 import type { DeliveryReason, PhaseStep, Player, Proposal, RevealPayload } from "../../core/types";
-import { scalarInformationValueLabel } from "../../core/informationPresentation";
 import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
 import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { characterLabel, characters } from "../../setupDraft";
@@ -32,6 +31,13 @@ import { NightResultsAnnouncement } from "../phase-control/NightResultsAnnouncem
 import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
 import { suggestionRequestFingerprint } from "../phase-control/randomSuggestion";
 import { TroubleBrewingSetupInformationEditor } from "./TroubleBrewingSetupInformationEditor";
+import {
+  defaultScalarInformationChoice,
+  isTroubleBrewingScalarInformationStep,
+  scalarInformationMayUseDefault,
+  scalarInformationSelectionReady,
+  TroubleBrewingScalarInformationEditor,
+} from "./TroubleBrewingScalarInformationEditor";
 
 const troubleBrewingCharacterPresentation: CharacterPresentationResolver = (characterId) => {
   const character = characters.find((candidate) => candidate.id === characterId);
@@ -240,7 +246,7 @@ function TroubleBrewingTask({
   const resultSubject = currentStep?.stepType === "executionDeath" || currentStep?.stepType === "slayerDeath";
   const isNightDeathAnnouncement = currentStep?.stepType === "announcement" && currentStep.id.endsWith(":announceDeaths");
   const actionPrompt = currentStep ? currentActionPrompt(currentStep) : undefined;
-  const immediateScalarInformation = currentStep ? immediateScalarInformationStep(currentStep) : false;
+  const scalarInformation = currentStep ? isTroubleBrewingScalarInformationStep(currentStep) : false;
   const zeroOutsiderInformation = Boolean(
     currentStep?.requiredInput.kind === "setupInfo" && phaseInputDraft.zeroOutsiders,
   );
@@ -284,23 +290,30 @@ function TroubleBrewingTask({
       return player ? [`${player.seat}번 ${player.name}`] : [];
     })
     : [];
-  const selectionValid = currentStep ? immediateScalarInformation || stepInputReady(
-    currentStep,
-    phaseInputDraft.selectedPlayerIds.length,
-    phaseInputDraft.selectedCharacterIds.length,
-    phaseInputDraft.selectedCharacterId,
-    nominationDraft,
-    phaseInputDraft.zeroOutsiders,
-    phaseInputDraft.selectedNumberChoice,
-    phaseInputDraft.zeroOutsidersAvailable,
-    phaseInputDraft.mayorDecision,
-    phaseInputDraft.selectedPlayerIds,
-    players,
-  ) : false;
+  const selectionValid = currentStep ? scalarInformation
+    ? scalarInformationSelectionReady(
+        currentStep,
+        players,
+        phaseInputDraft.selectedNumberChoice,
+        phaseInputDraft.registrationJudgments,
+      )
+    : stepInputReady(
+        currentStep,
+        phaseInputDraft.selectedPlayerIds.length,
+        phaseInputDraft.selectedCharacterIds.length,
+        phaseInputDraft.selectedCharacterId,
+        nominationDraft,
+        phaseInputDraft.zeroOutsiders,
+        phaseInputDraft.selectedNumberChoice,
+        phaseInputDraft.zeroOutsidersAvailable,
+        phaseInputDraft.mayorDecision,
+        phaseInputDraft.selectedPlayerIds,
+        players,
+      ) : false;
   const currentConfirmation = currentStep
     ? phaseStepConfirmation(
         currentStep,
-        immediateScalarInformation
+        scalarInformation && scalarInformationMayUseDefault(currentStep)
           ? {
               ...phaseInputDraft,
               selectedNumberChoice: phaseInputDraft.selectedNumberChoice
@@ -545,11 +558,14 @@ function TroubleBrewingTask({
             {selectedInformationTargetLabels.length ? <p className="snvInformationTargetSummary tbInformationTargetSummary" aria-label="선택한 대상">
               <span>대상 ·</span><strong>{selectedInformationTargetLabels.join(" · ")}</strong>
             </p> : null}
-            {immediateScalarInformation ? <ScalarInformationResult
+            {scalarInformation ? <TroubleBrewingScalarInformationEditor
               step={currentStep}
+              players={players}
               selectedNumberChoice={phaseInputDraft.selectedNumberChoice}
+              registrationJudgments={phaseInputDraft.registrationJudgments}
               busy={busy || suggesting}
               onNumberChoiceChange={phaseInputDraft.setSelectedNumberChoice}
+              onRegistrationJudgmentsChange={phaseInputDraft.setRegistrationJudgments}
             /> : currentStep.requiredInput.kind === "setupInfo" ? <>
               {zeroOutsiderInformation ? <dl className="snvInformationValues" role="group" aria-label="정보 결과">
                 <div><dt>대상</dt><dd>외지인 없음</dd></div>
@@ -853,74 +869,6 @@ function TroubleBrewingInformationFollowUp({
     </div>
     {!canContinue ? <p className="tbProgressWaiting">다음 단계 준비 중</p> : null}
   </article>;
-}
-
-function ScalarInformationResult({
-  step,
-  selectedNumberChoice,
-  busy,
-  onNumberChoiceChange,
-}: {
-  step: PhaseStep;
-  selectedNumberChoice: PhaseControlProps["phaseInputDraft"]["selectedNumberChoice"];
-  busy: boolean;
-  onNumberChoiceChange: PhaseControlProps["phaseInputDraft"]["setSelectedNumberChoice"];
-}) {
-  const characterId = step.character === "empath" ? "empath" : "chef";
-  const truth = step.informationPrompt?.computedResult?.kind === "number"
-    ? step.informationPrompt.computedResult.value
-    : 0;
-  const constraint = step.informationPrompt?.numberConstraint;
-  const delivered = selectedNumberChoice?.value ?? 0;
-  return <dl className="snvInformationValues tbScalarInformationResult" role="group" aria-label="정보 결과">
-    <div><dt>진실</dt><dd>{scalarInformationValueLabel(characterId, truth)}</dd></div>
-    {constraint ? <div>
-      <dt>전달</dt>
-      <dd>
-        <input
-          type="number"
-          min={constraint.min}
-          max={constraint.max}
-          step="1"
-          inputMode="numeric"
-          aria-label="전달할 숫자"
-          value={delivered}
-          disabled={busy}
-          onChange={(event) => {
-            const value = Number(event.target.value);
-            const valid = event.target.value !== ""
-              && Number.isSafeInteger(value)
-              && value >= constraint.min
-              && value <= constraint.max
-              && !constraint.excludedValues.includes(value);
-            onNumberChoiceChange(valid ? { value, isComputed: value === truth, registrationJudgments: [] } : undefined);
-          }}
-        />
-        <span>{characterId === "chef" ? "쌍" : "명"}</span>
-      </dd>
-    </div> : null}
-  </dl>;
-}
-
-function immediateScalarInformationStep(step: PhaseStep) {
-  if (step.character !== "chef" && step.character !== "empath") return false;
-  const prompt = step.informationPrompt;
-  return Boolean(
-    prompt?.numberConstraint
-      || (prompt?.deliveryMode === "fixed"
-        && prompt.numberChoices.length === 1
-        && prompt.numberChoices[0]?.isComputed),
-  );
-}
-
-function defaultScalarInformationChoice(step: PhaseStep) {
-  const prompt = step.informationPrompt;
-  if (!prompt) return undefined;
-  if (prompt.numberConstraint) {
-    const value = Math.max(0, prompt.numberConstraint.min);
-    return { value, isComputed: prompt.computedResult?.kind === "number" && prompt.computedResult.value === value, registrationJudgments: [] };
-  }
-  return prompt.numberChoices.find((choice) => choice.isComputed);
 }
 
 function informationRevealActionLabel(reasons: DeliveryReason[]) {

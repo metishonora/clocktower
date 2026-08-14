@@ -19,6 +19,7 @@ import {
 } from "../../setupDraft.js";
 import type { NominationDraft } from "../voting/useNominationDraft.js";
 import { abilityPresentationForStep } from "./actingRoleContext.js";
+import { numberChoicesMatch } from "../../core/numberChoice.js";
 
 export function phaseLabel(phase: Phase): string {
   if (phase === "firstNight") return "첫 밤";
@@ -279,7 +280,7 @@ export function stepInputReady(
     if (!selectedNumberChoice) return false;
     if (
       !step.informationPrompt.numberChoices.some(
-        (choice) => choice.value === selectedNumberChoice.value,
+        (choice) => numberChoicesMatch(choice, selectedNumberChoice),
       )
     ) {
       return false;
@@ -573,7 +574,11 @@ export function phaseStepConfirmation(
   ) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
-  if (step.requiredInput.kind !== "setupInfo" && draft.registrationJudgments.length) {
+  if (
+    step.requiredInput.kind !== "setupInfo"
+    && step.requiredInput.kind !== "number"
+    && draft.registrationJudgments.length
+  ) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
 
@@ -601,7 +606,7 @@ export function phaseStepConfirmation(
   }
 
   const choice = step.informationPrompt?.numberChoices.find(
-    (candidate) => candidate.value === draft.selectedNumberChoice?.value,
+    (candidate) => numberChoicesMatch(candidate, draft.selectedNumberChoice),
   );
   const constraint = step.informationPrompt?.numberConstraint;
   const constrainedChoice = draft.selectedNumberChoice;

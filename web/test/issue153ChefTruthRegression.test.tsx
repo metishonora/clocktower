@@ -15,17 +15,7 @@ test("presents the attached healthy Chef alternatives as truthful registration t
     computedResult: { kind: "number", value: 1 },
     deliveryMode: "selectable",
     activeReasons: [],
-    numberChoices: [
-      {
-        value: 0,
-        isComputed: false,
-        registrationJudgments: [
-          { playerId: "player-5", registeredAs: "good" },
-          { playerId: "player-9", registeredAs: "good" },
-        ],
-      },
-      { value: 1, isComputed: true, registrationJudgments: [] },
-    ],
+    registrationCandidatePlayerIds: ["player-5", "player-9"],
   });
 
   const arbitraryDelivery = await realWasmCore().propose(game, {
@@ -82,17 +72,26 @@ test("presents the attached healthy Chef alternatives as truthful registration t
   render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
   await screen.findByRole("heading", { name: "요리사: 14번 플레이어 14" });
-  const choices = screen.getByLabelText("전달할 숫자");
-  expect(within(choices).queryAllByText("거짓", { exact: true })).toHaveLength(0);
-  expect(within(choices).getByRole("button", { name: /진실.*1/ })).toBeTruthy();
-  const treatedChoice = within(choices).getByRole("button", {
-    name: /취급.*0.*5번 플레이어 5.*선한 팀으로 취급.*9번 플레이어 9.*선한 팀으로 취급/,
-  });
+  expect(screen.queryByLabelText("이웃 관계")).toBeNull();
+  expect(screen.queryByLabelText("전달할 숫자")).toBeNull();
   expect(screen.queryByRole("spinbutton")).toBeNull();
 
+  const recluseTreatment = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
+  const spyTreatment = screen.getByRole("group", { name: "이번 판정의 첩자 취급" });
+  const result = screen.getByRole("group", { name: "정보 결과" });
   const revealButton = screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement;
+  expect(within(result).getByText("결과", { exact: true })).toBeTruthy();
+  expect(within(result).getByText("선택 필요", { exact: true })).toBeTruthy();
   expect(revealButton.disabled).toBe(true);
-  await user.click(treatedChoice);
+
+  await user.click(within(recluseTreatment).getByRole("button", { name: "악한 팀으로 취급하지 않음" }));
+  expect(within(result).getByText("선택 필요", { exact: true })).toBeTruthy();
+  expect(revealButton.disabled).toBe(true);
+
+  await user.click(within(spyTreatment).getByRole("button", { name: "선한 팀으로 취급" }));
+  expect(within(result).getByText("0쌍", { exact: true })).toBeTruthy();
+  expect(within(result).queryByText("진실", { exact: true })).toBeNull();
+  expect(within(result).queryByText("전달", { exact: true })).toBeNull();
   expect(revealButton.disabled).toBe(false);
   await user.click(revealButton);
 
@@ -121,15 +120,67 @@ test("presents the attached healthy Chef alternatives as truthful registration t
   }));
 });
 
-test("keeps an impaired Chef freely editable while preserving the computed truth", async () => {
-  const game = await poisonedChefGame();
+test("shows only the computed result when no registration-sensitive character exists", async () => {
+  const game = await healthyChefWithoutRegistrationCandidatesGame();
+  const replayed = await replayOrThrow(game);
+
+  expect(replayed.currentStep?.id).toBe("firstNight:chef");
+  expect(replayed.currentStep?.informationPrompt).toMatchObject({
+    computedResult: { kind: "number" },
+    activeReasons: [],
+    registrationCandidatePlayerIds: [],
+  });
+
+  const storage = new MemoryGameStorageDriver(game);
+  render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await screen.findByRole("heading", { name: "요리사: 1번 Chef" });
+  expect(screen.queryByRole("group", { name: /이번 판정의 .* 취급/ })).toBeNull();
+  expect(screen.queryByLabelText("이웃 관계")).toBeNull();
+  expect(screen.queryByLabelText("전달할 숫자")).toBeNull();
+  expect(screen.queryByRole("spinbutton")).toBeNull();
+
+  const result = screen.getByRole("group", { name: "정보 결과" });
+  expect(within(result).getByText("결과", { exact: true })).toBeTruthy();
+  expect(within(result).getByText("1쌍", { exact: true })).toBeTruthy();
+  expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+test.each([
+  ["Spy", healthyChefWithOnlySpyGame, "이번 판정의 첩자 취급", "이번 판정의 은둔자 취급"],
+  ["Recluse", healthyChefWithOnlyRecluseGame, "이번 판정의 은둔자 취급", "이번 판정의 첩자 취급"],
+] as const)("shows only the %s treatment control represented in the roster", async (
+  _candidate,
+  buildGame,
+  presentTreatment,
+  absentTreatment,
+) => {
+  const game = await buildGame();
+  const storage = new MemoryGameStorageDriver(game);
+  render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+  await screen.findByRole("heading", { name: "요리사: 1번 Chef" });
+  expect(screen.getByRole("group", { name: presentTreatment })).toBeTruthy();
+  expect(screen.queryByRole("group", { name: absentTreatment })).toBeNull();
+});
+
+test.each([
+  ["poisoned", poisonedChefGame, "중독 정보 공개"],
+  ["drunk", drunkChefGame, "취한 정보 공개"],
+] as const)("keeps a %s Chef freely editable without registration treatment controls", async (
+  _state,
+  buildGame,
+  revealLabel,
+) => {
+  const game = await buildGame();
   const replayed = await replayOrThrow(game);
 
   expect(replayed.currentStep?.id).toBe("firstNight:chef");
   expect(replayed.currentStep?.informationPrompt).toMatchObject({
     computedResult: { kind: "number" },
     deliveryMode: "selectable",
-    activeReasons: [expect.objectContaining({ type: "poisoned" })],
+    activeReasons: [expect.objectContaining({ type: _state })],
+    registrationCandidatePlayerIds: expect.arrayContaining(["player-2", "player-4"]),
     numberChoices: [],
     numberConstraint: {
       min: 0,
@@ -142,13 +193,17 @@ test("keeps an impaired Chef freely editable while preserving the computed truth
   const user = userEvent.setup();
   render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-  await screen.findByRole("heading", { name: "요리사: 1번 Chef" });
+  await screen.findByRole("button", { name: revealLabel });
+  expect(screen.queryByRole("group", { name: /이번 판정의 .* 취급/ })).toBeNull();
+  expect(screen.queryByLabelText("이웃 관계")).toBeNull();
+  expect(screen.queryByRole("button", { name: /[0-9]+쌍/ })).toBeNull();
+
   const result = screen.getByRole("group", { name: "정보 결과" });
   const deliveredNumber = within(result).getByRole("spinbutton", { name: "전달할 숫자" }) as HTMLInputElement;
   expect(deliveredNumber.value).toBe("0");
   await user.clear(deliveredNumber);
   await user.type(deliveredNumber, "99");
-  await user.click(screen.getByRole("button", { name: "중독 정보 공개" }));
+  await user.click(screen.getByRole("button", { name: revealLabel }));
 
   const reveal = await screen.findByRole("dialog", { name: "요리사 정보 공개" });
   expect(within(reveal).getByText("99쌍", { exact: true })).toBeTruthy();
@@ -160,7 +215,7 @@ test("keeps an impaired Chef freely editable while preserving the computed truth
         deliveredResult: { kind: "number", value: 99 },
         deliveryContext: {
           type: "discretionary",
-          reasons: [expect.objectContaining({ type: "poisoned" })],
+          reasons: [expect.objectContaining({ type: _state })],
         },
       },
     },
@@ -211,6 +266,35 @@ async function attachedHealthyChefGame(): Promise<GameFile> {
 async function poisonedChefGame(): Promise<GameFile> {
   const game = gameWithRoster("issue-153-poisoned-chef", [
     ["chef", "chef", "Chef"],
+    ["recluse", "recluse", "Recluse"],
+    ["empath", "empath", "Good"],
+    ["spy", "spy", "Spy"],
+    ["poisoner", "poisoner", "Poisoner"],
+    ["imp", "imp", "Imp"],
+    ["fortuneTeller", "fortuneTeller", "Good 2"],
+  ]);
+  await confirm(game, "firstNight:minionInfo", null);
+  await confirm(game, "firstNight:demonInfo", null);
+  await confirm(game, "firstNight:poisoner", { playerIds: ["player-1"] });
+  return game;
+}
+
+async function drunkChefGame(): Promise<GameFile> {
+  const game = gameWithRoster("issue-153-drunk-chef", [
+    ["drunk", "chef", "Drunk"],
+    ["recluse", "recluse", "Recluse"],
+    ["empath", "empath", "Good"],
+    ["spy", "spy", "Spy"],
+    ["imp", "imp", "Imp"],
+  ]);
+  await confirm(game, "firstNight:minionInfo", null);
+  await confirm(game, "firstNight:demonInfo", null);
+  return game;
+}
+
+async function healthyChefWithoutRegistrationCandidatesGame(): Promise<GameFile> {
+  const game = gameWithRoster("issue-153-healthy-chef-no-registration", [
+    ["chef", "chef", "Chef"],
     ["empath", "empath", "Good"],
     ["fortuneTeller", "fortuneTeller", "Good 2"],
     ["poisoner", "poisoner", "Poisoner"],
@@ -218,7 +302,33 @@ async function poisonedChefGame(): Promise<GameFile> {
   ]);
   await confirm(game, "firstNight:minionInfo", null);
   await confirm(game, "firstNight:demonInfo", null);
-  await confirm(game, "firstNight:poisoner", { playerIds: ["player-1"] });
+  await confirm(game, "firstNight:poisoner", { playerIds: ["player-2"] });
+  return game;
+}
+
+async function healthyChefWithOnlySpyGame(): Promise<GameFile> {
+  const game = gameWithRoster("issue-153-healthy-chef-spy", [
+    ["chef", "chef", "Chef"],
+    ["empath", "empath", "Good"],
+    ["fortuneTeller", "fortuneTeller", "Good 2"],
+    ["spy", "spy", "Spy"],
+    ["imp", "imp", "Imp"],
+  ]);
+  await confirm(game, "firstNight:minionInfo", null);
+  await confirm(game, "firstNight:demonInfo", null);
+  return game;
+}
+
+async function healthyChefWithOnlyRecluseGame(): Promise<GameFile> {
+  const game = gameWithRoster("issue-153-healthy-chef-recluse", [
+    ["chef", "chef", "Chef"],
+    ["empath", "empath", "Good"],
+    ["recluse", "recluse", "Recluse"],
+    ["imp", "imp", "Imp"],
+    ["baron", "baron", "Baron"],
+  ]);
+  await confirm(game, "firstNight:minionInfo", null);
+  await confirm(game, "firstNight:demonInfo", null);
   return game;
 }
 
