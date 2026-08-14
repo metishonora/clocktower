@@ -128,6 +128,10 @@ because no player target is required.
 
 - The healthy Progress task follows the SnV scalar-information pattern, opens
   immediately, and shows only `진실 / 1쌍` before the Reveal action.
+- If a Spy or Recluse can legally change that count, the same task presents
+  each result as a truthful `취급` judgment with its player and treatment;
+  it never labels a healthy Chef result as `거짓` or permits an arbitrary
+  number.
 - A poisoned Chef keeps the truth row for the Storyteller and adds a separate
   free-form non-negative integer input, initially `0쌍`, along with the shared
   poison badge and `중독 정보 공개` action.
@@ -141,6 +145,8 @@ approved scalar-information flow with the Chef.
 
 - The healthy Progress task opens immediately and shows `진실 / 1명` with no
   Grimoire or intermediate confirmation action.
+- If a living neighbor can register differently, the available truthful
+  results use the same shared `취급` presentation as the Chef.
 - A poisoned Empath retains that truth row and can enter any non-negative
   integer to deliver, starting at `0명`.
 - Reveal shows `초공감자 정보`, the Empath icon, `살아있는 양옆 이웃 중 악한 팀`,

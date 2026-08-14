@@ -1370,7 +1370,8 @@ describe("ClocktowerApp live-play integration", () => {
 
     const choices = screen.getByLabelText("전달할 숫자");
     expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
-    await user.click(within(choices).getByRole("button", { name: /거짓.*1/ }));
+    expect(within(choices).queryAllByText("거짓", { exact: true })).toHaveLength(0);
+    await user.click(within(choices).getByRole("button", { name: /취급.*1/ }));
     expect(confirm.disabled).toBe(false);
     await user.click(confirm);
 
@@ -1440,7 +1441,7 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
-  test("shows a Recluse and adjacent Demon before dynamic Chef truth and alternate buttons", async () => {
+  test("shows a Recluse and adjacent Demon before truthful Chef registration treatments", async () => {
     const playerRoster = players().map((player) =>
       player.id === "player-4"
         ? { ...player, actualCharacter: "recluse", shownCharacter: "recluse", alignment: "good" as const }
@@ -1486,9 +1487,10 @@ describe("ClocktowerApp live-play integration", () => {
     expect(within(neighbors).getByText("임프")).toBeTruthy();
     const choices = screen.getByLabelText("전달할 숫자");
     expect(within(choices).getByRole("button", { name: /진실.*0/ })).toBeTruthy();
-    expect(within(choices).getByRole("button", { name: /거짓.*1/ })).toBeTruthy();
-    expect(within(choices).getByRole("button", { name: /거짓.*2/ })).toBeTruthy();
-    await user.click(within(choices).getByRole("button", { name: /거짓.*1/ }));
+    expect(within(choices).queryAllByText("거짓", { exact: true })).toHaveLength(0);
+    expect(within(choices).getByRole("button", { name: /취급.*1/ })).toBeTruthy();
+    expect(within(choices).getByRole("button", { name: /취급.*2/ })).toBeTruthy();
+    await user.click(within(choices).getByRole("button", { name: /취급.*1/ }));
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {

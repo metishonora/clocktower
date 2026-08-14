@@ -9,6 +9,7 @@ import type {
   RegistrationJudgment,
   TargetCheck,
 } from "../../core/types";
+import { isScalarInformationCharacterId, scalarInformationValueLabel } from "../../core/informationPresentation";
 import { characterKind, characterLabel, kindLabels } from "../../setupDraft";
 import { seatPlayerLabel } from "../../voting";
 import { NominationVoteInput } from "../voting/NominationVoteInput";
@@ -634,25 +635,59 @@ function InformationDeliveryInput({
     <div className="stepSpecificInput informationDeliveryInput" aria-label="전달 정보">
       <NeighborVisualization step={step} players={players} />
       <div className="numberChoiceButtons" aria-label="전달할 숫자">
-        {prompt.numberChoices.map((choice) => {
+        {[...prompt.numberChoices]
+          .sort((left, right) => Number(right.isComputed) - Number(left.isComputed) || left.value - right.value)
+          .map((choice) => {
           const selected = selectedNumberChoice?.value === choice.value;
+          const valueLabel = step.character && isScalarInformationCharacterId(step.character)
+            ? scalarInformationValueLabel(step.character, choice.value)
+            : String(choice.value);
+          const judgments = choice.registrationJudgments.flatMap((judgment) => {
+            const player = players.find((candidate) => candidate.id === judgment.playerId);
+            return player
+              ? [`${seatPlayerLabel(player)} · ${characterLabel(player.actualCharacter)} → ${registrationTreatmentLabel(judgment.registeredAs)}`]
+              : [];
+          });
+          const hasRegistrationJudgment = choice.registrationJudgments.length > 0;
+          const choiceKind = choice.isComputed
+            ? "truth"
+            : hasRegistrationJudgment
+              ? "registration"
+              : "choice";
+          const choiceLabel = choice.isComputed ? "진실" : hasRegistrationJudgment ? "취급" : "선택";
           return (
             <button
               type="button"
-              className={`${choice.isComputed ? "truth" : "falsehood"} ${selected ? "selected" : ""}`}
+              className={`${choiceKind} ${selected ? "selected" : ""}`}
+              aria-label={[choiceLabel, valueLabel, ...judgments].join(" · ")}
               aria-pressed={selected}
               disabled={busy}
               onClick={() => onNumberChoiceChange(choice)}
               key={choice.value}
             >
-              <small>{choice.isComputed ? "진실" : "거짓"}</small>
-              <strong>{choice.value}</strong>
+              <small>{choiceLabel}</small>
+              <strong>{valueLabel}</strong>
+              {judgments.length ? <span className="numberChoiceRegistrationJudgments">
+                {judgments.map((judgment) => <span key={judgment}>{judgment}</span>)}
+              </span> : null}
             </button>
           );
         })}
       </div>
     </div>
   );
+}
+
+function registrationTreatmentLabel(registeredAs: RegistrationJudgment["registeredAs"]): string {
+  const labels: Record<RegistrationJudgment["registeredAs"], string> = {
+    good: "선한 팀으로 취급",
+    evil: "악한 팀으로 취급",
+    townsfolk: "주민으로 취급",
+    outsider: "외지인으로 취급",
+    minion: "하수인으로 취급",
+    demon: "악마로 취급",
+  };
+  return labels[registeredAs];
 }
 
 function NeighborVisualization({ step, players }: { step: PhaseStep; players: Player[] }) {

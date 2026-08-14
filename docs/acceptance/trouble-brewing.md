@@ -66,7 +66,7 @@
 - [x] `INF-02` [librarian-zero-outsiders.json](../../fixtures/acceptance/trouble-brewing/librarian-zero-outsiders.json) — Outsider가 없을 때 `0` 정보가 가능한지 확인한다.
 - [x] `REG-02` [librarian-spy-registration.json](../../fixtures/acceptance/trouble-brewing/librarian-spy-registration.json) — Spy를 특정 Outsider로 등록하는 정보와 `0` 정보가 함께 선택 가능한지 확인한다.
 - [x] `REG-03` [investigator-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/investigator-recluse-registration.json) — 실제 Poisoner 정보와 Recluse를 특정 Minion으로 등록한 정보를 각각 시험한다.
-- [x] `REG-04` [chef-evil-pairs-and-recluse.json](../../fixtures/acceptance/trouble-brewing/chef-evil-pairs-and-recluse.json) — 원형 끝-시작 경계와 Recluse 등록별 Chef 수치를 비교한다.
+- [x] `REG-04` [chef-evil-pairs-and-recluse.json](../../fixtures/acceptance/trouble-brewing/chef-evil-pairs-and-recluse.json) — 원형 끝-시작 경계와 Recluse 등록별 Chef 수치를 비교한다. 정상 요리사의 대안 수치는 `거짓`이 아니라 플레이어별 `취급` 판정으로 표시하며, 임의 수치는 선택할 수 없어야 한다.
 - [x] `INF-03` [empath-alive-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-alive-neighbors.json) — 1번 Empath의 살아 있는 좌우 이웃 중 8번 Imp 한 명을 세어 `1`이 나오는지 확인한다.
 - [x] `INF-03B` [empath-skips-dead-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-skips-dead-neighbors.json) — 양옆 dead 플레이어를 건너뛰어 다음 살아 있는 이웃인 Imp와 Poisoner를 세어 `2`가 나오는지 확인한다.
 - [x] `INF-04` [fortune-teller-red-herring.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-red-herring.json) — good 플레이어 또는 자신을 Red Herring으로 지정할 수 있는지 확인한다.
