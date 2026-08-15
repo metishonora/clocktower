@@ -429,6 +429,8 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
       });
     });
 
+    if (!result.ok) setPendingConfirmedReveal(undefined);
+
     setProposalResult(result);
     setBusy(false);
 

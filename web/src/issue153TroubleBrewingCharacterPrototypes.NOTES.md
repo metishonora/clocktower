@@ -169,8 +169,8 @@ keeps its two first-night actions in canonical order.
 - Healthy information shows the selected pair and fixed `결과 / 있음·없음`.
 - A poisoned Fortune Teller retains the truth while offering either result as
   `전달할 정보` and uses the shared poisoned Reveal action.
-- Reveal shows `점쟁이 정보`, the icon, `이 중에 악마는…`, the two compact
-  seat cards, and the delivered `있음` or `없음` result.
+- Reveal shows `점쟁이 정보`, the two compact seat cards, `이 중에 악마는`,
+  and the delivered `있음` or `없음` result, in that order.
 
 ## Undertaker review route
 
@@ -425,7 +425,7 @@ shared targeted-night-action flow.
 The Spy uses the separate `issue-153-tb-spy` route and reuses the approved
 Issue #152 locked live-Grimoire presentation.
 
-- Progress presents one `마도서 공개` action. Opening it replaces the
+- Progress presents one `정보 공개` action. Opening it replaces the
   Storyteller task with the ordinary Trouble Brewing live Grimoire, locks all
   shell navigation and game actions, preserves player-detail inspection, and
   closes through `확인 완료` in the Grimoire center.
@@ -433,7 +433,7 @@ Issue #152 locked live-Grimoire presentation.
   and `다음 단계`, so the Storyteller can repeat the handoff before continuing.
 - The ordinary `마도서` tab always remains a Storyteller-only view of the
   actual state. A poisoned Spy instead receives a separately prepared false
-  fixture through `중독 마도서 공개`; the sample swaps two character
+  fixture through `중독 정보 공개`; the sample swaps two character
   identities and moves status information so truth and delivery are visibly
   distinct without exposing that distinction inside the player handoff.
 - The poisoned fixture settles the delivery boundary only. Production still

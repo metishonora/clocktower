@@ -134,7 +134,7 @@ test("opens the healthy Spy's actual Grimoire and returns to replay or continue"
   render(<Issue153SpyPrototype />);
   const fixture = screen.getByRole("main", { name: "첩자 전체 흐름 fixture" });
   const task = within(fixture).getByRole("article", { name: "첩자 마도서 정보" });
-  await user.click(within(task).getByRole("button", { name: "마도서 공개" }));
+  await user.click(within(task).getByRole("button", { name: "정보 공개" }));
 
   const reveal = screen.getByRole("main", { name: "Trouble Brewing 진행" });
   const board = within(reveal).getByLabelText("라이브 마도서 좌석 맵");
@@ -162,7 +162,7 @@ test("keeps the poisoned Spy's actual Grimoire separate from the prepared false 
   await user.click(within(fixture).getByRole("button", { name: "진행 →" }));
 
   fixture = screen.getByRole("main", { name: "첩자 전체 흐름 fixture" });
-  await user.click(within(fixture).getByRole("button", { name: "중독 마도서 공개" }));
+  await user.click(within(fixture).getByRole("button", { name: "중독 정보 공개" }));
   const reveal = screen.getByRole("main", { name: "Trouble Brewing 진행" });
   board = within(reveal).getByLabelText("라이브 마도서 좌석 맵");
   expect(within(board).getByRole("button", { name: /2번 좌석, 서연, 군인/ })).toBeTruthy();
@@ -883,10 +883,14 @@ test("continues directly from Fortune Teller decoy assignment to two-player sele
 
   const reveal = screen.getByRole("dialog", { name: "점쟁이 정보 공개" });
   expect(within(reveal).getByText("점쟁이 정보", { exact: true })).toBeTruthy();
-  expect(within(reveal).getByText("이 중에 악마는…", { exact: true })).toBeTruthy();
-  expect(within(reveal).getByRole("article", { name: "2번 서연 좌석" })).toBeTruthy();
-  expect(within(reveal).getByRole("article", { name: "5번 도윤 좌석" })).toBeTruthy();
-  expect(within(reveal).getByText("있음", { exact: true })).toBeTruthy();
+  const targets = within(reveal).getByRole("group", { name: "확인한 플레이어" });
+  expect(within(targets).getAllByRole("article").map((card) => card.getAttribute("aria-label")))
+    .toEqual(["2번 서연 좌석", "5번 도윤 좌석"]);
+  const prompt = within(reveal).getByText("이 중에 악마는", { exact: true });
+  const revealedResult = within(reveal).getByText("있음", { exact: true });
+  expect(targets.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(prompt.compareDocumentPosition(revealedResult) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(within(reveal).queryByRole("img")).toBeNull();
 });
 
 test("keeps Fortune Teller truth visible while poisoned and allows either delivery", async () => {

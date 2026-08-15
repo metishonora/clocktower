@@ -1677,21 +1677,20 @@ describe("ClocktowerApp live-play integration", () => {
       .getByRole("button", { name: /4번 좌석, Dae/ })
       .getAttribute("style");
     await user.click(screen.getByRole("button", { name: "진행" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
-    const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(followup).queryByLabelText("Reveal 미리보기")).toBeNull();
-    expect(within(followup).queryByText(`${playerRoster.length}명`)).toBeNull();
-    expect(within(followup).queryByText(/실제 캐릭터와 현재 상태|읽기 전용 공개/)).toBeNull();
-    const showButton = within(followup).getByRole("button", { name: "플레이어에게 공개" });
+    const currentTask = screen.getByRole("region", { name: "현재 단계" });
+    expect(within(currentTask).queryByRole("button", { name: "확정" })).toBeNull();
+    await user.click(within(currentTask).getByRole("button", { name: "정보 공개" }));
 
-    await user.click(showButton);
+    await screen.findByRole("button", { name: "확인 완료" });
     const revealScreen = screen.getByRole("main", { name: "Trouble Brewing 진행" });
+    expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+    expect(screen.queryByRole("button", { name: "플레이어에게 공개" })).toBeNull();
     const revealSeat = within(revealScreen).getByText("Dae").closest("button");
     expect(revealSeat?.getAttribute("style")).toBe(storytellerSeatStyle);
     expect(within(revealScreen).getByRole("heading", { name: "Trouble Brewing" })).toBeTruthy();
     expect(within(revealScreen).getByLabelText("라이브 마도서 좌석 맵")).toBeTruthy();
     expect(within(revealScreen).getAllByRole("button", { name: /좌석/ })).toHaveLength(playerRoster.length);
-    expect(within(revealScreen).getByRole("button", { name: "열람 종료" })).toBeTruthy();
+    expect(within(revealScreen).getByRole("button", { name: "확인 완료" })).toBeTruthy();
     expect((within(revealScreen).getByRole("button", { name: "직업" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(revealScreen).getByRole("button", { name: "진행" }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(revealScreen).getByRole("button", { name: "새 게임" }) as HTMLButtonElement).disabled).toBe(true);
@@ -1706,16 +1705,14 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByText("이벤트 로그")).toBeNull();
     expect(screen.queryByText("설정 및 불러오기")).toBeNull();
 
-    await user.click(within(revealScreen).getByRole("button", { name: "열람 종료" }));
-    expect(screen.queryByRole("main", { name: "Trouble Brewing 진행" })).toBeNull();
-    const endedShell = screen.getByRole("main", { name: "첩자 공개 종료" });
-    expect(within(endedShell).getByText("SPY REVEAL")).toBeTruthy();
-    const ended = screen.getByRole("region", { name: "첩자 공개 종료 안내" });
-    expect(within(ended).getByRole("heading", { name: "열람을 종료했습니다" })).toBeTruthy();
-    expect(within(ended).queryByRole("button", { name: "다시 열람" })).toBeNull();
-    await user.click(within(ended).getByRole("button", { name: "진행" }));
+    await user.click(within(revealScreen).getByRole("button", { name: "확인 완료" }));
+    expect(await screen.findByRole("main", { name: "Trouble Brewing 진행" })).toBeTruthy();
+    expect(screen.queryByRole("main", { name: "첩자 공개 종료" })).toBeNull();
+    const reviewedTask = await screen.findByRole("region", { name: "첩자 정보" });
+    expect(within(reviewedTask).getByRole("button", { name: "마도서 다시 공개" })).toBeTruthy();
+    await user.click(within(reviewedTask).getByRole("button", { name: "다음 단계" }));
 
-    expect(screen.queryByRole("region", { name: "첩자 공개 종료 안내" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "첩자 정보" })).toBeNull();
     expect(await screen.findByRole("heading", { name: "1일차 밤" })).toBeTruthy();
     expect(core.propose).toHaveBeenCalledTimes(1);
   });

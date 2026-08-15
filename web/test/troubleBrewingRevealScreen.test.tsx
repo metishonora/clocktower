@@ -38,7 +38,10 @@ test("presents TB setup information as two seats followed by the revealed charac
   expect(closed).toBe(true);
 });
 
-test("shows Fortune Teller's pair and result with an accessible close action", async () => {
+test.each([
+  { hasDemon: true, result: "있음" },
+  { hasDemon: false, result: "없음" },
+])("shows the Fortune Teller's ordered seat cards before the exact $result result copy", async ({ hasDemon, result }) => {
   const user = userEvent.setup();
   let closed = false;
 
@@ -47,18 +50,26 @@ test("shows Fortune Teller's pair and result with an accessible close action", a
       payload={{
         kind: "fortuneTellerInformation",
         targetPlayers: [
-          { playerId: "p-1", seat: 1, name: "민지" },
           { playerId: "p-7", seat: 7, name: "현우" },
+          { playerId: "p-1", seat: 1, name: "민지" },
         ],
-        hasDemon: true,
+        hasDemon,
       }}
       onClose={() => { closed = true; }}
     />,
   );
 
   const dialog = screen.getByRole("dialog", { name: "점쟁이 정보 공개" });
-  expect(within(dialog).getByLabelText("확인한 플레이어").textContent).toContain("7번 현우");
-  expect(within(dialog).getByText("있음")).toBeTruthy();
+  const targets = within(dialog).getByRole("group", { name: "확인한 플레이어" });
+  expect(within(targets).getAllByRole("article").map((card) => card.getAttribute("aria-label")))
+    .toEqual(["7번 현우 좌석", "1번 민지 좌석"]);
+  expect(within(targets).queryByText("그리고", { exact: true })).toBeNull();
+
+  const prompt = within(dialog).getByText("이 중에 악마는", { exact: true });
+  const revealedResult = within(dialog).getByText(result, { exact: true });
+  expect(within(dialog).queryByText("이 중에 악마는…", { exact: true })).toBeNull();
+  expect(targets.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(prompt.compareDocumentPosition(revealedResult) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
 
   await user.click(within(dialog).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(closed).toBe(true);

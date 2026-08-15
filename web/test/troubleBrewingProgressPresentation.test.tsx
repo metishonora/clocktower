@@ -2,7 +2,7 @@ import { useState } from "react";
 import { render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import type { NumberChoice, PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment } from "../src/core/types";
+import type { NumberChoice, PhaseOverviewItem, PhaseStep, Player, RegistrationJudgment, RevealPayload } from "../src/core/types";
 import type { PhaseControlProps } from "../src/features/phase-control/PhaseControl";
 import { usePhaseInputDraft, type PhaseInputDraftController } from "../src/features/phase-control/usePhaseInputDraft";
 import { TroubleBrewingProgress } from "../src/features/trouble-brewing/TroubleBrewingProgress";
@@ -300,6 +300,87 @@ test("opens evil-team information immediately, then returns to the compact S&V R
   expect(onShowReveal).toHaveBeenCalledTimes(2);
   await user.click(within(task).getByRole("button", { name: "다음으로" }));
   expect(onContinue).toHaveBeenCalledTimes(1);
+});
+
+test("keeps the Spy task in place while its direct Grimoire Reveal is being prepared", () => {
+  const spy = step({
+    id: "firstNight:spy",
+    phase: "firstNight",
+    character: "spy",
+    playerId: "player-7",
+    requiredInput: { kind: "none", optional: false },
+  });
+  const onShowReveal = vi.fn();
+
+  renderProgress(spy, [overview(spy, "needsFollowUp")], undefined, {
+    pendingReveal: {
+      step: spy,
+      confirmedEventCount: 12,
+      payload: spyGrimoirePayload(),
+    },
+    replayReady: false,
+    busy: true,
+    onShowReveal,
+  });
+
+  const task = screen.queryByRole("region", { name: "현재 단계" });
+  expect.soft(task).not.toBeNull();
+  if (task) expect(within(task).getByRole("heading", { name: "첩자: 7번 현우" })).toBeTruthy();
+  expect(screen.queryByRole("region", { name: "첩자 정보" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "마도서 다시 공개" })).toBeNull();
+  expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
+  expect(onShowReveal).not.toHaveBeenCalled();
+});
+
+test("uses the common poisoned Spy badge and poisoned Reveal actions before and after review", () => {
+  const spy = step({
+    id: "firstNight:spy",
+    phase: "firstNight",
+    character: "spy",
+    playerId: "player-7",
+    requiredInput: { kind: "none", optional: false },
+  });
+  const poisonedRuleState = {
+    unannouncedNightDeathPlayerIds: [],
+    activeImpairments: [{
+      kind: "poisoned" as const,
+      playerId: "player-7",
+      sourceEventId: "poison-1",
+      sourceCharacterId: "poisoner",
+      expires: "whileSourceAbilityActive" as const,
+    }],
+  };
+  const view = renderProgress(spy, [overview(spy, "current")], undefined, {
+    ruleState: poisonedRuleState,
+  });
+
+  const initialTask = screen.getByRole("region", { name: "현재 단계" });
+  const initialBadge = within(within(initialTask).getByLabelText("정보 영향"))
+    .getByText("중독", { exact: true });
+  expect(initialBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(initialBadge.classList.contains("poisoned")).toBe(true);
+  const initialReveal = within(initialTask).queryByRole("button", { name: "중독 정보 공개" });
+  expect.soft(initialReveal).not.toBeNull();
+  expect.soft(initialReveal?.classList.contains("poisoned")).toBe(true);
+
+  view.rerender(progress(spy, [overview(spy, "needsFollowUp")], undefined, {
+    ruleState: poisonedRuleState,
+    pendingReveal: {
+      step: spy,
+      confirmedEventCount: 12,
+      payload: spyGrimoirePayload(),
+    },
+    replayReady: true,
+  }));
+
+  const reviewedTask = screen.getByRole("region", { name: "첩자 정보" });
+  const reviewedBadge = within(within(reviewedTask).getByLabelText("정보 영향"))
+    .getByText("중독", { exact: true });
+  expect(reviewedBadge.classList.contains("snvInformationInfluenceBadge")).toBe(true);
+  expect(reviewedBadge.classList.contains("poisoned")).toBe(true);
+  const reviewedReveal = within(reviewedTask).queryByRole("button", { name: "중독 마도서 다시 공개" });
+  expect.soft(reviewedReveal).not.toBeNull();
+  expect.soft(reviewedReveal?.classList.contains("poisoned")).toBe(true);
 });
 
 test("shows an impaired actor badge before choosing information targets", () => {
@@ -773,6 +854,21 @@ function informationPrompt(activeReasons: NonNullable<PhaseStep["informationProm
     registrationCandidatePlayerIds: [],
     numberChoices: [],
     setupInfoRegistrationOptions: [],
+  };
+}
+
+function spyGrimoirePayload(): Extract<RevealPayload, { kind: "spyGrimoire" }> {
+  return {
+    kind: "spyGrimoire",
+    players: players.map((candidate) => ({
+      playerId: candidate.id,
+      seat: candidate.seat,
+      name: candidate.name,
+      characterId: candidate.actualCharacter,
+      alive: candidate.alive,
+      ghostVoteUsed: candidate.ghostVoteUsed,
+      reminderTokens: [],
+    })),
   };
 }
 

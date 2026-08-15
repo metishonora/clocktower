@@ -70,6 +70,7 @@ export function TroubleBrewingLiveGrimoire({
   revealMode,
   interactionLocked = false,
   progressActionLabel = "진행 →",
+  progressActionDisabled = false,
 }: {
   players: Player[];
   currentStep?: PhaseStep;
@@ -116,6 +117,7 @@ export function TroubleBrewingLiveGrimoire({
   /** Locks mutation affordances while retaining interactive read-only seat details. */
   interactionLocked?: boolean;
   progressActionLabel?: string;
+  progressActionDisabled?: boolean;
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
@@ -366,7 +368,7 @@ export function TroubleBrewingLiveGrimoire({
         center={handoff === "nomination" || handoff === "vote" ? undefined : <>
           <strong>{revealMode ? "첩자 공개" : gameEnded ? "게임 종료" : phaseLabel}</strong>
           {!revealMode && !gameEnded ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time> : null}
-          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" onClick={onGoToProgress}>{progressActionLabel}</button> : null}
+          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" disabled={progressActionDisabled} onClick={onGoToProgress}>{progressActionLabel}</button> : null}
         </>}
       />}
       inspector={handoff ? <TroubleBrewingSelectionPanel

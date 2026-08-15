@@ -28,7 +28,7 @@ import {
   targetCheckForSelection,
 } from "../phase-control/phaseInput";
 import { NightResultsAnnouncement } from "../phase-control/NightResultsAnnouncement";
-import { PlayerImpairmentBadges } from "../phase-control/ImpairmentBadges";
+import { PlayerImpairmentBadges, visibleImpairmentsForPlayer } from "../phase-control/ImpairmentBadges";
 import { suggestionRequestFingerprint } from "../phase-control/randomSuggestion";
 import { TroubleBrewingSetupInformationEditor } from "./TroubleBrewingSetupInformationEditor";
 import {
@@ -181,20 +181,21 @@ function TroubleBrewingTask({
     }
     const directReveal = isSpyGrimoireRevealPayload(pendingReveal.payload);
     if (directReveal) {
-      const actor = pendingReveal.step.playerId
-        ? players.find((player) => player.id === pendingReveal.step.playerId)
-        : undefined;
-      return <article className="snvCurrentStep tbCurrentTask" aria-label="확정된 Reveal 후속 조치">
-        <p className="snvCurrentStepLabel">공개할 정보</p>
-        <h3>{stepTitle(pendingReveal.step, actor)}</h3>
-        <div className="tbProgressInputs">
-          <button type="button" className="primaryButton" onClick={() => onShowReveal(pendingReveal.payload)} disabled={busy}>플레이어에게 공개</button>
-        </div>
-        <div className="snvStepActions">
-          <button type="button" disabled={busy || !replayReady} onClick={onContinue}>다음 단계로 계속</button>
-        </div>
-        {!replayReady ? <p className="tbProgressWaiting">다음 단계 준비 중</p> : null}
-      </article>;
+      return <div className="tbProgressTaskColumn">
+        <TroubleBrewingInformationFollowUp
+          step={pendingReveal.step}
+          payload={pendingReveal.payload}
+          players={players}
+          ruleState={ruleState}
+          theme={theme}
+          busy={busy}
+          canContinue={replayReady}
+          preparing={!replayReady}
+          revealActionLabel={replayReady ? "마도서 다시 공개" : undefined}
+          onReveal={() => onShowReveal(pendingReveal.payload)}
+          onContinue={onContinue}
+        />
+      </div>;
     }
     return <div className="tbProgressTaskColumn">
       <TroubleBrewingInformationFollowUp
@@ -260,7 +261,14 @@ function TroubleBrewingTask({
       && !setupInfoDeliveryIsImpaired(currentStep)
       && !setupInfoCandidatePathAvailable,
   );
-  const isInformationConfirmation = Boolean(currentStep?.informationPrompt || zeroOutsiderInformation);
+  const isInformationConfirmation = Boolean(
+    currentStep?.informationPrompt
+      || zeroOutsiderInformation
+      || (currentStep && isSpyInformationStep(currentStep)),
+  );
+  const currentInformationInfluence = currentStep
+    ? informationInfluenceForStep(currentStep, ruleState)
+    : undefined;
   const isInformationStep = Boolean(
     currentStep?.informationPrompt || currentStep?.requiredInput.kind === "setupInfo",
   );
@@ -630,15 +638,17 @@ function TroubleBrewingTask({
               </button> : null}
               {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button
                 type="button"
-                className={isInformationConfirmation ? `informationReveal prominent${primaryInformationInfluence(currentStep.informationPrompt?.activeReasons ?? []) ? ` ${primaryInformationInfluence(currentStep.informationPrompt?.activeReasons ?? [])}` : ""}` : undefined}
+                className={isInformationConfirmation ? `informationReveal prominent${currentInformationInfluence ? ` ${currentInformationInfluence}` : ""}` : undefined}
                 disabled={busy || suggesting || !selectionValid || !targetChoiceReady}
                 onClick={() => {
-                  if (isInformationConfirmation) autoRevealStepRef.current = currentStep.id;
+                  if (isInformationConfirmation && !isSpyInformationStep(currentStep)) {
+                    autoRevealStepRef.current = currentStep.id;
+                  }
                   onConfirm(currentConfirmation);
                 }}
               >
                 {isInformationConfirmation
-                  ? informationRevealActionLabel(currentStep.informationPrompt?.activeReasons ?? [])
+                  ? informationRevealActionLabel(currentInformationInfluence)
                   : confirmationLabel(currentStep, isNightDeathAnnouncement)}
               </button> : null}
               {currentStep.stepType === "nomination" && currentStep.canSkip ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>
@@ -758,6 +768,8 @@ function TroubleBrewingInformationFollowUp({
   theme,
   busy,
   canContinue,
+  preparing = false,
+  revealActionLabel,
   onReveal,
   onContinue,
 }: {
@@ -768,6 +780,8 @@ function TroubleBrewingInformationFollowUp({
   theme: "day" | "night";
   busy: boolean;
   canContinue: boolean;
+  preparing?: boolean;
+  revealActionLabel?: string;
   onReveal: () => void;
   onContinue: () => void;
 }) {
@@ -778,7 +792,7 @@ function TroubleBrewingInformationFollowUp({
     ? characters.find((candidate) => candidate.id === step.character)
     : undefined;
   const title = character?.label ?? "정보";
-  const influence = primaryInformationInfluence(step.informationPrompt?.activeReasons ?? []);
+  const influence = informationInfluenceForStep(step, ruleState);
   const abilityRelation = actor ? abilityPresentationForStep(step, actor) : undefined;
   const setupInformation = "kind" in payload && payload.kind === "setupInformation"
     ? payload
@@ -791,7 +805,7 @@ function TroubleBrewingInformationFollowUp({
   return <article
     className="snvCurrentStep tbCurrentTask issue116CurrentStep"
     role="region"
-    aria-label={`${title} 정보`}
+    aria-label={preparing ? "현재 단계" : `${title} 정보`}
   >
     <p className="snvCurrentStepLabel">현재 할 일</p>
     {actor && step.character ? <section className="tbProgressActorBlock issue116ActorIdentity" aria-label="현재 행동자">
@@ -863,19 +877,37 @@ function TroubleBrewingInformationFollowUp({
         type="button"
         className={`informationReveal${influence ? ` ${influence}` : ""}`}
         onClick={onReveal}
-        disabled={busy}
-      >{informationRevealActionLabel(step.informationPrompt?.activeReasons ?? [])}</button>
-      <button type="button" className="secondary" disabled={busy || !canContinue} onClick={onContinue}>다음 단계</button>
+        disabled={busy || preparing}
+      >{informationRevealActionLabel(influence, revealActionLabel)}</button>
+      {!preparing ? <button type="button" className="secondary" disabled={busy || !canContinue} onClick={onContinue}>다음 단계</button> : null}
     </div>
-    {!canContinue ? <p className="tbProgressWaiting">다음 단계 준비 중</p> : null}
+    {preparing ? <p className="tbProgressWaiting" role="status">마도서 준비 중</p>
+      : !canContinue ? <p className="tbProgressWaiting">다음 단계 준비 중</p> : null}
   </article>;
 }
 
-function informationRevealActionLabel(reasons: DeliveryReason[]) {
-  const influence = primaryInformationInfluence(reasons);
-  if (influence === "poisoned") return "중독 정보 공개";
-  if (influence === "drunk") return "취한 정보 공개";
-  return "정보 공개";
+function isSpyInformationStep(step: PhaseStep) {
+  return step.character === "spy" && step.requiredInput.kind === "none";
+}
+
+function informationRevealActionLabel(
+  influence: "poisoned" | "drunk" | undefined,
+  baseLabel = "정보 공개",
+) {
+  if (influence === "poisoned") return `중독 ${baseLabel}`;
+  if (influence === "drunk") return `취한 ${baseLabel}`;
+  return baseLabel;
+}
+
+function informationInfluenceForStep(
+  step: PhaseStep,
+  ruleState: PhaseControlProps["ruleState"],
+): "poisoned" | "drunk" | undefined {
+  const promptInfluence = primaryInformationInfluence(step.informationPrompt?.activeReasons ?? []);
+  if (promptInfluence) return promptInfluence;
+  const impairments = visibleImpairmentsForPlayer(ruleState?.activeImpairments, step.playerId);
+  if (impairments.includes("poisoned")) return "poisoned";
+  return impairments.includes("drunk") ? "drunk" : undefined;
 }
 
 function primaryInformationInfluence(reasons: DeliveryReason[]): "poisoned" | "drunk" | undefined {

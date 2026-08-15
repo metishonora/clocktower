@@ -3637,8 +3637,8 @@ function SpyInformationTask({
 }) {
   const poisoned = informationStatus === "poisoned";
   const revealLabel = poisoned
-    ? revealReviewed ? "중독 마도서 다시 공개" : "중독 마도서 공개"
-    : revealReviewed ? "마도서 다시 공개" : "마도서 공개";
+    ? revealReviewed ? "중독 마도서 다시 공개" : "중독 정보 공개"
+    : revealReviewed ? "마도서 다시 공개" : "정보 공개";
   return (
     <article className="snvCurrentStep snvInformationTask tbCurrentTask issue153SetupInformationProgressCard" aria-label="첩자 마도서 정보">
       <p className="snvCurrentStepLabel">현재 할 일</p>
@@ -4413,8 +4413,6 @@ function FortuneTellerReveal({ players, hasDemon, onClose }: { players: Player[]
       onClose={onClose}
     >
       <header className="issue153RevealHeader"><span>점쟁이 정보</span></header>
-      <div className="issue153ScalarRevealIdentity"><CharacterIcon characterId="fortuneTeller" /></div>
-      <p className="issue153RevealPrompt">이 중에 악마는…</p>
       <div className="issue153RevealSeatCards" role="group" aria-label="확인한 플레이어">
         {players.map((player) => (
           <article className="issue153RevealSeatCard" key={player.id} aria-label={`${player.seat}번 ${player.name} 좌석`}>
@@ -4423,6 +4421,7 @@ function FortuneTellerReveal({ players, hasDemon, onClose }: { players: Player[]
           </article>
         ))}
       </div>
+      <p className="issue153RevealPrompt">이 중에 악마는</p>
       <strong className="issue153ScalarRevealValue">{hasDemon ? "있음" : "없음"}</strong>
     </SectsAndVioletsReveal>
   );

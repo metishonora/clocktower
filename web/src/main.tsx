@@ -830,7 +830,7 @@ export function ClocktowerApp({
   const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
-  const [spyRevealEnded, setSpyRevealEnded] = useState(false);
+  const [acknowledgedSpyRevealKey, setAcknowledgedSpyRevealKey] = useState<string>();
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
   const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
   const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
@@ -952,16 +952,28 @@ export function ClocktowerApp({
       ? { kind: "active" as const, phaseLabel: numberedPhase.label, runtime: phaseRuntime }
       : undefined;
   const mobilePhasePanel = useMobilePhasePanel(gameStore.setupConfirmed);
-  const activeSpyRevealPayload = activeRevealPayload && isSpyGrimoireRevealPayload(activeRevealPayload)
+  const explicitSpyRevealPayload = activeRevealPayload && isSpyGrimoireRevealPayload(activeRevealPayload)
     ? activeRevealPayload
     : undefined;
+  const pendingSpyRevealPayload = gameStore.pendingConfirmedReveal
+    && isSpyGrimoireRevealPayload(gameStore.pendingConfirmedReveal.payload)
+    ? gameStore.pendingConfirmedReveal.payload
+    : undefined;
+  const pendingSpyRevealKey = pendingSpyRevealPayload && gameStore.pendingConfirmedReveal
+    ? `${gameStore.pendingConfirmedReveal.step.id}:${gameStore.pendingConfirmedReveal.confirmedEventCount}`
+    : undefined;
+  const implicitSpyRevealPayload = !activeRevealPayload
+    && pendingSpyRevealKey !== acknowledgedSpyRevealKey
+    ? pendingSpyRevealPayload
+    : undefined;
+  const activeSpyRevealPayload = explicitSpyRevealPayload ?? implicitSpyRevealPayload;
   const revealPlayers = activeSpyRevealPayload ? playersForSpyReveal(activeSpyRevealPayload) : undefined;
   const revealRuleState = activeSpyRevealPayload ? ruleStateForSpyReveal(activeSpyRevealPayload) : undefined;
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
       setActiveRevealPayload(undefined);
-      setSpyRevealEnded(false);
+      setAcknowledgedSpyRevealKey(undefined);
     }
   }, [gameStore.pendingConfirmedReveal]);
 
@@ -993,7 +1005,6 @@ export function ClocktowerApp({
   }
 
   function showReveal(payload: RevealPayload) {
-    setSpyRevealEnded(false);
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
   }
@@ -1036,18 +1047,9 @@ export function ClocktowerApp({
       setAcknowledgedPreActionRevealKey(activePreActionRevealKey);
       setActivePreActionRevealKey(undefined);
     }
-    setActiveRevealPayload(undefined);
-  }
-
-  function finishSpyReveal() {
-    if (!activeSpyRevealPayload) return;
-    setSpyRevealEnded(true);
-  }
-
-  function continueAfterSpyReveal() {
-    if (!gameStore.pendingConfirmedRevealReady) return;
-    gameStore.continueAfterConfirmedReveal();
-    setSpyRevealEnded(false);
+    if (activeSpyRevealPayload && pendingSpyRevealKey) {
+      setAcknowledgedSpyRevealKey(pendingSpyRevealKey);
+    }
     setActiveRevealPayload(undefined);
   }
 
@@ -1357,15 +1359,6 @@ export function ClocktowerApp({
   if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && activeSpyRevealPayload && revealPlayers) {
     const revealTheme = gameStore.phase === "day" ? "day" : "night";
     const revealPhaseLabel = numberedPhase?.label ?? (gameStore.phase === "day" ? "낮" : "밤");
-    if (spyRevealEnded) {
-      return (
-        <SpyRevealEndedProduction
-          theme={revealTheme}
-          ready={gameStore.pendingConfirmedRevealReady}
-          onContinue={continueAfterSpyReveal}
-        />
-      );
-    }
     return (
       <div
         className="clocktowerApp tbSharedLivePlay spyRevealActive"
@@ -1394,8 +1387,9 @@ export function ClocktowerApp({
             gameEnded={false}
             ruleState={revealRuleState}
             interactionLocked
-            progressActionLabel="열람 종료"
-            onGoToProgress={finishSpyReveal}
+            progressActionLabel="확인 완료"
+            progressActionDisabled={Boolean(pendingSpyRevealPayload && !gameStore.pendingConfirmedRevealReady)}
+            onGoToProgress={closeActiveReveal}
           />}
           progress={<span aria-hidden="true" />}
           storage={<span aria-hidden="true" />}
@@ -1652,26 +1646,4 @@ function legacyReminder(
     description: token === "poisoned" ? "이전 Spy Reveal의 중독 상태입니다." : "이전 Spy Reveal의 수도사 보호 상태입니다.",
     sourceEventId: `spy-reveal-legacy:${player.playerId}`,
   };
-}
-
-function SpyRevealEndedProduction({
-  theme,
-  ready,
-  onContinue,
-}: {
-  theme: "day" | "night";
-  ready: boolean;
-  onContinue: () => void;
-}) {
-  return <main
-    className="productionApplicationShell tbProductionShell tbSpyRevealEndedShell"
-    data-theme={theme}
-    aria-label="첩자 공개 종료"
-  >
-    <section className="tbSpyRevealEndedProduction" aria-label="첩자 공개 종료 안내">
-      <span>SPY REVEAL</span>
-      <h1>열람을 종료했습니다</h1>
-      <button type="button" disabled={!ready} onClick={onContinue}>진행</button>
-    </section>
-  </main>;
 }

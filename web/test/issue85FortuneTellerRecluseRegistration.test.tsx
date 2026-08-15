@@ -44,7 +44,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
         }],
       },
     },
-  ])("confirms the $treatmentButton judgment once when the Recluse is selected first", async ({
+  ] as const)("confirms the $treatmentButton judgment once when the Recluse is selected first", async ({
     treatmentButton,
     treatmentLabel,
     treatmentClass,
@@ -98,7 +98,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(confirm);
 
     const reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText(revealValue)).toBeTruthy();
+    expectFortuneTellerReveal(reveal, revealValue);
     await waitFor(() => {
       expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1);
     });
@@ -381,7 +381,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(confirm);
 
     const reveal = await screen.findByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("있음", { exact: true })).toBeTruthy();
+    expectFortuneTellerReveal(reveal, "있음");
     await waitFor(() => expect(latestSavedGame(storage).game.events).toHaveLength(initialEventCount + 1));
     expect(latestSavedGame(storage).game.events.at(-1)).toMatchObject({
       type: "phaseStepConfirmed",
@@ -400,6 +400,17 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     });
   });
 });
+
+function expectFortuneTellerReveal(reveal: HTMLElement, result: "있음" | "없음") {
+  const targets = within(reveal).getByRole("group", { name: "확인한 플레이어" });
+  expect(within(targets).getAllByRole("article").map((card) => card.getAttribute("aria-label")))
+    .toEqual(["3번 플레이어 3 좌석", "6번 플레이어 6 좌석"]);
+
+  const prompt = within(reveal).getByText("이 중에 악마는", { exact: true });
+  const revealedResult = within(reveal).getByText(result, { exact: true });
+  expect(targets.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  expect(prompt.compareDocumentPosition(revealedResult) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+}
 
 function loadFixture(): GameFile {
   return importGameFileJson(readFileSync(fixturePath, "utf8"));

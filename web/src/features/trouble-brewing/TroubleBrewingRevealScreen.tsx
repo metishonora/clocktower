@@ -183,10 +183,9 @@ function SetupInformationContent({ payload }: { payload: Extract<RoleInformation
 function FortuneTellerContent({ payload }: { payload: FortuneTellerInformationRevealPayload }) {
   return (
     <>
-      <CharacterIcon characterId="fortuneTeller" className="tbRevealIcon" />
       <span className="tbRevealEyebrow">점쟁이 정보</span>
-      <h2>이 중에 악마는…</h2>
-      <RevealPlayers players={payload.targetPlayers} ariaLabel="확인한 플레이어" separator="그리고" />
+      <RevealSeatCards players={payload.targetPlayers} ariaLabel="확인한 플레이어" />
+      <p className="tbRevealDescription">이 중에 악마는</p>
       <strong className={`tbRevealValue ${payload.hasDemon ? "yes" : "no"}`}>{payload.hasDemon ? "있음" : "없음"}</strong>
     </>
   );
