@@ -57,7 +57,7 @@ import type {
   TroubleBrewingBugReportContextInput,
   TroubleBrewingBugReportEnvironment,
 } from "./troubleBrewingBugReport";
-import { teamTreatmentChoices } from "./features/trouble-brewing/teamTreatmentPresentation";
+import { demonRegistrationTreatmentChoices } from "./features/trouble-brewing/teamTreatmentPresentation";
 import "./styles.css";
 
 const DevScriptSelectionPrototype = import.meta.env.DEV
@@ -874,8 +874,8 @@ export function ClocktowerApp({
     : undefined;
   const troubleBrewingTargetTreatmentOptions = troubleBrewingTargetTreatment
     && troubleBrewingTargetTreatmentPlayer
-    ? teamTreatmentChoices(
-        troubleBrewingTargetTreatmentPlayer.alignment,
+    ? demonRegistrationTreatmentChoices(
+        `${characterLabel(troubleBrewingTargetTreatmentPlayer.actualCharacter)}를`,
         troubleBrewingTargetTreatment.canonicalChoice,
         troubleBrewingTargetTreatment.registeredAs,
         troubleBrewingTargetTreatment.registeredChoice,
@@ -888,15 +888,15 @@ export function ClocktowerApp({
         label: `이번 판정의 ${characterLabel(troubleBrewingTargetTreatmentPlayer.actualCharacter)} 취급`,
         selectedId: troubleBrewingTargetTreatmentOptions.find(
           (option) => option.choice === phaseInputDraft.selectedTargetChoice,
-        )?.team,
+        )?.id,
         options: troubleBrewingTargetTreatmentOptions.map((option) => ({
-          id: option.team,
+          id: option.id,
           label: option.label,
           ariaLabel: option.accessibleLabel,
           className: option.className,
         })),
         onChange: (id: string) => {
-          const option = troubleBrewingTargetTreatmentOptions.find((candidate) => candidate.team === id);
+          const option = troubleBrewingTargetTreatmentOptions.find((candidate) => candidate.id === id);
           if (option) phaseInputDraft.setSelectedTargetChoice(option.choice);
         },
       }

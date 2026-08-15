@@ -78,6 +78,10 @@ test("presents the attached healthy Chef alternatives as truthful registration t
 
   const recluseTreatment = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
   const spyTreatment = screen.getByRole("group", { name: "이번 판정의 첩자 취급" });
+  expect(within(recluseTreatment).getAllByRole("button").map((button) => button.textContent))
+    .toEqual(["선", "악"]);
+  expect(within(spyTreatment).getAllByRole("button").map((button) => button.textContent))
+    .toEqual(["선", "악"]);
   const result = screen.getByRole("group", { name: "정보 결과" });
   const revealButton = screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement;
   expect(within(result).getByText("결과", { exact: true })).toBeTruthy();

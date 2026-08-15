@@ -23,16 +23,16 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
 
   test.each([
     {
-      treatmentButton: "선한 팀으로 취급",
-      treatmentLabel: "선",
+      treatmentButton: "은둔자를 악마로 취급하지 않음",
+      treatmentLabel: "악마로 취급하지 않음",
       treatmentClass: "alignment-good",
       deliveredValue: false,
       revealValue: "없음",
       deliveryContext: { type: "fixed" },
     },
     {
-      treatmentButton: "악한 팀으로 취급",
-      treatmentLabel: "악",
+      treatmentButton: "은둔자를 악마로 취급",
+      treatmentLabel: "악마",
       treatmentClass: "alignment-evil",
       deliveredValue: true,
       revealValue: "있음",
@@ -69,9 +69,11 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     expect(treatment.classList.contains("snvInformationBinary")).toBe(true);
     expect(treatment.classList.contains("tbSelectionChoices")).toBe(true);
     const treatmentButtons = within(treatment).getAllByRole("button");
-    expect(treatmentButtons.map((button) => button.textContent)).toEqual(["선", "악"]);
-    expect(within(treatment).getByRole("button", { name: "선한 팀으로 취급" }).classList.contains("alignment-good")).toBe(true);
-    expect(within(treatment).getByRole("button", { name: "악한 팀으로 취급" }).classList.contains("alignment-evil")).toBe(true);
+    expect(treatmentButtons.map((button) => button.textContent)).toEqual(["악마로 취급하지 않음", "악마"]);
+    expect(within(treatment).getByRole("button", { name: "은둔자를 악마로 취급하지 않음" })
+      .classList.contains("alignment-good")).toBe(true);
+    expect(within(treatment).getByRole("button", { name: "은둔자를 악마로 취급" })
+      .classList.contains("alignment-evil")).toBe(true);
     const selectedTreatment = within(treatment).getByRole("button", { name: treatmentButton });
     expect(selectedTreatment.textContent).toBe(treatmentLabel);
     expect(selectedTreatment.classList.contains(treatmentClass)).toBe(true);
@@ -139,8 +141,8 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     const treatment = within(selectionPanel).getByRole("group", { name: "이번 판정의 은둔자 취급" });
     const selectionConfirm = within(selectionPanel).getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
     expect(selectionConfirm.disabled).toBe(true);
-    const demon = within(treatment).getByRole("button", { name: "악한 팀으로 취급" });
-    const notDemon = within(treatment).getByRole("button", { name: "선한 팀으로 취급" });
+    const demon = within(treatment).getByRole("button", { name: "은둔자를 악마로 취급" });
+    const notDemon = within(treatment).getByRole("button", { name: "은둔자를 악마로 취급하지 않음" });
     expect(notDemon.getAttribute("aria-pressed")).toBe("false");
     expect(demon.getAttribute("aria-pressed")).toBe("false");
     expect(within(treatment).queryByText("✓")).toBeNull();
@@ -188,7 +190,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     const selectionConfirm = within(selectionPanel).getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
     expect(selectionConfirm.disabled).toBe(true);
 
-    await user.click(within(treatment).getByRole("button", { name: "악한 팀으로 취급" }));
+    await user.click(within(treatment).getByRole("button", { name: "은둔자를 악마로 취급" }));
     expect(selectionConfirm.disabled).toBe(false);
     await user.click(selectionConfirm);
 
@@ -228,7 +230,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
     await user.click(within(within(screen.getByLabelText("현재 마도서 작업"))
       .getByRole("group", { name: "이번 판정의 은둔자 취급" }))
-      .getByRole("button", { name: "악한 팀으로 취급" }));
+      .getByRole("button", { name: "은둔자를 악마로 취급" }));
 
     const imported = loadFixture();
     imported.game.id = "reg-05-imported-again";
@@ -254,7 +256,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
     const selectionPanel = screen.getByLabelText("현재 마도서 작업");
     await user.click(within(within(selectionPanel).getByRole("group", { name: "이번 판정의 은둔자 취급" }))
-      .getByRole("button", { name: "악한 팀으로 취급" }));
+      .getByRole("button", { name: "은둔자를 악마로 취급" }));
     await user.click(within(selectionPanel).getByRole("button", { name: "선택 확정" }));
     expect(screen.queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
     expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("있음", { exact: true })).toBeTruthy();
@@ -289,7 +291,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
     let selectionPanel = screen.getByLabelText("현재 마도서 작업");
     await user.click(within(within(selectionPanel).getByRole("group", { name: "이번 판정의 은둔자 취급" }))
-      .getByRole("button", { name: "악한 팀으로 취급" }));
+      .getByRole("button", { name: "은둔자를 악마로 취급" }));
     await user.click(within(selectionPanel).getByRole("button", { name: "선택 확정" }));
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
     await waitFor(() => {
@@ -316,7 +318,7 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
     selectionPanel = screen.getByLabelText("현재 마도서 작업");
     await user.click(within(within(selectionPanel).getByRole("group", { name: "이번 판정의 은둔자 취급" }))
-      .getByRole("button", { name: "선한 팀으로 취급" }));
+      .getByRole("button", { name: "은둔자를 악마로 취급하지 않음" }));
     await user.click(within(selectionPanel).getByRole("button", { name: "선택 확정" }));
     expect(screen.queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
     expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("없음", { exact: true })).toBeTruthy();

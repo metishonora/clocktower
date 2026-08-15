@@ -2763,8 +2763,18 @@ function ReclusePrototype() {
     label: "이번 판정의 은둔자 취급",
     selectedId: registrationChoice,
     options: [
-      { id: "canonical", label: "악마로 취급하지 않음" },
-      { id: "registered", label: "악마로 취급" },
+      {
+        id: "canonical",
+        label: "악마로 취급하지 않음",
+        ariaLabel: "은둔자를 악마로 취급하지 않음",
+        className: "alignment-good",
+      },
+      {
+        id: "registered",
+        label: "악마",
+        ariaLabel: "은둔자를 악마로 취급",
+        className: "alignment-evil",
+      },
     ],
     onChange: (id) => setRegistrationChoice(id as "canonical" | "registered"),
   } : undefined;

@@ -367,7 +367,7 @@ does not receive a character-owned Progress step. Its ability is resolved only
 inside the other character action that is currently judging the Recluse.
 
 - In the Fortune Teller case, target selection and the healthy Recluse's
-  `악마로 취급하지 않음` / `악마로 취급` judgment live in the same Grimoire
+  `악마로 취급하지 않음` / `악마` judgment live in the same Grimoire
   selection panel. `선택 확정` commits both together; Progress only presents
   the resulting `없음` / `있음` information and its Reveal.
 - The review-only `판정 사례` control also exposes an Empath case. Because the

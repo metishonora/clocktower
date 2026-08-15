@@ -414,7 +414,9 @@ test("keeps a Fortune Teller Recluse judgment inside the Grimoire selection pane
   expect(within(panel).getByText("이번 판정의 은둔자 취급", { exact: true })).toBeTruthy();
   const confirm = within(panel).getByRole("button", { name: "선택 확정" });
   expect((confirm as HTMLButtonElement).disabled).toBe(true);
-  await user.click(within(panel).getByRole("button", { name: "악마로 취급" }));
+  expect(within(panel).getAllByRole("button").filter((button) => button.getAttribute("aria-pressed") !== null)
+    .map((button) => button.textContent)).toEqual(["악마로 취급하지 않음", "악마"]);
+  await user.click(within(panel).getByRole("button", { name: "은둔자를 악마로 취급" }));
   await user.click(within(grimoire).getByRole("button", { name: /3번 좌석, 준호/ }));
   expect((confirm as HTMLButtonElement).disabled).toBe(false);
   await user.click(confirm);

@@ -1379,6 +1379,10 @@ describe("ClocktowerApp live-play integration", () => {
 
     const recluse = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
     const spy = screen.getByRole("group", { name: "이번 판정의 첩자 취급" });
+    expect(within(recluse).getAllByRole("button").map((button) => button.textContent))
+      .toEqual(["선", "악"]);
+    expect(within(spy).getAllByRole("button").map((button) => button.textContent))
+      .toEqual(["선", "악"]);
     await user.click(within(recluse).getByRole("button", { name: "악한 팀으로 취급" }));
     await user.click(within(spy).getByRole("button", { name: "악한 팀으로 취급" }));
     expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("1명")).toBeTruthy();

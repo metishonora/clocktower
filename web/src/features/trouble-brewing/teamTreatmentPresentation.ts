@@ -9,6 +9,14 @@ export type TeamTreatmentOption = {
   className: "alignment-good" | "alignment-evil";
 };
 
+export type DemonRegistrationTreatmentOption<T> = {
+  id: "notDemon" | "demon";
+  label: "악마로 취급하지 않음" | "악마";
+  accessibleLabel: string;
+  className: "alignment-good" | "alignment-evil";
+  choice: T;
+};
+
 export const TEAM_TREATMENT_OPTIONS: readonly TeamTreatmentOption[] = [
   {
     team: "good",
@@ -37,6 +45,31 @@ export function teamTreatmentChoices<T>(
     if (option.team === registeredTeam) return [{ ...option, choice: registeredChoice }];
     return [];
   });
+}
+
+export function demonRegistrationTreatmentChoices<T>(
+  subjectObjectLabel: string,
+  canonicalChoice: T,
+  registeredAs: RegistrationJudgment["registeredAs"],
+  registeredChoice: T,
+): DemonRegistrationTreatmentOption<T>[] {
+  if (registeredAs !== "demon") return [];
+  return [
+    {
+      id: "notDemon",
+      label: "악마로 취급하지 않음",
+      accessibleLabel: `${subjectObjectLabel} 악마로 취급하지 않음`,
+      className: "alignment-good",
+      choice: canonicalChoice,
+    },
+    {
+      id: "demon",
+      label: "악마",
+      accessibleLabel: `${subjectObjectLabel} 악마로 취급`,
+      className: "alignment-evil",
+      choice: registeredChoice,
+    },
+  ];
 }
 
 function registrationTreatmentTeam(
