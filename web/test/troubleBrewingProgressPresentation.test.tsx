@@ -70,9 +70,15 @@ test("uses the domain treatment choice when a legacy duplicate player id makes t
   });
 
   render(<ScalarEditorHarness stepValue={chef} playerRoster={sharedPlayers} />);
-  await user.click(within(screen.getByRole("group", { name: "이번 판정의 은둔자 취급" }))
-    .getByRole("button", { name: "악한 팀으로 취급하지 않음" }));
+  const treatment = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
+  const good = within(treatment).getByRole("button", { name: "악한 팀으로 취급하지 않음" });
+  const evil = within(treatment).getByRole("button", { name: "악한 팀으로 취급" });
+  expect(good.classList.contains("alignment-good")).toBe(true);
+  expect(evil.classList.contains("alignment-evil")).toBe(true);
+  await user.click(good);
 
+  expect(good.getAttribute("aria-pressed")).toBe("true");
+  expect(good.classList.contains("selected")).toBe(true);
   expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("0쌍")).toBeTruthy();
 });
 

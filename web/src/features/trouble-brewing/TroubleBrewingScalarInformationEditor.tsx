@@ -114,7 +114,7 @@ export function TroubleBrewingScalarInformationEditor({
           {treatmentOptions.map((registeredAs) => (
             <button
               type="button"
-              className={selected === registeredAs ? "selected" : ""}
+              className={`alignment-${registeredAs}${selected === registeredAs ? " selected" : ""}`}
               aria-pressed={selected === registeredAs}
               disabled={busy}
               onClick={() => chooseTreatment(player, registeredAs)}
