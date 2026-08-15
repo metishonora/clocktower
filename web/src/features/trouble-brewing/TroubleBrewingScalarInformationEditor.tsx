@@ -106,20 +106,18 @@ export function TroubleBrewingScalarInformationEditor({
         const selected = registrationJudgments.find(
           (judgment) => judgment.playerId === player.id,
         )?.registeredAs;
-        const defaultTreatment: "good" | "evil" = player.alignment === "evil" ? "evil" : "good";
-        const alternateTreatment: "good" | "evil" = defaultTreatment === "evil" ? "good" : "evil";
-        const treatmentOptions: Array<"good" | "evil"> = [defaultTreatment, alternateTreatment];
         return <fieldset className="tbScalarTreatment" key={player.id}>
           <legend>{legend}</legend>
-          {treatmentOptions.map((registeredAs) => (
+          {TEAM_TREATMENT_OPTIONS.map(({ registeredAs, label, accessibleLabel }) => (
             <button
               type="button"
               className={`alignment-${registeredAs}${selected === registeredAs ? " selected" : ""}`}
+              aria-label={accessibleLabel}
               aria-pressed={selected === registeredAs}
               disabled={busy}
               onClick={() => chooseTreatment(player, registeredAs)}
               key={registeredAs}
-            >{registrationTreatmentChoiceLabel(player.alignment, registeredAs)}</button>
+            >{label}</button>
           ))}
         </fieldset>;
       })}
@@ -224,10 +222,7 @@ function registrationJudgmentsMatch(
   ));
 }
 
-function registrationTreatmentChoiceLabel(
-  actualAlignment: Player["alignment"],
-  registeredAs: "good" | "evil",
-): string {
-  if (registeredAs === "evil") return "악한 팀으로 취급";
-  return actualAlignment === "good" ? "악한 팀으로 취급하지 않음" : "선한 팀으로 취급";
-}
+const TEAM_TREATMENT_OPTIONS = [
+  { registeredAs: "good", label: "선", accessibleLabel: "선한 팀으로 취급" },
+  { registeredAs: "evil", label: "악", accessibleLabel: "악한 팀으로 취급" },
+] as const;

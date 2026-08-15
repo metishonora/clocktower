@@ -71,8 +71,8 @@ test("uses the domain treatment choice when a legacy duplicate player id makes t
 
   render(<ScalarEditorHarness stepValue={chef} playerRoster={sharedPlayers} />);
   const treatment = screen.getByRole("group", { name: "이번 판정의 은둔자 취급" });
-  const good = within(treatment).getByRole("button", { name: "악한 팀으로 취급하지 않음" });
-  const evil = within(treatment).getByRole("button", { name: "악한 팀으로 취급" });
+  const [good, evil] = within(treatment).getAllByRole("button");
+  expect([good.textContent, evil.textContent]).toEqual(["선", "악"]);
   expect(good.classList.contains("alignment-good")).toBe(true);
   expect(evil.classList.contains("alignment-evil")).toBe(true);
   await user.click(good);
@@ -80,6 +80,39 @@ test("uses the domain treatment choice when a legacy duplicate player id makes t
   expect(good.getAttribute("aria-pressed")).toBe("true");
   expect(good.classList.contains("selected")).toBe(true);
   expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("0쌍")).toBeTruthy();
+});
+
+test("keeps every registration treatment in good-then-evil order with concise labels", () => {
+  const character = "chef";
+  const treatmentStep = step({
+    id: `firstNight:${character}`,
+    character,
+    playerId: character,
+    requiredInput: { kind: "number", target: "number", optional: false },
+    informationPrompt: {
+      computedResult: { kind: "number", value: 0 },
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["recluse", "spy"],
+      numberChoices: [{ value: 0, isComputed: true, registrationJudgments: [] }],
+      setupInfoRegistrationOptions: [],
+    },
+  });
+  const playerRoster = [
+    player(character, 1, character, character),
+    player("recluse", 2, "Recluse", "recluse"),
+    player("spy", 3, "Spy", "spy"),
+  ];
+
+  render(<ScalarEditorHarness stepValue={treatmentStep} playerRoster={playerRoster} />);
+
+  for (const groupName of ["이번 판정의 은둔자 취급", "이번 판정의 첩자 취급"]) {
+    const buttons = within(screen.getByRole("group", { name: groupName })).getAllByRole("button");
+    expect(buttons.map((button) => button.textContent)).toEqual(["선", "악"]);
+    expect(buttons[0]?.classList.contains("alignment-good")).toBe(true);
+    expect(buttons[1]?.classList.contains("alignment-evil")).toBe(true);
+  }
+  expect(screen.queryByText(/팀으로 취급/)).toBeNull();
 });
 
 test("uses the accepted S&V target hierarchy while keeping phase order expanded", () => {

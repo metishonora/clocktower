@@ -84,11 +84,8 @@ test("presents the attached healthy Chef alternatives as truthful registration t
   expect(within(result).getByText("선택 필요", { exact: true })).toBeTruthy();
   expect(revealButton.disabled).toBe(true);
 
-  const recluseGood = within(recluseTreatment).getByRole("button", { name: "악한 팀으로 취급하지 않음" });
-  const recluseEvil = within(recluseTreatment).getByRole("button", { name: "악한 팀으로 취급" });
+  const recluseGood = within(recluseTreatment).getByRole("button", { name: "선한 팀으로 취급" });
   const spyGood = within(spyTreatment).getByRole("button", { name: "선한 팀으로 취급" });
-  expect(recluseGood.classList.contains("alignment-good")).toBe(true);
-  expect(recluseEvil.classList.contains("alignment-evil")).toBe(true);
 
   await user.click(recluseGood);
   expect(within(result).getByText("선택 필요", { exact: true })).toBeTruthy();
