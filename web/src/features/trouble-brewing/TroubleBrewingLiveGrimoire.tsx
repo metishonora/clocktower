@@ -33,7 +33,7 @@ export type TroubleBrewingCompletedSelection = {
 export type TroubleBrewingSelectionChoices = {
   label: string;
   selectedId?: string;
-  options: Array<{ id: string; label: string }>;
+  options: Array<{ id: string; label: string; className?: string; ariaLabel?: string }>;
   onChange: (id: string) => void;
 };
 
@@ -493,11 +493,12 @@ function TroubleBrewingSelectionPanel({
     </dl> : <dl>
       <div><dt>{targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
-    {selectionChoices ? <fieldset className="tbSelectionChoices">
+    {selectionChoices ? <fieldset className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment">
       <legend>{selectionChoices.label}</legend>
       {selectionChoices.options.map((option) => <button
         type="button"
-        className={selectionChoices.selectedId === option.id ? "selected" : ""}
+        className={[option.className, selectionChoices.selectedId === option.id ? "selected" : ""].filter(Boolean).join(" ")}
+        aria-label={option.ariaLabel}
         aria-pressed={selectionChoices.selectedId === option.id}
         disabled={busy}
         onClick={() => selectionChoices.onChange(option.id)}
@@ -524,8 +525,8 @@ function targetOrdinal(index: number) {
 
 function targetSelectionTitle(step?: PhaseStep) {
   if (!step) return "대상 선택";
-  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상 지정";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상 지정";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 지정";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각 지정";
   if (step.id.endsWith(":mayorBounce")) return "시장 능력";
   if (step.character === "washerwoman") return "세탁부 능력";
   if (step.character === "librarian") return "사서 능력";
@@ -541,8 +542,8 @@ function targetSelectionTitle(step?: PhaseStep) {
 
 function targetSelectionFieldLabel(step?: PhaseStep) {
   if (!step) return "선택 대상";
-  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각";
   if (step.id.endsWith(":mayorBounce")) return "대신 사망 대상";
   if (step.character === "poisoner") return "중독 대상";
   if (step.character === "monk") return "보호 대상";
@@ -554,8 +555,8 @@ function targetSelectionFieldLabel(step?: PhaseStep) {
 
 function targetSelectionSeatLabel(step?: PhaseStep) {
   if (!step) return "선택";
-  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 대상";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각";
   if (step.id.endsWith(":mayorBounce")) return "대신 사망";
   if (step.character === "poisoner") return "중독";
   if (step.character === "monk") return "보호";

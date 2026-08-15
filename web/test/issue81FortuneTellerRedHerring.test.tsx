@@ -29,7 +29,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     const user = userEvent.setup();
     const firstRender = render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
 
-    await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.");
+    await screen.findByText("점쟁이의 착각으로 지정할 플레이어 1명을 선택하세요.");
     const input = await startLiveTargetSelection(user);
     const goodTarget = within(input).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement;
     const spy = within(input).getByRole("button", { name: /Spy/ }) as HTMLButtonElement;
@@ -76,7 +76,7 @@ describe("issue #81 Fortune Teller Red Herring assignment", () => {
     await user.click(undo);
     await user.click(screen.getByRole("button", { name: "되돌리기" }));
 
-    expect(await screen.findByText("점쟁이의 오답 대상 플레이어 1명을 선택하세요.")).toBeTruthy();
+    expect(await screen.findByText("점쟁이의 착각으로 지정할 플레이어 1명을 선택하세요.")).toBeTruthy();
     const restoredInput = await startLiveTargetSelection(user);
     expect((within(restoredInput).getByRole("button", { name: /Good Target/ }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(restoredInput).getByRole("button", { name: /Spy/ }) as HTMLButtonElement).disabled).toBe(false);

@@ -11,6 +11,7 @@ import type {
 } from "../../core/types";
 import { characterLabel } from "../../setupDraft";
 import { numberChoicesMatch } from "../../core/numberChoice";
+import { TEAM_TREATMENT_OPTIONS } from "./teamTreatmentPresentation";
 
 export function TroubleBrewingScalarInformationEditor({
   step,
@@ -108,15 +109,15 @@ export function TroubleBrewingScalarInformationEditor({
         )?.registeredAs;
         return <fieldset className="tbScalarTreatment" key={player.id}>
           <legend>{legend}</legend>
-          {TEAM_TREATMENT_OPTIONS.map(({ registeredAs, label, accessibleLabel }) => (
+          {TEAM_TREATMENT_OPTIONS.map(({ team, label, accessibleLabel, className }) => (
             <button
               type="button"
-              className={`alignment-${registeredAs}${selected === registeredAs ? " selected" : ""}`}
+              className={`${className}${selected === team ? " selected" : ""}`}
               aria-label={accessibleLabel}
-              aria-pressed={selected === registeredAs}
+              aria-pressed={selected === team}
               disabled={busy}
-              onClick={() => chooseTreatment(player, registeredAs)}
-              key={registeredAs}
+              onClick={() => chooseTreatment(player, team)}
+              key={team}
             >{label}</button>
           ))}
         </fieldset>;
@@ -221,8 +222,3 @@ function registrationJudgmentsMatch(
       && candidate.characterId === judgment.characterId,
   ));
 }
-
-const TEAM_TREATMENT_OPTIONS = [
-  { registeredAs: "good", label: "선", accessibleLabel: "선한 팀으로 취급" },
-  { registeredAs: "evil", label: "악", accessibleLabel: "악한 팀으로 취급" },
-] as const;

@@ -841,7 +841,7 @@ test("continues directly from Fortune Teller decoy assignment to two-player sele
   render(<Issue153FortuneTellerPrototype />);
   const fixture = screen.getByRole("main", { name: "점쟁이 전체 흐름 fixture" });
 
-  const assignment = within(fixture).getByRole("article", { name: "점쟁이 착각 대상 지정" });
+  const assignment = within(fixture).getByRole("article", { name: "점쟁이 착각 지정" });
   expect(within(assignment).getByRole("button", { name: "대상 선택" })).toBeTruthy();
   expect(within(assignment).queryByText("준비", { exact: true })).toBeNull();
   await user.click(within(assignment).getByRole("button", { name: "대상 선택" }));
@@ -854,7 +854,7 @@ test("continues directly from Fortune Teller decoy assignment to two-player sele
 
   grimoire = within(fixture).getByLabelText("라이브 마도서 좌석 맵");
   expect(within(fixture).getByRole("heading", { name: "점쟁이 능력" })).toBeTruthy();
-  expect(within(grimoire).queryByRole("img", { name: "공식 토큰 · 점쟁이 · 착각 대상 · 6번 하린" })).toBeNull();
+  expect(within(grimoire).queryByRole("img", { name: "공식 토큰 · 점쟁이 · 착각 · 6번 하린" })).toBeNull();
   await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, 서연/ }));
   await user.click(within(grimoire).getByRole("button", { name: /5번 좌석, 도윤/ }));
   await user.click(within(fixture).getByRole("button", { name: "선택 확정" }));
@@ -872,7 +872,7 @@ test("continues directly from Fortune Teller decoy assignment to two-player sele
   grimoire = within(fixture).getByLabelText("라이브 마도서 좌석 맵");
   await user.click(within(grimoire).getByRole("button", { name: /6번 좌석, 하린.*토큰 1개/ }));
   const tokenDetails = screen.getByRole("dialog", { name: "6번 하린 플레이어 상세" });
-  expect(within(tokenDetails).getByRole("listitem", { name: "자동 규칙 · 착각 대상 · 출처 점쟁이" })).toBeTruthy();
+  expect(within(tokenDetails).getByRole("listitem", { name: "자동 규칙 · 착각 · 출처 점쟁이" })).toBeTruthy();
   await user.click(within(tokenDetails).getByRole("button", { name: "플레이어 상세 닫기" }));
   await user.click(within(stages).getByRole("button", { name: "진행" }));
 
@@ -893,7 +893,7 @@ test("keeps Fortune Teller truth visible while poisoned and allows either delive
   await user.selectOptions(screen.getByRole("combobox", { name: "점쟁이 상태" }), "poisoned");
   const fixture = screen.getByRole("main", { name: "점쟁이 전체 흐름 fixture" });
 
-  await user.click(within(within(fixture).getByRole("article", { name: "점쟁이 착각 대상 지정" })).getByRole("button", { name: "대상 선택" }));
+  await user.click(within(within(fixture).getByRole("article", { name: "점쟁이 착각 지정" })).getByRole("button", { name: "대상 선택" }));
   let grimoire = within(fixture).getByLabelText("라이브 마도서 좌석 맵");
   await user.click(within(grimoire).getByRole("button", { name: /6번 좌석, 하린/ }));
   await user.click(within(fixture).getByRole("button", { name: "선택 확정" }));

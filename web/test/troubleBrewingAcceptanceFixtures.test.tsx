@@ -181,7 +181,7 @@ describe("Trouble Brewing acceptance fixtures", () => {
       ),
     );
     expect(canonicalPairs).toEqual(expect.arrayContaining([
-      "fortuneTeller:redHerring:오답 대상",
+      "fortuneTeller:redHerring:착각",
       "poisoner:poisoned:중독",
       "monk:safe:안전",
     ]));

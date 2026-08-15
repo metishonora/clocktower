@@ -1359,8 +1359,8 @@ fn red_herring_reminders(players: &[Player], events: &[GameEvent]) -> Vec<Automa
         payload.player_id.clone(),
         "fortuneTeller",
         "redHerring",
-        "오답 대상",
-        "점쟁이 능력의 레드 헤링 대상입니다.",
+        "착각",
+        "점쟁이 능력의 착각 표식입니다.",
         Some(event.id.clone()),
     )]
 }
@@ -2014,7 +2014,12 @@ pub(crate) fn target_information_checks(
                                 registration_judgments: vec![],
                             })
                             .collect();
-                    } else if !yes {
+                    } else {
+                        // A Recluse may register as the Demon independently of the
+                        // canonical result. Keep that witness choice even when the
+                        // pair already contains the real Demon or red herring, so
+                        // the Storyteller can distinguish identical boolean values
+                        // by their registration context.
                         for p in players
                             .iter()
                             .filter(|p| p.actual_character == "recluse" && ids.contains(&p.id))

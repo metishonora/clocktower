@@ -13,7 +13,7 @@ import {
 const expectedReminderInventory = [
   ["butler", "master", "주인"],
   ["drunk", "isTheDrunk", "주정뱅이임"],
-  ["fortuneTeller", "redHerring", "오답 대상"],
+  ["fortuneTeller", "redHerring", "착각"],
   ["imp", "dead", "사망"],
   ["investigator", "minion", "하수인"],
   ["investigator", "wrong", "오답"],
@@ -96,4 +96,21 @@ test("details and manual script tokens expose the same canonical reminder invent
     scriptTokens.map(({ characterId, tokenId, label }) => [characterId, tokenId, label]),
     expectedReminderInventory,
   );
+});
+
+test("uses 착각 only for the Fortune Teller while setup-information decoys remain 오답", () => {
+  assert.equal(
+    troubleBrewingReminderInventory.find(({ characterId, tokenId }) => (
+      characterId === "fortuneTeller" && tokenId === "redHerring"
+    ))?.label,
+    "착각",
+  );
+  for (const characterId of ["washerwoman", "librarian", "investigator"]) {
+    assert.equal(
+      troubleBrewingReminderInventory.find(({ characterId: candidate, tokenId }) => (
+        candidate === characterId && tokenId === "wrong"
+      ))?.label,
+      "오답",
+    );
+  }
 });

@@ -292,7 +292,7 @@ test("uses attack semantics and a distinct attack highlight for the Imp", async 
   expect(target.classList.contains("tbSeatStateSelection")).toBe(false);
 });
 
-test("uses the official red-herring reminder wording in the grimoire", async () => {
+test("uses the approved Fortune Teller 착각 wording in the grimoire", async () => {
   const user = userEvent.setup();
   renderStep(step({
     id: "firstNight:fortuneTellerRedHerring",
@@ -311,9 +311,10 @@ test("uses the official red-herring reminder wording in the grimoire", async () 
   const target = within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ });
   await user.click(target);
 
-  expect(within(panel).getByRole("heading", { name: "오답 대상 지정" })).toBeTruthy();
-  expect(within(panel).getByText("오답 대상")).toBeTruthy();
-  expect(within(target).getByText("오답 대상")).toBeTruthy();
+  expect(within(panel).getByRole("heading", { name: "착각 지정" })).toBeTruthy();
+  expect(within(panel).getByText("착각")).toBeTruthy();
+  expect(within(target).getByText("착각")).toBeTruthy();
+  expect(within(panel).queryByText("오답 대상")).toBeNull();
 });
 
 test.each([

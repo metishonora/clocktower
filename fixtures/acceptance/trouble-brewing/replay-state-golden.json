@@ -5379,6 +5379,19 @@
                 },
                 "isComputed": true,
                 "registrationJudgments": []
+              },
+              {
+                "result": {
+                  "kind": "boolean",
+                  "value": true
+                },
+                "isComputed": false,
+                "registrationJudgments": [
+                  {
+                    "playerId": "player-6",
+                    "registeredAs": "demon"
+                  }
+                ]
               }
             ]
           },
@@ -5751,6 +5764,19 @@
                 },
                 "isComputed": true,
                 "registrationJudgments": []
+              },
+              {
+                "result": {
+                  "kind": "boolean",
+                  "value": true
+                },
+                "isComputed": false,
+                "registrationJudgments": [
+                  {
+                    "playerId": "player-6",
+                    "registeredAs": "demon"
+                  }
+                ]
               }
             ]
           },
@@ -5962,8 +5988,8 @@
           "playerId": "player-2",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -6632,8 +6658,8 @@
           "playerId": "player-2",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-7"
         },
         {
@@ -6976,8 +7002,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -7765,8 +7791,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-9"
         }
       ]
@@ -8136,8 +8162,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         },
         {
@@ -8584,8 +8610,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-9"
         },
         {
@@ -8932,8 +8958,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         },
         {
@@ -12563,8 +12589,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-7"
         },
         {
@@ -12949,8 +12975,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-10"
         }
       ]
@@ -13885,8 +13911,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-7"
         }
       ]
@@ -14198,8 +14224,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-7"
         }
       ]
@@ -14500,8 +14526,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-7"
         },
         {
@@ -14806,8 +14832,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-6"
         }
       ]
@@ -15120,8 +15146,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-9"
         }
       ]
@@ -15428,8 +15454,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -15756,8 +15782,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-9"
         },
         {
@@ -16083,8 +16109,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-10"
         }
       ]
@@ -16407,8 +16433,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -16767,8 +16793,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         },
         {
@@ -17089,8 +17115,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -17446,8 +17472,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -17817,8 +17843,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         },
         {
@@ -18157,8 +18183,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -18484,8 +18510,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -18898,8 +18924,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-10"
         },
         {
@@ -20189,8 +20215,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]
@@ -20577,8 +20603,8 @@
           "playerId": "player-1",
           "characterId": "fortuneTeller",
           "tokenId": "redHerring",
-          "label": "오답 대상",
-          "description": "점쟁이 능력의 레드 헤링 대상입니다.",
+          "label": "착각",
+          "description": "점쟁이 능력의 착각 표식입니다.",
           "sourceEventId": "phase-step-8"
         }
       ]

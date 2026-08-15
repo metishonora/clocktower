@@ -14,7 +14,7 @@ import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
 import { SlayerPublicAbilityPrototype } from "./slayerPublicAbilityPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
-import { characters } from "./setupDraft";
+import { characterLabel, characters } from "./setupDraft";
 import { EventLog } from "./features/event-log/EventLog";
 import { LiveUndoDialog } from "./features/event-log/LiveUndoDialog";
 import { Grimoire } from "./features/grimoire/Grimoire";
@@ -45,6 +45,8 @@ import {
   phaseStepConfirmation,
   setupInfoSelectionIsComplete,
   stepInputReady,
+  targetCheckForSelection,
+  targetRegistrationTreatment,
 } from "./features/phase-control/phaseInput";
 import {
   currentBugReportEnvironment,
@@ -55,6 +57,7 @@ import type {
   TroubleBrewingBugReportContextInput,
   TroubleBrewingBugReportEnvironment,
 } from "./troubleBrewingBugReport";
+import { teamTreatmentChoices } from "./features/trouble-brewing/teamTreatmentPresentation";
 import "./styles.css";
 
 const DevScriptSelectionPrototype = import.meta.env.DEV
@@ -859,13 +862,52 @@ export function ClocktowerApp({
     gameStore.suggestionContextFingerprint,
     undoResetRevision,
   );
+  const troubleBrewingTargetCheck = phaseInputStep
+    ? targetCheckForSelection(phaseInputStep, phaseInputDraft.selectedPlayerIds)
+    : undefined;
+  const troubleBrewingTargetTreatment = targetRegistrationTreatment(troubleBrewingTargetCheck);
+  const troubleBrewingTargetTreatmentReady = !troubleBrewingTargetTreatment
+    || phaseInputDraft.selectedTargetChoice === troubleBrewingTargetTreatment.canonicalChoice
+    || phaseInputDraft.selectedTargetChoice === troubleBrewingTargetTreatment.registeredChoice;
+  const troubleBrewingTargetTreatmentPlayer = troubleBrewingTargetTreatment
+    ? gameStore.players.find((player) => player.id === troubleBrewingTargetTreatment.playerId)
+    : undefined;
+  const troubleBrewingTargetTreatmentOptions = troubleBrewingTargetTreatment
+    && troubleBrewingTargetTreatmentPlayer
+    ? teamTreatmentChoices(
+        troubleBrewingTargetTreatmentPlayer.alignment,
+        troubleBrewingTargetTreatment.canonicalChoice,
+        troubleBrewingTargetTreatment.registeredAs,
+        troubleBrewingTargetTreatment.registeredChoice,
+      )
+    : [];
+  const troubleBrewingSelectionChoices = troubleBrewingTargetTreatment
+    && troubleBrewingTargetTreatmentPlayer
+    && troubleBrewingTargetTreatmentOptions.length === 2
+    ? {
+        label: `이번 판정의 ${characterLabel(troubleBrewingTargetTreatmentPlayer.actualCharacter)} 취급`,
+        selectedId: troubleBrewingTargetTreatmentOptions.find(
+          (option) => option.choice === phaseInputDraft.selectedTargetChoice,
+        )?.team,
+        options: troubleBrewingTargetTreatmentOptions.map((option) => ({
+          id: option.team,
+          label: option.label,
+          ariaLabel: option.accessibleLabel,
+          className: option.className,
+        })),
+        onChange: (id: string) => {
+          const option = troubleBrewingTargetTreatmentOptions.find((candidate) => candidate.team === id);
+          if (option) phaseInputDraft.setSelectedTargetChoice(option.choice);
+        },
+      }
+    : undefined;
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
   const troubleBrewingVoteStepActive = Boolean(
     phaseInputStep?.requiredInput.kind === "nominationVote"
       && (phaseInputStep.id.endsWith(":vote") || gameStore.dayState?.activeNomination),
   );
-  const troubleBrewingSelectionReady = phaseInputStep
+  const troubleBrewingBaseSelectionReady = phaseInputStep
     ? phaseInputStep.requiredInput.kind === "setupInfo"
       ? phaseInputDraft.zeroOutsiders
         ? phaseInputDraft.zeroOutsidersAvailable && phaseInputDraft.selectedPlayerIds.length === 0
@@ -888,6 +930,8 @@ export function ClocktowerApp({
           gameStore.players,
         )
     : false;
+  const troubleBrewingSelectionReady = troubleBrewingBaseSelectionReady
+    && troubleBrewingTargetTreatmentReady;
   const troubleBrewingNeedsProgressConfirmation = Boolean(
     phaseInputStep?.requiredInput.kind === "playerIds"
       && (phaseInputStep.informationPrompt
@@ -1200,6 +1244,9 @@ export function ClocktowerApp({
                   }
                 : undefined
             }
+            selectionChoices={troubleBrewingHandoff === "target"
+              ? troubleBrewingSelectionChoices
+              : undefined}
             selectionReady={troubleBrewingSelectionReady}
             onConfirmSelection={() => { void confirmTroubleBrewingSelection(); }}
             onResetSelection={resetTroubleBrewingSelection}

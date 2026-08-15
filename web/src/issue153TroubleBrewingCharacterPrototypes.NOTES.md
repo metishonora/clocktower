@@ -158,14 +158,14 @@ The Fortune Teller uses the separate `issue-153-tb-fortune-teller` route and
 keeps its two first-night actions in canonical order.
 
 - Progress first sends the Storyteller to the Grimoire to assign one eligible
-  good player as `착각 대상`; no separate `준비` summary is shown, and the
+  good player as `착각`; no separate `준비` summary is shown, and the
   chosen seat uses a cyan selection accent distinct from the gold actor state.
-- Confirming the `착각 대상` stays in the Grimoire and immediately switches the
+- Confirming the `착각` stays in the Grimoire and immediately switches the
   selection panel to exactly two Fortune Teller information targets.
 - The assigned seat does not show a Fortune Teller icon. After information
   targets are confirmed, the ordinary `마도서` tab opens a reference Grimoire;
   its token-count badge and player detail dialog expose the official automatic
-  `착각 대상` token without restarting target selection.
+  `착각` token without restarting target selection.
 - Healthy information shows the selected pair and fixed `결과 / 있음·없음`.
 - A poisoned Fortune Teller retains the truth while offering either result as
   `전달할 정보` and uses the shared poisoned Reveal action.

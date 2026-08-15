@@ -4059,7 +4059,7 @@ function FortuneTellerPrototype() {
       playerId: redHerringPlayerId,
       characterId: "fortuneTeller",
       tokenId: "redHerring",
-      label: "착각 대상",
+      label: "착각",
       description: "점쟁이에게 악마로 보이는 선한 플레이어입니다.",
       sourceEventId: "issue153-fortune-red-herring",
     }] : undefined,
@@ -4272,7 +4272,7 @@ function FortuneTellerGrimoireStage({
 }) {
   const requiredCount = mode === "redHerring" ? 1 : 2;
   return (
-    <section className="issue153GrimoireStage" aria-label={mode === "redHerring" ? "점쟁이 착각 대상 선택" : "점쟁이 정보 대상 선택"}>
+    <section className="issue153GrimoireStage" aria-label={mode === "redHerring" ? "점쟁이 착각 선택" : "점쟁이 정보 대상 선택"}>
       <TroubleBrewingLiveGrimoire
         players={players}
         currentStep={fortuneTellerStep(mode, allowedPlayerIds)}
@@ -4305,7 +4305,7 @@ function FortuneTellerPendingTask({
   onChooseTargets: () => void;
 }) {
   return (
-    <article className="snvCurrentStep snvInformationTask tbCurrentTask issue153SetupInformationProgressCard" aria-label={kind === "redHerring" ? "점쟁이 착각 대상 지정" : "점쟁이 정보"}>
+    <article className="snvCurrentStep snvInformationTask tbCurrentTask issue153SetupInformationProgressCard" aria-label={kind === "redHerring" ? "점쟁이 착각 지정" : "점쟁이 정보"}>
       <p className="snvCurrentStepLabel">현재 할 일</p>
       <PrototypeActorIdentity character={fortuneTeller} informationStatus={informationStatus} theme={theme} />
       <p className="issue153ProgressAbility">{fortuneTeller.abilitySummary}</p>
@@ -4423,7 +4423,7 @@ function FortuneTellerPhaseOrder({ stage }: { stage: FortuneTellerStage }) {
     : stage === "targetProgress" || stage === "targetGrimoire" ? 1 : 2;
   return (
     <ol className="snvPhaseOverview issue153PhaseOrder" aria-label="점쟁이 단계 순서">
-      {["착각 대상", "정보 대상", "정보 공개"].map((label, index) => (
+      {["착각", "정보 대상", "정보 공개"].map((label, index) => (
         <li className={index < current ? "complete" : index === current ? "current" : undefined} key={label}>
           <span>{index < current ? "완료" : index === current ? "현재" : "대기"}</span><strong>{label}</strong>
         </li>

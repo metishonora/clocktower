@@ -19,6 +19,7 @@ import {
   mayorDecisionApplies,
   setupInfoCharacterOptions,
   targetCheckForSelection,
+  targetRegistrationTreatment,
 } from "./phaseInput";
 
 export function PlayerStepInput({
@@ -381,7 +382,40 @@ function TargetInformationDeliveryInput({
   onChange: (choice: TargetCheck["choices"][number]) => void;
 }) {
   const check = targetCheckForSelection(step, selectedPlayerIds);
-  if (!check || check.choices.length <= 1) return null;
+  if (!check) return null;
+  const selected = selectedChoice && check.choices.includes(selectedChoice)
+    ? selectedChoice
+    : check.choices.length === 1
+      ? check.choices[0]
+      : undefined;
+  const registrationTreatment = targetRegistrationTreatment(check);
+  if (registrationTreatment || check.choices.length === 1) {
+    return <TargetInformationResult choice={selected} />;
+  }
+  const booleanChoices = check.choices.every((choice) => choice.result.kind === "boolean");
+  if (booleanChoices) {
+    return <>
+      {step.informationPrompt?.activeReasons.length ? (
+        <dl className="snvInformationValues tbTargetInformationTruth" role="group" aria-label="정보 진실">
+          <div><dt>진실</dt><dd>{informationResultValueLabel(check.computedResult)}</dd></div>
+        </dl>
+      ) : null}
+      <fieldset className="snvInformationBinary targetInformationChoices tbTargetInformationChoices">
+        <legend>전달할 정보</legend>
+        {check.choices.map((choice, index) => {
+          const pressed = selectedChoice === choice;
+          return <button
+            type="button"
+            className={pressed ? "selected" : ""}
+            aria-pressed={pressed}
+            disabled={busy}
+            onClick={() => onChange(choice)}
+            key={`${informationResultLabel(choice.result)}-${index}`}
+          >{informationResultLabel(choice.result)}</button>;
+        })}
+      </fieldset>
+    </>;
+  }
   return (
     <div className="targetInformationChoices" aria-label="전달 정보">
       {check.choices.map((choice, index) => {
@@ -404,11 +438,22 @@ function TargetInformationDeliveryInput({
   );
 }
 
+function TargetInformationResult({ choice }: { choice?: TargetCheck["choices"][number] }) {
+  return <dl className="snvInformationValues tbTargetInformationResult" role="group" aria-label="정보 결과">
+    <div><dt>결과</dt><dd>{choice ? informationResultValueLabel(choice.result) : "선택 필요"}</dd></div>
+  </dl>;
+}
+
 function informationResultLabel(result: TargetCheck["computedResult"]): string {
   if (result.kind === "boolean") return result.value ? "악마 있음" : "악마 없음";
   if (result.kind === "character") return characterLabel(result.characterId);
   if (result.kind === "number") return String(result.value);
   return "정보";
+}
+
+function informationResultValueLabel(result: TargetCheck["computedResult"]): string {
+  if (result.kind === "boolean") return result.value ? "있음" : "없음";
+  return informationResultLabel(result);
 }
 
 export function ExecutionDecisionActions({

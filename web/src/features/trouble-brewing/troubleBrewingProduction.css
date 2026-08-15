@@ -1229,7 +1229,8 @@
   font: 850 .74rem/1.35 system-ui, sans-serif;
 }
 
-.tbScalarTreatment button {
+.tbScalarTreatment button,
+.tbProductionShell .tbRegistrationTreatment button {
   min-height: 46px;
   padding: 9px 12px;
   border: 1px solid var(--tb-treatment-accent);
@@ -1237,50 +1238,118 @@
   color: var(--tb-treatment-text);
   background: var(--tb-treatment-background);
   font: 850 .76rem/1.3 system-ui, sans-serif;
+  text-align: center;
 }
 
-.tbScalarTreatment button.alignment-good {
+.tbScalarTreatment button.alignment-good,
+.tbProductionShell .tbRegistrationTreatment button.alignment-good {
   --tb-treatment-accent: rgba(116, 209, 239, .76);
   --tb-treatment-text: #c9f1ff;
   --tb-treatment-background: rgba(67, 154, 189, .12);
   --tb-treatment-selected-background: linear-gradient(145deg, rgba(47, 120, 151, .76), rgba(27, 74, 96, .72));
 }
 
-.tbScalarTreatment button.alignment-evil {
+.tbScalarTreatment button.alignment-evil,
+.tbProductionShell .tbRegistrationTreatment button.alignment-evil {
   --tb-treatment-accent: rgba(241, 122, 144, .8);
   --tb-treatment-text: #ffd6de;
   --tb-treatment-background: rgba(196, 68, 94, .12);
   --tb-treatment-selected-background: linear-gradient(145deg, rgba(151, 52, 72, .78), rgba(92, 34, 48, .74));
 }
 
-.tbScalarTreatment button.selected {
+.tbScalarTreatment button.selected,
+.tbProductionShell .tbRegistrationTreatment button.selected {
   border-color: var(--tb-treatment-accent);
   color: #fff;
   background: var(--tb-treatment-selected-background);
   box-shadow: inset 0 0 0 2px var(--tb-treatment-accent), 0 0 18px color-mix(in srgb, var(--tb-treatment-accent) 24%, transparent);
 }
 
-.tbScalarTreatment button:focus-visible {
+.tbScalarTreatment button:focus-visible,
+.tbProductionShell .tbRegistrationTreatment button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--tb-treatment-accent) 58%, transparent);
   outline-offset: 2px;
 }
 
-.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-good {
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-good,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.alignment-good {
   --tb-treatment-accent: #4b9dbc;
   --tb-treatment-text: #24546b;
   --tb-treatment-background: #edf8fc;
   --tb-treatment-selected-background: #cfeaf4;
 }
 
-.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-evil {
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-evil,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.alignment-evil {
   --tb-treatment-accent: #b94d64;
   --tb-treatment-text: #7b3040;
   --tb-treatment-background: #fff1f4;
   --tb-treatment-selected-background: #f4d3da;
 }
 
-.tbProductionShell[data-theme="day"] .tbScalarTreatment button.selected {
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.selected,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.selected {
   color: var(--tb-treatment-text);
+}
+
+.tbProductionShell .tbTargetInformationResult,
+.tbProductionShell .tbTargetInformationTruth,
+.tbProductionShell .tbTargetInformationChoices {
+  width: min(620px, 100%);
+}
+
+.tbProductionShell .tbTargetInformationChoices {
+  display: grid;
+  margin: 0;
+  padding: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 14px;
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell .tbTargetInformationChoices legend {
+  padding: 0 6px;
+  color: var(--tb-ui-muted);
+  font-size: .66rem;
+  font-weight: 850;
+}
+
+.tbProductionShell .tbTargetInformationChoices button {
+  position: static;
+  min-width: 0;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 11px;
+  color: var(--tb-ui-copy-muted);
+  background: var(--tb-ui-row);
+  box-shadow: none;
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.tbProductionShell .tbTargetInformationChoices button:hover:not(:disabled):not(.selected) {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .tbTargetInformationChoices button.selected,
+.tbProductionShell .tbTargetInformationChoices button.selected:hover:not(:disabled),
+.tbProductionShell .tbTargetInformationChoices button.selected:active:not(:disabled) {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+  box-shadow: inset 0 0 0 1px var(--tb-ui-action-border);
+}
+
+.tbProductionShell .tbTargetInformationChoices button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tb-ui-action-border) 58%, transparent);
+  outline-offset: 2px;
 }
 
 .tbScalarInformationResult dd {

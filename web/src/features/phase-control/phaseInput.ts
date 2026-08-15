@@ -128,7 +128,7 @@ export function inputKindLabel(inputKind: string): string {
 export function currentActionPrompt(step: PhaseStep): string | undefined {
   if (step.stepType === "executionDeath" || step.stepType === "slayerDeath") return undefined;
   if (step.id.endsWith(":fortuneTellerRedHerring")) {
-    return "점쟁이의 오답 대상 플레이어 1명을 선택하세요.";
+    return "점쟁이의 착각으로 지정할 플레이어 1명을 선택하세요.";
   }
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "selectable"
@@ -655,6 +655,37 @@ export function targetCheckForSelection(
       check.targetPlayerIds.length === selectedPlayerIds.length &&
       check.targetPlayerIds.every((id) => selectedPlayerIds.includes(id)),
   );
+}
+
+export type TargetRegistrationTreatment = {
+  playerId: string;
+  registeredAs: RegistrationJudgment["registeredAs"];
+  canonicalChoice: TargetCheck["choices"][number];
+  registeredChoice: TargetCheck["choices"][number];
+};
+
+export function targetRegistrationTreatment(
+  check: TargetCheck | undefined,
+): TargetRegistrationTreatment | undefined {
+  if (!check || check.computedResult.kind !== "boolean") return undefined;
+  const canonicalChoice = check.choices.find(
+    (choice) => choice.result.kind === "boolean"
+      && choice.isComputed
+      && choice.registrationJudgments.length === 0,
+  );
+  const registeredChoices = check.choices.filter(
+    (choice) => choice.result.kind === "boolean" && choice.registrationJudgments.length === 1,
+  );
+  if (!canonicalChoice || registeredChoices.length !== 1) return undefined;
+  const registeredChoice = registeredChoices[0];
+  const judgment = registeredChoice.registrationJudgments[0];
+  if (!judgment) return undefined;
+  return {
+    playerId: judgment.playerId,
+    registeredAs: judgment.registeredAs,
+    canonicalChoice,
+    registeredChoice,
+  };
 }
 
 export function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

@@ -79,7 +79,7 @@ const representativeRuleState: RuleState = {
     canUseNow: false,
   },
   automaticReminders: [
-    reminder("spy-1", "fortuneTeller", "redHerring", "오답 대상"),
+    reminder("spy-1", "fortuneTeller", "redHerring", "착각"),
     reminder("spy-3", "poisoner", "poisoned", "중독"),
     reminder("spy-4", "monk", "safe", "안전"),
     reminder("spy-6", "butler", "master", "주인"),
@@ -119,7 +119,7 @@ const compactRuleState: RuleState = {
 };
 
 const fixtureReminderLabels: Record<FixtureId, string> = {
-  representative: "오답 대상 · 중독 · 안전 · 주인 · 능력 없음 · 주민/오답 · 오늘 사망 · 주정뱅이임 · 악마임",
+  representative: "착각 · 중독 · 안전 · 주인 · 능력 없음 · 주민/오답 · 오늘 사망 · 주정뱅이임 · 악마임",
   compact: "오답 · 중독 · 안전 · 능력 없음 · 주정뱅이임",
 };
 
