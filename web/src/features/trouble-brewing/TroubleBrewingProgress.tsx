@@ -698,6 +698,7 @@ function TroubleBrewingEvilInformationTask({
     ? step.requiredInput.maxSelections ?? 3
     : 0;
   const complete = !demonInformation || selectedCharacterIds.length === maxSelections;
+  const wakePlayerLabel = wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ");
 
   return <article
     className={`snvCurrentStep tbCurrentTask snvEvilInformationTask ${demonInformation ? "snvDemonInformationTask" : "snvMinionInformationTask"}`}
@@ -708,7 +709,12 @@ function TroubleBrewingEvilInformationTask({
       <div><p className="snvCurrentStepLabel">현재 할 일</p><h3>{demonInformation ? "악마 정보" : "하수인 정보"}</h3></div>
       {demonInformation ? <span className={complete ? "complete" : undefined}>{selectedCharacterIds.length} / {maxSelections}</span> : null}
     </header>
-    <p className="snvEvilInformationWakeInstruction"><strong>{wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ")}</strong>를 깨웁니다.</p>
+    <p className="snvEvilInformationWakeInstruction">
+      {demonInformation ? <>
+        <span>속임수를 선택하고,</span>
+        <span><strong>{wakePlayerLabel}</strong>{objectParticle(wakePlayerLabel)} 깨우십시오</span>
+      </> : <><strong>{wakePlayerLabel}</strong>를 깨웁니다.</>}
+    </p>
     {demonInformation ? <div className="snvBluffCandidateGrid" aria-label="사용 가능한 속임수">
       {allowedCharacterIds.map((characterId) => {
         const selected = selectedCharacterIds.includes(characterId);
@@ -952,6 +958,12 @@ function confirmationLabel(step: PhaseStep, nightDeathAnnouncement: boolean) {
   if (step.stepType === "discussion") return "지목 및 투표 시작";
   if (nightDeathAnnouncement) return "확인하고 낮 시작";
   return "확정";
+}
+
+function objectParticle(value: string) {
+  const finalCodePoint = Array.from(value.trim()).at(-1)?.codePointAt(0);
+  if (finalCodePoint === undefined || finalCodePoint < 0xac00 || finalCodePoint > 0xd7a3) return "를";
+  return (finalCodePoint - 0xac00) % 28 === 0 ? "를" : "을";
 }
 
 function resultEffectDescription(step: PhaseStep) {

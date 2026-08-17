@@ -1352,6 +1352,10 @@
   overflow-wrap: anywhere;
 }
 
+.tbCurrentTask.snvDemonInformationTask .snvEvilInformationWakeInstruction > span {
+  display: block;
+}
+
 .tbCurrentTask .snvBluffCandidateGrid {
   display: grid;
   margin-top: 18px;

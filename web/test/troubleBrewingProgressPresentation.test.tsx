@@ -245,8 +245,10 @@ test("uses the S&V evil-information task shape and Reveal action for Demon bluff
   expect(task.classList.contains("snvDemonInformationTask")).toBe(true);
   expect(within(task).getByRole("heading", { name: "악마 정보" })).toBeTruthy();
   expect(within(task).getByText("0 / 3")).toBeTruthy();
-  expect(task.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toContain("5번 하린");
-  expect(task.querySelector(".snvEvilInformationWakeInstruction")?.textContent).toContain("깨웁니다");
+  const wakeInstruction = task.querySelector(".snvEvilInformationWakeInstruction");
+  expect(wakeInstruction?.children).toHaveLength(2);
+  expect(wakeInstruction?.children[0]?.textContent).toBe("속임수를 선택하고,");
+  expect(wakeInstruction?.children[1]?.textContent).toBe("5번 하린을 깨우십시오");
   expect(within(task).getByRole("button", { name: "속임수 무작위 추천" })).toBeTruthy();
   expect(within(task).getByRole("button", { name: "정보 공개" })).toBeTruthy();
   expect(within(task).queryByRole("button", { name: "정보 확정" })).toBeNull();
