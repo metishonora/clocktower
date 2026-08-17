@@ -16,6 +16,7 @@ import {
 } from "../phase-control/acquiredAbilityPresentation";
 import { abilityPresentationForStep } from "../phase-control/actingRoleContext";
 import {
+  collapseNominationVotingSteps,
   currentActionPrompt,
   phaseOverviewTitle,
   phaseStepConfirmation,
@@ -66,7 +67,9 @@ export function TroubleBrewingProgress({
 }) {
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
   const visibleCurrentStep = control.pendingReveal?.step ?? control.currentStep;
-  const visiblePhaseOverview = phaseOverviewWithPendingReveal(control.phaseOverview, control.pendingReveal?.step);
+  const visiblePhaseOverview = collapseNominationVotingSteps(
+    phaseOverviewWithPendingReveal(control.phaseOverview, control.pendingReveal?.step),
+  );
 
   useEffect(() => {
     currentOverviewItemRef.current?.scrollIntoView?.({ block: "nearest", inline: "center" });

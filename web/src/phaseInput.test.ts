@@ -3,6 +3,7 @@ import test from "node:test";
 import type { PhaseStep, Player } from "./core/types.js";
 import {
   characterInputOptions,
+  collapseNominationVotingSteps,
   currentActionPrompt,
   phaseStepConfirmation,
   setupInfoCharacterOptions,
@@ -14,6 +15,40 @@ import {
   stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("nomination and vote rounds share one stable phase-overview entry", () => {
+  const nomination = (id: string, kind: "nomination" | "nominationVote", status: "complete" | "current") => ({
+    id,
+    phase: "day" as const,
+    stepType: "nomination" as const,
+    requiredInput: { kind, optional: kind === "nomination" },
+    canSkip: kind === "nomination",
+    support: "automated" as const,
+    status,
+  });
+  const execution = {
+    id: "day:1:execution",
+    phase: "day" as const,
+    stepType: "execution" as const,
+    requiredInput: { kind: "executionDecision" as const, optional: false },
+    canSkip: false,
+    support: "automated" as const,
+    status: "waiting" as const,
+  };
+
+  const collapsed = collapseNominationVotingSteps([
+    nomination("day:1:nomination:1", "nomination", "complete"),
+    nomination("day:1:nomination:1:vote", "nominationVote", "complete"),
+    nomination("day:1:nomination:2", "nomination", "current"),
+    execution,
+  ]);
+
+  equal(collapsed.length, 2);
+  equal(collapsed[0].id, "day:1:nomination:1");
+  equal(collapsed[0].status, "current");
+  equal(stepTitle(collapsed[0]), "지목 및 투표");
+  equal(collapsed[1].id, execution.id);
+});
 
 test("evil-information steps use operational Korean titles instead of internal identifiers", () => {
   const baseStep: PhaseStep = {

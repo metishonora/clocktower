@@ -49,11 +49,29 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.id.endsWith(":announceDeaths")) return "사망 발표";
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
-  if (step.stepType === "nomination") return `지목 및 투표 ${step.id.split(":").at(-1)}`;
+  if (step.stepType === "nomination") return "지목 및 투표";
   if (step.id.endsWith(":execution")) return "처형 확정";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   if (step.stepType === "slayerDeath") return player ? `처단자 결과: ${player.seat}번 ${player.name}` : "처단자 결과";
   return step.id;
+}
+
+export function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const nominationVotingSteps = steps.filter(isNominationVotingStep);
+  if (nominationVotingSteps.length < 2) return steps;
+  const current = nominationVotingSteps.find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? nominationVotingSteps.at(-1)!.status;
+  let inserted = false;
+  return steps.flatMap((step) => {
+    if (!isNominationVotingStep(step)) return [step];
+    if (inserted) return [];
+    inserted = true;
+    return [{ ...step, status: combinedStatus }];
+  });
+}
+
+function isNominationVotingStep(step: PhaseStep) {
+  return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
 }
 
 export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[], includeSeats = true): string {

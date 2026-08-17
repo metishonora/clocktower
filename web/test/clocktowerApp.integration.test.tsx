@@ -1849,7 +1849,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    await screen.findByRole("heading", { name: "지목 및 투표 1" });
+    await screen.findByRole("heading", { name: "지목 및 투표" });
     const standing = screen.getByLabelText("현재 최고 득표");
     expect(within(standing).getByText("5번 Eun")).toBeTruthy();
     expect(within(standing).getByText("4표")).toBeTruthy();
@@ -1881,7 +1881,7 @@ describe("ClocktowerApp live-play integration", () => {
         },
       },
     });
-    expect(await screen.findByRole("heading", { name: "지목 및 투표 2" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "지목 및 투표" })).toBeTruthy();
   });
 
   test("continues from a confirmed nomination directly into voting on the Grimoire", async () => {
@@ -2108,7 +2108,7 @@ describe("ClocktowerApp live-play integration", () => {
     const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    await screen.findByRole("heading", { name: "지목 및 투표 2" });
+    await screen.findByRole("heading", { name: "지목 및 투표" });
     await user.click(screen.getByRole("button", { name: "← 지명하기" }));
     const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
     expect((within(seatMap).getByRole("button", { name: /Ada/ }) as HTMLButtonElement).disabled).toBe(false);
@@ -2184,7 +2184,7 @@ describe("ClocktowerApp live-play integration", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={storage} />);
 
-    await screen.findByRole("heading", { name: "지목 및 투표 1" });
+    await screen.findByRole("heading", { name: "지목 및 투표" });
     await user.click(screen.getByRole("button", { name: "지명 종료" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {

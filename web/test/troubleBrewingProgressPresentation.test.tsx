@@ -260,6 +260,46 @@ test("uses the S&V nomination summary and execution decision shapes", () => {
   expect(within(executionTask).getByRole("button", { name: "처형 없음" })).toBeTruthy();
 });
 
+test("collapses every completed and current nomination round into one phase entry", () => {
+  const nominationOne = step({
+    id: "day1:nomination:1",
+    phase: "day",
+    stepType: "nomination",
+    requiredInput: { kind: "nomination", target: "nomination", optional: true },
+    canSkip: true,
+  });
+  const voteOne = step({
+    id: "day1:nomination:1:vote",
+    phase: "day",
+    stepType: "nomination",
+    requiredInput: { kind: "nominationVote", target: "players", optional: false },
+  });
+  const nominationTwo = step({
+    id: "day1:nomination:2",
+    phase: "day",
+    stepType: "nomination",
+    requiredInput: { kind: "nomination", target: "nomination", optional: true },
+    canSkip: true,
+  });
+
+  renderProgress(nominationTwo, [
+    overview(nominationOne, "complete"),
+    overview(voteOne, "complete"),
+    overview(nominationTwo, "current"),
+  ], {
+    nominations: [],
+    eligibleNominatorIds: players.map(({ id }) => id),
+    eligibleNomineeIds: players.map(({ id }) => id),
+    executionVoteThreshold: 2,
+    highestVoteCount: 0,
+  });
+
+  const phaseOrder = screen.getByRole("list", { name: "1일차 낮 순서" });
+  expect(within(phaseOrder).getAllByText("지목 및 투표", { exact: true })).toHaveLength(1);
+  expect(phaseOrder.querySelectorAll("li")).toHaveLength(1);
+  expect(within(phaseOrder).queryByText(/지목 및 투표 \d/)).toBeNull();
+});
+
 test("uses the S&V evil-information task shape and Reveal action for Demon bluffs", () => {
   const demonInformation = step({
     id: "firstNight:demonInfo",
