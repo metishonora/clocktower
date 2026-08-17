@@ -72,13 +72,14 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
         .first()
         .map_or(events.as_slice(), |index| &events[..*index]);
     let TbReplayContext {
+        initial_players,
         players,
         phase_state,
         mut rule_state,
         rules_owned_game_ends,
         ..
     } = trouble_brewing_replay_context(active_events)?;
-    let mut warnings = validate_setup_warnings(&players);
+    let mut warnings = validate_setup_warnings(&initial_players);
     let day_state = if phase_state.phase == Phase::Day {
         current_day_prefix(&phase_state)
             .map(|prefix| replay_day_state(active_events, &players, &prefix))
@@ -329,11 +330,13 @@ fn saint_execution_source_event_id(
 
 #[derive(Debug)]
 struct TbPlayerTimeline {
+    initial_players: Vec<Player>,
     before_event: Vec<Vec<Player>>,
     players: Vec<Player>,
 }
 
 pub(crate) struct TbReplayContext {
+    pub(crate) initial_players: Vec<Player>,
     pub(crate) players: Vec<Player>,
     pub(crate) phase_state: PhaseReplayState,
     pub(crate) rule_state: RuleState,
@@ -353,6 +356,7 @@ pub(crate) fn trouble_brewing_replay_context(
     events: &[GameEvent],
 ) -> Result<TbReplayContext, CoreError> {
     let timeline = replay_player_timeline(events)?;
+    let initial_players = timeline.initial_players.clone();
     let players = timeline.players.clone();
     let phase_state = replay_phase_state_with_timeline(&players, events, &timeline)?;
     let rule_state = replay_rule_state(events, &players);
@@ -400,6 +404,7 @@ pub(crate) fn trouble_brewing_replay_context(
         });
     }
     Ok(TbReplayContext {
+        initial_players,
         players,
         phase_state,
         rule_state,
@@ -479,6 +484,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     TB_PLAYER_REPLAY_PASS_COUNT.with(|count| count.set(count.get() + 1));
     if events.is_empty() {
         return Ok(TbPlayerTimeline {
+            initial_players: Vec::new(),
             before_event: Vec::new(),
             players: Vec::new(),
         });
@@ -502,6 +508,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
         .iter()
         .map(player_from_setup_input)
         .collect::<Result<Vec<_>, _>>()?;
+    let initial_players = players.clone();
     let mut before_event = Vec::with_capacity(events.len());
     before_event.push(Vec::new());
 
@@ -513,6 +520,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     }
 
     Ok(TbPlayerTimeline {
+        initial_players,
         before_event,
         players,
     })

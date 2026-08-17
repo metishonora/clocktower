@@ -12,7 +12,7 @@ export function SlayerAbilityReveal({ target, died, busy, onClose }: {
     <SectsAndVioletsReveal
       dialogLabel="처단자 능력 공개"
       backdropAriaLabel="처단자 공개 화면"
-      className="snvProductionInformationReveal tbInformationReveal tbSlayerAbilityReveal"
+      className="snvProductionInformationReveal tbInformationReveal tbCenteredAbilityReveal tbSlayerAbilityReveal"
       closeLabel={busy ? "처리 중" : "확인"}
       closeDisabled={busy}
       onClose={onClose}

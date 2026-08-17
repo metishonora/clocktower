@@ -1556,7 +1556,7 @@
 
 .tbExecutionDecisionActions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -2231,9 +2231,11 @@
   box-shadow: 0 12px 30px rgba(148, 106, 30, .25);
 }
 
+.tbCenteredAbilityReveal { justify-items: center; gap: 12px; }
+.tbCenteredAbilityReveal > * { justify-self: center; }
 .tbSlayerAbilityReveal > .tbSlayerRevealHeader { color: #d9bd76; font-size: .72rem; font-weight: 900; }
 .tbSlayerAbilityReveal > img { width: clamp(76px, 16vw, 112px); height: clamp(76px, 16vw, 112px); object-fit: contain; }
-.tbSlayerAbilityReveal > h2 { display: grid; max-width: 520px; margin: 12px 0 4px; justify-items: center; gap: 2px; color: #fff8e8; font: clamp(2rem, 7vw, 3.7rem)/1.2 Georgia, serif; }
+.tbSlayerAbilityReveal > h2 { display: grid; width: 100%; max-width: 520px; margin: 12px 0 4px; justify-items: center; gap: 2px; color: #fff8e8; font: clamp(2rem, 7vw, 3.7rem)/1.2 Georgia, serif; text-align: center; }
 .tbSlayerAbilityReveal > h2 > span { white-space: nowrap; }
 
 @media (max-width: 780px) {

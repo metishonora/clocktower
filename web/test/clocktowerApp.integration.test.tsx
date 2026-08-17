@@ -2191,7 +2191,13 @@ describe("ClocktowerApp live-play integration", () => {
       type: "skipStep",
       payload: { stepId: "day:nomination:1", input: null },
     });
-    expect(await screen.findByRole("heading", { name: "처형 확정" })).toBeTruthy();
+    const executionTask = await screen.findByRole("region", { name: "현재 단계" });
+    expect(within(executionTask).getByText("후보 없음")).toBeTruthy();
+    await user.click(within(executionTask).getByRole("button", { name: "확정" }));
+    expect(core.propose).toHaveBeenLastCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: { stepId: "day:execution", input: { execute: false } },
+    });
     await user.click(liveStageButton("저장 / 불러오기"));
     expect(screen.getAllByText("지목 종료").length).toBeGreaterThan(0);
     await waitFor(() => expect(latestSavedGame(storage.savedGames).game.events).toHaveLength(2));

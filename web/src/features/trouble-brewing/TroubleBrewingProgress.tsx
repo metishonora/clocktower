@@ -384,15 +384,9 @@ function TroubleBrewingTask({
             <button
               type="button"
               className="issue116ExecutionConfirm"
-              disabled={busy || !candidate}
-              onClick={() => onConfirm({ input: { execute: true } })}
-            >처형 확정</button>
-            <button
-              type="button"
-              className="issue116ExecutionCancel"
               disabled={busy}
-              onClick={() => onConfirm({ input: { execute: false } })}
-            >처형 없음</button>
+              onClick={() => onConfirm({ input: { execute: Boolean(candidate) } })}
+            >확정</button>
           </div>
         </article>
       </GameEndControls>

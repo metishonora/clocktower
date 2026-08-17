@@ -213,7 +213,9 @@ test("uses the current Trouble Brewing phase theme for progress character detail
   expect(characterRules.closest(".characterRulesBackdrop")?.classList.contains("tb-day")).toBe(false);
 });
 
-test("uses the S&V nomination summary and execution decision shapes", () => {
+test("uses the S&V nomination summary and derives the execution decision from the candidate", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
   const nomination = step({
     id: "day1:nomination:1",
     phase: "day",
@@ -250,14 +252,18 @@ test("uses the S&V nomination summary and execution decision shapes", () => {
     executionVoteThreshold: 2,
     highestVoteCount: 4,
     executionCandidate: { nomineeId: "player-7", voteCount: 4 },
-  }));
+  }, { onConfirm }));
 
   const executionTask = screen.getByRole("region", { name: "현재 단계" });
   expect(executionTask.classList.contains("issue116ExecutionStep")).toBe(true);
   expect(within(executionTask).getByText("7번 현우")).toBeTruthy();
   expect(within(executionTask).getByText("첩자")).toBeTruthy();
-  expect(within(executionTask).getByRole("button", { name: "처형 확정" }).classList.contains("issue116ExecutionConfirm")).toBe(true);
-  expect(within(executionTask).getByRole("button", { name: "처형 없음" })).toBeTruthy();
+  const executionConfirm = within(executionTask).getByRole("button", { name: "확정" });
+  expect(executionConfirm.classList.contains("issue116ExecutionConfirm")).toBe(true);
+  expect(within(executionTask).queryByRole("button", { name: "처형 확정" })).toBeNull();
+  expect(within(executionTask).queryByRole("button", { name: "처형 없음" })).toBeNull();
+  await user.click(executionConfirm);
+  expect(onConfirm).toHaveBeenCalledWith({ input: { execute: true } });
 });
 
 test("collapses every completed and current nomination round into one phase entry", () => {

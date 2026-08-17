@@ -72,6 +72,7 @@ test("presents the approved Slayer result copy in one Reveal", () => {
     <SlayerAbilityReveal target={players[1]} died={false} busy={false} onClose={() => undefined} />,
   );
   let reveal = screen.getByRole("dialog", { name: "처단자 능력 공개" });
+  expect(reveal.classList.contains("tbCenteredAbilityReveal")).toBe(true);
   expect(within(reveal).getByText("아무런 일도", { exact: true })).toBeTruthy();
   expect(within(reveal).getByText("일어나지 않음", { exact: true })).toBeTruthy();
 

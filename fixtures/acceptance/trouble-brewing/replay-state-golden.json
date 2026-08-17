@@ -6633,16 +6633,6 @@
     ],
     "warnings": [
       {
-        "code": "SETUP_DISTRIBUTION_MISMATCH",
-        "severity": "warning",
-        "messageKo": "Trouble Brewing 권장 구성은 주민 5, 외지인 0, 하수인 1, 악마 1명입니다."
-      },
-      {
-        "code": "DUPLICATE_ACTUAL_CHARACTER",
-        "severity": "warning",
-        "messageKo": "중복된 실제 캐릭터가 있습니다."
-      },
-      {
         "code": "NIGHT_DEATH_UNANNOUNCED",
         "severity": "warning",
         "messageKo": "공개하지 않은 밤 사망이 있습니다."
