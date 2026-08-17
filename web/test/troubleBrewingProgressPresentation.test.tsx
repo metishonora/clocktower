@@ -158,6 +158,44 @@ test("uses the accepted S&V target hierarchy while keeping phase order expanded"
   expect(screen.queryByText(/현재 \d+\/\d+/)).toBeNull();
 });
 
+test("keeps reference Grimoire navigation separate from explicit target selection", async () => {
+  const user = userEvent.setup();
+  const onOpenReferenceGrimoire = vi.fn();
+  const onStartGrimoireSelection = vi.fn();
+  const currentStep = step({
+    id: "firstNight:poisoner",
+    phase: "firstNight",
+    character: "poisoner",
+    playerId: "player-4",
+    requiredInput: {
+      kind: "playerIds",
+      target: "player",
+      minSelections: 1,
+      maxSelections: 1,
+      allowedPlayerIds: players.map(({ id }) => id),
+      optional: false,
+    },
+  });
+
+  render(<TroubleBrewingProgress
+    {...controlProps(currentStep, [overview(currentStep, "current")])}
+    phaseLabel="1일차 밤"
+    phaseRuntime="03:12"
+    theme="night"
+    onOpenReferenceGrimoire={onOpenReferenceGrimoire}
+    onStartGrimoireSelection={onStartGrimoireSelection}
+  />);
+
+  await user.click(screen.getByRole("button", { name: "마도서로 이동" }));
+  expect(onOpenReferenceGrimoire).toHaveBeenCalledOnce();
+  expect(onStartGrimoireSelection).not.toHaveBeenCalled();
+
+  await user.click(within(screen.getByRole("region", { name: "현재 단계" }))
+    .getByRole("button", { name: "대상 선택" }));
+  expect(onStartGrimoireSelection).toHaveBeenCalledOnce();
+  expect(onOpenReferenceGrimoire).toHaveBeenCalledOnce();
+});
+
 test("uses the current Trouble Brewing phase theme for progress character details", async () => {
   const user = userEvent.setup();
   const currentStep = step({
@@ -813,7 +851,8 @@ function progress(
     phaseLabel={currentStep.phase === "day" ? "1일차 낮" : "1일차 밤"}
     phaseRuntime="03:12"
     theme={currentStep.phase === "day" ? "day" : "night"}
-    onGoToGrimoire={vi.fn()}
+    onOpenReferenceGrimoire={vi.fn()}
+    onStartGrimoireSelection={vi.fn()}
   />;
 }
 

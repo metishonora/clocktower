@@ -38,7 +38,7 @@ export async function selectLivePlayers(user: User, ...names: RegExp[]) {
   for (const name of names) {
     await user.click(within(grimoire).getByRole("button", { name }));
   }
-  await returnToLiveProgress(user);
+  await confirmCurrentLiveTargetSelection(user);
   return grimoire;
 }
 
@@ -47,7 +47,15 @@ export async function confirmLivePlayerSelection(user: User, ...names: RegExp[])
   for (const name of names) {
     await user.click(within(grimoire).getByRole("button", { name }));
   }
+  await confirmCurrentLiveTargetSelection(user);
+}
+
+export async function confirmCurrentLiveTargetSelection(user: User) {
   const panel = screen.getByLabelText("현재 마도서 작업");
   const confirm = within(panel).getByRole("button", { name: /선택 확정$/ });
   await user.click(confirm);
+}
+
+export async function cancelCurrentLiveTargetSelection(user: User) {
+  await user.click(screen.getByRole("button", { name: /선택 취소/ }));
 }

@@ -34,6 +34,7 @@ export function TroubleBrewingLiveFlow({
   onBugReport,
   bugReportTriggerRef,
   interactionLocked = false,
+  handoffActive = false,
 }: {
   draft: SetupDraft;
   expectedCounts?: SetupDistribution;
@@ -54,6 +55,8 @@ export function TroubleBrewingLiveFlow({
   bugReportTriggerRef?: Ref<HTMLButtonElement>;
   /** Locks shell navigation while preserving the normal production presentation. */
   interactionLocked?: boolean;
+  /** Keeps the live action in the Grimoire until it is explicitly confirmed or cancelled. */
+  handoffActive?: boolean;
 }) {
   const [activeCharacterId, setActiveCharacterId] = useState("imp");
   const selectedIds = setupDraftSelectedCharacterIds(draft);
@@ -124,7 +127,12 @@ export function TroubleBrewingLiveFlow({
       stages={[
         { id: "roles", label: "직업", active: activeStage === "roles", disabled: interactionLocked },
         { id: "seating", label: "마도서", active: activeStage === "seating", disabled: interactionLocked },
-        { id: "play", label: "진행", active: activeStage === "play", disabled: interactionLocked },
+        {
+          id: "play",
+          label: handoffActive ? "마도서 작업을 완료하세요" : "진행",
+          active: activeStage === "play",
+          disabled: interactionLocked || handoffActive,
+        },
       ]}
       onNavigate={navigate}
       warning={loadError || warnings.length ? <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">

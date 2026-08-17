@@ -1082,7 +1082,7 @@ export function ClocktowerApp({
     } else if (troubleBrewingHandoff === "vote") {
       setNominationDraft((current) => ({ ...current, voterIds: [] }));
     } else {
-      phaseInputDraft.setSelectedPlayerIds([]);
+      phaseInputDraft.reset();
     }
   }
 
@@ -1112,6 +1112,7 @@ export function ClocktowerApp({
   }
 
   function cancelTroubleBrewingSelection() {
+    resetTroubleBrewingSelection();
     setTroubleBrewingHandoff(undefined);
     setTroubleBrewingStage("play");
   }
@@ -1200,10 +1201,8 @@ export function ClocktowerApp({
           warnings={gameStore.shownWarnings}
           loadError={gameStore.loadError}
           canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
-          onStageChange={(stage) => {
-            setTroubleBrewingStage(stage);
-            setTroubleBrewingHandoff(undefined);
-          }}
+          handoffActive={Boolean(troubleBrewingHandoff)}
+          onStageChange={setTroubleBrewingStage}
           onReset={() => setNewGameConfirmOpen(true)}
           onRequestUndo={(trigger) => {
             if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
@@ -1260,7 +1259,8 @@ export function ClocktowerApp({
             phaseLabel={livePhaseLabel}
             phaseRuntime={phaseRuntime ?? "00:00"}
             theme={gameStore.phase === "day" ? "day" : "night"}
-            onGoToGrimoire={startTroubleBrewingSelection}
+            onOpenReferenceGrimoire={() => setTroubleBrewingStage("seating")}
+            onStartGrimoireSelection={startTroubleBrewingSelection}
             pendingReveal={gameStore.pendingConfirmedReveal}
             currentStep={gameStore.currentStep}
             phaseOverview={gameStore.phaseOverview}

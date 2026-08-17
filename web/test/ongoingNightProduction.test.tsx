@@ -21,9 +21,8 @@ import {
   step,
 } from "./clocktowerAppHarness";
 import {
+  cancelCurrentLiveTargetSelection,
   confirmLivePlayerSelection,
-  openLiveGrimoire,
-  returnToLiveProgress,
   selectLivePlayers,
   startLiveTargetSelection,
 } from "./livePlayTestHelpers";
@@ -523,7 +522,7 @@ describe("ongoing-night production UI", () => {
       target: { files: [new File([JSON.stringify(importedFile)], "imported.json", { type: "application/json" })] },
     });
 
-    await returnToLiveProgress(user);
+    await cancelCurrentLiveTargetSelection(user);
     await screen.findByRole("heading", { name: "점쟁이: 1번 지우-새게임" });
     await startLiveTargetSelection(user);
     await waitFor(() => {

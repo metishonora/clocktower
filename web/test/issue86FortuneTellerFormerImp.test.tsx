@@ -7,7 +7,7 @@ import type { GameFile } from "../src/core/types";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
 import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { returnToLiveProgress, startLiveTargetSelection } from "./livePlayTestHelpers";
+import { confirmCurrentLiveTargetSelection, startLiveTargetSelection } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -92,7 +92,7 @@ describe("issue #86 Fortune Teller checks after Scarlet Woman succession", () =>
 
     await user.click(demon);
     expect(demon.getAttribute("aria-pressed")).toBe("true");
-    await returnToLiveProgress(user);
+    await confirmCurrentLiveTargetSelection(user);
     const confirm = screen.getByRole("button", { name: "정보 공개" });
     expect((confirm as HTMLButtonElement).disabled).toBe(false);
     await user.click(confirm);

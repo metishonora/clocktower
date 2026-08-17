@@ -54,13 +54,15 @@ export function TroubleBrewingProgress({
   phaseLabel,
   phaseRuntime,
   theme,
-  onGoToGrimoire,
+  onOpenReferenceGrimoire,
+  onStartGrimoireSelection,
   ...control
 }: PhaseControlProps & {
   phaseLabel: string;
   phaseRuntime: string;
   theme: "day" | "night";
-  onGoToGrimoire: () => void;
+  onOpenReferenceGrimoire: () => void;
+  onStartGrimoireSelection: () => void;
 }) {
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
   const visibleCurrentStep = control.pendingReveal?.step ?? control.currentStep;
@@ -77,13 +79,17 @@ export function TroubleBrewingProgress({
       headerClassName="snvFirstNightHeader tbPlayHeader"
       primaryClassName="snvFirstNightPrimary tbPlayPrimary"
       phaseHeader={<>
-        <button type="button" aria-label="마도서로 이동" onClick={onGoToGrimoire}>← 마도서</button>
+        <button type="button" aria-label="마도서로 이동" onClick={onOpenReferenceGrimoire}>← 마도서</button>
         <div className="snvProgressPhaseHeader">
           <h2>{phaseLabel}</h2>
           <time className="snvProgressRuntime" aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
         </div>
       </>}
-      currentTask={<TroubleBrewingTask {...control} theme={theme} onGoToGrimoire={onGoToGrimoire} />}
+      currentTask={<TroubleBrewingTask
+        {...control}
+        theme={theme}
+        onStartGrimoireSelection={onStartGrimoireSelection}
+      />}
       phaseOrder={<section className="tbProgressOrder" aria-label="단계 개요">
         <ol className="snvPhaseOverview tbPhaseOrder" aria-label={phaseOrderLabel(visibleCurrentStep, phaseLabel)}>
           {visiblePhaseOverview.length === 0 ? <li className="current"><span>현재</span><span className="snvPhaseOverviewAction"><strong>진행할 단계 없음</strong></span></li> : null}
@@ -136,9 +142,9 @@ function TroubleBrewingTask({
   gameEnd,
   onEndGame,
   onRequestUndoGameEnd,
-  onGoToGrimoire,
+  onStartGrimoireSelection,
   theme,
-}: PhaseControlProps & { theme: "day" | "night"; onGoToGrimoire: () => void }) {
+}: PhaseControlProps & { theme: "day" | "night"; onStartGrimoireSelection: () => void }) {
   const [suggesting, setSuggesting] = useState(false);
   const [suggestionUsed, setSuggestionUsed] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string>();
@@ -633,7 +639,7 @@ function TroubleBrewingTask({
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
           </div>
           <div className={`snvStepActions${currentStep.stepType === "nomination" ? " issue116NominationActions" : ""}`}>
-              {usesGrimoireSelection && !informationTargetsSelected ? <button type="button" className="secondary" disabled={busy} onClick={onGoToGrimoire}>
+              {usesGrimoireSelection && !informationTargetsSelected ? <button type="button" className="secondary" disabled={busy} onClick={onStartGrimoireSelection}>
                 {currentStep.requiredInput.kind === "nomination" || (currentStep.requiredInput.kind === "nominationVote" && !nominationVoteIsVote) ? "← 지명하기" : currentStep.requiredInput.kind === "nominationVote" ? "← 투표하기" : "대상 선택"}
               </button> : null}
               {!usesGrimoireSelection || currentStep.requiredInput.kind === "setupInfo" || needsProgressConfirmation ? <button

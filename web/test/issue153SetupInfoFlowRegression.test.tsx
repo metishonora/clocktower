@@ -12,7 +12,7 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
-import { startLiveTargetSelection } from "./livePlayTestHelpers";
+import { confirmCurrentLiveTargetSelection, startLiveTargetSelection } from "./livePlayTestHelpers";
 import { proposeAndAppend, realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 describe("Issue 153 setup-information flow regressions", () => {
@@ -178,7 +178,7 @@ describe("Issue 153 setup-information flow regressions", () => {
     const grimoire = await startLiveTargetSelection(user);
     await user.click(within(grimoire).getByRole("button", { name: /6번 좌석, 플레이어 6/ }));
     await user.click(within(grimoire).getByRole("button", { name: /7번 좌석, 플레이어 7/ }));
-    await user.click(liveStageButton("진행"));
+    await confirmCurrentLiveTargetSelection(user);
 
     await user.selectOptions(screen.getByRole("combobox", { name: "보여줄 캐릭터" }), "spy");
     const revealButton = screen.getByRole("button", { name: "중독 정보 공개" });
@@ -226,11 +226,6 @@ function librarianStep({ impaired = false }: { impaired?: boolean } = {}): Phase
 
 function overview(stepValue: PhaseStep, status: "complete" | "current" | "waiting") {
   return { ...stepValue, status };
-}
-
-function liveStageButton(name: "마도서" | "진행") {
-  return within(screen.getByRole("main", { name: "Trouble Brewing 진행" }))
-    .getByRole("button", { name });
 }
 
 async function attachedPoisonedInvestigatorGame(): Promise<GameFile> {
