@@ -94,6 +94,12 @@
   background: var(--tb-ui-row);
 }
 
+.tbProductionShell .snvSeatingToolbar button.tbHandoffCancel {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
 .tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:disabled {
   border-color: var(--tb-ui-disabled-border);
   color: var(--tb-ui-disabled-text);
@@ -1878,6 +1884,12 @@
   border-color: rgba(57, 83, 55, .28);
   color: #2b4535;
   background: rgba(255, 253, 238, .7);
+}
+
+.tbProductionShell[data-theme="day"] .snvSeatingToolbar button.tbHandoffCancel {
+  border-color: rgba(57, 83, 55, .38);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .76);
 }
 
 .tbProductionShell[data-theme="day"] .tbPhaseOrder li {

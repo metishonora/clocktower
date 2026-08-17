@@ -230,7 +230,8 @@ fn propose_slayer_ability(
     let Some(step) = context.phase_state.current_step.as_ref() else {
         return Err(ErrorKind::SlayerWrongPhase.into_error());
     };
-    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+    if !crate::characters::slayer_can_use_on_day_step(step) || step.id != payload.discussion_step_id
+    {
         return Err(ErrorKind::SlayerWrongPhase.into_error());
     }
     if game_file

@@ -103,7 +103,12 @@ impl TbStepKey {
             [_, "execution"] => TbSemanticStep::Execution,
             [_, "executionDeath"] => TbSemanticStep::ExecutionDeath,
             [_, "virginDeath"] | [_, "nomination", _, "virginDeath"] => TbSemanticStep::VirginDeath,
-            [_, "discussion", "slayerDeath"] => TbSemanticStep::SlayerDeath,
+            [_, "announceDeaths", "slayerDeath"]
+            | [_, "whisper", "slayerDeath"]
+            | [_, "discussion", "slayerDeath"]
+            | [_, "execution", "slayerDeath"]
+            | [_, "nomination", _, "slayerDeath"]
+            | [_, "nomination", _, "vote", "slayerDeath"] => TbSemanticStep::SlayerDeath,
             [_, "toDay"] => TbSemanticStep::ToDay,
             [_, "toNight"] => TbSemanticStep::ToNight,
             [_, character, actor_id] if valid_actor_suffix(actor_id) => {

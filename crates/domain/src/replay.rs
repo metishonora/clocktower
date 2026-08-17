@@ -99,7 +99,7 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
             && phase_state
                 .current_step
                 .as_ref()
-                .is_some_and(|step| step.step_type == StepType::Discussion);
+                .is_some_and(crate::characters::slayer_can_use_on_day_step);
         rule_state.slayer_ability = Some(SlayerAbilityState {
             actor_player_id: actor.id.clone(),
             spent,
@@ -1469,7 +1469,9 @@ fn validate_slayer_event(
     else {
         return Err(ErrorKind::ReplayFailed.into_error());
     };
-    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+    if !crate::characters::slayer_can_use_on_day_step(&step)
+        || step.id != payload.discussion_step_id
+    {
         return Err(ErrorKind::ReplayFailed.into_error());
     }
     let actor = players

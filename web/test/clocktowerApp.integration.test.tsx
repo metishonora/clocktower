@@ -2396,15 +2396,61 @@ describe("ClocktowerApp live-play integration", () => {
     expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
   });
 
+  test("keeps the Slayer free action available while a nomination is being selected", async () => {
+    const nominationStep = step({
+      id: "day:nomination:1",
+      kind: "nomination",
+      stepType: "nomination",
+      phase: "day",
+      canSkip: true,
+    });
+    const playerRoster = players().map((player) =>
+      player.id === "player-1"
+        ? { ...player, actualCharacter: "slayer", shownCharacter: "slayer", alive: true }
+        : player,
+    );
+    const dayState = {
+      nominations: [],
+      executionVoteThreshold: 2,
+      highestVoteCount: 0,
+      eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+      eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+    } as unknown as ReplayState["dayState"];
+    const initialReplay = {
+      ...replayState({ currentStep: nominationStep, playerRoster, dayState }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: false, canUseNow: true },
+      },
+    } as unknown as ReplayState;
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal: initialReplay,
+      proposal: proposal(event("unused", "unused", "day")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await user.click(await screen.findByRole("button", { name: "← 지명하기" }));
+    expect(screen.getByRole("button", { name: "돌아가기 →" }).classList.contains("tbHandoffCancel")).toBe(true);
+    expect(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" })).toBeTruthy();
+  });
+
   test("does not expose a Slayer action when Rust marks the action unavailable", async () => {
-    const whisperStep = step({ id: "day:whisper", stepType: "whisper" as never, phase: "day" });
+    const nightStep = step({
+      id: "firstNight:chef",
+      character: "chef",
+      playerId: "player-2",
+      phase: "firstNight",
+    });
     const playerRoster = players().map((player) =>
       player.id === "player-1"
         ? { ...player, actualCharacter: "slayer", shownCharacter: "slayer", alive: true }
         : player,
     );
     const initialReplay = {
-      ...replayState({ currentStep: whisperStep, playerRoster }),
+      ...replayState({ currentStep: nightStep, playerRoster }),
       ruleState: {
         unannouncedNightDeathPlayerIds: [],
         slayerAbility: { actorPlayerId: "player-1", spent: false, canUseNow: false },
@@ -2419,7 +2465,7 @@ describe("ClocktowerApp live-play integration", () => {
     const user = userEvent.setup();
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    await screen.findByRole("heading", { name: "밀담" });
+    await screen.findByRole("heading", { name: /요리사/ });
     await user.click(screen.getByRole("button", { name: "마도서" }));
     expect(screen.queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
     expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();

@@ -230,7 +230,7 @@ export function TroubleBrewingLiveGrimoire({
         <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
       </div> : handoff ? (
         <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
-          {!selectionComplete ? <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
+          {!selectionComplete ? <button type="button" className="tbHandoffCancel" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
         </GrimoireToolbar>
       ) : (
         <GrimoireToolbar ariaLabel="확정된 마도서 도구">

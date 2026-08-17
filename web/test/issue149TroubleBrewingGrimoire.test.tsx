@@ -401,6 +401,8 @@ test("runs nomination and vote through the S&V grimoire modes", async () => {
   await user.click(await screen.findByRole("button", { name: "← 지명하기" }));
   const nominationSurface = await screen.findByLabelText("Trouble Brewing 마도서 검토");
   expect(nominationSurface.classList.contains("issue116NominationMode")).toBe(true);
+  expect(within(nominationSurface).getByRole("button", { name: "돌아가기 →" })
+    .classList.contains("tbHandoffCancel")).toBe(true);
   const panel = within(nominationSurface).getByRole("complementary", { name: "현재 마도서 작업" });
   await user.click(within(nominationSurface).getByRole("button", { name: /1번 좌석, Ada/ }));
   await user.click(within(nominationSurface).getByRole("button", { name: /4번 좌석, Dae/ }));

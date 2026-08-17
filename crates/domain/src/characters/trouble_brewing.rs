@@ -48,6 +48,17 @@ pub(crate) enum TbActivityRequirement {
     Triggered,
 }
 
+pub(crate) fn slayer_can_use_on_day_step(step: &PhaseStep) -> bool {
+    step.phase == Phase::Day
+        && !matches!(
+            step.step_type,
+            StepType::PhaseTransition
+                | StepType::ExecutionDeath
+                | StepType::WitchDeath
+                | StepType::SlayerDeath
+        )
+}
+
 #[derive(Debug, Copy, Clone)]
 struct TbCharacterMetadata {
     kind: CharacterKind,

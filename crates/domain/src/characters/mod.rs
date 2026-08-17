@@ -27,8 +27,8 @@ pub(crate) use trouble_brewing::{
     registration_candidate_player_ids, resolve_imp_attack, scarlet_woman_successor,
     setup_info_character_is_represented, setup_info_input_is_valid_impaired,
     setup_info_input_is_valid_normal, setup_info_input_is_valid_registration,
-    setup_info_registration_options, slayer_registration, spy_grimoire_result,
-    target_information_checks, virgin_resolution,
+    setup_info_registration_options, slayer_can_use_on_day_step, slayer_registration,
+    spy_grimoire_result, target_information_checks, virgin_resolution,
 };
 
 use crate::{
