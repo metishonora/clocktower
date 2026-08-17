@@ -253,9 +253,12 @@ fn propose_slayer_ability(
         .iter()
         .find(|player| player.id == payload.target_player_id)
         .ok_or_else(|| ErrorKind::InvalidSlayerTarget.into_error())?;
-    let registration_context =
-        crate::characters::slayer_registration(target, &payload.target_registration)?;
     let rule_state = &context.rule_state;
+    let registration_context = crate::characters::slayer_registration(
+        target,
+        &payload.target_registration,
+        rule_state.active_poison.as_ref(),
+    )?;
     let impairment_context = rule_state
         .active_poison
         .as_ref()

@@ -343,6 +343,48 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     });
   });
 
+  test("does not ask for a Demon treatment when the selected Recluse is poisoned", async () => {
+    const game = loadPoisonedRecluseFixture();
+    const replayed = await replayOrThrow(game);
+    const check = replayed.currentStep?.informationPrompt?.targetChecks?.find(({ targetPlayerIds }) => (
+      targetPlayerIds.join(",") === "player-3,player-6"
+    ));
+    expect(check?.choices).toEqual([{
+      result: { kind: "boolean", value: false },
+      isComputed: true,
+      registrationJudgments: [],
+    }]);
+
+    const storage = new MemoryGameStorageDriver(game);
+    const user = userEvent.setup();
+    render(<ClocktowerApp coreAdapter={realWasmCore()} storageDriver={storage} />);
+
+    const grimoire = await startLiveTargetSelection(user);
+    await user.click(within(grimoire).getByRole("button", { name: /플레이어 6/ }));
+    await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
+    const selectionPanel = screen.getByLabelText("현재 마도서 작업");
+    expect(within(selectionPanel).queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
+    const selectionConfirm = within(selectionPanel).getByRole("button", { name: "선택 확정" }) as HTMLButtonElement;
+    expect(selectionConfirm.disabled).toBe(false);
+    await user.click(selectionConfirm);
+
+    expect(screen.queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
+    expect(within(screen.getByRole("group", { name: "정보 결과" })).getByText("없음", { exact: true })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
+
+    await waitFor(() => {
+      expect(latestSavedGame(storage).game.events.at(-1)).toMatchObject({
+        payload: {
+          input: { playerIds: ["player-3", "player-6"] },
+          information: {
+            deliveredResult: { kind: "boolean", value: false },
+            deliveryContext: { type: "fixed" },
+          },
+        },
+      });
+    });
+  });
+
   test.each([
     ["poisoned", loadPoisonedFixture, "중독 정보 공개", "poisoned"],
     ["drunk", loadDrunkFixture, "취한 정보 공개", "drunk"],
@@ -437,6 +479,28 @@ function loadPoisonedFixture(): GameFile {
       resolution: { kind: "poison", targetPlayerId: "player-1", applied: true },
     },
     summary: "7번 플레이어 7(독살자) → 1번 플레이어 1(점쟁이) · 중독 적용",
+    createdAt: skipped.createdAt,
+  };
+  return game;
+}
+
+function loadPoisonedRecluseFixture(): GameFile {
+  const game = loadFixture();
+  const poisonerIndex = game.game.events.findIndex((event) => (
+    event.type === "phaseStepSkipped" && event.payload.stepId === "firstNight:poisoner"
+  ));
+  if (poisonerIndex < 0) throw new Error("fixture poisoner step missing");
+  const skipped = game.game.events[poisonerIndex];
+  game.game.events[poisonerIndex] = {
+    id: skipped.id,
+    type: "nightActionResolved",
+    phase: skipped.phase,
+    payload: {
+      stepId: "firstNight:poisoner",
+      actorPlayerId: "player-7",
+      resolution: { kind: "poison", targetPlayerId: "player-6", applied: true },
+    },
+    summary: "7번 플레이어 7(독살자) → 6번 플레이어 6(은둔자) · 중독 적용",
     createdAt: skipped.createdAt,
   };
   return game;

@@ -1498,9 +1498,10 @@ fn validate_slayer_event(
         } => SlayerTargetRegistration::Canonical,
         _ => return Err(ErrorKind::ReplayFailed.into_error()),
     };
-    let expected_registration = crate::characters::slayer_registration(target, &choice)
-        .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
     let rule = replay_rule_state(prefix, players);
+    let expected_registration =
+        crate::characters::slayer_registration(target, &choice, rule.active_poison.as_ref())
+            .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
     let expected_impairment = rule
         .active_poison
         .as_ref()

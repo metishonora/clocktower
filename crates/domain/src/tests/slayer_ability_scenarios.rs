@@ -299,6 +299,45 @@ fn recluse_registration_is_explicit_and_scoped_to_each_shot() {
     );
 }
 
+#[test]
+fn poisoned_recluse_cannot_register_as_the_demon_to_the_slayer() {
+    let game = poisoned_recluse_discussion_game();
+    let rejected = call_propose(
+        &game,
+        json!({
+            "type": "useSlayerAbility",
+            "payload": {
+                "discussionStepId": "day:discussion",
+                "expectedEventCount": event_count(&game),
+                "actorPlayerId": "player-1",
+                "targetPlayerId": "player-2",
+                "targetRegistration": {
+                    "kind": "recluseAsDemon",
+                    "registeredCharacterId": "imp"
+                }
+            }
+        }),
+    );
+    assert_eq!(
+        rejected["ok"], false,
+        "poisoned registration succeeded as {rejected}"
+    );
+    assert_eq!(rejected["error"]["code"], "INVALID_SLAYER_REGISTRATION");
+
+    let canonical = call_propose(
+        &game,
+        slayer_command(&game, "player-1", "player-2", "canonical"),
+    );
+    assert_eq!(
+        canonical["ok"], true,
+        "canonical shot failed as {canonical}"
+    );
+    assert_eq!(
+        canonical["value"]["event"]["payload"]["outcome"],
+        json!({ "kind": "noEffect", "reason": "targetNotDemon" })
+    );
+}
+
 fn slayer_discussion_game() -> Value {
     game_with_events(json!([
         setup_event_with_players(json!([
@@ -331,6 +370,40 @@ fn recluse_discussion_game() -> Value {
         phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
         phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
         phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:empath"),
+        phase_event("phaseStepConfirmed", "firstNight:toDay"),
+        phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper")
+    ]))
+}
+
+fn poisoned_recluse_discussion_game() -> Value {
+    game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Slayer", "actualCharacter": "slayer", "shownCharacter": "slayer" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        {
+            "id": "evt-firstNight:poisoner",
+            "type": "nightActionResolved",
+            "phase": "firstNight",
+            "payload": {
+                "stepId": "firstNight:poisoner",
+                "actorPlayerId": "player-4",
+                "resolution": {
+                    "kind": "poison",
+                    "targetPlayerId": "player-2",
+                    "applied": true
+                }
+            },
+            "summary": "독 지정 확정",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        },
         phase_event("phaseStepConfirmed", "firstNight:empath"),
         phase_event("phaseStepConfirmed", "firstNight:toDay"),
         phase_event("phaseStepConfirmed", "day:announceDeaths"),

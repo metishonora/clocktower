@@ -574,6 +574,16 @@ fn is_poisoned(active_poison: Option<&ActiveRuleEffect>, player_id: &str) -> boo
     active_poison.is_some_and(|poison| poison.player_id == player_id)
 }
 
+fn registration_ability_is_active(
+    player: &Player,
+    active_poison: Option<&ActiveRuleEffect>,
+) -> bool {
+    // Misregistration belongs to the Spy/Recluse ability. Poisoning the
+    // character disables that ability, while abilities targeting them still
+    // resolve normally against their canonical identity and alignment.
+    !is_poisoned(active_poison, &player.id)
+}
+
 fn protection_for<'a>(
     active_protection: Option<&'a ActiveRuleEffect>,
     player_id: &str,
@@ -584,6 +594,7 @@ fn protection_for<'a>(
 pub(crate) fn slayer_registration(
     target: &Player,
     choice: &SlayerTargetRegistration,
+    active_poison: Option<&ActiveRuleEffect>,
 ) -> Result<SlayerRegistrationContext, crate::error::CoreError> {
     match (target.actual_character.as_str(), choice) {
         ("recluse", SlayerTargetRegistration::Canonical) => {
@@ -597,10 +608,14 @@ pub(crate) fn slayer_registration(
             SlayerTargetRegistration::RecluseAsDemon {
                 registered_character_id,
             },
-        ) if registered_character_id == "imp" => Ok(SlayerRegistrationContext::RecluseDecision {
-            registered_as_demon: true,
-            registered_character_id: Some("imp".into()),
-        }),
+        ) if registered_character_id == "imp"
+            && registration_ability_is_active(target, active_poison) =>
+        {
+            Ok(SlayerRegistrationContext::RecluseDecision {
+                registered_as_demon: true,
+                registered_character_id: Some("imp".into()),
+            })
+        }
         ("recluse", _) | (_, SlayerTargetRegistration::RecluseAsDemon { .. }) => {
             Err(ErrorKind::InvalidSlayerRegistration.into_error())
         }
@@ -774,6 +789,7 @@ pub(crate) fn setup_info_character_is_represented(
 pub(crate) fn setup_info_registration_options(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
 ) -> Vec<SetupInfoRegistrationOption> {
     let Some(setup_info) = step.required_input.setup_info else {
         return Vec::new();
@@ -784,9 +800,13 @@ pub(crate) fn setup_info_registration_options(
         SetupInfoKind::Investigator => ("recluse", RegistrationValue::Minion, MINIONS),
     };
 
+    let (active_poison, _) = active_rule_effects(players, events);
     players
         .iter()
-        .filter(|player| player.actual_character == actual_character)
+        .filter(|player| {
+            player.actual_character == actual_character
+                && registration_ability_is_active(player, active_poison.as_ref())
+        })
         .map(|player| SetupInfoRegistrationOption {
             player_id: player.id.clone(),
             registered_as,
@@ -846,6 +866,7 @@ pub(crate) fn setup_info_input_is_valid_registration(
     step: &PhaseStep,
     input: &StepInput,
     players: &[Player],
+    events: &[GameEvent],
     judgments: &[RegistrationJudgment],
 ) -> bool {
     let Some(value) = input.as_ref() else {
@@ -863,7 +884,7 @@ pub(crate) fn setup_info_input_is_valid_registration(
     let judgment = &judgments[0];
     player_ids.contains(&judgment.player_id)
         && judgment.character_id.as_deref() == Some(character_id)
-        && setup_info_registration_options(step, players)
+        && setup_info_registration_options(step, players, events)
             .iter()
             .any(|option| {
                 option.player_id == judgment.player_id
@@ -1680,6 +1701,7 @@ pub(crate) fn spy_grimoire_result(
 pub(crate) fn registration_candidate_player_ids(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
 ) -> Vec<String> {
     let eligible_ids = match step.character.as_deref() {
         Some("empath") => {
@@ -1699,12 +1721,14 @@ pub(crate) fn registration_candidate_player_ids(
         _ => return Vec::new(),
     };
 
+    let (active_poison, _) = active_rule_effects(players, events);
     let mut seen = HashSet::new();
     players
         .iter()
         .filter(|player| {
             eligible_ids.contains(player.id.as_str())
                 && matches!(player.actual_character.as_str(), "spy" | "recluse")
+                && registration_ability_is_active(player, active_poison.as_ref())
         })
         .map(|player| player.id.clone())
         .filter(|player_id| seen.insert(player_id.clone()))
@@ -1766,6 +1790,7 @@ pub(crate) fn number_result_with_registration_judgments(
 pub(crate) fn legal_number_choices(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
     impaired: bool,
 ) -> Vec<NumberInformationChoice> {
     let Some(InformationResult::Number { value: computed }) =
@@ -1798,7 +1823,7 @@ pub(crate) fn legal_number_choices(
             .collect();
     }
 
-    let candidates = registration_candidate_player_ids(step, players);
+    let candidates = registration_candidate_player_ids(step, players, events);
     let mut choices = vec![NumberInformationChoice {
         value: computed,
         is_computed: true,
@@ -1973,6 +1998,7 @@ pub(crate) fn target_information_checks(
                 && last_to_night.is_none_or(|boundary| index > boundary)
                 && players.iter().any(|p| p.id == payload.actor_player_id && p.alive && p.actual_character == "poisoner")))
     });
+    let (active_poison, _) = active_rule_effects(players, events);
     let fixed = |target_player_ids: Vec<String>, computed_result: InformationResult| {
         TargetInformationCheck {
             target_player_ids,
@@ -2020,10 +2046,11 @@ pub(crate) fn target_information_checks(
                         // pair already contains the real Demon or red herring, so
                         // the Storyteller can distinguish identical boolean values
                         // by their registration context.
-                        for p in players
-                            .iter()
-                            .filter(|p| p.actual_character == "recluse" && ids.contains(&p.id))
-                        {
+                        for p in players.iter().filter(|p| {
+                            p.actual_character == "recluse"
+                                && ids.contains(&p.id)
+                                && registration_ability_is_active(p, active_poison.as_ref())
+                        }) {
                             check.choices.push(TargetInformationChoice {
                                 result: InformationResult::Boolean { value: true },
                                 is_computed: false,
@@ -2063,7 +2090,9 @@ pub(crate) fn target_information_checks(
                             registration_judgments: vec![],
                         })
                         .collect();
-                } else if p.actual_character == "spy" {
+                } else if p.actual_character == "spy"
+                    && registration_ability_is_active(p, active_poison.as_ref())
+                {
                     check
                         .choices
                         .extend(TOWNSFOLK.iter().map(|id| TargetInformationChoice {
@@ -2077,7 +2106,9 @@ pub(crate) fn target_information_checks(
                                 character_id: Some((*id).into()),
                             }],
                         }));
-                } else if p.actual_character == "recluse" {
+                } else if p.actual_character == "recluse"
+                    && registration_ability_is_active(p, active_poison.as_ref())
+                {
                     check
                         .choices
                         .extend(MINIONS.iter().map(|id| TargetInformationChoice {
@@ -2135,7 +2166,9 @@ pub(crate) fn target_information_checks(
                                     registration_judgments: vec![],
                                 })
                                 .collect();
-                        } else if p.actual_character == "spy" {
+                        } else if p.actual_character == "spy"
+                            && registration_ability_is_active(p, active_poison.as_ref())
+                        {
                             check.choices.extend(TOWNSFOLK.iter().map(|character_id| {
                                 TargetInformationChoice {
                                     result: InformationResult::Character {
@@ -2149,7 +2182,9 @@ pub(crate) fn target_information_checks(
                                     }],
                                 }
                             }));
-                        } else if p.actual_character == "recluse" {
+                        } else if p.actual_character == "recluse"
+                            && registration_ability_is_active(p, active_poison.as_ref())
+                        {
                             check.choices.extend(MINIONS.iter().map(|character_id| {
                                 TargetInformationChoice {
                                     result: InformationResult::Character {

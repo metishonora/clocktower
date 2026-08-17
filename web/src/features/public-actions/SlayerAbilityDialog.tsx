@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import type { Player, UseSlayerAbilityPayload } from "../../core/types";
+import type { ActiveImpairment, Player, UseSlayerAbilityPayload } from "../../core/types";
 import { characterLabel } from "../../setupDraft";
+import { visibleImpairmentsForPlayer } from "../phase-control/ImpairmentBadges";
 
-export function SlayerAbilityDialog({ actor, players, busy, onClose, onConfirm }: {
-  actor: Player; players: Player[]; busy: boolean; onClose: () => void;
+export function SlayerAbilityDialog({ actor, players, activeImpairments, busy, onClose, onConfirm }: {
+  actor: Player; players: Player[]; activeImpairments?: readonly ActiveImpairment[]; busy: boolean; onClose: () => void;
   onConfirm: (targetPlayerId: string, registration: UseSlayerAbilityPayload["targetRegistration"]) => void;
 }) {
   const [targetId, setTargetId] = useState<string>();
   const [recluseDecision, setRecluseDecision] = useState<"canonical" | "demon">();
   const dialogRef = useRef<HTMLDivElement>(null);
   const target = players.find((player) => player.id === targetId);
-  const ready = Boolean(target && (target.actualCharacter !== "recluse" || recluseDecision));
+  const targetImpaired = visibleImpairmentsForPlayer(activeImpairments, target?.id).length > 0;
+  const needsRecluseDecision = target?.actualCharacter === "recluse" && !targetImpaired;
+  const ready = Boolean(target && (!needsRecluseDecision || recluseDecision));
 
   useEffect(() => {
     dialogRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
@@ -63,7 +66,7 @@ export function SlayerAbilityDialog({ actor, players, busy, onClose, onConfirm }
           </div>
         </fieldset>
 
-        {target?.actualCharacter === "recluse" ? (
+        {needsRecluseDecision ? (
           <fieldset className="slayerRegistration">
             <legend>이번 판정의 은둔자 등록</legend>
             <button type="button" className={recluseDecision === "canonical" ? "selected" : ""} aria-pressed={recluseDecision === "canonical"} onClick={() => setRecluseDecision("canonical")}>악마로 등록하지 않음</button>
@@ -74,7 +77,7 @@ export function SlayerAbilityDialog({ actor, players, busy, onClose, onConfirm }
         <div className="slayerReview">
           <small>확정할 행동</small>
           <strong>{target ? `${actor.seat}번 ${actor.name} → ${target.seat}번 ${target.name}` : "대상을 선택하세요"}</strong>
-          {target?.actualCharacter === "recluse" && recluseDecision ? (
+          {needsRecluseDecision && recluseDecision ? (
             <span>{recluseDecision === "demon" ? "은둔자 · 악마로 등록" : "은둔자 · 악마로 등록하지 않음"}</span>
           ) : null}
         </div>

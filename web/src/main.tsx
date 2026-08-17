@@ -1314,6 +1314,7 @@ export function ClocktowerApp({
         {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
           actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
           players={gameStore.players}
+          activeImpairments={gameStore.ruleState.activeImpairments}
           busy={gameStore.busy}
           onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
           onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
@@ -1571,6 +1572,7 @@ export function ClocktowerApp({
       {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
         actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
         players={gameStore.players}
+        activeImpairments={gameStore.ruleState.activeImpairments}
         busy={gameStore.busy}
         onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
         onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}

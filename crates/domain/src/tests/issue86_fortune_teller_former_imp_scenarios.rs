@@ -253,6 +253,90 @@ fn fortune_teller_recluse_choices_keep_canonical_and_demon_registration_witnesse
 }
 
 #[test]
+fn poisoned_recluse_cannot_register_as_the_demon_to_the_fortune_teller() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Fortune", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "player-4", "seat": 4, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-5", "seat": 5, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        {
+            "id": "evt-firstNight:poisoner",
+            "type": "nightActionResolved",
+            "phase": "firstNight",
+            "payload": {
+                "stepId": "firstNight:poisoner",
+                "actorPlayerId": "player-5",
+                "resolution": {
+                    "kind": "poison",
+                    "targetPlayerId": "player-2",
+                    "applied": true
+                }
+            },
+            "summary": "독 지정 확정",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        },
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        {
+            "id": "red-herring",
+            "type": "redHerringAssigned",
+            "phase": "firstNight",
+            "payload": {
+                "stepId": "firstNight:fortuneTellerRedHerring",
+                "playerId": "player-4",
+                "registrationJudgments": []
+            },
+            "summary": "red herring",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        }
+    ]));
+    let replayed = replay(&game);
+    assert_eq!(replayed["ok"], true, "replay failed as {replayed}");
+    let checks = replayed["value"]["currentStep"]["informationPrompt"]["targetChecks"]
+        .as_array()
+        .unwrap();
+    let check = target_check(checks, &["player-2", "player-4"]);
+    assert_eq!(
+        check["computedResult"],
+        json!({ "kind": "boolean", "value": true })
+    );
+    assert_eq!(
+        check["choices"],
+        json!([{
+            "result": { "kind": "boolean", "value": true },
+            "isComputed": true,
+            "registrationJudgments": []
+        }]),
+        "a poisoned Recluse must not offer a Demon registration witness"
+    );
+
+    let forged = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:fortuneTeller",
+                "input": { "playerIds": ["player-2", "player-4"] },
+                "deliveredResult": { "kind": "boolean", "value": true },
+                "registrationJudgments": [{
+                    "playerId": "player-2",
+                    "registeredAs": "demon"
+                }]
+            }
+        }),
+    );
+    assert_eq!(
+        forged["ok"], false,
+        "poisoned registration succeeded as {forged}"
+    );
+    assert_eq!(forged["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+}
+
+#[test]
 fn impaired_fortune_teller_choices_have_no_recluse_registration_witnesses() {
     let game = fortune_teller_recluse_game("drunk", "fortuneTeller");
     let replayed = replay(&game);

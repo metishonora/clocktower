@@ -40,6 +40,34 @@ test("keeps Spy canonical and requires an explicit Recluse registration decision
   expect(onConfirm).toHaveBeenCalledWith("recluse", { kind: "canonical" });
 });
 
+test("treats a poisoned Recluse canonically without offering a Demon decision", async () => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  render(
+    <SlayerAbilityDialog
+      actor={players[0]}
+      players={players}
+      activeImpairments={[{
+        kind: "poisoned",
+        playerId: "recluse",
+        sourceEventId: "poison-event",
+        sourceCharacterId: "poisoner",
+        expires: "whileSourceAbilityActive",
+      }]}
+      busy={false}
+      onClose={() => undefined}
+      onConfirm={onConfirm}
+    />,
+  );
+  const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
+  await user.click(within(dialog).getByRole("button", { name: "3번 Cy" }));
+  expect(within(dialog).queryByText("이번 판정의 은둔자 등록")).toBeNull();
+  const confirm = within(dialog).getByRole("button", { name: "처단자 사용 확정" }) as HTMLButtonElement;
+  expect(confirm.disabled).toBe(false);
+  await user.click(confirm);
+  expect(onConfirm).toHaveBeenCalledWith("recluse", { kind: "canonical" });
+});
+
 function player(id: string, seat: number, name: string, actualCharacter: string, alive = true): Player {
   return {
     id,

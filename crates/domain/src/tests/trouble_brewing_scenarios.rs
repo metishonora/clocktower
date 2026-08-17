@@ -1986,6 +1986,104 @@ fn recluse_selection_expands_investigator_characters_with_concrete_registration(
 }
 
 #[test]
+fn poisoned_recluse_is_not_a_registration_candidate_for_setup_or_number_information() {
+    let poison_recluse = json!({
+        "id": "evt-firstNight:poisoner",
+        "type": "nightActionResolved",
+        "phase": "firstNight",
+        "payload": {
+            "stepId": "firstNight:poisoner",
+            "actorPlayerId": "player-4",
+            "resolution": {
+                "kind": "poison",
+                "targetPlayerId": "player-2",
+                "applied": true
+            }
+        },
+        "summary": "독 지정 확정",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    });
+    let investigator_game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Investigator", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        poison_recluse.clone()
+    ]));
+    let investigator: Value =
+        serde_json::from_str(&replay_json(&investigator_game.to_string())).unwrap();
+    assert_eq!(investigator["ok"], true, "replay failed as {investigator}");
+    assert_eq!(
+        investigator["value"]["currentStep"]["id"],
+        "firstNight:investigator"
+    );
+    assert_eq!(
+        investigator["value"]["currentStep"]["informationPrompt"]["setupInfoRegistrationOptions"],
+        json!([]),
+        "a poisoned Recluse cannot register as a Minion"
+    );
+    let forged_setup = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:investigator",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "baron"
+            },
+            "registrationJudgments": [{
+                "playerId": "player-2",
+                "registeredAs": "minion",
+                "characterId": "baron"
+            }]
+        }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &investigator_game.to_string(),
+        &forged_setup.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        rejected["ok"], false,
+        "poisoned registration succeeded as {rejected}"
+    );
+    assert_eq!(rejected["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+
+    let empath_game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        poison_recluse,
+        phase_event("phaseStepConfirmed", "firstNight:chef")
+    ]));
+    let empath: Value = serde_json::from_str(&replay_json(&empath_game.to_string())).unwrap();
+    assert_eq!(empath["ok"], true, "replay failed as {empath}");
+    assert_eq!(empath["value"]["currentStep"]["id"], "firstNight:empath");
+    assert_eq!(
+        empath["value"]["currentStep"]["informationPrompt"]["registrationCandidatePlayerIds"],
+        json!([]),
+        "a poisoned Recluse cannot register as evil"
+    );
+    assert_eq!(
+        empath["value"]["currentStep"]["informationPrompt"]["numberChoices"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
 fn chef_prompt_marks_a_computed_truth_of_two_pairs() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([

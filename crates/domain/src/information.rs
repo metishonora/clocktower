@@ -32,12 +32,12 @@ pub(crate) fn information_prompt(
 
     let active_reasons = active_delivery_reasons(step, players, events);
     let registration_candidate_player_ids = if is_number {
-        registration_candidate_player_ids(step, players)
+        registration_candidate_player_ids(step, players, events)
     } else {
         Vec::new()
     };
     let number_choices = if is_number && active_reasons.is_empty() {
-        legal_number_choices(step, players, !active_reasons.is_empty())
+        legal_number_choices(step, players, events, !active_reasons.is_empty())
     } else {
         Vec::new()
     };
@@ -48,7 +48,7 @@ pub(crate) fn information_prompt(
             excluded_values: vec![],
         });
     let setup_info_registration_options = if is_setup_info {
-        setup_info_registration_options(step, players)
+        setup_info_registration_options(step, players, events)
     } else {
         Vec::new()
     };
@@ -277,7 +277,7 @@ fn confirmed_number_information(
 ) -> Result<ConfirmedInformation, CoreError> {
     let impairment_reasons = active_delivery_reasons(step, players, events);
     let impaired = !impairment_reasons.is_empty();
-    let choices = legal_number_choices(step, players, impaired);
+    let choices = legal_number_choices(step, players, events, impaired);
 
     let (delivered_result, delivery_context) = if impaired {
         if !registration_judgments.is_empty() {
@@ -374,7 +374,13 @@ fn confirmed_setup_information(
         }
         (Some(selected_result.clone()), DeliveryContext::Fixed)
     } else {
-        if !setup_info_input_is_valid_registration(step, input, players, &registration_judgments) {
+        if !setup_info_input_is_valid_registration(
+            step,
+            input,
+            players,
+            events,
+            &registration_judgments,
+        ) {
             return Err(ErrorKind::InvalidRegistrationJudgment.into_error());
         }
         (
@@ -546,7 +552,7 @@ fn legacy_numeric_registration_information_is_valid(
     }) else {
         return false;
     };
-    if !legacy_alignment_judgments_are_valid(step, players, judgments) {
+    if !legacy_alignment_judgments_are_valid(step, players, prior_events, judgments) {
         return false;
     }
     let active_reasons = active_delivery_reasons(step, players, prior_events);
@@ -577,9 +583,10 @@ fn legacy_numeric_registration_information_is_valid(
 fn legacy_alignment_judgments_are_valid(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
     judgments: &[RegistrationJudgment],
 ) -> bool {
-    let candidates = registration_candidate_player_ids(step, players)
+    let candidates = registration_candidate_player_ids(step, players, events)
         .into_iter()
         .collect::<HashSet<_>>();
     let mut seen = HashSet::new();
