@@ -10,7 +10,7 @@ import type {
   RegistrationJudgment,
 } from "../../core/types";
 import { characterLabel } from "../../setupDraft";
-import { numberChoicesMatch } from "../../core/numberChoice";
+import { defaultConstrainedNumberChoice, numberChoicesMatch } from "../../core/numberChoice";
 import { TEAM_TREATMENT_OPTIONS } from "./teamTreatmentPresentation";
 
 export function TroubleBrewingScalarInformationEditor({
@@ -36,7 +36,6 @@ export function TroubleBrewingScalarInformationEditor({
   if (!prompt || prompt.computedResult?.kind !== "number") return null;
   const truth = prompt.computedResult.value;
   const constraint = prompt.numberConstraint;
-  const delivered = selectedNumberChoice?.value ?? Math.max(0, constraint?.min ?? 0);
   if (constraint) {
     return <dl className="snvInformationValues tbScalarInformationResult" role="group" aria-label="정보 결과">
       <div><dt>진실</dt><dd>{scalarInformationValueLabel(characterId, truth)}</dd></div>
@@ -50,7 +49,7 @@ export function TroubleBrewingScalarInformationEditor({
             step="1"
             inputMode="numeric"
             aria-label="전달할 숫자"
-            value={delivered}
+            value={selectedNumberChoice?.value ?? ""}
             disabled={busy}
             onChange={(event) => {
               const value = Number(event.target.value);
@@ -144,20 +143,14 @@ export function isTroubleBrewingScalarInformationStep(step: PhaseStep): boolean 
 
 export function scalarInformationMayUseDefault(step: PhaseStep): boolean {
   const prompt = step.informationPrompt;
-  return Boolean(prompt && (prompt.numberConstraint || prompt.registrationCandidatePlayerIds.length === 0));
+  return Boolean(prompt && !prompt.numberConstraint && prompt.registrationCandidatePlayerIds.length === 0);
 }
 
 export function defaultScalarInformationChoice(step: PhaseStep): NumberChoice | undefined {
   const prompt = step.informationPrompt;
   if (!prompt) return undefined;
-  if (prompt.numberConstraint) {
-    const value = Math.max(0, prompt.numberConstraint.min);
-    return {
-      value,
-      isComputed: prompt.computedResult?.kind === "number" && prompt.computedResult.value === value,
-      registrationJudgments: [],
-    };
-  }
+  const constrained = defaultConstrainedNumberChoice(step);
+  if (constrained) return constrained;
   return prompt.numberChoices.find((choice) => choice.isComputed);
 }
 
@@ -169,7 +162,16 @@ export function scalarInformationSelectionReady(
 ): boolean {
   const prompt = step.informationPrompt;
   if (!prompt) return false;
-  if (prompt.numberConstraint) return true;
+  if (prompt.numberConstraint) {
+    const value = selectedNumberChoice?.value;
+    return Boolean(
+      value !== undefined
+        && Number.isSafeInteger(value)
+        && value >= prompt.numberConstraint.min
+        && value <= prompt.numberConstraint.max
+        && !prompt.numberConstraint.excludedValues.includes(value),
+    );
+  }
   if (prompt.registrationCandidatePlayerIds.length === 0) {
     return prompt.numberChoices.some((choice) => choice.isComputed);
   }

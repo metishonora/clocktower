@@ -1,4 +1,16 @@
-import type { NumberChoice, RegistrationJudgment } from "./types.js";
+import type { NumberChoice, PhaseStep, RegistrationJudgment } from "./types.js";
+
+export function defaultConstrainedNumberChoice(step: PhaseStep): NumberChoice | undefined {
+  const prompt = step.informationPrompt;
+  const constraint = prompt?.numberConstraint;
+  if (!constraint) return undefined;
+  const value = Math.max(0, constraint.min);
+  return {
+    value,
+    isComputed: prompt.computedResult?.kind === "number" && prompt.computedResult.value === value,
+    registrationJudgments: [],
+  };
+}
 
 export function numberChoiceIdentity(choice: NumberChoice): string {
   return JSON.stringify([

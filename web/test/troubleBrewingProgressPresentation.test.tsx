@@ -739,7 +739,13 @@ test("shows poisoned Chef truth separately and defaults free-form delivery to ze
       numberConstraint: { min: 0, max: Number.MAX_SAFE_INTEGER, excludedValues: [] },
     },
   });
-  renderProgress(chef, [overview(chef, "current")], undefined, { onConfirm });
+  renderProgress(chef, [overview(chef, "current")], undefined, {
+    onConfirm,
+    phaseInputDraft: {
+      ...emptyPhaseInputDraft(),
+      selectedNumberChoice: { value: 0, isComputed: false, registrationJudgments: [] },
+    },
+  });
 
   const information = screen.getByRole("group", { name: "정보 결과" });
   expect(within(information).getByText("진실").nextElementSibling?.textContent).toBe("1쌍");

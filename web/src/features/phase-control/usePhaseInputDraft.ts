@@ -9,6 +9,7 @@ import type {
   TargetCheck,
 } from "../../core/types";
 import { characterKind } from "../../setupDraft";
+import { defaultConstrainedNumberChoice } from "../../core/numberChoice";
 import {
   mayorDecisionApplies,
   setupInfoCharacterOptions,
@@ -58,13 +59,19 @@ function emptyDraft(): PhaseInputDraft {
   };
 }
 
+function initialDraft(step: PhaseStep | undefined): PhaseInputDraft {
+  const draft = emptyDraft();
+  const selectedNumberChoice = step ? defaultConstrainedNumberChoice(step) : undefined;
+  return selectedNumberChoice ? { ...draft, selectedNumberChoice } : draft;
+}
+
 export function usePhaseInputDraft(
   step: PhaseStep | undefined,
   players: Player[],
   contextFingerprint = "",
   resetRevision = 0,
 ): PhaseInputDraftController {
-  const [draft, setDraft] = useState<PhaseInputDraft>(emptyDraft);
+  const [draft, setDraft] = useState<PhaseInputDraft>(() => initialDraft(step));
   const zeroOutsidersAvailable = useMemo(
     () => setupInfoZeroOutsidersAvailable(players, step),
     [players, step],
@@ -87,7 +94,7 @@ export function usePhaseInputDraft(
   );
 
   useEffect(() => {
-    setDraft(emptyDraft());
+    setDraft(initialDraft(step));
   }, [step?.id, contextFingerprint, resetRevision]);
 
   useEffect(() => {
@@ -214,7 +221,7 @@ export function usePhaseInputDraft(
     setMayorDecision: (mayorDecision) => setDraft((current) => ({ ...current, mayorDecision })),
     setRegistrationJudgments: (registrationJudgments) =>
       setDraft((current) => ({ ...current, registrationJudgments })),
-    reset: () => setDraft(emptyDraft()),
+    reset: () => setDraft(initialDraft(step)),
     applySuggestion,
   };
 }

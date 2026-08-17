@@ -209,7 +209,10 @@ test.each([
   const deliveredNumber = within(result).getByRole("spinbutton", { name: "전달할 숫자" }) as HTMLInputElement;
   expect(deliveredNumber.value).toBe("0");
   await user.clear(deliveredNumber);
+  expect(deliveredNumber.value).toBe("");
+  expect((screen.getByRole("button", { name: revealLabel }) as HTMLButtonElement).disabled).toBe(true);
   await user.type(deliveredNumber, "99");
+  expect(deliveredNumber.value).toBe("99");
   await user.click(screen.getByRole("button", { name: revealLabel }));
 
   const reveal = await screen.findByRole("dialog", { name: "요리사 정보 공개" });
