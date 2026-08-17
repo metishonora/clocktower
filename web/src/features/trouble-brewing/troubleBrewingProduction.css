@@ -1038,7 +1038,8 @@
   box-shadow: 0 10px 28px color-mix(in srgb, var(--tb-ui-primary-border) 32%, transparent);
 }
 
-.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.poisoned {
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.poisoned,
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.drunk {
   border-color: #9d59bd;
   color: #fff;
   background: linear-gradient(135deg, #a95bd2, #71378f);
