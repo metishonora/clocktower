@@ -636,9 +636,6 @@ function TroubleBrewingTask({
               onClick={suggestCurrentInput}
             >{suggestionUsed ? "다시 추천" : "무작위 추천"}</button> : null}
             {latestProposal?.event.type === "nightActionResolved" ? <ImpActionResult proposal={latestProposal} players={players} /> : null}
-            {latestProposal?.event.type === "slayerAbilityUsed" && latestProposal.event.payload.outcome.kind === "noEffect" ? (
-              <p className="nightActionResult" aria-label="처단자 능력 결과">아무 일도 일어나지 않음</p>
-            ) : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
           </div>
           <div className={`snvStepActions${currentStep.stepType === "nomination" ? " issue116NominationActions" : ""}`}>

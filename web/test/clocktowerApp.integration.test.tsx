@@ -2273,7 +2273,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(latestSavedGame(storage.savedGames)).toEqual(storedGame);
   });
 
-  test("does not expose a dedicated Slayer action from the live grimoire", async () => {
+  test("runs the approved Slayer free action and resolves a hit when its Reveal closes", async () => {
     const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
     const slayerDeathStep = {
       ...step({
@@ -2316,6 +2316,16 @@ describe("ClocktowerApp live-play integration", () => {
         slayerAbility: { actorPlayerId: "player-1", spent: true, canUseNow: false },
       },
     } as unknown as ReplayState;
+    const deadRoster = playerRoster.map((player) =>
+      player.id === "player-3" ? { ...player, alive: false } : player,
+    );
+    const replayAfterDeath = {
+      ...replayState({ currentStep: discussionStep, playerRoster: deadRoster, eventCount: 3 }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: true, canUseNow: false },
+      },
+    } as unknown as ReplayState;
     const slayerEvent = {
       id: "event-slayer-shot",
       type: "slayerAbilityUsed",
@@ -2340,15 +2350,50 @@ describe("ClocktowerApp live-play integration", () => {
       replayAfterProposal,
       proposal: proposal(slayerEvent),
     });
+    vi.mocked(core.replay).mockImplementation(async (file) => ({
+      ok: true,
+      value: file.game.events.length === 1
+        ? initialReplay
+        : file.game.events.length === 2
+          ? replayAfterProposal
+          : replayAfterDeath,
+    }));
+    vi.mocked(core.propose)
+      .mockResolvedValueOnce({ ok: true, value: proposal(slayerEvent) })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: proposal(event("event-slayer-death", "3번 Cy 사망", "day")),
+      });
     const user = userEvent.setup();
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await screen.findByRole("heading", { name: "토론" });
-    await user.click(screen.getByRole("button", { name: "마도서" }));
-    expect(screen.queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
-    expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();
-    expect(core.propose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" }));
+    const action = screen.getByRole("dialog", { name: "처단자 능력 사용" });
+    await user.click(within(action).getByRole("button", { name: "3번 Cy" }));
+    expect(within(action).getByText("이번 판정의 은둔자 취급")).toBeTruthy();
+    await user.click(within(action).getByRole("button", { name: "악마로 취급" }));
+    await user.click(within(action).getByRole("button", { name: "처단자 능력 사용" }));
+
+    const reveal = await screen.findByRole("dialog", { name: "처단자 능력 공개" });
+    expect(within(reveal).getByText("3번 Cy 사망", { exact: true })).toBeTruthy();
+    expect(screen.queryByLabelText("처단자 결과 대상")).toBeNull();
+    await user.click(within(reveal).getByRole("button", { name: "확인" }));
+
+    await screen.findByRole("heading", { name: "토론" });
+    expect(core.propose).toHaveBeenNthCalledWith(1, expect.anything(), expect.objectContaining({
+      type: "useSlayerAbility",
+      payload: expect.objectContaining({
+        targetPlayerId: "player-3",
+        targetRegistration: { kind: "recluseAsDemon", registeredCharacterId: "imp" },
+      }),
+    }));
+    expect(core.propose).toHaveBeenNthCalledWith(2, expect.anything(), expect.objectContaining({
+      type: "confirmStep",
+      payload: expect.objectContaining({ input: { died: true } }),
+    }));
+    expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
   });
 
   test("does not expose a Slayer action when Rust marks the action unavailable", async () => {
@@ -2378,6 +2423,68 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "마도서" }));
     expect(screen.queryByRole("button", { name: "1번 Ada 처단자 능력 사용" })).toBeNull();
     expect(screen.queryByRole("dialog", { name: "처단자 능력 사용" })).toBeNull();
+  });
+
+  test("returns directly to Discussion after the no-effect Slayer Reveal", async () => {
+    const discussionStep = step({ id: "day:discussion", stepType: "discussion", phase: "day" });
+    const playerRoster = players().map((player) =>
+      player.id === "player-1"
+        ? { ...player, actualCharacter: "slayer", shownCharacter: "slayer", alive: true }
+        : player,
+    );
+    const initialReplay = {
+      ...replayState({ currentStep: discussionStep, playerRoster }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: false, canUseNow: true },
+      },
+    } as unknown as ReplayState;
+    const replayAfterProposal = {
+      ...replayState({ currentStep: discussionStep, playerRoster, eventCount: 2 }),
+      ruleState: {
+        unannouncedNightDeathPlayerIds: [],
+        slayerAbility: { actorPlayerId: "player-1", spent: true, canUseNow: false },
+      },
+    } as unknown as ReplayState;
+    const slayerEvent = {
+      id: "event-slayer-miss",
+      type: "slayerAbilityUsed",
+      phase: "day",
+      payload: {
+        discussionStepId: "day:discussion",
+        actorPlayerId: "player-1",
+        targetPlayerId: "player-4",
+        impairmentContext: { kind: "healthy" },
+        registrationContext: { kind: "canonical", registeredAsDemon: false },
+        outcome: { kind: "noEffect", reason: "targetNotDemon" },
+      },
+      summary: "처단자가 4번 Dae를 선택함",
+      createdAt: "2026-07-14T00:01:00.000Z",
+    } as unknown as GameFile["game"]["events"][number];
+    const core = createCoreHarness({
+      initialReplay,
+      replayAfterProposal,
+      proposal: proposal(slayerEvent),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await screen.findByRole("heading", { name: "토론" });
+    await user.click(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" }));
+    const action = screen.getByRole("dialog", { name: "처단자 능력 사용" });
+    await user.click(within(action).getByRole("button", { name: "4번 Dae" }));
+    await user.click(within(action).getByRole("button", { name: "처단자 능력 사용" }));
+
+    const reveal = await screen.findByRole("dialog", { name: "처단자 능력 공개" });
+    expect(within(reveal).getByText("아무런 일도", { exact: true })).toBeTruthy();
+    expect(within(reveal).getByText("일어나지 않음", { exact: true })).toBeTruthy();
+    await user.click(within(reveal).getByRole("button", { name: "확인" }));
+
+    await screen.findByRole("heading", { name: "토론" });
+    expect(core.propose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText("처단자 능력 결과")).toBeNull();
+    expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
   });
 });
 

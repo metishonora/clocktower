@@ -33,7 +33,8 @@ import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBr
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
 import { TroubleBrewingBugReportDialog } from "./features/bug-report/TroubleBrewingBugReportDialog";
 import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
-import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityAction } from "./features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityReveal } from "./features/public-actions/SlayerAbilityReveal";
 import {
   browserRuntimeClock,
   numberedPhaseForStep,
@@ -833,8 +834,8 @@ export function ClocktowerApp({
   const [acknowledgedSpyRevealKey, setAcknowledgedSpyRevealKey] = useState<string>();
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
   const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
-  const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
-  const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
+  const [slayerReveal, setSlayerReveal] = useState<{ targetPlayerId: string; died: boolean }>();
+  const [slayerRevealClosing, setSlayerRevealClosing] = useState(false);
   const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
   const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [undoResetRevision, setUndoResetRevision] = useState(0);
@@ -969,6 +970,19 @@ export function ClocktowerApp({
   const activeSpyRevealPayload = explicitSpyRevealPayload ?? implicitSpyRevealPayload;
   const revealPlayers = activeSpyRevealPayload ? playersForSpyReveal(activeSpyRevealPayload) : undefined;
   const revealRuleState = activeSpyRevealPayload ? ruleStateForSpyReveal(activeSpyRevealPayload) : undefined;
+  const slayerActor = gameStore.ruleState?.slayerAbility
+    ? gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)
+    : undefined;
+  const pendingSlayerDeathEvent = gameStore.currentStep?.requiredInput.kind === "slayerDeathDecision"
+    ? [...gameStore.gameFile.game.events].reverse().find((candidate) =>
+        candidate.type === "slayerAbilityUsed"
+        && candidate.payload.outcome.kind === "deathPending"
+        && candidate.payload.outcome.playerId === gameStore.currentStep?.playerId,
+      )
+    : undefined;
+  const activeSlayerReveal = slayerReveal ?? (pendingSlayerDeathEvent?.type === "slayerAbilityUsed"
+    ? { targetPlayerId: pendingSlayerDeathEvent.payload.targetPlayerId, died: true }
+    : undefined);
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
@@ -1029,7 +1043,7 @@ export function ClocktowerApp({
     if (removed) {
       setUndoResetRevision((current) => current + 1);
       setActiveRevealPayload(undefined);
-      setSlayerDialogOpen(false);
+      setSlayerReveal(undefined);
     }
     queueMicrotask(() => liveUndoTriggerRef.current?.focus());
   }
@@ -1051,6 +1065,30 @@ export function ClocktowerApp({
       setAcknowledgedSpyRevealKey(pendingSpyRevealKey);
     }
     setActiveRevealPayload(undefined);
+  }
+
+  async function useSlayerAbility(
+    targetPlayerId: string,
+    registration: Parameters<typeof gameStore.useSlayerAbility>[1],
+  ) {
+    const result = await gameStore.useSlayerAbility(targetPlayerId, registration);
+    if (!result?.ok || result.value.event.type !== "slayerAbilityUsed") return;
+    setSlayerReveal({
+      targetPlayerId,
+      died: result.value.event.payload.outcome.kind === "deathPending",
+    });
+  }
+
+  async function closeSlayerReveal() {
+    if (!activeSlayerReveal || slayerRevealClosing) return;
+    if (!activeSlayerReveal.died) {
+      setSlayerReveal(undefined);
+      return;
+    }
+    setSlayerRevealClosing(true);
+    const result = await gameStore.confirmCurrentStep({ input: { died: true } });
+    setSlayerRevealClosing(false);
+    if (result?.ok) setSlayerReveal(undefined);
   }
 
   function currentTroubleBrewingHandoff(): TroubleBrewingLiveHandoff | undefined {
@@ -1188,6 +1226,18 @@ export function ClocktowerApp({
     </>;
   }
 
+  if (activeSlayerReveal) {
+    const target = gameStore.players.find((player) => player.id === activeSlayerReveal.targetPlayerId);
+    if (target) {
+      return <SlayerAbilityReveal
+        target={target}
+        died={activeSlayerReveal.died}
+        busy={slayerRevealClosing}
+        onClose={() => { void closeSlayerReveal(); }}
+      />;
+    }
+  }
+
   if (activeRevealPayload && !activeSpyRevealPayload) {
     return scriptId === TROUBLE_BREWING && gameStore.setupConfirmed
       ? <TroubleBrewingRevealScreen payload={activeRevealPayload} onClose={closeActiveReveal} />
@@ -1323,13 +1373,12 @@ export function ClocktowerApp({
             </section>
           </section>}
         />
-        {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
-          actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
+        {gameStore.ruleState?.slayerAbility?.canUseNow && slayerActor ? <SlayerAbilityAction
+          actor={slayerActor}
           players={gameStore.players}
           activeImpairments={gameStore.ruleState.activeImpairments}
           busy={gameStore.busy}
-          onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
-          onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
+          onConfirm={useSlayerAbility}
         /> : null}
         {liveUndoDialogEvent ? (
           <LiveUndoDialog events={liveUndoDialogEvent.events} onCancel={closeLiveUndoDialog} onConfirm={confirmLiveUndo} />
@@ -1452,12 +1501,6 @@ export function ClocktowerApp({
                 ruleState={revealRuleState ?? gameStore.ruleState}
                 readOnlyReveal={Boolean(activeSpyRevealPayload)}
                 onUpdatePlayerAnnotations={activeSpyRevealPayload || gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
-                slayerAbility={!activeSpyRevealPayload && gameStore.ruleState?.slayerAbility ? {
-                  actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
-                  enabled: gameStore.ruleState.slayerAbility.canUseNow,
-                  spent: gameStore.ruleState.slayerAbility.spent,
-                  onUse: (button) => { slayerTriggerRef.current = button; setSlayerDialogOpen(true); },
-                } : undefined}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
                 setupInformationSelection={
                   !activeSpyRevealPayload && !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
@@ -1581,14 +1624,6 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
-        actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
-        players={gameStore.players}
-        activeImpairments={gameStore.ruleState.activeImpairments}
-        busy={gameStore.busy}
-        onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
-        onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
-      /> : null}
       {!activeSpyRevealPayload && liveUndoDialogEvent ? (
         <LiveUndoDialog
           events={liveUndoDialogEvent.events}

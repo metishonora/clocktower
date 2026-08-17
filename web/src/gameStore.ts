@@ -325,7 +325,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
 
   async function useSlayerAbility(targetPlayerId: string, targetRegistration: import("./core/types").UseSlayerAbilityPayload["targetRegistration"]) {
     const ability = ruleState?.slayerAbility;
-    if (!currentStep || !ability) return;
+    if (!currentStep || !ability) return undefined;
     setBusy(true);
     setLoadError(undefined);
     const result = await executeCommand({
@@ -340,6 +340,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     });
     setProposalResult(result);
     setBusy(false);
+    return result;
   }
 
   async function endGame(winningTeam: "good" | "evil") {

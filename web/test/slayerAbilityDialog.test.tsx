@@ -2,7 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { Player } from "../src/core/types";
-import { SlayerAbilityDialog } from "../src/features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityAction } from "../src/features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityReveal } from "../src/features/public-actions/SlayerAbilityReveal";
 
 const players: Player[] = [
   player("slayer", 1, "Ada", "slayer"),
@@ -11,31 +12,29 @@ const players: Player[] = [
   player("spy", 4, "Dae", "spy"),
 ];
 
-test("keeps Spy canonical and requires an explicit Recluse registration decision", async () => {
+test("uses the approved free-action dock and requires an explicit Recluse treatment", async () => {
   const user = userEvent.setup();
   const onConfirm = vi.fn();
   render(
-    <SlayerAbilityDialog
+    <SlayerAbilityAction
       actor={players[0]}
       players={players}
       busy={false}
-      onClose={() => undefined}
       onConfirm={onConfirm}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" }));
   const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
-  expect(within(dialog).getByText("확정하면 결과와 관계없이 이 플레이어의 능력이 소모됩니다.")).toBeTruthy();
   expect(within(dialog).getByRole("button", { name: "2번 Bert · 사망" })).toBeTruthy();
 
   await user.click(within(dialog).getByRole("button", { name: "4번 Dae" }));
-  expect(within(dialog).queryByText("이번 판정의 은둔자 등록")).toBeNull();
+  expect(within(dialog).queryByText("이번 판정의 은둔자 취급")).toBeNull();
 
   await user.click(within(dialog).getByRole("button", { name: "3번 Cy" }));
-  expect(within(dialog).getByText("이번 판정의 은둔자 등록")).toBeTruthy();
-  const confirm = within(dialog).getByRole("button", { name: "처단자 사용 확정" }) as HTMLButtonElement;
+  expect(within(dialog).getByText("이번 판정의 은둔자 취급")).toBeTruthy();
+  const confirm = within(dialog).getByRole("button", { name: "처단자 능력 사용" }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(true);
-  await user.click(within(dialog).getByRole("button", { name: "악마로 등록하지 않음" }));
-  expect(within(dialog).getByText("은둔자 · 악마로 등록하지 않음")).toBeTruthy();
+  await user.click(within(dialog).getByRole("button", { name: "악마로 취급하지 않음" }));
   await user.click(confirm);
   expect(onConfirm).toHaveBeenCalledWith("recluse", { kind: "canonical" });
 });
@@ -44,7 +43,7 @@ test("treats a poisoned Recluse canonically without offering a Demon decision", 
   const user = userEvent.setup();
   const onConfirm = vi.fn();
   render(
-    <SlayerAbilityDialog
+    <SlayerAbilityAction
       actor={players[0]}
       players={players}
       activeImpairments={[{
@@ -55,17 +54,30 @@ test("treats a poisoned Recluse canonically without offering a Demon decision", 
         expires: "whileSourceAbilityActive",
       }]}
       busy={false}
-      onClose={() => undefined}
       onConfirm={onConfirm}
     />,
   );
+  await user.click(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" }));
   const dialog = screen.getByRole("dialog", { name: "처단자 능력 사용" });
   await user.click(within(dialog).getByRole("button", { name: "3번 Cy" }));
-  expect(within(dialog).queryByText("이번 판정의 은둔자 등록")).toBeNull();
-  const confirm = within(dialog).getByRole("button", { name: "처단자 사용 확정" }) as HTMLButtonElement;
+  expect(within(dialog).queryByText("이번 판정의 은둔자 취급")).toBeNull();
+  const confirm = within(dialog).getByRole("button", { name: "처단자 능력 사용" }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(false);
   await user.click(confirm);
   expect(onConfirm).toHaveBeenCalledWith("recluse", { kind: "canonical" });
+});
+
+test("presents the approved Slayer result copy in one Reveal", () => {
+  const { rerender } = render(
+    <SlayerAbilityReveal target={players[1]} died={false} busy={false} onClose={() => undefined} />,
+  );
+  let reveal = screen.getByRole("dialog", { name: "처단자 능력 공개" });
+  expect(within(reveal).getByText("아무런 일도", { exact: true })).toBeTruthy();
+  expect(within(reveal).getByText("일어나지 않음", { exact: true })).toBeTruthy();
+
+  rerender(<SlayerAbilityReveal target={players[2]} died busy={false} onClose={() => undefined} />);
+  reveal = screen.getByRole("dialog", { name: "처단자 능력 공개" });
+  expect(within(reveal).getByText("3번 Cy 사망", { exact: true })).toBeTruthy();
 });
 
 function player(id: string, seat: number, name: string, actualCharacter: string, alive = true): Player {

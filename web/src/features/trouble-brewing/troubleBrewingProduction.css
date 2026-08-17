@@ -2159,3 +2159,71 @@
     transition-duration: 0s !important;
   }
 }
+
+.tbSharedLivePlay .tbSlayerActionDock > button {
+  border-color: rgba(75, 107, 76, .32);
+  background: rgba(255, 252, 238, .97);
+  box-shadow: 0 11px 30px rgba(18, 62, 39, .28);
+}
+
+.tbSharedLivePlay .tbSlayerActionDock > button.selected {
+  border-color: #d3b46b;
+  color: #fff8e8;
+  background: #246143;
+  box-shadow: 0 0 0 4px rgba(211, 180, 107, .22), 0 12px 30px rgba(18, 62, 39, .32);
+}
+
+.tbSharedLivePlay .tbSlayerActionPanel {
+  border-color: rgba(91, 114, 78, .24);
+  color: #173526;
+  background: rgba(255, 252, 238, .98);
+  box-shadow: 0 24px 70px rgba(18, 62, 39, .32);
+}
+
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity:hover { background: rgba(39, 104, 68, .07); }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity > div > span:first-child { color: #61745f; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity h2 { color: #193b29; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionHeader > p {
+  border-color: rgba(62, 104, 69, .14);
+  color: #49604c;
+  background: rgba(47, 112, 78, .055);
+}
+
+.tbSlayerActionForm fieldset > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tbSlayerActionForm legend { color: #526d54; }
+.tbSlayerActionForm fieldset button {
+  display: grid;
+  min-height: 58px;
+  padding: 7px;
+  place-items: center;
+  gap: 2px;
+  border-color: rgba(54, 93, 60, .18);
+  color: #27452f;
+  background: rgba(255, 255, 255, .72);
+}
+
+.tbSlayerActionForm fieldset button.selected {
+  border-color: #2f704e;
+  color: #17452f;
+  background: rgba(47, 112, 78, .16);
+  box-shadow: inset 0 0 0 1px rgba(47, 112, 78, .12);
+}
+
+.tbSlayerTargets button > span { color: #8b6a2b; font-size: .65rem; font-weight: 900; }
+.tbSlayerTargets button > strong { font-size: .76rem; }
+.tbSlayerRegistration > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionConfirm.normal {
+  border-color: #c9a958;
+  color: #1d2d20;
+  background: linear-gradient(135deg, #f1d895, #d9b765);
+  box-shadow: 0 12px 30px rgba(148, 106, 30, .25);
+}
+
+.tbSlayerAbilityReveal > .tbSlayerRevealHeader { color: #d9bd76; font-size: .72rem; font-weight: 900; }
+.tbSlayerAbilityReveal > img { width: clamp(76px, 16vw, 112px); height: clamp(76px, 16vw, 112px); object-fit: contain; }
+.tbSlayerAbilityReveal > h2 { display: grid; max-width: 520px; margin: 12px 0 4px; justify-items: center; gap: 2px; color: #fff8e8; font: clamp(2rem, 7vw, 3.7rem)/1.2 Georgia, serif; }
+.tbSlayerAbilityReveal > h2 > span { white-space: nowrap; }
+
+@media (max-width: 780px) {
+  .tbSlayerActionForm fieldset > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
