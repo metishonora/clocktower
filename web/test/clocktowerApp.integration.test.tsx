@@ -1940,7 +1940,7 @@ describe("ClocktowerApp live-play integration", () => {
     expect(core.propose).toHaveBeenCalledTimes(1);
   });
 
-  test("blocks the Butler until the master votes and removes both when the master is cleared", async () => {
+  test("allows the Butler to vote first and leaves masterless invalidation to confirmation", async () => {
     const votingStep = step({
       id: "day:nomination:1:vote",
       kind: "nominationVote",
@@ -1995,20 +1995,23 @@ describe("ClocktowerApp live-play integration", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     const seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
-    const blockedButler = within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ });
-    expect((blockedButler as HTMLButtonElement).disabled).toBe(true);
-    await user.click(blockedButler);
-    expect(blockedButler.getAttribute("aria-pressed")).toBe("false");
+    const butlerSeat = within(seatMap).getByRole("button", { name: /Bert.*생존/ });
+    expect((butlerSeat as HTMLButtonElement).disabled).toBe(false);
+    await user.click(butlerSeat);
+    expect(butlerSeat.getAttribute("aria-pressed")).toBe("true");
 
     await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
-    const enabledButler = within(seatMap).getByRole("button", { name: /Bert.*생존/ });
-    expect((enabledButler as HTMLButtonElement).disabled).toBe(false);
-    await user.click(enabledButler);
-    expect(enabledButler.getAttribute("aria-pressed")).toBe("true");
-
     await user.click(within(seatMap).getByRole("button", { name: /Ada.*생존/ }));
-    expect((within(seatMap).getByRole("button", { name: /Bert.*주인 미투표/ }) as HTMLButtonElement).disabled)
-      .toBe(true);
+    expect(butlerSeat.getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "1표로 투표 확정" }));
+    expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "day:nomination:1:vote",
+        input: { voterIds: ["player-2"] },
+      },
+    });
   });
 
   test("always exposes concise life and ghost-vote state on confirmed Grimoire seats", async () => {

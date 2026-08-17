@@ -229,7 +229,7 @@ describe("Trouble Brewing acceptance fixtures", () => {
     }
   });
 
-  it("VOT-01 restores the Butler master and rejects a new vote without that master", async () => {
+  it("VOT-01 restores the Butler master and omits an unsupported Butler vote", async () => {
     const acceptanceCase = manifest.cases.find(({ id }) => id === "butler-master-selection");
     expect(acceptanceCase?.checkpoint.butlerVote).toBeDefined();
     if (!acceptanceCase?.checkpoint.butlerVote) return;
@@ -239,20 +239,16 @@ describe("Trouble Brewing acceptance fixtures", () => {
     const replay = await replayOrThrow(gameFile);
     expect(replay.ruleState.butlerVote).toEqual(acceptanceCase.checkpoint.butlerVote);
 
-    const invalid = await realWasmCore().propose(gameFile, {
+    const withoutMaster = await realWasmCore().propose(gameFile, {
       type: "confirmStep",
       payload: {
         stepId: replay.currentStep?.id ?? "",
         input: { voterIds: [acceptanceCase.checkpoint.butlerVote.butlerPlayerId] },
       },
     });
-    expect(invalid).toEqual({
-      ok: false,
-      error: {
-        code: "BUTLER_MASTER_VOTE_REQUIRED",
-        messageKo: "집사는 주인이 현재 투표에 참여한 경우에만 투표할 수 있습니다.",
-      },
-    });
+    expect(withoutMaster.ok).toBe(true);
+    if (!withoutMaster.ok) return;
+    expect(withoutMaster.value.event.payload).toMatchObject({ voterIds: [] });
 
     const valid = await realWasmCore().propose(gameFile, {
       type: "confirmStep",

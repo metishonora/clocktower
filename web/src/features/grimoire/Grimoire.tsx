@@ -132,8 +132,6 @@ export function Grimoire({
             ? voteStatusForPlayer(
                 confirmedPlayer,
                 votingSelected,
-                nominationVoting?.draft.voterIds,
-                ruleState?.butlerVote,
               )
             : undefined;
           const votingDisabled = busy || !playerId || Boolean(voteStatus?.disabled);
@@ -189,7 +187,6 @@ export function Grimoire({
             const voterIds = nextVoterIdsAfterToggle(
               nominationVoting.draft.voterIds,
               playerId,
-              ruleState?.butlerVote,
             );
             nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
           }

@@ -432,7 +432,7 @@
       ],
       "officialSource": "https://wiki.bloodontheclocktower.com/Butler",
       "actionKo": "Butler가 자신이 아닌 Master를 지정한 뒤 다음 날 지목 투표를 진행한다.",
-      "expectedKo": "Master가 현재 투표에 없으면 Butler 좌석이 사유와 함께 비활성화되고, Master 선택 후 활성화되며, Master 해제 시 Butler 표도 제거된다.",
+      "expectedKo": "Butler와 Master는 순서와 관계없이 투표 draft에서 선택할 수 있고, 확정 시 Master가 빠져 있으면 Butler 표만 집계에서 자동 제외된다.",
       "checkpoint": {
         "phase": "day",
         "currentStepId": "day:nomination:1:vote",

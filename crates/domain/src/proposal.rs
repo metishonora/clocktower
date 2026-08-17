@@ -998,7 +998,7 @@ pub(crate) fn propose_nomination_vote(
     players: &[Player],
     input: StepInput,
 ) -> Result<Proposal, CoreError> {
-    let (record, active) =
+    let (mut record, active) =
         nomination_record(current_step, players, &input, &game_file.game.events)?;
     let active_poison = crate::night::active_night_poison(&game_file.game.events, players);
     let butler_vote = crate::characters::butler_vote_state(
@@ -1006,7 +1006,12 @@ pub(crate) fn propose_nomination_vote(
         &game_file.game.events,
         active_poison.as_ref(),
     );
-    crate::characters::validate_butler_voters(butler_vote.as_ref(), &record.voter_ids)?;
+    record.voter_ids =
+        crate::characters::counted_butler_voter_ids(butler_vote.as_ref(), &record.voter_ids);
+    record
+        .ghost_vote_spent_player_ids
+        .retain(|player_id| record.voter_ids.contains(player_id));
+    record.vote_count = record.voter_ids.len();
     let prefix = step_prefix(&current_step.id)?;
     let mut projected_nominations =
         replay_day_state(&game_file.game.events, players, &prefix)?.nominations;

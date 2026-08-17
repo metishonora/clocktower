@@ -281,24 +281,28 @@ pub(crate) fn butler_vote_state(
     })
 }
 
-pub(crate) fn validate_butler_voters(
+pub(crate) fn counted_butler_voter_ids(
     state: Option<&ButlerVoteState>,
     voter_ids: &[String],
-) -> Result<(), crate::error::CoreError> {
+) -> Vec<String> {
     let Some(state) = state.filter(|state| state.restriction_applies) else {
-        return Ok(());
+        return voter_ids.to_vec();
     };
     if !voter_ids.contains(&state.butler_player_id) {
-        return Ok(());
+        return voter_ids.to_vec();
     }
     if state
         .master_player_id
         .as_ref()
         .is_some_and(|master_id| voter_ids.contains(master_id))
     {
-        return Ok(());
+        return voter_ids.to_vec();
     }
-    Err(ErrorKind::ButlerMasterVoteRequired.into_error())
+    voter_ids
+        .iter()
+        .filter(|player_id| *player_id != &state.butler_player_id)
+        .cloned()
+        .collect()
 }
 
 pub(crate) fn virgin_resolution(

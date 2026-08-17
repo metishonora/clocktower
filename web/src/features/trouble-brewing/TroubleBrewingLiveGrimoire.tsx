@@ -207,7 +207,6 @@ export function TroubleBrewingLiveGrimoire({
         voterIds: nextVoterIdsAfterToggle(
           nominationVoting.draft.voterIds,
           player.id,
-          ruleState?.butlerVote,
         ),
       });
       return;
@@ -275,7 +274,7 @@ export function TroubleBrewingLiveGrimoire({
           const setupInformationAllowed = !setupInformationSelection?.allowedPlayerIds
             || setupInformationSelection.allowedPlayerIds.includes(player.id);
           const voteStatus = handoff === "vote" && nominationVoting
-            ? voteStatusForPlayer(player, selected, nominationVoting.draft.voterIds, ruleState?.butlerVote)
+            ? voteStatusForPlayer(player, selected)
             : undefined;
           const selectingNominator = handoff === "nomination" && !nominatorId;
           const nominationIneligible = handoff === "nomination" && (
