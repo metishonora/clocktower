@@ -895,6 +895,28 @@ fn replay_phase_state_with_timeline(
     }
 }
 
+fn fortune_teller_step_actor_is_actual(step_id: &str, players: &[Player]) -> bool {
+    let actor_id = step_id.split(':').nth(2).or_else(|| {
+        players
+            .iter()
+            .filter(|player| {
+                let acting_character = if player.actual_character == "drunk" {
+                    &player.shown_character
+                } else {
+                    &player.actual_character
+                };
+                acting_character == "fortuneTeller"
+            })
+            .max_by_key(|player| (player.alive, player.seat))
+            .map(|player| player.id.as_str())
+    });
+    actor_id.is_some_and(|actor_id| {
+        players
+            .iter()
+            .any(|player| player.id == actor_id && player.actual_character == "fortuneTeller")
+    })
+}
+
 struct TbPhaseProgress {
     statuses: HashMap<String, PhaseStepStatus>,
     cursor: TbPhaseKey,
@@ -964,9 +986,13 @@ fn phase_step_progress(
         };
         let incoming_step_key =
             incoming_step_id.and_then(|id| TbStepKey::parse(id, event.phase).ok());
+        // A Drunk shown the Fortune Teller can act before the Actual Fortune Teller.
+        // That separate check must not consume the Actual Fortune Teller's assignment.
         if incoming_step_key.is_some_and(|key| {
             key.semantic == TbSemanticStep::Character(TbCharacterId::FortuneTeller)
-        }) {
+        }) && incoming_step_id
+            .is_some_and(|step_id| fortune_teller_step_actor_is_actual(step_id, players_at_event))
+        {
             let prefix = incoming_step_key.expect("checked step").phase.prefix();
             statuses
                 .entry(format!("{prefix}:fortuneTellerRedHerring"))

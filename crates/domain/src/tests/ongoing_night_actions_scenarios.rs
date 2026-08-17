@@ -268,6 +268,71 @@ fn fortune_teller_assigns_a_red_herring_before_its_first_typed_boolean_check() {
 }
 
 #[test]
+fn drunk_fortune_teller_check_does_not_skip_the_actual_fortune_teller_red_herring() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Fortune", "actualCharacter": "fortuneTeller", "shownCharacter": "fortuneTeller" },
+            { "id": "player-2", "seat": 2, "name": "Drunk", "actualCharacter": "drunk", "shownCharacter": "fortuneTeller" },
+            { "id": "player-3", "seat": 3, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "player-4", "seat": 4, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-5", "seat": 5, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:empath")
+    ]));
+
+    let before_check = replay_game(&game);
+    assert_eq!(before_check["ok"], true, "replay failed as {before_check}");
+    assert_eq!(
+        before_check["value"]["currentStep"]["id"],
+        "firstNight:fortuneTeller"
+    );
+    assert_eq!(
+        before_check["value"]["currentStep"]["playerId"], "player-2",
+        "the Drunk shown Fortune Teller acts on the legacy step first"
+    );
+
+    let drunk_check = propose(
+        &game,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "firstNight:fortuneTeller",
+                "input": { "playerIds": ["player-1", "player-3"] }
+            }
+        }),
+    );
+    assert_eq!(
+        drunk_check["ok"], true,
+        "Drunk check failed as {drunk_check}"
+    );
+
+    let after_drunk_check = replay_game(&with_proposed_event(&game, &drunk_check));
+    assert_eq!(
+        after_drunk_check["ok"], true,
+        "replay failed as {after_drunk_check}"
+    );
+    assert_eq!(
+        after_drunk_check["value"]["currentStep"]["id"],
+        "firstNight:fortuneTellerRedHerring"
+    );
+    assert_eq!(
+        after_drunk_check["value"]["currentStep"]["playerId"], "player-1",
+        "the Actual Fortune Teller must still assign the Red Herring"
+    );
+    assert_eq!(
+        after_drunk_check["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|step| step["id"] == "firstNight:fortuneTeller:player-1")
+            .unwrap()["status"],
+        "waiting"
+    );
+}
+
+#[test]
 fn drunk_shown_fortune_teller_reveals_only_targets_and_delivered_result() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
