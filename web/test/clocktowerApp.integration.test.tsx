@@ -1884,6 +1884,62 @@ describe("ClocktowerApp live-play integration", () => {
     expect(await screen.findByRole("heading", { name: "지목 및 투표 2" })).toBeTruthy();
   });
 
+  test("continues from a confirmed nomination directly into voting on the Grimoire", async () => {
+    const nominationStep = step({
+      id: "day:1:nomination:1",
+      kind: "nomination",
+      stepType: "nomination",
+      phase: "day",
+      canSkip: true,
+    });
+    const voteStep = step({
+      id: "day:1:nomination:1:vote",
+      kind: "nominationVote",
+      stepType: "nomination",
+      phase: "day",
+    });
+    const initialDayState = {
+      nominations: [],
+      executionVoteThreshold: 2,
+      highestVoteCount: 0,
+      eligibleNominatorIds: ["player-1", "player-4", "player-5"],
+      eligibleNomineeIds: ["player-1", "player-4", "player-5"],
+    } as unknown as ReplayState["dayState"];
+    const votingDayState = {
+      ...initialDayState,
+      activeNomination: {
+        eventId: "event-nomination",
+        stepId: nominationStep.id,
+        nominatorId: "player-1",
+        nomineeId: "player-4",
+      },
+    } as unknown as ReplayState["dayState"];
+    const core = createCoreHarness({
+      initialReplay: replayState({ currentStep: nominationStep, dayState: initialDayState }),
+      replayAfterProposal: replayState({ currentStep: voteStep, dayState: votingDayState, eventCount: 2 }),
+      proposal: proposal(event("event-nomination", "1번 Ada가 4번 Dae를 지목", "day")),
+    });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    await user.click(await screen.findByRole("button", { name: "← 지명하기" }));
+    let seatMap = await screen.findByLabelText("라이브 마도서 좌석 맵");
+    await user.click(within(seatMap).getByRole("button", { name: /Ada/ }));
+    await user.click(within(seatMap).getByRole("button", { name: /Dae/ }));
+    await user.click(screen.getByRole("button", { name: "1번 → 4번 지명 확정" }));
+
+    const votePanel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
+    expect(within(votePanel).getByRole("heading", { name: "투표 집계" })).toBeTruthy();
+    expect(within(votePanel).getByText("1번 Ada → 4번 Dae")).toBeTruthy();
+    expect(within(votePanel).getByRole("button", { name: "0표로 투표 확정" })).toBeTruthy();
+    seatMap = screen.getByLabelText("라이브 마도서 좌석 맵");
+    expect(seatMap.closest(".issue116VoteMode")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "투표 취소 →" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "마도서 작업을 완료하세요" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(core.propose).toHaveBeenCalledTimes(1);
+  });
+
   test("blocks the Butler until the master votes and removes both when the master is cleared", async () => {
     const votingStep = step({
       id: "day:nomination:1:vote",

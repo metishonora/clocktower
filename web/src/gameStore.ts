@@ -320,7 +320,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   }
 
   async function confirmCurrentStep(confirmation: PhaseStepConfirmation = {}) {
-    await proposeCurrentStep("confirmStep", confirmation);
+    return proposeCurrentStep("confirmStep", confirmation);
   }
 
   async function useSlayerAbility(targetPlayerId: string, targetRegistration: import("./core/types").UseSlayerAbilityPayload["targetRegistration"]) {
@@ -397,7 +397,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     commandType: "confirmStep" | "skipStep",
     confirmation: PhaseStepConfirmation = {},
   ) {
-    if (!currentStep) return;
+    if (!currentStep) return undefined;
 
     setBusy(true);
     setLoadError(undefined);
@@ -433,6 +433,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
 
     setProposalResult(result);
     setBusy(false);
+    return result;
 
   }
 

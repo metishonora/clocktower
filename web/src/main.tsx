@@ -1106,7 +1106,19 @@ export function ClocktowerApp({
       setTroubleBrewingStage("play");
       return;
     }
-    await gameStore.confirmCurrentStep(phaseStepConfirmation(phaseInputStep, phaseInputDraft, nominationDraft));
+    const confirmed = await gameStore.confirmCurrentStep(
+      phaseStepConfirmation(phaseInputStep, phaseInputDraft, nominationDraft),
+    );
+    if (!confirmed?.ok) return;
+    if (
+      troubleBrewingHandoff === "nomination"
+      && phaseInputStep.requiredInput.kind === "nomination"
+    ) {
+      setNominationDraft((current) => ({ ...current, voterIds: [] }));
+      setTroubleBrewingHandoff("vote");
+      setTroubleBrewingStage("seating");
+      return;
+    }
     setTroubleBrewingHandoff(undefined);
     setTroubleBrewingStage("play");
   }
