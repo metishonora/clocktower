@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
-import type { AutomaticReminder, GameFile, Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
+import type { AutomaticReminder, GameFile, PhaseStep, Player, Proposal, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
 import type { GameStoreDependencies } from "./gameStore";
@@ -31,6 +31,7 @@ import {
 import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
 import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBrewingRevealScreen";
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
+import { troubleBrewingImpAttackPresentation } from "./features/trouble-brewing/impAttackPresentation";
 import { TroubleBrewingBugReportDialog } from "./features/bug-report/TroubleBrewingBugReportDialog";
 import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
 import { SlayerAbilityAction } from "./features/public-actions/SlayerAbilityDialog";
@@ -44,6 +45,7 @@ import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
 import {
   phaseStepConfirmation,
+  playerSelectionIsComplete,
   setupInfoSelectionIsComplete,
   stepInputReady,
   targetCheckForSelection,
@@ -363,6 +365,11 @@ type TroubleBrewingBugReportSnapshot = {
   environment: TroubleBrewingBugReportEnvironment;
   reproductionContext: TroubleBrewingBugReportContextInput;
   theme: "day" | "night";
+};
+
+type TroubleBrewingAttackCheckpoint = {
+  step: PhaseStep;
+  proposal: Proposal;
 };
 
 export function App(props: ClocktowerAppProps) {
@@ -841,6 +848,8 @@ export function ClocktowerApp({
   const [undoResetRevision, setUndoResetRevision] = useState(0);
   const [troubleBrewingStage, setTroubleBrewingStage] = useState<TroubleBrewingLiveStage>("play");
   const [troubleBrewingHandoff, setTroubleBrewingHandoff] = useState<TroubleBrewingLiveHandoff>();
+  const [troubleBrewingAttackCheckpoint, setTroubleBrewingAttackCheckpoint] = useState<TroubleBrewingAttackCheckpoint>();
+  const [troubleBrewingMayorBounceSelecting, setTroubleBrewingMayorBounceSelecting] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
   const [troubleBrewingBugReportSnapshot, setTroubleBrewingBugReportSnapshot] = useState<
@@ -902,6 +911,37 @@ export function ClocktowerApp({
         },
       }
     : undefined;
+  const troubleBrewingMayorPrompt = phaseInputStep?.requiredInput.kind === "playerIds"
+    ? phaseInputStep.requiredInput.mayorDecision
+    : undefined;
+  const troubleBrewingMayorTargeted = Boolean(
+    troubleBrewingMayorPrompt
+      && phaseInputDraft.selectedPlayerIds.includes(troubleBrewingMayorPrompt.mayorPlayerId),
+  );
+  const troubleBrewingMayorSelectionChoices = troubleBrewingMayorTargeted
+    && !troubleBrewingMayorBounceSelecting
+    ? {
+        label: "시장 공격 결과",
+        selectedId: phaseInputDraft.mayorDecision?.kind === "mayorDies" ? "mayorDies" : undefined,
+        options: [
+          { id: "mayorDies", label: "시장이 사망" },
+          { id: "bounce", label: "다른 플레이어가 대신 사망" },
+        ],
+        onChange: (id: string) => {
+          if (id === "mayorDies") {
+            setTroubleBrewingMayorBounceSelecting(false);
+            phaseInputDraft.setMayorDecision({ kind: "mayorDies" });
+          } else {
+            setTroubleBrewingMayorBounceSelecting(true);
+            phaseInputDraft.setMayorDecision(undefined);
+          }
+        },
+      }
+    : undefined;
+  const troubleBrewingEffectiveSelectionChoices = troubleBrewingMayorSelectionChoices
+    ?? troubleBrewingSelectionChoices;
+  const troubleBrewingMayorDecisionReady = !troubleBrewingMayorTargeted
+    || Boolean(phaseInputDraft.mayorDecision);
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
   const troubleBrewingVoteStepActive = Boolean(
@@ -917,27 +957,28 @@ export function ClocktowerApp({
             phaseInputDraft.selectedPlayerIds,
             gameStore.players,
           )
-      : stepInputReady(
-          phaseInputStep,
-          phaseInputDraft.selectedPlayerIds.length,
-          phaseInputDraft.selectedCharacterIds.length,
-          phaseInputDraft.selectedCharacterId,
-          nominationDraft,
-          phaseInputDraft.zeroOutsiders,
-          phaseInputDraft.selectedNumberChoice,
-          phaseInputDraft.zeroOutsidersAvailable,
-          phaseInputDraft.mayorDecision,
-          phaseInputDraft.selectedPlayerIds,
-          gameStore.players,
-        )
+      : phaseInputStep.requiredInput.kind === "playerIds"
+        ? playerSelectionIsComplete(phaseInputStep, phaseInputDraft.selectedPlayerIds)
+        : stepInputReady(
+            phaseInputStep,
+            phaseInputDraft.selectedPlayerIds.length,
+            phaseInputDraft.selectedCharacterIds.length,
+            phaseInputDraft.selectedCharacterId,
+            nominationDraft,
+            phaseInputDraft.zeroOutsiders,
+            phaseInputDraft.selectedNumberChoice,
+            phaseInputDraft.zeroOutsidersAvailable,
+            phaseInputDraft.mayorDecision,
+            phaseInputDraft.selectedPlayerIds,
+            gameStore.players,
+          )
     : false;
   const troubleBrewingSelectionReady = troubleBrewingBaseSelectionReady
-    && troubleBrewingTargetTreatmentReady;
+    && troubleBrewingTargetTreatmentReady
+    && troubleBrewingMayorDecisionReady;
   const troubleBrewingNeedsProgressConfirmation = Boolean(
     phaseInputStep?.requiredInput.kind === "playerIds"
-      && (phaseInputStep.informationPrompt
-        || (phaseInputStep.requiredInput.mayorDecision
-          && phaseInputDraft.selectedPlayerIds.includes(phaseInputStep.requiredInput.mayorDecision.mayorPlayerId))),
+      && phaseInputStep.informationPrompt,
   );
   const numberedPhase = gameStore.gameEnd
     ? undefined
@@ -983,6 +1024,12 @@ export function ClocktowerApp({
   const activeSlayerReveal = slayerReveal ?? (pendingSlayerDeathEvent?.type === "slayerAbilityUsed"
     ? { targetPlayerId: pendingSlayerDeathEvent.payload.targetPlayerId, died: true }
     : undefined);
+  const troubleBrewingAttackResult = troubleBrewingAttackCheckpoint
+    ? troubleBrewingImpAttackPresentation(troubleBrewingAttackCheckpoint.proposal, gameStore.players)
+    : undefined;
+  const troubleBrewingVisibleWarnings = gameStore.shownWarnings.filter(
+    (warning) => warning.code !== "NIGHT_DEATH_UNANNOUNCED",
+  );
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
@@ -1016,6 +1063,10 @@ export function ClocktowerApp({
     event.currentTarget.value = "";
     if (!file) return;
     await gameStore.importGameFile(await file.text());
+    setTroubleBrewingAttackCheckpoint(undefined);
+    setTroubleBrewingMayorBounceSelecting(false);
+    setTroubleBrewingHandoff(undefined);
+    setTroubleBrewingStage("play");
   }
 
   function showReveal(payload: RevealPayload) {
@@ -1044,6 +1095,8 @@ export function ClocktowerApp({
       setUndoResetRevision((current) => current + 1);
       setActiveRevealPayload(undefined);
       setSlayerReveal(undefined);
+      setTroubleBrewingAttackCheckpoint(undefined);
+      setTroubleBrewingMayorBounceSelecting(false);
     }
     queueMicrotask(() => liveUndoTriggerRef.current?.focus());
   }
@@ -1110,11 +1163,31 @@ export function ClocktowerApp({
       setTroubleBrewingStage("seating");
       return;
     }
+    setTroubleBrewingMayorBounceSelecting(false);
     setTroubleBrewingHandoff(handoff);
     setTroubleBrewingStage("seating");
   }
 
+  function toggleTroubleBrewingTargetPlayer(playerId: string) {
+    if (troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt) {
+      if (!troubleBrewingMayorPrompt.bounceTargetPlayerIds.includes(playerId)) return;
+      const selectedBounceTarget = phaseInputDraft.mayorDecision?.kind === "bounce"
+        ? phaseInputDraft.mayorDecision.targetPlayerId
+        : undefined;
+      phaseInputDraft.setMayorDecision(
+        selectedBounceTarget === playerId ? undefined : { kind: "bounce", targetPlayerId: playerId },
+      );
+      return;
+    }
+    setTroubleBrewingMayorBounceSelecting(false);
+    phaseInputDraft.togglePlayer(playerId);
+  }
+
   function resetTroubleBrewingSelection() {
+    if (troubleBrewingMayorBounceSelecting) {
+      phaseInputDraft.setMayorDecision(undefined);
+      return;
+    }
     if (troubleBrewingHandoff === "nomination") {
       setNominationDraft(emptyNominationDraft());
     } else if (troubleBrewingHandoff === "vote") {
@@ -1148,6 +1221,13 @@ export function ClocktowerApp({
       phaseStepConfirmation(phaseInputStep, phaseInputDraft, nominationDraft),
     );
     if (!confirmed?.ok) return;
+    setTroubleBrewingMayorBounceSelecting(false);
+    if (troubleBrewingImpAttackPresentation(confirmed.value, gameStore.players)) {
+      setTroubleBrewingAttackCheckpoint({ step: phaseInputStep, proposal: confirmed.value });
+      setTroubleBrewingHandoff("target");
+      setTroubleBrewingStage("seating");
+      return;
+    }
     if (
       troubleBrewingHandoff === "nomination"
       && phaseInputStep.requiredInput.kind === "nomination"
@@ -1162,9 +1242,40 @@ export function ClocktowerApp({
   }
 
   function cancelTroubleBrewingSelection() {
+    if (troubleBrewingMayorBounceSelecting) {
+      phaseInputDraft.setMayorDecision(undefined);
+      setTroubleBrewingMayorBounceSelecting(false);
+      return;
+    }
     resetTroubleBrewingSelection();
     setTroubleBrewingHandoff(undefined);
     setTroubleBrewingStage("play");
+  }
+
+  async function confirmTroubleBrewingProgress(
+    confirmation: Parameters<typeof gameStore.confirmCurrentStep>[0],
+  ) {
+    const confirmedStep = phaseInputStep;
+    const confirmed = await gameStore.confirmCurrentStep(confirmation);
+    if (
+      confirmed?.ok
+      && confirmedStep
+      && troubleBrewingImpAttackPresentation(confirmed.value, gameStore.players)
+    ) {
+      setTroubleBrewingMayorBounceSelecting(false);
+      setTroubleBrewingAttackCheckpoint({ step: confirmedStep, proposal: confirmed.value });
+      setTroubleBrewingHandoff("target");
+      setTroubleBrewingStage("seating");
+    }
+    return confirmed;
+  }
+
+  function finishTroubleBrewingAttackCheckpoint() {
+    setTroubleBrewingAttackCheckpoint(undefined);
+    setTroubleBrewingMayorBounceSelecting(false);
+    setTroubleBrewingHandoff(undefined);
+    setTroubleBrewingStage("play");
+    gameStore.clearProposalResult();
   }
 
   function openTroubleBrewingBugReport(
@@ -1260,7 +1371,7 @@ export function ClocktowerApp({
           theme={gameStore.phase === "day" ? "day" : "night"}
           busy={gameStore.busy}
           storageReady={gameStore.storageReady}
-          warnings={gameStore.shownWarnings}
+          warnings={troubleBrewingVisibleWarnings}
           loadError={gameStore.loadError}
           canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
           handoffActive={Boolean(troubleBrewingHandoff)}
@@ -1276,7 +1387,7 @@ export function ClocktowerApp({
           bugReportTriggerRef={troubleBrewingBugReportTriggerRef}
           grimoire={<TroubleBrewingLiveGrimoire
             players={gameStore.players}
-            currentStep={phaseInputStep}
+            currentStep={troubleBrewingAttackCheckpoint?.step ?? phaseInputStep}
             phaseLabel={livePhaseLabel}
             phaseRuntime={phaseRuntime ?? "00:00"}
             theme={gameStore.phase === "day" ? "day" : "night"}
@@ -1298,19 +1409,65 @@ export function ClocktowerApp({
                 : undefined
             }
             phasePlayerSelection={
-              troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "playerIds"
+              troubleBrewingAttackResult
+                ? {
+                    selectedPlayerIds: [troubleBrewingAttackResult.targetPlayerId],
+                    allowedPlayerIds: [troubleBrewingAttackResult.targetPlayerId],
+                    disabled: true,
+                    onTogglePlayer: () => undefined,
+                  }
+                : troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt
+                  ? {
+                      selectedPlayerIds: phaseInputDraft.mayorDecision?.kind === "bounce"
+                        ? [phaseInputDraft.mayorDecision.targetPlayerId]
+                        : [],
+                      allowedPlayerIds: troubleBrewingMayorPrompt.bounceTargetPlayerIds,
+                      disabled: gameStore.busy,
+                      onTogglePlayer: toggleTroubleBrewingTargetPlayer,
+                    }
+                : troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "playerIds"
                 ? {
                     selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
                     allowedPlayerIds: phaseInputStep.requiredInput.allowedPlayerIds,
                     disabled: gameStore.busy,
-                    onTogglePlayer: phaseInputDraft.togglePlayer,
+                    onTogglePlayer: toggleTroubleBrewingTargetPlayer,
                   }
                 : undefined
             }
             selectionChoices={troubleBrewingHandoff === "target"
-              ? troubleBrewingSelectionChoices
+              && !troubleBrewingAttackResult
+              && !troubleBrewingMayorBounceSelecting
+              ? troubleBrewingEffectiveSelectionChoices
               : undefined}
+            selectionPresentation={troubleBrewingAttackResult?.bounced
+              ? { selectedRole: "대신 사망", selectedStateClass: "tbSeatStateMayorBounce" }
+              : troubleBrewingMayorBounceSelecting
+                ? {
+                    title: "시장 능력",
+                    fieldLabel: "대신 사망 대상",
+                    selectedRole: "대신 사망",
+                    selectedStateClass: "tbSeatStateMayorBounce",
+                  }
+                : undefined}
+            seatMarkers={troubleBrewingAttackResult?.bounced
+              ? [{
+                  playerId: troubleBrewingAttackResult.attackTargetPlayerId,
+                  label: "공격 대상",
+                  className: "snvSeatStateTarget tbSeatStateAttack",
+                }]
+              : troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt
+                ? [{
+                    playerId: troubleBrewingMayorPrompt.mayorPlayerId,
+                    label: "공격 대상",
+                    className: "snvSeatStateTarget tbSeatStateAttack",
+                  }]
+                : undefined}
             selectionReady={troubleBrewingSelectionReady}
+            completedSelection={troubleBrewingAttackResult ? {
+              title: "악마 공격 결과",
+              summary: troubleBrewingAttackResult.summary,
+              onContinue: finishTroubleBrewingAttackCheckpoint,
+            } : undefined}
             onConfirmSelection={() => { void confirmTroubleBrewingSelection(); }}
             onResetSelection={resetTroubleBrewingSelection}
             onCancelSelection={cancelTroubleBrewingSelection}
@@ -1339,12 +1496,12 @@ export function ClocktowerApp({
             onShowPreActionReveal={showPreActionReveal}
             onShowReveal={showReveal}
             onContinue={gameStore.continueAfterConfirmedReveal}
-            onConfirm={gameStore.confirmCurrentStep}
+            onConfirm={confirmTroubleBrewingProgress}
             onSkip={gameStore.skipCurrentStep}
             onSuggest={gameStore.suggestPhaseInput}
             choiceTokenSource={choiceTokenSource}
             suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
-            warnings={gameStore.shownWarnings}
+            warnings={troubleBrewingVisibleWarnings}
             gameEnd={gameStore.gameEnd}
             onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
             onRequestUndoGameEnd={(trigger) => {
@@ -1391,6 +1548,8 @@ export function ClocktowerApp({
               <button type="button" onClick={() => setReturnConfirmOpen(false)}>취소</button>
               <button type="button" onClick={() => {
                 setReturnConfirmOpen(false);
+                setTroubleBrewingAttackCheckpoint(undefined);
+                setTroubleBrewingMayorBounceSelecting(false);
                 setTroubleBrewingHandoff(undefined);
                 setTroubleBrewingStage("seating");
                 gameStore.returnToConfirmedSetup();
@@ -1406,6 +1565,8 @@ export function ClocktowerApp({
               <button type="button" onClick={() => setNewGameConfirmOpen(false)}>취소</button>
               <button type="button" className="snvDestructiveAction" onClick={() => {
                 setNewGameConfirmOpen(false);
+                setTroubleBrewingAttackCheckpoint(undefined);
+                setTroubleBrewingMayorBounceSelecting(false);
                 setTroubleBrewingHandoff(undefined);
                 setTroubleBrewingStage("play");
                 gameStore.resetSetup();

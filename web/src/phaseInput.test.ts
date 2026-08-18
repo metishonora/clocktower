@@ -6,6 +6,7 @@ import {
   collapseNominationVotingSteps,
   currentActionPrompt,
   phaseStepConfirmation,
+  playerSelectionIsComplete,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
   setupInfoSelectablePlayerIds,
@@ -185,6 +186,7 @@ test("Mayor decision is required only when the Imp actually selects the Mayor", 
 
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["chef"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["mayor"]), false);
+  equal(playerSelectionIsComplete(step, ["mayor"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, { kind: "mayorDies" }, ["mayor"]), true);
   deepEqual(
     stepInputPayload(step, ["chef"], "", [], nominationDraft, false, { kind: "mayorDies" }),

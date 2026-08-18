@@ -2,7 +2,7 @@
 
 ## 목적과 판정 기준
 
-이 체크리스트는 Clocktower 앱이 공식 Trouble Brewing 규칙을 Storyteller 보조 도구로 올바르게 표현하는지 직접 확인하기 위한 것이다. 범위는 5~15명, Trouble Brewing 22직업, 기본 지명·투표·처형·밤 진행·승리 조건이다. Travellers, Fabled, 커스텀 스크립트와 전략 팁만으로 파생되는 조합은 제외한다.
+이 체크리스트는 Clocktower 앱이 공식 Trouble Brewing 규칙을 Storyteller 보조 도구로 올바르게 표현하는지 직접 확인하기 위한 것이다. 범위는 5~15명, Trouble Brewing 22직업, 기본 지명·투표·처형·밤 진행·승리 조건이다. Travellers, Fabled, 커스텀 스크립트와 전략 팁만으로 파생되는 조합은 제외한다. 중독된 첩자에게 보여 줄 임의의 거짓 마도서를 별도로 작성하는 편집 기능도 이번 구현 범위에서 제외한다. 중독된 첩자 공개는 현재 마도서 열람 흐름을 사용하며, Storyteller가 임의로 조작한 별도 마도서의 작성·저장은 자동화하지 않는다.
 
 규칙 판정은 [공식 Trouble Brewing Wiki](https://wiki.bloodontheclocktower.com/Trouble_Brewing), 각 직업 페이지의 `How to Run`, [공식 Glossary](https://wiki.bloodontheclocktower.com/Glossary) 순서로 확인한다. 공식 결과가 승리라 하더라도 앱은 자동으로 게임을 끝내지 않는다. 올바른 승리 경고를 표시한 뒤 Storyteller가 승리 팀을 명시적으로 확정하면 통과다.
 
@@ -78,6 +78,7 @@
 - [x] `INF-05` [spy-grimoire-reveal.json](../../fixtures/acceptance/trouble-brewing/spy-grimoire-reveal.json) — Spy reveal에 실제 직업과 필요한 상태만 표시되고 Storyteller 조작 화면 비밀이 새지 않는지 확인한다.
   - 표시: 1번은 `중독`, 4번은 `보호`, 6번은 사망 및 유령 투표 사용 상태로 보여야 한다.
   - 숨김: 이전 밤 대상인 2번의 중독과 3번의 보호, 7번의 수동 Script/System Tokens 및 Notes는 보이지 않아야 한다.
+  - 범위: 임의의 거짓 마도서를 작성하는 편집기는 검증 대상이 아니다. 중독된 첩자 전용 거짓 마도서 작성·저장은 이번 구현에서 의도적으로 생략한다.
 - [x] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 draft에서는 Butler를 먼저 선택하거나 Master를 나중에 해제할 수 있으며, 확정 시 Master가 빠져 있으면 Butler 표만 집계에서 자동 제외되는지 확인한다.
 
 ## 3. 밤 행동과 사망 후속 처리

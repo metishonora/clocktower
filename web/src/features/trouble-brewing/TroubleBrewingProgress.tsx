@@ -3,7 +3,7 @@ import { characterAsset } from "../../characterAssets";
 import { CharacterIcon } from "../../components/CharacterIcon";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
-import type { DeliveryReason, PhaseStep, Player, Proposal, RevealPayload } from "../../core/types";
+import type { DeliveryReason, PhaseStep, Player, RevealPayload } from "../../core/types";
 import { isSpyGrimoireRevealPayload } from "../../core/revealPayload";
 import { PlayPresentation } from "../../shared-ui/PlayPresentation";
 import { characterLabel, characters } from "../../setupDraft";
@@ -16,6 +16,7 @@ import {
 } from "../phase-control/acquiredAbilityPresentation";
 import { abilityPresentationForStep } from "../phase-control/actingRoleContext";
 import {
+  collapseExecutionResolutionSteps,
   collapseNominationVotingSteps,
   currentActionPrompt,
   phaseOverviewTitle,
@@ -67,8 +68,10 @@ export function TroubleBrewingProgress({
 }) {
   const currentOverviewItemRef = useRef<HTMLLIElement>(null);
   const visibleCurrentStep = control.pendingReveal?.step ?? control.currentStep;
-  const visiblePhaseOverview = collapseNominationVotingSteps(
-    phaseOverviewWithPendingReveal(control.phaseOverview, control.pendingReveal?.step),
+  const visiblePhaseOverview = collapseExecutionResolutionSteps(
+    collapseNominationVotingSteps(
+      phaseOverviewWithPendingReveal(control.phaseOverview, control.pendingReveal?.step),
+    ),
   );
 
   useEffect(() => {
@@ -126,7 +129,6 @@ function TroubleBrewingTask({
   players,
   dayState,
   ruleState,
-  latestProposal,
   nominationDraft,
   onNominationDraftChange,
   phaseInputDraft,
@@ -171,6 +173,18 @@ function TroubleBrewingTask({
   }, [pendingReveal, replayReady, onShowReveal]);
 
   if (pendingReveal) {
+    if (isCharacterChangeRevealPayload(pendingReveal.payload)) {
+      return <div className="tbProgressTaskColumn">
+        <TroubleBrewingCharacterChangeTask
+          payload={pendingReveal.payload}
+          players={players}
+          busy={busy}
+          preparing={!replayReady}
+          onReveal={() => onShowReveal(pendingReveal.payload)}
+          onContinue={onContinue}
+        />
+      </div>;
+    }
     if (isEvilInformationReveal(pendingReveal.payload)) {
       return <div className="tbProgressTaskColumn">
         <TroubleBrewingEvilInformationTask
@@ -222,15 +236,12 @@ function TroubleBrewingTask({
   }
 
   if (currentStep?.preActionReveal && preActionRevealPending) {
-    const player = players.find((candidate) => candidate.id === currentStep.preActionReveal?.playerId);
-    return <article className="snvCurrentStep tbCurrentTask" aria-label="직업 변경 안내">
-      <p className="snvCurrentStepLabel">먼저 안내할 플레이어</p>
-      <h3>새 임프 직업 변경 안내</h3>
-      <strong className="tbProgressPlayer tbProgressPlayerStandalone">{player ? `${player.seat}번 ${player.name}` : "새 임프"} · 임프</strong>
-      <div className="snvStepActions">
-        <button type="button" disabled={busy} onClick={onShowPreActionReveal}>플레이어에게 공개</button>
-      </div>
-    </article>;
+    return <TroubleBrewingCharacterChangeTask
+      payload={currentStep.preActionReveal}
+      players={players}
+      busy={busy}
+      onReveal={onShowPreActionReveal}
+    />;
   }
 
   if (gameEnd) {
@@ -352,9 +363,7 @@ function TroubleBrewingTask({
   );
   const needsProgressConfirmation = Boolean(
     currentStep?.requiredInput.kind === "playerIds"
-      && (currentStep.informationPrompt
-        || (currentStep.requiredInput.mayorDecision
-          && phaseInputDraft.selectedPlayerIds.includes(currentStep.requiredInput.mayorDecision.mayorPlayerId))),
+      && currentStep.informationPrompt,
   );
   const supportsInputSuggestion = Boolean(
     currentStep?.requiredInput.supportsRandomSuggestion
@@ -592,7 +601,9 @@ function TroubleBrewingTask({
                 onCharacterChange={phaseInputDraft.setSelectedCharacterId}
                 onZeroOutsidersChange={phaseInputDraft.setZeroOutsiders}
               /> : null}
-            </> : currentStep.requiredInput.kind === "nomination" || currentStep.requiredInput.kind === "nominationVote" ? null : <StepInputFields
+            </> : currentStep.requiredInput.kind === "nomination"
+              || currentStep.requiredInput.kind === "nominationVote"
+              || (currentStep.requiredInput.kind === "playerIds" && !currentStep.informationPrompt) ? null : <StepInputFields
               step={currentStep}
               players={players}
               dayState={dayState}
@@ -629,7 +640,6 @@ function TroubleBrewingTask({
               disabled={busy || suggesting}
               onClick={suggestCurrentInput}
             >{suggestionUsed ? "다시 추천" : "무작위 추천"}</button> : null}
-            {latestProposal?.event.type === "nightActionResolved" ? <ImpActionResult proposal={latestProposal} players={players} /> : null}
             {suggestionError ? <p className="randomSuggestionFailure" role="alert">{suggestionError}</p> : null}
           </div>
           <div className={`snvStepActions${currentStep.stepType === "nomination" ? " issue116NominationActions" : ""}`}>
@@ -764,6 +774,45 @@ function isEvilInformationReveal(payload: RevealPayload): payload is Extract<Rev
   kind: "minionInformation" | "demonInformation";
 }> {
   return "kind" in payload && (payload.kind === "minionInformation" || payload.kind === "demonInformation");
+}
+
+function isCharacterChangeRevealPayload(
+  payload: RevealPayload,
+): payload is Extract<RevealPayload, { kind: "characterChange" }> {
+  return "kind" in payload && payload.kind === "characterChange";
+}
+
+function TroubleBrewingCharacterChangeTask({
+  payload,
+  players,
+  busy,
+  preparing = false,
+  onReveal,
+  onContinue,
+}: {
+  payload: Extract<RevealPayload, { kind: "characterChange" }>;
+  players: Player[];
+  busy: boolean;
+  preparing?: boolean;
+  onReveal: () => void;
+  onContinue?: () => void;
+}) {
+  const player = players.find((candidate) => candidate.id === payload.playerId);
+  const character = characterLabel(payload.characterId);
+  const heading = payload.characterId === "imp" ? "새 임프 직업 변경 안내" : `${character} 직업 변경 안내`;
+
+  return <article className="snvCurrentStep tbCurrentTask issue116CurrentStep" role="region" aria-label="직업 변경 안내">
+    <p className="snvCurrentStepLabel">먼저 안내할 플레이어</p>
+    <h3>{heading}</h3>
+    <strong className="tbProgressPlayer tbProgressPlayerStandalone">
+      {player ? `${player.seat}번 ${player.name}` : "대상 플레이어"} · {character}
+    </strong>
+    <div className="snvStepActions">
+      <button type="button" disabled={busy || preparing} onClick={onReveal}>플레이어에게 공개</button>
+      {onContinue ? <button type="button" className="secondary" disabled={busy || preparing} onClick={onContinue}>다음 단계</button> : null}
+    </div>
+    {preparing ? <p className="tbProgressWaiting" role="status">직업 변경 준비 중</p> : null}
+  </article>;
 }
 
 function TroubleBrewingInformationFollowUp({
@@ -929,27 +978,6 @@ function ExecutionStanding({ players, dayState }: { players: Player[]; dayState:
     <strong>{candidate ? `${candidate.seat}번 ${candidate.name}` : "후보 없음"}</strong>
     <span>{dayState.executionCandidate?.voteCount ?? dayState.highestVoteCount}표</span>
   </div>;
-}
-
-function ImpActionResult({ proposal, players }: { proposal: Proposal; players: Player[] }) {
-  if (proposal.event.type !== "nightActionResolved" || proposal.event.payload.resolution.kind !== "impAttack") return null;
-  const resolution = proposal.event.payload.resolution;
-  const mayorContext = resolution.mayorContext ?? { kind: "notApplicable" as const };
-  const finalTargetId = resolution.outcome.kind === "death" || resolution.outcome.kind === "soldierProtected"
-    ? resolution.outcome.playerId
-    : mayorContext.kind === "bounced"
-      ? mayorContext.bounceTargetPlayerId
-      : resolution.targetPlayerId;
-  const target = players.find((player) => player.id === finalTargetId);
-  if (!target) return null;
-  const outcome = resolution.outcome.kind === "death"
-    ? "사망"
-    : resolution.outcome.kind === "prevented"
-      ? "수도승에 의해 보호됨"
-      : resolution.outcome.kind === "soldierProtected"
-        ? "군인 능력으로 생존"
-        : resolution.outcome.reason === "alreadyDead" ? "이미 사망" : "효과 없음";
-  return <p className="nightActionResult" aria-label="밤 행동 결과">{target.seat}번 {target.name} - {outcome}</p>;
 }
 
 function confirmationLabel(step: PhaseStep, nightDeathAnnouncement: boolean) {

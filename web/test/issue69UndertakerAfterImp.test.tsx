@@ -16,7 +16,7 @@ const players = {
 } as const;
 
 describe("issue #69 Undertaker progression after an Imp kill", () => {
-  test("keeps the night-death warning visible while the real WASM Undertaker Proposal and Reveal advance once", async () => {
+  test("keeps a successful Imp attack concise while the real WASM Undertaker Proposal and Reveal advance once", async () => {
     const game = await gameAtNight({ victimCharacter: "washerwoman", execute: true });
     const beforeAttackCount = game.game.events.length;
     const storage = new MemoryGameStorageDriver(game);
@@ -27,7 +27,10 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
     await confirmLivePlayerSelection(user, /Night Victim/);
 
-    expect((await screen.findAllByText("공개하지 않은 밤 사망이 있습니다.")).length).toBeGreaterThan(0);
+    const attackResult = await screen.findByLabelText("현재 마도서 작업");
+    expect(within(attackResult).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
+    expect(screen.queryByText("공개하지 않은 밤 사망이 있습니다.")).toBeNull();
+    await user.click(within(attackResult).getByRole("button", { name: "다음 →" }));
     expect(await screen.findByRole("heading", { name: "장의사: 1번 Undertaker" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 1);
     expect(screen.queryByText("코어 응답 형식이 올바르지 않습니다.")).toBeNull();
@@ -75,9 +78,12 @@ describe("issue #69 Undertaker progression after an Imp kill", () => {
     await screen.findByRole("heading", { name: "임프: 5번 Imp" });
     await confirmLivePlayerSelection(user, /Night Victim/);
 
+    const attackResult = await screen.findByLabelText("현재 마도서 작업");
+    expect(within(attackResult).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
+    await user.click(within(attackResult).getByRole("button", { name: "다음 →" }));
     expect(await screen.findByRole("heading", { name: "까마귀지기: 3번 Night Victim" })).toBeTruthy();
     await expectSavedEventCount(storage, beforeAttackCount + 1);
-    expect(screen.getAllByText("공개하지 않은 밤 사망이 있습니다.").length).toBeGreaterThan(0);
+    expect(screen.queryByText("공개하지 않은 밤 사망이 있습니다.")).toBeNull();
     await selectLivePlayers(user, /Imp/);
     await user.click(screen.getByRole("button", { name: "정보 공개" }));
 

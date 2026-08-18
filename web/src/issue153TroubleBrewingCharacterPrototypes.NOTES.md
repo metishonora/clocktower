@@ -399,9 +399,9 @@ ordinary daytime execution is committed.
 - Ordinary Grimoire inspection remains available after either result so the
   Storyteller can verify the Saint's death and, in the poisoned fixture, the
   existing poison state.
-- The Saint has no standalone UI to approve. Final acceptance is deferred to
-  an end-to-end production test of the real nomination, vote, execution, and
-  game-end pipeline.
+- The Saint has no standalone UI to approve. Production acceptance is covered
+  by `WIN-01` and `IMP-08`, which exercise the real nomination, vote,
+  execution, and game-end pipeline.
 
 ## Poisoner review route
 
@@ -436,9 +436,10 @@ Issue #152 locked live-Grimoire presentation.
   fixture through `중독 정보 공개`; the sample swaps two character
   identities and moves status information so truth and delivery are visibly
   distinct without exposing that distinction inside the player handoff.
-- The poisoned fixture settles the delivery boundary only. Production still
-  needs a dedicated way to prepare the arbitrary false Grimoire; this route
-  does not pretend that a full editor already exists.
+- The poisoned fixture settles the delivery boundary only. Issue #153
+  intentionally omits an editor for preparing and storing an arbitrary false
+  Grimoire for a poisoned Spy. Production keeps the ordinary Grimoire reveal
+  flow; the fixture is not a commitment to a separate false-Grimoire editor.
 
 ## Scarlet Woman review route
 
@@ -472,11 +473,11 @@ The Scarlet Woman (`탕녀`) uses the separate
 
 ## Rejected / deferred decisions
 
-- No character after the Scarlet Woman is included in these focused review surfaces;
-  those fixtures belong to later review passes.
-- No canonical event submission, session/store mutation, WASM call, or fake
-  night resolution is implemented.
-- No additional candidate/result variants, registration choices, or
-  Storyteller scheduling policy are invented for this pass.
+- An arbitrary false-Grimoire editor for a poisoned Spy is intentionally out
+  of scope for this implementation. The standard Trouble Brewing script can
+  produce that state, but it is uncommon enough that this pass does not add a
+  separate authoring and persistence workflow.
+- Prototype-only review controls do not submit canonical events, mutate the
+  production session/store, or replace production WASM resolution.
 - Korean terminology decisions outside this flow (`속임수/블러프`,
   `역할/직업`) remain deferred to the broader script review.

@@ -37,6 +37,13 @@ export type TroubleBrewingSelectionChoices = {
   onChange: (id: string) => void;
 };
 
+export type TroubleBrewingSelectionPresentation = {
+  title?: string;
+  fieldLabel?: string;
+  selectedRole?: string;
+  selectedStateClass?: string;
+};
+
 export type TroubleBrewingSeatMarker = {
   playerId: string;
   label: string;
@@ -65,6 +72,7 @@ export function TroubleBrewingLiveGrimoire({
   onCancelSelection,
   selectionReady,
   selectionChoices,
+  selectionPresentation,
   seatMarkers = [],
   completedSelection,
   revealMode,
@@ -109,6 +117,7 @@ export function TroubleBrewingLiveGrimoire({
   onCancelSelection?: () => void;
   selectionReady?: boolean;
   selectionChoices?: TroubleBrewingSelectionChoices;
+  selectionPresentation?: TroubleBrewingSelectionPresentation;
   seatMarkers?: TroubleBrewingSeatMarker[];
   completedSelection?: TroubleBrewingCompletedSelection;
   revealMode?: {
@@ -255,7 +264,7 @@ export function TroubleBrewingLiveGrimoire({
             && player.id === nominatorId
             && player.id === nomineeId;
           const seatMarker = seatMarkers.find((marker) => marker.playerId === player.id);
-          const targetRole = targetSelectionSeatLabel(currentStep);
+          const targetRole = selectionPresentation?.selectedRole ?? targetSelectionSeatLabel(currentStep);
           const selectionRole = handoff === "nomination"
             ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
             : handoff === "vote" && nominationVoting?.draft.voterIds.includes(player.id) ? "투표"
@@ -328,7 +337,7 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(presentation.displayedCharacterId)} character-${presentation.displayedCharacterId}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(presentation.displayedCharacterId)} character-${presentation.displayedCharacterId}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${selectionPresentation?.selectedStateClass ?? targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
             ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${additionalAutomaticTokenLabels.length ? `, ${additionalAutomaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
             disabled: gameEnded || selectionComplete || (selectionActive ? disabled : false),
@@ -382,6 +391,7 @@ export function TroubleBrewingLiveGrimoire({
         busy={busy}
         ready={Boolean(selectionReady)}
         selectionChoices={selectionChoices}
+        selectionPresentation={selectionPresentation}
         completedSelection={completedSelection}
         onReset={onResetSelection}
         onConfirm={onConfirmSelection}
@@ -428,6 +438,7 @@ function TroubleBrewingSelectionPanel({
   busy,
   ready,
   selectionChoices,
+  selectionPresentation,
   completedSelection,
   onReset,
   onConfirm,
@@ -443,6 +454,7 @@ function TroubleBrewingSelectionPanel({
   busy: boolean;
   ready: boolean;
   selectionChoices?: TroubleBrewingSelectionChoices;
+  selectionPresentation?: TroubleBrewingSelectionPresentation;
   completedSelection?: TroubleBrewingCompletedSelection;
   onReset?: () => void;
   onConfirm?: () => void;
@@ -462,7 +474,7 @@ function TroubleBrewingSelectionPanel({
   const targetLabel = target
     ? `${target.seat}번 ${target.name}${completedSelection ? ` · ${target.alive ? "생존" : "사망"}` : ""}`
     : "선택 전";
-  const title = completedSelection?.title ?? (handoff === "nomination"
+  const title = completedSelection?.title ?? selectionPresentation?.title ?? (handoff === "nomination"
     ? "지명 선택"
     : handoff === "vote"
       ? "투표 집계"
@@ -492,7 +504,7 @@ function TroubleBrewingSelectionPanel({
         <dt>{targetOrdinal(index)}</dt><dd>{playerLabel(selectedTarget)}</dd>
       </div>)}
     </dl> : <dl>
-      <div><dt>{targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
+      <div><dt>{selectionPresentation?.fieldLabel ?? targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
     {selectionChoices ? <fieldset className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment">
       <legend>{selectionChoices.label}</legend>

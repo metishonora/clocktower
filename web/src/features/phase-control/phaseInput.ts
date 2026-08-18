@@ -50,7 +50,7 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
   if (step.stepType === "nomination") return "지목 및 투표";
-  if (step.id.endsWith(":execution")) return "처형 확정";
+  if (step.id.endsWith(":execution")) return "처형";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   if (step.stepType === "slayerDeath") return player ? `처단자 결과: ${player.seat}번 ${player.name}` : "처단자 결과";
   return step.id;
@@ -70,6 +70,24 @@ export function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): Phase
   });
 }
 
+export function collapseExecutionResolutionSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const execution = steps.find((step) => step.requiredInput.kind === "executionDecision");
+  if (!execution) return steps;
+  const executionDeath = steps.find((step) => (
+    step.id === `${execution.id}Death`
+      && step.requiredInput.kind === "executionDeathDecision"
+  ));
+  if (!executionDeath) return steps;
+
+  const current = [execution, executionDeath].find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? executionDeath.status;
+  return steps.flatMap((step) => {
+    if (step.id === executionDeath.id) return [];
+    if (step.id === execution.id) return [{ ...step, status: combinedStatus }];
+    return [step];
+  });
+}
+
 function isNominationVotingStep(step: PhaseStep) {
   return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
 }
@@ -86,6 +104,9 @@ export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[], i
   }
   if (step.id.endsWith(":demonInfo")) {
     return includeSeats ? factionOverviewTitle("악마", "Demon", players) : "악마";
+  }
+  if (step.stepType === "demonSuccession") {
+    return stepTitle(step, player);
   }
   if (step.character) {
     const relation = abilityPresentationForStep(step, player);
@@ -256,6 +277,14 @@ function requiredSelectionValid(step: PhaseStep, selectedCount: number): boolean
 export function mayorDecisionApplies(step: PhaseStep, selectedPlayerIds: string[]): boolean {
   const prompt = step.requiredInput.mayorDecision;
   return Boolean(prompt && selectedPlayerIds.includes(prompt.mayorPlayerId));
+}
+
+export function playerSelectionIsComplete(step: PhaseStep, selectedPlayerIds: string[]): boolean {
+  const input = step.requiredInput;
+  if (input.kind !== "playerIds") return false;
+  if (!requiredSelectionValid(step, selectedPlayerIds.length)) return false;
+  return !input.allowedPlayerIds
+    || selectedPlayerIds.every((playerId) => input.allowedPlayerIds?.includes(playerId));
 }
 
 export function stepInputReady(
@@ -519,12 +548,16 @@ export function setupInfoZeroOutsidersAvailable(players: Player[], step?: PhaseS
   return players.every((player) => characterKind(player.actualCharacter) !== "Outsider");
 }
 
-export function setupInfoDeliveryIsImpaired(step: PhaseStep): boolean {
+export function informationDeliveryIsImpaired(step: PhaseStep): boolean {
   return Boolean(
     step.informationPrompt?.activeReasons.some(
       (reason) => reason.type === "drunk" || reason.type === "poisoned",
     ),
   );
+}
+
+export function setupInfoDeliveryIsImpaired(step: PhaseStep): boolean {
+  return informationDeliveryIsImpaired(step);
 }
 
 export function setupInfoRegistrationJudgments(

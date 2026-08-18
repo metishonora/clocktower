@@ -21,7 +21,6 @@ import {
   step,
 } from "./clocktowerAppHarness";
 import {
-  cancelCurrentLiveTargetSelection,
   confirmLivePlayerSelection,
   selectLivePlayers,
   startLiveTargetSelection,
@@ -147,7 +146,7 @@ describe("ongoing-night production UI", () => {
       expected: "5번 하린 - 사망",
       warning: undefined,
     },
-  ])("renders only the concise Imp outcome line: $expected", async ({ outcome, summary, expected, warning }) => {
+  ])("keeps the Imp outcome in the Grimoire until it is acknowledged: $expected", async ({ outcome, summary, expected, warning }) => {
     const playerRoster = koreanPlayers();
     const currentStep = ongoingStep(
       step({
@@ -179,10 +178,19 @@ describe("ongoing-night production UI", () => {
     const targetName = outcome.kind === "death" ? /하린/ : /서연/;
     await confirmLivePlayerSelection(user, targetName);
 
-    const actionResult = await screen.findByLabelText("밤 행동 결과");
-    expect(within(actionResult).getByText(expected)).toBeTruthy();
-    expect(within(actionResult).queryByText(summary)).toBeNull();
-    expect(within(actionResult).queryByText(/DEMON_ATTACK|ravenkeeperReveal|레이븐키퍼 후속|사망 없음/)).toBeNull();
+    const resultPanel = await screen.findByLabelText("현재 마도서 작업");
+    expect(within(resultPanel).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
+    expect(within(resultPanel).getByText(expected.replace(" - ", " · "))).toBeTruthy();
+    expect(within(resultPanel).queryByText(summary)).toBeNull();
+    expect(within(resultPanel).queryByText(/DEMON_ATTACK|ravenkeeperReveal|레이븐키퍼 후속|사망 없음/)).toBeNull();
+    expect(screen.queryByLabelText("밤 행동 결과")).toBeNull();
+    expect((within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "마도서 작업을 완료하세요" }) as HTMLButtonElement).disabled).toBe(true);
+
+    await user.click(within(resultPanel).getByRole("button", { name: "다음 →" }));
+
+    expect(await screen.findByRole("heading", { name: "초공감자: 2번 민준" })).toBeTruthy();
+    expect(screen.queryByLabelText("밤 행동 결과")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "악마 공격 결과" })).toBeNull();
   });
 
   test("freezes Grimoire editing after a Fortune Teller pair is confirmed and shows only the approved result/Reveal controls", async () => {
@@ -522,7 +530,6 @@ describe("ongoing-night production UI", () => {
       target: { files: [new File([JSON.stringify(importedFile)], "imported.json", { type: "application/json" })] },
     });
 
-    await cancelCurrentLiveTargetSelection(user);
     await screen.findByRole("heading", { name: "점쟁이: 1번 지우-새게임" });
     await startLiveTargetSelection(user);
     await waitFor(() => {

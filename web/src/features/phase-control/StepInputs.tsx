@@ -16,6 +16,7 @@ import { NominationVoteInput } from "../voting/NominationVoteInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import {
   characterInputOptions,
+  informationDeliveryIsImpaired,
   mayorDecisionApplies,
   setupInfoCharacterOptions,
   targetCheckForSelection,
@@ -348,23 +349,23 @@ function DemonSuccessionInput({
   }
   const allowedIds = prompt.allowedPlayerIds;
   return (
-    <div className="ruleDecisionInput" aria-label="새 임프 선택">
-      {allowedIds.flatMap((id) => {
-        const player = players.find((candidate) => candidate.id === id);
-        if (!player) return [];
-        const selected = selectedPlayerIds.includes(id);
-        return [(
-          <button
-            type="button"
-            className={selected ? "selected" : ""}
-            aria-pressed={selected}
-            disabled={busy}
-            onClick={() => onChange([id])}
-            key={id}
-          >{seatPlayerLabel(player)} → 임프</button>
-        )];
-      })}
-    </div>
+    <label className="snvInformationPairEditor tbDemonSuccessionEditor">
+      <span>새 임프</span>
+      <select
+        aria-label="새 임프"
+        value={selectedPlayerIds[0] ?? ""}
+        disabled={busy}
+        onChange={(event) => onChange(event.currentTarget.value ? [event.currentTarget.value] : [])}
+      >
+        <option value="">선택하세요</option>
+        {allowedIds.flatMap((id) => {
+          const player = players.find((candidate) => candidate.id === id);
+          return player
+            ? [<option value={id} key={id}>{seatPlayerLabel(player)} → 임프</option>]
+            : [];
+        })}
+      </select>
+    </label>
   );
 }
 
@@ -391,6 +392,16 @@ function TargetInformationDeliveryInput({
   const registrationTreatment = targetRegistrationTreatment(check);
   if (registrationTreatment || check.choices.length === 1) {
     return <TargetInformationResult choice={selected} />;
+  }
+  const characterChoices = check.choices.every((choice) => choice.result.kind === "character");
+  if (characterChoices && informationDeliveryIsImpaired(step)) {
+    return <CharacterInformationDeliveryInput
+      step={step}
+      check={check}
+      selectedChoice={selectedChoice}
+      busy={busy}
+      onChange={onChange}
+    />;
   }
   const booleanChoices = check.choices.every((choice) => choice.result.kind === "boolean");
   if (booleanChoices) {
@@ -436,6 +447,58 @@ function TargetInformationDeliveryInput({
       })}
     </div>
   );
+}
+
+function CharacterInformationDeliveryInput({
+  step,
+  check,
+  selectedChoice,
+  busy,
+  onChange,
+}: {
+  step: PhaseStep;
+  check: TargetCheck;
+  selectedChoice?: TargetCheck["choices"][number];
+  busy: boolean;
+  onChange: (choice: TargetCheck["choices"][number]) => void;
+}) {
+  const choices = check.choices.flatMap((choice) => (
+    choice.result.kind === "character" ? [{ choice, characterId: choice.result.characterId }] : []
+  ));
+  const selectedCharacterId = selectedChoice?.result.kind === "character"
+    ? selectedChoice.result.characterId
+    : "";
+  const inputId = `delivered-character-${step.id}`;
+
+  return <>
+    {check.computedResult.kind === "character" ? (
+      <dl className="snvInformationValues tbTargetInformationTruth" role="group" aria-label="정보 진실">
+        <div><dt>진실</dt><dd>{characterLabel(check.computedResult.characterId)}</dd></div>
+      </dl>
+    ) : null}
+    <dl className="snvInformationValues tbCharacterInformationEditor">
+      <div>
+        <dt><label htmlFor={inputId}>전달할 캐릭터</label></dt>
+        <dd>
+          <select
+            id={inputId}
+            aria-label="전달할 캐릭터"
+            value={selectedCharacterId}
+            disabled={busy}
+            onChange={(event) => {
+              const selected = choices.find(({ characterId }) => characterId === event.target.value);
+              if (selected) onChange(selected.choice);
+            }}
+          >
+            <option value="">선택하세요</option>
+            {choices.map(({ characterId }, index) => (
+              <option value={characterId} key={`${characterId}-${index}`}>{characterLabel(characterId)}</option>
+            ))}
+          </select>
+        </dd>
+      </div>
+    </dl>
+  </>;
 }
 
 function TargetInformationResult({ choice }: { choice?: TargetCheck["choices"][number] }) {

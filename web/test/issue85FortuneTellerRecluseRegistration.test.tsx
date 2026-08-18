@@ -246,16 +246,12 @@ describe("issue #85 Fortune Teller Recluse registration", () => {
     );
 
     expect(confirmImport).toHaveBeenCalled();
-    grimoire = await screen.findByLabelText("라이브 마도서 좌석 맵");
-    const input = grimoire;
-    expect(within(input).queryAllByRole("button", { pressed: true })).toHaveLength(0);
-    expect(within(screen.getByLabelText("현재 마도서 작업"))
-      .queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
-    await cancelCurrentLiveTargetSelection(user);
+    await screen.findByRole("heading", { name: /점쟁이:/ });
     expect(screen.queryByRole("group", { name: "이번 판정의 은둔자 취급" })).toBeNull();
     expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
 
     grimoire = await startLiveTargetSelection(user);
+    expect(within(grimoire).queryAllByRole("button", { pressed: true })).toHaveLength(0);
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 6/ }));
     await user.click(within(grimoire).getByRole("button", { name: /플레이어 3/ }));
     const selectionPanel = screen.getByLabelText("현재 마도서 작업");

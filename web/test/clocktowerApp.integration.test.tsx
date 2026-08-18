@@ -2076,6 +2076,112 @@ describe("ClocktowerApp live-play integration", () => {
     });
   });
 
+  test("confirms a voted execution and its certain death with one visible action", async () => {
+    const executionStep = step({
+      id: "day2:execution",
+      kind: "executionDecision",
+      stepType: "execution",
+      phase: "day",
+    });
+    const executionDeathStep = step({
+      id: "day2:executionDeath",
+      playerId: "player-5",
+      kind: "executionDeathDecision",
+      stepType: "executionDeath",
+      phase: "day",
+    });
+    const toNightStep = step({
+      id: "day2:toNight",
+      kind: "night",
+      stepType: "phaseTransition",
+      phase: "day",
+    });
+    const dayState = {
+      nominations: [],
+      eligibleNominatorIds: players().map(({ id }) => id),
+      eligibleNomineeIds: players().map(({ id }) => id),
+      executionVoteThreshold: 2,
+      highestVoteCount: 4,
+      executionCandidate: { nomineeId: "player-5", voteCount: 4 },
+    };
+    const executionReplay = replayState({ currentStep: executionStep, dayState });
+    const deathReplay = replayState({ currentStep: executionDeathStep, dayState, eventCount: 2 });
+    const nightReplay = replayState({ currentStep: toNightStep, dayState, eventCount: 3 });
+    const executionEvent = {
+      id: "execution-2",
+      type: "executionConfirmed",
+      phase: "day",
+      payload: {
+        stepId: "day2:execution",
+        input: { execute: true, playerId: "player-5" },
+      },
+      summary: "처형 확정: 5번 Eun(임프)",
+      createdAt: "2026-08-18T02:35:41.000Z",
+    } as GameFile["game"]["events"][number];
+    const deathEvent = {
+      id: "execution-death-3",
+      type: "deathConfirmed",
+      phase: "day",
+      payload: { playerId: "player-5", stepId: "day2:executionDeath" },
+      summary: "사망 확정: 5번 Eun(임프)",
+      createdAt: "2026-08-18T02:35:42.000Z",
+    } as GameFile["game"]["events"][number];
+    const core = createCoreHarness({
+      initialReplay: executionReplay,
+      replayAfterProposal: deathReplay,
+      proposal: proposal(executionEvent),
+    });
+    vi.mocked(core.replay).mockImplementation(async (file) => ({
+      ok: true,
+      value: file.game.events.length >= 3
+        ? nightReplay
+        : file.game.events.length >= 2
+          ? deathReplay
+          : executionReplay,
+    }));
+    vi.mocked(core.propose)
+      .mockResolvedValueOnce({ ok: true, value: proposal(executionEvent) })
+      .mockResolvedValueOnce({ ok: true, value: proposal(deathEvent) });
+    const user = userEvent.setup();
+
+    render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+    const currentAction = await screen.findByRole("region", { name: "현재 단계" });
+    expect(within(currentAction).getByText("5번 Eun")).toBeTruthy();
+    await user.click(within(currentAction).getByRole("button", { name: "확정" }));
+
+    await screen.findByRole("heading", { name: "밤 시작" });
+    expect(screen.queryByRole("heading", { name: "처형 결과: 5번 Eun" })).toBeNull();
+    expect(core.propose).toHaveBeenNthCalledWith(1, expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "day2:execution",
+        input: { execute: true },
+      },
+    });
+    expect(core.propose).toHaveBeenNthCalledWith(2, expect.any(Object), {
+      type: "confirmStep",
+      payload: {
+        stepId: "day2:executionDeath",
+        input: { died: true },
+      },
+    });
+
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect((undo as HTMLButtonElement).disabled).toBe(false));
+    await user.click(undo);
+    const undoDialog = screen.getByRole("dialog", { name: "Undo" });
+    expect(within(undoDialog).getByText(executionEvent.summary)).toBeTruthy();
+    expect(within(undoDialog).getByText(deathEvent.summary)).toBeTruthy();
+    await user.click(within(undoDialog).getByRole("button", { name: "되돌리기" }));
+
+    const restoredAction = await screen.findByRole("region", { name: "현재 단계" });
+    expect(within(restoredAction).getByText("5번 Eun")).toBeTruthy();
+    expect(within(restoredAction).getByRole("button", { name: "확정" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "처형 결과: 5번 Eun" })).toBeNull();
+    expect(vi.mocked(core.replay).mock.calls.at(-1)?.[0].game.events).toHaveLength(1);
+  });
+
   test("offers only each core-derived nomination role list while preserving self-selection", async () => {
     const votingStep = step({
       id: "day:nomination:2",
@@ -2368,7 +2474,14 @@ describe("ClocktowerApp live-play integration", () => {
       .mockResolvedValueOnce({ ok: true, value: proposal(slayerEvent) })
       .mockResolvedValueOnce({
         ok: true,
-        value: proposal(event("event-slayer-death", "3번 Cy 사망", "day")),
+        value: proposal({
+          id: "event-slayer-death",
+          type: "deathConfirmed",
+          phase: "day",
+          payload: { stepId: "day:discussion:slayerDeath", playerId: "player-3" },
+          summary: "3번 Cy 사망",
+          createdAt: "2026-07-14T00:01:01.000Z",
+        }),
       });
     const user = userEvent.setup();
 
@@ -2400,6 +2513,21 @@ describe("ClocktowerApp live-play integration", () => {
       payload: expect.objectContaining({ input: { died: true } }),
     }));
     expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
+
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect((undo as HTMLButtonElement).disabled).toBe(false));
+    await user.click(undo);
+    const undoDialog = screen.getByRole("dialog", { name: "Undo" });
+    expect(within(undoDialog).getByText(slayerEvent.summary)).toBeTruthy();
+    expect(within(undoDialog).getByText("3번 Cy 사망")).toBeTruthy();
+    await user.click(within(undoDialog).getByRole("button", { name: "되돌리기" }));
+
+    await screen.findByRole("heading", { name: "토론" });
+    expect(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" })).toBeTruthy();
+    await waitFor(() => expect(core.replay).toHaveBeenCalledWith(expect.objectContaining({
+      game: expect.objectContaining({ events: expect.arrayContaining([expect.objectContaining({ id: "event-setup" })]) }),
+    })));
+    expect(vi.mocked(core.replay).mock.calls.at(-1)?.[0].game.events).toHaveLength(1);
   });
 
   test("keeps the Slayer free action available while a nomination is being selected", async () => {
@@ -2537,6 +2665,17 @@ describe("ClocktowerApp live-play integration", () => {
     expect(core.propose).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText("처단자 능력 결과")).toBeNull();
     expect(screen.queryByLabelText("사용 가능한 낮 자유 행동")).toBeNull();
+
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await waitFor(() => expect((undo as HTMLButtonElement).disabled).toBe(false));
+    await user.click(undo);
+    const undoDialog = screen.getByRole("dialog", { name: "Undo" });
+    expect(within(undoDialog).getByText(slayerEvent.summary)).toBeTruthy();
+    await user.click(within(undoDialog).getByRole("button", { name: "되돌리기" }));
+
+    await screen.findByRole("heading", { name: "토론" });
+    expect(screen.getByRole("button", { name: "처단자 행동 열기, 1번 Ada" })).toBeTruthy();
+    expect(vi.mocked(core.replay).mock.calls.at(-1)?.[0].game.events).toHaveLength(1);
   });
 });
 

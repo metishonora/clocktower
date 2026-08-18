@@ -393,6 +393,26 @@ fn monk_prevented_imp_attack_has_stable_warning_and_operational_summary() {
         proposal["value"]["event"]["summary"],
         "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (수도사 보호)"
     );
+
+    let replayed = replay_with_event(&game, proposal["value"]["event"].clone());
+    assert_eq!(
+        replayed["ok"], true,
+        "confirmed event failed replay as {replayed}"
+    );
+    assert_ne!(
+        replayed["value"]["currentStep"]["id"], "night:imp",
+        "a prevented attack must still complete the Imp step: {replayed}"
+    );
+    assert_eq!(
+        replayed["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|step| step["id"] == "night:imp")
+            .count(),
+        1,
+        "the prevented attack created a duplicate Imp phase: {replayed}"
+    );
 }
 
 #[test]

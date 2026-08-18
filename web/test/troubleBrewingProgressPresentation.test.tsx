@@ -306,6 +306,47 @@ test("collapses every completed and current nomination round into one phase entr
   expect(within(phaseOrder).queryByText(/지목 및 투표 \d/)).toBeNull();
 });
 
+test("collapses execution confirmation and its death result into one phase entry", () => {
+  const execution = step({
+    id: "day1:execution",
+    phase: "day",
+    stepType: "execution",
+    requiredInput: { kind: "executionDecision", optional: false },
+  });
+  const executionDeath = step({
+    id: "day1:executionDeath",
+    phase: "day",
+    stepType: "executionDeath",
+    playerId: "player-7",
+    requiredInput: { kind: "executionDeathDecision", optional: false },
+  });
+  const toNight = step({
+    id: "day1:toNight",
+    phase: "day",
+    stepType: "phaseTransition",
+    requiredInput: { kind: "night", optional: false },
+  });
+
+  renderProgress(execution, [
+    overview(execution, "current"),
+    overview(executionDeath, "waiting"),
+    overview(toNight, "waiting"),
+  ], {
+    nominations: [],
+    eligibleNominatorIds: players.map(({ id }) => id),
+    eligibleNomineeIds: players.map(({ id }) => id),
+    executionVoteThreshold: 2,
+    highestVoteCount: 4,
+    executionCandidate: { nomineeId: "player-7", voteCount: 4 },
+  });
+
+  const phaseOrder = screen.getByRole("list", { name: "1일차 낮 순서" });
+  expect(within(phaseOrder).getAllByText("처형", { exact: true })).toHaveLength(1);
+  expect(within(phaseOrder).queryByText("처형 확정", { exact: true })).toBeNull();
+  expect(within(phaseOrder).queryByText("처형 결과", { exact: true })).toBeNull();
+  expect(phaseOrder.querySelectorAll("li")).toHaveLength(2);
+});
+
 test("uses the S&V evil-information task shape and Reveal action for Demon bluffs", () => {
   const demonInformation = step({
     id: "firstNight:demonInfo",
@@ -577,6 +618,80 @@ test("keeps the drunk identity hierarchy in the Washerwoman Reveal follow-up", (
   expect(within(task).queryByText("실제 주정뱅이")).toBeNull();
   expect(within(task).getByRole("button", { name: "취한 정보 공개" })).toBeTruthy();
   expect(within(task).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+});
+
+test.each([
+  {
+    status: "중독",
+    reason: { type: "poisoned" as const, poisonerPlayerId: "player-4", poisonEventId: "poison-1" },
+    revealLabel: "중독 정보 공개",
+    influenceClass: "poisoned",
+  },
+  {
+    status: "취함",
+    reason: { type: "drunk" as const },
+    revealLabel: "취한 정보 공개",
+    influenceClass: "drunk",
+  },
+])("uses the S&V character dropdown for a $status Undertaker", async ({ reason, revealLabel, influenceClass }) => {
+  const user = userEvent.setup();
+  const onConfirm = vi.fn();
+  const truthChoice = {
+    result: { kind: "character" as const, characterId: "spy" },
+    isComputed: true,
+    registrationJudgments: [],
+  };
+  const deliveredChoice = {
+    result: { kind: "character" as const, characterId: "saint" },
+    isComputed: false,
+    registrationJudgments: [],
+  };
+  const undertaker = step({
+    id: "night1:undertaker",
+    phase: "night",
+    character: "undertaker",
+    playerId: "player-1",
+    requiredInput: { kind: "none", optional: false },
+    informationPrompt: {
+      ...informationPrompt([reason]),
+      computedResult: truthChoice.result,
+      targetChecks: [{
+        targetPlayerIds: ["player-7"],
+        computedResult: truthChoice.result,
+        choices: [truthChoice, deliveredChoice],
+      }],
+    },
+  });
+  const initialDraft = emptyPhaseInputDraft();
+  const view = renderProgress(undertaker, [overview(undertaker, "current")], undefined, {
+    phaseInputDraft: initialDraft,
+    onConfirm,
+  });
+
+  const task = screen.getByRole("region", { name: "현재 단계" });
+  expect(within(task).queryByLabelText("전달 정보")).toBeNull();
+  expect(within(task).queryByRole("button", { name: "첩자" })).toBeNull();
+  expect(within(task).queryByRole("button", { name: "성자" })).toBeNull();
+  expect(within(task).getByRole("group", { name: "정보 진실" }).textContent).toContain("첩자");
+  const select = within(task).getByRole("combobox", { name: "전달할 캐릭터" }) as HTMLSelectElement;
+  expect(select.value).toBe("");
+  expect(Array.from(select.options, ({ text }) => text)).toEqual(["선택하세요", "첩자", "성자"]);
+  const initialReveal = within(task).getByRole("button", { name: revealLabel });
+  expect(initialReveal.classList.contains(influenceClass)).toBe(true);
+  expect((initialReveal as HTMLButtonElement).disabled).toBe(true);
+
+  await user.selectOptions(select, "saint");
+  expect(initialDraft.setSelectedTargetChoice).toHaveBeenCalledWith(deliveredChoice);
+
+  view.rerender(progress(undertaker, [overview(undertaker, "current")], undefined, {
+    phaseInputDraft: { ...emptyPhaseInputDraft(), selectedTargetChoice: deliveredChoice },
+    onConfirm,
+  }));
+  await user.click(screen.getByRole("button", { name: revealLabel }));
+  expect(onConfirm).toHaveBeenCalledWith({
+    input: null,
+    deliveredResult: { kind: "character", characterId: "saint" },
+  });
 });
 
 test("keeps the Washerwoman information context visible and locked after a poisoned Reveal", () => {

@@ -320,7 +320,71 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   }
 
   async function confirmCurrentStep(confirmation: PhaseStepConfirmation = {}) {
+    if (currentStep?.requiredInput.kind === "executionDecision") {
+      return confirmExecutionResolution(confirmation);
+    }
     return proposeCurrentStep("confirmStep", confirmation);
+  }
+
+  async function confirmExecutionResolution(
+    confirmation: PhaseStepConfirmation,
+  ): Promise<CoreResult<Proposal> | undefined> {
+    if (!currentStep) return undefined;
+
+    setBusy(true);
+    setLoadError(undefined);
+
+    const execution = await canonicalSession.execute(gameFile, replayState, {
+      type: "confirmStep",
+      payload: {
+        stepId: currentStep.id,
+        input: confirmation.input ?? null,
+        ...(confirmation.deliveredResult
+          ? { deliveredResult: confirmation.deliveredResult }
+          : {}),
+        ...(confirmation.registrationJudgments
+          ? { registrationJudgments: confirmation.registrationJudgments }
+          : {}),
+      },
+    });
+    if (!execution.ok) {
+      const result: CoreResult<Proposal> = { ok: false, error: execution.error };
+      setProposalResult(result);
+      setBusy(false);
+      return result;
+    }
+
+    let committed = execution.value;
+    const executionDeath = execution.value.replayState.currentStep;
+    if (executionDeath?.requiredInput.kind === "executionDeathDecision") {
+      const death = await canonicalSession.execute(
+        execution.value.gameFile,
+        execution.value.replayState,
+        {
+          type: "confirmStep",
+          payload: {
+            stepId: executionDeath.id,
+            input: { died: true },
+          },
+        },
+      );
+      if (!death.ok) {
+        setReplayResult({ ok: true, value: execution.value.replayState });
+        setGameFile(execution.value.gameFile);
+        const result: CoreResult<Proposal> = { ok: false, error: death.error };
+        setProposalResult(result);
+        setBusy(false);
+        return result;
+      }
+      committed = death.value;
+    }
+
+    setReplayResult({ ok: true, value: committed.replayState });
+    setGameFile(committed.gameFile);
+    const result: CoreResult<Proposal> = { ok: true, value: committed.proposal };
+    setProposalResult(result);
+    setBusy(false);
+    return result;
   }
 
   async function useSlayerAbility(targetPlayerId: string, targetRegistration: import("./core/types").UseSlayerAbilityPayload["targetRegistration"]) {
