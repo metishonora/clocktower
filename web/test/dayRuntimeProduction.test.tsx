@@ -147,9 +147,11 @@ test("hides the runtime in full-screen Reveal and preserves elapsed wall-clock t
   now += 3 * 60_000;
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   await user.click(screen.getByRole("button", { name: "확정" }));
-  const followup = await screen.findByLabelText("확정된 Reveal 후속 조치");
+  const informationTask = await screen.findByRole("region", { name: "요리사 정보" });
+  expect(screen.queryByLabelText("확정된 Reveal 후속 조치")).toBeNull();
   expect(screen.getByLabelText("2일차 낮 경과 시간 03:00")).toBeTruthy();
-  await user.click(within(followup).getByRole("button", { name: "플레이어에게 공개" }));
+  expect(within(informationTask).getByRole("button", { name: "다음 단계" })).toBeTruthy();
+  await user.click(within(informationTask).getByRole("button", { name: "정보 공개" }));
   const reveal = screen.getByLabelText("플레이어 공개 화면");
   expect(within(reveal).queryByLabelText(/경과 시간/)).toBeNull();
 

@@ -77,7 +77,7 @@ export function TroubleBrewingGrimoireAssignment({
             : undefined;
           const identityLabel = assignedCharacter
             ? assignedCharacter.id === "drunk"
-              ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
+              ? `실제 ${assignedCharacter.label}, 표시 ${shownCharacter?.label ?? "미선택"}`
               : assignedCharacter.label
             : "미할당";
           return {
@@ -93,17 +93,15 @@ export function TroubleBrewingGrimoireAssignment({
               {assignedCharacter && characterAsset(assignedCharacter.id) ? <img src={characterAsset(assignedCharacter.id)?.src} alt="" /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
               <small>{assignedCharacter?.label ?? "미할당"}</small>
-              {assignedCharacter?.id === "drunk" ? (
-                <span
-                  className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
-                  role="img"
-                  aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
-                >
-                  {shownCharacter && characterAsset(shownCharacter.id)
-                    ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
-                    : <span aria-hidden="true">?</span>}
-                </span>
-              ) : null}
+              {assignedCharacter?.id === "drunk" ? <span
+                className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
+                role="img"
+                aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
+              >
+                {shownCharacter && characterAsset(shownCharacter.id)
+                  ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
+                  : <span aria-hidden="true">?</span>}
+              </span> : null}
             </>,
           };
         })}

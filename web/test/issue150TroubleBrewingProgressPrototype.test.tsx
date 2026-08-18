@@ -70,7 +70,9 @@ test("reviews the four TB Reveal content families in the S&V presentation", asyn
   await user.click(within(screen.getByLabelText("첩자 마도서 정보")).getByRole("button", { name: "마도서 공개" }));
   const spyReveal = screen.getByRole("main", { name: "첩자 마도서 공개" });
   expect(within(spyReveal).getByRole("region", { name: "Trouble Brewing 첩자 마도서" })).toBeTruthy();
-  expect(within(spyReveal).getByText("주정뱅이")).toBeTruthy();
+  const drunkSeat = within(spyReveal).getByRole("article", { name: /실제 주정뱅이, 표시 시장/ });
+  expect(within(drunkSeat).getByText("시장", { exact: true })).toBeTruthy();
+  expect(within(drunkSeat).queryByText("주정뱅이", { exact: true })).toBeNull();
   await user.click(within(spyReveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
   expect(screen.queryByRole("main", { name: "첩자 마도서 공개" })).toBeNull();
 });

@@ -1,4 +1,6 @@
 import { characterAsset } from "../../characterAssets";
+import { troubleBrewingCharacterDetail } from "../../characterDetails";
+import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import { RoleCatalog, SetupPresentation } from "../../shared-ui/SetupPresentation";
 import {
   characterKinds,
@@ -88,7 +90,7 @@ export function TroubleBrewingSetupPresentation({
           label: kindLabels[kind],
           selectedCount: selectedByKind[kind],
           requiredCount: requiredByKind[kind],
-          roles: characters.filter((candidate) => candidate.kind === kind && candidate.id !== "imp").map((candidate) => {
+          roles: characters.filter((candidate) => candidate.kind === kind).map((candidate) => {
             const selected = selectedIds.includes(candidate.id);
             const capacityReached = !selected && selectedByKind[kind] >= requiredByKind[kind];
             return {
@@ -107,14 +109,18 @@ export function TroubleBrewingSetupPresentation({
         </>}
       />}
       detail={<aside className="snvRoleDetail fixed floatingAction tbRoleDetail" aria-label="직업 설명">
-        <div className="snvRoleDetailIdentity tbRoleIdentity">
+        <CharacterDetailButton
+          details={troubleBrewingCharacterDetail(activeCharacter.id)}
+          className="snvRoleDetailIdentity tbRoleIdentity"
+          theme="tb-night"
+        >
           {asset ? <img className="snvRoleDetailIcon" src={asset.src} alt={`${activeCharacter.label} 공식 캐릭터 아이콘`} /> : null}
           <div className="snvRoleDetailCopy">
             <div><span>{kindLabels[activeCharacter.kind]}</span></div>
             <h2>{activeCharacter.label}</h2>
             <p>{activeCharacter.abilitySummary}</p>
           </div>
-        </div>
+        </CharacterDetailButton>
         <div className="snvRoleDetailActions">
           <button
             type="button"

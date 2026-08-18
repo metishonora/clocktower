@@ -46,16 +46,18 @@ fn replay_exposes_the_current_days_butler_master() {
 }
 
 #[test]
-fn healthy_living_butler_requires_the_master_in_new_vote_commands() {
+fn healthy_living_butler_vote_without_master_is_omitted_on_confirmation() {
     let game = game_at_vote(Some("player-1"), ButlerCondition::Healthy);
 
     let without_master = confirm_vote(&game, &["player-2", "player-3"]);
-    assert_eq!(without_master["ok"], false);
     assert_eq!(
-        without_master["error"]["code"],
-        "BUTLER_MASTER_VOTE_REQUIRED"
+        without_master["ok"], true,
+        "vote failed as {without_master:#}"
     );
-    assert!(without_master.get("value").is_none());
+    assert_eq!(
+        without_master["value"]["event"]["payload"]["voterIds"],
+        json!(["player-3"])
+    );
 
     let with_master = confirm_vote(&game, &["player-1", "player-2"]);
     assert_eq!(with_master["ok"], true, "vote failed as {with_master:#}");
@@ -66,7 +68,7 @@ fn healthy_living_butler_requires_the_master_in_new_vote_commands() {
 }
 
 #[test]
-fn skipped_butler_master_disables_new_butler_votes() {
+fn skipped_butler_master_causes_the_butler_vote_to_be_omitted() {
     let game = game_at_vote(None, ButlerCondition::Healthy);
     let replay: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
     assert_eq!(
@@ -78,8 +80,8 @@ fn skipped_butler_master_disables_new_butler_votes() {
     );
 
     let vote = confirm_vote(&game, &["player-2"]);
-    assert_eq!(vote["ok"], false);
-    assert_eq!(vote["error"]["code"], "BUTLER_MASTER_VOTE_REQUIRED");
+    assert_eq!(vote["ok"], true, "vote failed as {vote:#}");
+    assert_eq!(vote["value"]["event"]["payload"]["voterIds"], json!([]));
 }
 
 #[test]
@@ -189,8 +191,8 @@ fn manual_poison_annotation_does_not_disable_the_butler_rule() {
         true
     );
     let vote = confirm_vote(&game, &["player-2"]);
-    assert_eq!(vote["ok"], false);
-    assert_eq!(vote["error"]["code"], "BUTLER_MASTER_VOTE_REQUIRED");
+    assert_eq!(vote["ok"], true, "vote failed as {vote:#}");
+    assert_eq!(vote["value"]["event"]["payload"]["voterIds"], json!([]));
 }
 
 #[test]
@@ -206,8 +208,8 @@ fn legacy_self_master_replays_as_missing_and_cannot_authorize_a_new_vote() {
         })
     );
     let vote = confirm_vote(&game, &["player-2"]);
-    assert_eq!(vote["ok"], false);
-    assert_eq!(vote["error"]["code"], "BUTLER_MASTER_VOTE_REQUIRED");
+    assert_eq!(vote["ok"], true, "vote failed as {vote:#}");
+    assert_eq!(vote["value"]["event"]["payload"]["voterIds"], json!([]));
 }
 
 #[derive(Clone, Copy)]

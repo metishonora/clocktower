@@ -18,9 +18,37 @@ import { PlayerTokenCountBadge, PlayerTokenDetailDialog } from "../grimoire/play
 import { currentActionPrompt } from "../phase-control/phaseInput";
 import type { NominationDraft } from "../voting/useNominationDraft";
 import { troubleBrewingPlayerTokens } from "./troubleBrewingPlayerTokenPresentation";
+import { troubleBrewingSeatPresentation } from "./troubleBrewingSeatPresentation";
 import "../grimoire/sectsAndVioletsSeatStates.css";
 
 export type TroubleBrewingLiveHandoff = "target" | "nomination" | "vote";
+
+export type TroubleBrewingCompletedSelection = {
+  title: string;
+  actionLabel?: string;
+  summary?: Array<{ label: string; value: string }>;
+  onContinue: () => void;
+};
+
+export type TroubleBrewingSelectionChoices = {
+  label: string;
+  selectedId?: string;
+  options: Array<{ id: string; label: string; className?: string; ariaLabel?: string }>;
+  onChange: (id: string) => void;
+};
+
+export type TroubleBrewingSelectionPresentation = {
+  title?: string;
+  fieldLabel?: string;
+  selectedRole?: string;
+  selectedStateClass?: string;
+};
+
+export type TroubleBrewingSeatMarker = {
+  playerId: string;
+  label: string;
+  className: string;
+};
 
 export function TroubleBrewingLiveGrimoire({
   players,
@@ -43,9 +71,14 @@ export function TroubleBrewingLiveGrimoire({
   onResetSelection,
   onCancelSelection,
   selectionReady,
+  selectionChoices,
+  selectionPresentation,
+  seatMarkers = [],
+  completedSelection,
   revealMode,
   interactionLocked = false,
   progressActionLabel = "진행 →",
+  progressActionDisabled = false,
 }: {
   players: Player[];
   currentStep?: PhaseStep;
@@ -62,6 +95,7 @@ export function TroubleBrewingLiveGrimoire({
   };
   setupInformationSelection?: {
     selectedPlayerIds: string[];
+    allowedPlayerIds?: string[];
     disabled: boolean;
     onTogglePlayer: (playerId: string) => void;
   };
@@ -82,12 +116,17 @@ export function TroubleBrewingLiveGrimoire({
   onResetSelection?: () => void;
   onCancelSelection?: () => void;
   selectionReady?: boolean;
+  selectionChoices?: TroubleBrewingSelectionChoices;
+  selectionPresentation?: TroubleBrewingSelectionPresentation;
+  seatMarkers?: TroubleBrewingSeatMarker[];
+  completedSelection?: TroubleBrewingCompletedSelection;
   revealMode?: {
     onClose: () => void;
   };
   /** Locks mutation affordances while retaining interactive read-only seat details. */
   interactionLocked?: boolean;
   progressActionLabel?: string;
+  progressActionDisabled?: boolean;
 }) {
   const [detailsPlayerId, setDetailsPlayerId] = useState<string>();
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
@@ -105,11 +144,12 @@ export function TroubleBrewingLiveGrimoire({
   const actorPlayerId = revealMode ? undefined : currentStep?.playerId;
   const detailsPlayer = players.find((player) => player.id === detailsPlayerId);
   const editingPlayer = players.find((player) => player.id === editingPlayerId);
-  const detailsCharacter = characters.find((candidate) => candidate.id === detailsPlayer?.actualCharacter);
-  const detailsShownCharacter = detailsPlayer?.actualCharacter === "drunk"
-    ? characters.find((candidate) => candidate.id === detailsPlayer.shownCharacter)
+  const detailsPresentation = detailsPlayer
+    ? troubleBrewingSeatPresentation(detailsPlayer.actualCharacter, detailsPlayer.shownCharacter)
     : undefined;
+  const detailsCharacter = characters.find((candidate) => candidate.id === detailsPresentation?.displayedCharacterId);
   const selectionActive = !revealMode && Boolean(handoff);
+  const selectionComplete = Boolean(completedSelection);
   const nominatorId = nominationVoting?.draft.nominatorId || dayState?.activeNomination?.nominatorId;
   const nomineeId = nominationVoting?.draft.nomineeId || dayState?.activeNomination?.nomineeId;
   const nominator = players.find((player) => player.id === nominatorId);
@@ -176,7 +216,6 @@ export function TroubleBrewingLiveGrimoire({
         voterIds: nextVoterIdsAfterToggle(
           nominationVoting.draft.voterIds,
           player.id,
-          ruleState?.butlerVote,
         ),
       });
       return;
@@ -200,7 +239,7 @@ export function TroubleBrewingLiveGrimoire({
         <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
       </div> : handoff ? (
         <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
-          <button type="button" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button>
+          {!selectionComplete ? <button type="button" className="tbHandoffCancel" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
         </GrimoireToolbar>
       ) : (
         <GrimoireToolbar ariaLabel="확정된 마도서 도구">
@@ -218,18 +257,18 @@ export function TroubleBrewingLiveGrimoire({
         seats={players.map((player, index) => {
           const position = desktopPositions[index];
           const mobilePosition = mobilePositions[index];
-          const shownCharacter = player.actualCharacter === "drunk"
-            ? characters.find((candidate) => candidate.id === player.shownCharacter)
-            : undefined;
-          const asset = characterAsset(player.actualCharacter);
+          const presentation = troubleBrewingSeatPresentation(player.actualCharacter, player.shownCharacter);
+          const displayedCharacter = characters.find((candidate) => candidate.id === presentation.displayedCharacterId);
+          const asset = characterAsset(presentation.displayedCharacterId);
           const selfNominee = handoff === "nomination"
             && player.id === nominatorId
             && player.id === nomineeId;
-          const targetRole = targetSelectionSeatLabel(currentStep);
+          const seatMarker = seatMarkers.find((marker) => marker.playerId === player.id);
+          const targetRole = selectionPresentation?.selectedRole ?? targetSelectionSeatLabel(currentStep);
           const selectionRole = handoff === "nomination"
             ? selfNominee ? "지명자 · 피지명자" : player.id === nominatorId ? "지명자" : player.id === nomineeId ? "피지명자" : undefined
             : handoff === "vote" && nominationVoting?.draft.voterIds.includes(player.id) ? "투표"
-              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? targetRole : undefined;
+              : handoff === "target" && (setupInformationSelection?.selectedPlayerIds.includes(player.id) || phasePlayerSelection?.selectedPlayerIds.includes(player.id)) ? targetRole : seatMarker?.label;
           const selected = handoff === "nomination"
             ? player.id === nominatorId || player.id === nomineeId
             : handoff === "vote"
@@ -241,8 +280,10 @@ export function TroubleBrewingLiveGrimoire({
                 : detailsPlayerId === player.id;
           const allowed = !phasePlayerSelection?.allowedPlayerIds
             || phasePlayerSelection.allowedPlayerIds.includes(player.id);
+          const setupInformationAllowed = !setupInformationSelection?.allowedPlayerIds
+            || setupInformationSelection.allowedPlayerIds.includes(player.id);
           const voteStatus = handoff === "vote" && nominationVoting
-            ? voteStatusForPlayer(player, selected, nominationVoting.draft.voterIds, ruleState?.butlerVote)
+            ? voteStatusForPlayer(player, selected)
             : undefined;
           const selectingNominator = handoff === "nomination" && !nominatorId;
           const nominationIneligible = handoff === "nomination" && (
@@ -253,7 +294,9 @@ export function TroubleBrewingLiveGrimoire({
           const disabled = busy
             || nominationIneligible
             || Boolean(handoff === "vote" && voteStatus?.disabled)
-            || Boolean(setupInformationSelection?.disabled)
+            || Boolean(setupInformationSelection && (
+              !setupInformationAllowed || setupInformationSelection.disabled
+            ))
             || Boolean(phasePlayerSelection && (!allowed || phasePlayerSelection.disabled));
           const actor = actorPlayerId === player.id;
           const playerTokens = tokensByPlayerId[player.id] ?? [];
@@ -267,9 +310,11 @@ export function TroubleBrewingLiveGrimoire({
             ruleState?.activePoison?.playerId === player.id ? "중독" : undefined,
             ruleState?.activeProtection?.playerId === player.id ? "보호" : undefined,
           ].filter((label): label is string => Boolean(label));
-          const identityLabel = player.actualCharacter === "drunk"
-            ? `실제 주정뱅이, 표시 ${shownCharacter?.label ?? "미선택"}`
-            : characterLabel(player.actualCharacter);
+          const additionalAutomaticTokenLabels = automaticTokenLabels.filter((label) => label !== selectionRole);
+          const actualCharacterLabel = characterLabel(player.actualCharacter);
+          const identityLabel = presentation.hasHiddenActualIdentity
+            ? `실제 ${actualCharacterLabel}, 표시 ${displayedCharacter?.label ?? characterLabel(presentation.displayedCharacterId)}`
+            : actualCharacterLabel;
           const deadVoteState = (handoff === "nomination" || handoff === "vote") && !player.alive
             ? player.ghostVoteUsed ? "spent" : "available"
             : undefined;
@@ -278,6 +323,7 @@ export function TroubleBrewingLiveGrimoire({
           const targetSelected = selected && handoff === "target";
           const genericSelected = selected && !targetSelected;
           const voteSelected = selected && handoff === "vote";
+          const settledOther = selectionComplete && !actor && !targetSelected && !seatMarker;
           const nominationClass = selfNominee
             ? " issue116NominatorSeat issue116NomineeSeat issue116SelfNominationSeat"
             : selectionRole === "지명자" ? " issue116NominatorSeat"
@@ -291,10 +337,10 @@ export function TroubleBrewingLiveGrimoire({
               if (node) seatRefs.current.set(player.id, node);
               else seatRefs.current.delete(player.id);
             },
-            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(player.actualCharacter)} character-${player.actualCharacter}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${targetSelectionStateClass(currentStep)}` : ""}${disabled && selectionActive ? " issue116IneligibleSeat" : ""}`,
-            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${automaticTokenLabels.length ? `, ${automaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
+            className: `fixedSize assigned alignment-${player.alignment} kind-${characterKindClass(presentation.displayedCharacterId)} character-${presentation.displayedCharacterId}${player.alive ? "" : " snvDeadSeat"}${showGhostVoteIndicator ? " snvGhostVoteAvailable issue116GhostVoteSeat" : ""}${showSpentGhostVoteState ? " snvGhostVoteSpent issue116GhostVoteSpentSeat" : ""}${actor ? " snvCurrentActorSeat snvSeatStateActor" : ""}${genericSelected ? " selected issue116SelectedSeat snvSeatStateSelected" : ""}${nominationClass}${voteSelected ? ` issue116VoterSeat${player.alive ? "" : " snvSeatStateStrong"}` : ""}${targetSelected ? ` snvSeatStateTarget ${selectionPresentation?.selectedStateClass ?? targetSelectionStateClass(currentStep)}` : ""}${seatMarker ? ` ${seatMarker.className}` : ""}${settledOther ? " snvSettledOtherSeat" : ""}${disabled && selectionActive && !seatMarker ? " issue116IneligibleSeat" : ""}`,
+            ariaLabel: `${player.seat}번 좌석, ${player.name}, ${identityLabel}, ${voteStatus?.label ?? lifeVoteLabel}${actor ? ", 현재 행동자" : ""}${selectionRole ? `, ${selectionRole}` : selected ? ", 선택됨" : ""}${selectionActive ? "" : `, ${tokenCount ? `토큰 ${tokenCount}개` : "토큰 없음"}`}${additionalAutomaticTokenLabels.length ? `, ${additionalAutomaticTokenLabels.join(", ")}` : ""}, ${player.seat}번 ${player.name} 좌석 선택`,
             pressed: revealMode ? undefined : selectionActive ? selected : detailsPlayerId === player.id,
-            disabled: gameEnded || (selectionActive ? disabled : false),
+            disabled: gameEnded || selectionComplete || (selectionActive ? disabled : false),
             onSelect: () => selectPlayer(player, disabled),
             onPointerDown: (event) => startLongPress(event, player),
             onPointerUp: cancelLongPress,
@@ -309,16 +355,7 @@ export function TroubleBrewingLiveGrimoire({
               /> : null}
               {!player.alive ? <FuneralIcon /> : null}
               <span className="snvSeatPlayerName">{player.name}</span>
-              <small>{selectionRole ?? characterLabel(player.actualCharacter)}</small>
-              {player.actualCharacter === "drunk" ? <span
-                className={`tbShownCharacterToken ${shownCharacter ? "assigned" : "missing"}`}
-                role="img"
-                aria-label={shownCharacter ? `보여준 직업 ${shownCharacter.label} 토큰` : "보여준 직업 미선택 토큰"}
-              >
-                {shownCharacter && characterAsset(shownCharacter.id)
-                  ? <img src={characterAsset(shownCharacter.id)?.src} alt="" />
-                  : <span aria-hidden="true">?</span>}
-              </span> : null}
+              <small>{selectionRole ?? displayedCharacter?.label ?? characterLabel(presentation.displayedCharacterId)}</small>
               {revealMode && automaticTokenLabels.length ? <span className="tbRevealTokenList" aria-label="적용 토큰">
                 {automaticTokenLabels.map((label) => <span key={label}>{label}</span>)}
               </span> : null}
@@ -339,7 +376,7 @@ export function TroubleBrewingLiveGrimoire({
         center={handoff === "nomination" || handoff === "vote" ? undefined : <>
           <strong>{revealMode ? "첩자 공개" : gameEnded ? "게임 종료" : phaseLabel}</strong>
           {!revealMode && !gameEnded ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time> : null}
-          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" onClick={onGoToProgress}>{progressActionLabel}</button> : null}
+          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" disabled={progressActionDisabled} onClick={onGoToProgress}>{progressActionLabel}</button> : null}
         </>}
       />}
       inspector={handoff ? <TroubleBrewingSelectionPanel
@@ -353,6 +390,9 @@ export function TroubleBrewingLiveGrimoire({
         executionVoteThreshold={dayState?.executionVoteThreshold ?? 0}
         busy={busy}
         ready={Boolean(selectionReady)}
+        selectionChoices={selectionChoices}
+        selectionPresentation={selectionPresentation}
+        completedSelection={completedSelection}
         onReset={onResetSelection}
         onConfirm={onConfirmSelection}
       /> : undefined}
@@ -371,10 +411,6 @@ export function TroubleBrewingLiveGrimoire({
         alignment: detailsPlayer.alignment,
       }}
       tokens={tokensByPlayerId[detailsPlayer.id] ?? []}
-      identityDetails={detailsCharacter.id === "drunk" && detailsShownCharacter ? <section className="tbDrunkIdentities" aria-label="주정뱅이 아이덴티티">
-        <article><span>실제 직업</span><div>{characterAsset("drunk") ? <img src={characterAsset("drunk")?.src} alt="" /> : null}<strong>주정뱅이</strong></div></article>
-        <article className="shown"><span>보여준 직업</span><div>{characterAsset(detailsShownCharacter.id) ? <img src={characterAsset(detailsShownCharacter.id)?.src} alt="" /> : null}<strong>{detailsShownCharacter.label}</strong></div></article>
-      </section> : null}
       details={<>
         {detailsPlayer.notes ? <section className="tbPlayerNotes" aria-label="Notes"><span>Notes</span><p>{detailsPlayer.notes}</p></section> : null}
       </>}
@@ -401,6 +437,9 @@ function TroubleBrewingSelectionPanel({
   executionVoteThreshold,
   busy,
   ready,
+  selectionChoices,
+  selectionPresentation,
+  completedSelection,
   onReset,
   onConfirm,
 }: {
@@ -414,6 +453,9 @@ function TroubleBrewingSelectionPanel({
   executionVoteThreshold: number;
   busy: boolean;
   ready: boolean;
+  selectionChoices?: TroubleBrewingSelectionChoices;
+  selectionPresentation?: TroubleBrewingSelectionPresentation;
+  completedSelection?: TroubleBrewingCompletedSelection;
   onReset?: () => void;
   onConfirm?: () => void;
 }) {
@@ -429,25 +471,29 @@ function TroubleBrewingSelectionPanel({
     : 0;
   const numberedTargetCount = setupInformationTargetCount || (playerTargetCount > 1 ? playerTargetCount : 0);
   const target = targets[0];
-  const targetLabel = target ? `${target.seat}번 ${target.name}` : "선택 전";
-  const title = handoff === "nomination"
+  const targetLabel = target
+    ? `${target.seat}번 ${target.name}${completedSelection ? ` · ${target.alive ? "생존" : "사망"}` : ""}`
+    : "선택 전";
+  const title = completedSelection?.title ?? selectionPresentation?.title ?? (handoff === "nomination"
     ? "지명 선택"
     : handoff === "vote"
       ? "투표 집계"
-      : targetSelectionTitle(currentStep);
+      : targetSelectionTitle(currentStep));
   const confirmLabel = handoff === "nomination"
     ? nominator && nominee ? `${nominator.seat}번 → ${nominee.seat}번 지명 확정` : "지명자와 피지명자를 선택하세요"
     : handoff === "vote" ? `${voterIds.length}표로 투표 확정`
       : target ? "선택 확정" : "대상을 선택하세요";
 
-  return <aside className="issue116SelectionPanel" aria-label="현재 마도서 작업">
+  return <aside className={`issue116SelectionPanel${completedSelection ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
     <header className="issue116SelectionHeader">
       <h2>{title}</h2>
-      <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
+      {!completedSelection ? <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
         {handoff === "nomination" ? "지명 초기화 X" : handoff === "vote" ? "투표 초기화 X" : setupInformationTargetCount > 0 ? "초기화" : "선택 초기화 X"}
-      </button>
+      </button> : null}
     </header>
-    {handoff === "nomination" ? <dl>
+    {completedSelection?.summary ? <dl>
+      {completedSelection.summary.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
+    </dl> : handoff === "nomination" ? <dl>
       <div><dt>지명자</dt><dd>{playerLabel(nominator)}</dd></div>
       <div><dt>피지명자</dt><dd>{playerLabel(nominee)}</dd></div>
     </dl> : handoff === "vote" ? <dl className="issue116VoteSummary">
@@ -458,9 +504,25 @@ function TroubleBrewingSelectionPanel({
         <dt>{targetOrdinal(index)}</dt><dd>{playerLabel(selectedTarget)}</dd>
       </div>)}
     </dl> : <dl>
-      <div><dt>{targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
+      <div><dt>{selectionPresentation?.fieldLabel ?? targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
-    <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+    {selectionChoices ? <fieldset className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment">
+      <legend>{selectionChoices.label}</legend>
+      {selectionChoices.options.map((option) => <button
+        type="button"
+        className={[option.className, selectionChoices.selectedId === option.id ? "selected" : ""].filter(Boolean).join(" ")}
+        aria-label={option.ariaLabel}
+        aria-pressed={selectionChoices.selectedId === option.id}
+        disabled={busy}
+        onClick={() => selectionChoices.onChange(option.id)}
+        key={option.id}
+      >{option.label}</button>)}
+    </fieldset> : null}
+    {completedSelection ? (
+      <button type="button" className="issue116PrimaryAction issue116NextAction" disabled={busy} onClick={completedSelection.onContinue}>{completedSelection.actionLabel ?? "다음 →"}</button>
+    ) : (
+      <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+    )}
   </aside>;
 }
 
@@ -476,7 +538,9 @@ function targetOrdinal(index: number) {
 
 function targetSelectionTitle(step?: PhaseStep) {
   if (!step) return "대상 선택";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상 지정";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각 지정";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각 지정";
+  if (step.id.endsWith(":mayorBounce")) return "시장 능력";
   if (step.character === "washerwoman") return "세탁부 능력";
   if (step.character === "librarian") return "사서 능력";
   if (step.character === "investigator") return "수사관 능력";
@@ -491,7 +555,9 @@ function targetSelectionTitle(step?: PhaseStep) {
 
 function targetSelectionFieldLabel(step?: PhaseStep) {
   if (!step) return "선택 대상";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각";
+  if (step.id.endsWith(":mayorBounce")) return "대신 사망 대상";
   if (step.character === "poisoner") return "중독 대상";
   if (step.character === "monk") return "보호 대상";
   if (step.character === "imp") return "공격 대상";
@@ -502,7 +568,9 @@ function targetSelectionFieldLabel(step?: PhaseStep) {
 
 function targetSelectionSeatLabel(step?: PhaseStep) {
   if (!step) return "선택";
-  if (step.id.endsWith(":fortuneTellerRedHerring")) return "오답 대상";
+  if (step.id.endsWith(":fortuneTellerDecoy")) return "착각";
+  if (step.id.endsWith(":fortuneTellerRedHerring")) return "착각";
+  if (step.id.endsWith(":mayorBounce")) return "대신 사망";
   if (step.character === "poisoner") return "중독";
   if (step.character === "monk") return "보호";
   if (step.character === "imp") return "공격";
@@ -511,6 +579,8 @@ function targetSelectionSeatLabel(step?: PhaseStep) {
 }
 
 function targetSelectionStateClass(step?: PhaseStep) {
+  if (step?.id.endsWith(":fortuneTellerDecoy")) return "tbSeatStateDecoy";
+  if (step?.id.endsWith(":mayorBounce")) return "tbSeatStateMayorBounce";
   if (step?.character === "poisoner") return "tbSeatStatePoison";
   if (step?.character === "imp") return "tbSeatStateAttack";
   return "tbSeatStateSelection";

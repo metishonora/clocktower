@@ -41,14 +41,14 @@ test("confirms System Tokens, Script Tokens, and Notes as one mock event", async
   longPressPlayer("2번 준호 좌석 선택");
   const dialog = screen.getByRole("dialog", { name: "2번 준호 토큰 및 Notes" });
   await user.click(within(dialog).getByRole("button", { name: "System Token · 후속 처리" }));
-  await user.click(within(dialog).getByRole("button", { name: "Script Token · 점쟁이 · 오답 대상" }));
+  await user.click(within(dialog).getByRole("button", { name: "Script Token · 점쟁이 · 착각" }));
   await user.type(within(dialog).getByRole("textbox", { name: "Notes" }), "다음 낮에 개인 확인");
   await user.click(within(dialog).getByRole("button", { name: "수정 확정" }));
 
   expect(screen.queryByRole("dialog")).toBeNull();
   const seat = screen.getByRole("group", { name: "2번 준호 좌석" });
   const systemBadge = within(seat).getByText("후속 처리");
-  const scriptBadge = within(seat).getByText("오답 대상");
+  const scriptBadge = within(seat).getByText("착각");
   expect(systemBadge.className).toContain("manual");
   expect(scriptBadge.className).toContain("manual");
   expect(systemBadge.closest(".annotationManualTokens")).toBeTruthy();

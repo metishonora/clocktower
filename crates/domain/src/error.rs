@@ -29,7 +29,6 @@ pub(crate) enum ErrorKind {
     InvalidStepInput,
     InvalidEvilTeamState,
     InvalidButlerMaster,
-    ButlerMasterVoteRequired,
     GhostVoteAlreadySpent,
     MissingStepInput,
     TooMuchStepInput,
@@ -122,10 +121,6 @@ impl ErrorKind {
             Self::InvalidButlerMaster => (
                 "INVALID_BUTLER_MASTER",
                 "집사는 자신을 주인으로 선택할 수 없습니다.",
-            ),
-            Self::ButlerMasterVoteRequired => (
-                "BUTLER_MASTER_VOTE_REQUIRED",
-                "집사는 주인이 현재 투표에 참여한 경우에만 투표할 수 있습니다.",
             ),
             Self::GhostVoteAlreadySpent => (
                 "GHOST_VOTE_ALREADY_SPENT",

@@ -8,10 +8,14 @@ import type {
   RegistrationJudgment,
   TargetCheck,
 } from "../../core/types";
+import { characterKind } from "../../setupDraft";
+import { defaultConstrainedNumberChoice } from "../../core/numberChoice";
 import {
   mayorDecisionApplies,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
+  setupInfoSelectablePlayerIds,
+  setupInfoSelectionCanComplete,
   setupInfoZeroOutsidersAvailable,
 } from "./phaseInput";
 
@@ -28,6 +32,7 @@ export type PhaseInputDraft = {
 
 export type PhaseInputDraftController = PhaseInputDraft & {
   zeroOutsidersAvailable: boolean;
+  setupInfoSelectablePlayerIds?: string[];
   setSelectedPlayerIds: (playerIds: string[]) => void;
   togglePlayer: (playerId: string) => void;
   setSelectedCharacterId: (characterId: string) => void;
@@ -54,32 +59,79 @@ function emptyDraft(): PhaseInputDraft {
   };
 }
 
+function initialDraft(step: PhaseStep | undefined): PhaseInputDraft {
+  const draft = emptyDraft();
+  const selectedNumberChoice = step ? defaultConstrainedNumberChoice(step) : undefined;
+  return selectedNumberChoice ? { ...draft, selectedNumberChoice } : draft;
+}
+
 export function usePhaseInputDraft(
   step: PhaseStep | undefined,
   players: Player[],
   contextFingerprint = "",
   resetRevision = 0,
 ): PhaseInputDraftController {
-  const [draft, setDraft] = useState<PhaseInputDraft>(emptyDraft);
+  const [draft, setDraft] = useState<PhaseInputDraft>(() => initialDraft(step));
   const zeroOutsidersAvailable = useMemo(
     () => setupInfoZeroOutsidersAvailable(players, step),
     [players, step],
   );
+  const actualOutsidersAbsent = useMemo(
+    () => players.every((player) => characterKind(player.actualCharacter) !== "Outsider"),
+    [players],
+  );
+  const selectableSetupInfoPlayerIds = useMemo(
+    () => step?.requiredInput.kind === "setupInfo"
+      ? setupInfoSelectablePlayerIds(step, draft.selectedPlayerIds, players)
+      : undefined,
+    [draft.selectedPlayerIds, players, step],
+  );
+  const setupInfoCandidatePathAvailable = useMemo(
+    () => step?.requiredInput.kind === "setupInfo"
+      ? setupInfoSelectionCanComplete(step, [], players)
+      : false,
+    [players, step],
+  );
 
   useEffect(() => {
-    setDraft(emptyDraft());
+    setDraft(initialDraft(step));
   }, [step?.id, contextFingerprint, resetRevision]);
 
   useEffect(() => {
-    if (!zeroOutsidersAvailable) {
+    const autoZeroOutsiders = step?.requiredInput.kind === "setupInfo"
+      && Boolean(step.requiredInput.zeroAllowed)
+      && zeroOutsidersAvailable
+      && actualOutsidersAbsent
+      && !setupInfoCandidatePathAvailable
+      && !step.informationPrompt?.activeReasons.some(
+        (reason) => reason.type === "poisoned" || reason.type === "drunk",
+      );
+    if (autoZeroOutsiders) {
+      setDraft((current) => current.zeroOutsiders ? current : {
+        ...emptyDraft(),
+        zeroOutsiders: true,
+      });
+    } else if (!zeroOutsidersAvailable) {
       setDraft((current) =>
         current.zeroOutsiders ? { ...current, zeroOutsiders: false } : current,
       );
     }
-  }, [zeroOutsidersAvailable]);
+  }, [actualOutsidersAbsent, setupInfoCandidatePathAvailable, step, zeroOutsidersAvailable]);
 
   function setSelectedPlayerIds(playerIds: string[]) {
-    setDraft((current) => updatePlayerSelection(current, playerIds, step, players));
+    setDraft((current) => {
+      const removesOnly = playerIds.length < current.selectedPlayerIds.length
+        && playerIds.every((playerId) => current.selectedPlayerIds.includes(playerId));
+      if (
+        step?.requiredInput.kind === "setupInfo"
+        && playerIds.length > 0
+        && !removesOnly
+        && !setupInfoSelectionCanComplete(step, playerIds, players)
+      ) {
+        return current;
+      }
+      return updatePlayerSelection(current, playerIds, step, players);
+    });
   }
 
   function togglePlayer(playerId: string) {
@@ -100,6 +152,7 @@ export function usePhaseInputDraft(
   function setSelectedCharacterId(characterId: string) {
     setDraft((current) => ({
       ...current,
+      zeroOutsiders: false,
       selectedCharacterId: characterId,
       registrationJudgments: step
         ? setupInfoRegistrationJudgments(
@@ -154,6 +207,7 @@ export function usePhaseInputDraft(
   return {
     ...draft,
     zeroOutsidersAvailable,
+    setupInfoSelectablePlayerIds: selectableSetupInfoPlayerIds,
     setSelectedPlayerIds,
     togglePlayer,
     setSelectedCharacterId,
@@ -167,7 +221,7 @@ export function usePhaseInputDraft(
     setMayorDecision: (mayorDecision) => setDraft((current) => ({ ...current, mayorDecision })),
     setRegistrationJudgments: (registrationJudgments) =>
       setDraft((current) => ({ ...current, registrationJudgments })),
-    reset: () => setDraft(emptyDraft()),
+    reset: () => setDraft(initialDraft(step)),
     applySuggestion,
   };
 }

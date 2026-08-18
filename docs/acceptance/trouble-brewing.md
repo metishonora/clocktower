@@ -2,7 +2,7 @@
 
 ## 목적과 판정 기준
 
-이 체크리스트는 Clocktower 앱이 공식 Trouble Brewing 규칙을 Storyteller 보조 도구로 올바르게 표현하는지 직접 확인하기 위한 것이다. 범위는 5~15명, Trouble Brewing 22직업, 기본 지명·투표·처형·밤 진행·승리 조건이다. Travellers, Fabled, 커스텀 스크립트와 전략 팁만으로 파생되는 조합은 제외한다.
+이 체크리스트는 Clocktower 앱이 공식 Trouble Brewing 규칙을 Storyteller 보조 도구로 올바르게 표현하는지 직접 확인하기 위한 것이다. 범위는 5~15명, Trouble Brewing 22직업, 기본 지명·투표·처형·밤 진행·승리 조건이다. Travellers, Fabled, 커스텀 스크립트와 전략 팁만으로 파생되는 조합은 제외한다. 중독된 첩자에게 보여 줄 임의의 거짓 마도서를 별도로 작성하는 편집 기능도 이번 구현 범위에서 제외한다. 중독된 첩자 공개는 현재 마도서 열람 흐름을 사용하며, Storyteller가 임의로 조작한 별도 마도서의 작성·저장은 자동화하지 않는다.
 
 규칙 판정은 [공식 Trouble Brewing Wiki](https://wiki.bloodontheclocktower.com/Trouble_Brewing), 각 직업 페이지의 `How to Run`, [공식 Glossary](https://wiki.bloodontheclocktower.com/Glossary) 순서로 확인한다. 공식 결과가 승리라 하더라도 앱은 자동으로 게임을 끝내지 않는다. 올바른 승리 경고를 표시한 뒤 Storyteller가 승리 팀을 명시적으로 확정하면 통과다.
 
@@ -38,7 +38,7 @@
 
 ### Outsiders
 
-- **Butler**: 매일 밤 자신 이외 Master를 고르고 다음 날 Master가 투표 중이거나 이미 집계되었을 때만 투표할 수 있다. 공식 룰상 고의 위반은 부정행위이며 Storyteller가 자동으로 무효표 처리하지 않지만, 앱은 운영 실수를 막기 위해 불가능한 투표 draft와 새 command를 차단한다.
+- **Butler**: 매일 밤 자신 이외 Master를 고른다. 다음 날 투표 draft에서는 Butler와 Master를 순서와 관계없이 선택할 수 있으며, 확정 시 Master가 투표하지 않았다면 Butler 표만 집계에서 자동 제외한다. 중독·취함 등으로 제한이 무효인 경우에는 Butler 표를 그대로 집계한다.
 - **Drunk**: 실제 능력이 없고 Townsfolk라고 생각한다. 해당 Townsfolk처럼 깨우고 행동시키지만 효과는 없으며 정보는 거짓일 수 있다.
 - **Recluse**: 죽어 있어도 검사별로 evil 및 특정 Minion/Demon으로 등록할 수 있다. 등록된 직업의 능력을 얻지는 않는다.
 - **Saint**: sober/healthy actual Saint가 처형으로 죽으면 그 팀이 패배한다. 다른 원인의 사망이나 poisoned 상태에서는 발동하지 않는다.
@@ -66,7 +66,7 @@
 - [x] `INF-02` [librarian-zero-outsiders.json](../../fixtures/acceptance/trouble-brewing/librarian-zero-outsiders.json) — Outsider가 없을 때 `0` 정보가 가능한지 확인한다.
 - [x] `REG-02` [librarian-spy-registration.json](../../fixtures/acceptance/trouble-brewing/librarian-spy-registration.json) — Spy를 특정 Outsider로 등록하는 정보와 `0` 정보가 함께 선택 가능한지 확인한다.
 - [x] `REG-03` [investigator-recluse-registration.json](../../fixtures/acceptance/trouble-brewing/investigator-recluse-registration.json) — 실제 Poisoner 정보와 Recluse를 특정 Minion으로 등록한 정보를 각각 시험한다.
-- [x] `REG-04` [chef-evil-pairs-and-recluse.json](../../fixtures/acceptance/trouble-brewing/chef-evil-pairs-and-recluse.json) — 원형 끝-시작 경계와 Recluse 등록별 Chef 수치를 비교한다.
+- [x] `REG-04` [chef-evil-pairs-and-recluse.json](../../fixtures/acceptance/trouble-brewing/chef-evil-pairs-and-recluse.json) — 원형 끝-시작 경계와 Recluse 등록별 Chef 수치를 비교한다. 정상 요리사의 대안 수치는 `거짓`이 아니라 플레이어별 `취급` 판정으로 표시하며, 임의 수치는 선택할 수 없어야 한다.
 - [x] `INF-03` [empath-alive-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-alive-neighbors.json) — 1번 Empath의 살아 있는 좌우 이웃 중 8번 Imp 한 명을 세어 `1`이 나오는지 확인한다.
 - [x] `INF-03B` [empath-skips-dead-neighbors.json](../../fixtures/acceptance/trouble-brewing/empath-skips-dead-neighbors.json) — 양옆 dead 플레이어를 건너뛰어 다음 살아 있는 이웃인 Imp와 Poisoner를 세어 `2`가 나오는지 확인한다.
 - [x] `INF-04` [fortune-teller-red-herring.json](../../fixtures/acceptance/trouble-brewing/fortune-teller-red-herring.json) — good 플레이어 또는 자신을 Red Herring으로 지정할 수 있는지 확인한다.
@@ -78,7 +78,8 @@
 - [x] `INF-05` [spy-grimoire-reveal.json](../../fixtures/acceptance/trouble-brewing/spy-grimoire-reveal.json) — Spy reveal에 실제 직업과 필요한 상태만 표시되고 Storyteller 조작 화면 비밀이 새지 않는지 확인한다.
   - 표시: 1번은 `중독`, 4번은 `보호`, 6번은 사망 및 유령 투표 사용 상태로 보여야 한다.
   - 숨김: 이전 밤 대상인 2번의 중독과 3번의 보호, 7번의 수동 Script/System Tokens 및 Notes는 보이지 않아야 한다.
-- [x] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, Master 미투표 시 Butler 좌석이 사유와 함께 비활성화되며, Master 선택·해제에 따라 Butler 표가 활성화·원자 제거되고 UI 우회 command도 거부되는지 확인한다.
+  - 범위: 임의의 거짓 마도서를 작성하는 편집기는 검증 대상이 아니다. 중독된 첩자 전용 거짓 마도서 작성·저장은 이번 구현에서 의도적으로 생략한다.
+- [x] `VOT-01` [butler-master-selection.json](../../fixtures/acceptance/trouble-brewing/butler-master-selection.json) — Butler 자신은 Master로 선택할 수 없고, 투표 draft에서는 Butler를 먼저 선택하거나 Master를 나중에 해제할 수 있으며, 확정 시 Master가 빠져 있으면 Butler 표만 집계에서 자동 제외되는지 확인한다.
 
 ## 3. 밤 행동과 사망 후속 처리
 

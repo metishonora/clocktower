@@ -93,6 +93,42 @@ test("maps Trouble Brewing automatic reminders to canonical source tokens", () =
   expect(tokens).toHaveLength(4);
 });
 
+test("presents the actual Drunk identity as its canonical reminder token", () => {
+  const drunk: Player = {
+    ...player("drunk-player", "Drunk", "drunk"),
+    shownCharacter: "chef",
+  };
+  const ruleState: RuleState = {
+    unannouncedNightDeathPlayerIds: [],
+    automaticReminders: [reminder({
+      playerId: drunk.id,
+      characterId: "drunk",
+      tokenId: "isTheDrunk",
+      label: "주정뱅이임",
+      description: "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+      sourceEventId: "setup-event",
+    })],
+  };
+
+  const tokens = troubleBrewingPlayerTokens(drunk, [drunk], ruleState);
+
+  expect(tokens).toMatchObject([{
+    instanceId: "canonical-setup-event-isTheDrunk-drunk-player",
+    label: "주정뱅이임",
+    sourceLabel: "주정뱅이",
+    sourceIconSrc: "/assets/characters/tb/drunk_g.webp",
+    visualKind: "assignment",
+    description: "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+    origin: "automatic",
+  }]);
+
+  render(<PlayerTokenList theme="night" tokens={tokens} />);
+  expect(screen.getByRole("list", { name: "부착된 토큰 1개" })).toBeTruthy();
+  expect(screen.getByRole("listitem", {
+    name: /자동 규칙 · 주정뱅이임 · 출처 주정뱅이/,
+  })).toBeTruthy();
+});
+
 test("uses replay reminders as the only automatic truth and appends manual annotations", () => {
   const ruleState: RuleState = {
     unannouncedNightDeathPlayerIds: [],

@@ -249,7 +249,7 @@ fn official_tb_reminders_cover_effects_deaths_identity_and_spent_abilities() {
         ("player-10", "slayer", "noAbility", "능력 없음"),
         ("player-12", "virgin", "noAbility", "능력 없음"),
         ("player-2", "drunk", "isTheDrunk", "주정뱅이임"),
-        ("player-13", "fortuneTeller", "redHerring", "오답 대상"),
+        ("player-13", "fortuneTeller", "redHerring", "착각"),
         ("player-9", "scarletWoman", "isTheDemon", "악마임"),
     ] {
         assert!(

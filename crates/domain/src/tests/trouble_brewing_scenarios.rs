@@ -3,6 +3,179 @@ use crate::*;
 use serde_json::{json, Value};
 
 #[test]
+fn first_night_keeps_duplicate_shown_character_actors_as_distinct_steps() {
+    let setup = setup_event_with_players(json!([
+        {
+            "id": "player-1",
+            "seat": 1,
+            "name": "Ada",
+            "actualCharacter": "washerwoman",
+            "shownCharacter": "washerwoman"
+        },
+        {
+            "id": "player-2",
+            "seat": 2,
+            "name": "Bert",
+            "actualCharacter": "drunk",
+            "shownCharacter": "washerwoman"
+        },
+        {
+            "id": "player-3",
+            "seat": 3,
+            "name": "Cora",
+            "actualCharacter": "chef",
+            "shownCharacter": "chef"
+        },
+        {
+            "id": "player-4",
+            "seat": 4,
+            "name": "Dev",
+            "actualCharacter": "empath",
+            "shownCharacter": "empath"
+        },
+        {
+            "id": "player-5",
+            "seat": 5,
+            "name": "Eve",
+            "actualCharacter": "imp",
+            "shownCharacter": "imp"
+        }
+    ]));
+    let game = game_with_events(json!([setup.clone()]));
+
+    let first: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    let second: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+
+    assert_eq!(first["ok"], true, "{first:#}");
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-1")
+            .unwrap()["actualCharacter"],
+        "washerwoman"
+    );
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-2")
+            .unwrap()["actualCharacter"],
+        "drunk"
+    );
+    assert_eq!(
+        first["value"]["players"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|player| player["id"] == "player-2")
+            .unwrap()["shownCharacter"],
+        "washerwoman"
+    );
+
+    let washerwoman_steps = |state: &Value| {
+        state["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|step| step["character"] == "washerwoman")
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    let first_steps = washerwoman_steps(&first);
+    let second_steps = washerwoman_steps(&second);
+    assert_eq!(first_steps.len(), 2, "{first:#}");
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["playerId"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["player-2", "player-1"]
+    );
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["firstNight:washerwoman", "firstNight:washerwoman:player-1"]
+    );
+    assert_eq!(
+        first_steps
+            .iter()
+            .map(|step| step["id"].as_str().unwrap())
+            .collect::<std::collections::HashSet<_>>()
+            .len(),
+        2
+    );
+    assert_eq!(first_steps, second_steps);
+    assert_eq!(
+        first["value"]["ruleState"]["activeImpairments"],
+        json!([{
+            "kind": "drunk",
+            "playerId": "player-2",
+            "sourceEventId": "setup",
+            "sourceCharacterId": "drunk",
+            "expires": "never"
+        }])
+    );
+
+    let mut events = vec![
+        setup,
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+    ];
+    let first_actor = serde_json::from_str::<Value>(&replay_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        first_actor["value"]["currentStep"]["id"],
+        "firstNight:washerwoman"
+    );
+    assert_eq!(first_actor["value"]["currentStep"]["playerId"], "player-2");
+
+    let confirm_first = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:washerwoman",
+            "input": { "playerIds": ["player-1", "player-3"], "characterId": "chef" }
+        }
+    });
+    let first_proposal: Value = serde_json::from_str(&propose_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+        &confirm_first.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(first_proposal["ok"], true, "{first_proposal:#}");
+    events.push(first_proposal["value"]["event"].clone());
+
+    let second_actor: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events.clone())).to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        second_actor["value"]["currentStep"]["id"],
+        "firstNight:washerwoman:player-1"
+    );
+    assert_eq!(second_actor["value"]["currentStep"]["playerId"], "player-1");
+
+    let confirm_second = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:washerwoman:player-1",
+            "input": { "playerIds": ["player-1", "player-3"], "characterId": "chef" }
+        }
+    });
+    let second_proposal: Value = serde_json::from_str(&propose_json(
+        &game_with_events(Value::Array(events)).to_string(),
+        &confirm_second.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(second_proposal["ok"], true, "{second_proposal:#}");
+}
+
+#[test]
 fn replay_returns_required_input_shape_for_player_selection_steps() {
     let game = game_with_events(json!([
         setup_event(),
@@ -564,6 +737,50 @@ fn poisoned_chef_requires_explicit_delivery_and_reveal_uses_only_delivered_value
 }
 
 #[test]
+fn active_tb_poison_is_projected_as_an_impairment_for_the_current_actor() {
+    let game = game_with_events(json!([
+        setup_event_with_minion(),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+    ]));
+
+    let poison_command = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:poisoner",
+            "input": { "playerIds": ["player-1"] }
+        }
+    });
+    let poison_proposal: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &poison_command.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(poison_proposal["ok"], true, "{poison_proposal:#}");
+    let mut events = game["game"]["events"].as_array().unwrap().clone();
+    events.push(poison_proposal["value"]["event"].clone());
+
+    let actual: Value = serde_json::from_str(&replay_json(
+        &game_with_events(Value::Array(events)).to_string(),
+    ))
+    .unwrap();
+
+    assert_eq!(actual["ok"], true, "{actual:#}");
+    assert_eq!(
+        actual["value"]["ruleState"]["activeImpairments"],
+        json!([
+            {
+                "kind": "poisoned",
+                "playerId": "player-1",
+                "sourceEventId": "phase-step-4",
+                "sourceCharacterId": "poisoner",
+                "expires": "whileSourceAbilityActive"
+            }
+        ])
+    );
+}
+
+#[test]
 fn drunk_information_actor_requires_explicit_delivery_and_records_reason() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
@@ -1110,7 +1327,7 @@ fn confirming_player_selection_step_requires_matching_input_shape() {
 }
 
 #[test]
-fn chef_prompt_enumerates_sorted_registration_results_including_two_pairs() {
+fn chef_prompt_preserves_every_spy_and_recluse_treatment_combination() {
     let game = game_with_events(json!([
         setup_event_with_players(json!([
             { "id": "player-1", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
@@ -1129,21 +1346,135 @@ fn chef_prompt_enumerates_sorted_registration_results_including_two_pairs() {
 
     assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:chef");
     assert_eq!(
-        choices
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|choice| choice["value"].as_u64().unwrap())
-            .collect::<Vec<_>>(),
-        vec![0, 1, 2]
+        choices,
+        &json!([
+            {
+                "value": 0,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "good" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 1,
+                "isComputed": true,
+                "registrationJudgments": []
+            },
+            {
+                "value": 1,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 2,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "evil" }
+                ]
+            }
+        ])
     );
-    assert_eq!(choices[1]["isComputed"], true);
-    assert_eq!(choices[0]["isComputed"], false);
-    assert_eq!(choices[2]["isComputed"], false);
-    assert!(!choices[2]["registrationJudgments"]
-        .as_array()
-        .unwrap()
-        .is_empty());
+
+    let same_result_alternate = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": 1 },
+            "registrationJudgments": [
+                { "playerId": "player-2", "registeredAs": "evil" },
+                { "playerId": "player-4", "registeredAs": "good" }
+            ]
+        }
+    });
+    let accepted: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &same_result_alternate.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(accepted["ok"], true, "{accepted}");
+    assert_eq!(
+        accepted["value"]["event"]["payload"]["information"]["deliveryContext"],
+        json!({
+            "type": "discretionary",
+            "reasons": [{
+                "type": "registrationJudgment",
+                "judgments": [
+                    { "playerId": "player-2", "registeredAs": "evil" },
+                    { "playerId": "player-4", "registeredAs": "good" }
+                ]
+            }]
+        })
+    );
+
+    let mismatched_witness = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:chef",
+            "deliveredResult": { "kind": "number", "value": 1 },
+            "registrationJudgments": [
+                { "playerId": "player-2", "registeredAs": "evil" }
+            ]
+        }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &game.to_string(),
+        &mismatched_witness.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(rejected["ok"], false, "{rejected}");
+    assert_eq!(rejected["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+}
+
+#[test]
+fn chef_prompt_keeps_duplicate_legacy_player_ids_replayable() {
+    let game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "chef", "seat": 1, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "shared", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "imp", "seat": 3, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "shared", "seat": 4, "name": "Spy", "actualCharacter": "spy", "shownCharacter": "spy" },
+            { "id": "empath", "seat": 5, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo")
+    ]));
+
+    let actual: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["currentStep"]["id"], "firstNight:chef");
+    assert_eq!(
+        actual["value"]["currentStep"]["informationPrompt"]["registrationCandidatePlayerIds"],
+        json!(["shared"])
+    );
+    assert_eq!(
+        actual["value"]["currentStep"]["informationPrompt"]["numberChoices"],
+        json!([
+            {
+                "value": 0,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "shared", "registeredAs": "good" }
+                ]
+            },
+            {
+                "value": 1,
+                "isComputed": true,
+                "registrationJudgments": []
+            },
+            {
+                "value": 2,
+                "isComputed": false,
+                "registrationJudgments": [
+                    { "playerId": "shared", "registeredAs": "evil" }
+                ]
+            }
+        ])
+    );
 }
 
 #[test]
@@ -1652,6 +1983,104 @@ fn recluse_selection_expands_investigator_characters_with_concrete_registration(
         serde_json::from_str(&propose_json(&game.to_string(), &forged.to_string())).unwrap();
     assert_eq!(rejected["ok"], false);
     assert_eq!(rejected["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+}
+
+#[test]
+fn poisoned_recluse_is_not_a_registration_candidate_for_setup_or_number_information() {
+    let poison_recluse = json!({
+        "id": "evt-firstNight:poisoner",
+        "type": "nightActionResolved",
+        "phase": "firstNight",
+        "payload": {
+            "stepId": "firstNight:poisoner",
+            "actorPlayerId": "player-4",
+            "resolution": {
+                "kind": "poison",
+                "targetPlayerId": "player-2",
+                "applied": true
+            }
+        },
+        "summary": "독 지정 확정",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+    });
+    let investigator_game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Investigator", "actualCharacter": "investigator", "shownCharacter": "investigator" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        poison_recluse.clone()
+    ]));
+    let investigator: Value =
+        serde_json::from_str(&replay_json(&investigator_game.to_string())).unwrap();
+    assert_eq!(investigator["ok"], true, "replay failed as {investigator}");
+    assert_eq!(
+        investigator["value"]["currentStep"]["id"],
+        "firstNight:investigator"
+    );
+    assert_eq!(
+        investigator["value"]["currentStep"]["informationPrompt"]["setupInfoRegistrationOptions"],
+        json!([]),
+        "a poisoned Recluse cannot register as a Minion"
+    );
+    let forged_setup = json!({
+        "type": "confirmStep",
+        "payload": {
+            "stepId": "firstNight:investigator",
+            "input": {
+                "playerIds": ["player-2", "player-3"],
+                "characterId": "baron"
+            },
+            "registrationJudgments": [{
+                "playerId": "player-2",
+                "registeredAs": "minion",
+                "characterId": "baron"
+            }]
+        }
+    });
+    let rejected: Value = serde_json::from_str(&propose_json(
+        &investigator_game.to_string(),
+        &forged_setup.to_string(),
+    ))
+    .unwrap();
+    assert_eq!(
+        rejected["ok"], false,
+        "poisoned registration succeeded as {rejected}"
+    );
+    assert_eq!(rejected["error"]["code"], "INVALID_REGISTRATION_JUDGMENT");
+
+    let empath_game = game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        poison_recluse,
+        phase_event("phaseStepConfirmed", "firstNight:chef")
+    ]));
+    let empath: Value = serde_json::from_str(&replay_json(&empath_game.to_string())).unwrap();
+    assert_eq!(empath["ok"], true, "replay failed as {empath}");
+    assert_eq!(empath["value"]["currentStep"]["id"], "firstNight:empath");
+    assert_eq!(
+        empath["value"]["currentStep"]["informationPrompt"]["registrationCandidatePlayerIds"],
+        json!([]),
+        "a poisoned Recluse cannot register as evil"
+    );
+    assert_eq!(
+        empath["value"]["currentStep"]["informationPrompt"]["numberChoices"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]

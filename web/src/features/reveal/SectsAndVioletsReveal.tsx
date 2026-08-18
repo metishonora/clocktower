@@ -9,6 +9,7 @@ export function SectsAndVioletsReveal({
   closeLabel,
   closeAriaLabel,
   closeButtonRef,
+  closeDisabled = false,
   onClose,
 }: {
   dialogLabel: string;
@@ -18,6 +19,7 @@ export function SectsAndVioletsReveal({
   closeLabel: string;
   closeAriaLabel?: string;
   closeButtonRef?: Ref<HTMLButtonElement>;
+  closeDisabled?: boolean;
   onClose: () => void;
 }) {
   return (
@@ -29,7 +31,7 @@ export function SectsAndVioletsReveal({
         aria-label={dialogLabel}
       >
         {children}
-        <button ref={closeButtonRef} type="button" aria-label={closeAriaLabel} onClick={onClose}>
+        <button ref={closeButtonRef} type="button" aria-label={closeAriaLabel} disabled={closeDisabled} onClick={onClose}>
           {closeLabel}
         </button>
       </section>

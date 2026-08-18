@@ -40,36 +40,32 @@ export function LiveUndoDialog({
 
   return (
     <div
-      className="confirmedUndoDialogBackdrop"
+      className="snvDetailsBackdrop snvHistoryDialogBackdrop tbLiveUndoDialogBackdrop"
       onMouseDown={(mouseEvent) => {
         if (mouseEvent.target === mouseEvent.currentTarget) onCancel();
       }}
     >
       <section
         ref={dialogRef}
-        className="confirmedUndoDialog"
+        className="snvHistoryDialog snvUndoHistoryDialog tbLiveUndoDialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="live-undo-title"
       >
-        <h2 id="live-undo-title">최근 확정 행동을 되돌릴까요?</h2>
-        {events.length === 1 ? (
-          <strong>되돌릴 항목: {events[0].summary}</strong>
-        ) : (
-          <div>
-            <strong>함께 되돌릴 항목 {events.length}개</strong>
-            <ol>
-              {events.map((event) => <li key={event.id}>{event.summary}</li>)}
-            </ol>
-          </div>
-        )}
+        <h2 id="live-undo-title">Undo</h2>
+        <p className="snvUndoLabel">되돌릴 행동</p>
+        <ol className="snvUndoEventStack" aria-label="취소될 이벤트">
+          {events.map((event, index) => (
+            <li key={event.id}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p>{event.summary}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="snvUndoNotice">위 이벤트를 취소하고 직전 상태로 돌아갑니다.</p>
         <footer>
-          <button ref={cancelRef} type="button" className="secondaryButton" onClick={onCancel}>
-            취소
-          </button>
-          <button type="button" className="confirmedUndoButton" onClick={onConfirm}>
-            되돌리기
-          </button>
+          <button ref={cancelRef} type="button" onClick={onCancel}>취소</button>
+          <button type="button" className="snvDestructiveAction" onClick={onConfirm}>되돌리기</button>
         </footer>
       </section>
     </div>

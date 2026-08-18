@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use crate::{
     characters::{TbCharacterId, TbPhaseKey, TbSemanticStep, TbStepKey},
     contracts::{
-        DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource, GameEndCause,
-        GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile, ImpAttackOutcome,
-        MayorAttackContext, NightActionNoEffectReason, NightActionResolution, ReplayState,
-        RuleState, SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason,
-        SlayerOutcome, SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
+        ActiveImpairment, DemonDeathCause, DemonSuccessionConfirmedPayload, DemonSuccessionSource,
+        GameEndCause, GameEndSource, GameEndState, GameEvent, GameEventKind, GameFile,
+        ImpAttackOutcome, ImpairmentExpiry, ImpairmentKind, MayorAttackContext,
+        NightActionNoEffectReason, NightActionResolution, ReplayState, RuleState,
+        SlayerAbilityUsedPayload, SlayerImpairmentContext, SlayerNoEffectReason, SlayerOutcome,
+        SlayerRegistrationContext, SlayerTargetRegistration, VirginResolution,
     },
     day::{
         day_steps, replay_day_state, step_prefix, validate_nomination_event_input,
@@ -71,13 +72,14 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
         .first()
         .map_or(events.as_slice(), |index| &events[..*index]);
     let TbReplayContext {
+        initial_players,
         players,
         phase_state,
         mut rule_state,
         rules_owned_game_ends,
         ..
     } = trouble_brewing_replay_context(active_events)?;
-    let mut warnings = validate_setup_warnings(&players);
+    let mut warnings = validate_setup_warnings(&initial_players);
     let day_state = if phase_state.phase == Phase::Day {
         current_day_prefix(&phase_state)
             .map(|prefix| replay_day_state(active_events, &players, &prefix))
@@ -98,7 +100,7 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
             && phase_state
                 .current_step
                 .as_ref()
-                .is_some_and(|step| step.step_type == StepType::Discussion);
+                .is_some_and(crate::characters::slayer_can_use_on_day_step);
         rule_state.slayer_ability = Some(SlayerAbilityState {
             actor_player_id: actor.id.clone(),
             spent,
@@ -328,11 +330,13 @@ fn saint_execution_source_event_id(
 
 #[derive(Debug)]
 struct TbPlayerTimeline {
+    initial_players: Vec<Player>,
     before_event: Vec<Vec<Player>>,
     players: Vec<Player>,
 }
 
 pub(crate) struct TbReplayContext {
+    pub(crate) initial_players: Vec<Player>,
     pub(crate) players: Vec<Player>,
     pub(crate) phase_state: PhaseReplayState,
     pub(crate) rule_state: RuleState,
@@ -352,6 +356,7 @@ pub(crate) fn trouble_brewing_replay_context(
     events: &[GameEvent],
 ) -> Result<TbReplayContext, CoreError> {
     let timeline = replay_player_timeline(events)?;
+    let initial_players = timeline.initial_players.clone();
     let players = timeline.players.clone();
     let phase_state = replay_phase_state_with_timeline(&players, events, &timeline)?;
     let rule_state = replay_rule_state(events, &players);
@@ -399,6 +404,7 @@ pub(crate) fn trouble_brewing_replay_context(
         });
     }
     Ok(TbReplayContext {
+        initial_players,
         players,
         phase_state,
         rule_state,
@@ -478,6 +484,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     TB_PLAYER_REPLAY_PASS_COUNT.with(|count| count.set(count.get() + 1));
     if events.is_empty() {
         return Ok(TbPlayerTimeline {
+            initial_players: Vec::new(),
             before_event: Vec::new(),
             players: Vec::new(),
         });
@@ -501,6 +508,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
         .iter()
         .map(player_from_setup_input)
         .collect::<Result<Vec<_>, _>>()?;
+    let initial_players = players.clone();
     let mut before_event = Vec::with_capacity(events.len());
     before_event.push(Vec::new());
 
@@ -512,6 +520,7 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     }
 
     Ok(TbPlayerTimeline {
+        initial_players,
         before_event,
         players,
     })
@@ -894,6 +903,28 @@ fn replay_phase_state_with_timeline(
     }
 }
 
+fn fortune_teller_step_actor_is_actual(step_id: &str, players: &[Player]) -> bool {
+    let actor_id = step_id.split(':').nth(2).or_else(|| {
+        players
+            .iter()
+            .filter(|player| {
+                let acting_character = if player.actual_character == "drunk" {
+                    &player.shown_character
+                } else {
+                    &player.actual_character
+                };
+                acting_character == "fortuneTeller"
+            })
+            .max_by_key(|player| (player.alive, player.seat))
+            .map(|player| player.id.as_str())
+    });
+    actor_id.is_some_and(|actor_id| {
+        players
+            .iter()
+            .any(|player| player.id == actor_id && player.actual_character == "fortuneTeller")
+    })
+}
+
 struct TbPhaseProgress {
     statuses: HashMap<String, PhaseStepStatus>,
     cursor: TbPhaseKey,
@@ -963,9 +994,13 @@ fn phase_step_progress(
         };
         let incoming_step_key =
             incoming_step_id.and_then(|id| TbStepKey::parse(id, event.phase).ok());
+        // A Drunk shown the Fortune Teller can act before the Actual Fortune Teller.
+        // That separate check must not consume the Actual Fortune Teller's assignment.
         if incoming_step_key.is_some_and(|key| {
             key.semantic == TbSemanticStep::Character(TbCharacterId::FortuneTeller)
-        }) {
+        }) && incoming_step_id
+            .is_some_and(|step_id| fortune_teller_step_actor_is_actual(step_id, players_at_event))
+        {
             let prefix = incoming_step_key.expect("checked step").phase.prefix();
             statuses
                 .entry(format!("{prefix}:fortuneTellerRedHerring"))
@@ -1442,7 +1477,9 @@ fn validate_slayer_event(
     else {
         return Err(ErrorKind::ReplayFailed.into_error());
     };
-    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+    if !crate::characters::slayer_can_use_on_day_step(&step)
+        || step.id != payload.discussion_step_id
+    {
         return Err(ErrorKind::ReplayFailed.into_error());
     }
     let actor = players
@@ -1471,9 +1508,10 @@ fn validate_slayer_event(
         } => SlayerTargetRegistration::Canonical,
         _ => return Err(ErrorKind::ReplayFailed.into_error()),
     };
-    let expected_registration = crate::characters::slayer_registration(target, &choice)
-        .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
     let rule = replay_rule_state(prefix, players);
+    let expected_registration =
+        crate::characters::slayer_registration(target, &choice, rule.active_poison.as_ref())
+            .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
     let expected_impairment = rule
         .active_poison
         .as_ref()
@@ -1528,6 +1566,27 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
     });
     let (active_poison, active_protection) =
         crate::characters::active_rule_effects(players, events);
+    let mut active_impairments = players
+        .iter()
+        .filter(|player| player.actual_character == "drunk")
+        .map(|player| ActiveImpairment {
+            kind: ImpairmentKind::Drunk,
+            player_id: player.id.clone(),
+            source_event_id: player.ability_instance.source_event_id.clone(),
+            source_character_id: "drunk".into(),
+            expires: ImpairmentExpiry::Never,
+        })
+        .collect::<Vec<_>>();
+    if let Some(poison) = active_poison.as_ref() {
+        active_impairments.push(ActiveImpairment {
+            kind: ImpairmentKind::Poisoned,
+            player_id: poison.player_id.clone(),
+            source_event_id: poison.source_event_id.clone(),
+            source_character_id: "poisoner".into(),
+            expires: ImpairmentExpiry::WhileSourceAbilityActive,
+        });
+    }
+    let active_impairments = (!active_impairments.is_empty()).then_some(active_impairments);
     let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
     let announced = events
         .iter()
@@ -1559,7 +1618,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
         slayer_ability: None,
         virgin_ability: None,
         butler_vote,
-        active_impairments: None,
+        active_impairments,
         ability_grants: None,
         automatic_reminders: vec![],
         active_witch_curse: None,

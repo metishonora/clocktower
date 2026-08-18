@@ -20,15 +20,15 @@ pub(crate) use trouble_brewing::TbCharacterId;
 pub(crate) use trouble_brewing::{
     active_rule_effects, automatic_reminders, butler_vote_state, character_can_target_self,
     character_kind, character_required_input, character_steps, computed_information_result,
-    demon_dead_without_successor, first_night_order, has_actual_outsider,
+    counted_butler_voter_ids, demon_dead_without_successor, first_night_order, has_actual_outsider,
     imp_self_kill_successor_ids, is_townsfolk, is_valid_script_token,
     legal_demon_bluff_character_ids, legal_number_choices, mayor_decision_prompt,
     mayor_win_eligible, night_order, number_result_with_registration_judgments,
     registration_candidate_player_ids, resolve_imp_attack, scarlet_woman_successor,
     setup_info_character_is_represented, setup_info_input_is_valid_impaired,
     setup_info_input_is_valid_normal, setup_info_input_is_valid_registration,
-    setup_info_registration_options, slayer_registration, spy_grimoire_result,
-    target_information_checks, validate_butler_voters, virgin_resolution,
+    setup_info_registration_options, slayer_can_use_on_day_step, slayer_registration,
+    spy_grimoire_result, target_information_checks, virgin_resolution,
 };
 
 use crate::{

@@ -18,6 +18,8 @@ import {
   type CharacterKind,
 } from "../../setupDraft.js";
 import type { NominationDraft } from "../voting/useNominationDraft.js";
+import { abilityPresentationForStep } from "./actingRoleContext.js";
+import { numberChoicesMatch } from "../../core/numberChoice.js";
 
 export function phaseLabel(phase: Phase): string {
   if (phase === "firstNight") return "첫 밤";
@@ -37,20 +39,60 @@ export function stepTitle(step: PhaseStep, player?: Player): string {
     return step.requiredInput.demonSuccession?.kind === "fixed" ? "탕녀 승계" : "새 임프 선택";
   }
   if (step.character) {
+    const relation = abilityPresentationForStep(step, player);
+    if (relation && player) {
+      return `${characterLabel(player.actualCharacter)} · ${characterLabel(relation.abilityCharacterId)}`;
+    }
     const label = characterLabel(step.character);
     return player ? `${label}: ${player.seat}번 ${player.name}` : label;
   }
   if (step.id.endsWith(":announceDeaths")) return "사망 발표";
   if (step.stepType === "whisper") return "밀담";
   if (step.stepType === "discussion") return "토론";
-  if (step.stepType === "nomination") return `지목 및 투표 ${step.id.split(":").at(-1)}`;
-  if (step.id.endsWith(":execution")) return "처형 확정";
+  if (step.stepType === "nomination") return "지목 및 투표";
+  if (step.id.endsWith(":execution")) return "처형";
   if (step.stepType === "executionDeath") return player ? `처형 결과: ${player.seat}번 ${player.name}` : "처형 결과";
   if (step.stepType === "slayerDeath") return player ? `처단자 결과: ${player.seat}번 ${player.name}` : "처단자 결과";
   return step.id;
 }
 
-export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): string {
+export function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const nominationVotingSteps = steps.filter(isNominationVotingStep);
+  if (nominationVotingSteps.length < 2) return steps;
+  const current = nominationVotingSteps.find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? nominationVotingSteps.at(-1)!.status;
+  let inserted = false;
+  return steps.flatMap((step) => {
+    if (!isNominationVotingStep(step)) return [step];
+    if (inserted) return [];
+    inserted = true;
+    return [{ ...step, status: combinedStatus }];
+  });
+}
+
+export function collapseExecutionResolutionSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
+  const execution = steps.find((step) => step.requiredInput.kind === "executionDecision");
+  if (!execution) return steps;
+  const executionDeath = steps.find((step) => (
+    step.id === `${execution.id}Death`
+      && step.requiredInput.kind === "executionDeathDecision"
+  ));
+  if (!executionDeath) return steps;
+
+  const current = [execution, executionDeath].find((step) => step.status === "current");
+  const combinedStatus = current?.status ?? executionDeath.status;
+  return steps.flatMap((step) => {
+    if (step.id === executionDeath.id) return [];
+    if (step.id === execution.id) return [{ ...step, status: combinedStatus }];
+    return [step];
+  });
+}
+
+function isNominationVotingStep(step: PhaseStep) {
+  return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
+}
+
+export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[], includeSeats = true): string {
   const player = step.playerId
     ? players.find((candidate) => candidate.id === step.playerId)
     : undefined;
@@ -58,14 +100,22 @@ export function phaseOverviewTitle(step: PhaseOverviewItem, players: Player[]): 
     return stepTitle(step, player);
   }
   if (step.id.endsWith(":minionInfo")) {
-    return factionOverviewTitle("하수인", "Minion", players);
+    return includeSeats ? factionOverviewTitle("하수인", "Minion", players) : "하수인";
   }
   if (step.id.endsWith(":demonInfo")) {
-    return factionOverviewTitle("악마", "Demon", players);
+    return includeSeats ? factionOverviewTitle("악마", "Demon", players) : "악마";
+  }
+  if (step.stepType === "demonSuccession") {
+    return stepTitle(step, player);
   }
   if (step.character) {
+    const relation = abilityPresentationForStep(step, player);
+    if (relation && player) {
+      const layered = `${characterLabel(player.actualCharacter)} · ${characterLabel(relation.abilityCharacterId)}`;
+      return includeSeats ? `${layered} (${player.seat})` : layered;
+    }
     const label = characterLabel(step.character);
-    return player ? `${label} (${player.seat})` : label;
+    return includeSeats && player ? `${label} (${player.seat})` : label;
   }
   return stepTitle(step, player);
 }
@@ -117,7 +167,7 @@ export function inputKindLabel(inputKind: string): string {
 export function currentActionPrompt(step: PhaseStep): string | undefined {
   if (step.stepType === "executionDeath" || step.stepType === "slayerDeath") return undefined;
   if (step.id.endsWith(":fortuneTellerRedHerring")) {
-    return "점쟁이의 오답 대상 플레이어 1명을 선택하세요.";
+    return "점쟁이의 착각으로 지정할 플레이어 1명을 선택하세요.";
   }
   if (step.requiredInput.kind === "demonSuccession") {
     return step.requiredInput.demonSuccession?.kind === "selectable"
@@ -229,6 +279,14 @@ export function mayorDecisionApplies(step: PhaseStep, selectedPlayerIds: string[
   return Boolean(prompt && selectedPlayerIds.includes(prompt.mayorPlayerId));
 }
 
+export function playerSelectionIsComplete(step: PhaseStep, selectedPlayerIds: string[]): boolean {
+  const input = step.requiredInput;
+  if (input.kind !== "playerIds") return false;
+  if (!requiredSelectionValid(step, selectedPlayerIds.length)) return false;
+  return !input.allowedPlayerIds
+    || selectedPlayerIds.every((playerId) => input.allowedPlayerIds?.includes(playerId));
+}
+
 export function stepInputReady(
   step: PhaseStep,
   selectedCount: number,
@@ -240,6 +298,7 @@ export function stepInputReady(
   zeroOutsidersAvailable = true,
   mayorDecision?: MayorDecisionInput,
   selectedPlayerIds: string[] = [],
+  players: Player[] = [],
 ): boolean {
   if (step.requiredInput.kind === "nomination") {
     return nominationDraft.nominatorId.length > 0 && nominationDraft.nomineeId.length > 0;
@@ -268,7 +327,7 @@ export function stepInputReady(
     if (!selectedNumberChoice) return false;
     if (
       !step.informationPrompt.numberChoices.some(
-        (choice) => choice.value === selectedNumberChoice.value,
+        (choice) => numberChoicesMatch(choice, selectedNumberChoice),
       )
     ) {
       return false;
@@ -278,7 +337,20 @@ export function stepInputReady(
     if (step.requiredInput.zeroAllowed && zeroOutsiders) {
       return zeroOutsidersAvailable && selectedCount === 0;
     }
-    return selectedCount === (step.requiredInput.maxSelections ?? 0) && selectedCharacterId.length > 0;
+    if (
+      selectedCount !== (step.requiredInput.maxSelections ?? 0)
+      || selectedPlayerIds.length !== selectedCount
+      || !selectedCharacterId
+      || !setupInfoSelectionIsComplete(step, selectedPlayerIds, players)
+    ) {
+      return false;
+    }
+    return setupInfoCharacterOptions(
+      step.requiredInput.characterKind,
+      selectedPlayerIds,
+      players,
+      step,
+    ).some((character) => character.id === selectedCharacterId);
   }
   if (step.requiredInput.target === "characters") {
     return requiredSelectionCountValid(step, selectedCharacterCount);
@@ -367,6 +439,104 @@ export function setupInfoCharacterOptions(
   });
 }
 
+/**
+ * Whether a partial setup-information target selection can still be extended
+ * to a valid full delivery. Grimoire availability and confirmation both use
+ * this policy so an impossible pair cannot cross between the two surfaces.
+ */
+export function setupInfoSelectionCanComplete(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): boolean {
+  if (step.requiredInput.kind !== "setupInfo") return false;
+
+  const rosterPlayerIds = new Set(players.map((player) => player.id));
+  const uniqueSelectedPlayerIds = new Set(selectedPlayerIds);
+  if (
+    uniqueSelectedPlayerIds.size !== selectedPlayerIds.length
+    || selectedPlayerIds.some((playerId) => !rosterPlayerIds.has(playerId))
+  ) {
+    return false;
+  }
+
+  const selectionSize = step.requiredInput.maxSelections ?? 0;
+  if (selectedPlayerIds.length > selectionSize) return false;
+
+  const remainingPlayerIds = players
+    .map((player) => player.id)
+    .filter((playerId) => !uniqueSelectedPlayerIds.has(playerId));
+  const remainingSelections = selectionSize - selectedPlayerIds.length;
+  if (remainingPlayerIds.length < remainingSelections) return false;
+
+  return setupInfoCompletionExists(
+    step,
+    players,
+    selectedPlayerIds,
+    remainingPlayerIds,
+    remainingSelections,
+    0,
+  );
+}
+
+export function setupInfoSelectionIsComplete(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): boolean {
+  return step.requiredInput.kind === "setupInfo"
+    && selectedPlayerIds.length === (step.requiredInput.maxSelections ?? 0)
+    && setupInfoSelectionCanComplete(step, selectedPlayerIds, players);
+}
+
+export function setupInfoSelectablePlayerIds(
+  step: PhaseStep,
+  selectedPlayerIds: string[],
+  players: Player[],
+): string[] {
+  if (step.requiredInput.kind !== "setupInfo") return [];
+  const selected = new Set(selectedPlayerIds);
+  return players.flatMap((player) => {
+    if (selected.has(player.id)) return [player.id];
+    return setupInfoSelectionCanComplete(step, [...selectedPlayerIds, player.id], players)
+      ? [player.id]
+      : [];
+  });
+}
+
+function setupInfoCompletionExists(
+  step: PhaseStep,
+  players: Player[],
+  selectedPlayerIds: string[],
+  remainingPlayerIds: string[],
+  remainingSelections: number,
+  nextIndex: number,
+): boolean {
+  if (remainingSelections === 0) {
+    return setupInfoCharacterOptions(
+      step.requiredInput.characterKind,
+      selectedPlayerIds,
+      players,
+      step,
+    ).length > 0;
+  }
+  if (remainingPlayerIds.length - nextIndex < remainingSelections) return false;
+
+  for (let index = nextIndex; index < remainingPlayerIds.length; index += 1) {
+    if (setupInfoCompletionExists(
+      step,
+      players,
+      [...selectedPlayerIds, remainingPlayerIds[index]],
+      remainingPlayerIds,
+      remainingSelections - 1,
+      index + 1,
+    )) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function characterInputOptions(allowedCharacterIds?: string[]): typeof characters {
   if (allowedCharacterIds === undefined) return characters;
   const allowed = new Set(allowedCharacterIds);
@@ -378,12 +548,16 @@ export function setupInfoZeroOutsidersAvailable(players: Player[], step?: PhaseS
   return players.every((player) => characterKind(player.actualCharacter) !== "Outsider");
 }
 
-export function setupInfoDeliveryIsImpaired(step: PhaseStep): boolean {
+export function informationDeliveryIsImpaired(step: PhaseStep): boolean {
   return Boolean(
     step.informationPrompt?.activeReasons.some(
       (reason) => reason.type === "drunk" || reason.type === "poisoned",
     ),
   );
+}
+
+export function setupInfoDeliveryIsImpaired(step: PhaseStep): boolean {
+  return informationDeliveryIsImpaired(step);
 }
 
 export function setupInfoRegistrationJudgments(
@@ -392,7 +566,11 @@ export function setupInfoRegistrationJudgments(
   selectedCharacterId: string,
   players: Player[],
 ): RegistrationJudgment[] {
-  if (step.requiredInput.kind !== "setupInfo" || !selectedCharacterId) return [];
+  if (
+    step.requiredInput.kind !== "setupInfo"
+    || !selectedCharacterId
+    || setupInfoDeliveryIsImpaired(step)
+  ) return [];
   const representedByActualCharacter = players.some(
     (player) =>
       selectedPlayerIds.includes(player.id) && player.actualCharacter === selectedCharacterId,
@@ -440,10 +618,18 @@ export function phaseStepConfirmation(
     ),
   };
 
-  if (step.requiredInput.kind === "setupInfo" && draft.registrationJudgments.length) {
+  if (
+    step.requiredInput.kind === "setupInfo"
+    && !setupInfoDeliveryIsImpaired(step)
+    && draft.registrationJudgments.length
+  ) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
-  if (step.requiredInput.kind !== "setupInfo" && draft.registrationJudgments.length) {
+  if (
+    step.requiredInput.kind !== "setupInfo"
+    && step.requiredInput.kind !== "number"
+    && draft.registrationJudgments.length
+  ) {
     confirmation.registrationJudgments = draft.registrationJudgments;
   }
 
@@ -471,7 +657,7 @@ export function phaseStepConfirmation(
   }
 
   const choice = step.informationPrompt?.numberChoices.find(
-    (candidate) => candidate.value === draft.selectedNumberChoice?.value,
+    (candidate) => numberChoicesMatch(candidate, draft.selectedNumberChoice),
   );
   const constraint = step.informationPrompt?.numberConstraint;
   const constrainedChoice = draft.selectedNumberChoice;
@@ -520,6 +706,37 @@ export function targetCheckForSelection(
       check.targetPlayerIds.length === selectedPlayerIds.length &&
       check.targetPlayerIds.every((id) => selectedPlayerIds.includes(id)),
   );
+}
+
+export type TargetRegistrationTreatment = {
+  playerId: string;
+  registeredAs: RegistrationJudgment["registeredAs"];
+  canonicalChoice: TargetCheck["choices"][number];
+  registeredChoice: TargetCheck["choices"][number];
+};
+
+export function targetRegistrationTreatment(
+  check: TargetCheck | undefined,
+): TargetRegistrationTreatment | undefined {
+  if (!check || check.computedResult.kind !== "boolean") return undefined;
+  const canonicalChoice = check.choices.find(
+    (choice) => choice.result.kind === "boolean"
+      && choice.isComputed
+      && choice.registrationJudgments.length === 0,
+  );
+  const registeredChoices = check.choices.filter(
+    (choice) => choice.result.kind === "boolean" && choice.registrationJudgments.length === 1,
+  );
+  if (!canonicalChoice || registeredChoices.length !== 1) return undefined;
+  const registeredChoice = registeredChoices[0];
+  const judgment = registeredChoice.registrationJudgments[0];
+  if (!judgment) return undefined;
+  return {
+    playerId: judgment.playerId,
+    registeredAs: judgment.registeredAs,
+    canonicalChoice,
+    registeredChoice,
+  };
 }
 
 export function stepStatusLabel(status: PhaseOverviewItem["status"]): string {

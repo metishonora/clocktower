@@ -4,11 +4,6 @@
 .snvInformationPendingIdentity { margin: 34px 0 12px !important; }
 .snvInformationIdentity > div { display: grid; gap: 7px; }
 .snvInformationRoleLine { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.snvInformationInfluenceBadges { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.snvInformationInfluenceBadge { display: inline-grid; min-height: 26px; padding: 0 10px; place-items: center; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; color: #fff; box-shadow: 0 7px 18px rgba(0, 0, 0, .25); font-size: .62rem; font-style: normal; font-weight: 900; letter-spacing: .02em; }
-.snvInformationInfluenceBadge.poisoned,
-.snvInformationInfluenceBadge.drunk { background: linear-gradient(135deg, #a95bd2, #71378f); }
-.snvInformationInfluenceBadge.vortox { background: linear-gradient(135deg, #e34a68, #a92643); }
 .snvInformationIdentity strong { color: #ddcae2; font-size: .9rem; }
 .snvInformationAbility { max-width: 620px; color: #c7b9cc !important; font-size: .82rem; line-height: 1.58; }
 .snvDaySurface .snvDeathConsequence .snvInformationIdentity strong { color: #4b3650; }

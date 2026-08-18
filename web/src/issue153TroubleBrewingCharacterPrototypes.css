@@ -1,0 +1,399 @@
+.issue153ReviewRoot {
+  --issue153-ink: #f6efdd;
+  --issue153-muted: #b9c6b5;
+  --issue153-gold: #d5b46d;
+  --issue153-green: #2f704e;
+  --issue153-green-deep: #0d261a;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  padding: 20px clamp(10px, 3vw, 34px) 48px;
+  color: var(--issue153-ink);
+  background:
+    radial-gradient(circle at 78% 0%, rgba(83, 124, 81, .22), transparent 30%),
+    linear-gradient(155deg, #071611, #102a20 50%, #071611);
+}
+
+.issue153ReviewControls {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto 18px;
+  padding: clamp(15px, 3vw, 23px);
+  border: 1px solid rgba(221, 198, 151, .2);
+  border-radius: 18px;
+  background: rgba(7, 18, 13, .88);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, .2);
+}
+
+.issue153ReviewControls header { display: grid; gap: 6px; }
+.issue153ReviewControls header > span {
+  color: var(--issue153-gold);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.issue153ReviewControls h1 { margin: 0; font: clamp(1.35rem, 3vw, 2.05rem) Georgia, serif; }
+.issue153ReviewControls header p { max-width: 680px; margin: 0; color: var(--issue153-muted); font-size: .78rem; line-height: 1.5; }
+
+.issue153ReviewOptions { display: flex; flex-wrap: wrap; align-items: end; gap: 9px; margin-top: 14px; }
+.issue153ReviewOptions label { display: grid; min-width: 160px; gap: 5px; color: #d4ccb4; font-size: .66rem; font-weight: 850; }
+.issue153ReviewOptions select,
+.issue153ResetButton {
+  min-height: 38px;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid rgba(221, 198, 151, .26);
+  border-radius: 10px;
+  color: inherit;
+  background: #173629;
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 800;
+}
+.issue153ResetButton { cursor: pointer; background: rgba(255, 255, 255, .05); }
+
+.issue153ReviewControls button:focus-visible,
+.issue153ReviewControls select:focus-visible,
+.issue153ProductionShell button:focus-visible,
+.issue153ProductionShell select:focus-visible {
+  outline: 3px solid rgba(229, 192, 111, .65);
+  outline-offset: 2px;
+}
+
+.issue153ProductionShell { width: min(1180px, 100%); margin: 0 auto; overflow: hidden; }
+.issue153ProductionShell.issue153SlayerShell { position: relative; z-index: 3; overflow: visible; }
+.issue153FixtureMarker { position: absolute; top: 18px; left: 20px; color: var(--issue153-gold); font: 900 .72rem Georgia, serif; letter-spacing: .14em; }
+.issue153PlaySurface,
+.issue153PlayPrimary,
+.issue153RoleSelection,
+.issue153GrimoireStage,
+.issue153SetupInformationProgressCard { min-width: 0; }
+.issue153BackLabel { align-self: start; padding: 7px 11px; border: 1px solid rgba(221, 198, 151, .24); border-radius: 999px; color: #eadcb8; background: rgba(255, 255, 255, .05); font-size: .7rem; font-weight: 850; }
+.issue153ProductionShell .issue153PhaseOrder li { border-bottom-color: rgba(221, 198, 151, .12); color: #9fac9d; }
+.issue153ProductionShell .issue153PhaseOrder li.complete { color: #d6c69f; }
+.issue153ProductionShell .issue153PhaseOrder li.current { color: #fff8e8; background: rgba(55, 107, 80, .72); box-shadow: inset 3px 0 var(--issue153-gold); }
+
+.issue153RoleSelection,
+.issue153SetupInformationProgressCard {
+  color: #fff8e8;
+  background: linear-gradient(145deg, rgba(45, 105, 70, .88), rgba(20, 57, 39, .96));
+  box-shadow: inset 0 0 0 1px rgba(221, 198, 151, .1);
+}
+.issue153RoleSelection {
+  display: grid;
+  width: min(720px, calc(100% - 24px));
+  box-sizing: border-box;
+  margin: 18px auto 28px;
+  padding: clamp(22px, 4vw, 38px);
+  gap: 16px;
+  border: 1px solid rgba(221, 198, 151, .16);
+  border-radius: 20px;
+}
+.issue153RoleSelection .snvCurrentStepLabel,
+.issue153ProgressAbility { color: #d9d0b6; }
+.issue153RoleIdentity,
+.issue153ProgressIdentity {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 20px !important;
+  padding: 0;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+.issue153RoleIdentity img,
+.issue153ProgressIdentity img { width: 66px; height: 66px; object-fit: contain; }
+.issue153RoleIdentity > div,
+.issue153ProgressIdentity > div { display: grid; min-width: 0; gap: 7px; }
+.issue153RoleIdentity .snvCurrentStepRoleName,
+.issue153ProgressIdentity .snvCurrentStepRoleName { color: #fff8e8; font-size: clamp(1.7rem, 4vw, 2.8rem); font-weight: 900; }
+.issue153RoleIdentity strong,
+.issue153ProgressIdentity strong { color: #d1c5a3; font-size: .76rem; }
+.issue153RoleAbility,
+.issue153ProgressAbility { margin: 0; max-width: 660px; font-size: .82rem; line-height: 1.55; }
+
+.issue153PrimaryAction,
+.issue153SecondaryReveal {
+  min-height: 48px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.issue153PrimaryAction { border: 1px solid var(--issue153-gold); color: #18251b; background: #e6cb89; }
+.issue153PrimaryAction:disabled { opacity: .45; cursor: not-allowed; }
+.issue153RoleSelection > .issue153PrimaryAction { width: 100%; margin-top: 4px; }
+.issue153RoleConfirm { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.issue153RoleConfirm small { font-size: .68rem; }
+
+.issue153GrimoireStage { display: grid; gap: 14px; }
+.issue153GrimoireStage .grimoirePresentation { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.issue153GrimoireStage .issue116SelectionHeader h2 {
+  white-space: nowrap;
+  font-size: clamp(1.35rem, 5.5vw, 2.3rem);
+}
+.issue153ProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateDecoy {
+  border-color: #59d4ca;
+  box-shadow: 0 0 0 7px rgba(89, 212, 202, .38), 0 0 44px rgba(49, 169, 162, .62);
+  filter: brightness(1.1) saturate(1.08);
+}
+.issue153ProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateDecoy {
+  border-color: #187b76;
+  box-shadow: 0 0 0 6px rgba(24, 123, 118, .24), 0 0 30px rgba(24, 123, 118, .34);
+}
+
+.issue153SetupInformationProgressCard { display: grid; gap: 15px; }
+.issue153ProgressAbility { color: #ded6bd; }
+.issue153DrunkShownAbility {
+  display: grid;
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  padding: 14px 16px;
+  gap: 8px;
+  border: 1px solid rgba(221, 198, 151, .25);
+  border-radius: 16px;
+  background: rgba(7, 35, 22, .42);
+}
+.issue153DrunkShownLabel { color: #d8bd77; font-size: .68rem; font-weight: 900; letter-spacing: .08em; }
+.issue153DrunkShownIdentity {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+.issue153DrunkShownIdentity > img { width: 58px; height: 58px; object-fit: contain; }
+.issue153DrunkShownIdentity > div { min-width: 0; }
+.issue153DrunkShownName { color: #fff3c7; font: 1.45rem Georgia, serif; }
+.issue153DrunkShownIdentity p { margin: 6px 0 0; color: #c8d1bf; font-size: .78rem; line-height: 1.5; }
+.snvDaySurface .issue153DrunkShownAbility { border-color: rgba(51, 94, 62, .22); background: rgba(34, 103, 66, .08); }
+.snvDaySurface .issue153DrunkShownLabel { color: #80601f; }
+.snvDaySurface .issue153DrunkShownName { color: #173f2a; }
+.snvDaySurface .issue153DrunkShownIdentity p { color: #536451; }
+.issue153RegistrationDecision { display: grid; margin: 0; padding: 0; gap: 8px; border: 0; }
+.issue153RegistrationDecision legend { padding: 0; color: #d9cda9; font-size: .7rem; font-weight: 900; }
+.issue153RegistrationDecision > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.issue153RegistrationDecision button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid rgba(221, 198, 151, .28);
+  border-radius: 11px;
+  color: #f3ead5;
+  background: rgba(7, 35, 22, .42);
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+.issue153RegistrationDecision button.selected { border-color: #d8ba72; color: #17261b; background: #e5ca86; }
+.issue153RegistrationDecision button:disabled { opacity: .72; cursor: default; }
+.snvDaySurface .issue153RegistrationDecision legend { color: #526451; }
+.snvDaySurface .issue153RegistrationDecision button { border-color: rgba(51, 94, 62, .22); color: #294734; background: rgba(255, 255, 255, .72); }
+.snvDaySurface .issue153RegistrationDecision button.selected { border-color: #9b7d38; color: #173526; background: #ecd18c; }
+.issue153TargetSummary { margin: 0; padding: 12px 14px; border: 1px solid rgba(221, 198, 151, .25); border-radius: 12px; background: rgba(7, 35, 22, .42); }
+.issue153TargetSummary span { color: #d8bd77; font-size: .68rem; font-weight: 900; letter-spacing: .08em; }
+.issue153TargetSummary strong { display: block; margin-top: 4px; color: #fff3c7; font-size: .9rem; font-weight: 850; overflow-wrap: anywhere; }
+.issue153CharacterSelect { display: grid; gap: 7px; color: #d9cda9; font-size: .7rem; font-weight: 900; }
+.issue153CharacterSelect select { min-height: 44px; padding: 8px 11px; border: 1px solid rgba(221, 198, 151, .32); border-radius: 11px; color: #fff8e8; background: #163c29; font: inherit; font-size: .82rem; }
+.issue153TaskActions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 2px; }
+.issue153TaskActions > button { flex: 1 1 170px; }
+.issue153SetupInformationProgressCard .informationReveal { min-height: 48px; }
+.issue153SetupInformationProgressCard .informationReveal:disabled { opacity: .45; cursor: not-allowed; }
+.issue153SecondaryReveal { border: 1px solid rgba(221, 198, 151, .33); color: #f8efd9; background: rgba(255, 255, 255, .07); }
+.issue153ScalarTruth { margin: 0; }
+.issue153ProductionShell .issue153ScalarTruth > div { border-color: rgba(221, 198, 151, .25); background: rgba(7, 35, 22, .42); }
+.issue153ProductionShell .issue153ScalarTruth dt { color: #d8bd77; }
+.issue153ProductionShell .issue153ScalarTruth dd { color: #fff3c7; }
+.issue153NumericDelivery { display: grid; gap: 7px; color: #d9cda9; font-size: .7rem; font-weight: 900; }
+.issue153NumericDelivery > div { display: flex; min-height: 44px; padding: 0 12px; align-items: center; gap: 9px; border: 1px solid rgba(221, 198, 151, .32); border-radius: 11px; background: #163c29; }
+.issue153NumericDelivery input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; color: #fff8e8; background: transparent; font: 850 .86rem system-ui, sans-serif; }
+.issue153NumericDelivery strong { color: #d8bd77; font-size: .78rem; }
+
+.issue153VirginTriggerReveal > img { width: clamp(72px, 16vw, 104px); height: clamp(72px, 16vw, 104px); object-fit: contain; }
+.issue153VirginTriggerPlayer { margin-top: 12px; color: #f2dfaa; font: 850 clamp(1.2rem, 4vw, 1.75rem) Georgia, serif; }
+.issue153VirginTriggerReveal > h2 { margin: 0; color: #fff8e8; font: clamp(2rem, 7vw, 3.8rem)/1.12 Georgia, serif; }
+
+.issue153SlayerShell .snvDayActionDock > button {
+  border-color: rgba(75, 107, 76, .32);
+  background: rgba(255, 252, 238, .97);
+  box-shadow: 0 11px 30px rgba(18, 62, 39, .28);
+}
+.issue153SlayerShell .snvDayActionDock > button.selected {
+  border-color: #d3b46b;
+  color: #fff8e8;
+  background: #246143;
+  box-shadow: 0 0 0 4px rgba(211, 180, 107, .22), 0 12px 30px rgba(18, 62, 39, .32);
+}
+.issue153SlayerShell .snvDayActionPanel {
+  border-color: rgba(91, 114, 78, .24);
+  color: #173526;
+  background: rgba(255, 252, 238, .98);
+  box-shadow: 0 24px 70px rgba(18, 62, 39, .32);
+}
+.issue153SlayerShell .snvDayActionIdentity:hover { background: rgba(39, 104, 68, .07); }
+.issue153SlayerShell .snvDayActionIdentity > div > span:first-child { color: #61745f; }
+.issue153SlayerShell .snvDayActionIdentity h2 { color: #193b29; }
+.issue153SlayerShell .snvDayActionHeader > p {
+  border-color: rgba(62, 104, 69, .14);
+  color: #49604c;
+  background: rgba(47, 112, 78, .055);
+}
+.issue153SlayerActionForm fieldset > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.issue153SlayerActionForm legend { color: #526d54; }
+.issue153SlayerActionForm fieldset button {
+  display: grid;
+  min-height: 58px;
+  padding: 7px;
+  place-items: center;
+  gap: 2px;
+  border-color: rgba(54, 93, 60, .18);
+  color: #27452f;
+  background: rgba(255, 255, 255, .72);
+}
+.issue153SlayerActionForm fieldset button.selected {
+  border-color: #2f704e;
+  color: #17452f;
+  background: rgba(47, 112, 78, .16);
+  box-shadow: inset 0 0 0 1px rgba(47, 112, 78, .12);
+}
+.issue153SlayerTargets button > span { color: #8b6a2b; font-size: .65rem; font-weight: 900; }
+.issue153SlayerTargets button > strong { font-size: .76rem; }
+.issue153SlayerRegistration > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.issue153SlayerShell .snvDayActionConfirm.normal {
+  border-color: #c9a958;
+  color: #1d2d20;
+  background: linear-gradient(135deg, #f1d895, #d9b765);
+  box-shadow: 0 12px 30px rgba(148, 106, 30, .25);
+}
+.issue153SlayerAbilityReveal > img { width: clamp(76px, 16vw, 112px); height: clamp(76px, 16vw, 112px); object-fit: contain; }
+.issue153SlayerAbilityReveal > h2 { display: grid; max-width: 520px; margin: 12px 0 4px; justify-items: center; gap: 2px; color: #fff8e8; font: clamp(2rem, 7vw, 3.7rem)/1.2 Georgia, serif; }
+.issue153SlayerAbilityReveal > h2 > span { white-space: nowrap; }
+.issue153SetupInformationReveal {
+  display: grid;
+  width: min(620px, calc(100% - 24px));
+  min-height: min(560px, calc(100dvh - 36px));
+  box-sizing: border-box;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: clamp(28px, 7vw, 62px) clamp(18px, 5vw, 48px);
+  border: 1px solid rgba(221, 198, 151, .28);
+  border-radius: 20px;
+  color: #fff8e8;
+  background: linear-gradient(160deg, #163e2a, #0b2117);
+  text-align: center;
+}
+.issue153RevealHeader > span {
+  color: #d2ad64;
+  font: 800 .72rem Georgia, serif;
+  letter-spacing: .08em;
+}
+.issue153RevealSeatCards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(104px, 18vw, 128px);
+  justify-content: center;
+  gap: 12px;
+  margin: 14px 0 0;
+}
+.issue153RevealSeatCard {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 10px 8px;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid rgba(221, 198, 151, .24);
+  border-radius: 16px;
+  color: #f4ead5;
+  background: rgba(4, 24, 15, .36);
+  overflow: hidden;
+}
+.issue153RevealSeatCard > span {
+  display: grid;
+  width: 38px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(221, 198, 151, .32);
+  border-radius: 50%;
+  color: #efd68d;
+  background: rgba(210, 173, 100, .13);
+  font: 800 1rem Georgia, serif;
+}
+.issue153RevealSeatCard strong { min-width: 0; max-width: 100%; font-size: .74rem; overflow-wrap: anywhere; }
+.issue153SetupInformationReveal .issue153RevealPrompt { margin: 18px 0 0; color: #eadfc2; font: clamp(1.3rem, 4vw, 2.15rem)/1.35 Georgia, serif; }
+.issue153RevealResult { display: grid; justify-items: center; gap: 7px; }
+.issue153RevealResult img { width: clamp(62px, 12vw, 88px); height: clamp(62px, 12vw, 88px); object-fit: contain; }
+.issue153RevealResult h2 { margin: 0; font: clamp(2.55rem, 8vw, 4.7rem)/1 Georgia, serif; }
+.issue153ZeroOutsidersResult { display: grid; justify-items: center; gap: 14px; margin: 24px 0; text-align: center; }
+.issue153ZeroOutsidersResult h2 { margin: 0; color: #f4ead5; font: clamp(2rem, 7vw, 3.8rem)/1.12 Georgia, serif; }
+.issue153ScalarRevealIdentity { display: grid; justify-items: center; gap: 6px; }
+.issue153ScalarRevealIdentity img { width: clamp(62px, 12vw, 88px); height: clamp(62px, 12vw, 88px); object-fit: contain; }
+.issue153ScalarRevealLabel { margin: 14px 0 0; color: #eadfc2; font: clamp(1.2rem, 4vw, 1.9rem)/1.35 Georgia, serif; }
+.issue153ScalarRevealValue { color: #fff8e8; font: clamp(3rem, 10vw, 5.5rem)/1 Georgia, serif; }
+.issue153SetupInformationReveal > button { width: min(360px, 100%); min-height: 46px; margin-top: 8px; border: 1px solid var(--issue153-gold); border-radius: 11px; color: #1a2b20; background: #e5ca86; font: inherit; font-weight: 900; cursor: pointer; }
+
+.issue153NextStage { display: grid; width: min(660px, 100%); box-sizing: border-box; margin: 0 auto; padding: clamp(25px, 5vw, 45px); place-items: center; gap: 11px; border: 1px solid rgba(210, 173, 100, .28); border-radius: 20px; background: rgba(7, 25, 18, .75); text-align: center; }
+.issue153NextStage > span { color: var(--issue153-gold); font-size: .68rem; font-weight: 900; letter-spacing: .13em; }
+.issue153NextStage h2 { margin: 0; font: clamp(1.7rem, 5vw, 2.8rem) Georgia, serif; }
+.issue153NextStage p { margin: 0; color: #bdc9b7; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .issue153ReviewRoot { padding: 10px 8px 28px; }
+  .issue153ReviewControls { padding: 14px 12px; border-radius: 15px; }
+  .issue153ReviewOptions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .issue153ReviewOptions label { min-width: 0; }
+  .issue153ReviewOptions select, .issue153ResetButton { width: 100%; }
+  .issue153RoleSelection, .issue153SetupInformationProgressCard { padding: 22px 16px; }
+  .issue153TaskActions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .issue153TaskActions > button { width: 100%; }
+  .issue153RegistrationDecision > div { grid-template-columns: 1fr; }
+  .issue153SlayerActionForm fieldset > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.issue153ProductionShell[data-theme="day"] .issue153ProgressIdentity .snvCurrentStepRoleName {
+  color: var(--tb-ui-heading);
+}
+
+.issue153ProductionShell[data-theme="day"] .issue153NextStage h2 {
+  color: #fff8e8;
+}
+
+.issue153ProductionShell[data-theme="day"] .issue153ProgressIdentity strong,
+.issue153ProductionShell[data-theme="day"] .issue153BackLabel {
+  color: var(--tb-ui-copy-muted);
+}
+
+.issue153ProductionShell[data-theme="day"] .issue153BackLabel {
+  border-color: var(--tb-ui-panel-border);
+  background: var(--tb-ui-row);
+}
+
+@media (max-width: 390px) {
+  .issue153ReviewRoot { padding-inline: 6px; }
+  .issue153ReviewControls { padding-inline: 10px; }
+  .issue153RoleSelection, .issue153SetupInformationProgressCard { padding-inline: 13px; }
+  .issue153RoleIdentity img, .issue153ProgressIdentity img { width: 56px; height: 56px; }
+  .issue153TargetSummary strong { font-size: .8rem; }
+}
+
+@media (max-width: 360px) {
+  .issue153ReviewRoot { padding-inline: 4px; }
+  .issue153ReviewControls { padding-inline: 8px; }
+  .issue153RoleSelection, .issue153SetupInformationProgressCard { padding-inline: 11px; }
+}

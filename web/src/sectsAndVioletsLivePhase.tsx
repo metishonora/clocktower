@@ -28,6 +28,7 @@ import { PlayerImpairmentBadges } from "./features/phase-control/ImpairmentBadge
 import { FuneralIcon, GhostVoteIcon } from "./features/grimoire/SeatStateIcons";
 import { NominationArrow } from "./shared-ui/NominationArrow";
 import { GrimoireToolbar } from "./shared-ui/GrimoireToolbar";
+import { collapseNominationVotingSteps } from "./features/phase-control/phaseInput";
 
 export type LiveHandoffKind = "nomination" | "vote" | "demon" | "vigormortisPoison" | "snakeCharmer" | "pitHag" | "pitHagDeaths" | "cerenovus" | "evilTwin" | "witch" | "dreamer" | "seamstress" | "sweetheart" | "barber" | "klutz";
 export type LiveHandoff = {
@@ -739,24 +740,6 @@ function PhaseOverview({ replayState }: { replayState: ReplayState }) {
       ))}
     </ol>
   );
-}
-
-function collapseNominationVotingSteps(steps: PhaseOverviewItem[]): PhaseOverviewItem[] {
-  const nominationVotingSteps = steps.filter(isNominationVotingStep);
-  if (nominationVotingSteps.length < 2) return steps;
-  const current = nominationVotingSteps.find((step) => step.status === "current");
-  const combinedStatus = current?.status ?? nominationVotingSteps.at(-1)!.status;
-  let inserted = false;
-  return steps.flatMap((step) => {
-    if (!isNominationVotingStep(step)) return [step];
-    if (inserted) return [];
-    inserted = true;
-    return [{ ...step, status: combinedStatus }];
-  });
-}
-
-function isNominationVotingStep(step: PhaseStep) {
-  return step.requiredInput.kind === "nomination" || step.requiredInput.kind === "nominationVote";
 }
 
 function stepLabel(
