@@ -60,7 +60,7 @@ export function Grimoire({
   readOnlyReveal?: boolean;
 }) {
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
-  const annotationLongPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const annotationLongPressTimer = useRef<number | undefined>(undefined);
   const annotationLongPressActivated = useRef(false);
   const seats = players.length > 0 ? players : draft.players;
   const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);

@@ -36,5 +36,9 @@ jobs:
         run: cargo test --workspace
       - name: Test web app
         run: pnpm --dir web test
-      - name: Build web app
-        run: pnpm --dir web build
+      - name: Test server lifecycle
+        run: pnpm test:test-server
+      - name: Install Chromium
+        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Test production browser paths
+        run: pnpm test:browser

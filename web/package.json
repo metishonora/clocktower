@@ -33,13 +33,18 @@
     "prototype:issue-136-bug-report": "vite --host 0.0.0.0",
     "prototype:issue-148-tb-adaptation": "vite --host 0.0.0.0",
     "prototype:issue-151-tb-bug-report": "vite --host 0.0.0.0",
+    "prototype:issue-162-tb-game-end": "vite --host 0.0.0.0",
     "build": "pnpm --workspace-root build:wasm && tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "generate:pwa-assets": "pwa-assets-generator --preset minimal --root public --manifest false assets/icons/app-icon.svg",
     "verify:pwa": "node scripts/verify-pwa-build.mjs",
-    "test": "pnpm --workspace-root build:wasm && pnpm run test:unit && tsc -p tsconfig.integration.json --noEmit && vitest run",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "test": "pnpm --workspace-root build:wasm && pnpm run check:architecture && pnpm run test:unit && pnpm run test:integration:run",
     "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js .codex-tmp/web-tests/**/*.test.js",
-    "test:integration": "pnpm --workspace-root build:wasm && tsc -p tsconfig.integration.json --noEmit && vitest run"
+    "test:integration": "pnpm --workspace-root build:wasm && pnpm run test:integration:run",
+    "test:integration:run": "tsc -p tsconfig.integration.json --noEmit && vitest run",
+    "test:prototype": "pnpm --workspace-root build:wasm && tsc -p tsconfig.prototype.json --noEmit && vitest run --config vitest.prototype.config.ts",
+    "test:browser:run": "tsc -p tsconfig.browser.json --noEmit && playwright test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -49,8 +54,10 @@
     "vite": "^6.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "@vite-pwa/assets-generator": "1.0.2",

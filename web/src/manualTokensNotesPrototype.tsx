@@ -73,7 +73,7 @@ export function ManualTokensNotesPrototype() {
   const [selectedSeatId, setSelectedSeatId] = useState<string>();
   const [error, setError] = useState<string>();
   const [latestSummary, setLatestSummary] = useState("낮 토론 시작");
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const longPressTimer = useRef<number | undefined>(undefined);
   const longPressActivated = useRef(false);
   const editingPlayer = players.find((candidate) => candidate.id === editingPlayerId);
   const busy = scenario === "busy";
