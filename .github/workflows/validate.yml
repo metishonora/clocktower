@@ -41,6 +41,4 @@ jobs:
       - name: Install Chromium
         run: pnpm --dir web exec playwright install --with-deps chromium
       - name: Test production browser paths
-        env:
-          CLOCKTOWER_TEST_SERVER_PUBLIC_IPV4: 127.0.0.1
         run: pnpm test:browser

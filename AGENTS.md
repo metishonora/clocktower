@@ -3,7 +3,7 @@
 ## Working style
 
 - Keep `main` deployable. Start normal code work from an updated `develop` in a dedicated issue branch and worktree.
-- Merge issue branches into `develop` only after explicit user acceptance. Release by merging `develop` into `main`.
+- Merge issue branches into `develop`. Release by merging `develop` into `main`.
 - Branch hotfixes from `main` and merge them back into `develop`.
 - Keep live-play UI concise for a rule-literate Storyteller. Prefer actionable values and add explanatory copy only for validation, failure, recovery, destructive actions, or explicit requests.
 - For Rust domain changes, follow `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
@@ -21,15 +21,14 @@
 
 ## Test server lifecycle
 
-- For requested Clocktower test servers, use `clocktower_server_operator` when available; otherwise invoke the repository test-server manager directly. Agent unavailability must not block server operations.
-- Use only `node scripts/test-server-manager.mjs` for test-server start, status, keep, release, reconcile, and stop operations. `pnpm test-server` is a manual convenience alias, not the agent entry point. Do not improvise Vite, screen, detached-process, port-selection, or process-termination commands.
-- The manager owns worktree-specific port allocation, `0.0.0.0` binding, strict-port handling, detached execution, process ownership, logs, HTTP verification, and the Tailscale IPv4 URL.
+- For requested Clocktower test servers, use `web_server_operator` when available; otherwise invoke the shared manager through `node scripts/test-server-manager.mjs`. Agent unavailability must not block server operations.
+- Use only `node scripts/test-server-manager.mjs` for test-server start, status, keep, release, reconcile, and stop operations. `pnpm test-server` is a manual convenience alias. Do not improvise Vite, screen, detached-process, port-selection, or process-termination commands.
+- `.codex/web-server.json` owns approved profiles, worktree-specific port allocation, `0.0.0.0` binding, strict-port handling, process ownership, logs, HTTP verification, and the Tailscale IPv4 URL.
 - Never terminate a process not recorded and verified by the manager.
 - By default, stop the session-owned server on the next user turn. Preserve it when the user explicitly requests continued operation.
 
 ## Completion
 
 - Changes limited to the test-server manager, its lifecycle hooks, or server-operator configuration require focused manager tests and a real start/HTTP/stop smoke test. Do not run full application regression suites unless application runtime or build behavior changes.
-- Close a GitHub issue only when the user explicitly asks to close that specific issue. Implementation completion, acceptance, merge, or push does not imply permission to close it.
 - For Rust changes, run `cargo test --workspace`.
 - For relevant web changes, run `pnpm --dir web test` and `pnpm --dir web build`.

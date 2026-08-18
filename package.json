@@ -12,8 +12,8 @@
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
     "test:web": "pnpm --dir web test",
-    "test:browser": "pnpm --dir web build && node scripts/run-production-browser-tests.mjs",
+    "test:browser": "pnpm --dir web build && pnpm --dir web run test:browser:run",
     "test-server": "node scripts/test-server-manager.mjs",
-    "test:test-server": "node --test scripts/test-server-manager.test.mjs scripts/test-server-manager.integration.test.mjs .codex/hooks/test-server-lifecycle.test.mjs .codex/hooks/worktree-maintenance.test.mjs"
+    "test:test-server": "node --test scripts/test-server-manifest.test.mjs .codex/hooks/worktree-maintenance.test.mjs"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "description": "Clocktower test-server and worktree lifecycle guardrails.",
+  "description": "Clocktower worktree lifecycle guardrails.",
   "hooks": {
     "SessionStart": [
       {
@@ -10,42 +10,6 @@
             "command": "git worktree prune --expire now",
             "timeout": 3,
             "statusMessage": "Pruning stale Clocktower worktree metadata"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "^Bash$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/test-server-lifecycle.mjs\"",
-            "timeout": 5,
-            "statusMessage": "Checking Clocktower test-server command"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/test-server-lifecycle.mjs\"",
-            "timeout": 15,
-            "statusMessage": "Reconciling the Clocktower test server"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/test-server-lifecycle.mjs\"",
-            "timeout": 3
           }
         ]
       }
