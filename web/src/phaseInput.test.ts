@@ -3,15 +3,53 @@ import test from "node:test";
 import type { PhaseStep, Player } from "./core/types.js";
 import {
   characterInputOptions,
+  collapseNominationVotingSteps,
   currentActionPrompt,
   phaseStepConfirmation,
+  playerSelectionIsComplete,
   setupInfoCharacterOptions,
   setupInfoRegistrationJudgments,
+  setupInfoSelectablePlayerIds,
+  setupInfoSelectionIsComplete,
   setupInfoZeroOutsidersAvailable,
   stepTitle,
   stepInputPayload,
   stepInputReady,
 } from "./features/phase-control/phaseInput.js";
+
+test("nomination and vote rounds share one stable phase-overview entry", () => {
+  const nomination = (id: string, kind: "nomination" | "nominationVote", status: "complete" | "current") => ({
+    id,
+    phase: "day" as const,
+    stepType: "nomination" as const,
+    requiredInput: { kind, optional: kind === "nomination" },
+    canSkip: kind === "nomination",
+    support: "automated" as const,
+    status,
+  });
+  const execution = {
+    id: "day:1:execution",
+    phase: "day" as const,
+    stepType: "execution" as const,
+    requiredInput: { kind: "executionDecision" as const, optional: false },
+    canSkip: false,
+    support: "automated" as const,
+    status: "waiting" as const,
+  };
+
+  const collapsed = collapseNominationVotingSteps([
+    nomination("day:1:nomination:1", "nomination", "complete"),
+    nomination("day:1:nomination:1:vote", "nominationVote", "complete"),
+    nomination("day:1:nomination:2", "nomination", "current"),
+    execution,
+  ]);
+
+  equal(collapsed.length, 2);
+  equal(collapsed[0].id, "day:1:nomination:1");
+  equal(collapsed[0].status, "current");
+  equal(stepTitle(collapsed[0]), "지목 및 투표");
+  equal(collapsed[1].id, execution.id);
+});
 
 test("evil-information steps use operational Korean titles instead of internal identifiers", () => {
   const baseStep: PhaseStep = {
@@ -148,6 +186,7 @@ test("Mayor decision is required only when the Imp actually selects the Mayor", 
 
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["chef"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, undefined, ["mayor"]), false);
+  equal(playerSelectionIsComplete(step, ["mayor"]), true);
   equal(stepInputReady(step, 1, 0, "", nominationDraft, false, undefined, true, { kind: "mayorDies" }, ["mayor"]), true);
   deepEqual(
     stepInputPayload(step, ["chef"], "", [], nominationDraft, false, { kind: "mayorDies" }),
@@ -232,6 +271,71 @@ test("setup information options use candidate Actual Characters in catalog order
   );
 });
 
+test("setup information target feasibility and final readiness share one rule boundary", () => {
+  const step: PhaseStep = {
+    id: "firstNight:washerwoman",
+    phase: "firstNight",
+    stepType: "character",
+    character: "washerwoman",
+    playerId: "washerwoman",
+    requiredInput: {
+      kind: "setupInfo",
+      target: "players",
+      minSelections: 2,
+      maxSelections: 2,
+      setupInfo: "washerwoman",
+      characterKind: "Townsfolk",
+      optional: false,
+    },
+    canSkip: false,
+  };
+  const roster = [
+    player("chef", "chef"),
+    player("poisoner", "poisoner"),
+    player("imp", "imp"),
+  ];
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
+  deepEqual(
+    setupInfoSelectablePlayerIds(step, ["imp"], roster),
+    ["chef", "imp"],
+  );
+  equal(setupInfoSelectionIsComplete(step, ["imp", "poisoner"], roster), false);
+  equal(setupInfoSelectionIsComplete(step, ["imp", "chef"], roster), true);
+  equal(
+    stepInputReady(
+      step,
+      2,
+      0,
+      "chef",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      undefined,
+      ["imp", "poisoner"],
+      roster,
+    ),
+    false,
+  );
+  equal(
+    stepInputReady(
+      step,
+      2,
+      0,
+      "chef",
+      nominationDraft,
+      false,
+      undefined,
+      true,
+      undefined,
+      ["imp", "chef"],
+      roster,
+    ),
+    true,
+  );
+});
+
 test("zero Outsiders availability uses Actual Character and counts Drunk", () => {
   equal(setupInfoZeroOutsidersAvailable([player("chef", "chef")]), true);
   equal(setupInfoZeroOutsidersAvailable([player("drunk", "drunk", "librarian")]), false);
@@ -298,7 +402,7 @@ test("impaired setup information exposes every ability-shaped Character and zero
   equal(setupInfoZeroOutsidersAvailable([player("drunk", "drunk")], step), true);
 });
 
-test("setup registration expands one editor and builds a concrete judgment", () => {
+test("setup registration emits a witness only while the information is healthy", () => {
   const step: PhaseStep = {
     id: "firstNight:investigator",
     phase: "firstNight",
@@ -330,6 +434,20 @@ test("setup registration expands one editor and builds a concrete judgment", () 
     },
   };
   const roster = [player("chef", "chef"), player("recluse", "recluse")];
+  const judgment = {
+    playerId: "recluse",
+    registeredAs: "minion" as const,
+    characterId: "poisoner",
+  };
+  const draft = {
+    selectedPlayerIds: ["chef", "recluse"],
+    selectedCharacterId: "poisoner",
+    selectedCharacterIds: [],
+    zeroOutsiders: false,
+    registrationJudgments: [judgment],
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+
   deepEqual(
     setupInfoCharacterOptions("Minion", ["chef", "recluse"], roster, step).map(
       (character) => character.id,
@@ -338,8 +456,46 @@ test("setup registration expands one editor and builds a concrete judgment", () 
   );
   deepEqual(
     setupInfoRegistrationJudgments(step, ["chef", "recluse"], "poisoner", roster),
-    [{ playerId: "recluse", registeredAs: "minion", characterId: "poisoner" }],
+    [judgment],
   );
+  deepEqual(
+    phaseStepConfirmation(step, draft, nominationDraft),
+    {
+      input: { playerIds: ["chef", "recluse"], characterId: "poisoner" },
+      registrationJudgments: [judgment],
+    },
+  );
+
+  const impairedReasonSets: Array<
+    NonNullable<PhaseStep["informationPrompt"]>["activeReasons"]
+  > = [
+    [{ type: "drunk" }],
+    [{ type: "poisoned", poisonerPlayerId: "poisoner", poisonEventId: "poison-event" }],
+  ];
+  for (const activeReasons of impairedReasonSets) {
+    const impairedStep: PhaseStep = {
+      ...step,
+      informationPrompt: step.informationPrompt
+        ? { ...step.informationPrompt, activeReasons }
+        : undefined,
+    };
+
+    deepEqual(
+      setupInfoRegistrationJudgments(
+        impairedStep,
+        ["chef", "recluse"],
+        "poisoner",
+        roster,
+      ),
+      [],
+    );
+    deepEqual(
+      phaseStepConfirmation(impairedStep, draft, nominationDraft),
+      {
+        input: { playerIds: ["chef", "recluse"], characterId: "poisoner" },
+      },
+    );
+  }
 });
 
 test("numeric confirmation submits Rust witness only for an alternate choice", () => {
@@ -405,6 +561,75 @@ test("numeric confirmation submits Rust witness only for an alternate choice", (
       nominationDraft,
     ),
     { input: null, deliveredResult: { kind: "number", value: 1 } },
+  );
+});
+
+test("numeric registration choices use their exact treatment witness when results match", () => {
+  const computedChoice = { value: 1, isComputed: true, registrationJudgments: [] };
+  const treatedChoice = {
+    value: 1,
+    isComputed: false,
+    registrationJudgments: [{ playerId: "spy", registeredAs: "good" as const }],
+  };
+  const step: PhaseStep = {
+    id: "firstNight:chef",
+    phase: "firstNight",
+    stepType: "character",
+    character: "chef",
+    playerId: "chef",
+    requiredInput: { kind: "number", target: "number", optional: false },
+    canSkip: false,
+    informationPrompt: {
+      computedResult: { kind: "number", value: 1 },
+      deliveryMode: "selectable",
+      activeReasons: [],
+      registrationCandidatePlayerIds: ["spy"],
+      numberChoices: [computedChoice, treatedChoice],
+      setupInfoRegistrationOptions: [],
+    },
+  };
+  const nominationDraft = { nominatorId: "", nomineeId: "", voterIds: [] };
+  const baseDraft = {
+    selectedPlayerIds: [],
+    selectedCharacterId: "",
+    selectedCharacterIds: [],
+    zeroOutsiders: false,
+    registrationJudgments: [],
+  };
+
+  equal(
+    stepInputReady(step, 0, 0, "", nominationDraft, false, treatedChoice),
+    true,
+  );
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: treatedChoice },
+      nominationDraft,
+    ),
+    {
+      input: null,
+      deliveredResult: { kind: "number", value: 1 },
+      registrationJudgments: treatedChoice.registrationJudgments,
+    },
+  );
+
+  const unknownChoice = {
+    value: 1,
+    isComputed: false,
+    registrationJudgments: [{ playerId: "spy", registeredAs: "evil" as const }],
+  };
+  equal(
+    stepInputReady(step, 0, 0, "", nominationDraft, false, unknownChoice),
+    false,
+  );
+  deepEqual(
+    phaseStepConfirmation(
+      step,
+      { ...baseDraft, selectedNumberChoice: unknownChoice },
+      nominationDraft,
+    ),
+    { input: null },
   );
 });
 

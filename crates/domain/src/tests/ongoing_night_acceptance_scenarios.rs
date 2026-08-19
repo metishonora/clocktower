@@ -139,6 +139,90 @@ fn ravenkeeper_target_checks_expose_exact_spy_and_recluse_registration_witnesses
 }
 
 #[test]
+fn poisoned_recluse_has_only_canonical_ravenkeeper_and_undertaker_information() {
+    let mut raven_events = vec![
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Raven", "actualCharacter": "ravenkeeper", "shownCharacter": "ravenkeeper" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-4", "seat": 4, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "player-5", "seat": 5, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:toDay"),
+        phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper"),
+        phase_event("phaseStepConfirmed", "day:discussion"),
+        phase_event("phaseStepSkipped", "day:nomination:1"),
+        no_execution_event("day:execution"),
+        phase_event("phaseStepConfirmed", "day:toNight"),
+    ];
+    raven_events.push(poison_event("night:poisoner", "player-3", "player-2"));
+    raven_events.push(imp_death_event("night:imp", "player-4", "player-1"));
+    let raven = replay(raven_events);
+    assert_eq!(raven["ok"], true, "replay failed as {raven}");
+    assert_eq!(raven["value"]["currentStep"]["id"], "night:ravenkeeper");
+    let raven_checks = raven["value"]["currentStep"]["informationPrompt"]["targetChecks"]
+        .as_array()
+        .unwrap();
+    assert_eq!(
+        target_check(raven_checks, "player-2")["choices"],
+        json!([{
+            "result": { "kind": "character", "characterId": "recluse" },
+            "isComputed": true,
+            "registrationJudgments": []
+        }])
+    );
+
+    let mut undertaker_events = vec![
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Undertaker", "actualCharacter": "undertaker", "shownCharacter": "undertaker" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-4", "seat": 4, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" },
+            { "id": "player-5", "seat": 5, "name": "Chef", "actualCharacter": "chef", "shownCharacter": "chef" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:chef"),
+        phase_event("phaseStepConfirmed", "firstNight:toDay"),
+        phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper"),
+        phase_event("phaseStepConfirmed", "day:discussion"),
+        nomination_vote_event(
+            "day:nomination:1",
+            "player-1",
+            "player-2",
+            ["player-1", "player-2", "player-3"],
+        ),
+        phase_event("phaseStepSkipped", "day:nomination:2"),
+        execution_event("player-2"),
+        execution_death_event("player-2"),
+        phase_event("phaseStepConfirmed", "day:toNight"),
+    ];
+    undertaker_events.push(poison_event("night:poisoner", "player-3", "player-2"));
+    undertaker_events.push(phase_event("phaseStepSkipped", "night:imp"));
+    let undertaker = replay(undertaker_events);
+    assert_eq!(undertaker["ok"], true, "replay failed as {undertaker}");
+    assert_eq!(undertaker["value"]["currentStep"]["id"], "night:undertaker");
+    let undertaker_checks = undertaker["value"]["currentStep"]["informationPrompt"]["targetChecks"]
+        .as_array()
+        .unwrap();
+    assert_eq!(
+        target_check(undertaker_checks, "player-2")["choices"],
+        json!([{
+            "result": { "kind": "character", "characterId": "recluse" },
+            "isComputed": true,
+            "registrationJudgments": []
+        }])
+    );
+}
+
+#[test]
 fn undertaker_target_check_exposes_exact_spy_registration_witness() {
     let events = undertaker_spy_events();
     let game = game_with_events(Value::Array(events));
@@ -308,6 +392,26 @@ fn monk_prevented_imp_attack_has_stable_warning_and_operational_summary() {
     assert_eq!(
         proposal["value"]["event"]["summary"],
         "5번 Imp(임프) → 1번 Target(군인) 공격 · 사망 없음 (수도사 보호)"
+    );
+
+    let replayed = replay_with_event(&game, proposal["value"]["event"].clone());
+    assert_eq!(
+        replayed["ok"], true,
+        "confirmed event failed replay as {replayed}"
+    );
+    assert_ne!(
+        replayed["value"]["currentStep"]["id"], "night:imp",
+        "a prevented attack must still complete the Imp step: {replayed}"
+    );
+    assert_eq!(
+        replayed["value"]["phaseOverview"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|step| step["id"] == "night:imp")
+            .count(),
+        1,
+        "the prevented attack created a duplicate Imp phase: {replayed}"
     );
 }
 

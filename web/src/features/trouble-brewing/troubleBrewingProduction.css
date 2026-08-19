@@ -7,6 +7,23 @@
   --tb-gold: #d2ad64;
   --tb-rust: #a64f35;
   --tb-ink: #19251f;
+  --tb-ui-accent: var(--tb-gold);
+  --tb-ui-action: #3f6f55;
+  --tb-ui-action-border: #7fa58a;
+  --tb-ui-action-text: #fff8e8;
+  --tb-ui-heading: #fff8e8;
+  --tb-ui-primary: #e6cb89;
+  --tb-ui-primary-border: var(--tb-gold);
+  --tb-ui-primary-text: var(--tb-ink);
+  --tb-ui-muted: #d1b77e;
+  --tb-ui-copy-muted: #e0d4b9;
+  --tb-ui-panel: rgba(7, 25, 18, .72);
+  --tb-ui-panel-border: rgba(221, 198, 151, .18);
+  --tb-ui-row: rgba(255, 255, 255, .045);
+  --tb-ui-hover: rgba(55, 107, 80, .24);
+  --tb-ui-disabled: rgba(255, 255, 255, .035);
+  --tb-ui-disabled-border: rgba(221, 198, 151, .17);
+  --tb-ui-disabled-text: #8f958c;
   color: #f5eddc;
   background:
     radial-gradient(circle at 76% 0%, rgba(114, 147, 101, .34), transparent 30%),
@@ -62,87 +79,42 @@
   cursor: not-allowed;
 }
 
-.tbSpyRevealEndedShell {
-  display: grid;
-  min-height: calc(100vh - 190px);
-  place-items: center;
-  border: 1px solid rgba(221, 198, 151, .16);
-  border-radius: 22px;
-}
-
-.tbSpyRevealEndedProduction {
-  display: grid;
-  width: min(560px, 100%);
-  margin: 0 auto;
-  padding: clamp(28px, 6vw, 58px);
-  box-sizing: border-box;
-  gap: 14px;
-  border: 1px solid rgba(221, 198, 151, .2);
-  border-radius: 18px;
-  background: rgba(7, 25, 18, .72);
-  box-shadow: 0 24px 76px rgba(2, 10, 7, .44);
-  text-align: center;
-}
-
-.tbSpyRevealEndedProduction > span {
-  color: #d6b675;
-  font-size: .7rem;
-  font-weight: 900;
-  letter-spacing: .16em;
-}
-
-.tbSpyRevealEndedProduction h1 {
-  margin: 0;
-  font: clamp(2rem, 5vw, 3.2rem) Georgia, serif;
-}
-
-.tbSpyRevealEndedProduction button {
-  min-width: 180px;
-  min-height: 54px;
-  margin: 0 auto;
-  padding: 11px 18px;
-  border: 1px solid #d2ad64;
-  border-radius: 12px;
-  color: #102419;
-  background: linear-gradient(135deg, #efd69e, #c6a055);
-  box-shadow: 0 10px 28px rgba(4, 20, 13, .4);
-  font: inherit;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.tbSpyRevealEndedProduction button:disabled {
-  opacity: .46;
-  cursor: wait;
-}
-
-.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction {
-  border-color: rgba(73, 107, 80, .26);
-  background: rgba(247, 241, 216, .72);
-  box-shadow: 0 18px 54px rgba(49, 61, 40, .16);
-}
-
-.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction > span {
-  color: #6a5730;
-}
-
-.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction h1 {
-  color: #243329;
-}
-
-.tbProductionShell[data-theme="day"] .tbSpyRevealEndedProduction button {
-  border-color: #496b50;
-  color: #fffdf2;
-  background: linear-gradient(135deg, #68876d, #49664f);
-  box-shadow: 0 8px 22px rgba(49, 82, 57, .24);
-}
-
 .tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:focus-visible,
 .tbProductionShell button:focus-visible,
 .tbProductionShell input:focus-visible,
 .tbProductionShell select:focus-visible {
   outline: 3px solid rgba(229, 192, 111, .64);
   outline-offset: 3px;
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button,
+.tbProductionShell .snvSeatingToolbar button {
+  border-color: var(--tb-ui-panel-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell .snvSeatingToolbar button.tbHandoffCancel {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
+.tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
+}
+
+.tbProductionShell .snvCurrentStepIdentity.interactive:hover,
+.tbProductionShell .snvCurrentStepIdentity.interactive:focus-visible {
+  border-color: color-mix(in srgb, var(--tb-ui-accent) 46%, transparent);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .snvCurrentStepIdentity.interactive:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tb-ui-accent) 64%, transparent);
+  outline-offset: 2px;
 }
 
 .tbProductionShell :is(.productionApplicationUtilities, .productionApplicationStages) button[aria-current="page"],
@@ -206,10 +178,20 @@
   color: #f0d799;
 }
 
-.tbCatalog button[aria-pressed="true"] {
+.tbProductionShell .tbCatalog article button.selected,
+.tbProductionShell .tbCatalog article button[aria-pressed="true"] {
   border-color: #d2ad64;
+  color: #fff8e8;
   background: linear-gradient(135deg, rgba(55, 107, 80, .84), rgba(126, 81, 46, .62));
   box-shadow: inset 0 0 0 1px rgba(244, 222, 174, .14);
+}
+
+.tbProductionShell .tbCatalog.rosterConfirmed article button.selected,
+.tbProductionShell .tbCatalog.rosterConfirmed article button[aria-pressed="true"] {
+  border-color: #d2ad64;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #376b50, #7e512e);
+  box-shadow: 0 0 0 2px rgba(244, 222, 174, .14), 0 8px 22px rgba(4, 25, 16, .26);
 }
 
 .tbCatalog button:disabled {
@@ -226,11 +208,11 @@
 }
 
 .tbRoleIdentity {
-  cursor: default;
+  cursor: pointer;
 }
 
 .tbRoleIdentity:hover {
-  background: transparent;
+  background: rgba(225, 202, 146, .08);
 }
 
 .tbProductionShell .tbRoleDetail h2 {
@@ -283,11 +265,11 @@
   box-shadow: 0 0 0 4px rgba(226, 189, 110, .2);
 }
 
-.tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
+.tbProductionShell .tbGrimoireSurface.editing .tbGrimoireBoard > button.character-drunk > img {
   transform: translateX(-6px);
 }
 
-.tbShownCharacterToken {
+.tbProductionShell .tbGrimoireSurface.editing .tbShownCharacterToken {
   position: absolute;
   z-index: 3;
   top: 4px;
@@ -308,26 +290,26 @@
   pointer-events: none;
 }
 
-.tbShownCharacterToken.missing {
+.tbProductionShell .tbGrimoireSurface.editing .tbShownCharacterToken.missing {
   border-color: #d2ad64;
   background: #3e3520;
 }
 
-.tbProductionShell[data-theme="day"] .tbShownCharacterToken {
+.tbProductionShell[data-theme="day"] .tbGrimoireSurface.editing .tbShownCharacterToken {
   border-color: #3481a3;
   color: #20343d;
   background: #e7f4f7;
   box-shadow: 0 5px 14px rgba(38, 73, 82, .2), 0 0 0 3px rgba(52, 129, 163, .14);
 }
 
-.tbProductionShell[data-theme="day"] .tbShownCharacterToken.missing {
+.tbProductionShell[data-theme="day"] .tbGrimoireSurface.editing .tbShownCharacterToken.missing {
   border-color: #a8782c;
   color: #4b3719;
   background: #f3e4b7;
   box-shadow: 0 5px 14px rgba(89, 67, 30, .16), 0 0 0 3px rgba(168, 120, 44, .12);
 }
 
-.tbProductionShell .tbGrimoireBoard > button .tbShownCharacterToken img {
+.tbProductionShell .tbGrimoireSurface.editing .tbGrimoireBoard > button .tbShownCharacterToken img {
   width: 24px;
   height: 24px;
   margin: 0;
@@ -361,6 +343,98 @@
   color: #c5cbbd;
 }
 
+.tbProductionShell .issue116PhaseChip {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .tbGrimoireBoard > button .snvSeatNumber {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .tbGrimoireBoard > button {
+  color: var(--tb-ui-heading);
+}
+
+.tbProductionShell .tbGrimoireBoard > button .snvSeatPlayerName {
+  color: var(--tb-ui-heading);
+}
+
+.tbProductionShell .tbGrimoireBoard > button small,
+.tbProductionShell .snvCurrentActorLegend {
+  color: var(--tb-ui-copy-muted);
+}
+
+.tbProductionShell .issue116SelectionPanel {
+  border-color: var(--tb-ui-panel-border);
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell .issue116SelectionPanel dl > div {
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell .issue116SelectionHeader button,
+.tbProductionShell .issue116SelectionPanel :is(dt, p) {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell .issue116SelectionHeader button:hover:not(:disabled) {
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .tbSelectionChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+}
+
+.tbProductionShell .tbSelectionChoices legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--tb-ui-muted);
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.tbProductionShell .tbSelectionChoices button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 11px;
+  color: var(--tb-ui-copy-muted);
+  background: var(--tb-ui-row);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.tbProductionShell .tbSelectionChoices button.selected {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
+.tbProductionShell .issue116SelectionPanel .issue116PrimaryAction.issue116NextAction {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--tb-ui-action) 38%, transparent);
+}
+
+.tbProductionShell .issue116SelectionPanel .issue116PrimaryAction:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
+}
+
 .tbProductionShell[data-theme="day"] .issue116PhaseClock button {
   border-color: #496b50;
   color: #fffdf2;
@@ -389,9 +463,9 @@
 }
 
 .tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
-  border-color: #a989f0;
-  box-shadow: 0 0 0 7px rgba(151, 112, 226, .52), 0 0 46px rgba(128, 80, 217, .76);
-  filter: brightness(1.12) saturate(1.12);
+  border-color: #e1b4ff;
+  box-shadow: 0 0 0 7px rgba(199, 111, 255, .76), 0 0 54px rgba(174, 66, 247, .92);
+  filter: brightness(1.18) saturate(1.2);
 }
 
 .tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
@@ -400,19 +474,30 @@
   filter: brightness(1.1) saturate(1.18);
 }
 
+.tbProductionShell[data-theme="night"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateMayorBounce {
+  border-color: #66c59c;
+  box-shadow: 0 0 0 7px rgba(76, 174, 130, .48), 0 0 46px rgba(45, 145, 104, .72);
+  filter: brightness(1.12) saturate(1.08);
+}
+
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateSelection {
   border-color: #b73668;
   box-shadow: 0 0 0 6px rgba(183, 54, 104, .26), 0 0 30px rgba(183, 54, 104, .4);
 }
 
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStatePoison {
-  border-color: #7650bf;
-  box-shadow: 0 0 0 6px rgba(118, 80, 191, .28), 0 0 30px rgba(118, 80, 191, .42);
+  border-color: #9c4ee5;
+  box-shadow: 0 0 0 6px rgba(166, 78, 239, .42), 0 0 34px rgba(146, 56, 221, .56);
 }
 
 .tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateAttack {
   border-color: #c93434;
   box-shadow: 0 0 0 6px rgba(201, 52, 52, .28), 0 0 30px rgba(201, 52, 52, .44);
+}
+
+.tbProductionShell[data-theme="day"] .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateTarget.tbSeatStateMayorBounce {
+  border-color: #2f835e;
+  box-shadow: 0 0 0 6px rgba(47, 131, 94, .27), 0 0 30px rgba(47, 131, 94, .42);
 }
 
 .tbProductionShell .issue116GrimoireSurface .tbGrimoireBoard > button.snvSeatStateActor {
@@ -474,15 +559,9 @@
   box-shadow: inset 0 0 0 1px rgba(210, 173, 100, .09), inset 0 14px 38px rgba(0, 0, 0, .24);
 }
 
-.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article,
 .playerTokenDetailBackdrop.tbTheme .tbPlayerNotes {
   border-color: rgba(210, 173, 100, .14);
   background: rgba(255, 255, 255, .035);
-}
-
-.playerTokenDetailBackdrop.tbTheme .tbDrunkIdentities article.shown {
-  border-color: rgba(90, 177, 213, .34);
-  background: rgba(43, 123, 151, .13);
 }
 
 .playerTokenDetailBackdrop.tbTheme.day {
@@ -522,8 +601,7 @@
 }
 
 .playerTokenDetailBackdrop.tbTheme.day .playerTokenCharacterSummary p,
-.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes p,
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities strong {
+.playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes p {
   color: #38483d;
 }
 
@@ -532,15 +610,9 @@
   box-shadow: inset 0 0 0 1px rgba(73, 107, 80, .12), inset 0 14px 38px rgba(49, 61, 40, .08);
 }
 
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article,
 .playerTokenDetailBackdrop.tbTheme.day .tbPlayerNotes {
   border-color: rgba(73, 107, 80, .14);
   background: rgba(73, 107, 80, .05);
-}
-
-.playerTokenDetailBackdrop.tbTheme.day .tbDrunkIdentities article.shown {
-  border-color: rgba(45, 126, 157, .24);
-  background: rgba(182, 216, 222, .4);
 }
 
 .tbSharedLivePlay .snvDetailsBackdrop {
@@ -613,6 +685,113 @@
   background: #a8344c;
 }
 
+/* Live Undo follows the SnV history dialog structure while staying in TB's green/gold system. */
+.tbSharedLivePlay .tbLiveUndoDialogBackdrop {
+  background: rgba(4, 14, 10, .76);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog {
+  border-color: rgba(210, 173, 100, .42);
+  color: #f5eddc;
+  background: linear-gradient(145deg, #163929, #0b1e15);
+  box-shadow: 0 28px 90px rgba(1, 9, 6, .64);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog h2 {
+  color: #fff8e8;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoLabel {
+  color: #e6cb89;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack {
+  border-color: rgba(210, 173, 100, .36);
+  background: rgba(55, 107, 80, .2);
+  scrollbar-color: rgba(210, 173, 100, .58) transparent;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li {
+  border-color: rgba(210, 173, 100, .16);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li > span {
+  color: #e6cb89;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoEventStack li p {
+  color: #f5eddc;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog .snvUndoNotice {
+  color: #c7cbbd;
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog footer button {
+  border-color: rgba(221, 198, 151, .24);
+  color: #f5eddc;
+  background: rgba(255, 255, 255, .055);
+}
+
+.tbSharedLivePlay .tbLiveUndoDialog footer button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialogBackdrop {
+  background: rgba(43, 52, 38, .48);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog {
+  border-color: rgba(67, 89, 62, .24);
+  color: #213128;
+  background: linear-gradient(145deg, #f7f2dc, #dfe8ce);
+  box-shadow: 0 26px 80px rgba(49, 61, 40, .28);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog h2 {
+  color: #213128;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoLabel {
+  color: #6a5730;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack {
+  border-color: rgba(73, 107, 80, .26);
+  background: rgba(73, 107, 80, .08);
+  scrollbar-color: rgba(73, 107, 80, .48) transparent;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li {
+  border-color: rgba(73, 107, 80, .14);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li > span {
+  color: #7c652e;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoEventStack li p {
+  color: #38483d;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog .snvUndoNotice {
+  color: #526154;
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog footer button {
+  border-color: rgba(67, 89, 62, .22);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .72);
+}
+
+.tbSharedLivePlay[data-theme="day"] .tbLiveUndoDialog footer button.snvDestructiveAction {
+  border-color: #b6435a;
+  color: #fff;
+  background: #a8344c;
+}
+
 .tbProductionShell .snvSelectedRosterTray button[aria-pressed="true"] {
   border-color: #e1c278;
   background: #3f7658;
@@ -664,56 +843,6 @@
   color: #e0d0e8;
   font-size: .68rem;
   font-weight: 850;
-}
-
-.tbDrunkIdentities {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.tbDrunkIdentities article {
-  display: grid;
-  min-width: 0;
-  padding: 10px;
-  gap: 7px;
-  border: 1px solid rgba(182, 151, 237, .28);
-  border-radius: 14px;
-  background: rgba(115, 82, 151, .13);
-}
-
-.tbDrunkIdentities article.shown {
-  border-color: rgba(90, 177, 213, .34);
-  background: rgba(43, 123, 151, .13);
-}
-
-.tbDrunkIdentities article > span {
-  color: #bcae8d;
-  font-size: .6rem;
-  font-weight: 900;
-  letter-spacing: .05em;
-}
-
-.tbDrunkIdentities article > div {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.tbDrunkIdentities img {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-
-.tbDrunkIdentities strong {
-  min-width: 0;
-  overflow: hidden;
-  color: #f6edda;
-  font-size: .72rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tbPlayerNotes {
@@ -789,25 +918,96 @@
   gap: 8px;
 }
 
+.tbProductionShell .tbProgressActor .snvInformationInfluenceBadge {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: .74rem;
+}
+
+.tbProductionShell .snvPhaseOverviewAction .snvInformationInfluenceBadge {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: .62rem;
+}
+
 .tbProgressPlayerStandalone {
   margin: 14px 0 0;
   font-size: 1rem;
 }
 
-.tbProgressActorTags {
-  display: flex;
-  margin: 6px 0 0 102px;
-  gap: 7px;
+.tbProgressShownAbility {
+  display: grid;
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 14px 16px;
+  gap: 8px;
+  border: 1px solid rgba(221, 198, 151, .25);
+  border-radius: 16px;
+  background: rgba(7, 35, 22, .42);
 }
 
-.tbProgressActorTags em {
-  padding: 4px 9px;
-  border: 1px solid rgba(216, 190, 122, .32);
-  border-radius: 999px;
-  color: #ead9a9;
-  background: rgba(8, 28, 18, .44);
-  font-size: .72rem;
-  font-style: normal;
+.tbProgressShownIdentity > span {
+  grid-column: 1 / -1;
+  color: #d8bd77;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.tbProgressShownIdentity {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.tbProgressShownIdentity > img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.tbProgressShownIdentity > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.tbProgressShownName {
+  color: #fff3c7;
+  font: 1.45rem Georgia, serif;
+}
+
+.tbProgressShownIdentity p {
+  margin: 0;
+  color: #c8d1bf;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownAbility {
+  border-color: rgba(51, 94, 62, .22);
+  background: rgba(34, 103, 66, .08);
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownIdentity > span {
+  color: #80601f;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownName {
+  color: #173f2a;
+}
+
+.tbProductionShell[data-theme="day"] .tbProgressShownIdentity p {
+  color: #536451;
 }
 
 .tbCurrentTask .tbProgressAbility {
@@ -818,15 +1018,375 @@
   line-height: 1.55;
 }
 
+.tbProductionShell .tbCurrentTask :is(.snvCurrentStepLabel, p) {
+  color: var(--tb-ui-copy-muted);
+}
+
+.tbProductionShell .tbPlayHeader {
+  border-bottom-color: var(--tb-ui-panel-border);
+}
+
 .tbCurrentTask .snvStepActions {
   margin-top: auto;
   padding-top: 30px;
 }
 
-.tbCurrentTask .snvStepActions button {
-  border-color: #7fa58a;
-  color: #fff8e8;
-  background: #3f6f55;
+.tbProductionShell[data-theme] .tbCurrentTask .snvStepActions button {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+}
+
+.tbProductionShell[data-theme] .tbCurrentTask .snvStepActions button.secondary {
+  border-color: var(--tb-ui-panel-border);
+  color: var(--tb-ui-copy-muted);
+  background: transparent;
+}
+
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.prominent {
+  border-color: var(--tb-ui-primary-border);
+  color: var(--tb-ui-primary-text);
+  background: var(--tb-ui-primary);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--tb-ui-primary-border) 32%, transparent);
+}
+
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.poisoned,
+.tbProductionShell .tbCurrentTask .snvStepActions button.informationReveal.drunk {
+  border-color: #9d59bd;
+  color: #fff;
+  background: linear-gradient(135deg, #a95bd2, #71378f);
+  box-shadow: 0 12px 30px rgba(112, 49, 145, .36);
+}
+
+.tbProductionShell .tbCurrentTask .snvInformationValues {
+  display: grid;
+  width: min(620px, 100%);
+  margin: 0;
+  gap: 8px;
+}
+
+.tbProductionShell .tbCurrentTask .snvInformationValues > div {
+  display: grid;
+  min-height: 58px;
+  padding: 10px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid;
+  border-radius: 13px;
+  border-color: var(--tb-ui-panel-border);
+  background: color-mix(in srgb, var(--tb-ui-panel) 72%, transparent);
+}
+
+.tbProductionShell .tbCurrentTask .snvInformationValues dt {
+  color: var(--tb-ui-muted);
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.tbProductionShell .tbCurrentTask .snvInformationValues dd {
+  margin: 0;
+  color: var(--tb-ui-heading);
+  font: 1.18rem Georgia, serif;
+}
+
+.tbProductionShell .tbCurrentTask .tbCharacterInformationEditor select {
+  width: min(100%, 300px);
+  min-height: 44px;
+  padding: 9px 30px 9px 11px;
+  border: 1px solid rgba(210, 173, 100, .42);
+  border-radius: 10px;
+  color: var(--tb-ui-heading);
+  background: #173c29;
+  font: 850 .78rem system-ui, sans-serif;
+}
+
+.tbProductionShell .tbCurrentTask .tbCharacterInformationEditor select:focus-visible {
+  outline: 3px solid rgba(210, 173, 100, .28);
+  outline-offset: 2px;
+}
+
+.tbProductionShell .tbCurrentTask .tbCharacterInformationEditor select:disabled {
+  border-color: rgba(221, 198, 151, .16);
+  color: var(--tb-ui-copy-muted);
+  background: rgba(8, 28, 18, .48);
+  opacity: 1;
+}
+
+.tbProductionShell .demonSuccessionCard {
+  display: grid;
+  width: min(620px, 100%);
+  box-sizing: border-box;
+  padding: 16px 18px;
+  gap: 8px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 14px;
+  color: var(--tb-ui-heading);
+  background: color-mix(in srgb, var(--tb-ui-panel) 76%, transparent);
+}
+
+.tbProductionShell .demonSuccessionCard small,
+.tbProductionShell .tbDemonSuccessionEditor > span {
+  color: var(--tb-ui-muted);
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.tbProductionShell .demonSuccessionCard strong {
+  color: var(--tb-ui-heading);
+  font: 1.18rem Georgia, serif;
+}
+
+.tbProductionShell .tbDemonSuccessionEditor {
+  display: grid;
+  width: min(620px, 100%);
+  gap: 8px;
+}
+
+.tbProductionShell .tbDemonSuccessionEditor select {
+  width: 100%;
+  min-height: 48px;
+  padding: 9px 34px 9px 12px;
+  border: 1px solid rgba(210, 173, 100, .42);
+  border-radius: 10px;
+  color: var(--tb-ui-heading);
+  background: #173c29;
+  font: 850 .82rem system-ui, sans-serif;
+}
+
+.tbProductionShell[data-theme="day"] .tbDemonSuccessionEditor select {
+  color: #173f2a;
+  background: #f7f1d9;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbCharacterInformationEditor select {
+  background: #f7f1d9;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbCharacterInformationEditor select:disabled {
+  background: rgba(255, 253, 238, .72);
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select {
+  width: min(100%, 300px);
+  min-height: 44px;
+  padding: 9px 30px 9px 11px;
+  border: 1px solid rgba(210, 173, 100, .42);
+  border-radius: 10px;
+  color: var(--tb-ui-heading);
+  background: #173c29;
+  font: 850 .78rem system-ui, sans-serif;
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select:focus-visible {
+  outline: 3px solid rgba(210, 173, 100, .28);
+  outline-offset: 2px;
+}
+
+.tbProductionShell .tbCurrentTask .tbSetupInformationEditor select:disabled {
+  border-color: rgba(221, 198, 151, .16);
+  color: var(--tb-ui-copy-muted);
+  background: rgba(8, 28, 18, .48);
+  opacity: 1;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbSetupInformationEditor select {
+  background: #f7f1d9;
+}
+
+.tbProductionShell[data-theme="day"] .tbCurrentTask .tbSetupInformationEditor select:disabled {
+  background: rgba(255, 253, 238, .72);
+}
+
+.tbProductionShell .tbCurrentTask .tbInformationTargetSummary {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--tb-ui-muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.tbProductionShell .tbCurrentTask .tbInformationTargetSummary strong {
+  color: var(--tb-ui-heading);
+  font-size: .94rem;
+  overflow-wrap: anywhere;
+}
+
+.tbScalarInformationResult {
+  width: min(620px, 100%);
+  margin: 0;
+}
+
+.tbScalarInformationEditor,
+.tbScalarTreatmentControls {
+  display: grid;
+  width: min(620px, 100%);
+  gap: 14px;
+}
+
+.tbScalarTreatment {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 0;
+}
+
+.tbScalarTreatment legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: var(--tb-ui-muted);
+  font: 850 .74rem/1.35 system-ui, sans-serif;
+}
+
+.tbScalarTreatment button,
+.tbProductionShell .tbRegistrationTreatment button {
+  min-height: 46px;
+  padding: 9px 12px;
+  border: 1px solid var(--tb-treatment-accent);
+  border-radius: 999px;
+  color: var(--tb-treatment-text);
+  background: var(--tb-treatment-background);
+  font: 850 .76rem/1.3 system-ui, sans-serif;
+  text-align: center;
+}
+
+.tbScalarTreatment button.alignment-good,
+.tbProductionShell .tbRegistrationTreatment button.alignment-good {
+  --tb-treatment-accent: rgba(116, 209, 239, .76);
+  --tb-treatment-text: #c9f1ff;
+  --tb-treatment-background: rgba(67, 154, 189, .12);
+  --tb-treatment-selected-background: linear-gradient(145deg, rgba(47, 120, 151, .76), rgba(27, 74, 96, .72));
+}
+
+.tbScalarTreatment button.alignment-evil,
+.tbProductionShell .tbRegistrationTreatment button.alignment-evil {
+  --tb-treatment-accent: rgba(241, 122, 144, .8);
+  --tb-treatment-text: #ffd6de;
+  --tb-treatment-background: rgba(196, 68, 94, .12);
+  --tb-treatment-selected-background: linear-gradient(145deg, rgba(151, 52, 72, .78), rgba(92, 34, 48, .74));
+}
+
+.tbScalarTreatment button.selected,
+.tbProductionShell .tbRegistrationTreatment button.selected {
+  border-color: var(--tb-treatment-accent);
+  color: #fff;
+  background: var(--tb-treatment-selected-background);
+  box-shadow: inset 0 0 0 2px var(--tb-treatment-accent), 0 0 18px color-mix(in srgb, var(--tb-treatment-accent) 24%, transparent);
+}
+
+.tbScalarTreatment button:focus-visible,
+.tbProductionShell .tbRegistrationTreatment button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tb-treatment-accent) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-good,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.alignment-good {
+  --tb-treatment-accent: #4b9dbc;
+  --tb-treatment-text: #24546b;
+  --tb-treatment-background: #edf8fc;
+  --tb-treatment-selected-background: #cfeaf4;
+}
+
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.alignment-evil,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.alignment-evil {
+  --tb-treatment-accent: #b94d64;
+  --tb-treatment-text: #7b3040;
+  --tb-treatment-background: #fff1f4;
+  --tb-treatment-selected-background: #f4d3da;
+}
+
+.tbProductionShell[data-theme="day"] .tbScalarTreatment button.selected,
+.tbProductionShell[data-theme="day"] .tbRegistrationTreatment button.selected {
+  color: var(--tb-treatment-text);
+}
+
+.tbProductionShell .tbTargetInformationResult,
+.tbProductionShell .tbTargetInformationTruth,
+.tbProductionShell .tbTargetInformationChoices {
+  width: min(620px, 100%);
+}
+
+.tbProductionShell .tbTargetInformationChoices {
+  display: grid;
+  margin: 0;
+  padding: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 14px;
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell .tbTargetInformationChoices legend {
+  padding: 0 6px;
+  color: var(--tb-ui-muted);
+  font-size: .66rem;
+  font-weight: 850;
+}
+
+.tbProductionShell .tbTargetInformationChoices button {
+  position: static;
+  min-width: 0;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid var(--tb-ui-panel-border);
+  border-radius: 11px;
+  color: var(--tb-ui-copy-muted);
+  background: var(--tb-ui-row);
+  box-shadow: none;
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.tbProductionShell .tbTargetInformationChoices button:hover:not(:disabled):not(.selected) {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell .tbTargetInformationChoices button.selected,
+.tbProductionShell .tbTargetInformationChoices button.selected:hover:not(:disabled),
+.tbProductionShell .tbTargetInformationChoices button.selected:active:not(:disabled) {
+  border-color: var(--tb-ui-action-border);
+  color: var(--tb-ui-action-text);
+  background: var(--tb-ui-action);
+  box-shadow: inset 0 0 0 1px var(--tb-ui-action-border);
+}
+
+.tbProductionShell .tbTargetInformationChoices button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tb-ui-action-border) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.tbScalarInformationResult dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tbScalarInformationResult input {
+  width: 118px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--tb-ui-action-border);
+  border-radius: 10px;
+  color: var(--tb-ui-action-text);
+  background: color-mix(in srgb, var(--tb-ui-panel) 82%, #000 18%);
+  font: 850 .82rem system-ui, sans-serif;
+}
+
+.tbScalarInformationResult dd > span {
+  color: var(--tb-ui-muted);
+  font: 850 .72rem system-ui, sans-serif;
 }
 
 .tbCurrentTask.snvEvilInformationTask {
@@ -880,6 +1440,10 @@
 .tbCurrentTask .snvEvilInformationWakeInstruction strong {
   color: #f1d99e;
   overflow-wrap: anywhere;
+}
+
+.tbCurrentTask.snvDemonInformationTask .snvEvilInformationWakeInstruction > span {
+  display: block;
 }
 
 .tbCurrentTask .snvBluffCandidateGrid {
@@ -1075,7 +1639,7 @@
 
 .tbExecutionDecisionActions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -1259,6 +1823,23 @@
 }
 
 .tbProductionShell[data-theme="day"] {
+  --tb-ui-accent: #98642f;
+  --tb-ui-action: #58745c;
+  --tb-ui-action-border: #496b50;
+  --tb-ui-action-text: #fffdf2;
+  --tb-ui-heading: #243329;
+  --tb-ui-primary: #58745c;
+  --tb-ui-primary-border: #496b50;
+  --tb-ui-primary-text: #fffdf2;
+  --tb-ui-muted: #5f684e;
+  --tb-ui-copy-muted: #5f684e;
+  --tb-ui-panel: rgba(255, 253, 238, .64);
+  --tb-ui-panel-border: rgba(57, 83, 55, .2);
+  --tb-ui-row: rgba(57, 83, 55, .07);
+  --tb-ui-hover: rgba(73, 107, 80, .12);
+  --tb-ui-disabled: rgba(57, 83, 55, .06);
+  --tb-ui-disabled-border: rgba(57, 83, 55, .14);
+  --tb-ui-disabled-text: #748074;
   color: #213128;
 }
 
@@ -1269,6 +1850,34 @@
 .tbProductionShell[data-theme="day"] .snvDistributionCard h2,
 .tbProductionShell[data-theme="day"] .snvDistributionCard span {
   color: #5f6c4e;
+}
+
+.tbProductionShell[data-theme="day"]
+  :is(.productionApplicationUtilities, .productionApplicationStages)
+  button:not(:disabled):not([aria-current="page"]):not(.snvNewGameTab),
+.tbProductionShell[data-theme="day"]
+  .snvSeatingToolbar
+  button:not(:disabled):not(.destructive):not(.tbHandoffCancel) {
+  border-color: rgba(57, 83, 55, .24);
+  color: #385042;
+  background: rgba(255, 253, 238, .62);
+}
+
+.tbProductionShell[data-theme="day"]
+  :is(.productionApplicationUtilities, .productionApplicationStages)
+  button:not(:disabled):not([aria-current="page"]):not(.snvNewGameTab):hover,
+.tbProductionShell[data-theme="day"]
+  .snvSeatingToolbar
+  button:not(:disabled):not(.destructive):not(.tbHandoffCancel):hover {
+  border-color: rgba(57, 83, 55, .42);
+  color: #243329;
+  background: rgba(224, 232, 203, .82);
+}
+
+.tbProductionShell[data-theme="day"] .snvSeatingToolbar button:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
 }
 
 .tbProductionShell[data-theme="day"] .tbPhaseMark {
@@ -1282,6 +1891,43 @@
   color: #213128;
   background: rgba(255, 251, 230, .72);
   box-shadow: 0 22px 70px rgba(49, 61, 40, .14);
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerCounts button:not([aria-pressed="true"]),
+.tbProductionShell[data-theme="day"] .tbCatalog article button:not(.selected):not([aria-pressed="true"]) {
+  border-color: rgba(57, 83, 55, .18);
+  color: #385042;
+  background: rgba(255, 253, 238, .58);
+}
+
+.tbProductionShell[data-theme="day"] .tbPlayerCounts button:disabled,
+.tbProductionShell[data-theme="day"] .tbCatalog article button:disabled:not(.selected):not([aria-pressed="true"]) {
+  color: #657266;
+  background: rgba(226, 231, 207, .48);
+  opacity: .72;
+}
+
+.tbProductionShell[data-theme="day"] .snvModifierNote {
+  color: #53644f;
+  background: rgba(57, 83, 55, .08);
+}
+
+.tbProductionShell[data-theme="day"] .snvModifierNote.active {
+  color: #845b24;
+  background: rgba(183, 146, 69, .13);
+}
+
+.tbProductionShell[data-theme="day"] .tbPinnedDemon {
+  border-color: rgba(153, 73, 62, .38);
+  color: #65362f;
+  background: linear-gradient(135deg, rgba(248, 231, 220, .96), rgba(232, 219, 190, .9));
+}
+
+.tbProductionShell[data-theme="day"] .tbPinnedDemon[aria-pressed="true"] {
+  border-color: #b79245;
+  color: #512b27;
+  background: linear-gradient(135deg, #f2d8cf, #ead8aa);
+  box-shadow: inset 0 0 0 1px rgba(123, 65, 52, .1);
 }
 
 .tbProductionShell[data-theme="day"] .tbRoleDetail {
@@ -1298,9 +1944,41 @@
   color: #526154;
 }
 
+.tbProductionShell[data-theme="day"] .tbRoleDetail .snvRoleDetailCopy > div {
+  color: #526154;
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail .snvRoleDetailCopy > div strong {
+  color: #845b24;
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail .snvRoleDetailButton {
+  border-color: rgba(57, 83, 55, .28);
+  color: #385042;
+  background: rgba(255, 253, 238, .56);
+}
+
+.tbProductionShell[data-theme="day"] .tbRoleDetail .snvRoleDetailIdentity:hover {
+  background: rgba(57, 83, 55, .08);
+}
+
+.tbProductionShell[data-theme="day"] .tbCatalog article button.selected,
+.tbProductionShell[data-theme="day"] .tbCatalog article button[aria-pressed="true"],
+.tbProductionShell[data-theme="day"] .tbCatalog.rosterConfirmed article button.selected,
+.tbProductionShell[data-theme="day"] .tbCatalog.rosterConfirmed article button[aria-pressed="true"] {
+  border-color: #b79245;
+  color: #243329;
+  background: linear-gradient(135deg, #d8e4c8, #ead8aa);
+  box-shadow: 0 0 0 2px rgba(151, 111, 35, .14), 0 8px 22px rgba(49, 61, 40, .14);
+}
+
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard {
   border-color: rgba(81, 103, 69, .22);
   background: linear-gradient(145deg, #f7f2d8, #d9e2c8);
+}
+
+.tbProductionShell[data-theme="day"] .tbGrimoireBoard > button {
+  box-shadow: 0 9px 24px rgba(49, 61, 40, .16);
 }
 
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard > button.assigned.alignment-good {
@@ -1315,6 +1993,63 @@
   background: linear-gradient(145deg, #fff8ef, #efd9ca);
 }
 
+.tbProductionShell[data-theme="day"]
+  :is(.issue116NominationMode, .issue116VoteMode)
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat:not(.snvSeatStateSelected):not(.snvSeatStateStrong) {
+  --kind-accent: #2d333a;
+  border-color: #525a64;
+  color: #fff;
+  background: linear-gradient(145deg, #59616b, #343a42);
+  box-shadow: 0 0 0 3px rgba(54, 60, 69, .2), 0 12px 30px rgba(39, 43, 49, .3), inset 0 -3px rgba(218, 221, 225, .2);
+  filter: none;
+  opacity: 1;
+}
+
+.tbProductionShell[data-theme="day"]
+  :is(.issue116NominationMode, .issue116VoteMode)
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat:not(.snvSeatStateSelected):not(.snvSeatStateStrong)
+  :is(.snvSeatNumber, .snvSeatPlayerName) {
+  color: #fff;
+}
+
+.tbProductionShell[data-theme="day"]
+  :is(.issue116NominationMode, .issue116VoteMode)
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat:not(.snvSeatStateSelected):not(.snvSeatStateStrong)
+  small {
+  color: #e3e5e8;
+}
+
+.tbProductionShell[data-theme="day"]
+  :is(.issue116NominationMode, .issue116VoteMode)
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat.issue116IneligibleSeat:not(.snvSeatStateSelected) {
+  opacity: .68;
+}
+
+.tbProductionShell[data-theme="day"]
+  .issue116VoteMode
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat.snvGhostVoteSpent:not(.snvSeatStateSelected) {
+  --kind-accent: #747a82;
+  border-color: #8d939b;
+  color: #374047;
+  background: linear-gradient(145deg, #d4d6d8, #b7bbc0);
+  box-shadow: none;
+  filter: grayscale(1);
+  opacity: .68;
+}
+
+.tbProductionShell[data-theme="day"]
+  .issue116VoteMode
+  .tbGrimoireBoard
+  > button.assigned.snvDeadSeat.snvGhostVoteSpent:not(.snvSeatStateSelected)
+  :is(.snvSeatNumber, .snvSeatPlayerName, small) {
+  color: #515960;
+}
+
 .tbProductionShell[data-theme="day"] .tbGrimoireBoard > button .snvSeatPlayerName {
   color: #25352b;
 }
@@ -1323,22 +2058,36 @@
   color: #58645b;
 }
 
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article > span,
+.tbProductionShell[data-theme="day"] .issue116PhaseChip,
+.tbProductionShell[data-theme="day"] .issue116SelectionHeader button,
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel :is(dt, p) {
+  color: var(--tb-ui-muted);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel {
+  border-color: var(--tb-ui-panel-border);
+  background: var(--tb-ui-panel);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel dl > div {
+  background: var(--tb-ui-row);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionHeader button:hover:not(:disabled) {
+  color: var(--tb-ui-heading);
+  background: var(--tb-ui-hover);
+}
+
+.tbProductionShell[data-theme="day"] .issue116SelectionPanel .issue116PrimaryAction:disabled {
+  border-color: var(--tb-ui-disabled-border);
+  color: var(--tb-ui-disabled-text);
+  background: var(--tb-ui-disabled);
+}
+
 .playerTokenDetailBackdrop.day .tbPlayerNotes > span {
   color: #627057;
 }
 
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article {
-  border-color: rgba(121, 89, 154, .22);
-  background: rgba(206, 192, 219, .34);
-}
-
-.playerTokenDetailBackdrop.day .tbDrunkIdentities article.shown {
-  border-color: rgba(45, 126, 157, .24);
-  background: rgba(182, 216, 222, .4);
-}
-
-.playerTokenDetailBackdrop.day .tbDrunkIdentities strong,
 .playerTokenDetailBackdrop.day .tbPlayerNotes p {
   color: #38483d;
 }
@@ -1354,10 +2103,22 @@
   box-shadow: inset 0 0 0 1px rgba(66, 88, 58, .09);
 }
 
+.tbProductionShell[data-theme="day"] .tbCurrentTask .snvStepActions button.secondary {
+  border-color: rgba(57, 83, 55, .24);
+  color: #385042;
+  background: rgba(255, 253, 238, .62);
+}
+
 .tbProductionShell[data-theme="day"] .tbPlayHeader button {
   border-color: rgba(57, 83, 55, .28);
   color: #2b4535;
   background: rgba(255, 253, 238, .7);
+}
+
+.tbProductionShell[data-theme="day"] .snvSeatingToolbar button.tbHandoffCancel {
+  border-color: rgba(57, 83, 55, .38);
+  color: #2b4535;
+  background: rgba(255, 253, 238, .76);
 }
 
 .tbProductionShell[data-theme="day"] .tbPhaseOrder li {
@@ -1524,7 +2285,7 @@
     background: #10271d;
   }
 
-  .tbProductionShell .tbGrimoireBoard > button.character-drunk > img {
+  .tbProductionShell .tbGrimoireSurface.editing .tbGrimoireBoard > button.character-drunk > img {
     transform: translateX(-12px);
   }
 
@@ -1539,10 +2300,6 @@
 
   .tbProgressPlayerStandalone {
     margin-left: 0;
-  }
-
-  .tbProgressActorTags {
-    margin-left: 76px;
   }
 
   .tbCurrentTask .snvBluffCandidateGrid {
@@ -1595,6 +2352,21 @@
     flex: 1;
   }
 
+  .tbCurrentTask > .snvStepActions:has(.informationReveal) {
+    flex-wrap: wrap;
+  }
+
+  .tbCurrentTask > .snvStepActions:has(.informationReveal) > button {
+    min-width: 0;
+    flex: 1 1 calc(50% - 5px);
+    white-space: nowrap;
+  }
+
+  .tbCurrentTask > .snvStepActions > .informationReveal {
+    order: 2;
+    flex-basis: 100%;
+  }
+
 }
 
 @media (max-width: 390px) {
@@ -1627,4 +2399,74 @@
     animation-duration: 0s !important;
     transition-duration: 0s !important;
   }
+}
+
+.tbSharedLivePlay .tbSlayerActionDock > button {
+  border-color: rgba(75, 107, 76, .32);
+  background: rgba(255, 252, 238, .97);
+  box-shadow: 0 11px 30px rgba(18, 62, 39, .28);
+}
+
+.tbSharedLivePlay .tbSlayerActionDock > button.selected {
+  border-color: #d3b46b;
+  color: #fff8e8;
+  background: #246143;
+  box-shadow: 0 0 0 4px rgba(211, 180, 107, .22), 0 12px 30px rgba(18, 62, 39, .32);
+}
+
+.tbSharedLivePlay .tbSlayerActionPanel {
+  border-color: rgba(91, 114, 78, .24);
+  color: #173526;
+  background: rgba(255, 252, 238, .98);
+  box-shadow: 0 24px 70px rgba(18, 62, 39, .32);
+}
+
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity:hover { background: rgba(39, 104, 68, .07); }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity > div > span:first-child { color: #61745f; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionIdentity h2 { color: #193b29; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionHeader > p {
+  border-color: rgba(62, 104, 69, .14);
+  color: #49604c;
+  background: rgba(47, 112, 78, .055);
+}
+
+.tbSlayerActionForm fieldset > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tbSlayerActionForm legend { color: #526d54; }
+.tbSlayerActionForm fieldset button {
+  display: grid;
+  min-height: 58px;
+  padding: 7px;
+  place-items: center;
+  gap: 2px;
+  border-color: rgba(54, 93, 60, .18);
+  color: #27452f;
+  background: rgba(255, 255, 255, .72);
+}
+
+.tbSlayerActionForm fieldset button.selected {
+  border-color: #2f704e;
+  color: #17452f;
+  background: rgba(47, 112, 78, .16);
+  box-shadow: inset 0 0 0 1px rgba(47, 112, 78, .12);
+}
+
+.tbSlayerTargets button > span { color: #8b6a2b; font-size: .65rem; font-weight: 900; }
+.tbSlayerTargets button > strong { font-size: .76rem; }
+.tbSlayerRegistration > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.tbSharedLivePlay .tbSlayerActionPanel .snvDayActionConfirm.normal {
+  border-color: #c9a958;
+  color: #1d2d20;
+  background: linear-gradient(135deg, #f1d895, #d9b765);
+  box-shadow: 0 12px 30px rgba(148, 106, 30, .25);
+}
+
+.tbCenteredAbilityReveal { justify-items: center; gap: 12px; }
+.tbCenteredAbilityReveal > * { justify-self: center; }
+.tbSlayerAbilityReveal > .tbSlayerRevealHeader { color: #d9bd76; font-size: .72rem; font-weight: 900; }
+.tbSlayerAbilityReveal > img { width: clamp(76px, 16vw, 112px); height: clamp(76px, 16vw, 112px); object-fit: contain; }
+.tbSlayerAbilityReveal > h2 { display: grid; width: 100%; max-width: 520px; margin: 12px 0 4px; justify-items: center; gap: 2px; color: #fff8e8; font: clamp(2rem, 7vw, 3.7rem)/1.2 Georgia, serif; text-align: center; }
+.tbSlayerAbilityReveal > h2 > span { white-space: nowrap; }
+
+@media (max-width: 780px) {
+  .tbSlayerActionForm fieldset > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -72,7 +72,7 @@ const reminderDrafts: Readonly<Record<string, readonly TroubleBrewingReminder[]>
     reminder("drunk", "isTheDrunk", "주정뱅이임", "실제 캐릭터가 주정뱅이인 플레이어를 표시합니다.", "player.actualCharacter"),
   ],
   fortuneTeller: [
-    reminder("fortuneTeller", "redHerring", "오답 대상", "점쟁이에게 악마로 보이는 선한 레드 헤링을 표시합니다.", "ruleState.redHerringPlayerId"),
+    reminder("fortuneTeller", "redHerring", "착각", "점쟁이에게 악마로 보이는 선한 착각을 표시합니다.", "ruleState.redHerringPlayerId"),
   ],
   imp: [
     reminder(
@@ -85,11 +85,11 @@ const reminderDrafts: Readonly<Record<string, readonly TroubleBrewingReminder[]>
   ],
   investigator: [
     reminder("investigator", "minion", "하수인", "수사관에게 보여준 하수인 종류를 표시합니다.", "confirmed setup information"),
-    reminder("investigator", "wrong", "오답", "수사관의 두 후보 중 하수인이 아닌 오답 대상을 표시합니다.", "confirmed setup information"),
+    reminder("investigator", "wrong", "오답", "수사관의 두 후보 중 하수인이 아닌 오답 후보를 표시합니다.", "confirmed setup information"),
   ],
   librarian: [
     reminder("librarian", "outsider", "외지인", "사서에게 보여준 외지인 종류를 표시합니다.", "confirmed setup information"),
-    reminder("librarian", "wrong", "오답", "사서의 두 후보 중 외지인이 아닌 오답 대상을 표시합니다.", "confirmed setup information"),
+    reminder("librarian", "wrong", "오답", "사서의 두 후보 중 외지인이 아닌 오답 후보를 표시합니다.", "confirmed setup information"),
   ],
   monk: [
     reminder("monk", "safe", "안전", "수도사가 오늘 밤 악마로부터 보호한 대상을 표시합니다.", "ruleState.activeProtection"),
@@ -111,7 +111,7 @@ const reminderDrafts: Readonly<Record<string, readonly TroubleBrewingReminder[]>
   ],
   washerwoman: [
     reminder("washerwoman", "townsfolk", "주민", "세탁부에게 보여준 실제 주민 종류를 표시합니다.", "confirmed setup information"),
-    reminder("washerwoman", "wrong", "오답", "세탁부의 두 후보 중 주민이 아닌 오답 대상을 표시합니다.", "confirmed setup information"),
+    reminder("washerwoman", "wrong", "오답", "세탁부의 두 후보 중 주민이 아닌 오답 후보를 표시합니다.", "confirmed setup information"),
   ],
 };
 

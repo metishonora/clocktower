@@ -157,7 +157,7 @@ test("confirms Korean Script Tokens, System Tokens, and Notes in one command", a
   const dialog = screen.getByRole("dialog", { name: "1번 Ada 토큰 및 Notes" });
 
   await user.click(within(dialog).getByRole("button", { name: "System Token · 후속 처리" }));
-  await user.click(within(dialog).getByRole("button", { name: "Script Token · 점쟁이 · 오답 대상" }));
+  await user.click(within(dialog).getByRole("button", { name: "Script Token · 점쟁이 · 착각" }));
   await user.type(within(dialog).getByRole("textbox", { name: "Notes" }), "다음 낮에 개인 확인");
   await user.click(within(dialog).getByRole("button", { name: "수정 확정" }));
 

@@ -523,67 +523,6 @@ select {
 
 .virginAbilityIcon.spent { filter: grayscale(1); opacity: 0.68; }
 
-.slayerDialogBackdrop {
-  position: fixed;
-  z-index: 100;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(25, 31, 28, 0.58);
-  backdrop-filter: blur(2px);
-}
-
-.slayerDialog {
-  display: grid;
-  gap: 16px;
-  width: min(720px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  border: 1px solid #c9c3b8;
-  border-radius: 18px;
-  background: #fffefa;
-  box-shadow: 0 26px 70px rgba(20, 27, 24, 0.32);
-  color: var(--ink);
-  padding: 22px;
-}
-
-.slayerDialog header,
-.slayerDialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.slayerDialog header { align-items: start; }
-.slayerDialog header h2 { margin: 2px 0 0; }
-.slayerDialog header > button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; background: #f4f0e7; color: var(--muted); font-size: 1.6rem; }
-
-.slayerActor { display: flex; align-items: center; gap: 11px; padding: 12px; border-radius: 10px; background: #e9f2ef; }
-.slayerActor > span { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: var(--townsfolk); color: #fff; font-weight: 950; }
-.slayerActor > div { display: grid; gap: 2px; }
-.slayerActor small,
-.slayerReview small { color: var(--muted); font-weight: 850; }
-
-.slayerTargets,
-.slayerRegistration { min-width: 0; margin: 0; padding: 0; border: 0; }
-.slayerTargets legend,
-.slayerRegistration legend { margin-bottom: 8px; color: var(--muted); font-size: 0.82rem; font-weight: 950; }
-.slayerTargets > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-.slayerTargets button { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 7px; min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); padding: 7px; text-align: left; }
-.slayerTargets button > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #e9e4da; font-weight: 950; }
-.slayerTargets button small { grid-column: 2; color: var(--accent); font-weight: 900; }
-.slayerTargets button.dead { border-style: dashed; background: #f7eee5; }
-.slayerTargets button.selected,
-.slayerRegistration button.selected { border-color: var(--primary); background: rgba(31, 111, 91, 0.1); box-shadow: inset 0 0 0 1px rgba(31, 111, 91, 0.18); }
-.slayerTargets button.selected > span { background: var(--primary); color: #fff; }
-
-.slayerRegistration { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; border: 1px solid #dccb9f; border-radius: 10px; background: #fff9e8; }
-.slayerRegistration legend { grid-column: 1 / -1; }
-.slayerRegistration button { min-height: 44px; border: 1px solid #d7cba8; border-radius: 8px; background: #fffefa; color: var(--ink); font-weight: 900; }
-
-.slayerReview { display: grid; gap: 3px; padding: 13px; border-left: 5px solid var(--primary); background: #f1f4ef; }
-.slayerReview strong { font-size: 1.08rem; }
-.slayerReview span { color: #795b1c; font-size: 0.8rem; font-weight: 900; }
-.slayerWarning { margin: 0; color: #8b3f2e; font-size: 0.84rem; font-weight: 900; }
-.slayerDialog footer { display: grid; grid-template-columns: 1fr 1.6fr; }
-.slayerDialog footer button { min-height: 50px; border-radius: 8px; font-weight: 950; }
-
 .confirmedSeatToken.votingEnabled[aria-disabled="false"] {
   cursor: pointer;
 }
@@ -1486,7 +1425,7 @@ select {
 
 .numberChoiceButtons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
 }
 
@@ -1514,6 +1453,12 @@ select {
   color: #8a5c17;
 }
 
+.numberChoiceButtons button.registration {
+  border-color: rgba(177, 123, 38, 0.48);
+  background: rgba(177, 123, 38, 0.08);
+  color: #8a5c17;
+}
+
 .numberChoiceButtons button.selected {
   box-shadow: inset 0 0 0 2px currentColor;
 }
@@ -1526,6 +1471,17 @@ select {
 .numberChoiceButtons strong {
   font-size: 1.55rem;
   line-height: 1;
+}
+
+.numberChoiceRegistrationJudgments {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  color: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
 }
 
 .neighborVisualization {

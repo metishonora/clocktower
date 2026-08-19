@@ -33,6 +33,7 @@
 @media (max-width: 760px) {
   .snvBugReportBackdrop { padding: 10px; align-items: end; }
   .snvBugReportDialog { width: 100%; max-height: 94dvh; border-radius: 24px 24px 0 0; }
+  .snvBugReportDialog textarea { font-size: 16px; }
   .snvBugReportDialog > header, .snvBugReportBody { padding-right: 17px; padding-left: 17px; }
   .snvBugReportDialog > footer { padding-right: 17px; padding-left: 17px; flex-wrap: wrap; }
   .snvBugReportDialog > footer button { flex: 1 1 auto; }

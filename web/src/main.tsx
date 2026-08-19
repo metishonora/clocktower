@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { CoreAdapter } from "./core/coreAdapter";
 import { TROUBLE_BREWING, type ScriptId } from "./core/scripts";
-import type { AutomaticReminder, Player, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
+import type { AutomaticReminder, GameFile, PhaseStep, Player, Proposal, RevealPayload, RuleState, SpyGrimoireRevealPayload } from "./core/types";
 import { isSpyGrimoireRevealPayload } from "./core/revealPayload";
 import { useGameStore } from "./gameStore";
 import type { GameStoreDependencies } from "./gameStore";
@@ -14,7 +14,7 @@ import { SetupInfoDiscretionPrototype } from "./setupInfoDiscretionPrototype";
 import { SlayerPublicAbilityPrototype } from "./slayerPublicAbilityPrototype";
 import { RevealScreen } from "./reveal";
 import { setupFormBusy } from "./setupReadiness";
-import { characters } from "./setupDraft";
+import { characterLabel, characters } from "./setupDraft";
 import { EventLog } from "./features/event-log/EventLog";
 import { LiveUndoDialog } from "./features/event-log/LiveUndoDialog";
 import { Grimoire } from "./features/grimoire/Grimoire";
@@ -31,8 +31,11 @@ import {
 import { TroubleBrewingProgress } from "./features/trouble-brewing/TroubleBrewingProgress";
 import { TroubleBrewingRevealScreen } from "./features/trouble-brewing/TroubleBrewingRevealScreen";
 import { TroubleBrewingLiveGrimoire, type TroubleBrewingLiveHandoff } from "./features/trouble-brewing/TroubleBrewingLiveGrimoire";
+import { troubleBrewingImpAttackPresentation } from "./features/trouble-brewing/impAttackPresentation";
+import { TroubleBrewingBugReportDialog } from "./features/bug-report/TroubleBrewingBugReportDialog";
 import { emptyNominationDraft, useNominationDraft } from "./features/voting/useNominationDraft";
-import { SlayerAbilityDialog } from "./features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityAction } from "./features/public-actions/SlayerAbilityDialog";
+import { SlayerAbilityReveal } from "./features/public-actions/SlayerAbilityReveal";
 import {
   browserRuntimeClock,
   numberedPhaseForStep,
@@ -40,7 +43,24 @@ import {
 } from "./features/phase-control/phaseRuntime";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime";
 import { MobilePhasePanelToggle, useMobilePhasePanel } from "./features/phase-control/useMobilePhasePanel";
-import { phaseStepConfirmation, stepInputReady } from "./features/phase-control/phaseInput";
+import {
+  phaseStepConfirmation,
+  playerSelectionIsComplete,
+  setupInfoSelectionIsComplete,
+  stepInputReady,
+  targetCheckForSelection,
+  targetRegistrationTreatment,
+} from "./features/phase-control/phaseInput";
+import {
+  currentBugReportEnvironment,
+  DEFAULT_BUG_REPORT_EMAIL,
+  type BugReportDelivery,
+} from "./bugReportDelivery";
+import type {
+  TroubleBrewingBugReportContextInput,
+  TroubleBrewingBugReportEnvironment,
+} from "./troubleBrewingBugReport";
+import { demonRegistrationTreatmentChoices } from "./features/trouble-brewing/teamTreatmentPresentation";
 import "./styles.css";
 
 const DevScriptSelectionPrototype = import.meta.env.DEV
@@ -183,15 +203,403 @@ const DevIssue152SpyGrimoirePrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue162TroubleBrewingGameEndPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue162TroubleBrewingGameEndPrototype");
+      return { default: module.Issue162TroubleBrewingGameEndPrototype };
+    })
+  : undefined;
+
+const DevIssue151TroubleBrewingBugReportPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue151TroubleBrewingBugReportPrototype");
+      return { default: module.Issue151TroubleBrewingBugReportPrototype };
+    })
+  : undefined;
+
+const DevIssue153TroubleBrewingCharacterPrototypes = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153TroubleBrewingCharacterPrototypes };
+    })
+  : undefined;
+
+const DevIssue153LibrarianPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153LibrarianPrototype };
+    })
+  : undefined;
+
+const DevIssue153InvestigatorPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153InvestigatorPrototype };
+    })
+  : undefined;
+
+const DevIssue153ChefPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ChefPrototype };
+    })
+  : undefined;
+
+const DevIssue153EmpathPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153EmpathPrototype };
+    })
+  : undefined;
+
+const DevIssue153FortuneTellerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153FortuneTellerPrototype };
+    })
+  : undefined;
+
+const DevIssue153UndertakerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153UndertakerPrototype };
+    })
+  : undefined;
+
+const DevIssue153MonkPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153MonkPrototype };
+    })
+  : undefined;
+
+const DevIssue153RavenkeeperPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153RavenkeeperPrototype };
+    })
+  : undefined;
+
+const DevIssue153VirginPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153VirginPrototype };
+    })
+  : undefined;
+
+const DevIssue153SlayerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SlayerPrototype };
+    })
+  : undefined;
+
+const DevIssue153SoldierPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SoldierPrototype };
+    })
+  : undefined;
+
+const DevIssue153MayorPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153MayorPrototype };
+    })
+  : undefined;
+
+const DevIssue153ButlerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ButlerPrototype };
+    })
+  : undefined;
+
+const DevIssue153DrunkPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153DrunkPrototype };
+    })
+  : undefined;
+
+const DevIssue153ReclusePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ReclusePrototype };
+    })
+  : undefined;
+
+const DevIssue153SaintPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SaintPrototype };
+    })
+  : undefined;
+
+const DevIssue153PoisonerPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153PoisonerPrototype };
+    })
+  : undefined;
+
+const DevIssue153SpyPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153SpyPrototype };
+    })
+  : undefined;
+
+const DevIssue153ScarletWomanPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue153TroubleBrewingCharacterPrototypes");
+      return { default: module.Issue153ScarletWomanPrototype };
+    })
+  : undefined;
+
 export type ClocktowerAppProps = {
   scriptId?: ScriptId;
   coreAdapter: CoreAdapter;
   storageDriver: GameStoreDependencies["storage"];
   choiceTokenSource?: ChoiceTokenSource;
   phaseRuntimeClock?: RuntimeClock;
+  bugReportEmail?: string;
+  bugReportDelivery?: BugReportDelivery;
+};
+
+type TroubleBrewingBugReportSnapshot = {
+  gameFile: GameFile;
+  environment: TroubleBrewingBugReportEnvironment;
+  reproductionContext: TroubleBrewingBugReportContextInput;
+  theme: "day" | "night";
+};
+
+type TroubleBrewingAttackCheckpoint = {
+  step: PhaseStep;
+  proposal: Proposal;
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue153ScarletWomanPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-scarlet-woman"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ScarletWomanPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SpyPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-spy"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SpyPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153PoisonerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-poisoner"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153PoisonerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SaintPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-saint"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SaintPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ReclusePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-recluse"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ReclusePrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153DrunkPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-drunk"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153DrunkPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ButlerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-butler"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ButlerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153MayorPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-mayor"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153MayorPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SoldierPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-soldier"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SoldierPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153SlayerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-slayer"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153SlayerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153VirginPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-virgin"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153VirginPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153RavenkeeperPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-ravenkeeper"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153RavenkeeperPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153MonkPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-monk"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153MonkPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153UndertakerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-undertaker"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153UndertakerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153FortuneTellerPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-fortune-teller"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153FortuneTellerPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153EmpathPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-empath"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153EmpathPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153ChefPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-chef"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153ChefPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153InvestigatorPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-investigator"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153InvestigatorPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153LibrarianPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-librarian"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153LibrarianPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue153TroubleBrewingCharacterPrototypes &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-characters"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue153TroubleBrewingCharacterPrototypes />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue162TroubleBrewingGameEndPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-162-tb-game-end"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue162TroubleBrewingGameEndPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue151TroubleBrewingBugReportPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-151-tb-bug-report"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue151TroubleBrewingBugReportPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue152SpyGrimoirePrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-152-spy-grimoire"
@@ -441,22 +849,30 @@ export function ClocktowerApp({
   storageDriver,
   choiceTokenSource = browserCryptoChoiceToken,
   phaseRuntimeClock = browserRuntimeClock,
+  bugReportEmail = import.meta.env.VITE_BUG_REPORT_EMAIL?.trim() || DEFAULT_BUG_REPORT_EMAIL,
+  bugReportDelivery,
 }: ClocktowerAppProps) {
   const gameStore = useGameStore({ scriptId, core: coreAdapter, storage: storageDriver });
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeRevealPayload, setActiveRevealPayload] = useState<RevealPayload>();
-  const [spyRevealEnded, setSpyRevealEnded] = useState(false);
+  const [acknowledgedSpyRevealKey, setAcknowledgedSpyRevealKey] = useState<string>();
   const [activePreActionRevealKey, setActivePreActionRevealKey] = useState<string>();
   const [acknowledgedPreActionRevealKey, setAcknowledgedPreActionRevealKey] = useState<string>();
-  const [slayerDialogOpen, setSlayerDialogOpen] = useState(false);
-  const slayerTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
+  const [slayerReveal, setSlayerReveal] = useState<{ targetPlayerId: string; died: boolean }>();
+  const [slayerRevealClosing, setSlayerRevealClosing] = useState(false);
   const [liveUndoDialogEvent, setLiveUndoDialogEvent] = useState<typeof gameStore.latestLiveUndoEvent>();
   const liveUndoTriggerRef = useRef<HTMLButtonElement | undefined>(undefined);
   const [undoResetRevision, setUndoResetRevision] = useState(0);
   const [troubleBrewingStage, setTroubleBrewingStage] = useState<TroubleBrewingLiveStage>("play");
   const [troubleBrewingHandoff, setTroubleBrewingHandoff] = useState<TroubleBrewingLiveHandoff>();
+  const [troubleBrewingAttackCheckpoint, setTroubleBrewingAttackCheckpoint] = useState<TroubleBrewingAttackCheckpoint>();
+  const [troubleBrewingMayorBounceSelecting, setTroubleBrewingMayorBounceSelecting] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [newGameConfirmOpen, setNewGameConfirmOpen] = useState(false);
+  const [troubleBrewingBugReportSnapshot, setTroubleBrewingBugReportSnapshot] = useState<
+    TroubleBrewingBugReportSnapshot
+  >();
+  const troubleBrewingBugReportTriggerRef = useRef<HTMLButtonElement>(null);
   const [nominationDraft, setNominationDraft] = useNominationDraft(gameStore.currentStep?.id, undoResetRevision);
   const preActionRevealKey = gameStore.currentStep?.preActionReveal
     ? `${gameStore.currentStep.id}:${gameStore.currentStep.preActionReveal.sourceEventId}`
@@ -473,35 +889,113 @@ export function ClocktowerApp({
     gameStore.suggestionContextFingerprint,
     undoResetRevision,
   );
+  const troubleBrewingTargetCheck = phaseInputStep
+    ? targetCheckForSelection(phaseInputStep, phaseInputDraft.selectedPlayerIds)
+    : undefined;
+  const troubleBrewingTargetTreatment = targetRegistrationTreatment(troubleBrewingTargetCheck);
+  const troubleBrewingTargetTreatmentReady = !troubleBrewingTargetTreatment
+    || phaseInputDraft.selectedTargetChoice === troubleBrewingTargetTreatment.canonicalChoice
+    || phaseInputDraft.selectedTargetChoice === troubleBrewingTargetTreatment.registeredChoice;
+  const troubleBrewingTargetTreatmentPlayer = troubleBrewingTargetTreatment
+    ? gameStore.players.find((player) => player.id === troubleBrewingTargetTreatment.playerId)
+    : undefined;
+  const troubleBrewingTargetTreatmentOptions = troubleBrewingTargetTreatment
+    && troubleBrewingTargetTreatmentPlayer
+    ? demonRegistrationTreatmentChoices(
+        `${characterLabel(troubleBrewingTargetTreatmentPlayer.actualCharacter)}를`,
+        troubleBrewingTargetTreatment.canonicalChoice,
+        troubleBrewingTargetTreatment.registeredAs,
+        troubleBrewingTargetTreatment.registeredChoice,
+      )
+    : [];
+  const troubleBrewingSelectionChoices = troubleBrewingTargetTreatment
+    && troubleBrewingTargetTreatmentPlayer
+    && troubleBrewingTargetTreatmentOptions.length === 2
+    ? {
+        label: `이번 판정의 ${characterLabel(troubleBrewingTargetTreatmentPlayer.actualCharacter)} 취급`,
+        selectedId: troubleBrewingTargetTreatmentOptions.find(
+          (option) => option.choice === phaseInputDraft.selectedTargetChoice,
+        )?.id,
+        options: troubleBrewingTargetTreatmentOptions.map((option) => ({
+          id: option.id,
+          label: option.label,
+          ariaLabel: option.accessibleLabel,
+          className: option.className,
+        })),
+        onChange: (id: string) => {
+          const option = troubleBrewingTargetTreatmentOptions.find((candidate) => candidate.id === id);
+          if (option) phaseInputDraft.setSelectedTargetChoice(option.choice);
+        },
+      }
+    : undefined;
+  const troubleBrewingMayorPrompt = phaseInputStep?.requiredInput.kind === "playerIds"
+    ? phaseInputStep.requiredInput.mayorDecision
+    : undefined;
+  const troubleBrewingMayorTargeted = Boolean(
+    troubleBrewingMayorPrompt
+      && phaseInputDraft.selectedPlayerIds.includes(troubleBrewingMayorPrompt.mayorPlayerId),
+  );
+  const troubleBrewingMayorSelectionChoices = troubleBrewingMayorTargeted
+    && !troubleBrewingMayorBounceSelecting
+    ? {
+        label: "시장 공격 결과",
+        selectedId: phaseInputDraft.mayorDecision?.kind === "mayorDies" ? "mayorDies" : undefined,
+        options: [
+          { id: "mayorDies", label: "시장이 사망" },
+          { id: "bounce", label: "다른 플레이어가 대신 사망" },
+        ],
+        onChange: (id: string) => {
+          if (id === "mayorDies") {
+            setTroubleBrewingMayorBounceSelecting(false);
+            phaseInputDraft.setMayorDecision({ kind: "mayorDies" });
+          } else {
+            setTroubleBrewingMayorBounceSelecting(true);
+            phaseInputDraft.setMayorDecision(undefined);
+          }
+        },
+      }
+    : undefined;
+  const troubleBrewingEffectiveSelectionChoices = troubleBrewingMayorSelectionChoices
+    ?? troubleBrewingSelectionChoices;
+  const troubleBrewingMayorDecisionReady = !troubleBrewingMayorTargeted
+    || Boolean(phaseInputDraft.mayorDecision);
   const votingStepActive =
     !gameStore.pendingConfirmedReveal && gameStore.currentStep?.requiredInput.kind === "nominationVote";
   const troubleBrewingVoteStepActive = Boolean(
     phaseInputStep?.requiredInput.kind === "nominationVote"
       && (phaseInputStep.id.endsWith(":vote") || gameStore.dayState?.activeNomination),
   );
-  const troubleBrewingSelectionReady = phaseInputStep
+  const troubleBrewingBaseSelectionReady = phaseInputStep
     ? phaseInputStep.requiredInput.kind === "setupInfo"
       ? phaseInputDraft.zeroOutsiders
         ? phaseInputDraft.zeroOutsidersAvailable && phaseInputDraft.selectedPlayerIds.length === 0
-        : phaseInputDraft.selectedPlayerIds.length === (phaseInputStep.requiredInput.maxSelections ?? 0)
-      : stepInputReady(
-          phaseInputStep,
-          phaseInputDraft.selectedPlayerIds.length,
-          phaseInputDraft.selectedCharacterIds.length,
-          phaseInputDraft.selectedCharacterId,
-          nominationDraft,
-          phaseInputDraft.zeroOutsiders,
-          phaseInputDraft.selectedNumberChoice,
-          phaseInputDraft.zeroOutsidersAvailable,
-          phaseInputDraft.mayorDecision,
-          phaseInputDraft.selectedPlayerIds,
-        )
+        : setupInfoSelectionIsComplete(
+            phaseInputStep,
+            phaseInputDraft.selectedPlayerIds,
+            gameStore.players,
+          )
+      : phaseInputStep.requiredInput.kind === "playerIds"
+        ? playerSelectionIsComplete(phaseInputStep, phaseInputDraft.selectedPlayerIds)
+        : stepInputReady(
+            phaseInputStep,
+            phaseInputDraft.selectedPlayerIds.length,
+            phaseInputDraft.selectedCharacterIds.length,
+            phaseInputDraft.selectedCharacterId,
+            nominationDraft,
+            phaseInputDraft.zeroOutsiders,
+            phaseInputDraft.selectedNumberChoice,
+            phaseInputDraft.zeroOutsidersAvailable,
+            phaseInputDraft.mayorDecision,
+            phaseInputDraft.selectedPlayerIds,
+            gameStore.players,
+          )
     : false;
+  const troubleBrewingSelectionReady = troubleBrewingBaseSelectionReady
+    && troubleBrewingTargetTreatmentReady
+    && troubleBrewingMayorDecisionReady;
   const troubleBrewingNeedsProgressConfirmation = Boolean(
     phaseInputStep?.requiredInput.kind === "playerIds"
-      && (phaseInputStep.informationPrompt
-        || (phaseInputStep.requiredInput.mayorDecision
-          && phaseInputDraft.selectedPlayerIds.includes(phaseInputStep.requiredInput.mayorDecision.mayorPlayerId))),
+      && phaseInputStep.informationPrompt,
   );
   const numberedPhase = gameStore.gameEnd
     ? undefined
@@ -517,16 +1011,47 @@ export function ClocktowerApp({
       ? { kind: "active" as const, phaseLabel: numberedPhase.label, runtime: phaseRuntime }
       : undefined;
   const mobilePhasePanel = useMobilePhasePanel(gameStore.setupConfirmed);
-  const activeSpyRevealPayload = activeRevealPayload && isSpyGrimoireRevealPayload(activeRevealPayload)
+  const explicitSpyRevealPayload = activeRevealPayload && isSpyGrimoireRevealPayload(activeRevealPayload)
     ? activeRevealPayload
     : undefined;
+  const pendingSpyRevealPayload = gameStore.pendingConfirmedReveal
+    && isSpyGrimoireRevealPayload(gameStore.pendingConfirmedReveal.payload)
+    ? gameStore.pendingConfirmedReveal.payload
+    : undefined;
+  const pendingSpyRevealKey = pendingSpyRevealPayload && gameStore.pendingConfirmedReveal
+    ? `${gameStore.pendingConfirmedReveal.step.id}:${gameStore.pendingConfirmedReveal.confirmedEventCount}`
+    : undefined;
+  const implicitSpyRevealPayload = !activeRevealPayload
+    && pendingSpyRevealKey !== acknowledgedSpyRevealKey
+    ? pendingSpyRevealPayload
+    : undefined;
+  const activeSpyRevealPayload = explicitSpyRevealPayload ?? implicitSpyRevealPayload;
   const revealPlayers = activeSpyRevealPayload ? playersForSpyReveal(activeSpyRevealPayload) : undefined;
   const revealRuleState = activeSpyRevealPayload ? ruleStateForSpyReveal(activeSpyRevealPayload) : undefined;
+  const slayerActor = gameStore.ruleState?.slayerAbility
+    ? gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)
+    : undefined;
+  const pendingSlayerDeathEvent = gameStore.currentStep?.requiredInput.kind === "slayerDeathDecision"
+    ? [...gameStore.gameFile.game.events].reverse().find((candidate) =>
+        candidate.type === "slayerAbilityUsed"
+        && candidate.payload.outcome.kind === "deathPending"
+        && candidate.payload.outcome.playerId === gameStore.currentStep?.playerId,
+      )
+    : undefined;
+  const activeSlayerReveal = slayerReveal ?? (pendingSlayerDeathEvent?.type === "slayerAbilityUsed"
+    ? { targetPlayerId: pendingSlayerDeathEvent.payload.targetPlayerId, died: true }
+    : undefined);
+  const troubleBrewingAttackResult = troubleBrewingAttackCheckpoint
+    ? troubleBrewingImpAttackPresentation(troubleBrewingAttackCheckpoint.proposal, gameStore.players)
+    : undefined;
+  const troubleBrewingVisibleWarnings = gameStore.shownWarnings.filter(
+    (warning) => warning.code !== "NIGHT_DEATH_UNANNOUNCED",
+  );
 
   useEffect(() => {
     if (!gameStore.pendingConfirmedReveal) {
       setActiveRevealPayload(undefined);
-      setSpyRevealEnded(false);
+      setAcknowledgedSpyRevealKey(undefined);
     }
   }, [gameStore.pendingConfirmedReveal]);
 
@@ -555,10 +1080,13 @@ export function ClocktowerApp({
     event.currentTarget.value = "";
     if (!file) return;
     await gameStore.importGameFile(await file.text());
+    setTroubleBrewingAttackCheckpoint(undefined);
+    setTroubleBrewingMayorBounceSelecting(false);
+    setTroubleBrewingHandoff(undefined);
+    setTroubleBrewingStage("play");
   }
 
   function showReveal(payload: RevealPayload) {
-    setSpyRevealEnded(false);
     setActiveRevealPayload(payload);
     gameStore.clearProposalResult();
   }
@@ -583,7 +1111,9 @@ export function ClocktowerApp({
     if (removed) {
       setUndoResetRevision((current) => current + 1);
       setActiveRevealPayload(undefined);
-      setSlayerDialogOpen(false);
+      setSlayerReveal(undefined);
+      setTroubleBrewingAttackCheckpoint(undefined);
+      setTroubleBrewingMayorBounceSelecting(false);
     }
     queueMicrotask(() => liveUndoTriggerRef.current?.focus());
   }
@@ -601,19 +1131,34 @@ export function ClocktowerApp({
       setAcknowledgedPreActionRevealKey(activePreActionRevealKey);
       setActivePreActionRevealKey(undefined);
     }
+    if (activeSpyRevealPayload && pendingSpyRevealKey) {
+      setAcknowledgedSpyRevealKey(pendingSpyRevealKey);
+    }
     setActiveRevealPayload(undefined);
   }
 
-  function finishSpyReveal() {
-    if (!activeSpyRevealPayload) return;
-    setSpyRevealEnded(true);
+  async function useSlayerAbility(
+    targetPlayerId: string,
+    registration: Parameters<typeof gameStore.useSlayerAbility>[1],
+  ) {
+    const result = await gameStore.useSlayerAbility(targetPlayerId, registration);
+    if (!result?.ok || result.value.event.type !== "slayerAbilityUsed") return;
+    setSlayerReveal({
+      targetPlayerId,
+      died: result.value.event.payload.outcome.kind === "deathPending",
+    });
   }
 
-  function continueAfterSpyReveal() {
-    if (!gameStore.pendingConfirmedRevealReady) return;
-    gameStore.continueAfterConfirmedReveal();
-    setSpyRevealEnded(false);
-    setActiveRevealPayload(undefined);
+  async function closeSlayerReveal() {
+    if (!activeSlayerReveal || slayerRevealClosing) return;
+    if (!activeSlayerReveal.died) {
+      setSlayerReveal(undefined);
+      return;
+    }
+    setSlayerRevealClosing(true);
+    const result = await gameStore.confirmCurrentStep({ input: { died: true } });
+    setSlayerRevealClosing(false);
+    if (result?.ok) setSlayerReveal(undefined);
   }
 
   function currentTroubleBrewingHandoff(): TroubleBrewingLiveHandoff | undefined {
@@ -635,17 +1180,37 @@ export function ClocktowerApp({
       setTroubleBrewingStage("seating");
       return;
     }
+    setTroubleBrewingMayorBounceSelecting(false);
     setTroubleBrewingHandoff(handoff);
     setTroubleBrewingStage("seating");
   }
 
+  function toggleTroubleBrewingTargetPlayer(playerId: string) {
+    if (troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt) {
+      if (!troubleBrewingMayorPrompt.bounceTargetPlayerIds.includes(playerId)) return;
+      const selectedBounceTarget = phaseInputDraft.mayorDecision?.kind === "bounce"
+        ? phaseInputDraft.mayorDecision.targetPlayerId
+        : undefined;
+      phaseInputDraft.setMayorDecision(
+        selectedBounceTarget === playerId ? undefined : { kind: "bounce", targetPlayerId: playerId },
+      );
+      return;
+    }
+    setTroubleBrewingMayorBounceSelecting(false);
+    phaseInputDraft.togglePlayer(playerId);
+  }
+
   function resetTroubleBrewingSelection() {
+    if (troubleBrewingMayorBounceSelecting) {
+      phaseInputDraft.setMayorDecision(undefined);
+      return;
+    }
     if (troubleBrewingHandoff === "nomination") {
       setNominationDraft(emptyNominationDraft());
     } else if (troubleBrewingHandoff === "vote") {
       setNominationDraft((current) => ({ ...current, voterIds: [] }));
     } else {
-      phaseInputDraft.setSelectedPlayerIds([]);
+      phaseInputDraft.reset();
     }
   }
 
@@ -669,15 +1234,100 @@ export function ClocktowerApp({
       setTroubleBrewingStage("play");
       return;
     }
-    await gameStore.confirmCurrentStep(phaseStepConfirmation(phaseInputStep, phaseInputDraft, nominationDraft));
+    const confirmed = await gameStore.confirmCurrentStep(
+      phaseStepConfirmation(phaseInputStep, phaseInputDraft, nominationDraft),
+    );
+    if (!confirmed?.ok) return;
+    setTroubleBrewingMayorBounceSelecting(false);
+    if (troubleBrewingImpAttackPresentation(confirmed.value, gameStore.players)) {
+      setTroubleBrewingAttackCheckpoint({ step: phaseInputStep, proposal: confirmed.value });
+      setTroubleBrewingHandoff("target");
+      setTroubleBrewingStage("seating");
+      return;
+    }
+    if (
+      troubleBrewingHandoff === "nomination"
+      && phaseInputStep.requiredInput.kind === "nomination"
+    ) {
+      setNominationDraft((current) => ({ ...current, voterIds: [] }));
+      setTroubleBrewingHandoff("vote");
+      setTroubleBrewingStage("seating");
+      return;
+    }
     setTroubleBrewingHandoff(undefined);
     setTroubleBrewingStage("play");
   }
 
   function cancelTroubleBrewingSelection() {
+    if (troubleBrewingMayorBounceSelecting) {
+      phaseInputDraft.setMayorDecision(undefined);
+      setTroubleBrewingMayorBounceSelecting(false);
+      return;
+    }
+    resetTroubleBrewingSelection();
     setTroubleBrewingHandoff(undefined);
     setTroubleBrewingStage("play");
   }
+
+  async function confirmTroubleBrewingProgress(
+    confirmation: Parameters<typeof gameStore.confirmCurrentStep>[0],
+  ) {
+    const confirmedStep = phaseInputStep;
+    const confirmed = await gameStore.confirmCurrentStep(confirmation);
+    if (
+      confirmed?.ok
+      && confirmedStep
+      && troubleBrewingImpAttackPresentation(confirmed.value, gameStore.players)
+    ) {
+      setTroubleBrewingMayorBounceSelecting(false);
+      setTroubleBrewingAttackCheckpoint({ step: confirmedStep, proposal: confirmed.value });
+      setTroubleBrewingHandoff("target");
+      setTroubleBrewingStage("seating");
+    }
+    return confirmed;
+  }
+
+  function finishTroubleBrewingAttackCheckpoint() {
+    setTroubleBrewingAttackCheckpoint(undefined);
+    setTroubleBrewingMayorBounceSelecting(false);
+    setTroubleBrewingHandoff(undefined);
+    setTroubleBrewingStage("play");
+    gameStore.clearProposalResult();
+  }
+
+  function openTroubleBrewingBugReport(
+    activeTab: TroubleBrewingBugReportContextInput["activeTab"],
+    theme: "day" | "night",
+  ) {
+    setTroubleBrewingBugReportSnapshot({
+      gameFile: gameStore.gameFile,
+      environment: currentBugReportEnvironment(),
+      reproductionContext: {
+        activeTab,
+        replayPhase: gameStore.phase ?? null,
+        currentStepId: gameStore.currentStep?.id ?? null,
+        currentStepType: gameStore.currentStep?.stepType ?? null,
+      },
+      theme,
+    });
+  }
+
+  function closeTroubleBrewingBugReport() {
+    setTroubleBrewingBugReportSnapshot(undefined);
+    window.setTimeout(() => troubleBrewingBugReportTriggerRef.current?.focus(), 0);
+  }
+
+  const troubleBrewingBugReportDialog = troubleBrewingBugReportSnapshot ? (
+    <TroubleBrewingBugReportDialog
+      gameFile={troubleBrewingBugReportSnapshot.gameFile}
+      environment={troubleBrewingBugReportSnapshot.environment}
+      reproductionContext={troubleBrewingBugReportSnapshot.reproductionContext}
+      recipient={bugReportEmail}
+      delivery={bugReportDelivery}
+      theme={troubleBrewingBugReportSnapshot.theme}
+      onClose={closeTroubleBrewingBugReport}
+    />
+  ) : null;
 
   if (scriptId === TROUBLE_BREWING && !gameStore.setupConfirmed) {
     return <>
@@ -697,8 +1347,23 @@ export function ClocktowerApp({
         }}
         onImport={() => importInputRef.current?.click()}
         onReset={gameStore.resetSetup}
+        onBugReport={() => openTroubleBrewingBugReport(gameStore.setupDraft.setupStage ?? "roles", "night")}
+        bugReportTriggerRef={troubleBrewingBugReportTriggerRef}
       />
+      {troubleBrewingBugReportDialog}
     </>;
+  }
+
+  if (activeSlayerReveal) {
+    const target = gameStore.players.find((player) => player.id === activeSlayerReveal.targetPlayerId);
+    if (target) {
+      return <SlayerAbilityReveal
+        target={target}
+        died={activeSlayerReveal.died}
+        busy={slayerRevealClosing}
+        onClose={() => { void closeSlayerReveal(); }}
+      />;
+    }
   }
 
   if (activeRevealPayload && !activeSpyRevealPayload) {
@@ -723,20 +1388,23 @@ export function ClocktowerApp({
           theme={gameStore.phase === "day" ? "day" : "night"}
           busy={gameStore.busy}
           storageReady={gameStore.storageReady}
-          warnings={gameStore.shownWarnings}
+          warnings={troubleBrewingVisibleWarnings}
           loadError={gameStore.loadError}
           canUndo={Boolean(gameStore.latestLiveUndoEvent && gameStore.canUndoLatestLiveEvent)}
-          onStageChange={(stage) => {
-            setTroubleBrewingStage(stage);
-            setTroubleBrewingHandoff(stage === "seating" ? currentTroubleBrewingHandoff() : undefined);
-          }}
+          handoffActive={Boolean(troubleBrewingHandoff)}
+          onStageChange={setTroubleBrewingStage}
           onReset={() => setNewGameConfirmOpen(true)}
           onRequestUndo={(trigger) => {
             if (gameStore.latestLiveUndoEvent) requestLiveUndo(gameStore.latestLiveUndoEvent, trigger);
           }}
+          onBugReport={() => openTroubleBrewingBugReport(
+            troubleBrewingStage,
+            gameStore.phase === "day" ? "day" : "night",
+          )}
+          bugReportTriggerRef={troubleBrewingBugReportTriggerRef}
           grimoire={<TroubleBrewingLiveGrimoire
             players={gameStore.players}
-            currentStep={phaseInputStep}
+            currentStep={troubleBrewingAttackCheckpoint?.step ?? phaseInputStep}
             phaseLabel={livePhaseLabel}
             phaseRuntime={phaseRuntime ?? "00:00"}
             theme={gameStore.phase === "day" ? "day" : "night"}
@@ -751,22 +1419,72 @@ export function ClocktowerApp({
               troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "setupInfo"
                 ? {
                     selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                    allowedPlayerIds: phaseInputDraft.setupInfoSelectablePlayerIds,
                     disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
                     onTogglePlayer: phaseInputDraft.togglePlayer,
                   }
                 : undefined
             }
             phasePlayerSelection={
-              troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "playerIds"
+              troubleBrewingAttackResult
+                ? {
+                    selectedPlayerIds: [troubleBrewingAttackResult.targetPlayerId],
+                    allowedPlayerIds: [troubleBrewingAttackResult.targetPlayerId],
+                    disabled: true,
+                    onTogglePlayer: () => undefined,
+                  }
+                : troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt
+                  ? {
+                      selectedPlayerIds: phaseInputDraft.mayorDecision?.kind === "bounce"
+                        ? [phaseInputDraft.mayorDecision.targetPlayerId]
+                        : [],
+                      allowedPlayerIds: troubleBrewingMayorPrompt.bounceTargetPlayerIds,
+                      disabled: gameStore.busy,
+                      onTogglePlayer: toggleTroubleBrewingTargetPlayer,
+                    }
+                : troubleBrewingHandoff === "target" && phaseInputStep?.requiredInput.kind === "playerIds"
                 ? {
                     selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
                     allowedPlayerIds: phaseInputStep.requiredInput.allowedPlayerIds,
                     disabled: gameStore.busy,
-                    onTogglePlayer: phaseInputDraft.togglePlayer,
+                    onTogglePlayer: toggleTroubleBrewingTargetPlayer,
                   }
                 : undefined
             }
+            selectionChoices={troubleBrewingHandoff === "target"
+              && !troubleBrewingAttackResult
+              && !troubleBrewingMayorBounceSelecting
+              ? troubleBrewingEffectiveSelectionChoices
+              : undefined}
+            selectionPresentation={troubleBrewingAttackResult?.bounced
+              ? { selectedRole: "대신 사망", selectedStateClass: "tbSeatStateMayorBounce" }
+              : troubleBrewingMayorBounceSelecting
+                ? {
+                    title: "시장 능력",
+                    fieldLabel: "대신 사망 대상",
+                    selectedRole: "대신 사망",
+                    selectedStateClass: "tbSeatStateMayorBounce",
+                  }
+                : undefined}
+            seatMarkers={troubleBrewingAttackResult?.bounced
+              ? [{
+                  playerId: troubleBrewingAttackResult.attackTargetPlayerId,
+                  label: "공격 대상",
+                  className: "snvSeatStateTarget tbSeatStateAttack",
+                }]
+              : troubleBrewingMayorBounceSelecting && troubleBrewingMayorPrompt
+                ? [{
+                    playerId: troubleBrewingMayorPrompt.mayorPlayerId,
+                    label: "공격 대상",
+                    className: "snvSeatStateTarget tbSeatStateAttack",
+                  }]
+                : undefined}
             selectionReady={troubleBrewingSelectionReady}
+            completedSelection={troubleBrewingAttackResult ? {
+              title: "악마 공격 결과",
+              summary: troubleBrewingAttackResult.summary,
+              onContinue: finishTroubleBrewingAttackCheckpoint,
+            } : undefined}
             onConfirmSelection={() => { void confirmTroubleBrewingSelection(); }}
             onResetSelection={resetTroubleBrewingSelection}
             onCancelSelection={cancelTroubleBrewingSelection}
@@ -777,7 +1495,8 @@ export function ClocktowerApp({
             phaseLabel={livePhaseLabel}
             phaseRuntime={phaseRuntime ?? "00:00"}
             theme={gameStore.phase === "day" ? "day" : "night"}
-            onGoToGrimoire={startTroubleBrewingSelection}
+            onOpenReferenceGrimoire={() => setTroubleBrewingStage("seating")}
+            onStartGrimoireSelection={startTroubleBrewingSelection}
             pendingReveal={gameStore.pendingConfirmedReveal}
             currentStep={gameStore.currentStep}
             phaseOverview={gameStore.phaseOverview}
@@ -794,12 +1513,12 @@ export function ClocktowerApp({
             onShowPreActionReveal={showPreActionReveal}
             onShowReveal={showReveal}
             onContinue={gameStore.continueAfterConfirmedReveal}
-            onConfirm={gameStore.confirmCurrentStep}
+            onConfirm={confirmTroubleBrewingProgress}
             onSkip={gameStore.skipCurrentStep}
             onSuggest={gameStore.suggestPhaseInput}
             choiceTokenSource={choiceTokenSource}
             suggestionContextFingerprint={gameStore.suggestionContextFingerprint}
-            warnings={gameStore.shownWarnings}
+            warnings={troubleBrewingVisibleWarnings}
             gameEnd={gameStore.gameEnd}
             onEndGame={(winningTeam) => { void gameStore.endGame(winningTeam); }}
             onRequestUndoGameEnd={(trigger) => {
@@ -828,12 +1547,12 @@ export function ClocktowerApp({
             </section>
           </section>}
         />
-        {slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
-          actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
+        {gameStore.ruleState?.slayerAbility?.canUseNow && slayerActor ? <SlayerAbilityAction
+          actor={slayerActor}
           players={gameStore.players}
+          activeImpairments={gameStore.ruleState.activeImpairments}
           busy={gameStore.busy}
-          onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
-          onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
+          onConfirm={useSlayerAbility}
         /> : null}
         {liveUndoDialogEvent ? (
           <LiveUndoDialog events={liveUndoDialogEvent.events} onCancel={closeLiveUndoDialog} onConfirm={confirmLiveUndo} />
@@ -846,6 +1565,8 @@ export function ClocktowerApp({
               <button type="button" onClick={() => setReturnConfirmOpen(false)}>취소</button>
               <button type="button" onClick={() => {
                 setReturnConfirmOpen(false);
+                setTroubleBrewingAttackCheckpoint(undefined);
+                setTroubleBrewingMayorBounceSelecting(false);
                 setTroubleBrewingHandoff(undefined);
                 setTroubleBrewingStage("seating");
                 gameStore.returnToConfirmedSetup();
@@ -861,6 +1582,8 @@ export function ClocktowerApp({
               <button type="button" onClick={() => setNewGameConfirmOpen(false)}>취소</button>
               <button type="button" className="snvDestructiveAction" onClick={() => {
                 setNewGameConfirmOpen(false);
+                setTroubleBrewingAttackCheckpoint(undefined);
+                setTroubleBrewingMayorBounceSelecting(false);
                 setTroubleBrewingHandoff(undefined);
                 setTroubleBrewingStage("play");
                 gameStore.resetSetup();
@@ -868,6 +1591,7 @@ export function ClocktowerApp({
             </div>
           </section>
         </div> : null}
+        {troubleBrewingBugReportDialog}
       </div>
     );
   }
@@ -875,15 +1599,6 @@ export function ClocktowerApp({
   if (scriptId === TROUBLE_BREWING && gameStore.setupConfirmed && activeSpyRevealPayload && revealPlayers) {
     const revealTheme = gameStore.phase === "day" ? "day" : "night";
     const revealPhaseLabel = numberedPhase?.label ?? (gameStore.phase === "day" ? "낮" : "밤");
-    if (spyRevealEnded) {
-      return (
-        <SpyRevealEndedProduction
-          theme={revealTheme}
-          ready={gameStore.pendingConfirmedRevealReady}
-          onContinue={continueAfterSpyReveal}
-        />
-      );
-    }
     return (
       <div
         className="clocktowerApp tbSharedLivePlay spyRevealActive"
@@ -912,8 +1627,9 @@ export function ClocktowerApp({
             gameEnded={false}
             ruleState={revealRuleState}
             interactionLocked
-            progressActionLabel="열람 종료"
-            onGoToProgress={finishSpyReveal}
+            progressActionLabel="확인 완료"
+            progressActionDisabled={Boolean(pendingSpyRevealPayload && !gameStore.pendingConfirmedRevealReady)}
+            onGoToProgress={closeActiveReveal}
           />}
           progress={<span aria-hidden="true" />}
           storage={<span aria-hidden="true" />}
@@ -963,17 +1679,12 @@ export function ClocktowerApp({
                 ruleState={revealRuleState ?? gameStore.ruleState}
                 readOnlyReveal={Boolean(activeSpyRevealPayload)}
                 onUpdatePlayerAnnotations={activeSpyRevealPayload || gameStore.gameEnd ? undefined : gameStore.updatePlayerAnnotations}
-                slayerAbility={!activeSpyRevealPayload && gameStore.ruleState?.slayerAbility ? {
-                  actorPlayerId: gameStore.ruleState.slayerAbility.actorPlayerId,
-                  enabled: gameStore.ruleState.slayerAbility.canUseNow,
-                  spent: gameStore.ruleState.slayerAbility.spent,
-                  onUse: (button) => { slayerTriggerRef.current = button; setSlayerDialogOpen(true); },
-                } : undefined}
                 nominationVoting={votingStepActive ? { draft: nominationDraft, onChange: setNominationDraft } : undefined}
                 setupInformationSelection={
                   !activeSpyRevealPayload && !votingStepActive && phaseInputStep?.requiredInput.kind === "setupInfo"
                     ? {
                         selectedPlayerIds: phaseInputDraft.selectedPlayerIds,
+                        allowedPlayerIds: phaseInputDraft.setupInfoSelectablePlayerIds,
                         disabled: gameStore.busy || phaseInputDraft.zeroOutsiders,
                         onTogglePlayer: phaseInputDraft.togglePlayer,
                       }
@@ -1091,13 +1802,6 @@ export function ClocktowerApp({
           />
         )}
       </main>
-      {!activeSpyRevealPayload && slayerDialogOpen && gameStore.ruleState?.slayerAbility ? <SlayerAbilityDialog
-        actor={gameStore.players.find((player) => player.id === gameStore.ruleState?.slayerAbility?.actorPlayerId)!}
-        players={gameStore.players}
-        busy={gameStore.busy}
-        onClose={() => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); }}
-        onConfirm={(targetId, registration) => { setSlayerDialogOpen(false); queueMicrotask(() => slayerTriggerRef.current?.focus()); void gameStore.useSlayerAbility(targetId, registration); }}
-      /> : null}
       {!activeSpyRevealPayload && liveUndoDialogEvent ? (
         <LiveUndoDialog
           events={liveUndoDialogEvent.events}
@@ -1169,26 +1873,4 @@ function legacyReminder(
     description: token === "poisoned" ? "이전 Spy Reveal의 중독 상태입니다." : "이전 Spy Reveal의 수도사 보호 상태입니다.",
     sourceEventId: `spy-reveal-legacy:${player.playerId}`,
   };
-}
-
-function SpyRevealEndedProduction({
-  theme,
-  ready,
-  onContinue,
-}: {
-  theme: "day" | "night";
-  ready: boolean;
-  onContinue: () => void;
-}) {
-  return <main
-    className="productionApplicationShell tbProductionShell tbSpyRevealEndedShell"
-    data-theme={theme}
-    aria-label="첩자 공개 종료"
-  >
-    <section className="tbSpyRevealEndedProduction" aria-label="첩자 공개 종료 안내">
-      <span>SPY REVEAL</span>
-      <h1>열람을 종료했습니다</h1>
-      <button type="button" disabled={!ready} onClick={onContinue}>진행</button>
-    </section>
-  </main>;
 }

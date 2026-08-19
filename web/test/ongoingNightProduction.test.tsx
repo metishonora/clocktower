@@ -20,7 +20,11 @@ import {
   replayState,
   step,
 } from "./clocktowerAppHarness";
-import { confirmLivePlayerSelection, openLiveGrimoire, returnToLiveProgress, selectLivePlayers } from "./livePlayTestHelpers";
+import {
+  confirmLivePlayerSelection,
+  selectLivePlayers,
+  startLiveTargetSelection,
+} from "./livePlayTestHelpers";
 
 describe("ongoing-night production UI", () => {
   test("renders replay-derived poison and protection as distinct read-only Grimoire badges", async () => {
@@ -103,7 +107,7 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     const spy = within(input).getByRole("button", { name: /도윤/ }) as HTMLButtonElement;
     const disallowedImp = within(input).getByRole("button", { name: /하린/ }) as HTMLButtonElement;
     expect(spy.disabled).toBe(false);
@@ -142,7 +146,7 @@ describe("ongoing-night production UI", () => {
       expected: "5번 하린 - 사망",
       warning: undefined,
     },
-  ])("renders only the concise Imp outcome line: $expected", async ({ outcome, summary, expected, warning }) => {
+  ])("keeps the Imp outcome in the Grimoire until it is acknowledged: $expected", async ({ outcome, summary, expected, warning }) => {
     const playerRoster = koreanPlayers();
     const currentStep = ongoingStep(
       step({
@@ -174,10 +178,19 @@ describe("ongoing-night production UI", () => {
     const targetName = outcome.kind === "death" ? /하린/ : /서연/;
     await confirmLivePlayerSelection(user, targetName);
 
-    const actionResult = await screen.findByLabelText("밤 행동 결과");
-    expect(within(actionResult).getByText(expected)).toBeTruthy();
-    expect(within(actionResult).queryByText(summary)).toBeNull();
-    expect(within(actionResult).queryByText(/DEMON_ATTACK|ravenkeeperReveal|레이븐키퍼 후속|사망 없음/)).toBeNull();
+    const resultPanel = await screen.findByLabelText("현재 마도서 작업");
+    expect(within(resultPanel).getByRole("heading", { name: "악마 공격 결과" })).toBeTruthy();
+    expect(within(resultPanel).getByText(expected.replace(" - ", " · "))).toBeTruthy();
+    expect(within(resultPanel).queryByText(summary)).toBeNull();
+    expect(within(resultPanel).queryByText(/DEMON_ATTACK|ravenkeeperReveal|레이븐키퍼 후속|사망 없음/)).toBeNull();
+    expect(screen.queryByLabelText("밤 행동 결과")).toBeNull();
+    expect((within(screen.getByRole("navigation", { name: "작업 단계" })).getByRole("button", { name: "마도서 작업을 완료하세요" }) as HTMLButtonElement).disabled).toBe(true);
+
+    await user.click(within(resultPanel).getByRole("button", { name: "다음 →" }));
+
+    expect(await screen.findByRole("heading", { name: "초공감자: 2번 민준" })).toBeTruthy();
+    expect(screen.queryByLabelText("밤 행동 결과")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "악마 공격 결과" })).toBeNull();
   });
 
   test("freezes Grimoire editing after a Fortune Teller pair is confirmed and shows only the approved result/Reveal controls", async () => {
@@ -212,8 +225,18 @@ describe("ongoing-night production UI", () => {
       },
     );
     const nextStep = step({ id: "night1:undertaker", phase: "night", character: "undertaker", playerId: "player-2" });
+    const drunkReplay = replayWithRuleState(replayState({ currentStep, playerRoster }), {
+      unannouncedNightDeathPlayerIds: [],
+      activeImpairments: [{
+        kind: "drunk",
+        playerId: "player-1",
+        sourceEventId: "setup",
+        sourceCharacterId: "drunk",
+        expires: "never",
+      }],
+    });
     const core = createCoreHarness({
-      initialReplay: replayState({ currentStep, playerRoster }),
+      initialReplay: drunkReplay,
       replayAfterProposal: replayState({ currentStep: nextStep, playerRoster, eventCount: 2 }),
       proposal: proposal(phaseEvent("event-ft", "점쟁이 정보 확정", "night"), {
         kind: "fortuneTellerInformation",
@@ -228,21 +251,24 @@ describe("ongoing-night production UI", () => {
 
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
-    expect(await screen.findByText("실제 주정뱅이")).toBeTruthy();
+    const currentTask = await screen.findByRole("region", { name: "현재 단계" });
+    expect(within(currentTask).getByRole("heading", { name: "주정뱅이" })).toBeTruthy();
+    const shownAbility = within(currentTask).getByRole("region", { name: "보여준 직업 · 점쟁이" });
+    expect(within(shownAbility).getByRole("heading", { name: "점쟁이" })).toBeTruthy();
+    expect(within(shownAbility).queryByText("취함", { exact: true })).toBeNull();
+    expect(within(within(currentTask).getByLabelText("정보 영향")).getByText("취함", { exact: true })).toBeTruthy();
+    expect(within(currentTask).queryByText("실제 주정뱅이")).toBeNull();
     await selectLivePlayers(user, /서연/, /하린/);
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "취한 정보 공개" }));
 
-    const result = await screen.findByLabelText("확정된 Reveal 후속 조치");
-    expect(within(result).getByText("점쟁이 정보")).toBeTruthy();
-    expect(within(result).getByRole("button", { name: "플레이어에게 공개" })).toBeTruthy();
-    expect(within(result).queryByText(/정보 전달|계산값|2명/)).toBeNull();
-    await user.click(within(result).getByRole("button", { name: "플레이어에게 공개" }));
-    const reveal = screen.getByLabelText("플레이어 공개 화면");
-    expect(within(reveal).getByText("이 중에 악마는…")).toBeTruthy();
-    expect(within(reveal).getByText("있음")).toBeTruthy();
-    const targets = within(reveal).getByLabelText("확인한 플레이어");
-    expect(within(targets).getByText("3번 서연")).toBeTruthy();
-    expect(within(targets).getByText("5번 하린")).toBeTruthy();
+    const reveal = await screen.findByLabelText("플레이어 공개 화면");
+    const targets = within(reveal).getByRole("group", { name: "확인한 플레이어" });
+    expect(within(targets).getAllByRole("article").map((card) => card.getAttribute("aria-label")))
+      .toEqual(["3번 서연 좌석", "5번 하린 좌석"]);
+    const prompt = within(reveal).getByText("이 중에 악마는", { exact: true });
+    const result = within(reveal).getByText("있음", { exact: true });
+    expect(targets.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(prompt.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     await user.click(within(reveal).getByRole("button", { name: "확인했으면 눈을 감으세요" }));
     expect(screen.queryByRole("button", { name: "위치 조정" })).toBeNull();
   });
@@ -404,7 +430,7 @@ describe("ongoing-night production UI", () => {
     const choices = screen.getByLabelText("전달 정보");
     expect(within(choices).getByRole("button", { name: "첩자" })).toBeTruthy();
     await user.click(within(choices).getByRole("button", { name: "사서" }));
-    await user.click(screen.getByRole("button", { name: "확정" }));
+    await user.click(screen.getByRole("button", { name: "정보 공개" }));
 
     expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
       type: "confirmStep",
@@ -457,7 +483,7 @@ describe("ongoing-night production UI", () => {
     render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
 
     await selectLivePlayers(user, /지우/, /민준/);
-    expect((screen.getByRole("button", { name: "확정" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "정보 공개" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test("clears an in-progress selection when an imported game reaches the same step id", async () => {
@@ -493,7 +519,7 @@ describe("ongoing-night production UI", () => {
       <ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />,
     );
 
-    const input = await openLiveGrimoire(user);
+    const input = await startLiveTargetSelection(user);
     const firstPlayer = within(input).getByRole("button", { name: /지우/ });
     await user.click(firstPlayer);
     expect(firstPlayer.getAttribute("aria-pressed")).toBe("true");
@@ -504,9 +530,8 @@ describe("ongoing-night production UI", () => {
       target: { files: [new File([JSON.stringify(importedFile)], "imported.json", { type: "application/json" })] },
     });
 
-    await returnToLiveProgress(user);
     await screen.findByRole("heading", { name: "점쟁이: 1번 지우-새게임" });
-    await openLiveGrimoire(user);
+    await startLiveTargetSelection(user);
     await waitFor(() => {
       expect(
         within(screen.getByLabelText("라이브 마도서 좌석 맵")).getByRole("button", { name: /지우-새게임/ }).getAttribute("aria-pressed"),
@@ -527,6 +552,7 @@ function replayWithRuleState(
     redHerringPlayerId?: string;
     activePoison?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
     activeProtection?: { playerId: string; sourcePlayerId: string; sourceEventId: string };
+    activeImpairments?: ReplayState["ruleState"]["activeImpairments"];
     unannouncedNightDeathPlayerIds: string[];
     unannouncedNightResurrectionPlayerIds?: string[];
   },

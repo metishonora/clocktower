@@ -35,7 +35,7 @@ export function inferCanonicalUndoUnits(events: GameEvent[]): CanonicalUndoUnit[
 
     const sourceEventId = event.type === "gameEnded"
       ? event.payload.source?.sourceEventId
-      : undefined;
+      : deathConfirmationSourceEventId(events, event, index);
     if (sourceEventId) {
       const sourceIndex = units.findIndex(({ eventIds }) => eventIds.includes(sourceEventId));
       if (sourceIndex >= 0) {
@@ -56,6 +56,33 @@ export function inferCanonicalUndoUnits(events: GameEvent[]): CanonicalUndoUnit[
     units.push(unit);
     return units;
   }, []);
+}
+
+function deathConfirmationSourceEventId(
+  events: GameEvent[],
+  event: GameEvent,
+  eventIndex: number,
+): string | undefined {
+  if (event.type !== "deathConfirmed" || !event.payload.stepId) return undefined;
+
+  for (let index = eventIndex - 1; index >= 0; index -= 1) {
+    const candidate = events[index];
+    if (
+      event.payload.stepId.endsWith(":slayerDeath")
+      && candidate?.type === "slayerAbilityUsed"
+      && candidate.payload.outcome.kind === "deathPending"
+      && candidate.payload.outcome.playerId === event.payload.playerId
+      && `${candidate.payload.discussionStepId}:slayerDeath` === event.payload.stepId
+    ) return candidate.id;
+    if (
+      event.payload.stepId.endsWith(":executionDeath")
+      && candidate?.type === "executionConfirmed"
+      && candidate.payload.input.execute
+      && candidate.payload.input.playerId === event.payload.playerId
+      && `${candidate.payload.stepId}Death` === event.payload.stepId
+    ) return candidate.id;
+  }
+  return undefined;
 }
 
 export function latestCanonicalUndoUnit(gameFile: GameFile): CanonicalUndoUnit | undefined {

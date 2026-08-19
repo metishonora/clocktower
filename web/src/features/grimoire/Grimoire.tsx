@@ -36,6 +36,7 @@ export function Grimoire({
   };
   setupInformationSelection?: {
     selectedPlayerIds: string[];
+    allowedPlayerIds?: string[];
     disabled: boolean;
     onTogglePlayer: (playerId: string) => void;
   };
@@ -59,7 +60,7 @@ export function Grimoire({
   readOnlyReveal?: boolean;
 }) {
   const [editingPlayerId, setEditingPlayerId] = useState<string>();
-  const annotationLongPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const annotationLongPressTimer = useRef<number | undefined>(undefined);
   const annotationLongPressActivated = useRef(false);
   const seats = players.length > 0 ? players : draft.players;
   const fallbackPositions = useMemo(() => seatLayoutPositions(seats.length || 5, "circle"), [seats.length]);
@@ -131,13 +132,18 @@ export function Grimoire({
             ? voteStatusForPlayer(
                 confirmedPlayer,
                 votingSelected,
-                nominationVoting?.draft.voterIds,
-                ruleState?.butlerVote,
               )
             : undefined;
           const votingDisabled = busy || !playerId || Boolean(voteStatus?.disabled);
           const setupInformationDisabled =
-            busy || !playerId || Boolean(setupInformationSelection?.disabled);
+            busy
+            || !playerId
+            || Boolean(setupInformationSelection?.disabled)
+            || Boolean(
+              setupInformationSelection?.allowedPlayerIds
+              && playerId
+              && !setupInformationSelection.allowedPlayerIds.includes(playerId),
+            );
           const phaseSelectionDisabled = busy || !phaseAllowed || Boolean(phasePlayerSelection?.disabled);
           const currentSlayerAbility = playerId === slayerAbility?.actorPlayerId ? slayerAbility : undefined;
           const automaticEdge = position.x < 50 ? "edgeLeft" : "edgeRight";
@@ -181,7 +187,6 @@ export function Grimoire({
             const voterIds = nextVoterIdsAfterToggle(
               nominationVoting.draft.voterIds,
               playerId,
-              ruleState?.butlerVote,
             );
             nominationVoting.onChange({ ...nominationVoting.draft, voterIds });
           }

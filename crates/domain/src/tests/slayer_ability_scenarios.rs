@@ -101,16 +101,16 @@ fn healthy_slayer_shot_uses_a_separate_undoable_death_confirmation() {
 fn slayer_rejects_wrong_phase_stale_invalid_and_repeated_commands() {
     let discussion_game = slayer_discussion_game();
 
-    let mut whisper_events = discussion_game["game"]["events"]
+    let mut first_night_events = discussion_game["game"]["events"]
         .as_array()
         .unwrap()
         .clone();
-    whisper_events.pop();
-    let whisper_game = game_with_events(Value::Array(whisper_events));
+    first_night_events.truncate(1);
+    let first_night_game = game_with_events(Value::Array(first_night_events));
     assert_error_code(
         &call_propose(
-            &whisper_game,
-            slayer_command(&whisper_game, "player-1", "player-5", "canonical"),
+            &first_night_game,
+            slayer_command(&first_night_game, "player-1", "player-5", "canonical"),
         ),
         "SLAYER_WRONG_PHASE",
     );
@@ -162,6 +162,55 @@ fn slayer_rejects_wrong_phase_stale_invalid_and_repeated_commands() {
         &call_propose(&discussion_game, invalid_registration),
         "INVALID_SLAYER_REGISTRATION",
     );
+}
+
+#[test]
+fn slayer_remains_available_during_nomination_and_resumes_it_after_a_kill() {
+    let game = slayer_nomination_game();
+    let before = call_replay(&game);
+    assert_eq!(before["ok"], true, "fixture replay failed as {before}");
+    assert_eq!(before["value"]["currentStep"]["id"], "day:nomination:1");
+    assert_eq!(
+        before["value"]["ruleState"]["slayerAbility"],
+        json!({ "actorPlayerId": "player-1", "spent": false, "canUseNow": true })
+    );
+
+    let proposal = call_propose(
+        &game,
+        slayer_command(&game, "player-1", "player-5", "canonical"),
+    );
+    assert_eq!(proposal["ok"], true, "proposal failed as {proposal}");
+    assert_eq!(
+        proposal["value"]["event"]["payload"]["discussionStepId"],
+        "day:nomination:1"
+    );
+
+    let after_shot = with_event(&game, proposal["value"]["event"].clone());
+    let pending = call_replay(&after_shot);
+    assert_eq!(pending["ok"], true, "pending replay failed as {pending}");
+    assert_eq!(
+        pending["value"]["currentStep"]["id"],
+        "day:nomination:1:slayerDeath"
+    );
+
+    let death = call_propose(
+        &after_shot,
+        json!({
+            "type": "confirmStep",
+            "payload": {
+                "stepId": "day:nomination:1:slayerDeath",
+                "input": { "died": true }
+            }
+        }),
+    );
+    assert_eq!(death["ok"], true, "death proposal failed as {death}");
+    let confirmed = call_replay(&with_event(&after_shot, death["value"]["event"].clone()));
+    assert_eq!(
+        confirmed["ok"], true,
+        "confirmed replay failed as {confirmed}"
+    );
+    assert_eq!(confirmed["value"]["currentStep"]["id"], "day:nomination:1");
+    assert_eq!(confirmed["value"]["players"][4]["alive"], false);
 }
 
 #[test]
@@ -299,6 +348,45 @@ fn recluse_registration_is_explicit_and_scoped_to_each_shot() {
     );
 }
 
+#[test]
+fn poisoned_recluse_cannot_register_as_the_demon_to_the_slayer() {
+    let game = poisoned_recluse_discussion_game();
+    let rejected = call_propose(
+        &game,
+        json!({
+            "type": "useSlayerAbility",
+            "payload": {
+                "discussionStepId": "day:discussion",
+                "expectedEventCount": event_count(&game),
+                "actorPlayerId": "player-1",
+                "targetPlayerId": "player-2",
+                "targetRegistration": {
+                    "kind": "recluseAsDemon",
+                    "registeredCharacterId": "imp"
+                }
+            }
+        }),
+    );
+    assert_eq!(
+        rejected["ok"], false,
+        "poisoned registration succeeded as {rejected}"
+    );
+    assert_eq!(rejected["error"]["code"], "INVALID_SLAYER_REGISTRATION");
+
+    let canonical = call_propose(
+        &game,
+        slayer_command(&game, "player-1", "player-2", "canonical"),
+    );
+    assert_eq!(
+        canonical["ok"], true,
+        "canonical shot failed as {canonical}"
+    );
+    assert_eq!(
+        canonical["value"]["event"]["payload"]["outcome"],
+        json!({ "kind": "noEffect", "reason": "targetNotDemon" })
+    );
+}
+
 fn slayer_discussion_game() -> Value {
     game_with_events(json!([
         setup_event_with_players(json!([
@@ -319,6 +407,15 @@ fn slayer_discussion_game() -> Value {
     ]))
 }
 
+fn slayer_nomination_game() -> Value {
+    let mut events = slayer_discussion_game()["game"]["events"]
+        .as_array()
+        .unwrap()
+        .clone();
+    events.push(phase_event("phaseStepConfirmed", "day:discussion"));
+    game_with_events(Value::Array(events))
+}
+
 fn recluse_discussion_game() -> Value {
     game_with_events(json!([
         setup_event_with_players(json!([
@@ -331,6 +428,40 @@ fn recluse_discussion_game() -> Value {
         phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
         phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
         phase_event("phaseStepSkipped", "firstNight:poisoner"),
+        phase_event("phaseStepConfirmed", "firstNight:empath"),
+        phase_event("phaseStepConfirmed", "firstNight:toDay"),
+        phase_event("phaseStepConfirmed", "day:announceDeaths"),
+        phase_event("phaseStepConfirmed", "day:whisper")
+    ]))
+}
+
+fn poisoned_recluse_discussion_game() -> Value {
+    game_with_events(json!([
+        setup_event_with_players(json!([
+            { "id": "player-1", "seat": 1, "name": "Slayer", "actualCharacter": "slayer", "shownCharacter": "slayer" },
+            { "id": "player-2", "seat": 2, "name": "Recluse", "actualCharacter": "recluse", "shownCharacter": "recluse" },
+            { "id": "player-3", "seat": 3, "name": "Empath", "actualCharacter": "empath", "shownCharacter": "empath" },
+            { "id": "player-4", "seat": 4, "name": "Poisoner", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+            { "id": "player-5", "seat": 5, "name": "Imp", "actualCharacter": "imp", "shownCharacter": "imp" }
+        ])),
+        phase_event("phaseStepConfirmed", "firstNight:minionInfo"),
+        phase_event("phaseStepConfirmed", "firstNight:demonInfo"),
+        {
+            "id": "evt-firstNight:poisoner",
+            "type": "nightActionResolved",
+            "phase": "firstNight",
+            "payload": {
+                "stepId": "firstNight:poisoner",
+                "actorPlayerId": "player-4",
+                "resolution": {
+                    "kind": "poison",
+                    "targetPlayerId": "player-2",
+                    "applied": true
+                }
+            },
+            "summary": "독 지정 확정",
+            "createdAt": "2026-01-01T00:00:00.000Z"
+        },
         phase_event("phaseStepConfirmed", "firstNight:empath"),
         phase_event("phaseStepConfirmed", "firstNight:toDay"),
         phase_event("phaseStepConfirmed", "day:announceDeaths"),
@@ -356,10 +487,14 @@ fn slayer_command(
     target_player_id: &str,
     registration_kind: &str,
 ) -> Value {
+    let current_step_id = call_replay(game)["value"]["currentStep"]["id"]
+        .as_str()
+        .expect("current Slayer command step")
+        .to_owned();
     json!({
         "type": "useSlayerAbility",
         "payload": {
-            "discussionStepId": "day:discussion",
+            "discussionStepId": current_step_id,
             "expectedEventCount": event_count(game),
             "actorPlayerId": actor_player_id,
             "targetPlayerId": target_player_id,

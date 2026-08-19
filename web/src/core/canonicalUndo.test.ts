@@ -32,6 +32,49 @@ test("groups a rules-owned game end with its causal event and intervening events
   assert.deepEqual(removed?.gameFile.game.events.map(({ id }) => id), ["setup"]);
 });
 
+test("groups a Slayer ability use with its linked death confirmation", () => {
+  const game = gameFile([
+    event("setup", "setupConfirmed"),
+    slayerAbility("slayer-shot", "day:discussion", "player-5", true),
+    slayerDeath("slayer-death", "day:discussion:slayerDeath", "player-5"),
+  ]);
+
+  const unit = latestCanonicalUndoUnit(game);
+  const removed = removeLatestCanonicalUndoUnit(game, unit?.id ?? "");
+
+  assert.equal(unit?.id, "slayer-shot");
+  assert.deepEqual(unit?.eventIds, ["slayer-shot", "slayer-death"]);
+  assert.deepEqual(removed?.gameFile.game.events.map(({ id }) => id), ["setup"]);
+});
+
+test("groups a voted execution with its automatic death confirmation", () => {
+  const game = gameFile([
+    event("setup", "setupConfirmed"),
+    execution("execution", "day2:execution", "player-5"),
+    executionDeath("execution-death", "day2:executionDeath", "player-5"),
+  ]);
+
+  const unit = latestCanonicalUndoUnit(game);
+  const removed = removeLatestCanonicalUndoUnit(game, unit?.id ?? "");
+
+  assert.equal(unit?.id, "execution");
+  assert.deepEqual(unit?.eventIds, ["execution", "execution-death"]);
+  assert.deepEqual(removed?.gameFile.game.events.map(({ id }) => id), ["setup"]);
+});
+
+test("keeps a no-effect Slayer ability use as one complete Undo unit", () => {
+  const game = gameFile([
+    event("setup", "setupConfirmed"),
+    slayerAbility("slayer-miss", "day:discussion", "player-2", false),
+  ]);
+
+  const unit = latestCanonicalUndoUnit(game);
+  const removed = removeLatestCanonicalUndoUnit(game, unit?.id ?? "");
+
+  assert.deepEqual(unit?.eventIds, ["slayer-miss"]);
+  assert.deepEqual(removed?.gameFile.game.events.map(({ id }) => id), ["setup"]);
+});
+
 test("keeps a source-less legacy or manual game end as one Undo unit", () => {
   const game = gameFile([
     event("setup", "setupConfirmed"),
@@ -111,6 +154,64 @@ function vote(id: string, nominationEventId: string): GameEvent {
     },
     summary: id,
     createdAt: "2026-08-06T00:00:00.000Z",
+  };
+}
+
+function slayerAbility(
+  id: string,
+  discussionStepId: string,
+  targetPlayerId: string,
+  died: boolean,
+): GameEvent {
+  return {
+    id,
+    type: "slayerAbilityUsed",
+    phase: "day",
+    payload: {
+      discussionStepId,
+      actorPlayerId: "player-1",
+      targetPlayerId,
+      impairmentContext: { kind: "healthy" },
+      registrationContext: { kind: "canonical", registeredAsDemon: died },
+      outcome: died
+        ? { kind: "deathPending", playerId: targetPlayerId }
+        : { kind: "noEffect", reason: "targetNotDemon" },
+    },
+    summary: died ? "처단자 적중" : "처단자 빗나감",
+    createdAt: "2026-08-06T00:00:00.000Z",
+  };
+}
+
+function slayerDeath(id: string, stepId: string, playerId: string): GameEvent {
+  return {
+    id,
+    type: "deathConfirmed",
+    phase: "day",
+    payload: { stepId, playerId },
+    summary: "처단자 사망 확정",
+    createdAt: "2026-08-06T00:00:01.000Z",
+  };
+}
+
+function execution(id: string, stepId: string, playerId: string): GameEvent {
+  return {
+    id,
+    type: "executionConfirmed",
+    phase: "day",
+    payload: { stepId, input: { execute: true, playerId } },
+    summary: "처형 확정",
+    createdAt: "2026-08-06T00:00:00.000Z",
+  };
+}
+
+function executionDeath(id: string, stepId: string, playerId: string): GameEvent {
+  return {
+    id,
+    type: "deathConfirmed",
+    phase: "day",
+    payload: { stepId, playerId },
+    summary: "처형 사망 확정",
+    createdAt: "2026-08-06T00:00:01.000Z",
   };
 }
 

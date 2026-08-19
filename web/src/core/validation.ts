@@ -22,6 +22,7 @@ import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
 import { isScriptId } from "./scripts.js";
 import { eventDiscriminatorSet } from "./wireDiscriminators.js";
+import { numberChoiceIdentity } from "./numberChoice.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -791,7 +792,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   }
 
   const computedChoices = value.numberChoices.filter((choice) => choice.isComputed);
-  const uniqueValues = new Set(value.numberChoices.map((choice) => choice.value));
+  const uniqueChoices = new Set(value.numberChoices.map(numberChoiceIdentity));
   const computedValue = value.computedResult.value;
   if (value.numberConstraint !== undefined) {
     return (impaired || vortoxActive)
@@ -809,7 +810,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     (vortoxActive
       ? computedChoices.length === 0 && value.numberChoices.every((choice) => choice.value !== computedValue)
       : computedChoices.length === 1 && computedChoices[0]?.value === computedValue) &&
-    uniqueValues.size === value.numberChoices.length &&
+    uniqueChoices.size === value.numberChoices.length &&
     (value.booleanChoices?.length ?? 0) === 0
   );
 }

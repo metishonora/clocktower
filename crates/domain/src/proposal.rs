@@ -230,7 +230,8 @@ fn propose_slayer_ability(
     let Some(step) = context.phase_state.current_step.as_ref() else {
         return Err(ErrorKind::SlayerWrongPhase.into_error());
     };
-    if step.step_type != StepType::Discussion || step.id != payload.discussion_step_id {
+    if !crate::characters::slayer_can_use_on_day_step(step) || step.id != payload.discussion_step_id
+    {
         return Err(ErrorKind::SlayerWrongPhase.into_error());
     }
     if game_file
@@ -253,9 +254,12 @@ fn propose_slayer_ability(
         .iter()
         .find(|player| player.id == payload.target_player_id)
         .ok_or_else(|| ErrorKind::InvalidSlayerTarget.into_error())?;
-    let registration_context =
-        crate::characters::slayer_registration(target, &payload.target_registration)?;
     let rule_state = &context.rule_state;
+    let registration_context = crate::characters::slayer_registration(
+        target,
+        &payload.target_registration,
+        rule_state.active_poison.as_ref(),
+    )?;
     let impairment_context = rule_state
         .active_poison
         .as_ref()
@@ -995,7 +999,7 @@ pub(crate) fn propose_nomination_vote(
     players: &[Player],
     input: StepInput,
 ) -> Result<Proposal, CoreError> {
-    let (record, active) =
+    let (mut record, active) =
         nomination_record(current_step, players, &input, &game_file.game.events)?;
     let active_poison = crate::night::active_night_poison(&game_file.game.events, players);
     let butler_vote = crate::characters::butler_vote_state(
@@ -1003,7 +1007,12 @@ pub(crate) fn propose_nomination_vote(
         &game_file.game.events,
         active_poison.as_ref(),
     );
-    crate::characters::validate_butler_voters(butler_vote.as_ref(), &record.voter_ids)?;
+    record.voter_ids =
+        crate::characters::counted_butler_voter_ids(butler_vote.as_ref(), &record.voter_ids);
+    record
+        .ghost_vote_spent_player_ids
+        .retain(|player_id| record.voter_ids.contains(player_id));
+    record.vote_count = record.voter_ids.len();
     let prefix = step_prefix(&current_step.id)?;
     let mut projected_nominations =
         replay_day_state(&game_file.game.events, players, &prefix)?.nominations;

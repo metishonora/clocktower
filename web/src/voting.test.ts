@@ -43,51 +43,28 @@ test("vote status labels dead and spent ghost voters clearly", () => {
   });
 });
 
-test("healthy living Butler is unavailable until the master is selected", () => {
+test("healthy living Butler remains selectable before the master votes", () => {
   const players = votingPlayers();
   const butler = {
     ...players[3],
     actualCharacter: "butler",
     shownCharacter: "butler",
   };
-  const rule = {
-    butlerPlayerId: butler.id,
-    masterPlayerId: players[0].id,
-    restrictionApplies: true,
-  };
-
-  deepEqual(voteStatusForPlayer(butler, false, [], rule), {
-    className: "voteUnavailable",
-    disabled: true,
-    label: "주인 미투표",
-  });
-  deepEqual(voteStatusForPlayer(butler, false, [players[0].id], rule), {
+  deepEqual(voteStatusForPlayer(butler, false), {
     className: "",
     disabled: false,
     label: "생존",
   });
-  equal(
-    voteStatusForPlayer(butler, false, [], {
-      butlerPlayerId: butler.id,
-      restrictionApplies: true,
-    }).label,
-    "주인 미지정",
-  );
-  equal(voteStatusForPlayer(butler, false, [], { ...rule, restrictionApplies: false }).disabled, false);
 });
 
-test("removing the Butler master removes the selected Butler atomically", () => {
-  const rule = {
-    butlerPlayerId: "player-2",
-    masterPlayerId: "player-1",
-    restrictionApplies: true,
-  };
-
-  deepEqual(nextVoterIdsAfterToggle(["player-1", "player-2", "player-4"], "player-1", rule), [
+test("Butler and master vote selections toggle independently", () => {
+  deepEqual(nextVoterIdsAfterToggle(["player-1", "player-2", "player-4"], "player-1"), [
+    "player-2",
     "player-4",
   ]);
-  deepEqual(nextVoterIdsAfterToggle([], "player-1", rule), ["player-1"]);
-  deepEqual(nextVoterIdsAfterToggle(["player-1"], "player-2", rule), ["player-1", "player-2"]);
+  deepEqual(nextVoterIdsAfterToggle([], "player-2"), ["player-2"]);
+  deepEqual(nextVoterIdsAfterToggle([], "player-1"), ["player-1"]);
+  deepEqual(nextVoterIdsAfterToggle(["player-1"], "player-2"), ["player-1", "player-2"]);
 });
 
 function votingPlayers(): Player[] {

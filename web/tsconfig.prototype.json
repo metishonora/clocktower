@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/node-test.d.ts",
+    "src/vite-env.d.ts",
+    "test/**/*Prototype.test.tsx",
+    "test/setup.ts",
+    "vitest.prototype.config.ts"
+  ]
+}

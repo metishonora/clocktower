@@ -77,6 +77,14 @@ fn imp_self_kill_with_five_alive_fixes_healthy_scarlet_woman_as_successor() {
     );
     assert_eq!(transformed["value"]["players"][5]["actualCharacter"], "imp");
     assert_eq!(transformed["value"]["players"][5]["shownCharacter"], "imp");
+    let warning_codes = transformed["value"]["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|warning| warning["code"].as_str())
+        .collect::<Vec<_>>();
+    assert!(!warning_codes.contains(&"SETUP_DISTRIBUTION_MISMATCH"));
+    assert!(!warning_codes.contains(&"DUPLICATE_ACTUAL_CHARACTER"));
 }
 
 #[test]

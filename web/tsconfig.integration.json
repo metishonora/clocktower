@@ -9,5 +9,9 @@
     "test/**/*.ts",
     "test/**/*.tsx",
     "vitest.config.ts"
+  ],
+  "exclude": [
+    "test/**/*Prototype.test.tsx",
+    "test/browser/**"
   ]
 }

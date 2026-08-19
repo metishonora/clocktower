@@ -9,8 +9,16 @@ import { usePhaseInputDraft } from "../src/features/phase-control/usePhaseInputD
 import { emptyNominationDraft } from "../src/features/voting/useNominationDraft";
 import { importGameFileJson } from "../src/gameStorage";
 import { ClocktowerApp } from "../src/main";
-import { MemoryGameStorageDriver } from "./clocktowerAppHarness";
-import { confirmLivePlayerSelection } from "./livePlayTestHelpers";
+import {
+  MemoryGameStorageDriver,
+  createCoreHarness,
+  event,
+  gameFile,
+  proposal,
+  replayState,
+  step,
+} from "./clocktowerAppHarness";
+import { confirmLivePlayerSelection, startLiveTargetSelection } from "./livePlayTestHelpers";
 import { realWasmCore, replayOrThrow } from "./realWasmCoreHarness";
 
 const fixturePath = resolve(
@@ -44,6 +52,75 @@ test("switching away from and back to the Mayor requires a fresh decision", () =
 
   act(() => result.current.setSelectedPlayerIds(["mayor"]));
   expect(result.current.mayorDecision).toBeUndefined();
+});
+
+test("a healthy Imp resolves a Mayor bounce entirely inside the Grimoire before returning to Progress", async () => {
+  const impStep = healthyImpStep();
+  const nextStep = step({ id: "night:empath", character: "empath", playerId: "chef", phase: "night" });
+  const attackEvent = {
+    ...event("imp-attacks-mayor", "임프가 시장을 공격함", "night"),
+    type: "nightActionResolved" as const,
+    payload: {
+      stepId: impStep.id,
+      actorPlayerId: "imp",
+      resolution: {
+        kind: "impAttack" as const,
+        targetPlayerId: "mayor",
+        mayorContext: {
+          kind: "bounced" as const,
+          mayorPlayerId: "mayor",
+          bounceTargetPlayerId: "chef",
+        },
+        outcome: { kind: "death" as const, playerId: "chef" },
+      },
+    },
+  };
+  const core = createCoreHarness({
+    initialReplay: replayState({ currentStep: impStep, playerRoster: players }),
+    replayAfterProposal: replayState({ currentStep: nextStep, playerRoster: players, eventCount: 2 }),
+    proposal: proposal(attackEvent),
+  });
+  const user = userEvent.setup();
+
+  render(<ClocktowerApp coreAdapter={core} storageDriver={new MemoryGameStorageDriver(gameFile())} />);
+
+  await screen.findByRole("heading", { name: "임프: 3번 임프" });
+  const grimoire = await startLiveTargetSelection(user);
+  await user.click(within(grimoire).getByRole("button", { name: /1번 좌석, 시장/ }));
+  let selectionPanel = screen.getByLabelText("현재 마도서 작업");
+  expect(within(selectionPanel).getByText("시장 공격 결과", { exact: true })).toBeTruthy();
+  expect((within(selectionPanel).getByRole("button", { name: "선택 확정" }) as HTMLButtonElement).disabled).toBe(true);
+  await user.click(within(selectionPanel).getByRole("button", { name: "다른 플레이어가 대신 사망" }));
+
+  selectionPanel = screen.getByLabelText("현재 마도서 작업");
+  expect(within(selectionPanel).getByRole("heading", { name: "시장 능력" })).toBeTruthy();
+  expect(within(selectionPanel).getByText("대신 사망 대상", { exact: true })).toBeTruthy();
+  expect((screen.getByRole("button", { name: "마도서 작업을 완료하세요" }) as HTMLButtonElement).disabled).toBe(true);
+  const attackedMayorSeat = within(grimoire).getByRole("button", { name: /1번 좌석, 시장.*공격 대상/ });
+  expect(attackedMayorSeat.classList.contains("tbSeatStateAttack")).toBe(true);
+  await user.click(within(grimoire).getByRole("button", { name: /2번 좌석, 요리사/ }));
+  expect((within(selectionPanel).getByRole("button", { name: "선택 확정" }) as HTMLButtonElement).disabled).toBe(false);
+  await user.click(within(selectionPanel).getByRole("button", { name: "선택 확정" }));
+
+  const completed = await screen.findByRole("heading", { name: "악마 공격 결과" });
+  const completedPanel = completed.closest("aside");
+  expect(completedPanel).not.toBeNull();
+  expect(within(completedPanel as HTMLElement).getByText("1번 시장 · 생존", { exact: true })).toBeTruthy();
+  expect(within(completedPanel as HTMLElement).getByText("2번 요리사 · 사망", { exact: true })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "마도서" }).getAttribute("aria-current")).toBe("page");
+  await user.click(within(completedPanel as HTMLElement).getByRole("button", { name: "다음 →" }));
+  expect(await screen.findByRole("heading", { name: "초공감자: 2번 요리사" })).toBeTruthy();
+
+  expect(core.propose).toHaveBeenCalledWith(expect.any(Object), {
+    type: "confirmStep",
+    payload: {
+      stepId: "night:imp",
+      input: {
+        playerIds: ["mayor"],
+        mayorDecision: { kind: "bounce", targetPlayerId: "chef" },
+      },
+    },
+  });
 });
 
 test("IMP-04 confirms a poisoned Imp attack on the Mayor exactly once through real WASM", async () => {

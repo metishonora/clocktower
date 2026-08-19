@@ -1,4 +1,4 @@
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode, type Ref } from "react";
 import type { SetupDistribution } from "../../core/types";
 import { ProductionApplicationShell } from "../../shared-ui/ProductionApplicationShell";
 import {
@@ -31,7 +31,10 @@ export function TroubleBrewingLiveFlow({
   onStageChange,
   onReset,
   onRequestUndo,
+  onBugReport,
+  bugReportTriggerRef,
   interactionLocked = false,
+  handoffActive = false,
 }: {
   draft: SetupDraft;
   expectedCounts?: SetupDistribution;
@@ -48,8 +51,12 @@ export function TroubleBrewingLiveFlow({
   onStageChange: (stage: TroubleBrewingLiveStage) => void;
   onReset: () => void;
   onRequestUndo: (trigger: HTMLButtonElement) => void;
+  onBugReport?: () => void;
+  bugReportTriggerRef?: Ref<HTMLButtonElement>;
   /** Locks shell navigation while preserving the normal production presentation. */
   interactionLocked?: boolean;
+  /** Keeps the live action in the Grimoire until it is explicitly confirmed or cancelled. */
+  handoffActive?: boolean;
 }) {
   const [activeCharacterId, setActiveCharacterId] = useState("imp");
   const selectedIds = setupDraftSelectedCharacterIds(draft);
@@ -63,9 +70,6 @@ export function TroubleBrewingLiveFlow({
       return;
     }
     if (destination === "new-game") onReset();
-    if (destination === "bug-report") {
-      window.open("https://github.com/metishonora/clocktower/issues/new", "_blank", "noopener,noreferrer");
-    }
   }
 
   function blockHomeNavigation(event: MouseEvent<HTMLAnchorElement>) {
@@ -111,12 +115,24 @@ export function TroubleBrewingLiveFlow({
       utilities={[
         { id: "new-game", label: "새 게임", className: "snvNewGameTab", disabled: interactionLocked || !storageReady || busy, onSelect: onReset },
         { id: "storage", label: "저장 / 불러오기", active: activeStage === "storage", disabled: interactionLocked || busy },
-        { id: "bug-report", label: "버그 제보", className: "snvBugReportTrigger", disabled: interactionLocked },
+        {
+          id: "bug-report",
+          label: "버그 제보",
+          className: "snvBugReportTrigger",
+          disabled: interactionLocked,
+          buttonRef: bugReportTriggerRef,
+          onSelect: onBugReport,
+        },
       ]}
       stages={[
         { id: "roles", label: "직업", active: activeStage === "roles", disabled: interactionLocked },
         { id: "seating", label: "마도서", active: activeStage === "seating", disabled: interactionLocked },
-        { id: "play", label: "진행", active: activeStage === "play", disabled: interactionLocked },
+        {
+          id: "play",
+          label: handoffActive ? "마도서 작업을 완료하세요" : "진행",
+          active: activeStage === "play",
+          disabled: interactionLocked || handoffActive,
+        },
       ]}
       onNavigate={navigate}
       warning={loadError || warnings.length ? <aside className="snvWarningNotification" role="status" aria-live="polite" aria-label="게임 경고">

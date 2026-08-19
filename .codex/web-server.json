@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "projectId": "clocktower",
+  "stateDirectory": ".codex-tmp/test-servers",
+  "startTimeoutMs": 120000,
+  "port": {
+    "main": 5173,
+    "issueBase": 10000,
+    "fallbackBase": 11000,
+    "fallbackSpan": 1000
+  },
+  "profiles": [
+    {
+      "namePattern": "^dev$",
+      "command": [
+        "pnpm",
+        "--dir",
+        "web",
+        "run",
+        "dev:external",
+        "--host",
+        "{host}",
+        "--strictPort",
+        "--port",
+        "{port}"
+      ],
+      "cwd": ".",
+      "environment": {
+        "pnpm_config_verify_deps_before_run": "false"
+      },
+      "healthPath": "/clocktower/",
+      "publicPath": "/clocktower/",
+      "identityTokens": [
+        "dev:external",
+        "{port}"
+      ]
+    },
+    {
+      "namePattern": "^preview$",
+      "command": [
+        "pnpm",
+        "--dir",
+        "web",
+        "run",
+        "preview",
+        "--host",
+        "{host}",
+        "--strictPort",
+        "--port",
+        "{port}"
+      ],
+      "cwd": ".",
+      "environment": {
+        "pnpm_config_verify_deps_before_run": "false"
+      },
+      "healthPath": "/clocktower/",
+      "publicPath": "/clocktower/",
+      "identityTokens": [
+        "preview",
+        "{port}"
+      ]
+    },
+    {
+      "namePattern": "^prototype:[A-Za-z0-9_-]+$",
+      "command": [
+        "pnpm",
+        "--dir",
+        "web",
+        "run",
+        "{server}",
+        "--host",
+        "{host}",
+        "--strictPort",
+        "--port",
+        "{port}"
+      ],
+      "cwd": ".",
+      "environment": {
+        "pnpm_config_verify_deps_before_run": "false"
+      },
+      "healthPath": "/clocktower/",
+      "publicPath": "/clocktower/",
+      "identityTokens": [
+        "{server}",
+        "{port}"
+      ]
+    }
+  ]
+}

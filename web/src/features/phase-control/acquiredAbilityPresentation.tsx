@@ -1,45 +1,33 @@
 import type { ReactNode } from "react";
-import type { AbilityOrigin, AbilityUseRef, PhaseStep, Player } from "../../core/types";
+import type { AbilityOrigin, Player } from "../../core/types";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
+import type { CharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterDetail } from "../../characterDetails";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "../../sectsAndVioletsCharacters";
-import "./sectsAndVioletsInformationTask.css";
+import { isAcquiredAbility, type AbilityPresentationRelation } from "./actingRoleContext.js";
+export {
+  abilityContextForStep,
+  acquiredAbilityCharacterForStep,
+  isAcquiredAbility,
+  type AbilityContext,
+} from "./actingRoleContext.js";
 
-export type AbilityContext = {
-  owner: Pick<Player, "id" | "actualCharacter">;
-  abilityUse: AbilityUseRef;
-  origin: AbilityOrigin;
+export type CharacterPresentation = {
+  label: string;
+  details?: CharacterDetail;
+  icon?: { label: string; src: string };
+  ability?: string;
 };
 
-export function isAcquiredAbility(origin: AbilityOrigin | undefined): origin is Extract<AbilityOrigin, { kind: "acquired" }> {
-  return origin?.kind === "acquired";
-}
-
-export function abilityContextForStep(
-  step: Pick<PhaseStep, "abilityUse" | "abilityOrigin"> | null | undefined,
-  actor: Pick<Player, "id" | "actualCharacter"> | null | undefined,
-): AbilityContext | undefined {
-  if (!step?.abilityUse || !step.abilityOrigin || !actor) return undefined;
-  if (step.abilityUse.ownerPlayerId !== actor.id) return undefined;
-  if (step.abilityOrigin.kind === "acquired" && step.abilityOrigin.source.ownerPlayerId !== actor.id) return undefined;
-  return { owner: actor, abilityUse: step.abilityUse, origin: step.abilityOrigin };
-}
-
-/** Resolve the acquired ability represented by a canonical phase step. */
-export function acquiredAbilityCharacterForStep(
-  step: Pick<PhaseStep, "abilityUse" | "abilityOrigin"> | null | undefined,
-  actor: Pick<Player, "id" | "actualCharacter"> | null | undefined,
-): string | undefined {
-  const context = abilityContextForStep(step, actor);
-  return isAcquiredAbility(context?.origin) ? context.abilityUse.characterId : undefined;
-}
+export type CharacterPresentationResolver = (characterId: string) => CharacterPresentation | undefined;
 
 export type AcquiredAbilityPresentationProps = {
   actor: Player;
   abilityCharacterId: string;
   abilityOrigin: AbilityOrigin;
-  theme?: "light" | "snv-day" | "snv-night";
+  theme?: "light" | "snv-day" | "snv-night" | "tb-day" | "tb-night";
+  characterPresentation?: CharacterPresentationResolver;
   actorRoleName?: string;
   actorPlayerLabel?: string;
   actorPlayerNode?: ReactNode;
@@ -48,6 +36,9 @@ export type AcquiredAbilityPresentationProps = {
   abilityStatusNode?: ReactNode;
   actorIdentityClassName?: string;
   abilityClassName?: string;
+  abilityLabel?: string;
+  abilityRegionLabel?: string;
+  abilityRegionClassName?: string;
   abilitySummary?: string;
 };
 
@@ -55,6 +46,7 @@ type AbilityOwnerIdentityProps = Pick<
   AcquiredAbilityPresentationProps,
   | "actor"
   | "theme"
+  | "characterPresentation"
   | "actorRoleName"
   | "actorPlayerLabel"
   | "actorPlayerNode"
@@ -65,22 +57,22 @@ type AbilityOwnerIdentityProps = Pick<
 export function AbilityOwnerIdentity({
   actor,
   theme = "snv-night",
+  characterPresentation = defaultCharacterPresentation,
   actorRoleName,
   actorPlayerLabel,
   actorPlayerNode,
   actorRoleNode,
   actorIdentityClassName = "snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity",
 }: AbilityOwnerIdentityProps) {
-  const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === actor.actualCharacter);
-  const asset = sectsAndVioletsCharacterAsset(actor.actualCharacter);
-  const roleName = actorRoleName ?? character?.name ?? actor.actualCharacter;
+  const character = characterPresentation(actor.actualCharacter);
+  const roleName = actorRoleName ?? character?.label ?? actor.actualCharacter;
   return (
     <CharacterDetailButton
-      details={sectsAndVioletsCharacterDetail(actor.actualCharacter)}
+      details={character?.details}
       className={actorIdentityClassName}
       theme={theme}
     >
-      {asset ? <img src={asset.src} alt={`${roleName} 공식 캐릭터 아이콘`} /> : null}
+      {character?.icon ? <img src={character.icon.src} alt={`${roleName} 공식 캐릭터 아이콘`} /> : null}
       <div>
         {actorRoleNode ?? <span className="snvCurrentStepRoleName" role="heading" aria-level={3}>{roleName}</span>}
         {actorPlayerNode ?? <strong>{actorPlayerLabel ?? actor.name}</strong>}
@@ -93,34 +85,78 @@ type ActingAbilityIdentityProps = Pick<
   AcquiredAbilityPresentationProps,
   | "abilityCharacterId"
   | "theme"
+  | "characterPresentation"
   | "abilityNameNode"
   | "abilityStatusNode"
   | "abilityClassName"
+  | "abilityLabel"
+  | "abilityRegionLabel"
+  | "abilityRegionClassName"
   | "abilitySummary"
 >;
+
+const defaultCharacterPresentation: CharacterPresentationResolver = (characterId) => {
+  const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === characterId);
+  if (!character) return undefined;
+  const asset = sectsAndVioletsCharacterAsset(characterId);
+  return {
+    label: character.name,
+    details: sectsAndVioletsCharacterDetail(characterId),
+    icon: asset,
+    ability: character.ability,
+  };
+};
 
 export function ActingAbilityIdentity({
   abilityCharacterId,
   theme = "snv-night",
+  characterPresentation = defaultCharacterPresentation,
   abilityNameNode,
   abilityStatusNode,
   abilityClassName = "issue107AbilityResult interactive",
+  abilityLabel,
+  abilityRegionLabel,
+  abilityRegionClassName,
   abilitySummary,
 }: ActingAbilityIdentityProps) {
-  const character = sectsAndVioletsCharacters.find((candidate) => candidate.id === abilityCharacterId);
-  const asset = sectsAndVioletsCharacterAsset(abilityCharacterId);
-  const name = character?.name ?? abilityCharacterId;
+  const character = characterPresentation(abilityCharacterId);
+  const name = character?.label ?? abilityCharacterId;
   const summary = abilitySummary ?? character?.ability;
-  return (
+  const identity = (
     <CharacterDetailButton
-      details={sectsAndVioletsCharacterDetail(abilityCharacterId)}
+      details={character?.details}
       className={abilityClassName}
       theme={theme}
     >
-      <span>획득한 능력</span>
-      {asset ? <img src={asset.src} alt={`${name} 공식 캐릭터 아이콘`} /> : null}
+      <span>{abilityLabel ?? "획득한 능력"}</span>
+      {character?.icon ? <img src={character.icon.src} alt={`${name} 공식 캐릭터 아이콘`} /> : null}
       <div>{abilityNameNode ?? <strong>{name}</strong>}{abilityStatusNode}{summary ? <p>{summary}</p> : null}</div>
     </CharacterDetailButton>
+  );
+  return abilityRegionLabel ? (
+    <section className={abilityRegionClassName} aria-label={`${abilityRegionLabel} · ${name}`}>
+      {identity}
+    </section>
+  ) : identity;
+}
+
+export type AbilityPresentationProps = Omit<AcquiredAbilityPresentationProps, "abilityCharacterId" | "abilityOrigin"> & {
+  relation: AbilityPresentationRelation;
+};
+
+export function AbilityPresentation({ relation, ...props }: AbilityPresentationProps) {
+  const abilityLabel = props.abilityLabel ?? (relation.kind === "shown" ? "보여준 직업" : "획득한 능력");
+  const abilityRegionLabel = props.abilityRegionLabel ?? (relation.kind === "shown" ? "보여준 직업" : undefined);
+  return (
+    <>
+      <AbilityOwnerIdentity {...props} />
+      <ActingAbilityIdentity
+        {...props}
+        abilityCharacterId={relation.abilityCharacterId}
+        abilityLabel={abilityLabel}
+        abilityRegionLabel={abilityRegionLabel}
+      />
+    </>
   );
 }
 
@@ -136,6 +172,7 @@ export function AcquiredAbilityPresentation({
   abilityCharacterId,
   abilityOrigin,
   theme = "snv-night",
+  characterPresentation,
   actorRoleName,
   actorPlayerLabel,
   actorPlayerNode,
@@ -144,29 +181,29 @@ export function AcquiredAbilityPresentation({
   abilityStatusNode,
   actorIdentityClassName = "snvCurrentStepIdentity interactive snvInformationIdentity issue107ActorIdentity",
   abilityClassName = "issue107AbilityResult interactive",
+  abilityLabel,
+  abilityRegionLabel,
+  abilityRegionClassName,
   abilitySummary,
 }: AcquiredAbilityPresentationProps) {
   if (!isAcquiredAbility(abilityOrigin)) return null;
 
-  return (
-    <>
-      <AbilityOwnerIdentity
-        actor={actor}
-        theme={theme}
-        actorRoleName={actorRoleName}
-        actorPlayerLabel={actorPlayerLabel}
-        actorPlayerNode={actorPlayerNode}
-        actorRoleNode={actorRoleNode}
-        actorIdentityClassName={actorIdentityClassName}
-      />
-      <ActingAbilityIdentity
-        abilityCharacterId={abilityCharacterId}
-        theme={theme}
-        abilityNameNode={abilityNameNode}
-        abilityStatusNode={abilityStatusNode}
-        abilityClassName={abilityClassName}
-        abilitySummary={abilitySummary}
-      />
-    </>
-  );
+  return <AbilityPresentation
+    actor={actor}
+    relation={{ kind: "acquired", abilityCharacterId, abilityOrigin }}
+    theme={theme}
+    characterPresentation={characterPresentation}
+    actorRoleName={actorRoleName}
+    actorPlayerLabel={actorPlayerLabel}
+    actorPlayerNode={actorPlayerNode}
+    actorRoleNode={actorRoleNode}
+    abilityNameNode={abilityNameNode}
+    abilityStatusNode={abilityStatusNode}
+    actorIdentityClassName={actorIdentityClassName}
+    abilityClassName={abilityClassName}
+    abilityLabel={abilityLabel}
+    abilityRegionLabel={abilityRegionLabel}
+    abilityRegionClassName={abilityRegionClassName}
+    abilitySummary={abilitySummary}
+  />;
 }

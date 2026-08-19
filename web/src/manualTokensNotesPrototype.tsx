@@ -36,7 +36,7 @@ const systemTokens: Array<{ id: SystemTokenId; label: string }> = [
 const scriptTokens: ScriptTokenRef[] = [
   { id: "butler:master", character: "집사", label: "주인" },
   { id: "drunk:isTheDrunk", character: "주정뱅이", label: "주정뱅이임" },
-  { id: "fortuneTeller:redHerring", character: "점쟁이", label: "오답 대상" },
+  { id: "fortuneTeller:redHerring", character: "점쟁이", label: "착각" },
   { id: "imp:dead", character: "임프", label: "사망" },
   { id: "investigator:minion", character: "수사관", label: "하수인" },
   { id: "investigator:wrong", character: "수사관", label: "오답" },
@@ -73,7 +73,7 @@ export function ManualTokensNotesPrototype() {
   const [selectedSeatId, setSelectedSeatId] = useState<string>();
   const [error, setError] = useState<string>();
   const [latestSummary, setLatestSummary] = useState("낮 토론 시작");
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const longPressTimer = useRef<number | undefined>(undefined);
   const longPressActivated = useRef(false);
   const editingPlayer = players.find((candidate) => candidate.id === editingPlayerId);
   const busy = scenario === "busy";

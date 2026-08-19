@@ -13,7 +13,7 @@ use crate::model::{
     RegistrationJudgment, RegistrationValue, RequiredInput, RequiredInputKind, SetupInfoKind,
     SetupInfoRegistrationOption, SpyReminderToken, StepInput, StepInputFields, StepType,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum TbCharacterId {
@@ -46,6 +46,17 @@ pub(crate) enum TbActivityRequirement {
     Always,
     Alive,
     Triggered,
+}
+
+pub(crate) fn slayer_can_use_on_day_step(step: &PhaseStep) -> bool {
+    step.phase == Phase::Day
+        && !matches!(
+            step.step_type,
+            StepType::PhaseTransition
+                | StepType::ExecutionDeath
+                | StepType::WitchDeath
+                | StepType::SlayerDeath
+        )
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -281,24 +292,28 @@ pub(crate) fn butler_vote_state(
     })
 }
 
-pub(crate) fn validate_butler_voters(
+pub(crate) fn counted_butler_voter_ids(
     state: Option<&ButlerVoteState>,
     voter_ids: &[String],
-) -> Result<(), crate::error::CoreError> {
+) -> Vec<String> {
     let Some(state) = state.filter(|state| state.restriction_applies) else {
-        return Ok(());
+        return voter_ids.to_vec();
     };
     if !voter_ids.contains(&state.butler_player_id) {
-        return Ok(());
+        return voter_ids.to_vec();
     }
     if state
         .master_player_id
         .as_ref()
         .is_some_and(|master_id| voter_ids.contains(master_id))
     {
-        return Ok(());
+        return voter_ids.to_vec();
     }
-    Err(ErrorKind::ButlerMasterVoteRequired.into_error())
+    voter_ids
+        .iter()
+        .filter(|player_id| *player_id != &state.butler_player_id)
+        .cloned()
+        .collect()
 }
 
 pub(crate) fn virgin_resolution(
@@ -574,6 +589,16 @@ fn is_poisoned(active_poison: Option<&ActiveRuleEffect>, player_id: &str) -> boo
     active_poison.is_some_and(|poison| poison.player_id == player_id)
 }
 
+fn registration_ability_is_active(
+    player: &Player,
+    active_poison: Option<&ActiveRuleEffect>,
+) -> bool {
+    // Misregistration belongs to the Spy/Recluse ability. Poisoning the
+    // character disables that ability, while abilities targeting them still
+    // resolve normally against their canonical identity and alignment.
+    !is_poisoned(active_poison, &player.id)
+}
+
 fn protection_for<'a>(
     active_protection: Option<&'a ActiveRuleEffect>,
     player_id: &str,
@@ -584,6 +609,7 @@ fn protection_for<'a>(
 pub(crate) fn slayer_registration(
     target: &Player,
     choice: &SlayerTargetRegistration,
+    active_poison: Option<&ActiveRuleEffect>,
 ) -> Result<SlayerRegistrationContext, crate::error::CoreError> {
     match (target.actual_character.as_str(), choice) {
         ("recluse", SlayerTargetRegistration::Canonical) => {
@@ -597,10 +623,14 @@ pub(crate) fn slayer_registration(
             SlayerTargetRegistration::RecluseAsDemon {
                 registered_character_id,
             },
-        ) if registered_character_id == "imp" => Ok(SlayerRegistrationContext::RecluseDecision {
-            registered_as_demon: true,
-            registered_character_id: Some("imp".into()),
-        }),
+        ) if registered_character_id == "imp"
+            && registration_ability_is_active(target, active_poison) =>
+        {
+            Ok(SlayerRegistrationContext::RecluseDecision {
+                registered_as_demon: true,
+                registered_character_id: Some("imp".into()),
+            })
+        }
         ("recluse", _) | (_, SlayerTargetRegistration::RecluseAsDemon { .. }) => {
             Err(ErrorKind::InvalidSlayerRegistration.into_error())
         }
@@ -774,6 +804,7 @@ pub(crate) fn setup_info_character_is_represented(
 pub(crate) fn setup_info_registration_options(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
 ) -> Vec<SetupInfoRegistrationOption> {
     let Some(setup_info) = step.required_input.setup_info else {
         return Vec::new();
@@ -784,9 +815,13 @@ pub(crate) fn setup_info_registration_options(
         SetupInfoKind::Investigator => ("recluse", RegistrationValue::Minion, MINIONS),
     };
 
+    let (active_poison, _) = active_rule_effects(players, events);
     players
         .iter()
-        .filter(|player| player.actual_character == actual_character)
+        .filter(|player| {
+            player.actual_character == actual_character
+                && registration_ability_is_active(player, active_poison.as_ref())
+        })
         .map(|player| SetupInfoRegistrationOption {
             player_id: player.id.clone(),
             registered_as,
@@ -846,6 +881,7 @@ pub(crate) fn setup_info_input_is_valid_registration(
     step: &PhaseStep,
     input: &StepInput,
     players: &[Player],
+    events: &[GameEvent],
     judgments: &[RegistrationJudgment],
 ) -> bool {
     let Some(value) = input.as_ref() else {
@@ -863,7 +899,7 @@ pub(crate) fn setup_info_input_is_valid_registration(
     let judgment = &judgments[0];
     player_ids.contains(&judgment.player_id)
         && judgment.character_id.as_deref() == Some(character_id)
-        && setup_info_registration_options(step, players)
+        && setup_info_registration_options(step, players, events)
             .iter()
             .any(|option| {
                 option.player_id == judgment.player_id
@@ -1359,8 +1395,8 @@ fn red_herring_reminders(players: &[Player], events: &[GameEvent]) -> Vec<Automa
         payload.player_id.clone(),
         "fortuneTeller",
         "redHerring",
-        "오답 대상",
-        "점쟁이 능력의 레드 헤링 대상입니다.",
+        "착각",
+        "점쟁이 능력의 착각 표식입니다.",
         Some(event.id.clone()),
     )]
 }
@@ -1680,6 +1716,7 @@ pub(crate) fn spy_grimoire_result(
 pub(crate) fn registration_candidate_player_ids(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
 ) -> Vec<String> {
     let eligible_ids = match step.character.as_deref() {
         Some("empath") => {
@@ -1699,13 +1736,17 @@ pub(crate) fn registration_candidate_player_ids(
         _ => return Vec::new(),
     };
 
+    let (active_poison, _) = active_rule_effects(players, events);
+    let mut seen = HashSet::new();
     players
         .iter()
         .filter(|player| {
             eligible_ids.contains(player.id.as_str())
                 && matches!(player.actual_character.as_str(), "spy" | "recluse")
+                && registration_ability_is_active(player, active_poison.as_ref())
         })
         .map(|player| player.id.clone())
+        .filter(|player_id| seen.insert(player_id.clone()))
         .collect()
 }
 
@@ -1764,6 +1805,7 @@ pub(crate) fn number_result_with_registration_judgments(
 pub(crate) fn legal_number_choices(
     step: &PhaseStep,
     players: &[Player],
+    events: &[GameEvent],
     impaired: bool,
 ) -> Vec<NumberInformationChoice> {
     let Some(InformationResult::Number { value: computed }) =
@@ -1796,40 +1838,58 @@ pub(crate) fn legal_number_choices(
             .collect();
     }
 
-    let candidates = registration_candidate_player_ids(step, players);
-    let mut by_value = BTreeMap::<u64, Vec<RegistrationJudgment>>::new();
-    by_value.insert(computed, Vec::new());
+    let candidates = registration_candidate_player_ids(step, players, events);
+    let mut choices = vec![NumberInformationChoice {
+        value: computed,
+        is_computed: true,
+        registration_judgments: Vec::new(),
+    }];
+    choices.reserve(1usize << candidates.len());
     for mask in 0..(1usize << candidates.len()) {
         let judgments = candidates
             .iter()
             .enumerate()
-            .map(|(index, player_id)| RegistrationJudgment {
-                player_id: player_id.clone(),
-                registered_as: if mask & (1 << index) == 0 {
+            .map(|(index, player_id)| {
+                let registered_as = if mask & (1 << index) == 0 {
                     RegistrationValue::Good
                 } else {
                     RegistrationValue::Evil
-                },
-                character_id: None,
+                };
+                RegistrationJudgment {
+                    player_id: player_id.clone(),
+                    registered_as,
+                    character_id: None,
+                }
             })
             .collect::<Vec<_>>();
         let Some(value) = number_result_with_registration_judgments(step, players, &judgments)
         else {
             continue;
         };
-        if value as u64 != computed {
-            by_value.entry(value as u64).or_insert(judgments);
+        let is_default = judgments.iter().all(|judgment| {
+            players
+                .iter()
+                .filter(|player| player.id == judgment.player_id)
+                .all(|player| {
+                    matches!(
+                        (judgment.registered_as, player.alignment),
+                        (RegistrationValue::Good, Alignment::Good)
+                            | (RegistrationValue::Evil, Alignment::Evil)
+                    )
+                })
+        });
+        if is_default {
+            continue;
         }
+        choices.push(NumberInformationChoice {
+            value: value as u64,
+            is_computed: false,
+            registration_judgments: judgments,
+        });
     }
 
-    by_value
-        .into_iter()
-        .map(|(value, registration_judgments)| NumberInformationChoice {
-            value,
-            is_computed: value == computed,
-            registration_judgments,
-        })
-        .collect()
+    choices.sort_by_key(|choice| (choice.value, !choice.is_computed));
+    choices
 }
 
 pub(crate) fn alive_neighbor_indexes(players: &[&Player], index: usize) -> Vec<usize> {
@@ -1867,48 +1927,67 @@ pub(crate) fn character_steps(
     players: &[Player],
     order: &[&str],
 ) -> Vec<PhaseStep> {
-    let waking_characters = players
-        .iter()
-        .fold(HashMap::new(), |mut waking_characters, player| {
-            let character = awakening_character(player);
-            let replace = waking_characters
-                .get(character)
-                .is_none_or(|current: &&Player| player.alive || !current.alive);
-            if replace {
-                waking_characters.insert(character, player);
-            }
-            waking_characters
-        });
-    let mut emitted = HashSet::new();
+    let mut actors_by_character: HashMap<&str, Vec<&Player>> = HashMap::new();
+    for player in players {
+        actors_by_character
+            .entry(awakening_character(player))
+            .or_default()
+            .push(player);
+    }
 
     order
         .iter()
         .filter_map(|character| {
-            if !waking_characters.contains_key(character) || !emitted.insert(*character) {
-                return None;
-            }
-
             let metadata = TbCharacterId::parse(character)?.metadata();
-            let actor = waking_characters.get(character)?;
-            Some(PhaseStep {
-                id: format!("{id_prefix}:{character}"),
-                phase,
-                step_type: StepType::Character,
-                character: Some((*character).to_string()),
-                player_id: Some(actor.id.clone()),
-                ability_use: None,
-                ability_origin: None,
-                required_input: character_required_input(character),
-                can_skip: metadata.activity != TbActivityRequirement::Always,
-                support: if metadata.automated {
-                    crate::model::PhaseStepSupport::Automated
-                } else {
-                    crate::model::PhaseStepSupport::Manual
-                },
-                information_prompt: None,
-                pre_action_reveal: None,
-            })
+            let mut actors = actors_by_character.remove(*character)?;
+            actors.sort_by_key(|player| player.seat);
+
+            // Keep the actor that the legacy one-step projection would have
+            // selected on the unsuffixed ID: the last living actor in seat
+            // order, or the last actor when everyone is dead. Additional
+            // actors receive a stable player-qualified ID so the legacy step
+            // reference keeps its actor while every additional ability remains
+            // independently addressable.
+            let legacy_actor_index = actors
+                .iter()
+                .rposition(|player| player.alive)
+                .unwrap_or_else(|| actors.len().saturating_sub(1));
+            let mut ordered_actors = Vec::with_capacity(actors.len());
+            ordered_actors.push(actors.remove(legacy_actor_index));
+            ordered_actors.extend(actors);
+
+            Some(
+                ordered_actors
+                    .into_iter()
+                    .enumerate()
+                    .map(move |(index, actor)| {
+                        let id = if index == 0 {
+                            format!("{id_prefix}:{character}")
+                        } else {
+                            format!("{id_prefix}:{character}:{}", actor.id)
+                        };
+                        PhaseStep {
+                            id,
+                            phase,
+                            step_type: StepType::Character,
+                            character: Some((*character).to_string()),
+                            player_id: Some(actor.id.clone()),
+                            ability_use: None,
+                            ability_origin: None,
+                            required_input: character_required_input(character),
+                            can_skip: metadata.activity != TbActivityRequirement::Always,
+                            support: if metadata.automated {
+                                crate::model::PhaseStepSupport::Automated
+                            } else {
+                                crate::model::PhaseStepSupport::Manual
+                            },
+                            information_prompt: None,
+                            pre_action_reveal: None,
+                        }
+                    }),
+            )
         })
+        .flatten()
         .collect()
 }
 
@@ -1934,6 +2013,7 @@ pub(crate) fn target_information_checks(
                 && last_to_night.is_none_or(|boundary| index > boundary)
                 && players.iter().any(|p| p.id == payload.actor_player_id && p.alive && p.actual_character == "poisoner")))
     });
+    let (active_poison, _) = active_rule_effects(players, events);
     let fixed = |target_player_ids: Vec<String>, computed_result: InformationResult| {
         TargetInformationCheck {
             target_player_ids,
@@ -1975,11 +2055,17 @@ pub(crate) fn target_information_checks(
                                 registration_judgments: vec![],
                             })
                             .collect();
-                    } else if !yes {
-                        for p in players
-                            .iter()
-                            .filter(|p| p.actual_character == "recluse" && ids.contains(&p.id))
-                        {
+                    } else {
+                        // A Recluse may register as the Demon independently of the
+                        // canonical result. Keep that witness choice even when the
+                        // pair already contains the real Demon or red herring, so
+                        // the Storyteller can distinguish identical boolean values
+                        // by their registration context.
+                        for p in players.iter().filter(|p| {
+                            p.actual_character == "recluse"
+                                && ids.contains(&p.id)
+                                && registration_ability_is_active(p, active_poison.as_ref())
+                        }) {
                             check.choices.push(TargetInformationChoice {
                                 result: InformationResult::Boolean { value: true },
                                 is_computed: false,
@@ -2019,7 +2105,9 @@ pub(crate) fn target_information_checks(
                             registration_judgments: vec![],
                         })
                         .collect();
-                } else if p.actual_character == "spy" {
+                } else if p.actual_character == "spy"
+                    && registration_ability_is_active(p, active_poison.as_ref())
+                {
                     check
                         .choices
                         .extend(TOWNSFOLK.iter().map(|id| TargetInformationChoice {
@@ -2033,7 +2121,9 @@ pub(crate) fn target_information_checks(
                                 character_id: Some((*id).into()),
                             }],
                         }));
-                } else if p.actual_character == "recluse" {
+                } else if p.actual_character == "recluse"
+                    && registration_ability_is_active(p, active_poison.as_ref())
+                {
                     check
                         .choices
                         .extend(MINIONS.iter().map(|id| TargetInformationChoice {
@@ -2091,7 +2181,9 @@ pub(crate) fn target_information_checks(
                                     registration_judgments: vec![],
                                 })
                                 .collect();
-                        } else if p.actual_character == "spy" {
+                        } else if p.actual_character == "spy"
+                            && registration_ability_is_active(p, active_poison.as_ref())
+                        {
                             check.choices.extend(TOWNSFOLK.iter().map(|character_id| {
                                 TargetInformationChoice {
                                     result: InformationResult::Character {
@@ -2105,7 +2197,9 @@ pub(crate) fn target_information_checks(
                                     }],
                                 }
                             }));
-                        } else if p.actual_character == "recluse" {
+                        } else if p.actual_character == "recluse"
+                            && registration_ability_is_active(p, active_poison.as_ref())
+                        {
                             check.choices.extend(MINIONS.iter().map(|character_id| {
                                 TargetInformationChoice {
                                     result: InformationResult::Character {

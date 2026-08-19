@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
+import { characterAsset } from "../src/characterAssets";
 import type { GameFile, Player, ReplayState, RuleState } from "../src/core/types";
 import { ClocktowerApp } from "../src/main";
 import {
@@ -291,7 +292,7 @@ test("uses attack semantics and a distinct attack highlight for the Imp", async 
   expect(target.classList.contains("tbSeatStateSelection")).toBe(false);
 });
 
-test("uses the official red-herring reminder wording in the grimoire", async () => {
+test("uses the approved Fortune Teller 착각 wording in the grimoire", async () => {
   const user = userEvent.setup();
   renderStep(step({
     id: "firstNight:fortuneTellerRedHerring",
@@ -310,9 +311,10 @@ test("uses the official red-herring reminder wording in the grimoire", async () 
   const target = within(grimoire).getByRole("button", { name: /2번 좌석, Bert/ });
   await user.click(target);
 
-  expect(within(panel).getByRole("heading", { name: "오답 대상 지정" })).toBeTruthy();
-  expect(within(panel).getByText("오답 대상")).toBeTruthy();
-  expect(within(target).getByText("오답 대상")).toBeTruthy();
+  expect(within(panel).getByRole("heading", { name: "착각 지정" })).toBeTruthy();
+  expect(within(panel).getByText("착각")).toBeTruthy();
+  expect(within(target).getByText("착각")).toBeTruthy();
+  expect(within(panel).queryByText("오답 대상")).toBeNull();
 });
 
 test.each([
@@ -330,10 +332,16 @@ test.each([
     maxSelections: 2,
     setupInfo: character,
     characterKind: character === "librarian" ? "Outsider" : "Minion",
+    zeroAllowed: character === "librarian",
   }));
 
-  await user.click(within(await screen.findByRole("region", { name: "현재 단계" }))
-    .getByRole("button", { name: /대상 선택/ }));
+  const currentTask = await screen.findByRole("region", { name: "현재 단계" });
+  if (character === "librarian") {
+    expect(within(currentTask).getByRole("group", { name: "정보 결과" }).textContent).toContain("외지인 없음");
+    expect(within(currentTask).queryByRole("button", { name: /대상 선택/ })).toBeNull();
+    return;
+  }
+  await user.click(within(currentTask).getByRole("button", { name: /대상 선택/ }));
   const panel = await screen.findByRole("complementary", { name: "현재 마도서 작업" });
   const grimoire = screen.getByLabelText("라이브 마도서 좌석 맵");
   const target = within(grimoire).getByRole("button", { name: /1번 좌석, Ada/ });
@@ -393,6 +401,8 @@ test("runs nomination and vote through the S&V grimoire modes", async () => {
   await user.click(await screen.findByRole("button", { name: "← 지명하기" }));
   const nominationSurface = await screen.findByLabelText("Trouble Brewing 마도서 검토");
   expect(nominationSurface.classList.contains("issue116NominationMode")).toBe(true);
+  expect(within(nominationSurface).getByRole("button", { name: "돌아가기 →" })
+    .classList.contains("tbHandoffCancel")).toBe(true);
   const panel = within(nominationSurface).getByRole("complementary", { name: "현재 마도서 작업" });
   await user.click(within(nominationSurface).getByRole("button", { name: /1번 좌석, Ada/ }));
   await user.click(within(nominationSurface).getByRole("button", { name: /4번 좌석, Dae/ }));
@@ -479,21 +489,37 @@ test("shows Drunk actual and shown identities in the shared detail and restores 
   const playerRoster = players().map((player) => player.id === "player-3" ? {
     ...player,
     actualCharacter: "drunk",
-    shownCharacter: "fortuneTeller",
+    shownCharacter: "chef",
   } : player);
-  renderLiveGrimoire(playerRoster);
+  renderLiveGrimoire(playerRoster, {
+    unannouncedNightDeathPlayerIds: [],
+    automaticReminders: [{
+      playerId: "player-3",
+      characterId: "drunk",
+      tokenId: "isTheDrunk",
+      label: "주정뱅이임",
+      description: "이 플레이어의 실제 캐릭터는 주정뱅이입니다.",
+      sourceEventId: "setup-event",
+    }],
+  });
 
   const grimoire = await openLiveGrimoire(user);
-  const seat = within(grimoire).getByRole("button", { name: /3번 좌석, Cy, 실제 주정뱅이, 표시 점쟁이/ });
-  expect(within(seat).getByRole("img", { name: "보여준 직업 점쟁이 토큰" })).toBeTruthy();
+  const seat = within(grimoire).getByRole("button", { name: /3번 좌석, Cy, 실제 주정뱅이, 표시 요리사/ });
+  expect(within(seat).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(seat).queryByText("주정뱅이", { exact: true })).toBeNull();
+  expect(within(seat).queryByText("표시 · 요리사", { exact: true })).toBeNull();
+  expect(seat.querySelector("img")?.getAttribute("src")).toBe(characterAsset("chef")?.src);
+  expect(within(seat).queryByRole("img", { name: "보여준 직업 요리사 토큰" })).toBeNull();
+  expect(within(grimoire).getByText("+1", { exact: true })).toBeTruthy();
   await user.click(seat);
 
   const detail = screen.getByRole("dialog", { name: "3번 Cy 플레이어 상세" });
-  const identities = within(detail).getByRole("region", { name: "주정뱅이 아이덴티티" });
-  expect(within(identities).getByText("실제 직업")).toBeTruthy();
-  expect(within(identities).getByText("보여준 직업")).toBeTruthy();
-  expect(within(identities).getByText("주정뱅이")).toBeTruthy();
-  expect(within(identities).getByText("점쟁이")).toBeTruthy();
+  expect(within(detail).getByText("요리사", { exact: true })).toBeTruthy();
+  expect(within(detail).queryByRole("region", { name: "주정뱅이 아이덴티티" })).toBeNull();
+  const tokenList = within(detail).getByRole("list", { name: "부착된 토큰 1개" });
+  expect(within(tokenList).getByRole("listitem", {
+    name: /자동 규칙 · 주정뱅이임 · 출처 주정뱅이/,
+  })).toBeTruthy();
 
   await user.click(within(detail).getByRole("button", { name: "플레이어 상세 닫기" }));
   await waitFor(() => expect(document.activeElement).toBe(seat));
