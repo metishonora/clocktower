@@ -400,7 +400,7 @@ pub(crate) struct PendingDeathConsequence {
     pub(crate) step_id: String,
     pub(crate) kind: DeathConsequenceKind,
     pub(crate) source_event_id: String,
-    pub(crate) death_sequence: u8,
+    pub(crate) death_sequence: u32,
     pub(crate) actor_player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
     pub(crate) ability_use: AbilityUseRef,
@@ -822,6 +822,10 @@ pub(crate) enum GameEventKind {
     NoExecutionConfirmed { payload: ExecutionEventPayload },
     #[serde(rename = "deathConfirmed")]
     DeathConfirmed { payload: DeathEventPayload },
+    #[serde(rename = "orderedDeathResolved")]
+    OrderedDeathResolved {
+        payload: OrderedDeathResolvedPayload,
+    },
     #[serde(rename = "executionSurvivalConfirmed")]
     ExecutionSurvivalConfirmed {
         payload: ExecutionSurvivalEventPayload,
@@ -904,6 +908,7 @@ impl GameEventKind {
         "executionConfirmed",
         "noExecutionConfirmed",
         "deathConfirmed",
+        "orderedDeathResolved",
         "executionSurvivalConfirmed",
         "redHerringAssigned",
         "nightActionResolved",
@@ -928,10 +933,120 @@ impl GameEventKind {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum OrderedDeathSource {
+    Ability {
+        ability_use: AbilityUseRef,
+        ability_origin: AbilityOrigin,
+    },
+    Execution {
+        execution_event_id: String,
+    },
+    Event {
+        source_event_id: String,
+        cause: OrderedDeathEventCause,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OrderedDeathEventCause {
+    RulesConsequence,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathResolvedPayload {
+    pub(crate) source: OrderedDeathSource,
+    pub(crate) resolutions: Vec<OrderedDeathResolution>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathResolution {
+    pub(crate) sequence: u32,
+    pub(crate) attempt: OrderedDeathAttempt,
+    pub(crate) prevention_checks: Vec<PreventionCheck>,
+    pub(crate) outcome: OrderedDeathOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OrderedDeathAttempt {
+    pub(crate) target_player_id: String,
+    pub(crate) bypass_policy: DeathBypassPolicy,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) enum DeathBypassPolicy {
+    None,
+    AllTargetProtections,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PreventionCheck {
+    pub(crate) sequence: u32,
+    pub(crate) source: PreventionSource,
+    pub(crate) selection: PreventionSelection,
+    pub(crate) decision: PreventionDecision,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PreventionSource {
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_origin: AbilityOrigin,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PreventionSelection {
+    Deterministic,
+    Storyteller,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PreventionDecision {
+    Applied,
+    NotApplied,
+    Bypassed,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum OrderedDeathOutcome {
+    Occurred { player_id: String },
+    Prevented { prevention_sequence: u32 },
+    NoEffect { reason: OrderedDeathNoEffectReason },
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OrderedDeathNoEffectReason {
+    SourceInvalid,
+    ActorImpaired,
+    TargetAlreadyDead,
+    TargetIneligible,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct DeathTriggerRef {
     pub(crate) source_event_id: String,
-    pub(crate) death_sequence: u8,
+    pub(crate) death_sequence: u32,
     pub(crate) player_id: String,
     pub(crate) source_ability_instance_id: AbilityInstanceId,
 }
