@@ -6973,6 +6973,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             players: vec![],
             current_step: None,
             phase_overview: vec![],
+            setup_choice_id: None,
             day_state: None,
             warnings: vec![],
             rule_state: RuleState::default(),
@@ -7016,7 +7017,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_game_end,
         mathematician_audit,
     } = replay_context(active_events)?;
-    let mut warnings = validate_setup_warnings_for_script(game_file.script_id, &initial_players);
+    let mut warnings =
+        validate_setup_warnings_for_script(game_file.script_id, &initial_players, None)?;
     let day_state = if phase == Phase::Day {
         current_step
             .as_ref()
@@ -7227,6 +7229,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         players,
         current_step,
         phase_overview,
+        setup_choice_id: None,
         day_state,
         warnings,
         rule_state,

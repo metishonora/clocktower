@@ -2,14 +2,78 @@ import { deepEqual, equal, throws } from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { importGameFileJson } from "../gameStorage.js";
-import { TROUBLE_BREWING } from "./scripts.js";
+import { BAD_MOON_RISING, TROUBLE_BREWING } from "./scripts.js";
 import {
   parseCoreResult,
   parseGameEvent,
   parsePhaseInputSuggestion,
   parseProposal,
   parseReplayState,
+  parseSetupDistribution,
 } from "./validation.js";
+
+test("accepts the BMR setup choice and deterministic distribution options", () => {
+  const event = {
+    id: "setup-bmr",
+    type: "setupConfirmed",
+    phase: "setup",
+    payload: { players: [], setupChoiceId: "addOutsider" },
+    summary: "setup",
+    createdAt: "2026-08-24T00:00:00.000Z",
+  };
+  const parsedEvent = parseGameEvent(event);
+  if (parsedEvent.type !== "setupConfirmed") throw new Error("expected setup event");
+  equal(parsedEvent.payload.setupChoiceId, "addOutsider");
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, setupChoiceId: "implicit" },
+  }));
+
+  deepEqual(parseSetupDistribution({
+    options: [
+      {
+        id: "addOutsider",
+        distribution: { Townsfolk: 4, Outsider: 2, Minion: 1, Demon: 1 },
+      },
+      {
+        id: "removeOutsider",
+        distribution: { Townsfolk: 6, Outsider: 0, Minion: 1, Demon: 1 },
+      },
+    ],
+  }), {
+    options: [
+      {
+        id: "addOutsider",
+        distribution: { Townsfolk: 4, Outsider: 2, Minion: 1, Demon: 1 },
+      },
+      {
+        id: "removeOutsider",
+        distribution: { Townsfolk: 6, Outsider: 0, Minion: 1, Demon: 1 },
+      },
+    ],
+  });
+  throws(() => parseSetupDistribution({
+    options: [{
+      id: "removeOutsider",
+      distribution: { Townsfolk: 6, Outsider: 0, Minion: 1, Demon: 1 },
+    }],
+  }));
+
+  const replay = {
+    schemaVersion: 3,
+    scriptId: BAD_MOON_RISING,
+    eventCount: 1,
+    phase: "firstNight",
+    setupChoiceId: "addOutsider",
+    players: [],
+    currentStep: null,
+    phaseOverview: [],
+    ruleState: { unannouncedNightDeathPlayerIds: [] },
+    warnings: [],
+    gameEnd: null,
+  };
+  equal(parseReplayState(replay).setupChoiceId, "addOutsider");
+});
 
 test("imports schema-v2 events as typed GameEvent values", () => {
   const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()), TROUBLE_BREWING);

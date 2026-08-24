@@ -780,8 +780,13 @@ export function SectsAndVioletsGameSurface({
       actualCharacters: [demon],
     }).then((result) => {
       if (cancelled) return;
-      if (result.ok) setCanonicalDistribution(result.value);
-      else setOperationError(result.error.messageKo);
+      if (!result.ok) {
+        setOperationError(result.error.messageKo);
+      } else if ("options" in result.value) {
+        setOperationError("지원하지 않는 인원 구성 응답입니다.");
+      } else {
+        setCanonicalDistribution(result.value);
+      }
     }).catch((error: unknown) => {
       if (!cancelled) setOperationError(error instanceof Error ? error.message : "인원 구성 계산 실패");
     });

@@ -3,6 +3,8 @@ import type { ScriptId } from "../../core/scripts";
 import { CommunityContentNotice } from "../../components/CommunityContentNotice";
 import "./scriptLanding.css";
 
+type LandingScriptId = Exclude<ScriptId, "badMoonRising">;
+
 const scripts = {
   troubleBrewing: {
     name: "Trouble Brewing",
@@ -47,7 +49,7 @@ const scripts = {
       </>
     ),
   },
-} satisfies Record<ScriptId, {
+} satisfies Record<LandingScriptId, {
   name: string;
   logo: string;
   href: string;
@@ -59,7 +61,7 @@ export function ScriptLanding({
 }: {
   onNavigate?: (href: string) => void;
 }) {
-  const [selectedScript, setSelectedScript] = useState<ScriptId>();
+  const [selectedScript, setSelectedScript] = useState<LandingScriptId>();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export function ScriptLanding({
       <main className="scriptLandingPage scriptLandingSelectionSurface">
         <section className="scriptLandingChoices" aria-label="스크립트 선택">
           <h1 className="visuallyHidden">스크립트 선택</h1>
-          {(Object.keys(scripts) as ScriptId[]).map((scriptId) => {
+          {(Object.keys(scripts) as LandingScriptId[]).map((scriptId) => {
             const script = scripts[scriptId];
             return (
               <button

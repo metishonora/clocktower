@@ -24,6 +24,8 @@ pub(crate) enum ErrorKind {
     InvalidPlayer,
     UnknownCharacter,
     InvalidDrunkShownCharacter,
+    InvalidLunaticShownCharacter,
+    InvalidSetupChoice,
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
@@ -107,6 +109,14 @@ impl ErrorKind {
             Self::InvalidDrunkShownCharacter => (
                 "INVALID_DRUNK_SHOWN_CHARACTER",
                 "주정뱅이에게 보여준 캐릭터는 주민이어야 합니다.",
+            ),
+            Self::InvalidLunaticShownCharacter => (
+                "INVALID_LUNATIC_SHOWN_CHARACTER",
+                "미치광이에게 보여준 캐릭터는 피로 물든 달의 악마여야 합니다.",
+            ),
+            Self::InvalidSetupChoice => (
+                "INVALID_SETUP_CHOICE",
+                "현재 구성에서 선택할 수 없는 설정 변경입니다.",
             ),
             Self::InvalidSeating => (
                 "INVALID_SEATING",

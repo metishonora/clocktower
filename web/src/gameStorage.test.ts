@@ -10,7 +10,7 @@ import {
   type GameStorageDriver,
 } from "./gameStorage.js";
 import type { GameFile } from "./core/types.js";
-import { SECTS_AND_VIOLETS, TROUBLE_BREWING } from "./core/scripts.js";
+import { BAD_MOON_RISING, SECTS_AND_VIOLETS, TROUBLE_BREWING } from "./core/scripts.js";
 
 const gameFile: GameFile = {
   schemaVersion: 3,
@@ -45,10 +45,11 @@ test("saving the latest GameFile stores one replaceable value", async () => {
   equal(driver.writeCount, 2);
 });
 
-test("IndexedDB preserves independent latest games for both scripts", async () => {
+test("IndexedDB preserves independent latest games for every script", async () => {
   const idb = new IDBFactory();
   const troubleBrewing = new IndexedDbGameStorageDriver("troubleBrewing", idb);
   const sectsAndViolets = new IndexedDbGameStorageDriver("sectsAndViolets", idb);
+  const badMoonRising = new IndexedDbGameStorageDriver(BAD_MOON_RISING, idb);
   const svGame: GameFile = {
     ...gameFile,
     game: {
@@ -59,12 +60,24 @@ test("IndexedDB preserves independent latest games for both scripts", async () =
       events: [],
     },
   };
+  const bmrGame: GameFile = {
+    ...gameFile,
+    game: {
+      ...gameFile.game,
+      scriptId: BAD_MOON_RISING,
+      id: "game-bmr",
+      name: "Bad Moon Rising",
+      events: [],
+    },
+  };
 
   await troubleBrewing.saveLatestGame(gameFile);
   await sectsAndViolets.saveLatestGame(svGame);
+  await badMoonRising.saveLatestGame(bmrGame);
 
   deepEqual(await troubleBrewing.loadLatestGame(), gameFile);
   deepEqual(await sectsAndViolets.loadLatestGame(), svGame);
+  deepEqual(await badMoonRising.loadLatestGame(), bmrGame);
 });
 
 test("only Trouble Brewing reads and normalizes the legacy latest key", async () => {

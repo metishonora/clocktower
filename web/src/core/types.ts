@@ -256,7 +256,10 @@ export type PhaseInputSuggestion = {
 
 export type Command =
   | { type: "smoke" }
-  | { type: "createGame"; payload: { players: SetupPlayerInput[] } }
+  | {
+      type: "createGame";
+      payload: { players: SetupPlayerInput[]; setupChoiceId?: SetupChoiceId };
+    }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | {
       type: "skipStep";
@@ -374,6 +377,7 @@ export type ReplayState = {
   scriptId: ScriptId;
   eventCount: number;
   phase: Phase;
+  setupChoiceId?: SetupChoiceId;
   players: Player[];
   currentStep: PhaseStep | null;
   phaseOverview: PhaseOverviewItem[];
@@ -707,6 +711,17 @@ export type SetupDistribution = {
   Demon: number;
 };
 
+export type SetupChoiceId = "addOutsider" | "removeOutsider";
+
+export type SetupDistributionOption = {
+  id: SetupChoiceId;
+  distribution: SetupDistribution;
+};
+
+export type SetupDistributionResult =
+  | SetupDistribution
+  | { options: SetupDistributionOption[] };
+
 type EventCommon = {
   id: string;
   phase: Phase;
@@ -732,7 +747,10 @@ export type PhilosopherAbilityResolvedPayload = {
 export type GameEvent = EventCommon &
   (
     | { type: "smokeConfirmed"; payload: { source: string } }
-    | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[] } }
+    | {
+        type: "setupConfirmed";
+        payload: { players: SetupPlayerInput[]; setupChoiceId?: SetupChoiceId };
+      }
     | {
         type: "phaseStepConfirmed";
         payload: { stepId: string; input: PhaseStepInput; information?: ConfirmedInformation };

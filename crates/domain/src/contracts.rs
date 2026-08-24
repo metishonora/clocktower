@@ -21,6 +21,7 @@ pub(crate) struct GameFile {
 pub(crate) enum ScriptId {
     TroubleBrewing,
     SectsAndViolets,
+    BadMoonRising,
 }
 
 #[derive(Debug)]
@@ -250,6 +251,8 @@ pub(crate) struct SetupPlayerInput {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CreateGamePayload {
     pub(crate) players: Vec<SetupPlayerInput>,
+    #[serde(default)]
+    pub(crate) setup_choice_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -340,6 +343,22 @@ pub(crate) struct SetupDistribution {
     pub(crate) demon: usize,
 }
 
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(untagged)]
+pub(crate) enum SetupDistributionResult {
+    Distribution(SetupDistribution),
+    Options {
+        options: Vec<SetupDistributionOption>,
+    },
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupDistributionOption {
+    pub(crate) id: String,
+    pub(crate) distribution: SetupDistribution,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
@@ -350,6 +369,8 @@ pub(crate) struct ReplayState {
     pub(crate) players: Vec<Player>,
     pub(crate) current_step: Option<PhaseStep>,
     pub(crate) phase_overview: Vec<PhaseOverviewItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) setup_choice_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) day_state: Option<DayState>,
     pub(crate) warnings: Vec<CoreWarning>,
@@ -1505,8 +1526,11 @@ pub(crate) struct SmokeEventPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct SetupEventPayload {
     pub(crate) players: Vec<SetupPlayerInput>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) setup_choice_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
