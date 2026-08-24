@@ -3418,6 +3418,9 @@ fn apply_player_event(
             };
             player.alive = false;
         }
+        GameEventKind::OrderedDeathResolved { payload } => {
+            crate::death::apply_ordered_death(players, &events[..event_index], payload)?;
+        }
         GameEventKind::NominationVoteConfirmed { payload } => {
             for player_id in &payload.ghost_vote_spent_player_ids {
                 let Some(player) = players.iter_mut().find(|player| player.id == *player_id) else {
@@ -3971,48 +3974,7 @@ pub(crate) fn ability_state_build_count() -> usize {
 }
 
 fn unannounced_night_death_player_ids(events: &[GameEvent]) -> Vec<String> {
-    let mut deaths = Vec::new();
-    for event in events {
-        match &event.kind {
-            GameEventKind::NightActionResolved { payload } => {
-                if let NightActionResolution::DemonAttack {
-                    outcome:
-                        DemonAttackOutcome::Deaths {
-                            deaths: event_deaths,
-                            ..
-                        },
-                    ..
-                } = &payload.resolution
-                {
-                    for death in event_deaths {
-                        if !deaths.contains(&death.player_id) {
-                            deaths.push(death.player_id.clone());
-                        }
-                    }
-                } else if let NightActionResolution::DemonAttack {
-                    outcome: DemonAttackOutcome::FangGuJump { death, .. },
-                    ..
-                } = &payload.resolution
-                {
-                    if !deaths.contains(&death.player_id) {
-                        deaths.push(death.player_id.clone());
-                    }
-                }
-            }
-            GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => {
-                for death in &payload.deaths {
-                    if !deaths.contains(&death.player_id) {
-                        deaths.push(death.player_id.clone());
-                    }
-                }
-            }
-            GameEventKind::NightDeathsAnnounced { payload } => {
-                deaths.retain(|player_id| !payload.player_ids.contains(player_id));
-            }
-            _ => {}
-        }
-    }
-    deaths
+    crate::death::unannounced_night_deaths(events)
 }
 
 fn unannounced_night_resurrection_player_ids(events: &[GameEvent]) -> Vec<String> {
@@ -4857,7 +4819,7 @@ fn record_death_triggers(
     let ability_state = SnvAbilityState::build(players, prior_events);
     let mut record = |actor: &AbilityActor<'_>,
                       source_event: &GameEvent,
-                      death_sequence: u8,
+                      death_sequence: u32,
                       kind: DeathConsequenceKind| {
         if triggers.iter().any(|trigger| {
             trigger.source_event_id == source_event.id
@@ -4916,32 +4878,9 @@ fn record_death_triggers(
         })
         .collect::<Vec<_>>();
 
-    let deaths = match &event.kind {
-        GameEventKind::DeathConfirmed { payload } => vec![(payload.player_id.as_str(), 1)],
-        GameEventKind::NightActionResolved { payload } => match &payload.resolution {
-            NightActionResolution::DemonAttack {
-                outcome: DemonAttackOutcome::Deaths { deaths, .. },
-                ..
-            } => deaths
-                .iter()
-                .enumerate()
-                .map(|(index, death)| (death.player_id.as_str(), (index + 1) as u8))
-                .collect(),
-            NightActionResolution::DemonAttack {
-                outcome: DemonAttackOutcome::FangGuJump { death, .. },
-                ..
-            } => vec![(death.player_id.as_str(), 1)],
-            _ => vec![],
-        },
-        GameEventKind::PitHagArbitraryDeathsConfirmed { payload } => payload
-            .deaths
-            .iter()
-            .enumerate()
-            .map(|(index, death)| (death.player_id.as_str(), (index + 1) as u8))
-            .collect(),
-        _ => vec![],
-    };
-    for (player_id, death_sequence) in deaths {
+    for fact in crate::death::event_death_facts(event) {
+        let player_id = fact.player_id;
+        let death_sequence = fact.sequence;
         for actor in death_ability_actors
             .iter()
             .filter(|actor| actor.identity.id == player_id)
@@ -4966,7 +4905,12 @@ fn record_death_triggers(
                 if let Some((source_event, sequence)) =
                     death_event_for_player(prior_events, &actor.identity.id)
                 {
-                    record(actor, source_event, sequence, DeathConsequenceKind::Klutz);
+                    record(
+                        actor,
+                        source_event,
+                        sequence.into(),
+                        DeathConsequenceKind::Klutz,
+                    );
                 }
             }
         }
@@ -5869,6 +5813,10 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             players_at_event,
             &events[..event_index],
         );
+        if matches!(event.kind, GameEventKind::OrderedDeathResolved { .. }) {
+            machine.apply_event(events, event_index, event, players_at_event)?;
+            continue;
+        }
         if matches!(
             event.kind,
             GameEventKind::SweetheartConsequenceResolved { .. }

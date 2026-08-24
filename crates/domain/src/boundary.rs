@@ -98,6 +98,40 @@ fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {
                 .map(|_| ())
         };
         match &event.kind {
+            GameEventKind::OrderedDeathResolved { payload } => {
+                crate::death::validate_contract(payload)?;
+                match &payload.source {
+                    crate::contracts::OrderedDeathSource::Ability { .. } => {}
+                    crate::contracts::OrderedDeathSource::Execution { execution_event_id } => {
+                        let execution_id = EventId::parse(execution_event_id)
+                            .map_err(|_| ErrorKind::InvalidEventReference.into_error())?;
+                        let Some(GameEventKind::ExecutionConfirmed { payload: execution }) =
+                            prior_by_id.get(&execution_id).copied()
+                        else {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        };
+                        let attempted_player = payload
+                            .resolutions
+                            .first()
+                            .map(|resolution| resolution.attempt.target_player_id.as_str());
+                        if payload.resolutions.len() != 1
+                            || !execution.input.execute
+                            || execution.input.player_id.as_deref() != attempted_player
+                        {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        }
+                    }
+                    crate::contracts::OrderedDeathSource::Event {
+                        source_event_id, ..
+                    } => {
+                        let source_id = EventId::parse(source_event_id)
+                            .map_err(|_| ErrorKind::InvalidEventReference.into_error())?;
+                        if !prior_by_id.contains_key(&source_id) {
+                            return Err(ErrorKind::InvalidEventReference.into_error());
+                        }
+                    }
+                }
+            }
             GameEventKind::NominationVoteConfirmed { payload } => {
                 if let Some(event_id) = payload.nomination_event_id.as_deref() {
                     require_prior(event_id, |kind| {
@@ -204,6 +238,7 @@ fn is_death_source_event(kind: &GameEventKind) -> bool {
     matches!(
         kind,
         GameEventKind::DeathConfirmed { .. }
+            | GameEventKind::OrderedDeathResolved { .. }
             | GameEventKind::NightActionResolved { .. }
             | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
     )

@@ -119,6 +119,7 @@ impl ScriptRules {
                             | GameEventKind::ExecutionConfirmed { .. }
                             | GameEventKind::NoExecutionConfirmed { .. }
                             | GameEventKind::DeathConfirmed { .. }
+                            | GameEventKind::OrderedDeathResolved { .. }
                             | GameEventKind::SnakeCharmerActionResolved { .. }
                             | GameEventKind::PitHagTransformationResolved { .. }
                             | GameEventKind::PitHagArbitraryDeathsConfirmed { .. }
@@ -147,6 +148,8 @@ impl ScriptRules {
                             | GameEventKind::PhaseStepConfirmed { .. }
                             | GameEventKind::ManualPhaseStepResolved { .. }
                             | GameEventKind::PhaseStepSkipped { .. }
+                            | GameEventKind::ExecutionConfirmed { .. }
+                            | GameEventKind::OrderedDeathResolved { .. }
                     )
                 }) =>
             {

@@ -726,14 +726,15 @@ pub(crate) struct AbilityUseRef {
     pub(crate) ability_instance_id: AbilityInstanceId,
 }
 
-/// Replay-derived provenance for an acting ability. This is deliberately not
-/// part of persisted events: old schema-v3 files keep their existing shape,
-/// while projections no longer need to infer ownership from character IDs.
-#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+/// Replay-derived provenance for an acting ability. Existing schema-v3 events
+/// keep their historical shape; the ordered Death contract persists the same
+/// provenance explicitly when auditing a source or prevention candidate.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
-    rename_all_fields = "camelCase"
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
 )]
 pub(crate) enum AbilityOrigin {
     IdentityBound,

@@ -35,7 +35,9 @@ export function inferCanonicalUndoUnits(events: GameEvent[]): CanonicalUndoUnit[
 
     const sourceEventId = event.type === "gameEnded"
       ? event.payload.source?.sourceEventId
-      : deathConfirmationSourceEventId(events, event, index);
+      : event.type === "orderedDeathResolved"
+        ? orderedDeathSourceEventId(event)
+        : deathConfirmationSourceEventId(events, event, index);
     if (sourceEventId) {
       const sourceIndex = units.findIndex(({ eventIds }) => eventIds.includes(sourceEventId));
       if (sourceIndex >= 0) {
@@ -56,6 +58,18 @@ export function inferCanonicalUndoUnits(events: GameEvent[]): CanonicalUndoUnit[
     units.push(unit);
     return units;
   }, []);
+}
+
+function orderedDeathSourceEventId(
+  event: Extract<GameEvent, { type: "orderedDeathResolved" }>,
+): string | undefined {
+  if (event.payload.source.kind === "execution") {
+    return event.payload.source.executionEventId;
+  }
+  if (event.payload.source.kind === "event") {
+    return event.payload.source.sourceEventId;
+  }
+  return undefined;
 }
 
 function deathConfirmationSourceEventId(

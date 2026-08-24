@@ -19,6 +19,7 @@ pub(crate) enum ErrorKind {
     EventNotSupportedByScript,
     DuplicateEventId,
     InvalidEventReference,
+    InvalidDeathResolution,
     MalformedRequest,
     InvalidPlayerCount,
     InvalidPlayer,
@@ -98,6 +99,10 @@ impl ErrorKind {
             Self::InvalidEventReference => (
                 "INVALID_EVENT_REFERENCE",
                 "이벤트가 존재하지 않거나 올바르지 않은 원본 이벤트를 참조합니다.",
+            ),
+            Self::InvalidDeathResolution => (
+                "INVALID_DEATH_RESOLUTION",
+                "순차 사망 판정이 올바르지 않습니다.",
             ),
             Self::MalformedRequest => ("MALFORMED_REQUEST", "요청 형식이 올바르지 않습니다."),
             Self::InvalidPlayerCount => (

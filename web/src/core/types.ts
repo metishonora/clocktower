@@ -539,6 +539,37 @@ export type AbilityOrigin =
       source: AbilityUseRef;
     };
 
+export type OrderedDeathSource =
+  | { kind: "ability"; abilityUse: AbilityUseRef; abilityOrigin: AbilityOrigin }
+  | { kind: "execution"; executionEventId: string }
+  | { kind: "event"; sourceEventId: string; cause: "rulesConsequence" };
+
+export type DeathBypassPolicy =
+  | { kind: "none" }
+  | { kind: "allTargetProtections" };
+
+export type PreventionCheck = {
+  sequence: number;
+  source: { abilityUse: AbilityUseRef; abilityOrigin: AbilityOrigin };
+  selection: "deterministic" | "storyteller";
+  decision: "applied" | "notApplied" | "bypassed";
+};
+
+export type OrderedDeathOutcome =
+  | { kind: "occurred"; playerId: string }
+  | { kind: "prevented"; preventionSequence: number }
+  | {
+      kind: "noEffect";
+      reason: "sourceInvalid" | "actorImpaired" | "targetAlreadyDead" | "targetIneligible";
+    };
+
+export type OrderedDeathResolution = {
+  sequence: number;
+  attempt: { targetPlayerId: string; bypassPolicy: DeathBypassPolicy };
+  preventionChecks: PreventionCheck[];
+  outcome: OrderedDeathOutcome;
+};
+
 export type AbilityGrant = {
   ownerPlayerId: string;
   characterId: string;
@@ -815,6 +846,10 @@ export type GameEvent = EventCommon &
         payload: { stepId: string; input: { execute: boolean; playerId?: string | null } };
       }
     | { type: "deathConfirmed"; payload: { playerId: string; stepId?: string } }
+    | {
+        type: "orderedDeathResolved";
+        payload: { source: OrderedDeathSource; resolutions: OrderedDeathResolution[] };
+      }
     | {
         type: "executionSurvivalConfirmed";
         payload: { stepId: string; playerId: string };

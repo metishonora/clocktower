@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 3,
+  "game": {
+    "id": "issue-177-ordered-death",
+    "name": "Issue 177 ordered Death contract",
+    "scriptId": "badMoonRising",
+    "createdAt": "2026-08-24T00:00:00.000Z",
+    "updatedAt": "2026-08-24T00:05:00.000Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "phase": "setup",
+        "payload": {
+          "players": [
+            { "id": "player-1", "seat": 1, "name": "A", "actualCharacter": "sailor", "shownCharacter": "sailor" },
+            { "id": "player-2", "seat": 2, "name": "B", "actualCharacter": "grandmother", "shownCharacter": "grandmother" },
+            { "id": "player-3", "seat": 3, "name": "C", "actualCharacter": "teaLady", "shownCharacter": "teaLady" },
+            { "id": "player-4", "seat": 4, "name": "D", "actualCharacter": "fool", "shownCharacter": "fool" },
+            { "id": "player-5", "seat": 5, "name": "E", "actualCharacter": "chambermaid", "shownCharacter": "chambermaid" },
+            { "id": "player-6", "seat": 6, "name": "F", "actualCharacter": "devilsAdvocate", "shownCharacter": "devilsAdvocate" },
+            { "id": "player-7", "seat": 7, "name": "G", "actualCharacter": "shabaloth", "shownCharacter": "shabaloth" }
+          ]
+        },
+        "summary": "초기 설정 확정: 7명",
+        "createdAt": "2026-08-24T00:00:00.000Z"
+      },
+      {
+        "id": "ordered-death-event-1",
+        "type": "orderedDeathResolved",
+        "phase": "firstNight",
+        "payload": {
+          "source": {
+            "kind": "ability",
+            "abilityUse": {
+              "ownerPlayerId": "player-7",
+              "characterId": "shabaloth",
+              "abilityInstanceId": "setup:player-7"
+            },
+            "abilityOrigin": { "kind": "identityBound" }
+          },
+          "resolutions": [
+            {
+              "sequence": 1,
+              "attempt": {
+                "targetPlayerId": "player-1",
+                "bypassPolicy": { "kind": "none" }
+              },
+              "preventionChecks": [
+                {
+                  "sequence": 1,
+                  "source": {
+                    "abilityUse": {
+                      "ownerPlayerId": "player-3",
+                      "characterId": "teaLady",
+                      "abilityInstanceId": "setup:player-3"
+                    },
+                    "abilityOrigin": { "kind": "identityBound" }
+                  },
+                  "selection": "deterministic",
+                  "decision": "applied"
+                }
+              ],
+              "outcome": { "kind": "prevented", "preventionSequence": 1 }
+            },
+            {
+              "sequence": 2,
+              "attempt": {
+                "targetPlayerId": "player-2",
+                "bypassPolicy": { "kind": "none" }
+              },
+              "preventionChecks": [],
+              "outcome": { "kind": "occurred", "playerId": "player-2" }
+            }
+          ]
+        },
+        "summary": "순차 사망 판정: 2명",
+        "createdAt": "2026-08-24T00:05:00.000Z"
+      }
+    ]
+  }
+}

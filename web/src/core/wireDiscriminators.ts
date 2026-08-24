@@ -32,6 +32,7 @@ export const eventDiscriminators = [
   "executionConfirmed",
   "noExecutionConfirmed",
   "deathConfirmed",
+  "orderedDeathResolved",
   "executionSurvivalConfirmed",
   "redHerringAssigned",
   "nightActionResolved",

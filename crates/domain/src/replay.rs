@@ -513,9 +513,9 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     let mut before_event = Vec::with_capacity(events.len());
     before_event.push(Vec::new());
 
-    for event in events.iter().skip(1) {
+    for (event_index, event) in events.iter().enumerate().skip(1) {
         before_event.push(players.clone());
-        apply_player_event(&mut players, event)?;
+        apply_player_event(&mut players, &events[..event_index], event)?;
         #[cfg(test)]
         TB_EVENT_APPLICATION_COUNT.with(|count| count.set(count.get() + 1));
     }
@@ -527,7 +527,11 @@ fn replay_player_timeline(events: &[GameEvent]) -> Result<TbPlayerTimeline, Core
     })
 }
 
-fn apply_player_event(players: &mut [Player], event: &GameEvent) -> Result<(), CoreError> {
+fn apply_player_event(
+    players: &mut [Player],
+    prior_events: &[GameEvent],
+    event: &GameEvent,
+) -> Result<(), CoreError> {
     match &event.kind {
         GameEventKind::DeathConfirmed { payload } => {
             let player_id = payload.player_id.as_str();
@@ -535,6 +539,9 @@ fn apply_player_event(players: &mut [Player], event: &GameEvent) -> Result<(), C
                 return Err(ErrorKind::ReplayFailed.into_error());
             };
             player.alive = false;
+        }
+        GameEventKind::OrderedDeathResolved { payload } => {
+            crate::death::apply_ordered_death(players, prior_events, payload)?;
         }
         GameEventKind::NightActionResolved { payload } => {
             if let NightActionResolution::ImpAttack {
@@ -1589,27 +1596,7 @@ pub(crate) fn replay_rule_state(events: &[GameEvent], players: &[Player]) -> Rul
     }
     let active_impairments = (!active_impairments.is_empty()).then_some(active_impairments);
     let butler_vote = crate::characters::butler_vote_state(players, events, active_poison.as_ref());
-    let announced = events
-        .iter()
-        .flat_map(|e| match &e.kind {
-            GameEventKind::NightDeathsAnnounced { payload } => payload.player_ids.clone(),
-            _ => vec![],
-        })
-        .collect::<Vec<_>>();
-    let unannounced_night_death_player_ids = events
-        .iter()
-        .filter_map(|e| match &e.kind {
-            GameEventKind::NightActionResolved { payload } => match &payload.resolution {
-                NightActionResolution::ImpAttack {
-                    outcome: ImpAttackOutcome::Death { player_id },
-                    ..
-                } => Some(player_id.clone()),
-                _ => None,
-            },
-            _ => None,
-        })
-        .filter(|id| !announced.contains(id))
-        .collect();
+    let unannounced_night_death_player_ids = crate::death::unannounced_night_deaths(events);
     let mut rule_state = RuleState {
         red_herring_player_id,
         active_poison,

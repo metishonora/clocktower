@@ -256,6 +256,9 @@ export function parseGameEvent(value: unknown): GameEvent {
         throw invalidEvent();
       }
       break;
+    case "orderedDeathResolved":
+      if (!isOrderedDeathResolvedPayload(payload)) throw invalidEvent();
+      break;
     case "executionSurvivalConfirmed":
       if (
         !hasExactKeys(payload, ["stepId", "playerId"]) ||
@@ -732,6 +735,92 @@ function isAbilityContext(abilityUse: unknown, origin: unknown): abilityUse is A
   if (!isAbilityUseRef(abilityUse) || !isAbilityOrigin(origin)) return false;
   return origin.kind !== "acquired"
     || (isRecord(origin.source) && origin.source.ownerPlayerId === abilityUse.ownerPlayerId);
+}
+
+function isOrderedDeathResolvedPayload(value: Record<string, unknown>): boolean {
+  if (
+    !hasExactKeys(value, ["source", "resolutions"]) ||
+    !isOrderedDeathSource(value.source) ||
+    !Array.isArray(value.resolutions) ||
+    value.resolutions.length === 0
+  ) return false;
+
+  return value.resolutions.every((resolution, index) =>
+    isOrderedDeathResolution(resolution, index + 1));
+}
+
+function isOrderedDeathSource(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "ability") {
+    return hasExactKeys(value, ["kind", "abilityUse", "abilityOrigin"])
+      && isAbilityContext(value.abilityUse, value.abilityOrigin);
+  }
+  if (value.kind === "execution") {
+    return hasExactKeys(value, ["kind", "executionEventId"])
+      && typeof value.executionEventId === "string";
+  }
+  return value.kind === "event"
+    && hasExactKeys(value, ["kind", "sourceEventId", "cause"])
+    && typeof value.sourceEventId === "string"
+    && value.cause === "rulesConsequence";
+}
+
+function isOrderedDeathResolution(value: unknown, expectedSequence: number): boolean {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["sequence", "attempt", "preventionChecks", "outcome"]) ||
+    value.sequence !== expectedSequence ||
+    !isRecord(value.attempt) ||
+    !hasExactKeys(value.attempt, ["targetPlayerId", "bypassPolicy"]) ||
+    typeof value.attempt.targetPlayerId !== "string" ||
+    !isDeathBypassPolicy(value.attempt.bypassPolicy) ||
+    !Array.isArray(value.preventionChecks) ||
+    !value.preventionChecks.every((check, index) => isPreventionCheck(check, index + 1)) ||
+    !isRecord(value.outcome)
+  ) return false;
+
+  const checks = value.preventionChecks as Array<Record<string, unknown>>;
+  const applied = checks.filter((check) => check.decision === "applied");
+  const bypassKind = (value.attempt.bypassPolicy as Record<string, unknown>).kind;
+  if (applied.length > 1) return false;
+  if (bypassKind === "none" && checks.some((check) => check.decision === "bypassed")) return false;
+  if (bypassKind === "allTargetProtections" && checks.some((check) => check.decision !== "bypassed")) return false;
+
+  if (value.outcome.kind === "occurred") {
+    return hasExactKeys(value.outcome, ["kind", "playerId"])
+      && typeof value.outcome.playerId === "string"
+      && applied.length === 0;
+  }
+  if (value.outcome.kind === "prevented") {
+    return hasExactKeys(value.outcome, ["kind", "preventionSequence"])
+      && Number.isInteger(value.outcome.preventionSequence)
+      && applied.length === 1
+      && applied[0]?.sequence === value.outcome.preventionSequence;
+  }
+  if (value.outcome.kind === "noEffect") {
+    return hasExactKeys(value.outcome, ["kind", "reason"])
+      && ["sourceInvalid", "actorImpaired", "targetAlreadyDead", "targetIneligible"]
+        .includes(value.outcome.reason as string)
+      && checks.length === 0;
+  }
+  return false;
+}
+
+function isDeathBypassPolicy(value: unknown): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["kind"])
+    && (value.kind === "none" || value.kind === "allTargetProtections");
+}
+
+function isPreventionCheck(value: unknown, expectedSequence: number): boolean {
+  return isRecord(value)
+    && hasExactKeys(value, ["sequence", "source", "selection", "decision"])
+    && value.sequence === expectedSequence
+    && isRecord(value.source)
+    && hasExactKeys(value.source, ["abilityUse", "abilityOrigin"])
+    && isAbilityContext(value.source.abilityUse, value.source.abilityOrigin)
+    && (value.selection === "deterministic" || value.selection === "storyteller")
+    && (value.decision === "applied" || value.decision === "notApplied" || value.decision === "bypassed");
 }
 
 function isPreActionReveal(value: unknown): boolean {

@@ -335,7 +335,21 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             pending_game_end: None,
         });
     }
-    let context = replay_context(&game_file.game.events)?;
+    let mut context = replay_context(&game_file.game.events)?;
+    let rule_state = RuleState {
+        unannounced_night_death_player_ids: crate::death::unannounced_night_deaths(
+            &game_file.game.events,
+        ),
+        ..RuleState::default()
+    };
+    if !rule_state.unannounced_night_death_player_ids.is_empty() {
+        context.warnings.push(crate::model::CoreWarning {
+            code: "NIGHT_DEATH_UNANNOUNCED".into(),
+            severity: "warning",
+            message_ko: "공개하지 않은 밤 사망이 있습니다.".into(),
+            winning_team: None,
+        });
+    }
     Ok(ReplayState {
         schema_version: game_file.schema_version,
         script_id: game_file.script_id,
@@ -347,7 +361,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         setup_choice_id: context.setup_choice_id,
         day_state: None,
         warnings: context.warnings,
-        rule_state: RuleState::default(),
+        rule_state,
         game_end: None,
         pending_identity_reveals: vec![],
         available_day_actions: vec![],
@@ -377,7 +391,7 @@ fn replay_context(events: &[GameEvent]) -> Result<BmrReplayContext, CoreError> {
     }
     validate_setup_inputs_for_script(ScriptId::BadMoonRising, &payload.players)
         .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
-    let players = payload
+    let mut players = payload
         .players
         .iter()
         .map(|player| {
@@ -392,7 +406,24 @@ fn replay_context(events: &[GameEvent]) -> Result<BmrReplayContext, CoreError> {
     )
     .map_err(|_| ErrorKind::ReplayFailed.into_error())?;
     let mut statuses = HashMap::new();
-    for event in events.iter().skip(1) {
+    for (event_index, event) in events.iter().enumerate().skip(1) {
+        if let GameEventKind::OrderedDeathResolved { payload } = &event.kind {
+            crate::death::apply_ordered_death(&mut players, &events[..event_index], payload)?;
+            continue;
+        }
+        if let GameEventKind::ExecutionConfirmed { payload } = &event.kind {
+            if event.phase != Phase::Day
+                || !payload.input.execute
+                || !payload
+                    .input
+                    .player_id
+                    .as_deref()
+                    .is_some_and(|player_id| players.iter().any(|player| player.id == player_id))
+            {
+                return Err(ErrorKind::ReplayFailed.into_error());
+            }
+            continue;
+        }
         let (phase, steps) = current_phase_steps(&players, &statuses, events.len() + 1);
         let current = steps
             .iter()
