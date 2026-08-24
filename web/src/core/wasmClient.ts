@@ -6,7 +6,7 @@ import type {
   PhaseInputSuggestionRequest,
   Proposal,
   ReplayState,
-  SetupDistribution,
+  SetupDistributionResult,
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
@@ -62,7 +62,7 @@ export async function propose(
 
 export async function setupDistribution(
   request: SetupDistributionRequest,
-): Promise<CoreResult<SetupDistribution>> {
+): Promise<CoreResult<SetupDistributionResult>> {
   await ensureWasm();
   return parseCoreResult(
     JSON.parse(wasmSetupDistribution(JSON.stringify(request))),
@@ -72,7 +72,7 @@ export async function setupDistribution(
 
 export function setupDistributionSync(
   request: SetupDistributionRequest,
-): CoreResult<SetupDistribution> | undefined {
+): CoreResult<SetupDistributionResult> | undefined {
   if (!initialized) return undefined;
   return parseCoreResult(
     JSON.parse(wasmSetupDistribution(JSON.stringify(request))),

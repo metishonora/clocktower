@@ -349,6 +349,7 @@ pub(crate) fn propose_create_game(
 
     validate_setup_inputs_for_script(game_file.script_id, &payload.players)?;
 
+    let setup_choice_id = payload.setup_choice_id.clone();
     let players = payload
         .players
         .iter()
@@ -358,14 +359,21 @@ pub(crate) fn propose_create_game(
         .iter()
         .map(|player| player_from_setup_input_for_script(game_file.script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
-    let warnings = validate_setup_warnings_for_script(game_file.script_id, &derived_players);
+    let warnings = validate_setup_warnings_for_script(
+        game_file.script_id,
+        &derived_players,
+        setup_choice_id.as_deref(),
+    )?;
     let count = players.len();
 
     Ok(Proposal {
         event: GameEvent {
             id: format!("setup-{}", game_file.game.events.len() + 1),
             kind: GameEventKind::SetupConfirmed {
-                payload: SetupEventPayload { players },
+                payload: SetupEventPayload {
+                    players,
+                    setup_choice_id,
+                },
             },
             phase: Phase::Setup,
             summary: setup_event_summary(count),

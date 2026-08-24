@@ -21,6 +21,8 @@
     "src/sectsAndVioletsCharacterAssets.ts",
     "src/sectsAndVioletsCharacterAssets.test.ts",
     "src/sectsAndVioletsCharacters.ts",
+    "src/badMoonRisingCharacters.ts",
+    "src/badMoonRisingCharacters.test.ts",
     "src/sectsAndVioletsCharacterRules.ts",
     "src/sectsAndVioletsCharacterRules.test.ts",
     "src/characterRules.ts",

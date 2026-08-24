@@ -18,6 +18,7 @@ import type {
   RevealPayload,
   SeatLayoutState,
   SetupDistribution,
+  SetupDistributionResult,
 } from "./core/types.js";
 import { scriptDisplayName, type ScriptId } from "./core/scripts.js";
 import {
@@ -212,7 +213,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
   const setupDistributionRequestKey = JSON.stringify(setupDistributionRequest);
   const setupExpectedCounts = useMemo(() => {
     const result = core.setupDistributionSync(setupDistributionRequest);
-    if (result?.ok) return result.value;
+    if (result?.ok && isSingleSetupDistribution(result.value)) return result.value;
     return asyncSetupExpectedCounts?.requestKey === setupDistributionRequestKey
       ? asyncSetupExpectedCounts.counts
       : undefined;
@@ -242,7 +243,7 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     const requestKey = setupDistributionRequestKey;
     core.setupDistribution(setupDistributionRequest)
       .then((result) => {
-        if (!cancelled && result.ok) {
+        if (!cancelled && result.ok && isSingleSetupDistribution(result.value)) {
           setAsyncSetupExpectedCounts({
             requestKey,
             counts: result.value,
@@ -718,6 +719,12 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
     importGameFile,
     exportGameFile: () => exportGameFileJson(gameFile),
   };
+}
+
+function isSingleSetupDistribution(
+  result: SetupDistributionResult,
+): result is SetupDistribution {
+  return !("options" in result);
 }
 
 function createTbSessionSnapshot(

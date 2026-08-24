@@ -1,6 +1,9 @@
 use crate::{
     characters::{character_kind, is_townsfolk},
-    contracts::{ScriptId, SetupDistribution, SetupDistributionRequest, SetupPlayerInput},
+    contracts::{
+        ScriptId, SetupDistribution, SetupDistributionRequest, SetupDistributionResult,
+        SetupPlayerInput,
+    },
     error::{CoreError, ErrorKind},
     messages::{duplicate_actual_character_warning, setup_distribution_warning},
     model::{CharacterKind, CoreWarning, Player},
@@ -8,13 +11,13 @@ use crate::{
 
 pub(crate) fn setup_distribution(
     request: SetupDistributionRequest,
-) -> Result<SetupDistribution, CoreError> {
+) -> Result<SetupDistributionResult, CoreError> {
     let rules = crate::characters::rules(request.script_id);
     if request.player_count < rules.minimum_player_count() || request.player_count > 15 {
         return Err(ErrorKind::InvalidPlayerCount.into_error());
     }
 
-    Ok(rules.adjust_setup_distribution(
+    Ok(rules.setup_distribution_result(
         base_distribution(request.player_count),
         &request.actual_characters,
     ))
@@ -29,11 +32,24 @@ pub(crate) fn validate_setup_inputs_for_script(
         return Err(ErrorKind::InvalidPlayerCount.into_error());
     }
 
+    if script_id == ScriptId::BadMoonRising {
+        for player in players {
+            if player.actual_character == "lunatic"
+                && !player
+                    .shown_character
+                    .as_deref()
+                    .is_some_and(|character| rules.is_demon(character))
+            {
+                return Err(ErrorKind::InvalidLunaticShownCharacter.into_error());
+            }
+        }
+    }
     validate_setup_input_contents(
         players,
         |character| rules.character_kind(character),
         |character| rules.is_townsfolk(character),
-    )
+    )?;
+    Ok(())
 }
 
 pub(crate) fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> {
@@ -87,6 +103,25 @@ pub(crate) fn normalized_setup_player_for_script(
     script_id: ScriptId,
     player: &SetupPlayerInput,
 ) -> Result<SetupPlayerInput, CoreError> {
+    if script_id == ScriptId::BadMoonRising && player.actual_character == "lunatic" {
+        let shown_character = player
+            .shown_character
+            .clone()
+            .filter(|character| crate::characters::rules(script_id).is_demon(character))
+            .ok_or_else(|| ErrorKind::InvalidLunaticShownCharacter.into_error())?;
+        return Ok(SetupPlayerInput {
+            id: Some(
+                player
+                    .id
+                    .clone()
+                    .unwrap_or_else(|| format!("player-{}", player.seat)),
+            ),
+            seat: player.seat,
+            name: player.name.trim().to_string(),
+            actual_character: player.actual_character.clone(),
+            shown_character: Some(shown_character),
+        });
+    }
     normalized_setup_player_with_townsfolk(player, |character| {
         crate::characters::rules(script_id).is_townsfolk(character)
     })
@@ -181,32 +216,39 @@ fn player_from_normalized_setup_input(
 pub(crate) fn validate_setup_warnings_for_script(
     script_id: ScriptId,
     players: &[Player],
-) -> Vec<CoreWarning> {
-    validate_setup_warnings_with_rules(
+    setup_choice_id: Option<&str>,
+) -> Result<Vec<CoreWarning>, CoreError> {
+    let actual_characters = players
+        .iter()
+        .map(|player| player.actual_character.clone())
+        .collect::<Vec<_>>();
+    let expected = crate::characters::rules(script_id).selected_setup_distribution(
+        base_distribution(players.len()),
+        &actual_characters,
+        setup_choice_id,
+    )?;
+    Ok(validate_setup_warnings_with_expected(
         players,
         |character| crate::characters::rules(script_id).character_kind(character),
-        |player_count, actual_characters| {
-            crate::characters::rules(script_id)
-                .adjust_setup_distribution(base_distribution(player_count), actual_characters)
-        },
-    )
+        expected,
+    ))
 }
 
 pub(crate) fn validate_setup_warnings(players: &[Player]) -> Vec<CoreWarning> {
-    validate_setup_warnings_with_rules(
-        players,
-        character_kind,
-        |player_count, actual_characters| {
-            crate::characters::rules(ScriptId::TroubleBrewing)
-                .adjust_setup_distribution(base_distribution(player_count), actual_characters)
-        },
-    )
+    let actual_characters = players
+        .iter()
+        .map(|player| player.actual_character.clone())
+        .collect::<Vec<_>>();
+    let expected = crate::characters::rules(ScriptId::TroubleBrewing)
+        .selected_setup_distribution(base_distribution(players.len()), &actual_characters, None)
+        .expect("Trouble Brewing has no explicit Setup choice");
+    validate_setup_warnings_with_expected(players, character_kind, expected)
 }
 
-fn validate_setup_warnings_with_rules(
+fn validate_setup_warnings_with_expected(
     players: &[Player],
     kind: impl Fn(&str) -> Option<CharacterKind>,
-    expected: impl Fn(usize, &[String]) -> SetupDistribution,
+    expected: SetupDistribution,
 ) -> Vec<CoreWarning> {
     if players.is_empty() {
         return Vec::new();
@@ -225,12 +267,6 @@ fn validate_setup_warnings_with_rules(
             }
             counts
         });
-    let actual_character_ids = players
-        .iter()
-        .map(|player| player.actual_character.clone())
-        .collect::<Vec<_>>();
-    let expected = expected(players.len(), &actual_character_ids);
-
     if actual != expected {
         warnings.push(setup_distribution_warning(&expected));
     }
@@ -266,10 +302,11 @@ pub(crate) fn expected_distribution(player_count: usize, has_baron: bool) -> Set
         vec![]
     };
     crate::characters::rules(ScriptId::TroubleBrewing)
-        .adjust_setup_distribution(base_distribution(player_count), &actual_characters)
+        .selected_setup_distribution(base_distribution(player_count), &actual_characters, None)
+        .expect("Trouble Brewing has no explicit Setup choice")
 }
 
-fn base_distribution(player_count: usize) -> SetupDistribution {
+pub(crate) fn base_distribution(player_count: usize) -> SetupDistribution {
     match player_count {
         5 => SetupDistribution {
             townsfolk: 3,

@@ -16,10 +16,12 @@ import type {
   Proposal,
   ReplayState,
   SetupDistribution,
+  SetupDistributionResult,
 } from "./types.js";
 import { isCharacterChangeRevealPayload, isEvilTwinPairRevealPayload, isMadnessAssignmentRevealPayload, isRevealPayload } from "./revealPayload.js";
 import { characters } from "../setupDraft.js";
 import { sectsAndVioletsCharacters } from "../sectsAndVioletsCharacters.js";
+import { badMoonRisingCharacters } from "../badMoonRisingCharacters.js";
 import { isScriptId } from "./scripts.js";
 import { eventDiscriminatorSet } from "./wireDiscriminators.js";
 import { numberChoiceIdentity } from "./numberChoice.js";
@@ -71,6 +73,7 @@ const inputTargets = new Set([
 const characterIds = new Set([
   ...characters.map((character) => character.id),
   ...sectsAndVioletsCharacters.map((character) => character.id),
+  ...badMoonRisingCharacters.map((character) => character.id),
 ]);
 const systemTokenIds = new Set(["drunk", "poisoned", "protected", "noAbility", "abilitySpent", "needsFollowUp"]);
 const scriptTokenKeys = new Set([
@@ -163,7 +166,12 @@ export function parseGameEvent(value: unknown): GameEvent {
       if (typeof payload.source !== "string") throw invalidEvent();
       break;
     case "setupConfirmed":
-      if (!Array.isArray(payload.players) || !payload.players.every(isSetupPlayer)) throw invalidEvent();
+      if (
+        !hasOnlyKeys(payload, ["players", "setupChoiceId"]) ||
+        !Array.isArray(payload.players) ||
+        !payload.players.every(isSetupPlayer) ||
+        (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId))
+      ) throw invalidEvent();
       break;
     case "phaseStepConfirmed":
       if (
@@ -559,6 +567,7 @@ export function parseReplayState(value: unknown): ReplayState {
     !isScriptId(value.scriptId) ||
     typeof value.eventCount !== "number" ||
     !isPhase(value.phase) ||
+    (value.setupChoiceId !== undefined && !isSetupChoiceId(value.setupChoiceId)) ||
     !Array.isArray(value.players) ||
     !value.players.every(isPlayer) ||
     !(value.currentStep === null || isPhaseStep(value.currentStep)) ||
@@ -612,16 +621,30 @@ export function parseProposal(value: unknown): Proposal {
   return { ...value, event } as Proposal;
 }
 
-export function parseSetupDistribution(value: unknown): SetupDistribution {
+export function parseSetupDistribution(value: unknown): SetupDistributionResult {
+  if (isSetupDistribution(value)) return value;
   if (
     !isRecord(value) ||
-    ![value.Townsfolk, value.Outsider, value.Minion, value.Demon].every(
-      (count) => typeof count === "number" && Number.isInteger(count),
+    !hasExactKeys(value, ["options"]) ||
+    !Array.isArray(value.options) ||
+    value.options.length < 1 ||
+    value.options.length > 2 ||
+    !value.options.every((option, index) =>
+      isRecord(option) &&
+      hasExactKeys(option, ["id", "distribution"]) &&
+      option.id === (index === 0 ? "addOutsider" : "removeOutsider") &&
+      isSetupDistribution(option.distribution)
     )
-  ) {
-    throw invalidCoreResponse();
-  }
-  return value as SetupDistribution;
+  ) throw invalidCoreResponse();
+  return value as SetupDistributionResult;
+}
+
+function isSetupDistribution(value: unknown): value is SetupDistribution {
+  return isRecord(value) &&
+    hasExactKeys(value, ["Townsfolk", "Outsider", "Minion", "Demon"]) &&
+    [value.Townsfolk, value.Outsider, value.Minion, value.Demon].every(
+      (count) => typeof count === "number" && Number.isInteger(count) && count >= 0,
+    );
 }
 
 export function parsePhaseInputSuggestion(value: unknown): PhaseInputSuggestion {
@@ -1863,6 +1886,10 @@ function isGameEndState(value: unknown): boolean {
 
 function isPhase(value: unknown): value is Phase {
   return typeof value === "string" && phases.has(value as Phase);
+}
+
+function isSetupChoiceId(value: unknown): value is "addOutsider" | "removeOutsider" {
+  return value === "addOutsider" || value === "removeOutsider";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
