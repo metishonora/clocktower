@@ -120,6 +120,10 @@ describe("promo card sample route", () => {
     "/invitation/260923/",
     "/clocktower/invitation/260923",
     "/clocktower/invitation/260923/",
+    "/invitation/260923-2",
+    "/invitation/260923-2/",
+    "/clocktower/invitation/260923-2",
+    "/clocktower/invitation/260923-2/",
   ])("matches the active Sects & Violets invitation path %s", (pathname) => {
     expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBe("sects-and-violets");
     expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
@@ -127,8 +131,10 @@ describe("promo card sample route", () => {
 
   test.each([
     "/invitation/260923.html",
+    "/invitation/260923-2.html",
     "/clocktower/invitation/260923-other",
     "/clocktower/invitation/260923/extra",
+    "/clocktower/invitation/260923-2/extra",
   ])("does not match another active invitation path %s", (pathname) => {
     expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
   });

@@ -69,6 +69,7 @@ export default defineConfig({
         invitation260813: `${webRoot}invitation/260813/index.html`,
         invitation260816: `${webRoot}invitation/260816/index.html`,
         invitation260923: `${webRoot}invitation/260923/index.html`,
+        invitation260923Variant2: `${webRoot}invitation/260923-2/index.html`,
         invitationSample: `${webRoot}invitation/sample/index.html`,
       },
     },
