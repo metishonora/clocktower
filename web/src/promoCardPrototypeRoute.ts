@@ -44,6 +44,8 @@ const ACTIVE_PRODUCTION_INVITATION_PATHS: Record<
   "sects-and-violets": [
     "/invitation/260923",
     "/clocktower/invitation/260923",
+    "/invitation/260923-2",
+    "/clocktower/invitation/260923-2",
   ],
 };
 
