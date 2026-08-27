@@ -36,6 +36,17 @@ const PRODUCTION_INVITATION_PATHS: Record<
   ],
 };
 
+const ACTIVE_PRODUCTION_INVITATION_PATHS: Record<
+  PromoCardProductionRoute,
+  readonly string[]
+> = {
+  "trouble-brewing": [],
+  "sects-and-violets": [
+    "/invitation/260923",
+    "/clocktower/invitation/260923",
+  ],
+};
+
 const EXPIRED_INVITATION_PROTOTYPE_PATHS: Record<
   Exclude<PromoCardRoute, "sample">,
   readonly string[]
@@ -82,6 +93,21 @@ export function resolvePromoCardProductionRoute(
   const pathname = normalizePathname(location.pathname);
 
   for (const [route, paths] of Object.entries(PRODUCTION_INVITATION_PATHS) as [
+    PromoCardProductionRoute,
+    readonly string[],
+  ][]) {
+    if (paths.includes(pathname)) return route;
+  }
+
+  return undefined;
+}
+
+export function resolveActivePromoCardProductionRoute(
+  location: LocationLike,
+): PromoCardProductionRoute | undefined {
+  const pathname = normalizePathname(location.pathname);
+
+  for (const [route, paths] of Object.entries(ACTIVE_PRODUCTION_INVITATION_PATHS) as [
     PromoCardProductionRoute,
     readonly string[],
   ][]) {

@@ -195,6 +195,21 @@ body {
   transition: transform 720ms cubic-bezier(.2, .72, .18, 1) 460ms;
 }
 
+.promoOpenHint {
+  position: absolute;
+  z-index: 10;
+  top: 140px;
+  right: 0;
+  left: 0;
+  margin: 0;
+  color: #ead8ef;
+  font: 650 34px/1.2 "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  letter-spacing: .005em;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(188, 132, 214, .4);
+  pointer-events: none;
+}
+
 .promoEnvelopeBase,
 .promoEnvelopeThroat,
 .promoEnvelopeTear,
@@ -386,10 +401,10 @@ body {
   animation: promoSealRelease 450ms cubic-bezier(.3, .62, .3, 1) 280ms both;
 }
 
-/* After the sealed invitation rests for a few seconds, the packet edge and
-   wax catch a restrained, candle-like glow. */
+/* After the sealed invitation rests, the packet edge and wax catch a
+   restrained, candle-like glow. */
 .promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope {
-  animation: promoEnvelopeIdleGlow 8s linear 3.5s infinite;
+  animation: promoEnvelopeIdleGlow 8s linear var(--promo-idle-glow-delay, 3.5s) infinite;
 }
 
 .promoCard.hasIdleGlowHint:not(.isOpen) .promoEnvelope::before {
@@ -405,11 +420,11 @@ body {
   content: "";
   opacity: 0;
   pointer-events: none;
-  animation: promoEnvelopeHalo 8s linear 3.5s infinite;
+  animation: promoEnvelopeHalo 8s linear var(--promo-idle-glow-delay, 3.5s) infinite;
 }
 
 .promoCard.hasIdleGlowHint:not(.isOpen) .promoSeal {
-  animation: promoSealIdleGlow 8s linear 3.5s infinite;
+  animation: promoSealIdleGlow 8s linear var(--promo-idle-glow-delay, 3.5s) infinite;
 }
 
 /* Trouble Brewing keeps the approved envelope and letter structure, but shifts
@@ -1269,6 +1284,95 @@ body {
 
 .promoCard--snv .promoEventDetails p {
   color: #5c4561;
+}
+
+.promoCard--snv.hasSpaciousCopy .promoLetterHeader {
+  font-size: 28px;
+}
+
+.promoCard--snv.hasSpaciousCopy .promoLetterCopy--tb {
+  margin-top: 28px;
+}
+
+.promoCard--snv.hasSpaciousCopy .promoLetterCopy--tb h1 {
+  margin-bottom: 18px;
+  font-size: 46px;
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+
+.promoCard--snv.hasSpaciousCopy .promoEventDetails {
+  gap: 4px;
+}
+
+.promoCard--snv.hasSpaciousCopy .promoEventDetails p {
+  font-size: 29px;
+  line-height: 1.14;
+}
+
+.promoVioletStamp {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 16px;
+  width: 74px;
+  height: 74px;
+  overflow: visible;
+  color: #572063;
+  opacity: .68;
+  filter: url("#promo-ink-distress");
+  mix-blend-mode: multiply;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+
+.promoVioletStamp circle,
+.promoVioletStamp path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.promoVioletStamp > circle:first-child {
+  stroke-width: 3.4;
+  stroke-dasharray: 42 7 91 5 63 10;
+}
+
+.promoVioletStamp > circle:nth-child(2) {
+  stroke-width: 1.4;
+  stroke-dasharray: 62 5 95 7;
+  opacity: .74;
+}
+
+.promoVioletStamp .promoVioletBloom path {
+  fill: currentColor;
+  stroke: none;
+  opacity: .66;
+}
+
+.promoVioletStamp .promoVioletBloom path:nth-child(even) {
+  opacity: .82;
+}
+
+.promoVioletStamp .promoVioletSigilFrame {
+  stroke-width: 1.9;
+  stroke-dasharray: 58 4 34 6 72 3;
+}
+
+.promoVioletStamp .promoVioletRuneTicks {
+  stroke-width: 2.8;
+}
+
+.promoVioletStamp .promoVioletSigilCore {
+  fill: #e2d4c0;
+  stroke-width: 2.2;
+}
+
+.promoVioletStamp .promoVioletThorns {
+  stroke-width: 2.5;
 }
 
 .promoCard--snv .promoAcceptanceLink {
