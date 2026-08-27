@@ -189,6 +189,55 @@ const DevIssue148TroubleBrewingAdaptationPrototype = import.meta.env.DEV
     })
   : undefined;
 
+const DevIssue179BadMoonRisingShellPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingShellPrototype");
+      return { default: module.Issue179BadMoonRisingShellPrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingGrimoirePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingGrimoirePrototype");
+      return { default: module.Issue179BadMoonRisingGrimoirePrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingConfirmedGrimoirePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingConfirmedGrimoirePrototype");
+      return { default: module.Issue179BadMoonRisingConfirmedGrimoirePrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingLunaticIdentityPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingLunaticIdentityPrototype");
+      return { default: module.Issue179BadMoonRisingLunaticIdentityPrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingZombuulStatePrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingZombuulStatePrototype");
+      return { default: module.Issue179BadMoonRisingZombuulStatePrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingFirstNightPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingFirstNightPrototype");
+      return { default: module.Issue179BadMoonRisingFirstNightPrototype };
+    })
+  : undefined;
+
+const DevIssue179BadMoonRisingOrderedDeathPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue179BadMoonRisingOrderedDeathPrototype");
+      return { default: module.Issue179BadMoonRisingOrderedDeathPrototype };
+    })
+  : undefined;
+
 const DevIssue150TroubleBrewingProgressPrototype = import.meta.env.DEV
   ? React.lazy(async () => {
       const module = await import("./issue150TroubleBrewingProgressPrototype");
@@ -380,6 +429,76 @@ type TroubleBrewingAttackCheckpoint = {
 };
 
 export function App(props: ClocktowerAppProps) {
+  if (
+    DevIssue179BadMoonRisingOrderedDeathPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-ordered-death"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingOrderedDeathPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingFirstNightPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-first-night"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingFirstNightPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingZombuulStatePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-zombuul-state"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingZombuulStatePrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingLunaticIdentityPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-lunatic-identity"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingLunaticIdentityPrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingConfirmedGrimoirePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-grimoire-confirmed"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingConfirmedGrimoirePrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingGrimoirePrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-grimoire"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingGrimoirePrototype />
+      </React.Suspense>
+    );
+  }
+  if (
+    DevIssue179BadMoonRisingShellPrototype &&
+    new URLSearchParams(window.location.search).get("prototype") === "issue-179-bmr-shell"
+  ) {
+    return (
+      <React.Suspense fallback={null}>
+        <DevIssue179BadMoonRisingShellPrototype />
+      </React.Suspense>
+    );
+  }
   if (
     DevIssue153ScarletWomanPrototype &&
     new URLSearchParams(window.location.search).get("prototype") === "issue-153-tb-scarlet-woman"
