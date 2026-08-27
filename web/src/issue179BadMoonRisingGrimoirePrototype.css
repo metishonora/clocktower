@@ -1,0 +1,333 @@
+.issue179BmrGrimoireShell .grimoirePresentation {
+  border-color: rgba(211, 136, 142, .16);
+  background: rgba(18, 6, 10, .7);
+  box-shadow: 0 22px 70px rgba(4, 0, 2, .4);
+}
+
+.issue179GrimoireToolbar button {
+  border-color: rgba(207, 104, 116, .24);
+  color: #ead8d9;
+  background: rgba(100, 23, 38, .28);
+}
+
+.issue179GrimoireBoard {
+  border-color: rgba(220, 116, 126, .42);
+  background:
+    radial-gradient(circle at center, rgba(153, 46, 61, .44), rgba(45, 11, 19, .9) 68%),
+    #2d0b13;
+  box-shadow: inset 0 0 42px rgba(139, 34, 49, .16);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button {
+  border-color: rgba(211, 136, 142, .24);
+  color: #fff4f1;
+  background: #321119;
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.unassigned {
+  border-color: rgba(218, 149, 154, .3);
+  color: #b99094;
+  background: rgba(72, 23, 32, .72);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(117, 174, 191, .64);
+  background: linear-gradient(145deg, #23333a, #321820);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(220, 88, 105, .8);
+  background: linear-gradient(145deg, #5b1a29, #2b1018);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button.selected,
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button[aria-pressed="true"] {
+  border-color: #e2bd72;
+  background: #6e2634;
+  box-shadow: 0 0 0 3px rgba(226, 189, 114, .16), 0 10px 30px rgba(16, 2, 6, .42);
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard .snvSeatNumber,
+.issue179BmrGrimoireShell .issue179GrimoireBoard > button small {
+  color: #c49ca0;
+}
+
+.issue179BmrGrimoireShell .issue179GrimoireBoard .snvSeatPlayerName {
+  color: #fff5f1;
+}
+
+.issue179CharacterMedallion.seat {
+  width: 39px;
+  height: 39px;
+  border-width: 1px;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .025);
+}
+
+.issue179CharacterMedallion.seat::after {
+  inset: 3px;
+}
+
+.issue179CharacterMedallion.seat > span {
+  font-size: .72rem;
+}
+
+.issue179EmptySeat {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  place-items: center;
+  border: 1px dashed rgba(219, 166, 170, .38);
+  border-radius: 50%;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.issue179GrimoireCenter {
+  border-color: rgba(218, 155, 161, .2);
+  color: #fff4ee;
+  background: rgba(37, 7, 13, .82);
+  box-shadow: 0 12px 36px rgba(9, 1, 3, .36);
+}
+
+.issue179GrimoireCenter span {
+  color: #bc9195;
+}
+
+.issue179AssignmentTray {
+  border-color: rgba(211, 136, 142, .16);
+  background: rgba(66, 14, 25, .22);
+}
+
+.issue179SelectedRosterTray button {
+  min-height: 48px;
+  border-color: rgba(211, 136, 142, .15);
+  color: #f0dddc;
+  background: rgba(255, 255, 255, .035);
+}
+
+.issue179SelectedRosterTray button.assigned {
+  border-color: rgba(207, 104, 116, .25);
+  background: rgba(115, 29, 44, .2);
+}
+
+.issue179SelectedRosterTray button[aria-pressed="true"],
+.issue179SelectedRosterTray button.selectedForSeat {
+  border-color: #dfbb73;
+  color: #fff8ec;
+  background: linear-gradient(135deg, #7e2032, #8d512b);
+  box-shadow: 0 0 0 2px rgba(223, 187, 115, .13);
+}
+
+.issue179SelectedRosterTray button > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.issue179SelectedRosterTray button strong {
+  overflow: hidden;
+  font-size: .7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue179SelectedRosterTray button small {
+  color: #a97f84;
+  font-size: .56rem;
+}
+
+.issue179SeatInspector {
+  background: rgba(111, 25, 40, .22);
+}
+
+.issue179SeatInspector input {
+  border-color: rgba(211, 136, 142, .22);
+  color: #fff5f1;
+  background: rgba(13, 3, 6, .44);
+}
+
+.issue179BmrGrimoireShell .snvConfirmSeating.floatingAction:not(:disabled) {
+  border-color: #e6c47d;
+  color: #2b170d;
+  background: linear-gradient(135deg, #f0d79b, #cf9b4d);
+  box-shadow: 0 14px 34px rgba(164, 104, 36, .34);
+}
+
+.issue179BmrGrimoireShell .snvConfirmSeating.floatingAction:disabled {
+  border-color: rgba(211, 136, 142, .16);
+  color: #a57e84;
+  background: rgba(42, 15, 22, .96);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .grimoirePresentation {
+  border-color: rgba(93, 20, 33, .14);
+  background: rgba(255, 250, 246, .72);
+  box-shadow: 0 22px 70px rgba(74, 34, 35, .14);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireToolbar button {
+  border-color: rgba(105, 35, 46, .17);
+  color: #63343c;
+  background: rgba(117, 38, 48, .07);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard {
+  border-color: rgba(105, 35, 46, .18);
+  background: #eee1dc;
+  box-shadow: none;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.unassigned {
+  border-color: rgba(105, 35, 46, .2);
+  color: #8b6970;
+  background: #efe2df;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(52, 143, 177, .58);
+  color: #312329;
+  background: linear-gradient(145deg, #fbfefe, #e1eff0);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(176, 55, 76, .62);
+  color: #3a1d24;
+  background: linear-gradient(145deg, #fff9f8, #f2d9dc);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button.selected,
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button[aria-pressed="true"] {
+  border-color: #8c3544;
+  background: #ead4d5;
+  box-shadow: 0 0 0 3px rgba(140, 53, 68, .12), 0 9px 24px rgba(73, 31, 40, .12);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard .snvSeatPlayerName {
+  color: #302126;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard .snvSeatNumber,
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireBoard > button small {
+  color: #795c63;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireCenter {
+  border-color: rgba(105, 35, 46, .18);
+  color: #3b2026;
+  background: #f4e7e3;
+  box-shadow: 0 8px 22px rgba(73, 31, 40, .11);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179GrimoireCenter span {
+  color: #75575e;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179AssignmentTray,
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SeatInspector {
+  border-color: rgba(105, 35, 46, .13);
+  background: rgba(117, 38, 48, .06);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SelectedRosterTray button {
+  border-color: rgba(105, 35, 46, .13);
+  color: #4b2d34;
+  background: rgba(255, 255, 255, .48);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SelectedRosterTray button.assigned {
+  background: rgba(117, 38, 48, .08);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SelectedRosterTray button[aria-pressed="true"],
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SelectedRosterTray button.selectedForSeat {
+  border-color: #8c3544;
+  color: #fff9f4;
+  background: linear-gradient(135deg, #7b1f31, #a35d35);
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SelectedRosterTray button small {
+  color: inherit;
+  opacity: .7;
+}
+
+.issue179BmrGrimoireShell[data-theme="day"] .issue179SeatInspector input {
+  border-color: rgba(105, 35, 46, .16);
+  color: #3a2228;
+  background: rgba(255, 255, 255, .58);
+}
+
+@media (min-width: 600px) {
+  .issue179GrimoireSurface.assignmentStarted {
+    padding-bottom: 28px;
+  }
+
+  .issue179SeatingActions {
+    min-height: 60px;
+    margin-top: 20px;
+    justify-content: center;
+  }
+
+  .issue179SeatingActions .snvConfirmSeating.floatingAction {
+    position: static;
+    width: min(380px, 100%);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 780px) {
+  .issue179BmrGrimoireShell {
+    padding-bottom: 104px;
+  }
+
+  .issue179GrimoireSurface {
+    padding-bottom: 28px !important;
+  }
+
+  .issue179AssignmentTray.mobileOpen {
+    border-color: rgba(211, 136, 142, .22);
+    background: #2b0f17;
+  }
+
+  .issue179BmrGrimoireShell[data-theme="day"] .issue179AssignmentTray.mobileOpen {
+    background: #f2e5e1;
+  }
+
+  .issue179SelectedRosterTray {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .issue179SelectedRosterTray button {
+    min-height: 40px;
+  }
+
+  .issue179SelectedRosterTray .issue179CharacterMedallion.compact {
+    width: 24px;
+    height: 24px;
+  }
+
+  .issue179SelectedRosterTray .issue179CharacterMedallion.compact > span {
+    font-size: .58rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .issue179GrimoireSurface {
+    padding: 14px !important;
+  }
+
+  .issue179GrimoireToolbar {
+    gap: 5px;
+  }
+
+  .issue179GrimoireToolbar button {
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: .64rem;
+  }
+
+  .issue179SelectedRosterTray {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
