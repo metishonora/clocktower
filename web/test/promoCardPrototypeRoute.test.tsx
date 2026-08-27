@@ -4,6 +4,7 @@ import {
   isPublishedPromoCardSampleRequest,
   isPromoCardProductionRequest,
   resolvePromoCardDesign,
+  resolveActivePromoCardProductionRoute,
   resolveExpiredInvitationPrototypeRoute,
   resolvePromoCardProductionRoute,
   resolvePromoCardRoute,
@@ -112,6 +113,24 @@ describe("promo card sample route", () => {
   ])("matches the production invitation path %s", (pathname) => {
     expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBe("trouble-brewing");
     expect(isPromoCardProductionRequest({ pathname, search: "" })).toBe(true);
+  });
+
+  test.each([
+    "/invitation/260923",
+    "/invitation/260923/",
+    "/clocktower/invitation/260923",
+    "/clocktower/invitation/260923/",
+  ])("matches the active Sects & Violets invitation path %s", (pathname) => {
+    expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBe("sects-and-violets");
+    expect(resolvePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
+  });
+
+  test.each([
+    "/invitation/260923.html",
+    "/clocktower/invitation/260923-other",
+    "/clocktower/invitation/260923/extra",
+  ])("does not match another active invitation path %s", (pathname) => {
+    expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();
   });
 
   test.each([
