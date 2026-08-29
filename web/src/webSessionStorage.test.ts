@@ -13,13 +13,20 @@ test("web session storage atomically preserves canonical, draft and presentation
   const idb = new IDBFactory();
   const tb = new IndexedDbWebSessionStorageDriver("troubleBrewing", idb);
   const snv = new IndexedDbWebSessionStorageDriver("sectsAndViolets", idb);
+  const bmr = new IndexedDbWebSessionStorageDriver("badMoonRising", idb);
   const tbSession = snapshot("troubleBrewing", { playerCount: 7 }, { activeTab: "roles" });
   const snvSession = snapshot("sectsAndViolets", { playerCount: 9 }, { activeTab: "seating" });
+  const bmrSession = snapshot("badMoonRising", { playerCount: 15 }, { activeTab: "play" });
 
-  await Promise.all([saveWebSession(tbSession, tb), saveWebSession(snvSession, snv)]);
+  await Promise.all([
+    saveWebSession(tbSession, tb),
+    saveWebSession(snvSession, snv),
+    saveWebSession(bmrSession, bmr),
+  ]);
 
   assert.deepEqual(await loadWebSession(tb), tbSession);
   assert.deepEqual(await loadWebSession(snv), snvSession);
+  assert.deepEqual(await loadWebSession(bmr), bmrSession);
 });
 
 test("web session storage replaces one complete snapshot and rejects script mismatch", async () => {

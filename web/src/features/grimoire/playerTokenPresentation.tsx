@@ -158,6 +158,7 @@ export function PlayerTokenDetailDialog({
   tokens,
   theme,
   characterDetails,
+  characterIcon,
   identityDetails,
   details,
   appearance = "snv",
@@ -167,9 +168,10 @@ export function PlayerTokenDetailDialog({
   tokens: readonly PlayerTokenPresentation[];
   theme: "day" | "night";
   characterDetails?: CharacterDetail;
+  characterIcon?: ReactNode;
   identityDetails?: ReactNode;
   details?: ReactNode;
-  appearance?: "snv" | "tb";
+  appearance?: "snv" | "tb" | "bmr";
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -204,9 +206,16 @@ export function PlayerTokenDetailDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [characterDetailOpen, onClose]);
 
+  const characterIdentity = <>
+    {player.characterIconSrc
+      ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} />
+      : characterIcon}
+    <strong>{player.characterLabel}</strong>
+  </>;
+
   return createPortal(
     <div
-      className={`playerTokenDetailBackdrop ${theme}${appearance === "tb" ? " tbTheme" : ""}`}
+      className={`playerTokenDetailBackdrop ${theme}${appearance === "tb" ? " tbTheme" : appearance === "bmr" ? " bmrTheme" : ""}`}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
@@ -217,17 +226,17 @@ export function PlayerTokenDetailDialog({
         aria-label={`${player.seat}번 ${player.name} 플레이어 상세`}
       >
         <header>
-          <CharacterDetailButton
+          {characterDetails ? <CharacterDetailButton
             details={characterDetails}
             className="playerTokenCharacterIdentityButton"
             theme={appearance === "tb"
               ? (theme === "day" ? "tb-day" : "tb-night")
               : (theme === "day" ? "snv-day" : "snv-night")}
             onOpenChange={setCharacterDetailOpen}
-          >
-            {player.characterIconSrc ? <img src={player.characterIconSrc} alt={`${player.characterLabel} 공식 캐릭터 아이콘`} /> : null}
-            <strong>{player.characterLabel}</strong>
-          </CharacterDetailButton>
+          >{characterIdentity}</CharacterDetailButton> : <div
+            className="playerTokenCharacterIdentityButton"
+            aria-label={`${player.characterLabel} 직업`}
+          >{characterIdentity}</div>}
           <div>
             <span>좌석 {player.seat} · {player.characterKindLabel}</span>
             <h2>{player.name}</h2>
