@@ -1,0 +1,1024 @@
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+.bmrProductionShell {
+  --bmr-red: #c84d63;
+  --bmr-deep-red: #7c1f34;
+  --bmr-gold: #e9c36e;
+  color: #fff5f1;
+  background:
+    radial-gradient(circle at 76% 5%, rgba(196, 53, 76, .3), transparent 28%),
+    linear-gradient(145deg, #21070d 0%, #3b0914 49%, #120408 100%);
+}
+
+.bmrProductionShell::before {
+  background:
+    radial-gradient(circle at 76% 4%, rgba(242, 191, 91, .42), transparent 25%),
+    radial-gradient(circle at 18% 30%, rgba(255, 255, 255, .62), transparent 34%),
+    linear-gradient(145deg, #e7d5c3 0%, #f7eee1 48%, #ddc3b2 100%);
+}
+
+.bmrProductionShell[data-theme="day"] {
+  color: #3b2026;
+}
+
+.bmrProductionShell .productionApplicationEyebrow,
+.bmrProductionShell .snvEyebrow {
+  color: #dc929c;
+}
+
+.bmrProductionShell[data-theme="day"] .productionApplicationEyebrow,
+.bmrProductionShell[data-theme="day"] .snvEyebrow {
+  color: #8f3a4c;
+}
+
+.bmrProductionShell .productionApplicationHeader p {
+  color: #c9a5a9;
+}
+
+.bmrProductionShell[data-theme="day"] .productionApplicationHeader p {
+  color: #76545b;
+}
+
+.bmrSkyDisc {
+  position: absolute;
+  z-index: 0;
+  top: clamp(24px, 4vw, 54px);
+  right: max(clamp(104px, 13vw, 190px), calc((100vw - 1180px) / 2 + 104px));
+  display: block;
+  width: clamp(64px, 8vw, 92px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ca4258;
+  box-shadow: 0 0 24px rgba(210, 58, 84, .62), 0 0 76px rgba(159, 21, 48, .42);
+  pointer-events: none;
+}
+
+.bmrSkyDisc.day {
+  background: #e8b94e;
+  box-shadow: 0 0 24px rgba(240, 191, 76, .66), 0 0 74px rgba(212, 139, 37, .35);
+}
+
+.bmrHeader,
+.bmrHeaderActions {
+  position: relative;
+  z-index: 1;
+}
+
+.bmrProductionShell .snvGlobalUndo {
+  border-color: rgba(225, 103, 123, .55);
+  color: #ffabb7;
+  background: rgba(118, 21, 42, .66);
+}
+
+.bmrProductionShell[data-theme="day"] .snvGlobalUndo {
+  border-color: rgba(128, 40, 57, .3);
+  color: #852d40;
+  background: rgba(255, 255, 255, .52);
+}
+
+.bmrOperationError,
+.bmrLoading {
+  box-sizing: border-box;
+  width: min(1180px, 100%);
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(235, 101, 120, .5);
+  border-radius: 14px;
+  color: #ffd9df;
+  background: rgba(115, 18, 39, .48);
+  font-weight: 750;
+}
+
+.bmrLoading {
+  border-color: rgba(222, 168, 174, .24);
+  color: #d8bdc0;
+  text-align: center;
+}
+
+.bmrSetupSurface {
+  padding-bottom: 200px;
+}
+
+.bmrSetupSurface.hasGodfather {
+  padding-bottom: 236px;
+}
+
+.bmrSetupControls,
+.bmrCatalog,
+.bmrGrimoireSurface,
+.bmrPlaySurface,
+.bmrStorage {
+  border-color: rgba(224, 156, 164, .18) !important;
+  background: rgba(42, 8, 16, .68) !important;
+  box-shadow: 0 22px 70px rgba(8, 0, 3, .34) !important;
+}
+
+.bmrProductionShell[data-theme="day"] :is(.bmrSetupControls, .bmrCatalog, .bmrGrimoireSurface, .bmrPlaySurface, .bmrStorage) {
+  border-color: rgba(112, 41, 54, .17) !important;
+  color: #3b2026;
+  background: rgba(255, 249, 243, .78) !important;
+  box-shadow: 0 20px 54px rgba(91, 45, 38, .16) !important;
+}
+
+.bmrProductionShell[data-theme="day"] .bmrDemonChoices button,
+.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button {
+  border-color: rgba(93, 20, 33, .16);
+  color: #4c3035;
+  background: rgba(255, 255, 255, .45);
+}
+
+.bmrProductionShell[data-theme="day"] .bmrDemonChoices button[aria-pressed="true"],
+.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button[aria-pressed="true"] {
+  border-color: #82283a;
+  color: #fff8f4;
+  background: linear-gradient(135deg, #7b1b2d, #a63d49);
+}
+
+.bmrPlayerCounts button[aria-pressed="true"],
+.bmrProductionShell .bmrCatalog article button.selected {
+  border-color: #e19a9f;
+  background: #8e293e;
+  box-shadow: 0 8px 24px rgba(101, 12, 34, .36);
+}
+
+.bmrDemonChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bmrDemonChoices button {
+  display: flex;
+  min-height: 58px;
+  padding: 7px 10px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(226, 163, 171, .2);
+  border-radius: 14px;
+  color: inherit;
+  background: rgba(255, 255, 255, .035);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bmrDemonChoices button[aria-pressed="true"] {
+  border-color: #cf6874;
+  color: #fff9f7;
+  background: linear-gradient(135deg, rgba(120, 25, 42, .94), rgba(78, 17, 29, .8));
+  box-shadow: inset 0 0 0 1px rgba(255, 194, 190, .08), 0 10px 26px rgba(71, 5, 18, .3);
+}
+
+.bmrDemonChoices strong {
+  font-size: .78rem;
+}
+
+.bmrSetupChoiceReveal {
+  display: grid;
+  margin-top: 0;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .42s cubic-bezier(.22, .8, .24, 1),
+    margin-top .42s cubic-bezier(.22, .8, .24, 1), opacity .22s ease;
+}
+
+.bmrSetupChoiceReveal.visible {
+  margin-top: 24px;
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.bmrSetupChoiceReveal > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bmrSetupChoice {
+  display: grid;
+  padding: 16px;
+  gap: 12px;
+  border: 1px solid rgba(226, 130, 143, .36);
+  border-radius: 20px;
+  background: rgba(141, 35, 56, .16);
+}
+
+.bmrSetupChoiceTitle {
+  display: grid;
+  gap: 4px;
+}
+
+.bmrSetupChoiceTitle span {
+  color: #d5a4aa;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.bmrSetupChoiceTitle strong {
+  font-size: .92rem;
+}
+
+.bmrSetupChoiceOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bmrSetupChoiceOptions button {
+  display: grid;
+  min-height: 66px;
+  padding: 9px 10px;
+  place-content: center;
+  gap: 3px;
+  border: 1px solid rgba(226, 163, 171, .25);
+  border-radius: 14px;
+  color: inherit;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.bmrSetupChoiceOptions button[aria-pressed="true"] {
+  border-color: var(--bmr-gold);
+  color: #fff8e8;
+  background: linear-gradient(135deg, rgba(111, 26, 40, .94), rgba(138, 75, 39, .62));
+  box-shadow: 0 0 0 2px rgba(217, 180, 108, .12);
+}
+
+.bmrSetupChoiceOptions button strong {
+  font-size: .78rem;
+}
+
+.bmrSetupChoiceOptions button span {
+  color: inherit;
+  font-size: .66rem;
+  opacity: .75;
+}
+
+.bmrProductionShell .snvDistributionCard.emphasized {
+  border-color: rgba(218, 138, 148, .42);
+  background: rgba(139, 38, 57, .18);
+}
+
+.bmrProductionShell .snvConfirmRoster.prominent:not(:disabled),
+.bmrProductionShell .snvStepActions button:first-child {
+  border-color: var(--bmr-gold);
+  color: #2c1608;
+  background: linear-gradient(135deg, #f3d78f, #d7a54d);
+  box-shadow: 0 14px 34px rgba(195, 126, 35, .28);
+}
+
+.bmrCharacterMedallion {
+  display: grid;
+  width: 64px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--kind-color, #d9a9af);
+  border-radius: 50%;
+  color: #fff8f4;
+  background: radial-gradient(circle at 36% 30%, color-mix(in srgb, var(--kind-color) 62%, #fff 10%), color-mix(in srgb, var(--kind-color) 44%, #21070d));
+  box-shadow: inset 0 0 0 4px rgba(25, 5, 10, .44), 0 6px 18px rgba(4, 0, 1, .32);
+  font: 800 .86rem Georgia, "Noto Serif KR", serif;
+  text-align: center;
+}
+
+.bmrCharacterMedallion.compact {
+  width: 34px;
+  font-size: .58rem;
+}
+
+.bmrCharacterMedallion.seat {
+  box-sizing: border-box;
+  width: 44px;
+  justify-self: center;
+  font-size: .66rem;
+}
+
+.bmrCharacterMedallion.kind-townsfolk { --kind-color: #4fa6c8; }
+.bmrCharacterMedallion.kind-outsider { --kind-color: #8b70c7; }
+.bmrCharacterMedallion.kind-minion { --kind-color: #c47845; }
+.bmrCharacterMedallion.kind-demon { --kind-color: #c83e56; }
+
+.bmrRoleDetail {
+  border-color: rgba(218, 132, 143, .38);
+  background: linear-gradient(135deg, rgba(117, 26, 43, .92), rgba(52, 9, 18, .94));
+}
+
+.bmrMobileGodfatherAdjustment {
+  display: none;
+}
+
+.bmrRoleDetailActions small {
+  display: block;
+  margin-top: 2px;
+  font-size: .66rem;
+  opacity: .7;
+}
+
+.bmrProductionShell[data-theme="day"] .bmrRoleDetail {
+  color: #3b2026;
+  background: linear-gradient(135deg, rgba(251, 234, 223, .96), rgba(241, 214, 207, .96));
+}
+
+.bmrGrimoireWorkspace {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.bmrGrimoireWorkspace.confirmed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bmrGrimoireBoard {
+  border-color: rgba(211, 111, 127, .35) !important;
+  background: radial-gradient(circle, rgba(135, 32, 51, .28), rgba(24, 4, 10, .88)) !important;
+}
+
+.bmrProductionShell[data-theme="day"] .bmrGrimoireBoard {
+  background: radial-gradient(circle, rgba(175, 78, 91, .13), rgba(246, 229, 218, .92)) !important;
+}
+
+.bmrGrimoireBoard > button.assigned.alignment-good {
+  border-color: rgba(90, 177, 208, .72);
+  background: linear-gradient(145deg, #183845, #2d2635);
+}
+
+.bmrGrimoireBoard > button.assigned.alignment-evil {
+  border-color: rgba(225, 92, 113, .8);
+  background: linear-gradient(145deg, #551b2a, #2b111a);
+}
+
+.bmrGrimoireBoard > button.selected {
+  border-color: var(--bmr-gold) !important;
+  box-shadow: 0 0 0 3px rgba(236, 192, 97, .18), 0 8px 28px rgba(8, 0, 2, .4) !important;
+}
+
+.bmrGrimoireBoard > button.needsShownCharacter {
+  border-color: #f0ce78 !important;
+  box-shadow: 0 0 0 3px rgba(240, 206, 120, .2), 0 8px 28px rgba(8, 0, 2, .4) !important;
+}
+
+.bmrGrimoireBoard > button.needsShownCharacter small {
+  color: #ffe39a;
+}
+
+.bmrEmptySeat {
+  color: #b7888f;
+  font-size: 1.5rem;
+}
+
+.bmrSeatingTray {
+  min-height: 210px;
+  border-color: rgba(224, 145, 155, .2) !important;
+  background: rgba(255, 255, 255, .035) !important;
+}
+
+.bmrSeatInspector {
+  display: grid;
+  height: auto;
+  min-height: 96px;
+  gap: 14px;
+  overflow: visible;
+}
+
+.bmrSeatInspector header {
+  display: grid;
+  grid-template-columns: auto 1fr 34px;
+  gap: 8px;
+  align-items: center;
+}
+
+.bmrSeatInspector header span,
+.bmrSeatInspector label {
+  color: #c99fa5;
+  font-size: .7rem;
+  font-weight: 850;
+}
+
+.bmrSeatInspector header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(224, 157, 166, .2);
+  border-radius: 50%;
+  color: inherit;
+  background: rgba(255, 255, 255, .05);
+  font-size: 1.2rem;
+}
+
+.bmrSeatInspector label {
+  display: grid;
+  gap: 6px;
+}
+
+.bmrSeatInspector input,
+.bmrSeatInspector select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid rgba(224, 157, 166, .2);
+  border-radius: 10px;
+  color: inherit;
+  background: rgba(255, 255, 255, .06);
+  font: inherit;
+}
+
+.bmrRosterTray button {
+  position: relative;
+  grid-template-columns: 34px minmax(0, 1fr) auto !important;
+  transition: opacity .16s ease, filter .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.bmrRosterTray button.assigned:not(.selectedForSeat) {
+  opacity: .52;
+  border-color: rgba(202, 158, 166, .2);
+  background: rgba(15, 4, 8, .52);
+  filter: saturate(.55);
+}
+
+.bmrRosterTray button.selectedForSeat,
+.bmrRosterTray button[aria-pressed="true"] {
+  z-index: 1;
+  opacity: 1;
+  border-color: #f0ce78;
+  color: #fffdf7;
+  background: linear-gradient(135deg, #8f4058, #652238);
+  box-shadow: 0 0 0 2px rgba(240, 206, 120, .28), 0 8px 20px rgba(8, 0, 2, .34);
+  filter: none;
+}
+
+.bmrRosterTray button.compact .bmrCharacterMedallion {
+  box-sizing: border-box;
+  width: 20px;
+  border-width: 1px;
+  box-shadow: inset 0 0 0 2px rgba(25, 5, 10, .28);
+  font-size: .46rem;
+}
+
+.bmrLunaticShownField {
+  display: grid;
+  gap: 6px;
+}
+
+.bmrLunaticShownField.required > span {
+  color: #ffe39a;
+}
+
+.bmrLunaticShownField select[aria-invalid="true"] {
+  border-color: #f0ce78;
+  box-shadow: 0 0 0 2px rgba(240, 206, 120, .16);
+}
+
+.bmrSeatingValidation {
+  margin: 0;
+  color: #ffe39a;
+  font-size: .76rem;
+  font-weight: 850;
+}
+
+.playerTokenDetailBackdrop.bmrTheme {
+  background: rgba(10, 1, 4, .66);
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenDetailDialog {
+  border-left-color: rgba(211, 136, 142, .26);
+  color: #fff5f1;
+  background: linear-gradient(160deg, #250a12, #3b111c);
+  box-shadow: -24px 0 70px rgba(7, 0, 2, .58);
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenDetailDialog > header {
+  border-bottom-color: rgba(211, 136, 142, .14);
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterIdentityButton {
+  cursor: default;
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterIdentityButton .bmrCharacterMedallion {
+  box-sizing: border-box;
+  width: 68px;
+  border-width: 1px;
+  box-shadow: inset 0 0 0 3px rgba(25, 5, 10, .32), 0 4px 12px rgba(4, 0, 1, .24);
+  font-size: .76rem;
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterIdentityButton > strong,
+.playerTokenDetailBackdrop.bmrTheme .playerTokenDetailDialog > header strong {
+  color: #e1b8bc;
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenDetailDialog > header span,
+.playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterSummary > span {
+  color: #c49ca0;
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterSummary p {
+  color: #e2ced0;
+}
+
+.playerTokenDetailBackdrop.bmrTheme .playerTokenDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(211, 136, 142, .24);
+  color: #fff5f1;
+  background: rgba(255, 255, 255, .045);
+}
+
+.bmrLunaticIdentityComparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bmrLunaticIdentityComparison article {
+  display: grid;
+  min-width: 0;
+  padding: 12px;
+  gap: 10px;
+  border: 1px solid rgba(211, 136, 142, .18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.bmrLunaticIdentityComparison article.actual {
+  border-color: rgba(117, 174, 191, .3);
+  background: rgba(57, 105, 117, .12);
+}
+
+.bmrLunaticIdentityComparison article.shown {
+  border-color: rgba(220, 88, 105, .3);
+  background: rgba(126, 33, 49, .17);
+}
+
+.bmrLunaticIdentityComparison article > span {
+  color: #bc9195;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.bmrLunaticIdentityComparison article > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.bmrLunaticIdentityComparison .bmrCharacterMedallion {
+  width: 48px;
+  font-size: .68rem;
+}
+
+.bmrLunaticIdentityComparison p {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  gap: 3px;
+}
+
+.bmrLunaticIdentityComparison p strong {
+  overflow: hidden;
+  color: #fff5f1;
+  font: 1rem Georgia, "Noto Serif KR", serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bmrLunaticIdentityComparison p small {
+  color: #b99094;
+  font-size: .58rem;
+  font-weight: 800;
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day {
+  background: rgba(55, 31, 37, .48);
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenDetailDialog {
+  border-left-color: rgba(105, 35, 46, .24);
+  color: #382126;
+  background: linear-gradient(160deg, #fff9f5, #f1dfdc);
+  box-shadow: -24px 0 70px rgba(73, 31, 40, .26);
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenDetailDialog > header {
+  border-bottom-color: rgba(105, 35, 46, .14);
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenCharacterIdentityButton > strong,
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenDetailDialog > header strong {
+  color: #7c2d3c;
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenDetailDialog > header span,
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenCharacterSummary > span,
+.playerTokenDetailBackdrop.bmrTheme.day .bmrLunaticIdentityComparison article > span,
+.playerTokenDetailBackdrop.bmrTheme.day .bmrLunaticIdentityComparison p small {
+  color: #704e55;
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenCharacterSummary p {
+  color: #4d3439;
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .playerTokenDetailDialog > header .playerTokenDetailClose {
+  border-color: rgba(105, 35, 46, .22);
+  color: #4a2830;
+  background: rgba(255, 255, 255, .68);
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .bmrLunaticIdentityComparison article {
+  border-color: rgba(105, 35, 46, .14);
+  background: rgba(255, 255, 255, .46);
+}
+
+.playerTokenDetailBackdrop.bmrTheme.day .bmrLunaticIdentityComparison p strong {
+  color: #3f252b;
+}
+
+.bmrPlaySurface {
+  max-width: 1180px !important;
+}
+
+.bmrPlayPrimary {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.bmrCurrentStep {
+  border-color: rgba(216, 119, 132, .26) !important;
+  background: rgba(255, 255, 255, .04) !important;
+}
+
+.bmrCurrentIdentity {
+  display: grid;
+  margin: 12px 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+}
+
+.bmrCurrentIdentity > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.bmrCurrentIdentity > span > span {
+  color: #c99ca3;
+  font-size: .72rem;
+  font-weight: 850;
+}
+
+.bmrCurrentIdentity strong {
+  overflow: hidden;
+  font: 1.35rem Georgia, "Noto Serif KR", serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bmrAbilitySummary {
+  color: #dbc7c9;
+  line-height: 1.7;
+}
+
+.bmrTransitionStep h3,
+.bmrEvilInformationTask h3 {
+  margin: 8px 0 12px;
+  font: 1.8rem Georgia, "Noto Serif KR", serif;
+}
+
+.bmrBluffGrid {
+  display: grid;
+  max-height: 330px;
+  margin: 18px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.bmrBluffGrid button {
+  display: grid;
+  min-width: 0;
+  padding: 9px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  border: 1px solid rgba(222, 148, 158, .2);
+  border-radius: 12px;
+  color: inherit;
+  background: rgba(255, 255, 255, .04);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.bmrBluffGrid button[aria-pressed="true"] {
+  border-color: var(--bmr-gold);
+  background: rgba(157, 99, 35, .34);
+}
+
+.bmrPhaseOrder {
+  overflow: visible !important;
+}
+
+.bmrPhaseOrder li.current {
+  border-color: #e4b953 !important;
+  background: rgba(151, 88, 25, .22) !important;
+}
+
+.bmrRevealBackdrop {
+  position: fixed;
+  z-index: 320;
+  inset: 0;
+  display: grid;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  place-items: center;
+  color: #fff7f2;
+  background: radial-gradient(circle at 50% 20%, #6b1729, #18040a 66%);
+}
+
+.bmrReveal {
+  display: grid;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 40px);
+  gap: 26px;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.bmrReveal h1 {
+  margin: 0;
+  font: clamp(2rem, 6vw, 4rem) Georgia, "Noto Serif KR", serif;
+}
+
+.bmrReveal h2 {
+  color: #d9aeb4;
+  font-size: .82rem;
+  letter-spacing: .08em;
+}
+
+.bmrRevealPlayers,
+.bmrRevealBluffs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.bmrRevealPlayers article,
+.bmrRevealBluffs article {
+  display: grid;
+  min-width: 120px;
+  padding: 16px;
+  place-items: center;
+  gap: 8px;
+  border: 1px solid rgba(235, 177, 184, .28);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .05);
+}
+
+.bmrReveal > button {
+  min-height: 54px;
+  border: 1px solid var(--bmr-gold);
+  border-radius: 999px;
+  color: #2b1609;
+  background: linear-gradient(135deg, #f1d486, #d8a64f);
+  font: inherit;
+  font-weight: 900;
+}
+
+.bmrStorage {
+  box-sizing: border-box;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid;
+  border-radius: 28px;
+}
+
+.bmrStorage h2 {
+  margin-top: 0;
+  font: 2rem Georgia, serif;
+}
+
+.bmrStorage > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.bmrStorage button,
+.bmrConfirmDialog button {
+  min-height: 44px;
+  padding: 10px 15px;
+  border: 1px solid rgba(222, 149, 159, .28);
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, .055);
+  font: inherit;
+  font-weight: 850;
+}
+
+.bmrConfirmDialog {
+  width: min(440px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(224, 89, 109, .46);
+  border-radius: 24px;
+  color: #fff5f1;
+  background: #310b15;
+  box-shadow: 0 28px 90px rgba(7, 0, 2, .62);
+}
+
+.bmrConfirmDialog h2 {
+  margin-top: 0;
+}
+
+.bmrConfirmDialog p {
+  color: #d8bdc0;
+  line-height: 1.6;
+}
+
+.bmrConfirmDialog > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bmrConfirmDialog .snvDestructiveAction {
+  border-color: #db5d72;
+  color: #fff;
+  background: #a62d43;
+}
+
+@media (max-width: 900px) {
+  .bmrSkyDisc {
+    right: 112px;
+  }
+
+  .bmrSetupSurface {
+    padding-bottom: 210px;
+  }
+
+  .bmrGrimoireWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .bmrSeatingTray.mobileCollapsed {
+    display: none;
+  }
+
+  .bmrSeatingTray.mobileOpen {
+    position: fixed;
+    z-index: 210;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    width: auto;
+    height: auto;
+    max-height: min(430px, calc(100dvh - 20px));
+    padding: 14px max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    border-radius: 24px 24px 0 0;
+    color: #fff5f1;
+    background: #310b15 !important;
+    box-shadow: 0 -22px 70px rgba(0, 0, 0, .62) !important;
+    overflow: auto;
+  }
+
+}
+
+@media (max-width: 780px) {
+  .bmrPlayPrimary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .playerTokenDetailBackdrop.bmrTheme .playerTokenCharacterIdentityButton .bmrCharacterMedallion {
+    width: 54px;
+    font-size: .64rem;
+  }
+
+  .bmrGrimoireBoard > button .bmrCharacterMedallion.seat {
+    width: 34px;
+    border-width: 1px;
+    box-shadow: inset 0 0 0 2px rgba(25, 5, 10, .34), 0 3px 9px rgba(4, 0, 1, .24);
+    font-size: .52rem;
+  }
+
+  .bmrGrimoireBoard > button .snvSeatPlayerName {
+    font-size: .68rem;
+    line-height: 1.05;
+  }
+
+  .bmrGrimoireBoard > button small {
+    font-size: .56rem;
+    line-height: 1.05;
+  }
+}
+
+@media (max-width: 700px) {
+  .bmrSkyDisc {
+    top: 26px;
+    right: 82px;
+    width: 58px;
+  }
+
+  .bmrSetupSurface {
+    padding-bottom: 222px;
+  }
+
+  .bmrSetupSurface.hasGodfather {
+    padding-bottom: 278px;
+  }
+
+  .bmrSeatingActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bmrSeatingActions .snvConfirmRoster {
+    width: 100%;
+  }
+
+  .bmrSetupChoiceReveal {
+    display: none;
+  }
+
+  .bmrMobileGodfatherAdjustment {
+    display: flex;
+    min-width: 0;
+    min-height: 38px;
+    padding: 5px 7px 5px 10px;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid rgba(217, 180, 108, .24);
+    border-radius: 12px;
+    color: #e9c9ca;
+    background: rgba(117, 27, 43, .28);
+  }
+
+  .bmrMobileGodfatherAdjustment .bmrSetupChoiceTitle {
+    flex: 0 0 auto;
+    font-size: .68rem;
+  }
+
+  .bmrMobileGodfatherAdjustment .bmrSetupChoiceOptions {
+    display: flex;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+
+  .bmrMobileGodfatherAdjustment .bmrSetupChoiceOptions button {
+    min-width: 58px;
+    min-height: 30px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: .69rem;
+    font-weight: 900;
+  }
+
+  .bmrRoleIdentity .bmrCharacterMedallion {
+    width: 46px;
+    font-size: .68rem;
+  }
+
+  .bmrSetupChoiceOptions,
+  .bmrBluffGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bmrProductionShell .bmrCatalog article {
+    grid-template-columns: 1fr;
+  }
+
+  .bmrGrimoireSurface {
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .bmrSkyDisc {
+    top: 22px;
+    right: 68px;
+    width: 50px;
+  }
+
+  .bmrSetupChoiceOptions,
+  .bmrBluffGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bmrConfirmDialog > div {
+    display: grid;
+  }
+}

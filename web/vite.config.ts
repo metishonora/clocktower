@@ -66,6 +66,7 @@ export default defineConfig({
         landing: `${webRoot}index.html`,
         troubleBrewing: `${webRoot}trouble-brewing/index.html`,
         sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
+        badMoonRising: `${webRoot}bad-moon-rising/index.html`,
         invitation260813: `${webRoot}invitation/260813/index.html`,
         invitation260816: `${webRoot}invitation/260816/index.html`,
       },

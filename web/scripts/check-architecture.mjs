@@ -5,6 +5,10 @@ import { resolve } from "node:path";
 for (const relativePath of [
   "src/sectsAndVioletsGame.tsx",
   "src/sectsAndVioletsLivePhase.tsx",
+  "src/badMoonRisingEntry.tsx",
+  "src/badMoonRisingApp.tsx",
+  "src/badMoonRisingGame.tsx",
+  "src/badMoonRisingSession.ts",
 ]) {
   const source = readFileSync(resolve(relativePath), "utf8");
   const imports = Array.from(
@@ -13,7 +17,7 @@ for (const relativePath of [
   );
   assert.doesNotMatch(
     imports.join("\n"),
-    /Prototype(?:\.tsx|\.css|")/,
+    /(?:Prototype|issue179)(?:\.tsx|\.css|")?/,
     `${relativePath} must not import prototype modules`,
   );
 }
