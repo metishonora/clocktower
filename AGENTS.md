@@ -10,15 +10,17 @@
 
 ## Prototype workflow
 
-- Use prototypes before production implementation for material new UI, interaction changes, or unresolved visual decisions. Small, explicitly specified changes may proceed directly with focused visual and interaction validation.
-- Align prototypes with the current `develop` app shell and target viewports. Use only the fixture state needed for review, keep review controls outside the production-like screen, and avoid unnecessary fake behavior.
-- Record approved and rejected decisions in the issue plan and retain the approved prototype as the visual baseline. Compare the production UI against it for agreed states and viewports, and surface necessary deviations before acceptance.
-- Prototype approval covers UI and interaction only; production acceptance uses the real entry and runtime. Skip full regression suites for isolated prototypes unless shared production code or configuration changes.
+- Use prototypes to settle one bounded set of material UI decisions before production implementation.
+- Keep the review screen faithful to the current `develop` UI even when data or behavior is simplified, and keep review-only controls outside it. Do not add tests solely for prototype presentation.
+- Have `prototype_reviewer` verify new or materially revised prototypes before user review.
+- Record approved decisions and retain the approved prototype as the production visual baseline.
+- Prototype approval covers UI and interaction only; production acceptance uses the real entry and runtime.
 
 ## Test server lifecycle
 
 - Delegate requested Clocktower test-server operations to `web_server_operator`. If it is unavailable, use only `node scripts/test-server-manager.mjs`; agent unavailability must not block the operation, and direct server or process commands are prohibited.
 - `.codex/web-server.json` and the shared manager own profiles, ports, binding, process ownership, verification, URLs, and session cleanup. Never terminate an unrecorded or unverified process.
+- By default, stop the session-owned server at the start of the next user turn. Preserve it only when the user explicitly requests continued operation.
 
 ## Completion
 
