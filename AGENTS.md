@@ -25,7 +25,7 @@
 
 - Delegate requested Clocktower test-server operations to `web_server_operator`. If it is unavailable, use only `node scripts/test-server-manager.mjs`; agent unavailability must not block the operation, and direct server or process commands are prohibited.
 - `.codex/web-server.json` and the shared manager own profiles, ports, binding, process ownership, verification, URLs, and session cleanup. Never terminate an unrecorded or unverified process.
-- Preserve session-owned test servers across user turns. Stop or replace them only when the user requests it, using the designated lifecycle manager.
+- Keep review servers running across turns while the review remains active. Stop them through the lifecycle manager when the review concludes, the worktree or phase changes, the server is replaced, or the user requests it. A turn boundary alone is not a reason to stop.
 
 ## Completion
 
