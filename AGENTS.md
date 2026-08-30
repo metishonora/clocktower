@@ -16,11 +16,16 @@
 - Record approved decisions and retain the approved prototype as the production visual baseline.
 - Prototype approval covers UI and interaction only; production acceptance uses the real entry and runtime.
 
+## Test contract review
+
+- For non-trivial behavior changes, after confirming new or materially changed tests fail for the expected reason and before writing production code, have `test_contract_reviewer` review the test contract against approved decisions, references, and material acceptance invariants.
+- Resolve reported blockers and obtain user decisions for material unapproved product changes before implementation. Repeat the review only when the test contract changes materially.
+
 ## Test server lifecycle
 
 - Delegate requested Clocktower test-server operations to `web_server_operator`. If it is unavailable, use only `node scripts/test-server-manager.mjs`; agent unavailability must not block the operation, and direct server or process commands are prohibited.
 - `.codex/web-server.json` and the shared manager own profiles, ports, binding, process ownership, verification, URLs, and session cleanup. Never terminate an unrecorded or unverified process.
-- By default, stop the session-owned server at the start of the next user turn. Preserve it only when the user explicitly requests continued operation.
+- Preserve session-owned test servers across user turns. Stop or replace them only when the user requests it, using the designated lifecycle manager.
 
 ## Completion
 
