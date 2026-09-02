@@ -13,6 +13,7 @@ pub(crate) enum ErrorKind {
     UnsupportedSchemaVersion,
     MalformedCustomScriptDefinition,
     DuplicateCustomScriptCharacter,
+    UnsupportedCustomScriptCharacter,
     CustomScriptNotResolved,
     MalformedCommand,
     UnsupportedCommand,
@@ -90,6 +91,10 @@ impl ErrorKind {
             Self::DuplicateCustomScriptCharacter => (
                 "DUPLICATE_CUSTOM_SCRIPT_CHARACTER",
                 "커스텀 시나리오에 중복된 캐릭터가 있습니다.",
+            ),
+            Self::UnsupportedCustomScriptCharacter => (
+                "UNSUPPORTED_CUSTOM_SCRIPT_CHARACTER",
+                "커스텀 시나리오에서 지원하지 않는 캐릭터입니다.",
             ),
             Self::CustomScriptNotResolved => (
                 "CUSTOM_SCRIPT_NOT_RESOLVED",

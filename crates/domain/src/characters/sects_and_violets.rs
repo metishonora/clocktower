@@ -1093,6 +1093,13 @@ pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     SnvCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
+pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
+    SnvCharacterId::ALL
+        .into_iter()
+        .map(|id| (id.as_str(), id.metadata().kind))
+        .collect()
+}
+
 fn nearest_townsfolk_neighbors(players: &[Player], source_player_id: &str) -> Vec<String> {
     let mut seated = players.iter().collect::<Vec<_>>();
     seated.sort_by_key(|player| player.seat);

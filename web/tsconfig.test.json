@@ -16,6 +16,8 @@
   "include": [
     "src/setupDraft.ts",
     "src/setupDraft.test.ts",
+    "src/customScriptRegistry.ts",
+    "src/customScriptRegistry.test.ts",
     "src/characterAssets.ts",
     "src/characterAssets.test.ts",
     "src/sectsAndVioletsCharacterAssets.ts",

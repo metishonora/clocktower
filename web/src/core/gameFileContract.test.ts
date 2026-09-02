@@ -119,14 +119,13 @@ test("accepts an empty custom Character list as a structural contract", () => {
   });
 });
 
-test("leaves unknown membership and case-different Character IDs for Registry resolution", () => {
+test("rejects unknown, case-different, and BMR Character IDs at Registry resolution", () => {
   for (const characterIds of [
     ["washerwoman", "futureCharacter", "imp"],
     ["imp", "Imp"],
+    ["imp", "grandmother"],
   ]) {
-    const parsed = parseGameFileJson(JSON.stringify(customV4(characterIds)));
-    if (parsed.game.script.type !== "custom") throw new Error("expected custom reference");
-    deepEqual(parsed.game.script.definition.characterIds, characterIds);
+    throws(() => parseGameFileJson(JSON.stringify(customV4(characterIds))));
   }
 });
 

@@ -32,5 +32,10 @@ pub fn suggest_phase_input_json(game_file_json: &str, request_json: &str) -> Str
     boundary::suggest_phase_input_json(game_file_json, request_json)
 }
 
+pub fn custom_script_catalog_json() -> String {
+    serde_json::to_string(&characters::custom_script_catalog())
+        .expect("custom script catalog serialization should not fail")
+}
+
 #[cfg(test)]
 mod tests;

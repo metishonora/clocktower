@@ -1,6 +1,9 @@
 mod bad_moon_rising;
+pub(crate) mod registry;
 mod sects_and_violets;
 mod trouble_brewing;
+
+pub(crate) use registry::{custom_script_catalog, resolve_custom_script};
 
 #[cfg(test)]
 pub(crate) use sects_and_violets::{

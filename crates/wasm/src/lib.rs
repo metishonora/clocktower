@@ -20,6 +20,11 @@ pub fn suggest_phase_input(game_file_json: &str, request_json: &str) -> String {
     clocktower_domain::suggest_phase_input_json(game_file_json, request_json)
 }
 
+#[wasm_bindgen]
+pub fn custom_script_catalog() -> String {
+    clocktower_domain::custom_script_catalog_json()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
