@@ -358,8 +358,11 @@ describe("ClocktowerApp live-play integration", () => {
     });
     await waitFor(async () => {
       expect(await getRawLatestGame(idb, "latest:troubleBrewing")).toMatchObject({
-        schemaVersion: 3,
-        game: { scriptId: "troubleBrewing", events: [] },
+        schemaVersion: 4,
+        game: {
+          script: { type: "official", scriptId: "troubleBrewing" },
+          events: [],
+        },
       });
     });
     expect(confirm).not.toHaveBeenCalled();
@@ -400,8 +403,10 @@ describe("ClocktowerApp live-play integration", () => {
     await user.click(screen.getByRole("button", { name: "새 게임" }));
 
     await waitFor(() => expect(storage.savedGames).toHaveLength(1));
-    expect(storage.savedGames[0]?.schemaVersion).toBe(3);
-    expect(storage.savedGames[0]?.game.scriptId).toBe("troubleBrewing");
+    expect(storage.savedGames[0]?.schemaVersion).toBe(4);
+    expect(storage.savedGames[0]?.game).toMatchObject({
+      script: { type: "official", scriptId: "troubleBrewing" },
+    });
     expect(storage.savedGames[0]?.game.events).toEqual([]);
   });
 
@@ -2330,7 +2335,13 @@ describe("ClocktowerApp live-play integration", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     await user.upload(fileInput, new File([JSON.stringify(imported)], "clocktower.json", { type: "application/json" }));
 
-    await waitFor(() => expect(core.replay).toHaveBeenCalledWith(imported));
+    await waitFor(() => expect(core.replay).toHaveBeenCalledWith(expect.objectContaining({
+      schemaVersion: 4,
+      game: expect.objectContaining({
+        id: "imported-game",
+        script: { type: "official", scriptId: "troubleBrewing" },
+      }),
+    })));
     await user.click(liveStageButton("진행"));
     expect(await screen.findByRole("heading", { name: "세탁부: 1번 Ada" })).toBeTruthy();
   });
@@ -2353,6 +2364,7 @@ describe("ClocktowerApp live-play integration", () => {
     await waitFor(() => expect(storage.savedGames.length).toBeGreaterThan(0));
     const savesBeforeImport = storage.savedGames.length;
     const incompatibleGame = gameFile();
+    if (incompatibleGame.schemaVersion !== 3) throw new Error("expected legacy fixture");
     incompatibleGame.game.scriptId = "sectsAndViolets";
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
     if (!fileInput) throw new Error("JSON file input was not rendered");

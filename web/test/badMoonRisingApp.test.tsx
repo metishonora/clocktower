@@ -35,7 +35,9 @@ test("runs the real 7-player Godfather Setup through first Night, Day, and later
   await user.click(within(app).getByRole("button", { name: "좌석 확정" }));
 
   await waitFor(() => expect(storage.snapshot?.canonical.game.events).toHaveLength(1));
-  expect(storage.snapshot?.canonical.game.scriptId).toBe(BAD_MOON_RISING);
+  expect(storage.snapshot?.canonical.game).toMatchObject({
+    script: { type: "official", scriptId: BAD_MOON_RISING },
+  });
   expect(storage.snapshot?.canonical.game.events[0]).toMatchObject({
     type: "setupConfirmed",
     payload: {
@@ -224,10 +226,13 @@ test("exports BMR JSON, imports it again, and rejects another script", async () 
     expect(within(app).getByRole("button", { name: "마도서" }).getAttribute("aria-current")).toBe("page");
 
     const incompatible = structuredClone(exportedGame);
-    incompatible.game.scriptId = "sectsAndViolets";
+    if (incompatible.schemaVersion !== 4) throw new Error("expected canonical v4 export");
+    incompatible.game.script = { type: "official", scriptId: "sectsAndViolets" };
     await user.upload(fileInput, new File([JSON.stringify(incompatible)], "snv.json", { type: "application/json" }));
     expect((await within(app).findByRole("alert")).textContent).toContain("현재 페이지와 다른 스크립트의 게임 파일입니다.");
-    expect(storage.snapshot?.canonical.game.scriptId).toBe(BAD_MOON_RISING);
+    expect(storage.snapshot?.canonical.game).toMatchObject({
+      script: { type: "official", scriptId: BAD_MOON_RISING },
+    });
     expect(storage.snapshot?.canonical.game.events).toHaveLength(1);
   } finally {
     anchorClick.mockRestore();

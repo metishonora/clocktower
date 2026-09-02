@@ -11,6 +11,9 @@ pub(crate) struct CoreError {
 pub(crate) enum ErrorKind {
     MalformedGameFile,
     UnsupportedSchemaVersion,
+    MalformedCustomScriptDefinition,
+    DuplicateCustomScriptCharacter,
+    CustomScriptNotResolved,
     MalformedCommand,
     UnsupportedCommand,
     MalformedEvent,
@@ -79,6 +82,18 @@ impl ErrorKind {
             Self::UnsupportedSchemaVersion => (
                 "UNSUPPORTED_SCHEMA_VERSION",
                 "지원하지 않는 게임 파일 버전입니다.",
+            ),
+            Self::MalformedCustomScriptDefinition => (
+                "MALFORMED_CUSTOM_SCRIPT_DEFINITION",
+                "커스텀 시나리오 정의가 올바르지 않습니다.",
+            ),
+            Self::DuplicateCustomScriptCharacter => (
+                "DUPLICATE_CUSTOM_SCRIPT_CHARACTER",
+                "커스텀 시나리오에 중복된 캐릭터가 있습니다.",
+            ),
+            Self::CustomScriptNotResolved => (
+                "CUSTOM_SCRIPT_NOT_RESOLVED",
+                "커스텀 시나리오 규칙을 아직 해석할 수 없습니다.",
             ),
             Self::MalformedCommand => ("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."),
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),

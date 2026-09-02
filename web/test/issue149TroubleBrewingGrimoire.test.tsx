@@ -584,5 +584,5 @@ function progressedGameFile(): GameFile {
       ...stored.game,
       events: [...stored.game.events, event("event-progress", "첫 단계 완료")],
     },
-  };
+  } as GameFile;
 }

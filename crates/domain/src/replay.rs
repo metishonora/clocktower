@@ -29,9 +29,10 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
-    crate::characters::rules(game_file.script_id).validate_replay_events(&game_file.game.events)?;
+    let script_id = game_file.official_script_id()?;
+    crate::characters::rules(script_id).validate_replay_events(&game_file.game.events)?;
     validate_terminal_game_event(&game_file.game.events)?;
-    crate::characters::rules(game_file.script_id).replay(game_file)
+    crate::characters::rules(script_id).replay(game_file)
 }
 
 fn validate_terminal_game_event(events: &[GameEvent]) -> Result<(), CoreError> {
@@ -53,6 +54,7 @@ fn validate_terminal_game_event(events: &[GameEvent]) -> Result<(), CoreError> {
 }
 
 pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    let script_id = game_file.official_script_id()?;
     let events = &game_file.game.events;
     let ended_positions = events
         .iter()
@@ -224,7 +226,7 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
     };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id: game_file.script_id,
+        script_id,
         event_count: events.len(),
         phase: phase_state.phase,
         players,

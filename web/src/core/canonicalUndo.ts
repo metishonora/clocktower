@@ -121,6 +121,6 @@ export function removeLatestCanonicalUndoUnit(
         updatedAt: new Date().toISOString(),
         events: gameFile.game.events.filter(({ id }) => !removedIds.has(id)),
       },
-    },
+    } as GameFile,
   };
 }

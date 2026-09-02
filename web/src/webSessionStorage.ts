@@ -1,4 +1,4 @@
-import type { ScriptId } from "./core/scripts.js";
+import { officialGameFileScriptId, type ScriptId } from "./core/scripts.js";
 import type { GameFile } from "./core/types.js";
 import {
   importGameFileJson,
@@ -52,7 +52,7 @@ implements WebSessionStorageDriver<SetupDraft, Presentation> {
   async saveSession(snapshot: WebSessionSnapshot<SetupDraft, Presentation>): Promise<void> {
     if (
       snapshot.scriptId !== this.scriptId
-      || snapshot.canonical.game.scriptId !== this.scriptId
+      || officialGameFileScriptId(snapshot.canonical) !== this.scriptId
     ) {
       throw scriptMismatch();
     }

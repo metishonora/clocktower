@@ -39,7 +39,7 @@ use crate::{
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
-    let rules = crate::characters::rules(game_file.script_id);
+    let rules = crate::characters::rules(game_file.official_script_id()?);
     rules.validate_command(&command)?;
     if command
         .expected_event_count()
@@ -347,20 +347,21 @@ pub(crate) fn propose_create_game(
         return Err(ErrorKind::GameAlreadyHasEvents.into_error());
     }
 
-    validate_setup_inputs_for_script(game_file.script_id, &payload.players)?;
+    let script_id = game_file.official_script_id()?;
+    validate_setup_inputs_for_script(script_id, &payload.players)?;
 
     let setup_choice_id = payload.setup_choice_id.clone();
     let players = payload
         .players
         .iter()
-        .map(|player| normalized_setup_player_for_script(game_file.script_id, player))
+        .map(|player| normalized_setup_player_for_script(script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
     let derived_players = players
         .iter()
-        .map(|player| player_from_setup_input_for_script(game_file.script_id, player))
+        .map(|player| player_from_setup_input_for_script(script_id, player))
         .collect::<Result<Vec<_>, _>>()?;
     let warnings = validate_setup_warnings_for_script(
-        game_file.script_id,
+        script_id,
         &derived_players,
         setup_choice_id.as_deref(),
     )?;

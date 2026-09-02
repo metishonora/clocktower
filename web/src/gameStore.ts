@@ -48,9 +48,9 @@ export function createGameFile(scriptId: ScriptId, events: GameEvent[] = []): Ga
   const now = new Date().toISOString();
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     game: {
-      scriptId,
+      script: { type: "official", scriptId },
       id: "local-game",
       name: scriptDisplayName(scriptId),
       createdAt: now,
@@ -597,14 +597,14 @@ export function useGameStore({ scriptId, core, storage }: GameStoreDependencies)
         setUndoReplayPending(false);
       });
     } else {
-      const nextGameFile: GameFile = {
-        schemaVersion: 3,
+      const nextGameFile = {
+        ...gameFile,
         game: {
           ...gameFile.game,
           updatedAt: new Date().toISOString(),
           events: gameFile.game.events.slice(0, -1),
         },
-      };
+      } as GameFile;
       void canonicalSession.replay(nextGameFile).then((result) => {
         if (!result.ok) {
           setLoadError(result.error.messageKo);

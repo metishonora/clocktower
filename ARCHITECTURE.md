@@ -151,10 +151,12 @@ characters/
 - `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
   Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
 
-`GameFile.game.scriptId` is the canonical rules selector. `replay`, `propose`, and
-`suggestPhaseInput` obtain it from the file; `setupDistribution` receives it in its standalone
-request. Dispatch occurs before a persisted event or command can enter a script-specific reducer.
-Until a script implements an event or command, reject it explicitly rather than falling back to
+`GameFile.game.script` is the canonical script reference. Official references carry a `scriptId`;
+custom references carry the complete definition snapshot needed to resolve their Character roster.
+`replay`, `propose`, and `suggestPhaseInput` obtain an official selector from that reference;
+`setupDistribution` receives it in its standalone request. Dispatch occurs before a persisted event
+or command can enter a script-specific reducer. Until the custom registry resolves a definition, or
+an official script implements an event or command, reject it explicitly rather than falling back to
 another script's rules.
 
 ### Character Script File Convention
@@ -641,16 +643,26 @@ Use a small IndexedDB wrapper without a storage dependency for MVP.
 ```text
 database: clocktower
 object store: game
-keys: latest:troubleBrewing, latest:sectsAndViolets
+keys: latest:troubleBrewing, latest:sectsAndViolets, latest:badMoonRising
 value: GameFile
 ```
 
 ```ts
+type CustomScriptDefinition = {
+  id: string;
+  name: string;
+  characterIds: string[];
+};
+
+type ScriptReference =
+  | { type: "official"; scriptId: ScriptId }
+  | { type: "custom"; definition: CustomScriptDefinition };
+
 type GameFile = {
-  schemaVersion: 3;
+  schemaVersion: 4;
   exportedAt?: string;
   game: {
-    scriptId: "troubleBrewing" | "sectsAndViolets";
+    script: ScriptReference;
     id: string;
     name: string;
     createdAt: string;
@@ -660,16 +672,20 @@ type GameFile = {
 };
 ```
 
-IndexedDB stores one latest `GameFile` per script without `exportedAt`. Script pages bind their
-storage driver to one script key, so navigation cannot replace the other script's latest game.
+IndexedDB stores one latest official `GameFile` per script without `exportedAt`. Official script
+pages bind their storage driver to one script key, so navigation cannot replace another script's
+latest game. Custom-script storage and sessions are deferred until their registry exists.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 
 Import reads a `GameFile`, checks the basic JSON shape, schema version, and expected page script,
 calls Rust `replay` to verify the complete event log, then replaces the script's stored game and
-opens it. A schema-version-2 file without `scriptId` is the only legacy form: it is interpreted as
-Trouble Brewing and normalized to schema version 3 after successful load. Schema version 1,
-script-aware version-2 files, wrong-script files, and invalid logs are rejected as whole files;
+opens it. A schema-version-2 file without `scriptId` is interpreted as Trouble Brewing; schema v3
+requires one known official `scriptId`. TypeScript normalizes both legacy forms to a schema-v4
+official reference. Schema v4 requires exactly one `game.script` arm and rejects legacy
+`game.scriptId`; a custom definition contains a non-blank ID and name plus an ordered, exactly
+unique array of non-blank Character IDs. Registry membership is checked separately. Schema version
+1, script-aware version-2 files, wrong-script files, and invalid logs are rejected as whole files;
 import never installs a successfully replayed prefix or partial state.
 
 For migration, the Trouble Brewing driver checks the old `latest` key only when
