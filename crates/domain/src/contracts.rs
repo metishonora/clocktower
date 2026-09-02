@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -12,8 +14,19 @@ pub(crate) use crate::model::AutomaticReminder;
 
 pub(crate) struct GameFile {
     pub(crate) schema_version: u32,
-    pub(crate) script_id: ScriptId,
+    pub(crate) script: ScriptReference,
     pub(crate) game: Game,
+}
+
+impl GameFile {
+    pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
+        match &self.script {
+            ScriptReference::Official { script_id } => Ok(*script_id),
+            ScriptReference::Custom { .. } => {
+                Err(crate::error::ErrorKind::CustomScriptNotResolved.into_error())
+            }
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq)]
@@ -22,6 +35,28 @@ pub(crate) enum ScriptId {
     TroubleBrewing,
     SectsAndViolets,
     BadMoonRising,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(tag = "type")]
+pub(crate) enum ScriptReference {
+    #[serde(rename = "official", rename_all = "camelCase")]
+    Official { script_id: ScriptId },
+    #[serde(rename = "custom", rename_all = "camelCase")]
+    Custom { definition: CustomScriptDefinition },
+}
+
+impl ScriptReference {
+    #[cfg(test)]
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["official", "custom"];
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomScriptDefinition {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) character_ids: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -40,10 +75,10 @@ pub(crate) struct RawGameFile {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RawGame {
-    #[serde(default)]
-    pub(crate) script_id: Option<ScriptId>,
     pub(crate) updated_at: Option<String>,
     pub(crate) events: Vec<Value>,
+    #[serde(flatten)]
+    pub(crate) fields: HashMap<String, Value>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -2,7 +2,7 @@ use super::support::*;
 use crate::*;
 use serde_json::{json, Value};
 
-use crate::contracts::{Command, GameEventKind};
+use crate::contracts::{Command, GameEventKind, ScriptReference};
 
 #[test]
 fn rust_and_typescript_wire_discriminators_stay_in_lockstep() {
@@ -14,6 +14,10 @@ fn rust_and_typescript_wire_discriminators_stay_in_lockstep() {
     assert_eq!(
         typescript_discriminators(typescript, "eventDiscriminators"),
         GameEventKind::DISCRIMINATORS,
+    );
+    assert_eq!(
+        typescript_discriminators(typescript, "scriptReferenceDiscriminators"),
+        ScriptReference::DISCRIMINATORS,
     );
 }
 

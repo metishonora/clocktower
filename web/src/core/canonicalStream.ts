@@ -18,5 +18,5 @@ export function appendCanonicalEvent(gameFile: GameFile, event: GameEvent): Game
       updatedAt: new Date().toISOString(),
       events: [...gameFile.game.events, event],
     },
-  };
+  } as GameFile;
 }

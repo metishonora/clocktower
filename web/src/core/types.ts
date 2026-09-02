@@ -1,12 +1,33 @@
 import type { ScriptId } from "./scripts.js";
 
-export type GameFile = {
-  schemaVersion: 3;
+export type CustomScriptDefinition = {
+  id: string;
+  name: string;
+  characterIds: string[];
+};
+
+export type OfficialScriptReference = {
+  type: "official";
+  scriptId: ScriptId;
+};
+
+export type CustomScriptReference = {
+  type: "custom";
+  definition: CustomScriptDefinition;
+};
+
+export type ScriptReference = OfficialScriptReference | CustomScriptReference;
+
+type GameFileMetadata = {
   ui?: {
     seatLayout?: SeatLayoutState;
     /** @deprecated Imported for schema tolerance only; runtime session state is stored separately. */
     sectsAndVioletsSession?: SectsAndVioletsSessionState;
   };
+};
+
+export type LegacyOfficialGameFile = GameFileMetadata & {
+  schemaVersion: 3;
   game: {
     scriptId: ScriptId;
     id: string;
@@ -16,6 +37,20 @@ export type GameFile = {
     events: GameEvent[];
   };
 };
+
+export type GameFileV4 = GameFileMetadata & {
+  schemaVersion: 4;
+  game: {
+    script: ScriptReference;
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    events: GameEvent[];
+  };
+};
+
+export type GameFile = LegacyOfficialGameFile | GameFileV4;
 
 /** @deprecated Runtime S&V presentation state no longer belongs to GameFile. */
 export type SectsAndVioletsTab = "roles" | "seating" | "play" | "storage";
@@ -373,7 +408,7 @@ export type CoreResult<T> =
   | { ok: false; error: { code: string; messageKo: string } };
 
 export type ReplayState = {
-  schemaVersion: 3;
+  schemaVersion: 2 | 3 | 4;
   scriptId: ScriptId;
   eventCount: number;
   phase: Phase;

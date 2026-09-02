@@ -39,6 +39,7 @@
     "src/bugReportDelivery.ts",
     "src/bugReportDelivery.test.ts",
     "src/core/validation.test.ts",
+    "src/core/gameFileContract.test.ts",
     "src/core/issue177OrderedDeathContract.test.ts",
     "src/core/latestJsonRequestCache.test.ts",
     "src/core/canonicalStream.test.ts",

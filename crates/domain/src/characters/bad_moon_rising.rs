@@ -311,10 +311,11 @@ struct BmrReplayContext {
 }
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    let script_id = game_file.official_script_id()?;
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
             schema_version: game_file.schema_version,
-            script_id: game_file.script_id,
+            script_id,
             event_count: 0,
             phase: Phase::Setup,
             players: vec![],
@@ -352,7 +353,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id: game_file.script_id,
+        script_id,
         event_count: game_file.game.events.len(),
         phase: context.phase,
         players: context.players,

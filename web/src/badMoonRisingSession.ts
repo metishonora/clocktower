@@ -57,9 +57,9 @@ export function createBmrSetupDraft(): BmrSetupState {
 export function createBmrGameFile(now = new Date()): GameFile {
   const timestamp = now.toISOString();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     game: {
-      scriptId: BAD_MOON_RISING,
+      script: { type: "official", scriptId: BAD_MOON_RISING },
       id: "local-bmr-game",
       name: "Bad Moon Rising",
       createdAt: timestamp,

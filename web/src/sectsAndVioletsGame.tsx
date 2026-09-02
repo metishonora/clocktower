@@ -3012,9 +3012,9 @@ function phaseStepPresentation(
 function createSectsAndVioletsGameFile(): GameFile {
   const now = new Date().toISOString();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     game: {
-      scriptId: SECTS_AND_VIOLETS,
+      script: { type: "official", scriptId: SECTS_AND_VIOLETS },
       id: "local-snv-game",
       name: "Sects & Violets",
       createdAt: now,

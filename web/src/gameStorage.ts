@@ -1,7 +1,15 @@
-import type { GameEvent, GameFile, SeatLayoutState } from "./core/types.js";
+import type {
+  CustomScriptDefinition,
+  GameEvent,
+  GameFile,
+  GameFileV4,
+  ScriptReference,
+  SeatLayoutState,
+} from "./core/types.js";
 import { parseGameEvent } from "./core/validation.js";
 import {
   isScriptId,
+  officialGameFileScriptId,
   scriptStorageKey,
   TROUBLE_BREWING,
   type ScriptId,
@@ -32,18 +40,22 @@ export class IndexedDbGameStorageDriver implements GameStorageDriver {
       if (value === undefined && this.scriptId === TROUBLE_BREWING) {
         value = await requestToPromise<unknown>(store.get(LATEST_GAME_KEY));
       }
-      return value === undefined ? undefined : validateGameFile(value, this.scriptId);
+      if (value === undefined) return undefined;
+      const canonical = validateGameFile(value);
+      if (officialGameFileScriptId(canonical) !== this.scriptId) throw scriptMismatch();
+      return canonical;
     } finally {
       db.close();
     }
   }
 
   async saveLatestGame(gameFile: GameFile): Promise<void> {
-    if (gameFile.game.scriptId !== this.scriptId) throw scriptMismatch();
+    const canonical = canonicalGameFile(gameFile);
+    if (officialGameFileScriptId(canonical) !== this.scriptId) throw scriptMismatch();
     const db = await this.openDb();
     try {
       const transaction = db.transaction(STORE_NAME, "readwrite");
-      transaction.objectStore(STORE_NAME).put(gameFile, scriptStorageKey(this.scriptId));
+      transaction.objectStore(STORE_NAME).put(canonical, scriptStorageKey(this.scriptId));
       await transactionDone(transaction);
     } finally {
       db.close();
@@ -70,13 +82,14 @@ export async function saveLatestGame(
   gameFile: GameFile,
   driver: GameStorageDriver,
 ) {
-  await driver.saveLatestGame(gameFile);
+  await driver.saveLatestGame(canonicalGameFile(gameFile));
 }
 
 export function exportGameFileJson(gameFile: GameFile, exportedAt = new Date()): string {
+  const canonical = canonicalGameFile(gameFile);
   return JSON.stringify(
     {
-      ...gameFile,
+      ...canonical,
       exportedAt: exportedAt.toISOString(),
     },
     null,
@@ -87,7 +100,13 @@ export function exportGameFileJson(gameFile: GameFile, exportedAt = new Date()):
 export function importGameFileJson(
   json: string,
   expectedScriptId: ScriptId = TROUBLE_BREWING,
-): GameFile {
+): GameFileV4 {
+  const gameFile = parseGameFileJson(json);
+  if (officialGameFileScriptId(gameFile) !== expectedScriptId) throw scriptMismatch();
+  return gameFile;
+}
+
+export function parseGameFileJson(json: string): GameFileV4 {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -95,21 +114,20 @@ export function importGameFileJson(
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
 
-  return validateGameFile(parsed, expectedScriptId);
+  return validateGameFile(parsed);
 }
 
-function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile {
+function validateGameFile(value: unknown): GameFileV4 {
   if (!isRecord(value)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
-  if (value.schemaVersion !== 2 && value.schemaVersion !== 3) {
+  if (value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4) {
     throw new Error("지원하지 않는 게임 파일 버전입니다.");
   }
   if (!isRecord(value.game)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
-  const scriptId = parseStoredScriptId(value.schemaVersion, value.game.scriptId);
-  if (scriptId !== expectedScriptId) throw scriptMismatch();
+  const script = parseStoredScriptReference(value.schemaVersion, value.game);
   if (
     typeof value.game.id !== "string" ||
     typeof value.game.name !== "string" ||
@@ -125,10 +143,10 @@ function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile 
   const ui = seatLayout ? { seatLayout } : undefined;
 
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     ...(ui ? { ui } : {}),
     game: {
-      scriptId,
+      script,
       id: value.game.id,
       name: value.game.name,
       createdAt: value.game.createdAt,
@@ -138,13 +156,90 @@ function validateGameFile(value: unknown, expectedScriptId: ScriptId): GameFile 
   };
 }
 
-function parseStoredScriptId(schemaVersion: unknown, value: unknown): ScriptId {
+function parseStoredScriptReference(
+  schemaVersion: unknown,
+  game: Record<string, unknown>,
+): ScriptReference {
+  const hasLegacyScriptId = Object.hasOwn(game, "scriptId");
+  const hasScriptReference = Object.hasOwn(game, "script");
   if (schemaVersion === 2) {
-    if (value !== undefined) throw new Error("게임 파일 형식이 올바르지 않습니다.");
-    return TROUBLE_BREWING;
+    if (hasLegacyScriptId || hasScriptReference) throw malformedGameFile();
+    return { type: "official", scriptId: TROUBLE_BREWING };
   }
-  if (!isScriptId(value)) throw new Error("게임 파일 형식이 올바르지 않습니다.");
-  return value;
+  if (schemaVersion === 3) {
+    if (!hasLegacyScriptId || hasScriptReference || !isScriptId(game.scriptId)) {
+      throw malformedGameFile();
+    }
+    return { type: "official", scriptId: game.scriptId };
+  }
+  if (hasLegacyScriptId || !hasScriptReference) throw malformedGameFile();
+  return parseScriptReference(game.script);
+}
+
+function parseScriptReference(value: unknown): ScriptReference {
+  if (!isRecord(value) || typeof value.type !== "string") throw malformedGameFile();
+  if (value.type === "official") {
+    if (!hasExactKeys(value, ["type", "scriptId"]) || !isScriptId(value.scriptId)) {
+      throw malformedGameFile();
+    }
+    return { type: "official", scriptId: value.scriptId };
+  }
+  if (value.type === "custom") {
+    if (!hasExactKeys(value, ["type", "definition"])) throw malformedGameFile();
+    return { type: "custom", definition: parseCustomScriptDefinition(value.definition) };
+  }
+  throw malformedGameFile();
+}
+
+function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
+  if (
+    !isRecord(value)
+    || !hasExactKeys(value, ["id", "name", "characterIds"])
+    || typeof value.id !== "string"
+    || value.id.trim().length === 0
+    || typeof value.name !== "string"
+    || value.name.trim().length === 0
+    || !Array.isArray(value.characterIds)
+    || !value.characterIds.every(
+      (characterId) => typeof characterId === "string" && characterId.trim().length > 0,
+    )
+  ) {
+    throw new Error("커스텀 시나리오 정의가 올바르지 않습니다.");
+  }
+  if (new Set(value.characterIds).size !== value.characterIds.length) {
+    throw new Error("커스텀 시나리오에 중복된 캐릭터가 있습니다.");
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    characterIds: [...value.characterIds],
+  };
+}
+
+function canonicalGameFile(gameFile: GameFile): GameFileV4 {
+  return gameFile.schemaVersion === 4
+    ? gameFile
+    : {
+        ...gameFile,
+        schemaVersion: 4,
+        game: {
+          script: { type: "official", scriptId: gameFile.game.scriptId },
+          id: gameFile.game.id,
+          name: gameFile.game.name,
+          createdAt: gameFile.game.createdAt,
+          updatedAt: gameFile.game.updatedAt,
+          events: gameFile.game.events,
+        },
+      };
+}
+
+function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const actual = Object.keys(value);
+  return actual.length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+}
+
+function malformedGameFile(): Error {
+  return new Error("게임 파일 형식이 올바르지 않습니다.");
 }
 
 function scriptMismatch(): Error {

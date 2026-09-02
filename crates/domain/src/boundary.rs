@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, Discriminator, Game, GameEvent, GameEventKind, GameFile,
-        PhaseInputSuggestionRequest, RawGameFile, SetupDistributionRequest,
+        Command, CustomScriptDefinition, Discriminator, Game, GameEvent, GameEventKind, GameFile,
+        PhaseInputSuggestionRequest, RawGameFile, ScriptId, ScriptReference,
+        SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
     identity::EventId,
@@ -53,13 +54,21 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
 
-    let script_id = match raw.schema_version {
-        2 if raw.game.script_id.is_none() => crate::contracts::ScriptId::TroubleBrewing,
+    let has_legacy_script_id = raw.game.fields.contains_key("scriptId");
+    let has_script_reference = raw.game.fields.contains_key("script");
+    let script = match raw.schema_version {
+        2 if !has_legacy_script_id && !has_script_reference => ScriptReference::Official {
+            script_id: ScriptId::TroubleBrewing,
+        },
         2 => return Err(ErrorKind::MalformedGameFile.into_error()),
-        3 => raw
-            .game
-            .script_id
-            .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?,
+        3 if has_legacy_script_id && !has_script_reference => ScriptReference::Official {
+            script_id: parse_official_script_id(&raw.game.fields["scriptId"])?,
+        },
+        3 => return Err(ErrorKind::MalformedGameFile.into_error()),
+        4 if !has_legacy_script_id && has_script_reference => {
+            parse_script_reference(&raw.game.fields["script"])?
+        }
+        4 => return Err(ErrorKind::MalformedGameFile.into_error()),
         _ => return Err(ErrorKind::UnsupportedSchemaVersion.into_error()),
     };
 
@@ -70,16 +79,71 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .map(parse_event)
         .collect::<Result<Vec<_>, _>>()?;
     validate_event_references(&events)?;
-    crate::characters::rules(script_id).validate_replay_events(&events)?;
+    if let ScriptReference::Official { script_id } = &script {
+        crate::characters::rules(*script_id).validate_replay_events(&events)?;
+    }
 
     Ok(GameFile {
         schema_version: raw.schema_version,
-        script_id,
+        script,
         game: Game {
             updated_at: raw.game.updated_at,
             events,
         },
     })
+}
+
+fn parse_official_script_id(value: &Value) -> Result<ScriptId, CoreError> {
+    serde_json::from_value(value.clone()).map_err(|_| ErrorKind::MalformedGameFile.into_error())
+}
+
+fn parse_script_reference(value: &Value) -> Result<ScriptReference, CoreError> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?;
+    let kind = object
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or_else(|| ErrorKind::MalformedGameFile.into_error())?;
+
+    match kind {
+        "official" if object.len() == 2 && object.contains_key("scriptId") => {
+            Ok(ScriptReference::Official {
+                script_id: parse_official_script_id(&object["scriptId"])?,
+            })
+        }
+        "custom" if object.len() == 2 && object.contains_key("definition") => {
+            let definition =
+                serde_json::from_value::<CustomScriptDefinition>(object["definition"].clone())
+                    .map_err(|_| ErrorKind::MalformedCustomScriptDefinition.into_error())?;
+            validate_custom_script_definition(&definition)?;
+            Ok(ScriptReference::Custom { definition })
+        }
+        "official" | "custom" | _ => Err(ErrorKind::MalformedGameFile.into_error()),
+    }
+}
+
+fn validate_custom_script_definition(definition: &CustomScriptDefinition) -> Result<(), CoreError> {
+    if definition.id.trim().is_empty()
+        || definition.name.trim().is_empty()
+        || definition
+            .character_ids
+            .iter()
+            .any(|character_id| character_id.trim().is_empty())
+    {
+        return Err(ErrorKind::MalformedCustomScriptDefinition.into_error());
+    }
+
+    let mut unique = HashSet::with_capacity(definition.character_ids.len());
+    if definition
+        .character_ids
+        .iter()
+        .any(|character_id| !unique.insert(character_id.as_str()))
+    {
+        return Err(ErrorKind::DuplicateCustomScriptCharacter.into_error());
+    }
+
+    Ok(())
 }
 
 fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {

@@ -13,9 +13,9 @@ import type { GameFile } from "./core/types.js";
 import { BAD_MOON_RISING, SECTS_AND_VIOLETS, TROUBLE_BREWING } from "./core/scripts.js";
 
 const gameFile: GameFile = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   game: {
-    scriptId: "troubleBrewing",
+    script: { type: "official", scriptId: "troubleBrewing" },
     id: "game-1",
     name: "Trouble Brewing",
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -54,7 +54,7 @@ test("IndexedDB preserves independent latest games for every script", async () =
     ...gameFile,
     game: {
       ...gameFile.game,
-      scriptId: "sectsAndViolets",
+      script: { type: "official", scriptId: "sectsAndViolets" },
       id: "game-sv",
       name: "Sects & Violets",
       events: [],
@@ -64,7 +64,7 @@ test("IndexedDB preserves independent latest games for every script", async () =
     ...gameFile,
     game: {
       ...gameFile.game,
-      scriptId: BAD_MOON_RISING,
+      script: { type: "official", scriptId: BAD_MOON_RISING },
       id: "game-bmr",
       name: "Bad Moon Rising",
       events: [],
@@ -84,7 +84,7 @@ test("only Trouble Brewing reads and normalizes the legacy latest key", async ()
   const idb = new IDBFactory();
   const legacy = structuredClone(gameFile) as unknown as Record<string, unknown>;
   legacy.schemaVersion = 2;
-  delete (legacy.game as Record<string, unknown>).scriptId;
+  delete (legacy.game as Record<string, unknown>).script;
   await putRawGame(idb, "latest", legacy);
 
   const troubleBrewing = new IndexedDbGameStorageDriver("troubleBrewing", idb);
@@ -98,8 +98,8 @@ test("export writes canonical schema, script identity, and exportedAt", () => {
   const json = exportGameFileJson(gameFile, new Date("2026-07-10T00:00:00.000Z"));
   const parsed = JSON.parse(json);
 
-  equal(parsed.schemaVersion, 3);
-  equal(parsed.game.scriptId, "troubleBrewing");
+  equal(parsed.schemaVersion, 4);
+  deepEqual(parsed.game.script, { type: "official", scriptId: "troubleBrewing" });
   equal(parsed.exportedAt, "2026-07-10T00:00:00.000Z");
   deepEqual(parsed.game.events, gameFile.game.events);
 });
@@ -150,8 +150,14 @@ test("import ignores obsolete S&V UI session metadata and keeps only canonical s
   };
 
   const imported = importGameFileJson(JSON.stringify(sectsAndViolets), SECTS_AND_VIOLETS);
-  const { ui: _obsoleteUi, ...canonicalOnly } = sectsAndViolets;
-  deepEqual(imported, canonicalOnly);
+  const { scriptId: _legacyScriptId, ...gameMetadata } = sectsAndViolets.game;
+  deepEqual(imported, {
+    schemaVersion: 4,
+    game: {
+      script: { type: "official", scriptId: SECTS_AND_VIOLETS },
+      ...gameMetadata,
+    },
+  });
   equal(imported.ui, undefined);
   try {
     importGameFileJson(JSON.stringify(sectsAndViolets), TROUBLE_BREWING);
@@ -161,10 +167,10 @@ test("import ignores obsolete S&V UI session metadata and keeps only canonical s
   }
 });
 
-test("import normalizes a script-less schema-v2 file to canonical Trouble Brewing v3", () => {
+test("import normalizes a script-less schema-v2 file to canonical Trouble Brewing v4", () => {
   const legacy = structuredClone(gameFile) as unknown as Record<string, unknown>;
   legacy.schemaVersion = 2;
-  delete (legacy.game as Record<string, unknown>).scriptId;
+  delete (legacy.game as Record<string, unknown>).script;
 
   deepEqual(importGameFileJson(JSON.stringify(legacy), TROUBLE_BREWING), gameFile);
 });
@@ -172,7 +178,10 @@ test("import normalizes a script-less schema-v2 file to canonical Trouble Brewin
 test("import rejects a valid game belonging to a different script", () => {
   const sectsAndViolets = {
     ...gameFile,
-    game: { ...gameFile.game, scriptId: "sectsAndViolets" },
+    game: {
+      ...gameFile.game,
+      script: { type: "official" as const, scriptId: "sectsAndViolets" as const },
+    },
   };
   try {
     importGameFileJson(JSON.stringify(sectsAndViolets), TROUBLE_BREWING);

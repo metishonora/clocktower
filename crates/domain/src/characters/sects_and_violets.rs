@@ -6912,10 +6912,11 @@ fn validate_death_consequence_event(
 }
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    let script_id = game_file.official_script_id()?;
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
             schema_version: game_file.schema_version,
-            script_id: game_file.script_id,
+            script_id,
             event_count: 0,
             phase: Phase::Setup,
             players: vec![],
@@ -6965,8 +6966,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         pending_game_end,
         mathematician_audit,
     } = replay_context(active_events)?;
-    let mut warnings =
-        validate_setup_warnings_for_script(game_file.script_id, &initial_players, None)?;
+    let mut warnings = validate_setup_warnings_for_script(script_id, &initial_players, None)?;
     let day_state = if phase == Phase::Day {
         current_step
             .as_ref()
@@ -7171,7 +7171,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let pending_game_end = game_end.is_none().then_some(pending_game_end).flatten();
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id: game_file.script_id,
+        script_id,
         event_count: game_file.game.events.len(),
         phase,
         players,
@@ -9200,7 +9200,9 @@ mod tests {
         let players = setup_players(&events).unwrap();
         let game_file = GameFile {
             schema_version: 3,
-            script_id: ScriptId::SectsAndViolets,
+            script: crate::contracts::ScriptReference::Official {
+                script_id: ScriptId::SectsAndViolets,
+            },
             game: Game {
                 updated_at: None,
                 events,

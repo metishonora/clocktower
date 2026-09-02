@@ -78,8 +78,8 @@ test("accepts the BMR setup choice and deterministic distribution options", () =
 test("imports schema-v2 events as typed GameEvent values", () => {
   const gameFile = importGameFileJson(JSON.stringify(schemaV2Fixture()), TROUBLE_BREWING);
 
-  equal(gameFile.schemaVersion, 3);
-  equal(gameFile.game.scriptId, TROUBLE_BREWING);
+  equal(gameFile.schemaVersion, 4);
+  deepEqual(gameFile.game.script, { type: "official", scriptId: TROUBLE_BREWING });
   equal(gameFile.game.events.length, 8);
   equal(gameFile.game.events[0]?.type, "setupConfirmed");
   equal(gameFile.game.events[7]?.type, "phaseStepConfirmed");

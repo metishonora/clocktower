@@ -566,7 +566,7 @@ function isPendingGameEnd(value: unknown): boolean {
 export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 3 ||
+    (value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4) ||
     !isScriptId(value.scriptId) ||
     typeof value.eventCount !== "number" ||
     !isPhase(value.phase) ||

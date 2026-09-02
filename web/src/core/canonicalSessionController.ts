@@ -12,7 +12,7 @@ import type {
   Proposal,
   ReplayState,
 } from "./types.js";
-import type { ScriptId } from "./scripts.js";
+import { officialGameFileScriptId, type ScriptId } from "./scripts.js";
 
 export type CanonicalStreamIdentity = {
   scriptId: ScriptId;
@@ -178,7 +178,7 @@ export class CanonicalSessionController {
   }
 
   private validateGameFile<T>(gameFile: GameFile): CoreResult<T> | undefined {
-    if (gameFile.game.scriptId !== this.scriptId) {
+    if (officialGameFileScriptId(gameFile) !== this.scriptId) {
       return failure("SCRIPT_MISMATCH", "현재 세션과 다른 스크립트의 게임 파일입니다.");
     }
     const ids = gameFile.game.events.map(({ id }) => id);
@@ -202,8 +202,10 @@ export function replayMatches(
 }
 
 function streamIdentity(gameFile: GameFile): CanonicalStreamIdentity {
+  const scriptId = officialGameFileScriptId(gameFile);
+  if (!scriptId) throw new Error("custom script canonical sessions are not available");
   return {
-    scriptId: gameFile.game.scriptId,
+    scriptId,
     gameId: gameFile.game.id,
     eventIds: gameFile.game.events.map(({ id }) => id),
   };
