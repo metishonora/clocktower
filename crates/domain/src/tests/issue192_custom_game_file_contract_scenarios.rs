@@ -49,7 +49,7 @@ fn schema_v4_official_references_replay_without_changing_rule_ownership() {
 fn structurally_valid_custom_snapshot_stops_before_official_rule_dispatch() {
     let actual = replay(&game_v4(custom_definition(json!([
         "washerwoman",
-        "futureCharacter",
+        "clockmaker",
         "imp"
     ]))));
 
@@ -58,8 +58,8 @@ fn structurally_valid_custom_snapshot_stops_before_official_rule_dispatch() {
 }
 
 #[test]
-fn structural_uniqueness_is_exact_and_case_sensitive() {
-    let actual = replay(&game_v4(custom_definition(json!(["imp", "Imp"]))));
+fn canonical_custom_character_ids_reach_the_execution_guard() {
+    let actual = replay(&game_v4(custom_definition(json!(["imp", "clockmaker"]))));
 
     assert_eq!(actual["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED");
 }

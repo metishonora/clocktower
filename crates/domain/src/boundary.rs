@@ -117,6 +117,7 @@ fn parse_script_reference(value: &Value) -> Result<ScriptReference, CoreError> {
                 serde_json::from_value::<CustomScriptDefinition>(object["definition"].clone())
                     .map_err(|_| ErrorKind::MalformedCustomScriptDefinition.into_error())?;
             validate_custom_script_definition(&definition)?;
+            crate::characters::resolve_custom_script(&definition)?;
             Ok(ScriptReference::Custom { definition })
         }
         "official" | "custom" | _ => Err(ErrorKind::MalformedGameFile.into_error()),

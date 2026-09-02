@@ -14,6 +14,7 @@ import {
   TROUBLE_BREWING,
   type ScriptId,
 } from "./core/scripts.js";
+import { resolveCustomScriptDefinition } from "./customScriptRegistry.js";
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -209,11 +210,11 @@ function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
   if (new Set(value.characterIds).size !== value.characterIds.length) {
     throw new Error("커스텀 시나리오에 중복된 캐릭터가 있습니다.");
   }
-  return {
+  return resolveCustomScriptDefinition({
     id: value.id,
     name: value.name,
     characterIds: [...value.characterIds],
-  };
+  });
 }
 
 function canonicalGameFile(gameFile: GameFile): GameFileV4 {

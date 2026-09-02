@@ -34,6 +34,7 @@ core.propose(gameFileJson, commandJson) -> proposalJson
 core.replay(gameFileJson) -> stateJson
 core.setupDistribution(requestJson) -> distributionJson
 core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
+core.customScriptCatalog() -> CustomScriptCatalogEntry[]
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
@@ -51,6 +52,11 @@ input combinations and maps a caller-supplied unsigned 32-bit choice token onto 
 pool. The optional current input is used only to exclude a semantically identical complete draft
 when another exists. This query returns `PhaseStepInput` only and never constructs a Command,
 Proposal, Confirmed Event, persisted value, or Reveal payload.
+
+`customScriptCatalog` is a stateless read-only compatibility query exposing only the canonical
+custom-script Character `id` and `kind` pairs. It exists so the TypeScript catalog can be checked
+against the generated Rust/WASM allowlist without maintaining a third fixture. It carries no
+script ownership, Setup modifier, phase order, command routing, or Character-rule metadata.
 
 Keep the Rust WebAssembly API stateless for MVP. Calls that depend on confirmed game state receive the current `GameFile`; setup draft queries receive only their draft input.
 
@@ -103,9 +109,10 @@ web
 
 ### Rust Domain Module Ownership
 
-Keep the public Rust API limited to the four JSON entrypoints: `replay_json`, `propose_json`,
-`setup_distribution_json`, and `suggest_phase_input_json`. Domain modules and their types stay
-crate-private unless an external Rust consumer is intentionally added.
+Keep the public Rust API limited to the four result-envelope JSON entrypoints (`replay_json`,
+`propose_json`, `setup_distribution_json`, and `suggest_phase_input_json`) plus the read-only
+`custom_script_catalog_json` compatibility query. Domain modules and their types stay crate-private
+unless an external Rust consumer is intentionally added.
 
 Organize `crates/domain/src` by cohesive domain responsibility:
 
@@ -126,6 +133,7 @@ night.rs
 messages.rs
 characters/
   mod.rs
+  registry.rs
   trouble_brewing.rs
   sects_and_violets.rs
   sects_and_violets/
@@ -147,17 +155,23 @@ characters/
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
+- `characters/registry.rs` resolves an ordered custom definition against the TB/S&V allowlist and
+  exposes roster-scoped membership and canonical `CharacterKind`. The registry does not assign a
+  script owner; official script modules supply only their typed ID/kind projections.
 - `identity.rs` owns validated event identities used while crossing the import/replay boundary.
 - `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
   Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
 
 `GameFile.game.script` is the canonical script reference. Official references carry a `scriptId`;
 custom references carry the complete definition snapshot needed to resolve their Character roster.
+Structural parsing first validates the definition shape and exact ID uniqueness. Registry
+resolution then rejects any ID outside the current TB/S&V allowlist, including non-canonical case
+and all BMR IDs, before replay or proposal can reach a script-specific reducer. A successful
+resolution preserves definition order and provides roster-scoped membership and kind lookup.
 `replay`, `propose`, and `suggestPhaseInput` obtain an official selector from that reference;
 `setupDistribution` receives it in its standalone request. Dispatch occurs before a persisted event
-or command can enter a script-specific reducer. Until the custom registry resolves a definition, or
-an official script implements an event or command, reject it explicitly rather than falling back to
-another script's rules.
+or command can enter a script-specific reducer. Registry-resolved custom execution remains guarded
+until its Setup and phase dispatch are implemented; it never falls back to another script's rules.
 
 ### Character Script File Convention
 
@@ -674,7 +688,7 @@ type GameFile = {
 
 IndexedDB stores one latest official `GameFile` per script without `exportedAt`. Official script
 pages bind their storage driver to one script key, so navigation cannot replace another script's
-latest game. Custom-script storage and sessions are deferred until their registry exists.
+latest game. Custom-script storage, sessions, and UI remain deferred to their dedicated issues.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 

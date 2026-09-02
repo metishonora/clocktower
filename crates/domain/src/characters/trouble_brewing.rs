@@ -2307,6 +2307,13 @@ pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     TbCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
+pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
+    TbCharacterId::ALL
+        .into_iter()
+        .map(|id| (id.as_str(), id.metadata().kind))
+        .collect()
+}
+
 pub(crate) fn is_townsfolk(character: &str) -> bool {
     matches!(character_kind(character), Some(CharacterKind::Townsfolk))
 }

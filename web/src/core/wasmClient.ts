@@ -20,11 +20,17 @@ import {
   parseSetupDistribution,
 } from "./validation.js";
 import init, {
+  custom_script_catalog as wasmCustomScriptCatalog,
   propose as wasmPropose,
   replay as wasmReplay,
   setup_distribution as wasmSetupDistribution,
   suggest_phase_input as wasmSuggestPhaseInput,
 } from "../generated/clocktower_wasm/clocktower_wasm.js";
+
+export type CustomScriptCatalogEntry = {
+  id: string;
+  kind: "Townsfolk" | "Outsider" | "Minion" | "Demon";
+};
 
 let initPromise: Promise<void> | undefined;
 let initialized = false;
@@ -89,6 +95,11 @@ export async function suggestPhaseInput(
     JSON.parse(wasmSuggestPhaseInput(JSON.stringify(gameFile), JSON.stringify(request))),
     parsePhaseInputSuggestion,
   );
+}
+
+export async function customScriptCatalog(): Promise<CustomScriptCatalogEntry[]> {
+  await ensureWasm();
+  return JSON.parse(wasmCustomScriptCatalog()) as CustomScriptCatalogEntry[];
 }
 
 export const wasmCoreAdapter: CoreAdapter = {

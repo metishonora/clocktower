@@ -55,7 +55,7 @@ test("generated WASM accepts a custom snapshot but never falls back to official 
     definition: {
       id: "custom-stable-id",
       name: "Mixed roster",
-      characterIds: ["washerwoman", "futureCharacter", "imp"],
+      characterIds: ["washerwoman", "clockmaker", "imp"],
     },
   }));
 
