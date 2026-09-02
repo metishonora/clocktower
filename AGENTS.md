@@ -5,6 +5,7 @@
 - Keep `main` deployable. Start normal code work from an updated `develop` in a dedicated issue branch and worktree.
 - Issue branches target `develop`; releases target `main` through `develop`.
 - Branch hotfixes from `main` and merge them back into `develop`.
+- When explicitly closing an issue, stop its review server and remove its clean issue worktree after merge and push. If the worktree is dirty or unmerged, preserve it and report the blocker; never force removal.
 - Keep live-play UI concise for a rule-literate Storyteller. Prefer actionable values and add explanatory copy only for validation, failure, recovery, destructive actions, or explicit requests.
 - Materially different approaches may be proposed when they have a concrete benefit. Before adopting one in tests or production implementation, document in the plan how it differs from approved decisions or established project references, along with its rationale and tradeoffs, and obtain explicit user approval.
 - For Rust domain changes, follow `ARCHITECTURE.md`, including keeping script-specific character rules in `characters/<script_name>.rs`.
