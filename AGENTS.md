@@ -14,6 +14,7 @@
 
 - Use prototypes to settle one bounded set of material UI decisions before production implementation.
 - Keep the review screen faithful to the current `develop` UI even when data or behavior is simplified, and keep review-only controls outside it. Do not add tests solely for prototype presentation.
+- Skip full regression suites for isolated prototypes unless shared production code or configuration changes.
 - Have `prototype_reviewer` verify new or materially revised prototypes before user review.
 - Record approved decisions and retain the approved prototype as the production visual baseline.
 - Prototype approval covers UI and interaction only; production acceptance uses the real entry and runtime.
