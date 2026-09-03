@@ -15,6 +15,13 @@ const PromoCardPrototypeEntry = React.lazy(async () => {
   return { default: module.PromoCardPrototype };
 });
 
+const DevIssue200CustomScriptPrototype = import.meta.env.DEV
+  ? React.lazy(async () => {
+      const module = await import("./issue200CustomScriptPrototype");
+      return { default: module.Issue200CustomScriptPrototype };
+    })
+  : undefined;
+
 const productionPromoCardRoute = resolvePromoCardProductionRoute(window.location);
 const devPromoCardRoute = !productionPromoCardRoute && import.meta.env.DEV
   ? resolvePromoCardRoute(window.location)
@@ -28,10 +35,16 @@ const promoCardDesign = productionPromoCardRoute
       ? "vellum"
     : undefined;
 const promoCardRequested = Boolean(productionPromoCardRoute || devPromoCardRoute);
-
+const issue200PrototypeRequested =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).get("prototype") === "issue-200-custom-script";
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {promoCardRequested && promoCardRoute ? (
+    {issue200PrototypeRequested && DevIssue200CustomScriptPrototype ? (
+      <React.Suspense fallback={null}>
+        <DevIssue200CustomScriptPrototype />
+      </React.Suspense>
+    ) : promoCardRequested && promoCardRoute ? (
       <React.Suspense fallback={null}>
         <PromoCardPrototypeEntry
           variant={promoCardRoute}
