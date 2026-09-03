@@ -1,0 +1,13 @@
+.issue200EntryPrototype {
+  min-height: 100vh;
+  color: #273644;
+}
+
+.issue200EntryPrototype .issue200CustomChoice {
+  color: #273644;
+}
+
+.issue200EntryPrototype .issue200CustomChoice img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 22px 30px rgba(43, 32, 21, .2));
+}

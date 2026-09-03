@@ -58,8 +58,10 @@ const scripts = {
 
 export function ScriptLanding({
   onNavigate = (href) => window.location.assign(href),
+  additionalChoice,
 }: {
   onNavigate?: (href: string) => void;
+  additionalChoice?: React.ReactNode;
 }) {
   const [selectedScript, setSelectedScript] = useState<LandingScriptId>();
   const [loading, setLoading] = useState(false);
@@ -89,6 +91,7 @@ export function ScriptLanding({
               </button>
             );
           })}
+          {additionalChoice}
         </section>
         <CommunityContentNotice />
       </main>

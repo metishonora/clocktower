@@ -1,0 +1,1256 @@
+:root {
+  color: #efe6d7;
+  background: #07090b;
+  font-family: Pretendard, Inter, "Noto Sans KR", sans-serif;
+}
+
+@font-face {
+  font-family: "Manuscript Ink";
+  src: url("./assets/fonts/NanumPenScript-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: #07090b; }
+button { font: inherit; cursor: pointer; }
+
+.issue200JourneyReview {
+  min-height: 100vh;
+  color: #efe6d7;
+  background: #07090b;
+}
+
+.issue200JourneyCanvas {
+  position: relative;
+  height: calc(100vh - 84px);
+  min-height: 520px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #050607;
+}
+
+.issue200JourneyFrame,
+.issue200JourneyFrame img,
+.issue200JourneyVignette { position: absolute; inset: 0; }
+
+.issue200JourneyFrame {
+  z-index: 1;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.issue200JourneyFrame img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  transform-origin: 50% 9%;
+  filter: saturate(.92) contrast(1.03);
+  transition: transform 880ms cubic-bezier(.16,.72,.18,1), filter 560ms ease;
+  user-select: none;
+}
+
+.issue200JourneyFrame.is-scenario img { transform: scale(1.48); }
+.issue200JourneyFrame.is-characters img { transform: scale(1.23); }
+.issue200JourneyFrame.is-review img { transform: scale(1); }
+
+.issue200JourneyFrame::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 48% 42% at 50% 81%, rgba(255, 222, 169, .16), rgba(255, 218, 159, .06) 56%, transparent 80%);
+  content: "";
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.issue200JourneyFrame.is-scenario::after {
+  background: radial-gradient(ellipse 48% 42% at 50% 81%, rgba(255, 226, 180, .22), rgba(255, 218, 159, .09) 56%, transparent 80%);
+}
+
+.issue200JourneyVignette {
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(3, 5, 7, .54), transparent 28%, transparent 73%, rgba(3, 4, 5, .14)),
+    linear-gradient(0deg, rgba(2, 3, 4, .12), transparent 27%),
+    radial-gradient(ellipse at center, transparent 58%, rgba(1, 2, 3, .34) 100%);
+  pointer-events: none;
+}
+
+.issue200JourneyFrame.is-scenario + .issue200JourneyVignette {
+  background:
+    linear-gradient(90deg, rgba(3, 5, 7, .46), transparent 24%, transparent 76%, rgba(3, 4, 5, .1)),
+    linear-gradient(0deg, rgba(2, 3, 4, .08), transparent 24%),
+    radial-gradient(ellipse at center, transparent 62%, rgba(1, 2, 3, .3) 100%);
+}
+
+.issue200InkFilters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.issue200ScriptSheet {
+  --sheet-title: #caa675;
+  --sheet-text: rgba(228, 213, 190, .72);
+  --sheet-text-active: #fff0d8;
+  --sheet-shadow: 0 2px 8px rgba(0, 0, 0, .86), .35px .2px 0 rgba(255, 232, 190, .16);
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: clamp(30px, 5vh, 62px);
+  display: grid;
+  width: min(760px, calc(100% - 48px));
+  min-height: 226px;
+  padding: 34px clamp(66px, 7vw, 104px) 26px;
+  align-content: center;
+  justify-items: center;
+  color: var(--sheet-text-active);
+  border: 1px solid rgba(198, 157, 101, .56);
+  background:
+    linear-gradient(90deg, rgba(237, 204, 151, .05), transparent 14% 86%, rgba(237, 204, 151, .04)),
+    radial-gradient(ellipse at 50% 18%, rgba(126, 81, 48, .2), transparent 54%),
+    linear-gradient(145deg, rgba(42, 31, 26, .96), rgba(19, 17, 17, .96) 58%, rgba(29, 22, 20, .96));
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, .72),
+    0 5px 18px rgba(0, 0, 0, .58),
+    inset 0 1px rgba(255, 224, 174, .13),
+    inset 0 0 42px rgba(0, 0, 0, .4);
+  transform: translateX(-50%);
+  -webkit-backdrop-filter: blur(7px) saturate(.72);
+  backdrop-filter: blur(7px) saturate(.72);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  isolation: isolate;
+}
+
+.issue200ScriptSheet::before {
+  position: absolute;
+  z-index: -1;
+  inset: 8px;
+  border: 1px solid rgba(195, 151, 93, .22);
+  background:
+    linear-gradient(135deg, rgba(216, 171, 105, .48) 0 1px, transparent 1px) top left / 42px 42px no-repeat,
+    linear-gradient(-135deg, rgba(216, 171, 105, .48) 0 1px, transparent 1px) top right / 42px 42px no-repeat,
+    linear-gradient(45deg, rgba(216, 171, 105, .36) 0 1px, transparent 1px) bottom left / 42px 42px no-repeat,
+    linear-gradient(-45deg, rgba(216, 171, 105, .36) 0 1px, transparent 1px) bottom right / 42px 42px no-repeat;
+  content: "";
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  pointer-events: none;
+}
+
+.issue200ScriptSheet::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 14px 14px, #b68b52 0 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #b68b52 0 1.5px, transparent 2px),
+    radial-gradient(circle at 14px calc(100% - 14px), #8e623d 0 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #8e623d 0 1.5px, transparent 2px),
+    repeating-linear-gradient(96deg, transparent 0 12px, rgba(255, 233, 198, .018) 13px, transparent 14px 25px);
+  content: "";
+  opacity: .8;
+  pointer-events: none;
+}
+
+.issue200ScriptSheet.panel-transparent {
+  border-color: rgba(211, 171, 111, .68);
+  background:
+    linear-gradient(90deg, rgba(29, 20, 17, .44), rgba(20, 17, 17, .29) 24% 76%, rgba(29, 20, 17, .44)),
+    radial-gradient(ellipse at center, rgba(16, 13, 13, .42), rgba(16, 13, 13, .18) 63%, transparent 100%);
+  box-shadow:
+    0 24px 66px rgba(0, 0, 0, .52),
+    0 4px 14px rgba(0, 0, 0, .38),
+    inset 0 1px rgba(255, 225, 177, .16),
+    inset 0 0 34px rgba(0, 0, 0, .2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  clip-path: none;
+}
+
+.issue200ScriptSheet.panel-transparent::before {
+  border-color: rgba(218, 177, 115, .3);
+}
+
+.issue200ScriptSheet.panel-transparent::after { opacity: .54; }
+
+.issue200FileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.issue200ScriptSheet header {
+  display: grid;
+  padding: 0 0 16px;
+  text-align: center;
+}
+
+.issue200ScriptSheet h1 {
+  margin: 0;
+  color: var(--sheet-title);
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  font-size: clamp(1.05rem, 1.45vw, 1.28rem);
+  font-weight: 700;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .72), .35px .25px 0 rgba(255, 226, 177, .18);
+}
+
+.issue200ScriptChoices {
+  position: relative;
+  display: grid;
+  width: 100%;
+  margin: 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(24px, 3.5vw, 48px);
+}
+
+.issue200ScriptChoices::after {
+  position: absolute;
+  top: 9px;
+  bottom: 12px;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(transparent, rgba(193, 153, 101, .25) 26% 74%, transparent);
+  content: "";
+}
+
+.issue200ScriptChoices button {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  padding: 6px 8px 10px;
+  border: 0;
+  border-bottom: 0;
+  color: var(--sheet-text);
+  background: transparent;
+  justify-items: center;
+  text-align: center;
+  transition: color 100ms ease;
+}
+
+.issue200ScriptChoices button::before {
+  display: none;
+}
+
+.issue200ScriptChoices button:hover,
+.issue200ScriptChoices button:focus-visible,
+.issue200ScriptChoices button[aria-pressed="true"] {
+  color: var(--sheet-text-active);
+}
+
+.issue200ScriptChoices button:focus-visible { outline: 0; }
+
+.issue200ScriptChoices strong {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  width: fit-content;
+  padding-bottom: 3px;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  font-size: clamp(1.02rem, 1.34vw, 1.18rem);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.3;
+  word-break: keep-all;
+  text-shadow: var(--sheet-shadow);
+}
+
+.issue200ScriptChoices strong::after {
+  position: absolute;
+  right: -5px;
+  bottom: -1px;
+  left: -3px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, #bc343d 4%, #e05050 31%, #a51e29 82%, transparent);
+  clip-path: polygon(0 48%, 15% 35%, 34% 54%, 55% 30%, 76% 48%, 100% 23%, 99% 73%, 77% 64%, 53% 79%, 32% 65%, 12% 78%, 1% 68%);
+  content: "";
+  opacity: 0;
+  transform: scaleX(.08) rotate(-.45deg);
+  transform-origin: left center;
+  transition: opacity 90ms ease, transform 150ms cubic-bezier(.2,.74,.18,1);
+}
+
+.issue200ScriptChoices button[aria-pressed="true"] strong::after {
+  opacity: 1;
+  transform: scaleX(1) rotate(-.45deg);
+}
+
+.issue200ScriptChoices button:focus-visible strong::after {
+  opacity: .6;
+  transform: scaleX(1) rotate(-.45deg);
+}
+
+.issue200ScriptChoices button[aria-pressed="true"]:focus-visible strong::after { opacity: 1; }
+
+.issue200ScriptImportStatus {
+  min-height: 18px;
+  margin: 2px auto -4px;
+  color: transparent;
+  font: 650 .63rem/1.35 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  text-align: center;
+}
+.issue200ScriptImportStatus.is-error { color: #e49c91; }
+
+.issue200ScriptContinue {
+  position: relative;
+  display: block;
+  width: max-content;
+  min-height: 42px;
+  margin: 14px 0 0 auto;
+  padding: 5px 8px 10px;
+  border: 0;
+  color: var(--sheet-text-active);
+  background: transparent;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  font-size: .98rem;
+  font-weight: 700;
+  text-shadow: var(--sheet-shadow);
+}
+
+.issue200ScriptContinue::after {
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  left: 4px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #bd343d 6%, #e05050 48%, #a51e29 91%, transparent);
+  clip-path: polygon(0 44%, 18% 30%, 42% 55%, 65% 28%, 100% 48%, 98% 74%, 62% 68%, 39% 80%, 16% 66%, 1% 72%);
+  content: "";
+  transform: rotate(-.5deg) scaleX(.88);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.issue200ScriptContinue:focus-visible { outline: 2px solid #8c542d; outline-offset: 4px; }
+.issue200ScriptContinue:hover::after,
+.issue200ScriptContinue:focus-visible::after { transform: rotate(-.5deg) scaleX(1); }
+.issue200ScriptContinue:active { transform: translateY(1px); }
+
+.issue200CharacterSheet {
+  position: absolute;
+  z-index: 4;
+  top: clamp(96px, 13vh, 132px);
+  right: max(24px, calc((100% - 1120px) / 2));
+  bottom: clamp(22px, 3.5vh, 38px);
+  left: max(24px, calc((100% - 1120px) / 2));
+  display: grid;
+  min-height: 0;
+  padding: 25px 34px 20px;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 13px;
+  color: #f8ead4;
+  border: 1px solid rgba(211, 171, 111, .68);
+  background:
+    linear-gradient(90deg, rgba(29, 20, 17, .52), rgba(20, 17, 17, .32) 24% 76%, rgba(29, 20, 17, .52)),
+    radial-gradient(ellipse at center, rgba(16, 13, 13, .46), rgba(16, 13, 13, .2) 65%, transparent 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 4px 16px rgba(0, 0, 0, .42), inset 0 0 36px rgba(0, 0, 0, .2);
+  isolation: isolate;
+}
+
+.issue200CharacterSheet::before {
+  position: absolute;
+  z-index: -1;
+  inset: 8px;
+  border: 1px solid rgba(218, 177, 115, .28);
+  content: "";
+  pointer-events: none;
+}
+
+.issue200CharacterSheet::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 14px 14px, #b68b52 0 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #b68b52 0 1.5px, transparent 2px),
+    radial-gradient(circle at 14px calc(100% - 14px), #8e623d 0 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #8e623d 0 1.5px, transparent 2px);
+  content: "";
+  pointer-events: none;
+}
+
+.issue200CharacterHeader {
+  display: flex;
+  min-height: 35px;
+  padding: 0 5px 10px;
+  align-items: end;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(205, 164, 105, .24);
+}
+
+.issue200CharacterHeader h1 {
+  margin: 0;
+  color: #d3b27e;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  font-size: clamp(1.03rem, 1.5vw, 1.28rem);
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+
+.issue200CharacterFields {
+  display: grid;
+  padding-inline: 5px;
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, .66fr);
+  gap: 28px;
+}
+
+.issue200CharacterName,
+.issue200CharacterSearch { display: grid; gap: 4px; }
+.issue200CharacterName span,
+.issue200CharacterSearch span { color: rgba(214, 190, 156, .58); font-size: .57rem; font-weight: 800; letter-spacing: .08em; }
+.issue200CharacterName input,
+.issue200CharacterSearch input {
+  width: 100%;
+  min-height: 36px;
+  padding: 3px 2px 7px;
+  border: 0;
+  border-bottom: 1px solid rgba(211, 171, 111, .32);
+  border-radius: 0;
+  outline: 0;
+  color: #fff2dc;
+  background: transparent;
+  font: 650 .83rem/1.2 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200CharacterName input:focus,
+.issue200CharacterSearch input:focus { border-bottom-color: #cfa166; }
+.issue200CharacterName input::placeholder,
+.issue200CharacterSearch input::placeholder { color: rgba(218, 203, 180, .36); }
+
+.issue200CharacterFilters {
+  display: flex;
+  min-width: 0;
+  padding-inline: 5px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.issue200CharacterKinds,
+.issue200CharacterSources { display: flex; min-width: 0; gap: 5px; }
+.issue200CharacterKinds button,
+.issue200CharacterSources button {
+  min-height: 44px;
+  padding: 5px 13px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: rgba(221, 207, 187, .58);
+  background: transparent;
+  font-size: .65rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.issue200CharacterKinds .kind-townsfolk,
+.issue200CharacterGrid .kind-townsfolk,
+.issue200CharacterDetail.kind-townsfolk,
+.issue200ReviewKind.kind-townsfolk {
+  --issue200-kind-accent: #5a9fc6;
+  --issue200-kind-glow: rgba(90, 159, 198, .58);
+  --issue200-kind-surface: rgba(35, 87, 116, .34);
+}
+.issue200CharacterKinds .kind-outsider,
+.issue200CharacterGrid .kind-outsider,
+.issue200CharacterDetail.kind-outsider,
+.issue200ReviewKind.kind-outsider {
+  --issue200-kind-accent: #45b8aa;
+  --issue200-kind-glow: rgba(69, 184, 170, .58);
+  --issue200-kind-surface: rgba(25, 100, 94, .34);
+}
+.issue200CharacterKinds .kind-minion,
+.issue200CharacterGrid .kind-minion,
+.issue200CharacterDetail.kind-minion,
+.issue200ReviewKind.kind-minion {
+  --issue200-kind-accent: #bd547d;
+  --issue200-kind-glow: rgba(189, 84, 125, .6);
+  --issue200-kind-surface: rgba(102, 34, 67, .36);
+}
+.issue200CharacterKinds .kind-demon,
+.issue200CharacterGrid .kind-demon,
+.issue200CharacterDetail.kind-demon,
+.issue200ReviewKind.kind-demon {
+  --issue200-kind-accent: #df5948;
+  --issue200-kind-glow: rgba(223, 89, 72, .64);
+  --issue200-kind-surface: rgba(119, 38, 31, .38);
+}
+.issue200CharacterKinds button small { margin-left: 3px; color: var(--issue200-kind-accent); font-size: .57rem; opacity: .8; }
+.issue200CharacterKinds button[aria-selected="true"] {
+  border-color: var(--issue200-kind-accent);
+  color: #fff0d8;
+  background: var(--issue200-kind-surface);
+  box-shadow: inset 0 -2px 0 var(--issue200-kind-accent);
+}
+.issue200CharacterKinds button:focus-visible { outline: 1px solid var(--issue200-kind-accent); outline-offset: 2px; }
+.issue200CharacterSources button[aria-pressed="true"] {
+  border-color: rgba(211, 171, 111, .3);
+  color: #fff0d8;
+  background: rgba(42, 28, 23, .46);
+}
+.issue200CharacterSources button:focus-visible { outline: 1px solid #d3ab73; outline-offset: 2px; }
+
+.issue200CharacterCatalog {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+  border-top: 1px solid rgba(205, 164, 105, .16);
+  border-bottom: 1px solid rgba(205, 164, 105, .16);
+}
+.issue200CharacterGrid {
+  display: grid;
+  min-height: 0;
+  overflow: auto;
+  padding: 13px 6px 15px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  align-content: start;
+  gap: 9px 5px;
+  scrollbar-color: rgba(194, 147, 91, .4) transparent;
+}
+.issue200CharacterGrid > p { grid-column: 1 / -1; margin: 38px auto; color: rgba(225, 210, 188, .58); font-size: .75rem; }
+.issue200CharacterGrid button {
+  display: grid;
+  min-height: 100px;
+  padding: 6px 3px;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  border: 0;
+  color: rgba(231, 219, 201, .7);
+  background: transparent;
+}
+.issue200CharacterGrid button > span {
+  position: relative;
+  display: grid;
+  width: 58px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid var(--issue200-kind-accent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 40%, var(--issue200-kind-surface), transparent 68%),
+    rgba(11, 19, 23, .84);
+  box-shadow: 0 7px 17px rgba(0, 0, 0, .44);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.issue200CharacterGrid button img { width: 53px; height: 53px; object-fit: contain; border-radius: 50%; }
+.issue200CharacterGrid button > strong { overflow: hidden; max-width: 100%; font-size: .61rem; text-overflow: ellipsis; white-space: nowrap; }
+.issue200CharacterGrid button i {
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  display: none;
+  width: 19px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid #281819;
+  border-radius: 50%;
+  color: #fff4de;
+  background: #a9333b;
+  font-size: .52rem;
+  font-style: normal;
+  font-weight: 900;
+}
+.issue200CharacterGrid button:hover > span { transform: translateY(-2px); }
+.issue200CharacterGrid button:focus-visible { outline: 1px solid var(--issue200-kind-accent); outline-offset: -2px; border-radius: 3px; }
+.issue200CharacterGrid button[aria-pressed="true"] { color: #fff2dc; }
+.issue200CharacterGrid button[aria-pressed="true"] > span { box-shadow: 0 0 0 3px var(--issue200-kind-glow), 0 8px 19px rgba(0, 0, 0, .5); }
+.issue200CharacterGrid button[aria-pressed="true"] i { display: grid; }
+
+.issue200CharacterDetail {
+  display: grid;
+  min-height: 76px;
+  padding: 10px 8px 9px;
+  grid-template-columns: 50px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--issue200-kind-accent);
+  background:
+    linear-gradient(90deg, var(--issue200-kind-surface), rgba(31, 21, 19, .58) 34% 72%, var(--issue200-kind-surface)),
+    rgba(21, 17, 16, .74);
+}
+.issue200CharacterDetailToken {
+  display: grid;
+  width: 48px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid var(--issue200-kind-accent);
+  border-radius: 50%;
+  background: rgba(11, 19, 23, .82);
+}
+.issue200CharacterDetailToken img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
+.issue200CharacterDetail > div { min-width: 0; }
+.issue200CharacterDetail header { display: flex; min-width: 0; align-items: baseline; gap: 9px; }
+.issue200CharacterDetail h2 {
+  flex: none;
+  margin: 0;
+  color: #fff0d8;
+  font: 700 .77rem/1.2 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200CharacterDetail header small {
+  overflow: hidden;
+  color: rgba(214, 190, 156, .62);
+  font: 700 .54rem/1.2 Georgia, serif;
+  letter-spacing: .04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.issue200CharacterDetail p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 6px 0 0;
+  color: rgba(239, 223, 201, .76);
+  font-size: .62rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.issue200CharacterDetail > button {
+  display: grid;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  color: rgba(225, 204, 176, .62);
+  background: transparent;
+  font: 400 1.25rem/1 Georgia, serif;
+}
+.issue200CharacterDetail > button:hover,
+.issue200CharacterDetail > button:focus-visible { color: #fff0d8; }
+
+.issue200CharacterFooter {
+  display: flex;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 5px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+}
+.issue200CharacterFooter.has-detail { min-height: 76px; }
+.issue200CharacterFooter .issue200CharacterDetail { flex: 1 1 auto; min-width: 0; }
+.issue200CharacterFooter > div { display: flex; flex: none; align-items: center; gap: 18px; }
+.issue200CharacterBack,
+.issue200CharacterContinue {
+  position: relative;
+  min-height: 40px;
+  padding: 5px 2px 8px;
+  border: 0;
+  color: rgba(236, 220, 197, .64);
+  background: transparent;
+  font: 700 .76rem/1 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200CharacterContinue { color: #fff0d8; }
+.issue200CharacterContinue::after {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  height: 2px;
+  background: #bd343d;
+  content: "";
+}
+
+.issue200ReviewSheet {
+  position: absolute;
+  z-index: 4;
+  top: clamp(82px, 10vh, 108px);
+  right: max(24px, calc((100% - 1120px) / 2));
+  bottom: clamp(22px, 3.5vh, 38px);
+  left: max(24px, calc((100% - 1120px) / 2));
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  padding: 25px 34px 20px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 13px;
+  color: #f8ead4;
+  border: 1px solid rgba(211, 171, 111, .68);
+  background:
+    linear-gradient(90deg, rgba(29, 20, 17, .56), rgba(20, 17, 17, .36) 24% 76%, rgba(29, 20, 17, .56)),
+    radial-gradient(ellipse at center, rgba(16, 13, 13, .5), rgba(16, 13, 13, .22) 68%, transparent 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 4px 16px rgba(0, 0, 0, .42), inset 0 0 36px rgba(0, 0, 0, .2);
+  isolation: isolate;
+}
+.issue200ReviewScroll { display: contents; }
+.issue200ReviewSheet::before {
+  position: absolute;
+  z-index: -1;
+  inset: 8px;
+  border: 1px solid rgba(218, 177, 115, .28);
+  content: "";
+  pointer-events: none;
+}
+.issue200ReviewSheet > header {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(205, 164, 105, .24);
+}
+.issue200ReviewSheet h1 {
+  margin: 0;
+  color: #d3b27e;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  font-size: clamp(1.08rem, 1.8vw, 1.4rem);
+  letter-spacing: .14em;
+}
+.issue200ReviewSummary {
+  display: grid;
+  margin: 0;
+  grid-template-columns: minmax(150px, 2fr) minmax(72px, .8fr) repeat(4, minmax(52px, .56fr));
+  border-block: 1px solid rgba(205, 164, 105, .16);
+}
+.issue200ReviewSummary > div {
+  min-width: 0;
+  padding: 12px 13px;
+  border-left: 1px solid rgba(205, 164, 105, .13);
+}
+.issue200ReviewSummary > div:first-child { border-left: 0; }
+.issue200ReviewSummary dt {
+  margin-bottom: 5px;
+  color: rgba(214, 190, 156, .55);
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.issue200ReviewSummary dd {
+  overflow: hidden;
+  margin: 0;
+  color: #fff0d8;
+  font: 700 .76rem/1.3 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.issue200ReviewSummary dd.is-missing { color: #e49c91; }
+.issue200ReviewSummary > .issue200ReviewSources {
+  display: flex;
+  padding-block: 8px;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid rgba(205, 164, 105, .13);
+  border-left: 0;
+}
+.issue200ReviewSources dt { margin: 0; }
+.issue200ReviewSources dd {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.issue200ReviewSources dd span { color: rgba(238, 219, 192, .68); }
+.issue200ReviewSources dd b { color: #d3b27e; letter-spacing: .06em; }
+.issue200ReviewRoster {
+  min-height: 0;
+  overflow: auto;
+  padding: 13px 6px 16px;
+  border-block: 1px solid rgba(205, 164, 105, .16);
+  scrollbar-color: rgba(194, 147, 91, .4) transparent;
+}
+.issue200ReviewRosterEmpty {
+  margin: 42px auto;
+  color: rgba(225, 210, 188, .54);
+  font: 650 .74rem/1.4 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  text-align: center;
+}
+.issue200ReviewKind + .issue200ReviewKind { margin-top: 18px; }
+.issue200ReviewKind h2 {
+  margin: 0 0 8px;
+  color: var(--issue200-kind-accent);
+  font: 800 .67rem/1.2 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  letter-spacing: .08em;
+}
+.issue200ReviewKind h2 small { margin-left: 4px; font-size: .54rem; opacity: .72; }
+.issue200ReviewKind ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  gap: 6px 8px;
+  list-style: none;
+}
+.issue200ReviewKind li {
+  display: grid;
+  min-width: 0;
+  min-height: 52px;
+  padding: 5px 7px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(205, 164, 105, .1);
+  background: linear-gradient(90deg, var(--issue200-kind-surface), rgba(18, 16, 16, .22));
+}
+.issue200ReviewKind li > span {
+  display: grid;
+  width: 38px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid var(--issue200-kind-accent);
+  border-radius: 50%;
+  background: rgba(11, 19, 23, .84);
+}
+.issue200ReviewKind li img { width: 35px; height: 35px; object-fit: contain; border-radius: 50%; }
+.issue200ReviewKind li > div { display: grid; min-width: 0; gap: 2px; }
+.issue200ReviewKind li strong,
+.issue200ReviewKind li small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.issue200ReviewKind li strong { color: #f6e6cd; font: 700 .64rem/1.2 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif; }
+.issue200ReviewKind li small { color: rgba(218, 196, 166, .5); font: 600 .49rem/1.2 Georgia, serif; }
+.issue200ReviewFindings {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 4px 2px;
+}
+.issue200ReviewFindings p {
+  margin: 0;
+  font: 650 .72rem/1.45 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200ReviewFindings p::before { margin-right: 7px; content: "—"; }
+.issue200ReviewFindings .is-blocked { color: #e49c91; }
+.issue200ReviewFindings .is-warning { color: #dfbd78; }
+.issue200ReviewFindings .is-ready { color: #a9c9ae; }
+.issue200ReviewRecommendation {
+  min-width: 0;
+  color: #dfbd78;
+  font: 650 .68rem/1.4 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200ReviewRecommendation ul {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+}
+.issue200ReviewRecommendation li::before { margin-right: 5px; content: "—"; }
+.issue200ReviewSheet > footer {
+  display: flex;
+  min-height: 44px;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 18px;
+}
+.issue200ReviewBack,
+.issue200ReviewStart,
+.issue200ReviewResume {
+  position: relative;
+  min-height: 44px;
+  padding: 6px 2px 9px;
+  border: 0;
+  color: rgba(236, 220, 197, .64);
+  background: transparent;
+  font: 700 .78rem/1 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+}
+.issue200ReviewBack { margin-right: auto; }
+.issue200ReviewStart.is-primary,
+.issue200ReviewResume.is-primary { color: #fff0d8; }
+.issue200ReviewStart.is-primary::after,
+.issue200ReviewResume.is-primary::after {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  height: 2px;
+  background: #bd343d;
+  content: "";
+}
+.issue200ReviewStart:disabled,
+.issue200ReviewResume:disabled { color: rgba(236, 220, 197, .26); cursor: default; }
+.issue200ReviewStart:disabled::after,
+.issue200ReviewResume:disabled::after { opacity: .2; }
+
+.issue200JourneyCaption {
+  position: absolute;
+  z-index: 3;
+  bottom: clamp(28px, 6vh, 68px);
+  left: clamp(28px, 5vw, 76px);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 17px;
+  align-items: end;
+  text-shadow: 0 3px 18px #000, 0 1px 3px #000;
+}
+
+.issue200JourneyCaption > span {
+  padding-bottom: 7px;
+  color: #b77a63;
+  font-family: Georgia, serif;
+  font-size: .72rem;
+  letter-spacing: .14em;
+}
+
+.issue200JourneyCaption small {
+  color: #cba86c;
+  font-size: .57rem;
+  font-weight: 900;
+  letter-spacing: .2em;
+}
+
+.issue200JourneyCaption h1 {
+  margin: 5px 0 0;
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: clamp(2.25rem, 4.8vw, 5rem);
+  font-weight: 500;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.issue200JourneyCaption p {
+  margin: 9px 0 0;
+  color: rgba(239, 230, 215, .68);
+  font-family: Georgia, "Noto Serif KR", serif;
+  font-size: .72rem;
+}
+
+.issue200JourneyEdge {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  width: 8vw;
+  min-width: 64px;
+  padding: 0;
+  border: 0;
+  color: rgba(239, 220, 186, .7);
+  background: transparent;
+  opacity: 0;
+  transition: opacity 180ms ease, background 180ms ease;
+}
+
+.issue200JourneyEdge:hover,
+.issue200JourneyEdge:focus-visible { opacity: 1; background: linear-gradient(90deg, rgba(0,0,0,.32), transparent); }
+.issue200JourneyEdge:disabled { pointer-events: none; }
+.issue200JourneyEdge span { font-family: Georgia, serif; font-size: 3rem; }
+.issue200JourneyPrevious { left: 0; }
+.issue200JourneyNext { right: 0; }
+.issue200JourneyNext:hover,
+.issue200JourneyNext:focus-visible { background: linear-gradient(-90deg, rgba(0,0,0,.32), transparent); }
+
+.issue200JourneyDock {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  min-height: 84px;
+  padding: 12px clamp(16px, 3vw, 42px);
+  grid-template-columns: minmax(205px, .8fr) minmax(440px, 1.7fr) auto;
+  gap: 24px;
+  align-items: center;
+  border-top: 1px solid rgba(211, 173, 112, .22);
+  background: linear-gradient(180deg, #11161a, #090c0f);
+  box-shadow: 0 -18px 46px rgba(0, 0, 0, .5);
+}
+
+.issue200JourneyIdentity { display: grid; gap: 3px; }
+.issue200JourneyIdentity small { color: #a78656; font-size: .5rem; font-weight: 900; letter-spacing: .16em; }
+.issue200JourneyIdentity strong { font-family: Georgia, "Noto Serif KR", serif; font-size: .88rem; font-weight: 500; }
+
+.issue200JourneySteps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.issue200JourneySteps button {
+  position: relative;
+  display: grid;
+  min-height: 48px;
+  padding: 5px 16px;
+  grid-template-columns: 27px 1fr;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  color: #7f898e;
+  background: transparent;
+  text-align: left;
+}
+.issue200JourneySteps button > span {
+  display: grid;
+  width: 27px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(158, 128, 82, .42);
+  border-radius: 50%;
+  color: #a88b61;
+  font-family: Georgia, serif;
+  font-size: .67rem;
+}
+.issue200JourneySteps strong { font-size: .68rem; }
+.issue200JourneySteps i {
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  width: 18px;
+  height: 1px;
+  background: rgba(145, 111, 70, .28);
+}
+.issue200JourneySteps button[aria-pressed="true"] { color: #f0e3cf; }
+.issue200JourneySteps button[aria-pressed="true"] > span {
+  border-color: #d0a467;
+  color: #1a1712;
+  background: #d0a467;
+  box-shadow: 0 0 22px rgba(202, 148, 83, .25);
+}
+
+.issue200JourneyWideToggle {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(213, 180, 126, .38);
+  border-radius: 999px;
+  color: #d9c6a7;
+  background: rgba(255, 255, 255, .025);
+  font-size: .64rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.issue200JourneyWideToggle[aria-pressed="true"] { border-color: #d0a467; color: #1a1712; background: #d0a467; }
+
+.issue200JourneyWide { min-width: 1440px; overflow-x: visible; }
+.issue200JourneyWide .issue200JourneyCanvas { min-width: 1440px; }
+
+@media (max-width: 720px) {
+  .issue200JourneyCanvas { height: calc(100svh - 120px); min-height: 430px; }
+  .issue200JourneyFrame img { object-position: center; }
+  .issue200JourneyCaption { bottom: 22px; left: 21px; }
+  .issue200JourneyCaption h1 { font-size: 2.25rem; }
+  .issue200JourneyCaption p { font-size: .65rem; }
+  .issue200JourneyEdge { min-width: 46px; }
+  .issue200JourneyDock {
+    min-height: 118px;
+    padding: 10px 12px;
+    grid-template-columns: 1fr auto;
+    gap: 7px 12px;
+  }
+  .issue200JourneyIdentity { display: none; }
+  .issue200JourneySteps { grid-column: 1 / -1; grid-row: 1; }
+  .issue200JourneySteps button { min-height: 48px; padding: 4px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .issue200JourneySteps button > span { width: 25px; }
+  .issue200JourneySteps strong { font-size: .59rem; }
+  .issue200JourneySteps i { right: -6px; width: 12px; }
+  .issue200JourneyWideToggle { grid-column: 1 / -1; grid-row: 2; justify-self: end; min-height: 38px; }
+  .issue200ScriptSheet {
+    bottom: 18px;
+    width: calc(100% - 18px);
+    min-height: 190px;
+    padding: 24px 26px 14px;
+    transform: translateX(-50%);
+  }
+  .issue200ScriptSheet header { padding-bottom: 12px; }
+  .issue200ScriptSheet h1 { font-size: .96rem; }
+  .issue200ScriptChoices { gap: 12px; }
+  .issue200ScriptChoices button { min-height: 58px; padding: 4px 3px 8px; }
+  .issue200ScriptChoices strong { font-size: clamp(.94rem, 4.35vw, 1.12rem); }
+  .issue200ScriptContinue { min-height: 42px; margin-top: 8px; font-size: 1.08rem; }
+
+  .issue200CharacterSheet {
+    top: 54px;
+    right: 8px;
+    bottom: 10px;
+    left: 8px;
+    padding: 16px 14px 12px;
+    gap: 8px;
+  }
+  .issue200CharacterHeader { min-height: 30px; padding: 0 3px 8px; }
+  .issue200CharacterHeader h1 { font-size: .96rem; }
+  .issue200CharacterFields { padding-inline: 3px; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 14px; }
+  .issue200CharacterName input,
+  .issue200CharacterSearch input { min-height: 34px; font-size: .76rem; }
+  .issue200CharacterFilters { display: grid; padding-inline: 3px; gap: 5px; }
+  .issue200CharacterKinds,
+  .issue200CharacterSources { overflow-x: auto; scrollbar-width: none; }
+  .issue200CharacterKinds::-webkit-scrollbar,
+  .issue200CharacterSources::-webkit-scrollbar { display: none; }
+  .issue200CharacterKinds button,
+  .issue200CharacterSources button { min-height: 44px; padding: 4px 10px; }
+  .issue200CharacterGrid { padding: 8px 2px 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 2px; }
+  .issue200CharacterGrid button { min-height: 82px; padding: 3px 1px; }
+  .issue200CharacterGrid button > span { width: 48px; }
+  .issue200CharacterGrid button img { width: 44px; height: 44px; }
+  .issue200CharacterGrid button > strong { font-size: .55rem; }
+  .issue200CharacterDetail { min-height: 66px; padding: 7px 2px 6px; grid-template-columns: 40px minmax(0, 1fr) 44px; gap: 8px; }
+  .issue200CharacterDetailToken { width: 38px; }
+  .issue200CharacterDetailToken img { width: 35px; height: 35px; }
+  .issue200CharacterDetail header { display: grid; gap: 2px; }
+  .issue200CharacterDetail h2 { font-size: .7rem; }
+  .issue200CharacterDetail header small { font-size: .49rem; }
+  .issue200CharacterDetail p { margin-top: 3px; font-size: .55rem; line-height: 1.35; }
+  .issue200CharacterFooter { padding-inline: 3px; gap: 8px; }
+  .issue200CharacterFooter.has-detail { min-height: 58px; }
+  .issue200CharacterFooter .issue200CharacterDetail { min-height: 58px; padding: 5px 1px; grid-template-columns: 34px minmax(0, 1fr) 28px; gap: 5px; }
+  .issue200CharacterFooter .issue200CharacterDetailToken { width: 32px; }
+  .issue200CharacterFooter .issue200CharacterDetailToken img { width: 29px; height: 29px; }
+  .issue200CharacterFooter .issue200CharacterDetail p { margin-top: 2px; -webkit-line-clamp: 1; }
+  .issue200CharacterFooter .issue200CharacterDetail > button { width: 28px; min-height: 40px; }
+  .issue200CharacterFooter > div { justify-content: flex-end; gap: 10px; }
+  .issue200CharacterBack,
+  .issue200CharacterContinue { min-height: 34px; font-size: .69rem; }
+
+  .issue200ReviewSheet {
+    top: 54px;
+    right: 8px;
+    bottom: 10px;
+    left: 8px;
+    width: auto;
+    max-height: none;
+    padding: 22px 18px 16px;
+    gap: 14px;
+    transform: none;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+  .issue200ReviewSheet > header { padding-bottom: 10px; }
+  .issue200ReviewSheet h1 { font-size: 1rem; }
+  .issue200ReviewScroll {
+    display: block;
+    min-height: 0;
+    overflow: auto;
+    border-block: 1px solid rgba(205, 164, 105, .16);
+    scrollbar-color: rgba(194, 147, 91, .4) transparent;
+  }
+  .issue200ReviewSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .issue200ReviewSummary > div { padding: 10px 11px; border-bottom: 1px solid rgba(205, 164, 105, .13); }
+  .issue200ReviewSummary > div:nth-child(odd) { border-left: 0; }
+  .issue200ReviewSummary > div:nth-last-child(-n + 2) { border-bottom: 0; }
+  .issue200ReviewSummary > .issue200ReviewSources { padding-block: 8px; border-bottom: 0; }
+  .issue200ReviewRoster { overflow: visible; padding: 10px 2px 12px; border-block: 0; }
+  .issue200ReviewKind + .issue200ReviewKind { margin-top: 13px; }
+  .issue200ReviewKind ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .issue200ReviewKind li { min-height: 48px; padding: 4px 5px; grid-template-columns: 36px minmax(0, 1fr); gap: 6px; }
+  .issue200ReviewKind li > span { width: 34px; }
+  .issue200ReviewKind li img { width: 31px; height: 31px; }
+  .issue200ReviewKind li strong { font-size: .59rem; }
+  .issue200ReviewKind li small { font-size: .46rem; }
+  .issue200ReviewFindings p { font-size: .68rem; }
+  .issue200ReviewRecommendation ul { gap: 2px 12px; }
+  .issue200ReviewBack,
+  .issue200ReviewStart,
+  .issue200ReviewResume { min-height: 44px; font-size: .72rem; }
+}
+
+@media (min-width: 721px) and (max-height: 600px) {
+  .issue200JourneyCanvas {
+    height: calc(100svh - 64px);
+    min-height: 0;
+  }
+
+  .issue200JourneyFrame.is-scenario img { transform: scale(1.42); }
+  .issue200JourneyFrame.is-characters img { transform: scale(1.2); }
+  .issue200JourneyFrame.is-review img { transform: scale(1); }
+
+  .issue200ScriptSheet {
+    bottom: 10px;
+    width: min(680px, 62vw);
+    min-height: 168px;
+    padding: 18px 54px 10px;
+  }
+
+  .issue200ScriptSheet header { padding-bottom: 10px; }
+  .issue200ScriptSheet h1 { font-size: .94rem; }
+  .issue200ScriptChoices { gap: 18px; }
+  .issue200ScriptChoices button { min-height: 54px; padding: 3px 4px 7px; }
+  .issue200ScriptChoices strong { font-size: 1.05rem; }
+  .issue200ScriptContinue { min-height: 40px; margin-top: 5px; font-size: 1rem; }
+
+  .issue200JourneyDock {
+    min-height: 64px;
+    padding-block: 7px;
+    grid-template-columns: minmax(180px, .7fr) minmax(400px, 1.5fr) auto;
+    gap: 12px;
+  }
+  .issue200JourneySteps button { min-height: 42px; }
+  .issue200JourneyWideToggle { min-height: 38px; }
+
+  .issue200CharacterSheet {
+    top: 14px;
+    right: max(18px, calc((100% - 1080px) / 2));
+    bottom: 10px;
+    left: max(18px, calc((100% - 1080px) / 2));
+    padding: 13px 24px 10px;
+    gap: 6px;
+  }
+  .issue200CharacterHeader { min-height: 27px; padding-bottom: 6px; }
+  .issue200CharacterFields { gap: 18px; }
+  .issue200CharacterName input,
+  .issue200CharacterSearch input { min-height: 28px; padding-bottom: 4px; }
+  .issue200CharacterKinds button,
+  .issue200CharacterSources button { min-height: 44px; padding-block: 3px; }
+  .issue200CharacterGrid { padding-block: 6px; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 4px; }
+  .issue200CharacterGrid button { min-height: 72px; }
+  .issue200CharacterGrid button > span { width: 44px; }
+  .issue200CharacterGrid button img { width: 40px; height: 40px; }
+  .issue200CharacterDetail { min-height: 58px; padding-block: 4px; }
+  .issue200CharacterDetail p { -webkit-line-clamp: 1; }
+  .issue200CharacterFooter { min-height: 48px; }
+
+  .issue200ReviewSheet {
+    top: 14px;
+    right: max(18px, calc((100% - 1080px) / 2));
+    bottom: 10px;
+    left: max(18px, calc((100% - 1080px) / 2));
+    width: auto;
+    max-height: none;
+    padding: 18px 30px 14px;
+    gap: 9px;
+  }
+  .issue200ReviewSheet > header { padding-bottom: 8px; }
+  .issue200ReviewSummary > div { padding-block: 8px; }
+  .issue200ReviewRoster { padding-block: 7px; }
+  .issue200ReviewKind + .issue200ReviewKind { margin-top: 10px; }
+  .issue200ReviewKind ul { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+  .issue200ReviewKind li { min-height: 44px; }
+  .issue200ReviewFindings { min-height: 36px; }
+}
+
+@media (max-width: 720px) {
+  .issue200JourneyWide .issue200JourneyCanvas { height: calc(100vh - 84px); min-height: 720px; }
+  .issue200JourneyWide .issue200JourneyFrame img { object-position: center; }
+  .issue200JourneyWide .issue200JourneyDock {
+    min-height: 84px;
+    padding: 12px 42px;
+    grid-template-columns: minmax(205px, .8fr) minmax(440px, 1.7fr) auto;
+    gap: 24px;
+  }
+  .issue200JourneyWide .issue200JourneyIdentity { display: grid; }
+  .issue200JourneyWide .issue200JourneySteps { grid-column: auto; grid-row: auto; }
+  .issue200JourneyWide .issue200JourneySteps button { padding: 5px 16px; grid-template-columns: 27px 1fr; justify-items: stretch; text-align: left; }
+  .issue200JourneyWide .issue200JourneyWideToggle { grid-column: auto; grid-row: auto; min-height: 42px; }
+  .issue200JourneyWide .issue200ScriptSheet {
+    bottom: clamp(26px, 4.5vh, 54px);
+    width: min(720px, calc(100% - 48px));
+    min-height: 194px;
+    padding: 30px clamp(62px, 7vw, 104px) 20px;
+    transform: translateX(-50%);
+  }
+  .issue200JourneyWide .issue200CharacterSheet {
+    top: 96px;
+    right: max(24px, calc((100% - 1120px) / 2));
+    bottom: 22px;
+    left: max(24px, calc((100% - 1120px) / 2));
+    padding: 25px 34px 20px;
+    gap: 13px;
+  }
+  .issue200JourneyWide .issue200CharacterHeader { min-height: 35px; padding: 0 5px 10px; }
+  .issue200JourneyWide .issue200CharacterHeader h1 { font-size: clamp(1.03rem, 1.5vw, 1.28rem); }
+  .issue200JourneyWide .issue200CharacterFields { padding-inline: 5px; grid-template-columns: minmax(180px, 1fr) minmax(160px, .66fr); gap: 28px; }
+  .issue200JourneyWide .issue200CharacterName input,
+  .issue200JourneyWide .issue200CharacterSearch input { min-height: 36px; font-size: .83rem; }
+  .issue200JourneyWide .issue200CharacterFilters { display: flex; padding-inline: 5px; gap: 18px; }
+  .issue200JourneyWide .issue200CharacterKinds button,
+  .issue200JourneyWide .issue200CharacterSources button { min-height: 44px; padding: 5px 13px; }
+  .issue200JourneyWide .issue200CharacterGrid { padding: 13px 6px 15px; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 9px 5px; }
+  .issue200JourneyWide .issue200CharacterGrid button { min-height: 100px; padding: 6px 3px; }
+  .issue200JourneyWide .issue200CharacterGrid button > span { width: 58px; }
+  .issue200JourneyWide .issue200CharacterGrid button img { width: 53px; height: 53px; }
+  .issue200JourneyWide .issue200CharacterGrid button > strong { font-size: .61rem; }
+  .issue200JourneyWide .issue200CharacterDetail { min-height: 76px; padding: 10px 8px 9px; grid-template-columns: 50px minmax(0, 1fr) 44px; gap: 12px; }
+  .issue200JourneyWide .issue200CharacterDetailToken { width: 48px; }
+  .issue200JourneyWide .issue200CharacterDetailToken img { width: 44px; height: 44px; }
+  .issue200JourneyWide .issue200CharacterDetail header { display: flex; gap: 9px; }
+  .issue200JourneyWide .issue200CharacterDetail h2 { font-size: .77rem; }
+  .issue200JourneyWide .issue200CharacterDetail header small { font-size: .54rem; }
+  .issue200JourneyWide .issue200CharacterDetail p { margin-top: 6px; font-size: .62rem; line-height: 1.45; -webkit-line-clamp: 2; }
+  .issue200JourneyWide .issue200CharacterFooter { display: flex; padding-inline: 5px; gap: 18px; }
+  .issue200JourneyWide .issue200CharacterBack,
+  .issue200JourneyWide .issue200CharacterContinue { min-height: 40px; font-size: .76rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue200JourneyFrame img { transition: none; }
+}
