@@ -23,6 +23,7 @@ mod issue175_bad_moon_rising_foundation_scenarios;
 mod issue177_ordered_death_foundation_scenarios;
 mod issue192_custom_game_file_contract_scenarios;
 mod issue193_custom_script_registry_scenarios;
+mod issue194_custom_setup_scenarios;
 mod issue86_fortune_teller_former_imp_scenarios;
 mod issue88_butler_vote_scenarios;
 mod issue89_execution_succession_scenarios;

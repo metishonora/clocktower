@@ -764,11 +764,19 @@ export type RoleInformationRevealPayload =
 
 export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload;
 
-export type SetupDistributionRequest = {
-  scriptId: ScriptId;
-  playerCount: number;
-  actualCharacters: string[];
-};
+export type SetupDistributionRequest =
+  | {
+      scriptId: ScriptId;
+      customDefinition?: never;
+      playerCount: number;
+      actualCharacters: string[];
+    }
+  | {
+      scriptId?: never;
+      customDefinition: CustomScriptDefinition;
+      playerCount: number;
+      actualCharacters: string[];
+    };
 
 export type SetupDistribution = {
   Townsfolk: number;

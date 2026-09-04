@@ -2314,6 +2314,10 @@ pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
         .collect()
 }
 
+pub(super) fn custom_setup_outsider_delta(character_id: &str) -> i8 {
+    i8::from(TbCharacterId::parse(character_id) == Some(TbCharacterId::Baron)) * 2
+}
+
 pub(crate) fn is_townsfolk(character: &str) -> bool {
     matches!(character_kind(character), Some(CharacterKind::Townsfolk))
 }

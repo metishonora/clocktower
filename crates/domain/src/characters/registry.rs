@@ -43,6 +43,69 @@ impl ResolvedScriptContext {
             .filter_map(|entry| (entry.kind == kind).then_some(entry.id))
             .collect()
     }
+
+    pub(crate) fn setup_outsider_delta(&self, actual_characters: &[String]) -> i32 {
+        let active = actual_characters
+            .iter()
+            .map(String::as_str)
+            .collect::<HashSet<_>>();
+        self.entries
+            .iter()
+            .filter(|entry| active.contains(entry.id))
+            .map(|entry| {
+                i32::from(trouble_brewing::custom_setup_outsider_delta(entry.id))
+                    + i32::from(sects_and_violets::custom_setup_outsider_delta(entry.id))
+            })
+            .sum()
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn custom_demon_bluff_character_ids(
+    context: &ResolvedScriptContext,
+    actual_characters: &[String],
+) -> Vec<String> {
+    let assigned = actual_characters
+        .iter()
+        .map(String::as_str)
+        .collect::<HashSet<_>>();
+    context
+        .entries
+        .iter()
+        .filter(|entry| {
+            matches!(
+                entry.kind,
+                CharacterKind::Townsfolk | CharacterKind::Outsider
+            ) && !assigned.contains(entry.id)
+        })
+        .map(|entry| entry.id.to_string())
+        .collect()
+}
+
+#[allow(dead_code)]
+pub(crate) fn custom_ability_acquisition_character_ids(
+    context: &ResolvedScriptContext,
+) -> Vec<String> {
+    context
+        .entries
+        .iter()
+        .filter(|entry| {
+            matches!(
+                entry.kind,
+                CharacterKind::Townsfolk | CharacterKind::Outsider
+            )
+        })
+        .map(|entry| entry.id.to_string())
+        .collect()
+}
+
+#[allow(dead_code)]
+pub(crate) fn custom_transformation_character_ids(context: &ResolvedScriptContext) -> Vec<String> {
+    context
+        .entries
+        .iter()
+        .map(|entry| entry.id.to_string())
+        .collect()
 }
 
 pub(crate) fn custom_script_catalog() -> Vec<CharacterRegistryEntry> {
@@ -51,6 +114,31 @@ pub(crate) fn custom_script_catalog() -> Vec<CharacterRegistryEntry> {
         .chain(sects_and_violets::custom_registry_entries())
         .map(|(id, kind)| CharacterRegistryEntry { id, kind })
         .collect()
+}
+
+pub(crate) fn validate_custom_script_definition(
+    definition: &CustomScriptDefinition,
+) -> Result<(), CoreError> {
+    if definition.id.trim().is_empty()
+        || definition.name.trim().is_empty()
+        || definition
+            .character_ids
+            .iter()
+            .any(|character_id| character_id.trim().is_empty())
+    {
+        return Err(ErrorKind::MalformedCustomScriptDefinition.into_error());
+    }
+
+    let mut unique = HashSet::with_capacity(definition.character_ids.len());
+    if definition
+        .character_ids
+        .iter()
+        .any(|character_id| !unique.insert(character_id.as_str()))
+    {
+        return Err(ErrorKind::DuplicateCustomScriptCharacter.into_error());
+    }
+
+    Ok(())
 }
 
 pub(crate) fn resolve_custom_script(

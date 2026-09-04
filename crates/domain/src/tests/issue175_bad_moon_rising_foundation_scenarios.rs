@@ -110,35 +110,91 @@ fn bmr_script_identity_and_official_character_ids_are_accepted_only_by_bmr() {
     assert_eq!(all_ids.len(), 25);
     assert_eq!(all_ids.iter().copied().collect::<HashSet<_>>().len(), 25);
 
-    let base = [
-        "grandmother",
-        "sailor",
-        "chambermaid",
-        "exorcist",
-        "innkeeper",
-        "devilsAdvocate",
-        "zombuul",
-    ];
-    for (kind, ids, slot) in [
-        ("Townsfolk", TOWNSFOLK.as_slice(), 0),
-        ("Outsider", OUTSIDERS.as_slice(), 0),
-        ("Minion", MINIONS.as_slice(), 5),
-        ("Demon", DEMONS.as_slice(), 6),
-    ] {
-        for character_id in ids {
-            let mut roster = base;
-            roster[slot] = character_id;
-            let choice = roster.contains(&"godfather").then_some("addOutsider");
-            let actual = propose_create(&roster, choice);
-            assert_eq!(
-                actual["ok"], true,
-                "{kind} {character_id} should belong to BMR: {actual}"
-            );
-        }
+    for character_id in TOWNSFOLK {
+        let mut roster = vec![character_id];
+        roster.extend(
+            TOWNSFOLK
+                .iter()
+                .copied()
+                .filter(|candidate| *candidate != character_id)
+                .take(4),
+        );
+        roster.extend(["devilsAdvocate", "zombuul"]);
+        let actual = propose_create(&roster, None);
+        assert_eq!(actual["ok"], true, "Townsfolk {character_id}: {actual}");
+    }
+    for character_id in OUTSIDERS {
+        let actual = propose_create(
+            &[
+                "grandmother",
+                "sailor",
+                "chambermaid",
+                "exorcist",
+                character_id,
+                "godfather",
+                "zombuul",
+            ],
+            Some("addOutsider"),
+        );
+        assert_eq!(actual["ok"], true, "Outsider {character_id}: {actual}");
+    }
+    for character_id in MINIONS {
+        let (roster, choice) = if character_id == "godfather" {
+            (
+                [
+                    "grandmother",
+                    "sailor",
+                    "chambermaid",
+                    "exorcist",
+                    "tinker",
+                    character_id,
+                    "zombuul",
+                ],
+                Some("addOutsider"),
+            )
+        } else {
+            (
+                [
+                    "grandmother",
+                    "sailor",
+                    "chambermaid",
+                    "exorcist",
+                    "innkeeper",
+                    character_id,
+                    "zombuul",
+                ],
+                None,
+            )
+        };
+        let actual = propose_create(&roster, choice);
+        assert_eq!(actual["ok"], true, "Minion {character_id}: {actual}");
+    }
+    for character_id in DEMONS {
+        let actual = propose_create(
+            &[
+                "grandmother",
+                "sailor",
+                "chambermaid",
+                "exorcist",
+                "innkeeper",
+                "devilsAdvocate",
+                character_id,
+            ],
+            None,
+        );
+        assert_eq!(actual["ok"], true, "Demon {character_id}: {actual}");
     }
 
     for foreign_id in ["washerwoman", "clockmaker", "notACharacter"] {
-        let mut roster = base;
+        let mut roster = [
+            "grandmother",
+            "sailor",
+            "chambermaid",
+            "exorcist",
+            "innkeeper",
+            "devilsAdvocate",
+            "zombuul",
+        ];
         roster[0] = foreign_id;
         let actual = propose_create(&roster, None);
         assert_eq!(actual["error"]["code"], "UNKNOWN_CHARACTER", "{actual}");
@@ -234,13 +290,13 @@ fn confirmed_godfather_choice_and_lunatic_identity_survive_event_and_replay() {
         "sailor",
         "chambermaid",
         "exorcist",
-        "innkeeper",
+        "tinker",
         "lunatic",
         "godfather",
         "zombuul",
     ];
-    let event = setup_event(&roster, Some("removeOutsider"));
-    assert_eq!(event["payload"]["setupChoiceId"], "removeOutsider");
+    let event = setup_event(&roster, Some("addOutsider"));
+    assert_eq!(event["payload"]["setupChoiceId"], "addOutsider");
     let lunatic = event["payload"]["players"]
         .as_array()
         .unwrap()
@@ -253,7 +309,7 @@ fn confirmed_godfather_choice_and_lunatic_identity_survive_event_and_replay() {
     let imported: Value = serde_json::from_str(&exported.to_string()).unwrap();
     let replayed: Value = serde_json::from_str(&replay_json(&imported.to_string())).unwrap();
     assert_eq!(replayed["ok"], true, "{replayed}");
-    assert_eq!(replayed["value"]["setupChoiceId"], "removeOutsider");
+    assert_eq!(replayed["value"]["setupChoiceId"], "addOutsider");
     assert!(
         replayed["value"]["ruleState"]
             .get("automaticReminders")
@@ -317,6 +373,8 @@ fn first_night_phase_overview_matches_the_official_roster_filtered_order() {
         "godfather",
         "devilsAdvocate",
         "pukka",
+        "minstrel",
+        "teaLady",
     ];
     let replayed: Value = serde_json::from_str(&replay_json(
         &game_with_events(vec![setup_event(&roster, Some("addOutsider"))]).to_string(),
@@ -450,7 +508,7 @@ fn later_night_phase_overview_preserves_every_official_demon_position() {
         "courtier",
         "gambler",
         "exorcist",
-        "professor",
+        "mastermind",
         "gossip",
         "grandmother",
         "chambermaid",
@@ -475,7 +533,7 @@ fn later_night_phase_overview_preserves_every_official_demon_position() {
     }
 
     let mut assassin_roster = base;
-    assassin_roster[6] = "assassin";
+    assassin_roster[5] = "assassin";
     let replayed = advance_to_later_night(&assassin_roster);
     let actual = replayed["value"]["phaseOverview"]
         .as_array()
@@ -494,10 +552,10 @@ fn bmr_manual_steps_reject_automated_confirmation_and_replay_explicit_outcomes()
         "grandmother",
         "chambermaid",
         "lunatic",
-        "devilsAdvocate",
+        "godfather",
         "pukka",
     ];
-    let mut events = vec![setup_event(&roster, None)];
+    let mut events = vec![setup_event(&roster, Some("addOutsider"))];
     let automated_as_manual: Value = serde_json::from_str(&propose_json(
         &game_with_events(events.clone()).to_string(),
         &json!({

@@ -1100,6 +1100,14 @@ pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
         .collect()
 }
 
+pub(super) fn custom_setup_outsider_delta(character_id: &str) -> i8 {
+    match SnvCharacterId::parse(character_id) {
+        Some(SnvCharacterId::FangGu) => 1,
+        Some(SnvCharacterId::Vigormortis) => -1,
+        _ => 0,
+    }
+}
+
 fn nearest_townsfolk_neighbors(players: &[Player], source_player_id: &str) -> Vec<String> {
     let mut seated = players.iter().collect::<Vec<_>>();
     seated.sort_by_key(|player| player.seat);

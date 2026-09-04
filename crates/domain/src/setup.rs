@@ -1,5 +1,7 @@
+use std::collections::HashSet;
+
 use crate::{
-    characters::{character_kind, is_townsfolk},
+    characters::{character_kind, is_townsfolk, registry::ResolvedScriptContext},
     contracts::{
         ScriptId, SetupDistribution, SetupDistributionRequest, SetupDistributionResult,
         SetupPlayerInput,
@@ -12,15 +14,69 @@ use crate::{
 pub(crate) fn setup_distribution(
     request: SetupDistributionRequest,
 ) -> Result<SetupDistributionResult, CoreError> {
-    let rules = crate::characters::rules(request.script_id);
-    if request.player_count < rules.minimum_player_count() || request.player_count > 15 {
-        return Err(ErrorKind::InvalidPlayerCount.into_error());
+    match request {
+        SetupDistributionRequest::Official(request) => {
+            let rules = crate::characters::rules(request.script_id);
+            if request.player_count < rules.minimum_player_count() || request.player_count > 15 {
+                return Err(ErrorKind::InvalidPlayerCount.into_error());
+            }
+
+            Ok(rules.setup_distribution_result(
+                base_distribution(request.player_count),
+                &request.actual_characters,
+            ))
+        }
+        SetupDistributionRequest::Custom(request) => {
+            if !(5..=15).contains(&request.player_count) {
+                return Err(ErrorKind::InvalidPlayerCount.into_error());
+            }
+            crate::characters::validate_custom_script_definition(&request.custom_definition)?;
+            let context = crate::characters::resolve_custom_script(&request.custom_definition)?;
+            Ok(SetupDistributionResult::Distribution(
+                custom_setup_distribution(
+                    &context,
+                    request.player_count,
+                    &request.actual_characters,
+                )?,
+            ))
+        }
+    }
+}
+
+pub(crate) fn custom_setup_distribution(
+    context: &ResolvedScriptContext,
+    player_count: usize,
+    actual_characters: &[String],
+) -> Result<SetupDistribution, CoreError> {
+    if actual_characters
+        .iter()
+        .any(|character| !context.contains(character))
+    {
+        return Err(ErrorKind::CharacterNotInScript.into_error());
     }
 
-    Ok(rules.setup_distribution_result(
-        base_distribution(request.player_count),
-        &request.actual_characters,
-    ))
+    let base = base_distribution(player_count);
+    let requested_delta = context.setup_outsider_delta(actual_characters);
+    let applied_delta = requested_delta.clamp(-(base.outsider as i32), base.townsfolk as i32);
+    let expected = SetupDistribution {
+        townsfolk: (base.townsfolk as i32 - applied_delta) as usize,
+        outsider: (base.outsider as i32 + applied_delta) as usize,
+        ..base
+    };
+
+    let enough_candidates = [
+        (CharacterKind::Townsfolk, expected.townsfolk),
+        (CharacterKind::Outsider, expected.outsider),
+        (CharacterKind::Minion, expected.minion),
+        (CharacterKind::Demon, expected.demon),
+    ]
+    .into_iter()
+    .all(|(kind, required)| context.character_ids_of_kind(kind).len() >= required);
+    if !enough_candidates {
+        return Err(ErrorKind::InsufficientSetupRoster.into_error());
+    }
+
+    Ok(expected)
 }
 
 pub(crate) fn validate_setup_inputs_for_script(
@@ -50,6 +106,29 @@ pub(crate) fn validate_setup_inputs_for_script(
         |character| rules.is_townsfolk(character),
     )?;
     Ok(())
+}
+
+pub(crate) fn validate_setup_inputs_for_custom(
+    context: &ResolvedScriptContext,
+    players: &[SetupPlayerInput],
+) -> Result<(), CoreError> {
+    if players.len() < 5 || players.len() > 15 {
+        return Err(ErrorKind::InvalidPlayerCount.into_error());
+    }
+    if players.iter().any(|player| {
+        !context.contains(&player.actual_character)
+            || player
+                .shown_character
+                .as_deref()
+                .is_some_and(|character| !context.contains(character))
+    }) {
+        return Err(ErrorKind::CharacterNotInScript.into_error());
+    }
+    validate_setup_input_contents(
+        players,
+        |character| context.character_kind(character),
+        |character| context.character_kind(character) == Some(CharacterKind::Townsfolk),
+    )
 }
 
 pub(crate) fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> {
@@ -127,6 +206,15 @@ pub(crate) fn normalized_setup_player_for_script(
     })
 }
 
+pub(crate) fn normalized_setup_player_for_custom(
+    context: &ResolvedScriptContext,
+    player: &SetupPlayerInput,
+) -> Result<SetupPlayerInput, CoreError> {
+    normalized_setup_player_with_townsfolk(player, |character| {
+        context.character_kind(character) == Some(CharacterKind::Townsfolk)
+    })
+}
+
 pub(crate) fn normalized_setup_player(
     player: &SetupPlayerInput,
 ) -> Result<SetupPlayerInput, CoreError> {
@@ -172,6 +260,14 @@ pub(crate) fn player_from_setup_input_for_script(
     player_from_normalized_setup_input(normalized, |character| {
         crate::characters::rules(script_id).character_kind(character)
     })
+}
+
+pub(crate) fn player_from_setup_input_for_custom(
+    context: &ResolvedScriptContext,
+    player: &SetupPlayerInput,
+) -> Result<Player, CoreError> {
+    let normalized = normalized_setup_player_for_custom(context, player)?;
+    player_from_normalized_setup_input(normalized, |character| context.character_kind(character))
 }
 
 pub(crate) fn player_from_setup_input(player: &SetupPlayerInput) -> Result<Player, CoreError> {
@@ -281,6 +377,44 @@ fn validate_setup_warnings_with_expected(
     }
 
     warnings
+}
+
+pub(crate) fn validate_new_setup_distribution(
+    players: &[Player],
+    kind: impl Fn(&str) -> Option<CharacterKind>,
+    expected: SetupDistribution,
+) -> Result<(), CoreError> {
+    let mut unique = HashSet::with_capacity(players.len());
+    if players
+        .iter()
+        .any(|player| !unique.insert(player.actual_character.as_str()))
+    {
+        return Err(ErrorKind::DuplicateActualCharacter.into_error());
+    }
+
+    let actual = actual_setup_distribution(players, kind);
+    if actual != expected {
+        return Err(ErrorKind::InvalidSetupDistribution.into_error());
+    }
+    Ok(())
+}
+
+fn actual_setup_distribution(
+    players: &[Player],
+    kind: impl Fn(&str) -> Option<CharacterKind>,
+) -> SetupDistribution {
+    players
+        .iter()
+        .fold(SetupDistribution::empty(), |mut counts, player| {
+            match kind(&player.actual_character) {
+                Some(CharacterKind::Townsfolk) => counts.townsfolk += 1,
+                Some(CharacterKind::Outsider) => counts.outsider += 1,
+                Some(CharacterKind::Minion) => counts.minion += 1,
+                Some(CharacterKind::Demon) => counts.demon += 1,
+                None => {}
+            }
+            counts
+        })
 }
 
 impl SetupDistribution {

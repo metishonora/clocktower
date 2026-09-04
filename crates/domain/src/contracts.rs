@@ -345,9 +345,25 @@ impl Command {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SetupDistributionRequest {
+#[serde(untagged)]
+pub(crate) enum SetupDistributionRequest {
+    Official(OfficialSetupDistributionRequest),
+    Custom(CustomSetupDistributionRequest),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct OfficialSetupDistributionRequest {
     pub(crate) script_id: ScriptId,
+    pub(crate) player_count: usize,
+    #[serde(default)]
+    pub(crate) actual_characters: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomSetupDistributionRequest {
+    pub(crate) custom_definition: CustomScriptDefinition,
     pub(crate) player_count: usize,
     #[serde(default)]
     pub(crate) actual_characters: Vec<String>,

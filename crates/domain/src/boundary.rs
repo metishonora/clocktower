@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use serde::Serialize;
 use serde_json::Value;
@@ -116,35 +116,12 @@ fn parse_script_reference(value: &Value) -> Result<ScriptReference, CoreError> {
             let definition =
                 serde_json::from_value::<CustomScriptDefinition>(object["definition"].clone())
                     .map_err(|_| ErrorKind::MalformedCustomScriptDefinition.into_error())?;
-            validate_custom_script_definition(&definition)?;
+            crate::characters::validate_custom_script_definition(&definition)?;
             crate::characters::resolve_custom_script(&definition)?;
             Ok(ScriptReference::Custom { definition })
         }
-        "official" | "custom" | _ => Err(ErrorKind::MalformedGameFile.into_error()),
+        _ => Err(ErrorKind::MalformedGameFile.into_error()),
     }
-}
-
-fn validate_custom_script_definition(definition: &CustomScriptDefinition) -> Result<(), CoreError> {
-    if definition.id.trim().is_empty()
-        || definition.name.trim().is_empty()
-        || definition
-            .character_ids
-            .iter()
-            .any(|character_id| character_id.trim().is_empty())
-    {
-        return Err(ErrorKind::MalformedCustomScriptDefinition.into_error());
-    }
-
-    let mut unique = HashSet::with_capacity(definition.character_ids.len());
-    if definition
-        .character_ids
-        .iter()
-        .any(|character_id| !unique.insert(character_id.as_str()))
-    {
-        return Err(ErrorKind::DuplicateCustomScriptCharacter.into_error());
-    }
-
-    Ok(())
 }
 
 fn validate_event_references(events: &[GameEvent]) -> Result<(), CoreError> {

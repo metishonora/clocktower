@@ -28,9 +28,13 @@ pub(crate) enum ErrorKind {
     InvalidPlayerCount,
     InvalidPlayer,
     UnknownCharacter,
+    CharacterNotInScript,
     InvalidDrunkShownCharacter,
     InvalidLunaticShownCharacter,
     InvalidSetupChoice,
+    InsufficientSetupRoster,
+    InvalidSetupDistribution,
+    DuplicateActualCharacter,
     InvalidSeating,
     ReplayFailed,
     InvalidStepInput,
@@ -131,6 +135,10 @@ impl ErrorKind {
             ),
             Self::InvalidPlayer => ("INVALID_PLAYER", "플레이어 이름을 입력해야 합니다."),
             Self::UnknownCharacter => ("UNKNOWN_CHARACTER", "지원하지 않는 캐릭터입니다."),
+            Self::CharacterNotInScript => (
+                "CHARACTER_NOT_IN_SCRIPT",
+                "선택한 캐릭터가 현재 시나리오에 없습니다.",
+            ),
             Self::InvalidDrunkShownCharacter => (
                 "INVALID_DRUNK_SHOWN_CHARACTER",
                 "주정뱅이에게 보여준 캐릭터는 주민이어야 합니다.",
@@ -142,6 +150,18 @@ impl ErrorKind {
             Self::InvalidSetupChoice => (
                 "INVALID_SETUP_CHOICE",
                 "현재 구성에서 선택할 수 없는 설정 변경입니다.",
+            ),
+            Self::InsufficientSetupRoster => (
+                "INSUFFICIENT_SETUP_ROSTER",
+                "현재 시나리오에는 필요한 유형의 캐릭터가 부족합니다.",
+            ),
+            Self::InvalidSetupDistribution => (
+                "INVALID_SETUP_DISTRIBUTION",
+                "실제 캐릭터 구성이 필요한 유형별 인원수와 일치하지 않습니다.",
+            ),
+            Self::DuplicateActualCharacter => (
+                "DUPLICATE_ACTUAL_CHARACTER",
+                "실제 캐릭터를 중복해서 배정할 수 없습니다.",
             ),
             Self::InvalidSeating => (
                 "INVALID_SEATING",
