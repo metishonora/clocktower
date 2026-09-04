@@ -1983,6 +1983,7 @@ pub(crate) fn character_steps(
                             },
                             information_prompt: None,
                             pre_action_reveal: None,
+                            action_ref: None,
                         }
                     }),
             )

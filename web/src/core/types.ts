@@ -4,6 +4,20 @@ export type CustomScriptDefinition = {
   id: string;
   name: string;
   characterIds: string[];
+  firstNightOrder?: FirstNightOrderPlan;
+};
+
+export type SystemFirstNightActionId = "dusk" | "minionInfo" | "demonInfo" | "dawn";
+
+export type FirstNightActionRef =
+  | { kind: "system"; actionId: SystemFirstNightActionId }
+  | { kind: "character"; characterId: string; actionId: string };
+
+export type FirstNightOrderPlan = FirstNightActionRef[];
+
+export type CustomFirstNightPlanResult = {
+  source: "definition" | "default";
+  plan: FirstNightOrderPlan;
 };
 
 export type OfficialScriptReference = {
@@ -293,7 +307,11 @@ export type Command =
   | { type: "smoke" }
   | {
       type: "createGame";
-      payload: { players: SetupPlayerInput[]; setupChoiceId?: SetupChoiceId };
+      payload: {
+        players: SetupPlayerInput[];
+        setupChoiceId?: SetupChoiceId;
+        firstNightOrderPlan?: FirstNightOrderPlan;
+      };
     }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | {
@@ -407,9 +425,8 @@ export type CoreResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; messageKo: string } };
 
-export type ReplayState = {
+type ReplayStateBase = {
   schemaVersion: 2 | 3 | 4;
-  scriptId: ScriptId;
   eventCount: number;
   phase: Phase;
   setupChoiceId?: SetupChoiceId;
@@ -429,6 +446,11 @@ export type ReplayState = {
   pendingDeathConsequences?: PendingDeathConsequence[];
   pendingGameEnd?: PendingGameEnd;
 };
+
+export type ReplayState = ReplayStateBase & (
+  | { scriptId: ScriptId; script?: never }
+  | { scriptId?: never; script: CustomScriptReference }
+);
 
 export type PendingDeathConsequence = {
   stepId: string;
@@ -823,11 +845,21 @@ export type GameEvent = EventCommon &
     | { type: "smokeConfirmed"; payload: { source: string } }
     | {
         type: "setupConfirmed";
-        payload: { players: SetupPlayerInput[]; setupChoiceId?: SetupChoiceId };
+        payload: {
+          players: SetupPlayerInput[];
+          setupChoiceId?: SetupChoiceId;
+          firstNightOrderPlan?: FirstNightOrderPlan;
+        };
       }
     | {
         type: "phaseStepConfirmed";
-        payload: { stepId: string; input: PhaseStepInput; information?: ConfirmedInformation };
+        payload: {
+          stepId: string;
+          actionRef?: FirstNightActionRef;
+          abilityUse?: AbilityUseRef;
+          input: PhaseStepInput;
+          information?: ConfirmedInformation;
+        };
       }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
@@ -1269,6 +1301,7 @@ export type PhaseStep = {
   support?: "automated" | "manual";
   informationPrompt?: InformationPrompt;
   preActionReveal?: PreActionReveal;
+  actionRef?: FirstNightActionRef;
 };
 
 export type PreActionReveal = CharacterChangeRevealPayload & {

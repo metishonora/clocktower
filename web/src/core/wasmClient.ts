@@ -1,6 +1,8 @@
 import type {
   Command,
   CoreResult,
+  CustomFirstNightPlanResult,
+  CustomScriptDefinition,
   GameFile,
   PhaseInputSuggestion,
   PhaseInputSuggestionRequest,
@@ -14,6 +16,7 @@ import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRe
 import { withExpectedEventCount } from "./streamVersion.js";
 import {
   parseCoreResult,
+  parseCustomFirstNightPlanResult,
   parseProposal,
   parsePhaseInputSuggestion,
   parseReplayState,
@@ -21,6 +24,7 @@ import {
 } from "./validation.js";
 import init, {
   custom_script_catalog as wasmCustomScriptCatalog,
+  custom_first_night_plan as wasmCustomFirstNightPlan,
   propose as wasmPropose,
   replay as wasmReplay,
   setup_distribution as wasmSetupDistribution,
@@ -100,6 +104,16 @@ export async function suggestPhaseInput(
 export async function customScriptCatalog(): Promise<CustomScriptCatalogEntry[]> {
   await ensureWasm();
   return JSON.parse(wasmCustomScriptCatalog()) as CustomScriptCatalogEntry[];
+}
+
+export async function customFirstNightPlan(
+  customDefinition: CustomScriptDefinition,
+): Promise<CoreResult<CustomFirstNightPlanResult>> {
+  await ensureWasm();
+  return parseCoreResult(
+    JSON.parse(wasmCustomFirstNightPlan(JSON.stringify({ customDefinition }))),
+    parseCustomFirstNightPlanResult,
+  );
 }
 
 export const wasmCoreAdapter: CoreAdapter = {

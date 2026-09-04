@@ -25,6 +25,11 @@ pub fn custom_script_catalog() -> String {
     clocktower_domain::custom_script_catalog_json()
 }
 
+#[wasm_bindgen]
+pub fn custom_first_night_plan(request_json: &str) -> String {
+    clocktower_domain::custom_first_night_plan_json(request_json)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,5 +94,21 @@ mod tests {
         assert!(response.contains(r#""characterIds""#));
         assert!(!response.contains(r#""event""#));
         assert!(!response.contains(r#""revealPayload""#));
+    }
+
+    #[test]
+    fn wasm_adapter_preserves_the_custom_first_night_plan_contract() {
+        let request = r#"{
+          "customDefinition": {
+            "id": "mixed",
+            "name": "Mixed",
+            "characterIds": ["philosopher", "poisoner", "imp"]
+          }
+        }"#;
+        assert_eq!(
+            custom_first_night_plan(request),
+            clocktower_domain::custom_first_night_plan_json(request),
+        );
+        assert!(custom_first_night_plan(request).contains(r#""actionId":"minionInfo""#));
     }
 }

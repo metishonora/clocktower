@@ -6,7 +6,7 @@ import type {
   ScriptReference,
   SeatLayoutState,
 } from "./core/types.js";
-import { parseGameEvent } from "./core/validation.js";
+import { parseFirstNightOrderPlan, parseGameEvent } from "./core/validation.js";
 import {
   isScriptId,
   officialGameFileScriptId,
@@ -195,7 +195,7 @@ function parseScriptReference(value: unknown): ScriptReference {
 function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
   if (
     !isRecord(value)
-    || !hasExactKeys(value, ["id", "name", "characterIds"])
+    || !hasOnlyKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
     || typeof value.id !== "string"
     || value.id.trim().length === 0
     || typeof value.name !== "string"
@@ -214,6 +214,9 @@ function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
     id: value.id,
     name: value.name,
     characterIds: [...value.characterIds],
+    ...(value.firstNightOrder === undefined
+      ? {}
+      : { firstNightOrder: parseFirstNightOrderPlan(value.firstNightOrder) }),
   });
 }
 
@@ -307,6 +310,11 @@ function invalidSeatLayout(): Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const allowed = new Set(keys);
+  return Object.keys(value).every((key) => allowed.has(key));
 }
 
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {

@@ -49,7 +49,7 @@ test("generated WASM replays a schema-v4 official reference", async () => {
   });
 });
 
-test("generated WASM accepts a custom snapshot but never falls back to official rules", async () => {
+test("generated WASM replays a custom snapshot with its complete identity", async () => {
   const result = await wasmCoreAdapter.replay(game({
     type: "custom",
     definition: {
@@ -59,7 +59,20 @@ test("generated WASM accepts a custom snapshot but never falls back to official 
     },
   }));
 
-  expect(result.ok).toBe(false);
-  if (result.ok) return;
-  expect(result.error.code).toBe("CUSTOM_SCRIPT_NOT_RESOLVED");
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  expect(result.value).toMatchObject({
+    schemaVersion: 4,
+    script: {
+      type: "custom",
+      definition: {
+        id: "custom-stable-id",
+        name: "Mixed roster",
+        characterIds: ["washerwoman", "clockmaker", "imp"],
+      },
+    },
+    eventCount: 0,
+    phase: "setup",
+  });
+  expect(result.value).not.toHaveProperty("scriptId");
 });

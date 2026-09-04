@@ -315,7 +315,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
             schema_version: game_file.schema_version,
-            script_id,
+            script_identity: crate::contracts::ReplayScriptIdentity::Official { script_id },
             event_count: 0,
             phase: Phase::Setup,
             players: vec![],
@@ -353,7 +353,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id,
+        script_identity: crate::contracts::ReplayScriptIdentity::Official { script_id },
         event_count: game_file.game.events.len(),
         phase: context.phase,
         players: context.players,
@@ -496,6 +496,7 @@ fn replay_context(events: &[GameEvent]) -> Result<BmrReplayContext, CoreError> {
             can_skip: step.can_skip,
             support: step.support,
             information_prompt: step.information_prompt,
+            action_ref: step.action_ref,
         })
         .collect();
     Ok(BmrReplayContext {
@@ -727,6 +728,7 @@ fn append_character_steps(
             support: PhaseStepSupport::Manual,
             information_prompt: None,
             pre_action_reveal: None,
+            action_ref: None,
         });
     }
 }
@@ -782,6 +784,8 @@ pub(crate) fn propose_phase_command(
                 GameEventKind::PhaseStepConfirmed {
                     payload: Box::new(PhaseStepEventPayload {
                         step_id: current.id.clone(),
+                        action_ref: None,
+                        ability_use: None,
                         input: payload.input,
                         information: None,
                     }),

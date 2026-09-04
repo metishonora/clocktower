@@ -150,6 +150,7 @@ fn custom_candidate_policy_scopes_bluffs_ability_acquisition_and_transformation(
             .iter()
             .map(|character_id| (*character_id).to_string())
             .collect(),
+        first_night_order: None,
     })
     .unwrap();
 
@@ -321,13 +322,13 @@ fn custom_setup_request_arms_are_exact_and_mutually_exclusive() {
 #[test]
 fn structurally_valid_definition_can_exist_when_a_player_count_roster_is_insufficient() {
     let character_ids = ["washerwoman", "chef", "empath", "poisoner", "baron", "imp"];
-    let unresolved: Value = serde_json::from_str(&replay_json(
+    let replayed: Value = serde_json::from_str(&replay_json(
         &custom_game(&character_ids, json!([])).to_string(),
     ))
     .unwrap();
     assert_eq!(
-        unresolved["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED",
-        "the definition should pass structural and registry validation: {unresolved}"
+        replayed["ok"], true,
+        "the definition should pass structural and registry validation: {replayed}"
     );
 
     let distribution = setup_distribution(&character_ids, 5, &["baron"]);

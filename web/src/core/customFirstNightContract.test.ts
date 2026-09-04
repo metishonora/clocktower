@@ -1,0 +1,76 @@
+import { deepEqual, equal, throws } from "node:assert/strict";
+import test from "node:test";
+
+import { exportGameFileJson, parseGameFileJson } from "../gameStorage.js";
+import {
+  parseCustomFirstNightPlanResult,
+  parseFirstNightOrderPlan,
+  parseGameEvent,
+} from "./validation.js";
+
+const plan = [
+  { kind: "system" as const, actionId: "dusk" as const },
+  { kind: "character" as const, characterId: "philosopher", actionId: "chooseAbility" },
+  { kind: "system" as const, actionId: "demonInfo" as const },
+  { kind: "system" as const, actionId: "minionInfo" as const },
+  { kind: "character" as const, characterId: "poisoner", actionId: "choosePoisonTarget" },
+  { kind: "system" as const, actionId: "dawn" as const },
+];
+
+test("parses the exact ordered action-ref and plan-result contracts", () => {
+  deepEqual(parseFirstNightOrderPlan(plan), plan);
+  deepEqual(
+    parseCustomFirstNightPlanResult({ source: "definition", plan }),
+    { source: "definition", plan },
+  );
+
+  for (const invalid of [
+    [{ kind: "system", actionId: "midnight" }],
+    [{ kind: "system", actionId: "dusk", characterId: "poisoner" }],
+    [{ kind: "character", characterId: "poisoner", actionId: "" }],
+    [{ kind: "character", characterId: "poisoner", actionId: "choose", handler: "tb.rs" }],
+  ]) {
+    throws(() => parseFirstNightOrderPlan(invalid));
+  }
+  throws(() => parseCustomFirstNightPlanResult({ source: "setup", plan }));
+  throws(() => parseCustomFirstNightPlanResult({ source: "default", plan, owner: "snv" }));
+});
+
+test("custom definition and setup plan round-trip without implementation ownership metadata", () => {
+  const setupEvent = parseGameEvent({
+    id: "setup-1",
+    type: "setupConfirmed",
+    phase: "setup",
+    payload: { players: [], firstNightOrderPlan: plan },
+    summary: "setup",
+    createdAt: "2026-09-04T00:00:00.000Z",
+  });
+  const game = {
+    schemaVersion: 4 as const,
+    game: {
+      script: {
+        type: "custom" as const,
+        definition: {
+          id: "mixed-first-night",
+          name: "Mixed first night",
+          characterIds: ["philosopher", "poisoner", "imp"],
+          firstNightOrder: plan,
+        },
+      },
+      id: "game-195",
+      name: "Game 195",
+      createdAt: "2026-09-04T00:00:00.000Z",
+      updatedAt: "2026-09-04T00:00:00.000Z",
+      events: [setupEvent],
+    },
+  };
+
+  const parsed = parseGameFileJson(JSON.stringify(game));
+  deepEqual(parsed.game.script, game.game.script);
+  deepEqual(parsed.game.events, [setupEvent]);
+  const exported = exportGameFileJson(parsed);
+  deepEqual(parseGameFileJson(exported), parsed);
+  equal(exported.includes("ruleOwner"), false);
+  equal(exported.includes("handlerPath"), false);
+  equal(exported.includes("scriptOwner"), false);
+});

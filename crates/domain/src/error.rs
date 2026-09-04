@@ -15,6 +15,10 @@ pub(crate) enum ErrorKind {
     DuplicateCustomScriptCharacter,
     UnsupportedCustomScriptCharacter,
     CustomScriptNotResolved,
+    InvalidFirstNightOrderPlan,
+    FirstNightActionRegistrationInvalid,
+    FirstNightActionHandlerUnavailable,
+    InvalidFirstNightActionProvenance,
     MalformedCommand,
     UnsupportedCommand,
     MalformedEvent,
@@ -103,6 +107,22 @@ impl ErrorKind {
             Self::CustomScriptNotResolved => (
                 "CUSTOM_SCRIPT_NOT_RESOLVED",
                 "커스텀 시나리오 규칙을 아직 해석할 수 없습니다.",
+            ),
+            Self::InvalidFirstNightOrderPlan => (
+                "INVALID_FIRST_NIGHT_ORDER_PLAN",
+                "첫날 밤 행동 순서가 올바르지 않습니다.",
+            ),
+            Self::FirstNightActionRegistrationInvalid => (
+                "FIRST_NIGHT_ACTION_REGISTRATION_INVALID",
+                "첫날 밤 행동 등록이 올바르지 않습니다.",
+            ),
+            Self::FirstNightActionHandlerUnavailable => (
+                "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE",
+                "첫날 밤 행동을 처리할 수 없습니다.",
+            ),
+            Self::InvalidFirstNightActionProvenance => (
+                "INVALID_FIRST_NIGHT_ACTION_PROVENANCE",
+                "첫날 밤 행동 출처가 올바르지 않습니다.",
             ),
             Self::MalformedCommand => ("MALFORMED_COMMAND", "명령 형식이 올바르지 않습니다."),
             Self::UnsupportedCommand => ("UNSUPPORTED_COMMAND", "지원하지 않는 명령입니다."),

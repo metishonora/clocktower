@@ -29,6 +29,12 @@ use crate::{
 };
 
 pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
+    if matches!(
+        &game_file.script,
+        crate::contracts::ScriptReference::Custom { .. }
+    ) {
+        return crate::custom::replay(game_file);
+    }
     let script_id = game_file.official_script_id()?;
     crate::characters::rules(script_id).validate_replay_events(&game_file.game.events)?;
     validate_terminal_game_event(&game_file.game.events)?;
@@ -226,7 +232,7 @@ pub(crate) fn replay_trouble_brewing(game_file: GameFile) -> Result<ReplayState,
     };
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id,
+        script_identity: crate::contracts::ReplayScriptIdentity::Official { script_id },
         event_count: events.len(),
         phase: phase_state.phase,
         players,
@@ -769,6 +775,7 @@ fn demon_succession_step(pending: &PendingDemonSuccession) -> PhaseStep {
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     }
 }
 
@@ -835,6 +842,7 @@ fn replay_phase_state_with_timeline(
                 can_skip: false,
                 support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
+                action_ref: step.action_ref,
                 status: PhaseStepStatus::Current,
             }],
         });
@@ -856,6 +864,7 @@ fn replay_phase_state_with_timeline(
                 can_skip: false,
                 support: crate::model::PhaseStepSupport::Automated,
                 information_prompt: None,
+                action_ref: step.action_ref,
                 status: PhaseStepStatus::Current,
             }],
         });
@@ -900,6 +909,7 @@ fn replay_phase_state_with_timeline(
                     can_skip: step.can_skip,
                     support: step.support,
                     information_prompt: step.information_prompt,
+                    action_ref: step.action_ref,
                     status,
                 }
             })
@@ -1442,6 +1452,7 @@ fn slayer_death_step(discussion_step_id: &str, player_id: &str) -> PhaseStep {
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
         required_input: RequiredInput {
             kind: RequiredInputKind::SlayerDeathDecision,
             target: None,

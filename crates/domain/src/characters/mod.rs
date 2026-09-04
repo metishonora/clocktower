@@ -3,12 +3,14 @@ pub(crate) mod registry;
 mod sects_and_violets;
 mod trouble_brewing;
 
-// #195 will consume these resolved-roster candidate policies during custom phase dispatch.
-#[allow(unused_imports)]
 pub(crate) use registry::{
-    custom_ability_acquisition_character_ids, custom_demon_bluff_character_ids,
-    custom_script_catalog, custom_transformation_character_ids, resolve_custom_script,
-    validate_custom_script_definition,
+    custom_demon_bluff_character_ids, custom_script_catalog, resolve_custom_script,
+    validate_custom_script_definition, ResolvedScriptContext,
+};
+
+#[cfg(test)]
+pub(crate) use registry::{
+    custom_ability_acquisition_character_ids, custom_transformation_character_ids,
 };
 
 #[cfg(test)]
@@ -105,6 +107,24 @@ impl ScriptRules {
                 )
             })
         {
+            return Err(ErrorKind::EventNotSupportedByScript.into_error());
+        }
+        if events.iter().any(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::SetupConfirmed { payload }
+                    if payload.first_night_order_plan.is_some()
+            )
+        }) {
+            return Err(ErrorKind::EventNotSupportedByScript.into_error());
+        }
+        if events.iter().any(|event| {
+            matches!(
+                &event.kind,
+                GameEventKind::PhaseStepConfirmed { payload }
+                    if payload.action_ref.is_some() || payload.ability_use.is_some()
+            )
+        }) {
             return Err(ErrorKind::EventNotSupportedByScript.into_error());
         }
 

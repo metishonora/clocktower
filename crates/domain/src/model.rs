@@ -472,6 +472,8 @@ pub(crate) struct PhaseStep {
     pub(crate) information_prompt: Option<InformationPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) pre_action_reveal: Option<PreActionReveal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -595,6 +597,8 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
     pub(crate) status: PhaseStepStatus,
 }
 
@@ -705,13 +709,18 @@ pub(crate) struct AbilityInstance {
     pub(crate) source_event_id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 #[serde(transparent)]
 pub(crate) struct AbilityInstanceId(String);
 
 impl AbilityInstanceId {
     pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
         Self(format!("{source_event_id}:{player_id}"))
+    }
+
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
