@@ -119,6 +119,7 @@ pub(crate) fn first_night_steps(players: &[Player], events: &[GameEvent]) -> Vec
                     support: crate::model::PhaseStepSupport::Automated,
                     information_prompt: None,
                     pre_action_reveal: None,
+                    action_ref: None,
                 },
             );
         }
@@ -215,6 +216,7 @@ pub(crate) fn night_steps(
                     support: crate::model::PhaseStepSupport::Automated,
                     information_prompt: None,
                     pre_action_reveal: None,
+                    action_ref: None,
                 },
             );
         }
@@ -275,6 +277,7 @@ fn custom_character_step(prefix: &str, character: &str, player_id: String) -> Ph
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     }
 }
 

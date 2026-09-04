@@ -39,6 +39,7 @@ pub(crate) fn simple_step(
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     }
 }
 
@@ -80,6 +81,7 @@ pub(crate) fn phase_transition_step(
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     }
 }
 

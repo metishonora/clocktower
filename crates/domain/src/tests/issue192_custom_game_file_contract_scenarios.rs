@@ -46,22 +46,25 @@ fn schema_v4_official_references_replay_without_changing_rule_ownership() {
 }
 
 #[test]
-fn structurally_valid_custom_snapshot_stops_before_official_rule_dispatch() {
+fn structurally_valid_custom_snapshot_enters_custom_setup_without_official_dispatch() {
     let actual = replay(&game_v4(custom_definition(json!([
         "washerwoman",
         "clockmaker",
         "imp"
     ]))));
 
-    assert_eq!(actual["ok"], false, "{actual}");
-    assert_eq!(actual["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED");
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["phase"], "setup");
+    assert_eq!(actual["value"]["script"]["type"], "custom");
+    assert!(actual["value"].get("scriptId").is_none());
 }
 
 #[test]
-fn canonical_custom_character_ids_reach_the_execution_guard() {
+fn canonical_custom_character_ids_reach_custom_setup() {
     let actual = replay(&game_v4(custom_definition(json!(["imp", "clockmaker"]))));
 
-    assert_eq!(actual["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED");
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["phase"], "setup");
 }
 
 #[test]
@@ -139,7 +142,8 @@ fn duplicate_custom_character_ids_are_rejected_explicitly() {
 fn empty_custom_character_list_is_structurally_valid() {
     let actual = replay(&game_v4(custom_definition(json!([]))));
 
-    assert_eq!(actual["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED");
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["phase"], "setup");
 }
 
 #[test]

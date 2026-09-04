@@ -57,6 +57,73 @@ pub(crate) struct CustomScriptDefinition {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) character_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) first_night_order: Option<FirstNightOrderPlan>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SystemFirstNightActionId {
+    Dusk,
+    MinionInfo,
+    DemonInfo,
+    Dawn,
+    #[serde(other)]
+    Unknown,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Hash)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum FirstNightActionRef {
+    System {
+        action_id: SystemFirstNightActionId,
+    },
+    Character {
+        character_id: String,
+        action_id: String,
+    },
+}
+
+impl FirstNightActionRef {
+    pub(crate) fn system(action_id: &str) -> Self {
+        let action_id = match action_id {
+            "dusk" => SystemFirstNightActionId::Dusk,
+            "minionInfo" => SystemFirstNightActionId::MinionInfo,
+            "demonInfo" => SystemFirstNightActionId::DemonInfo,
+            "dawn" => SystemFirstNightActionId::Dawn,
+            _ => panic!("unknown system first-night action: {action_id}"),
+        };
+        Self::System { action_id }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(transparent)]
+pub(crate) struct FirstNightOrderPlan(pub(crate) Vec<FirstNightActionRef>);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomFirstNightPlanRequest {
+    pub(crate) custom_definition: CustomScriptDefinition,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CustomFirstNightPlanResult {
+    pub(crate) source: FirstNightPlanSource,
+    pub(crate) plan: FirstNightOrderPlan,
+}
+
+#[derive(Debug, Serialize, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum FirstNightPlanSource {
+    Definition,
+    Default,
 }
 
 #[derive(Debug)]
@@ -288,6 +355,8 @@ pub(crate) struct CreateGamePayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default)]
     pub(crate) setup_choice_id: Option<String>,
+    #[serde(default)]
+    pub(crate) first_night_order_plan: Option<FirstNightOrderPlan>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -414,7 +483,8 @@ pub(crate) struct SetupDistributionOption {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
     pub(crate) schema_version: u32,
-    pub(crate) script_id: ScriptId,
+    #[serde(flatten)]
+    pub(crate) script_identity: ReplayScriptIdentity,
     pub(crate) event_count: usize,
     pub(crate) phase: Phase,
     pub(crate) players: Vec<Player>,
@@ -443,6 +513,29 @@ pub(crate) struct ReplayState {
     pub(crate) pending_death_consequences: Vec<PendingDeathConsequence>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) pending_game_end: Option<PendingGameEnd>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+pub(crate) enum ReplayScriptIdentity {
+    Official {
+        #[serde(rename = "scriptId")]
+        script_id: ScriptId,
+    },
+    Custom {
+        script: ScriptReference,
+    },
+}
+
+impl ReplayScriptIdentity {
+    pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
+        match self {
+            Self::Official { script_id } => Ok(*script_id),
+            Self::Custom { .. } => {
+                Err(crate::error::ErrorKind::CustomScriptNotResolved.into_error())
+            }
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -1697,6 +1790,8 @@ pub(crate) struct SetupEventPayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) setup_choice_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) first_night_order_plan: Option<FirstNightOrderPlan>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1737,6 +1832,10 @@ pub(crate) enum PhilosopherAbilityOutcome {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseStepEventPayload {
     pub(crate) step_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<FirstNightActionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
     #[serde(default)]
     pub(crate) input: StepInput,
     #[serde(default, skip_serializing_if = "Option::is_none")]

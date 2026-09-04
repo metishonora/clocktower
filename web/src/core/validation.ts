@@ -3,10 +3,13 @@ import type {
   AbilityOrigin,
   AbilityUseRef,
   ConfirmedInformation,
+  CustomFirstNightPlanResult,
   CoreResult,
   DayActionRecordInput,
   DeliveryReason,
   GameEvent,
+  FirstNightActionRef,
+  FirstNightOrderPlan,
   InformationPrompt,
   InformationResult,
   Phase,
@@ -167,16 +170,20 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "setupConfirmed":
       if (
-        !hasOnlyKeys(payload, ["players", "setupChoiceId"]) ||
+        !hasOnlyKeys(payload, ["players", "setupChoiceId", "firstNightOrderPlan"]) ||
         !Array.isArray(payload.players) ||
         !payload.players.every(isSetupPlayer) ||
-        (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId))
+        (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId)) ||
+        (payload.firstNightOrderPlan !== undefined && !isFirstNightOrderPlan(payload.firstNightOrderPlan))
       ) throw invalidEvent();
       break;
     case "phaseStepConfirmed":
       if (
+        !hasOnlyKeys(payload, ["stepId", "actionRef", "abilityUse", "input", "information"]) ||
         typeof payload.stepId !== "string" ||
         !isPhaseStepInput(payload.input) ||
+        (payload.actionRef !== undefined && !isFirstNightActionRef(payload.actionRef)) ||
+        (payload.abilityUse !== undefined && !isAbilityUseRef(payload.abilityUse)) ||
         (payload.information !== undefined && !isConfirmedInformation(payload.information))
       ) {
         throw invalidEvent();
@@ -567,7 +574,7 @@ export function parseReplayState(value: unknown): ReplayState {
   if (
     !isRecord(value) ||
     (value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== 4) ||
-    !isScriptId(value.scriptId) ||
+    !isReplayScriptIdentity(value) ||
     typeof value.eventCount !== "number" ||
     !isPhase(value.phase) ||
     (value.setupChoiceId !== undefined && !isSetupChoiceId(value.setupChoiceId)) ||
@@ -608,6 +615,35 @@ export function parseReplayState(value: unknown): ReplayState {
   return value as ReplayState;
 }
 
+function isReplayScriptIdentity(value: Record<string, unknown>): boolean {
+  const official = isScriptId(value.scriptId) && value.script === undefined;
+  const custom = value.scriptId === undefined && isCustomReplayScriptReference(value.script);
+  return official || custom;
+}
+
+function isCustomReplayScriptReference(value: unknown): boolean {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["type", "definition"]) ||
+    value.type !== "custom" ||
+    !isRecord(value.definition) ||
+    !hasOnlyKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder"]) ||
+    typeof value.definition.id !== "string" ||
+    value.definition.id.trim().length === 0 ||
+    typeof value.definition.name !== "string" ||
+    value.definition.name.trim().length === 0 ||
+    !Array.isArray(value.definition.characterIds) ||
+    !value.definition.characterIds.every(
+      (characterId) => typeof characterId === "string" && characterId.trim().length > 0,
+    ) ||
+    new Set(value.definition.characterIds).size !== value.definition.characterIds.length
+  ) {
+    return false;
+  }
+  return value.definition.firstNightOrder === undefined ||
+    isFirstNightOrderPlan(value.definition.firstNightOrder);
+}
+
 export function parseProposal(value: unknown): Proposal {
   if (
     !isRecord(value) ||
@@ -640,6 +676,23 @@ export function parseSetupDistribution(value: unknown): SetupDistributionResult 
     )
   ) throw invalidCoreResponse();
   return value as SetupDistributionResult;
+}
+
+export function parseFirstNightOrderPlan(value: unknown): FirstNightOrderPlan {
+  if (!isFirstNightOrderPlan(value)) throw invalidCoreResponse();
+  return value;
+}
+
+export function parseCustomFirstNightPlanResult(value: unknown): CustomFirstNightPlanResult {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["source", "plan"]) ||
+    (value.source !== "definition" && value.source !== "default") ||
+    !isFirstNightOrderPlan(value.plan)
+  ) {
+    throw invalidCoreResponse();
+  }
+  return value as CustomFirstNightPlanResult;
 }
 
 function isSetupDistribution(value: unknown): value is SetupDistribution {
@@ -709,9 +762,28 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     typeof value.canSkip === "boolean" &&
     (value.support === undefined || value.support === "automated" || value.support === "manual") &&
     (value.preActionReveal === undefined || isPreActionReveal(value.preActionReveal)) &&
+    (value.actionRef === undefined || isFirstNightActionRef(value.actionRef)) &&
     (value.informationPrompt === undefined ||
       isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
   );
+}
+
+function isFirstNightOrderPlan(value: unknown): value is FirstNightOrderPlan {
+  return Array.isArray(value) && value.every(isFirstNightActionRef);
+}
+
+function isFirstNightActionRef(value: unknown): value is FirstNightActionRef {
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "system") {
+    return hasExactKeys(value, ["kind", "actionId"])
+      && ["dusk", "minionInfo", "demonInfo", "dawn"].includes(String(value.actionId));
+  }
+  return value.kind === "character"
+    && hasExactKeys(value, ["kind", "characterId", "actionId"])
+    && typeof value.characterId === "string"
+    && value.characterId.trim().length > 0
+    && typeof value.actionId === "string"
+    && value.actionId.trim().length > 0;
 }
 
 function isAbilityUseRef(value: unknown): value is AbilityUseRef {

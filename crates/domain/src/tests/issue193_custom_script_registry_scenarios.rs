@@ -17,6 +17,7 @@ fn definition(character_ids: &[&str]) -> CustomScriptDefinition {
             .iter()
             .map(|character_id| (*character_id).to_string())
             .collect(),
+        first_night_order: None,
     }
 }
 
@@ -145,8 +146,9 @@ fn unsupported_case_different_and_bmr_ids_are_rejected_before_official_dispatch(
 }
 
 #[test]
-fn supported_custom_ids_pass_registry_resolution_before_later_execution_guards() {
+fn supported_custom_ids_pass_registry_resolution_into_custom_setup() {
     let actual = replay(&custom_game(&["washerwoman", "clockmaker", "imp"]));
 
-    assert_eq!(actual["error"]["code"], "CUSTOM_SCRIPT_NOT_RESOLVED");
+    assert_eq!(actual["ok"], true, "{actual}");
+    assert_eq!(actual["value"]["phase"], "setup");
 }

@@ -35,6 +35,7 @@ core.replay(gameFileJson) -> stateJson
 core.setupDistribution(requestJson) -> distributionJson
 core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
 core.customScriptCatalog() -> CustomScriptCatalogEntry[]
+core.customFirstNightPlan(requestJson) -> CustomFirstNightPlanResult
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
@@ -58,6 +59,13 @@ Proposal, Confirmed Event, persisted value, or Reveal payload.
 custom-script Character `id` and `kind` pairs. It exists so the TypeScript catalog can be checked
 against the generated Rust/WASM allowlist without maintaining a third fixture. It carries no
 script ownership, Setup modifier, phase order, command routing, or Character-rule metadata.
+
+`customFirstNightPlan` is a stateless read-only Setup query. It validates a complete custom
+definition and returns either its declared `firstNightOrder` or the deterministic built-in default,
+together with the source (`definition` or `default`). The default is a checked-in snapshot of the
+official global first-night order filtered to the supported TB/S&V action catalog. A Setup UI may
+reorder that complete plan before `createGame`; the canonical current-game plan is persisted in the
+resulting `setupConfirmed` event.
 
 Keep the Rust WebAssembly API stateless for MVP. Calls that depend on confirmed game state receive the current `GameFile`; setup draft queries receive only their draft input.
 
@@ -110,10 +118,11 @@ web
 
 ### Rust Domain Module Ownership
 
-Keep the public Rust API limited to the four result-envelope JSON entrypoints (`replay_json`,
-`propose_json`, `setup_distribution_json`, and `suggest_phase_input_json`) plus the read-only
-`custom_script_catalog_json` compatibility query. Domain modules and their types stay crate-private
-unless an external Rust consumer is intentionally added.
+Keep the public Rust API limited to six JSON entrypoints: the four existing result-envelope APIs
+(`replay_json`, `propose_json`, `setup_distribution_json`, and `suggest_phase_input_json`), the
+read-only `custom_script_catalog_json` compatibility query, and the result-envelope
+`custom_first_night_plan_json` Setup query. Domain modules and their types stay crate-private unless
+an external Rust consumer is intentionally added.
 
 Organize `crates/domain/src` by cohesive domain responsibility:
 
@@ -132,6 +141,15 @@ phase.rs
 day.rs
 night.rs
 messages.rs
+custom/
+  mod.rs
+  game.rs
+  first_night/
+    mod.rs
+    plan.rs
+    registry.rs
+    runtime.rs
+    system.rs
 characters/
   mod.rs
   registry.rs
@@ -154,6 +172,11 @@ characters/
   deterministic choice-token selection. Script-specific combination pools remain in
   `characters/<script_name>.rs`.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
+- `custom/game.rs` owns custom-game replay and proposal dispatch. For Issue #195 it executes only
+  Setup and the first-night system actions; production Character handlers arrive with Epic #190.
+- `custom/first_night/plan.rs` owns definition-wide order validation, the deterministic default,
+  and Setup source precedence. `registry.rs`, `runtime.rs`, and `system.rs` own semantic action
+  registration, ordered projection, event-only progress reduction, and system handlers.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
 - `characters/registry.rs` resolves an ordered custom definition against the TB/S&V allowlist and
@@ -171,9 +194,10 @@ and all BMR IDs, before replay or proposal can reach a script-specific reducer. 
 resolution preserves definition order and provides roster-scoped membership and kind lookup.
 `replay` and `suggestPhaseInput` obtain an official selector from that reference;
 `setupDistribution` receives an exact official/custom selector in its standalone request. `propose`
-resolves custom definitions only for strict Setup confirmation; later custom phase dispatch remains
-guarded until #195. Dispatch occurs before a persisted event or command can enter a script-specific
-reducer, and a custom game never falls back to another script's rules.
+resolves custom definitions for strict Setup confirmation and routes a custom game into its own
+first-night runtime. Dispatch occurs before a persisted event or command can enter an official
+script-specific reducer, and a custom game never falls back to another script's rules. Custom phases
+after first night remain unavailable until their dedicated runtime issues.
 
 ### Character Script File Convention
 
@@ -191,6 +215,47 @@ Do not reshape Trouble Brewing merely to make both implementations look alike wh
 evolving. After S&V behavior is complete, reassess Trouble Brewing against the proven S&V seams and
 extract only concepts that are genuinely shared. Until then, keep the script-selection interface
 narrow and do not introduce a generic rules DSL or cross-script reducer abstraction.
+
+### Custom First-Night Action Runtime
+
+A custom definition may contain an optional complete `firstNightOrder`. The plan is ordered over
+stable semantic references rather than over players or current assignments:
+
+```ts
+type FirstNightActionRef =
+  | { kind: "system"; actionId: "dusk" | "minionInfo" | "demonInfo" | "dawn" }
+  | { kind: "character"; characterId: string; actionId: string };
+```
+
+`dusk` must be first and `dawn` last. `minionInfo` and `demonInfo` are ordinary movable entries, so
+the Storyteller can place Character actions before, between, or after them. The plan must contain
+each system entry and each first-night action belonging to the definition's complete Character pool
+exactly once. It is intentionally not reduced to initially assigned Characters: acquired or newly
+introduced abilities must retain a predetermined location.
+
+The effective-plan precedence is the current Setup override, then definition `firstNightOrder`, then
+the deterministic built-in default. `createGame` persists the resolved plan in
+`setupConfirmed.payload.firstNightOrderPlan`; it never mutates the definition. Thus Undo/import and
+replay use one event-owned order for that game.
+
+Runtime composition uses four explicit roles:
+
+- `ActionSpec` declares a stable action reference plus first-night participation, input kind, and
+  support metadata.
+- A pure `ActionHandler` projects an action through read-only shared rule services and returns zero,
+  one, or multiple steps. Acquired abilities are distinguished by ability-instance provenance and
+  are deterministically ordered.
+- Shared rule services answer cross-Character facts and legality questions. They do not own a
+  Character's behavior and are not a generic rules DSL.
+- The event reducer is the only component that advances canonical state. Proposal and replay both
+  resolve the exact `(characterId, actionId)` registration and validate that same provenance.
+
+The registry rejects duplicate registrations, spec/handler identity mismatches, and missing
+handlers. A missing custom Character handler is an explicit error; it never delegates to a TB or S&V
+module. Issue #195 supplies the complete contract and system handlers only. Epic #190 adds production
+Character `ActionSpec`/handler registrations while keeping script-specific rule details under
+`characters/<script_name>.rs`. Existing official TB, S&V, and BMR execution paths coexist unchanged
+apart from additive shared-contract plumbing and are not migrated onto this runtime.
 
 Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
 
@@ -668,6 +733,7 @@ type CustomScriptDefinition = {
   id: string;
   name: string;
   characterIds: string[];
+  firstNightOrder?: FirstNightActionRef[];
 };
 
 type ScriptReference =
@@ -691,6 +757,10 @@ type GameFile = {
 IndexedDB stores one latest official `GameFile` per script without `exportedAt`. Official script
 pages bind their storage driver to one script key, so navigation cannot replace another script's
 latest game. Custom-script storage, sessions, and UI remain deferred to their dedicated issues.
+
+For a custom game, the Setup event additionally owns the required canonical
+`firstNightOrderPlan`. A definition order is reusable authoring data; a Setup override is scoped to
+that game only. Custom Setup UI and IndexedDB session wiring remain separate UI/runtime work.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 

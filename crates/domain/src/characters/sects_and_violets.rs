@@ -1317,6 +1317,7 @@ fn character_step(
         support: metadata.support,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     }
 }
 
@@ -1886,6 +1887,7 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
         support: PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     })
 }
 
@@ -1952,6 +1954,7 @@ fn pit_hag_arbitrary_deaths_step(
         support: PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
+        action_ref: None,
     })
 }
 
@@ -6625,6 +6628,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             support: PhaseStepSupport::Automated,
             information_prompt: None,
             pre_action_reveal: None,
+            action_ref: None,
         };
         let mut overview = steps
             .into_iter()
@@ -6648,6 +6652,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 can_skip: step.can_skip,
                 support: step.support,
                 information_prompt: None,
+                action_ref: step.action_ref,
             })
             .collect::<Vec<_>>();
         let insert_at = overview
@@ -6668,6 +6673,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 can_skip: false,
                 support: PhaseStepSupport::Automated,
                 information_prompt: None,
+                action_ref: None,
                 status: PhaseStepStatus::Current,
             },
         );
@@ -6749,6 +6755,7 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     can_skip: step.can_skip,
                     support: step.support,
                     information_prompt,
+                    action_ref: step.action_ref,
                 })
             })
             .collect::<Result<Vec<_>, _>>()?
@@ -6931,7 +6938,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
             schema_version: game_file.schema_version,
-            script_id,
+            script_identity: crate::contracts::ReplayScriptIdentity::Official { script_id },
             event_count: 0,
             phase: Phase::Setup,
             players: vec![],
@@ -7186,7 +7193,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let pending_game_end = game_end.is_none().then_some(pending_game_end).flatten();
     Ok(ReplayState {
         schema_version: game_file.schema_version,
-        script_id,
+        script_identity: crate::contracts::ReplayScriptIdentity::Official { script_id },
         event_count: game_file.game.events.len(),
         phase,
         players,
@@ -7554,6 +7561,8 @@ pub(crate) fn propose_phase_command(
                     GameEventKind::PhaseStepConfirmed {
                         payload: Box::new(PhaseStepEventPayload {
                             step_id: payload.step_id,
+                            action_ref: None,
+                            ability_use: None,
                             input: payload.input,
                             information: Some(information),
                         }),
@@ -7593,6 +7602,8 @@ pub(crate) fn propose_phase_command(
                     GameEventKind::PhaseStepConfirmed {
                         payload: Box::new(PhaseStepEventPayload {
                             step_id: payload.step_id,
+                            action_ref: None,
+                            ability_use: None,
                             input: payload.input,
                             information: Some(information),
                         }),
@@ -7609,6 +7620,8 @@ pub(crate) fn propose_phase_command(
                 GameEventKind::PhaseStepConfirmed {
                     payload: Box::new(PhaseStepEventPayload {
                         step_id: payload.step_id,
+                        action_ref: None,
+                        ability_use: None,
                         input: payload.input,
                         information: None,
                     }),

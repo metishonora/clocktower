@@ -5,9 +5,9 @@ use serde_json::Value;
 
 use crate::{
     contracts::{
-        Command, CustomScriptDefinition, Discriminator, Game, GameEvent, GameEventKind, GameFile,
-        PhaseInputSuggestionRequest, RawGameFile, ScriptId, ScriptReference,
-        SetupDistributionRequest,
+        Command, CustomFirstNightPlanRequest, CustomScriptDefinition, Discriminator, Game,
+        GameEvent, GameEventKind, GameFile, PhaseInputSuggestionRequest, RawGameFile, ScriptId,
+        ScriptReference, SetupDistributionRequest,
     },
     error::{CoreError, ErrorKind},
     identity::EventId,
@@ -38,6 +38,16 @@ pub(crate) fn suggest_phase_input_json(game_file_json: &str, request_json: &str)
             .map_err(|_| ErrorKind::MalformedRequest.into_error())?;
         crate::suggestion::suggest_phase_input(game_file, request)
     });
+    to_json(result)
+}
+
+pub(crate) fn custom_first_night_plan_json(request_json: &str) -> String {
+    let result = serde_json::from_str::<CustomFirstNightPlanRequest>(request_json)
+        .map_err(|_| ErrorKind::MalformedRequest.into_error())
+        .and_then(|request| {
+            crate::characters::validate_custom_script_definition(&request.custom_definition)?;
+            crate::custom::first_night::effective_plan(&request.custom_definition)
+        });
     to_json(result)
 }
 
@@ -118,6 +128,7 @@ fn parse_script_reference(value: &Value) -> Result<ScriptReference, CoreError> {
                     .map_err(|_| ErrorKind::MalformedCustomScriptDefinition.into_error())?;
             crate::characters::validate_custom_script_definition(&definition)?;
             crate::characters::resolve_custom_script(&definition)?;
+            crate::custom::first_night::effective_plan(&definition)?;
             Ok(ScriptReference::Custom { definition })
         }
         _ => Err(ErrorKind::MalformedGameFile.into_error()),
