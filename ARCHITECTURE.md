@@ -41,10 +41,11 @@ core.customScriptCatalog() -> CustomScriptCatalogEntry[]
 
 `replay` checks the schema version and rebuilds the current rules state, visible step overview, and warnings from confirmed events.
 
-`setupDistribution` is a read-only setup draft query. Its request carries the selected `scriptId`,
-player count, and assigned Actual Character IDs. The common layer owns the base player-count table;
-the active script owns modifiers such as Trouble Brewing's Baron adjustment. Keep this API limited
-to deterministic setup guidance that has no confirmed event.
+`setupDistribution` is a read-only setup draft query. Its exact request union carries either an
+official `scriptId` or a complete `customDefinition`, plus the player count and assigned Actual
+Character IDs. The common layer owns the base player-count table; official script modules own their
+modifiers, while a resolved custom roster composes the modifiers of its assigned characters. Keep
+this API limited to deterministic setup guidance that has no confirmed event.
 
 `suggestPhaseInput` is a stateless read-only live-play draft query. Replay identifies the current
 step and its semantic `supportsRandomSuggestion` marker; the active script constructs complete valid
@@ -168,10 +169,11 @@ Structural parsing first validates the definition shape and exact ID uniqueness.
 resolution then rejects any ID outside the current TB/S&V allowlist, including non-canonical case
 and all BMR IDs, before replay or proposal can reach a script-specific reducer. A successful
 resolution preserves definition order and provides roster-scoped membership and kind lookup.
-`replay`, `propose`, and `suggestPhaseInput` obtain an official selector from that reference;
-`setupDistribution` receives it in its standalone request. Dispatch occurs before a persisted event
-or command can enter a script-specific reducer. Registry-resolved custom execution remains guarded
-until its Setup and phase dispatch are implemented; it never falls back to another script's rules.
+`replay` and `suggestPhaseInput` obtain an official selector from that reference;
+`setupDistribution` receives an exact official/custom selector in its standalone request. `propose`
+resolves custom definitions only for strict Setup confirmation; later custom phase dispatch remains
+guarded until #195. Dispatch occurs before a persisted event or command can enter a script-specific
+reducer, and a custom game never falls back to another script's rules.
 
 ### Character Script File Convention
 

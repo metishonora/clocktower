@@ -3,7 +3,13 @@ pub(crate) mod registry;
 mod sects_and_violets;
 mod trouble_brewing;
 
-pub(crate) use registry::{custom_script_catalog, resolve_custom_script};
+// #195 will consume these resolved-roster candidate policies during custom phase dispatch.
+#[allow(unused_imports)]
+pub(crate) use registry::{
+    custom_ability_acquisition_character_ids, custom_demon_bluff_character_ids,
+    custom_script_catalog, custom_transformation_character_ids, resolve_custom_script,
+    validate_custom_script_definition,
+};
 
 #[cfg(test)]
 pub(crate) use sects_and_violets::{

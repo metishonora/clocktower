@@ -30,7 +30,7 @@ fn propose_create_game_returns_setup_confirmed_event_with_warnings() {
 }
 
 #[test]
-fn propose_create_game_returns_nonblocking_distribution_warnings() {
+fn propose_create_game_rejects_a_distribution_mismatch() {
     let command = json!({
         "type": "createGame",
         "payload": {
@@ -47,11 +47,8 @@ fn propose_create_game_returns_nonblocking_distribution_warnings() {
     let actual: Value =
         serde_json::from_str(&propose_json(EMPTY_GAME, &command.to_string())).unwrap();
 
-    assert_eq!(actual["ok"], true);
-    assert_eq!(
-        actual["value"]["warnings"][0]["code"],
-        "SETUP_DISTRIBUTION_MISMATCH"
-    );
+    assert_eq!(actual["ok"], false);
+    assert_eq!(actual["error"]["code"], "INVALID_SETUP_DISTRIBUTION");
 }
 
 #[test]
@@ -242,8 +239,9 @@ fn propose_create_game_preserves_townsfolk_shown_character_for_drunk() {
                 { "seat": 1, "name": "Ada", "actualCharacter": "drunk", "shownCharacter": "chef" },
                 { "seat": 2, "name": "Bert", "actualCharacter": "librarian", "shownCharacter": "librarian" },
                 { "seat": 3, "name": "Cora", "actualCharacter": "investigator", "shownCharacter": "investigator" },
-                { "seat": 4, "name": "Dev", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
-                { "seat": 5, "name": "Eve", "actualCharacter": "imp", "shownCharacter": "imp" }
+                { "seat": 4, "name": "Dev", "actualCharacter": "empath", "shownCharacter": "empath" },
+                { "seat": 5, "name": "Eve", "actualCharacter": "poisoner", "shownCharacter": "poisoner" },
+                { "seat": 6, "name": "Fay", "actualCharacter": "imp", "shownCharacter": "imp" }
             ]
         }
     });
