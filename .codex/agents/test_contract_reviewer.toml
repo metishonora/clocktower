@@ -15,8 +15,8 @@ Check whether the tests:
 4. Introduce any material unapproved change to user experience, data, scope, or architecture.
 
 Classify findings as:
-- Blocker: conflicts with an approved decision or reference.
-- Decision required: a potentially useful but unapproved material product change.
+- Blocker: conflicts with an explicitly approved decision or binding project requirement.
+- Decision required: a potentially useful but unapproved material product change or departure from an established reference.
 - Missing coverage: a material invariant or affected path is not protected.
 - Pass: no material issue found.
 
