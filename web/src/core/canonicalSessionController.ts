@@ -11,11 +11,17 @@ import type {
   GameFile,
   Proposal,
   ReplayState,
+  ScriptReference,
 } from "./types.js";
-import { officialGameFileScriptId, type ScriptId } from "./scripts.js";
+import { gameFileScriptReference, type ScriptId } from "./scripts.js";
+import {
+  cloneScriptReference,
+  replayStateScriptReference,
+  sameScriptReference,
+} from "./scriptIdentity.js";
 
 export type CanonicalStreamIdentity = {
-  scriptId: ScriptId;
+  script: ScriptReference;
   gameId: string;
   eventIds: string[];
 };
@@ -43,10 +49,16 @@ export type PreparedCanonicalUndo = {
 };
 
 export class CanonicalSessionController {
+  private readonly script: ScriptReference;
+
   constructor(
-    private readonly scriptId: ScriptId,
+    script: ScriptId | ScriptReference,
     private readonly core: CoreAdapter,
-  ) {}
+  ) {
+    this.script = typeof script === "string"
+      ? { type: "official", scriptId: script }
+      : cloneScriptReference(script);
+  }
 
   async replay(gameFile: GameFile): Promise<CoreResult<CanonicalReplaySnapshot>> {
     const fileFailure = this.validateGameFile<CanonicalReplaySnapshot>(gameFile);
@@ -54,7 +66,7 @@ export class CanonicalSessionController {
     try {
       const replayed = await this.core.replay(gameFile);
       if (!replayed.ok) return replayed;
-      if (replayed.value.scriptId !== this.scriptId) {
+      if (!sameScriptReference(replayStateScriptReference(replayed.value), this.script)) {
         return failure("SCRIPT_MISMATCH", "현재 세션과 다른 스크립트의 재생 결과입니다.");
       }
       if (replayed.value.eventCount !== gameFile.game.events.length) {
@@ -178,7 +190,7 @@ export class CanonicalSessionController {
   }
 
   private validateGameFile<T>(gameFile: GameFile): CoreResult<T> | undefined {
-    if (officialGameFileScriptId(gameFile) !== this.scriptId) {
+    if (!sameScriptReference(gameFileScriptReference(gameFile), this.script)) {
       return failure("SCRIPT_MISMATCH", "현재 세션과 다른 스크립트의 게임 파일입니다.");
     }
     const ids = gameFile.game.events.map(({ id }) => id);
@@ -195,17 +207,15 @@ export function replayMatches(
 ): boolean {
   if (!replayState || replayState.eventCount !== gameFile.game.events.length) return false;
   const expected = streamIdentity(gameFile);
-  return replayState.stream.scriptId === expected.scriptId
+  return sameScriptReference(replayState.stream.script, expected.script)
     && replayState.stream.gameId === expected.gameId
     && replayState.stream.eventIds.length === expected.eventIds.length
     && replayState.stream.eventIds.every((id, index) => id === expected.eventIds[index]);
 }
 
 function streamIdentity(gameFile: GameFile): CanonicalStreamIdentity {
-  const scriptId = officialGameFileScriptId(gameFile);
-  if (!scriptId) throw new Error("custom script canonical sessions are not available");
   return {
-    scriptId,
+    script: cloneScriptReference(gameFileScriptReference(gameFile)),
     gameId: gameFile.game.id,
     eventIds: gameFile.game.events.map(({ id }) => id),
   };

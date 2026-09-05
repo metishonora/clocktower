@@ -192,7 +192,7 @@ function parseScriptReference(value: unknown): ScriptReference {
   throw malformedGameFile();
 }
 
-function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
+export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
   if (
     !isRecord(value)
     || !hasOnlyKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
