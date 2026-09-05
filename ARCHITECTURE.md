@@ -756,11 +756,42 @@ type GameFile = {
 
 IndexedDB stores one latest official `GameFile` per script without `exportedAt`. Official script
 pages bind their storage driver to one script key, so navigation cannot replace another script's
-latest game. Custom-script storage, sessions, and UI remain deferred to their dedicated issues.
+latest game.
+
+Custom definitions and games use separate namespaced records in the same database and object
+store:
+
+```text
+custom-definition:<encoded-stable-id> -> { version: 1, definition, metadata? }
+session:custom:<encoded-stable-id>     -> { version: 1, customScriptId, savedAt,
+                                            canonical, setupDraft, presentation }
+```
+
+The repository envelope keeps optional author/source metadata outside the runtime definition.
+Saving an existing stable ID atomically replaces its complete definition envelope without touching
+the corresponding game session. Unreadable definition and session records are reported separately
+from missing records and cannot be overwritten by normal saves; only an explicit recovery/new-game
+operation may replace them.
+
+There is one active custom game session per stable ID. Its schema-v4 `GameFile.game.script` embeds
+an immutable copy of the definition used when the game was created. Editing the repository record
+therefore neither mutates nor deletes the active game. Resume is available only when the current
+runtime definition exactly matches that embedded snapshot: stable ID, name, ordered Character IDs,
+and optional ordered `firstNightOrder` must all match. Repository metadata is excluded from this
+comparison, and reverting the definition exactly restores resume eligibility. Explicitly starting
+a new game replaces the active session for that stable ID.
+
+Custom canonical sessions bind the controller, `GameFile`, replay output, game ID, and ordered event
+IDs to the same complete script identity. Setup confirmation waits for a durable session write before
+the live transition is published. Later writes coalesce to the newest meaningful snapshot; a failed
+write keeps the newest canonical state in memory and is not retried until another meaningful change
+is enqueued.
 
 For a custom game, the Setup event additionally owns the required canonical
 `firstNightOrderPlan`. A definition order is reusable authoring data; a Setup override is scoped to
-that game only. Custom Setup UI and IndexedDB session wiring remain separate UI/runtime work.
+that game only. The confirmed plan, `actionRef`, and `abilityUse` remain solely in the canonical
+event stream and are not copied into setup draft or presentation state. Custom Setup UI remains
+separate UI/runtime work.
 
 Export reads the stored `GameFile`, adds `exportedAt`, and writes JSON.
 
