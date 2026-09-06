@@ -1,0 +1,546 @@
+@font-face {
+  font-family: "Issue 202 Manuscript";
+  src: url("./assets/fonts/NanumPenScript-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  color: #efe5d4;
+  background: #07090b;
+  font-family: Pretendard, Inter, "Noto Sans KR", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; min-width: 320px; min-height: 100%; margin: 0; }
+body { overflow: hidden; background: #07090b; }
+button, select { font: inherit; }
+button { cursor: pointer; }
+
+.issue202AltPrototype {
+  --review-height: 106px;
+  width: 100vw;
+  height: 100svh;
+  min-height: 520px;
+  overflow: hidden;
+  color: #efe5d4;
+  background: #07090b;
+}
+
+.issue202AltProductStage {
+  position: relative;
+  height: calc(100svh - var(--review-height));
+  min-height: 414px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #050607;
+}
+
+.issue202AltLanding,
+.issue202AltLanding .scriptLandingPage {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.issue202AltLanding .scriptLandingChoices { padding-block: 12px; }
+.issue202AltLanding .issue202AltCustomChoice { color: #273644; }
+.issue202AltLanding .issue202AltCustomChoice img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 22px 30px rgba(43, 32, 21, .2));
+}
+.issue202AltLanding .officialScriptChoice:disabled { cursor: default; }
+.issue202AltInkTransition {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--issue202-origin-x) var(--issue202-origin-y), #21080e 0, #10070a 15%, #07090b 57%, #030405 100%);
+  clip-path: circle(0 at var(--issue202-origin-x) var(--issue202-origin-y));
+  animation: issue202AltInkBloom 820ms cubic-bezier(.6,.02,.32,1) forwards;
+}
+.issue202AltInkTransition span {
+  position: absolute;
+  top: var(--issue202-origin-y);
+  left: var(--issue202-origin-x);
+  width: 28px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #050608;
+  box-shadow:
+    -22px 6px 0 -7px #0c0709,
+    18px -13px 0 -9px #12070a,
+    28px 14px 0 -11px #060608,
+    -8px -26px 0 -10px #17080c;
+  transform: translate(-50%, -50%) scale(.18);
+  animation: issue202AltInkCore 820ms cubic-bezier(.58,.02,.28,1) forwards;
+}
+@keyframes issue202AltInkBloom {
+  0% { opacity: .2; clip-path: circle(0 at var(--issue202-origin-x) var(--issue202-origin-y)); }
+  16% { opacity: .96; clip-path: circle(5vmax at var(--issue202-origin-x) var(--issue202-origin-y)); }
+  58% { opacity: 1; clip-path: circle(48vmax at var(--issue202-origin-x) var(--issue202-origin-y)); }
+  100% { opacity: 1; clip-path: circle(160vmax at var(--issue202-origin-x) var(--issue202-origin-y)); }
+}
+@keyframes issue202AltInkCore {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.18); }
+  20% { opacity: 1; }
+  72% { opacity: .84; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(36); }
+}
+
+.issue202AltEditor {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: #050607;
+}
+.issue202AltArtwork,
+.issue202AltArtwork img,
+.issue202AltVignette { position: absolute; inset: 0; }
+.issue202AltArtwork { z-index: 1; margin: 0; overflow: hidden; pointer-events: none; }
+.issue202AltArtwork img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  transform-origin: 50% 9%;
+  filter: saturate(.92) contrast(1.03);
+  transition: transform 880ms cubic-bezier(.16,.72,.18,1), filter 560ms ease;
+  user-select: none;
+}
+.issue202AltEditor.is-scenario .issue202AltArtwork img { transform: scale(1.48); }
+.issue202AltEditor.is-characters .issue202AltArtwork img { transform: scale(1.25); }
+.issue202AltEditor.is-nightOrder .issue202AltArtwork img { transform: scale(1.11); }
+.issue202AltEditor.is-review .issue202AltArtwork img { transform: scale(1); }
+.issue202AltArtwork::after {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 44% at 50% 80%, rgba(255, 220, 163, .16), rgba(255, 218, 159, .05) 58%, transparent 82%);
+  content: "";
+  mix-blend-mode: screen;
+}
+.issue202AltVignette {
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(3, 5, 7, .5), transparent 27%, transparent 73%, rgba(3, 4, 5, .16)),
+    linear-gradient(0deg, rgba(2, 3, 4, .18), transparent 28%),
+    radial-gradient(ellipse at center, transparent 58%, rgba(1, 2, 3, .34) 100%);
+  pointer-events: none;
+}
+
+.issue202AltProductProgress {
+  position: absolute;
+  z-index: 5;
+  top: clamp(12px, 2.4vh, 24px);
+  left: 50%;
+  display: grid;
+  width: min(720px, calc(100% - 36px));
+  margin: 0;
+  padding: 8px 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid rgba(205, 165, 106, .23);
+  background: rgba(9, 10, 11, .48);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .32);
+  transform: translateX(-50%);
+  list-style: none;
+}
+.issue202AltProductProgress li {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 10px;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  color: rgba(220, 205, 183, .45);
+}
+.issue202AltProductProgress li + li::before {
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 10px;
+  height: 1px;
+  background: rgba(192, 148, 91, .3);
+  content: "";
+}
+.issue202AltProductProgress li > span {
+  display: grid;
+  width: 25px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(182, 142, 91, .42);
+  border-radius: 50%;
+  color: #ae8d62;
+  font: 700 .59rem/1 Georgia, serif;
+}
+.issue202AltProductProgress li > strong {
+  overflow: hidden;
+  font-size: .58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.issue202AltProductProgress li[data-status="complete"] { color: rgba(229, 215, 193, .7); }
+.issue202AltProductProgress li[data-status="complete"] > span { border-color: #946d45; color: #e1c594; }
+.issue202AltProductProgress li[data-status="current"] { color: #fff0d8; }
+.issue202AltProductProgress li[data-status="current"] > span {
+  border-color: #d2a568;
+  color: #1b1712;
+  background: #d2a568;
+  box-shadow: 0 0 18px rgba(210, 165, 104, .22);
+}
+
+.issue202AltScenarioSheet,
+.issue202AltPlaceholder {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  color: #f4e7d2;
+  border: 1px solid rgba(211, 171, 111, .66);
+  background:
+    linear-gradient(90deg, rgba(29, 20, 17, .48), rgba(20, 17, 17, .3) 24% 76%, rgba(29, 20, 17, .48)),
+    radial-gradient(ellipse at center, rgba(16, 13, 13, .46), rgba(16, 13, 13, .18) 66%, transparent 100%);
+  box-shadow: 0 24px 66px rgba(0, 0, 0, .52), 0 4px 14px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 225, 177, .14);
+  transform: translateX(-50%);
+  isolation: isolate;
+}
+.issue202AltScenarioSheet::before,
+.issue202AltPlaceholder::before {
+  position: absolute;
+  z-index: -1;
+  inset: 8px;
+  border: 1px solid rgba(218, 177, 115, .28);
+  content: "";
+  pointer-events: none;
+}
+.issue202AltScenarioSheet {
+  bottom: clamp(16px, 3.2vh, 34px);
+  display: grid;
+  width: min(880px, calc(100% - 44px));
+  min-height: 300px;
+  max-height: calc(100% - 82px);
+  padding: 24px clamp(42px, 5.5vw, 76px) 18px;
+  grid-template-rows: auto auto minmax(56px, auto) auto;
+  align-content: center;
+}
+.issue202AltScenarioSheet.is-entering {
+  animation: issue202AltPanelEntrance 900ms cubic-bezier(.18,.72,.2,1) both;
+}
+@keyframes issue202AltPanelEntrance {
+  0% { opacity: 0; filter: brightness(1.7) sepia(.5) blur(5px); transform: translateX(-50%) translateY(12px) scale(.97); clip-path: inset(48% 48%); }
+  46% { opacity: 1; filter: brightness(1.22) sepia(.18) blur(0); clip-path: inset(0); }
+  100% { opacity: 1; filter: none; transform: translateX(-50%) translateY(0) scale(1); clip-path: inset(0); }
+}
+.issue202AltScenarioSheet header { padding-bottom: 13px; text-align: center; }
+.issue202AltScenarioSheet h1,
+.issue202AltPlaceholder h1 {
+  margin: 0;
+  color: #caa675;
+  font: 700 clamp(1.02rem, 1.45vw, 1.26rem)/1.1 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  letter-spacing: .16em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .86);
+}
+
+.issue202AltPrimaryChoices,
+.issue202AltFlatChoices,
+.issue202AltExistingChoices { display: grid; }
+.issue202AltPrimaryChoices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.issue202AltFlatChoices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.issue202AltExistingChoices {
+  width: min(410px, 100%);
+  margin: -2px auto 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid rgba(193, 153, 101, .15);
+}
+.issue202AltPrimaryChoices > button,
+.issue202AltFlatChoices > button,
+.issue202AltExistingChoices > button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 58px;
+  padding: 7px 10px 11px;
+  place-items: center;
+  border: 0;
+  color: rgba(228, 213, 190, .58);
+  background: transparent;
+  text-align: center;
+}
+.issue202AltPrimaryChoices > button + button,
+.issue202AltFlatChoices > button + button { border-left: 1px solid rgba(193, 153, 101, .18); }
+.issue202AltExistingChoices > button { min-height: 44px; padding-block: 4px 7px; }
+.issue202AltPrimaryChoices button:hover,
+.issue202AltPrimaryChoices button:focus-visible,
+.issue202AltPrimaryChoices button[aria-pressed="true"],
+.issue202AltFlatChoices button:hover,
+.issue202AltFlatChoices button:focus-visible,
+.issue202AltFlatChoices button[aria-pressed="true"],
+.issue202AltExistingChoices button:hover,
+.issue202AltExistingChoices button:focus-visible,
+.issue202AltExistingChoices button[aria-pressed="true"] { color: #fff0d8; }
+.issue202AltPrimaryChoices button:focus-visible,
+.issue202AltFlatChoices button:focus-visible,
+.issue202AltExistingChoices button:focus-visible { outline: 1px solid #b78351; outline-offset: -2px; }
+.issue202AltPrimaryChoices strong,
+.issue202AltFlatChoices strong,
+.issue202AltExistingChoices strong {
+  position: relative;
+  padding-bottom: 4px;
+  font: 700 clamp(.88rem, 1.12vw, 1.04rem)/1.3 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  word-break: keep-all;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .86);
+}
+.issue202AltExistingChoices strong { font-size: .72rem; }
+.issue202AltPrimaryChoices strong::after,
+.issue202AltFlatChoices strong::after,
+.issue202AltExistingChoices strong::after {
+  position: absolute;
+  right: -5px;
+  bottom: -1px;
+  left: -3px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, #bc343d 4%, #e05050 31%, #a51e29 82%, transparent);
+  clip-path: polygon(0 48%, 15% 35%, 34% 54%, 55% 30%, 76% 48%, 100% 23%, 99% 73%, 77% 64%, 53% 79%, 32% 65%, 12% 78%, 1% 68%);
+  content: "";
+  opacity: 0;
+  transform: scaleX(.08) rotate(-.45deg);
+  transform-origin: left center;
+  transition: opacity 90ms ease, transform 150ms cubic-bezier(.2,.74,.18,1);
+}
+.issue202AltPrimaryChoices button[aria-pressed="true"] strong::after,
+.issue202AltFlatChoices button[aria-pressed="true"] strong::after,
+.issue202AltExistingChoices button[aria-pressed="true"] strong::after {
+  opacity: 1;
+  transform: scaleX(1) rotate(-.45deg);
+}
+
+.issue202AltScenarioDetail {
+  min-height: 62px;
+  margin-top: 3px;
+  border-top: 1px solid rgba(205, 164, 105, .14);
+}
+.issue202AltScenarioDetail.is-empty { border-top-color: transparent; }
+.issue202AltSavedList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.issue202AltSavedList > button {
+  display: grid;
+  min-width: 0;
+  min-height: 58px;
+  padding: 7px 12px;
+  grid-template-columns: minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  color: rgba(228, 213, 190, .58);
+  background: transparent;
+  text-align: left;
+}
+.issue202AltSavedList > button + button { border-left: 1px solid rgba(205, 164, 105, .13); }
+.issue202AltSavedList > button span { display: grid; min-width: 0; gap: 3px; }
+.issue202AltSavedList > button strong { overflow: hidden; color: #e8d6bb; font: 700 .72rem/1.2 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.issue202AltSavedList > button small { overflow: hidden; color: rgba(219, 199, 171, .48); font-size: .54rem; text-overflow: ellipsis; white-space: nowrap; }
+.issue202AltSavedList > button i {
+  width: 13px;
+  aspect-ratio: 1;
+  border: 1px solid #9a764d;
+  border-radius: 50%;
+}
+.issue202AltSavedList > button[aria-checked="true"] { background: rgba(118, 74, 45, .16); }
+.issue202AltSavedList > button[aria-checked="true"] i { border: 4px solid #c69a62; }
+.issue202AltSavedList > button:focus-visible { outline: 1px solid #b78351; outline-offset: -2px; }
+.issue202AltJsonStatus { display: grid; place-items: center; }
+.issue202AltJsonStatus p { display: grid; margin: 0; justify-items: center; gap: 3px; color: rgba(228, 213, 190, .6); text-align: center; }
+.issue202AltJsonStatus strong { color: #e8d6bb; font: 700 .7rem/1.2 Georgia, serif; }
+.issue202AltJsonStatus span { font-size: .58rem; }
+.issue202AltJsonStatus .is-error strong,
+.issue202AltJsonStatus .is-error span { color: #e49c91; }
+
+.issue202AltScenarioSheet footer { display: flex; min-height: 42px; align-items: end; justify-content: flex-end; }
+.issue202AltPrimaryAction {
+  position: relative;
+  min-height: 42px;
+  padding: 5px 8px 10px;
+  border: 0;
+  color: #fff0d8;
+  background: transparent;
+  font: 700 .9rem/1 Georgia, "AppleMyungjo", "Noto Serif KR", Batang, serif;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .86);
+}
+.issue202AltPrimaryAction::after {
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  left: 4px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #bd343d 6%, #e05050 48%, #a51e29 91%, transparent);
+  clip-path: polygon(0 44%, 18% 30%, 42% 55%, 65% 28%, 100% 48%, 98% 74%, 62% 68%, 39% 80%, 16% 66%, 1% 72%);
+  content: "";
+}
+.issue202AltPrimaryAction:focus-visible { outline: 2px solid #8c542d; outline-offset: 2px; }
+
+.issue202AltPlaceholder {
+  top: 50%;
+  display: grid;
+  width: min(560px, calc(100% - 38px));
+  min-height: 180px;
+  padding: 32px 44px;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  transform: translate(-50%, -42%);
+  text-align: center;
+}
+.issue202AltPlaceholder small { color: #aa725f; font-size: .52rem; font-weight: 900; letter-spacing: .14em; }
+.issue202AltPlaceholder p { margin: 4px 0 0; color: rgba(228, 213, 190, .5); font-size: .66rem; }
+
+.issue202AltReviewDock {
+  position: relative;
+  z-index: 40;
+  display: grid;
+  width: 100%;
+  height: var(--review-height);
+  min-height: var(--review-height);
+  padding: 10px clamp(14px, 2.8vw, 36px);
+  grid-template-columns: minmax(180px, .7fr) auto minmax(540px, 1.8fr);
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid rgba(211, 173, 112, .22);
+  background: linear-gradient(180deg, #11161a, #090c0f);
+  box-shadow: 0 -18px 46px rgba(0, 0, 0, .5);
+}
+.issue202AltReviewIdentity { display: grid; gap: 4px; }
+.issue202AltReviewIdentity small { color: #a78656; font-size: .5rem; font-weight: 900; letter-spacing: .16em; }
+.issue202AltReviewIdentity strong { font: 500 .82rem/1.25 Georgia, "Noto Serif KR", serif; }
+.issue202AltSceneSwitch { display: flex; align-items: center; gap: 5px; }
+.issue202AltSceneSwitch button {
+  display: grid;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0 8px;
+  place-items: center;
+  border: 1px solid rgba(205, 165, 106, .26);
+  border-radius: 999px;
+  color: #9b8d78;
+  background: transparent;
+  font-size: .58rem;
+  font-weight: 850;
+}
+.issue202AltSceneSwitch button[aria-pressed="true"] { border-color: #c99a60; color: #1a1712; background: #c99a60; }
+.issue202AltSceneSwitch button:focus-visible { outline: 2px solid #c99a60; outline-offset: 2px; }
+.issue202AltReviewControls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.issue202AltReviewControls label { display: grid; min-width: 0; gap: 3px; }
+.issue202AltReviewControls label > span { color: #a78656; font-size: .46rem; font-weight: 900; letter-spacing: .08em; }
+.issue202AltReviewControls select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 22px 0 8px;
+  border: 1px solid rgba(213, 180, 126, .3);
+  border-radius: 3px;
+  color: #d9c6a7;
+  background: #101519;
+  font-size: .58rem;
+  font-weight: 750;
+}
+.issue202AltReviewControls select:focus-visible { outline: 2px solid #c99a60; outline-offset: 1px; }
+
+@media (max-width: 980px) {
+  .issue202AltPrototype { --review-height: 118px; }
+  .issue202AltReviewDock {
+    padding: 8px 12px;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 6px 12px;
+  }
+  .issue202AltReviewIdentity { display: none; }
+  .issue202AltSceneSwitch { grid-column: 1; grid-row: 1 / 3; }
+  .issue202AltReviewControls { grid-column: 2; grid-row: 1 / 3; }
+}
+
+@media (max-width: 720px) {
+  .issue202AltPrototype { --review-height: 116px; min-height: 480px; }
+  .issue202AltProductStage { min-height: 364px; }
+
+  .issue202AltProductProgress {
+    top: 7px;
+    width: calc(100% - 16px);
+    padding: 6px 4px;
+  }
+  .issue202AltProductProgress li {
+    min-height: 28px;
+    padding: 0 2px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 4px;
+  }
+  .issue202AltProductProgress li > span { width: 22px; }
+  .issue202AltProductProgress li > strong { font-size: .48rem; }
+  .issue202AltProductProgress li + li::before { display: none; }
+
+  .issue202AltScenarioSheet {
+    bottom: 8px;
+    width: calc(100% - 16px);
+    min-height: 0;
+    max-height: calc(100% - 53px);
+    padding: 16px 15px 10px;
+    grid-template-rows: auto auto minmax(46px, auto) auto;
+  }
+  .issue202AltScenarioSheet header { padding-bottom: 7px; }
+  .issue202AltScenarioSheet h1 { font-size: .91rem; }
+  .issue202AltPrimaryChoices > button,
+  .issue202AltFlatChoices > button { min-height: 45px; padding: 4px 5px 7px; }
+  .issue202AltFlatChoices { grid-template-columns: 1fr; }
+  .issue202AltFlatChoices > button + button { border-top: 1px solid rgba(193, 153, 101, .14); border-left: 0; }
+  .issue202AltPrimaryChoices strong,
+  .issue202AltFlatChoices strong { font-size: .82rem; }
+  .issue202AltExistingChoices > button { min-height: 40px; }
+  .issue202AltExistingChoices strong { font-size: .63rem; }
+  .issue202AltScenarioDetail { min-height: 48px; }
+  .issue202AltSavedList > button { min-height: 48px; padding: 4px 7px; grid-template-columns: minmax(0, 1fr) 14px; }
+  .issue202AltSavedList > button strong { font-size: .61rem; }
+  .issue202AltSavedList > button small { font-size: .47rem; }
+  .issue202AltJsonStatus strong { font-size: .64rem; }
+  .issue202AltScenarioSheet footer { min-height: 38px; }
+  .issue202AltPrimaryAction { min-height: 38px; font-size: .8rem; }
+
+  .issue202AltReviewDock {
+    display: grid;
+    padding: 6px 8px;
+    grid-template-columns: 1fr;
+    grid-template-rows: 42px 56px;
+    gap: 4px;
+  }
+  .issue202AltSceneSwitch {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: center;
+  }
+  .issue202AltSceneSwitch button { min-width: 42px; min-height: 38px; }
+  .issue202AltReviewControls {
+    grid-column: 1;
+    grid-row: 2;
+    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(112px, 1fr));
+    gap: 6px;
+    scrollbar-width: thin;
+  }
+  .issue202AltReviewControls select { min-height: 34px; }
+}
+
+@media (min-width: 721px) and (max-height: 620px) {
+  .issue202AltPrototype { --review-height: 84px; min-height: 430px; }
+  .issue202AltProductStage { min-height: 346px; }
+  .issue202AltReviewDock { height: 84px; min-height: 84px; padding-block: 6px; }
+  .issue202AltReviewIdentity strong { font-size: .72rem; }
+  .issue202AltEditor.is-scenario .issue202AltArtwork img { transform: scale(1.42); }
+  .issue202AltScenarioSheet { bottom: 7px; min-height: 260px; max-height: calc(100% - 56px); padding-block: 15px 9px; }
+  .issue202AltProductProgress { top: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue202AltArtwork img { transition: none; }
+  .issue202AltInkTransition,
+  .issue202AltInkTransition span,
+  .issue202AltScenarioSheet.is-entering { animation-duration: 1ms !important; }
+}
