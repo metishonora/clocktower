@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    contracts::FirstNightOrderPlan,
+    contracts::{FirstNightActionRef, FirstNightOrderPlan},
     error::{CoreError, ErrorKind},
     model::PhaseStep,
 };
@@ -15,6 +15,11 @@ pub(crate) fn compose_steps(
 ) -> Result<Vec<PhaseStep>, CoreError> {
     let mut steps = Vec::new();
     for action_ref in &plan.0 {
+        if matches!(action_ref, FirstNightActionRef::Character { .. })
+            && context.rule_service.active_instances(action_ref).is_empty()
+        {
+            continue;
+        }
         steps.extend(registry.project(action_ref, context)?);
     }
     Ok(steps)

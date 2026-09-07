@@ -1,3 +1,4 @@
+use super::custom_first_night_fixture::{complete_order, complete_order_json};
 use std::collections::HashSet;
 
 use serde_json::{json, Value};
@@ -17,11 +18,12 @@ fn definition(character_ids: &[&str]) -> CustomScriptDefinition {
             .iter()
             .map(|character_id| (*character_id).to_string())
             .collect(),
-        first_night_order: None,
+        first_night_order: complete_order(character_ids),
     }
 }
 
 fn custom_game(character_ids: &[&str]) -> Value {
+    let first_night_order = complete_order_json(character_ids);
     json!({
         "schemaVersion": 4,
         "game": {
@@ -30,7 +32,8 @@ fn custom_game(character_ids: &[&str]) -> Value {
                 "definition": {
                     "id": "custom-registry-contract",
                     "name": "Registry contract",
-                    "characterIds": character_ids
+                    "characterIds": character_ids,
+                    "firstNightOrder": first_night_order,
                 }
             },
             "id": "custom-registry-game",

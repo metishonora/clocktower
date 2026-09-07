@@ -195,7 +195,7 @@ function parseScriptReference(value: unknown): ScriptReference {
 export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
   if (
     !isRecord(value)
-    || !hasOnlyKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
+    || !hasExactKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
     || typeof value.id !== "string"
     || value.id.trim().length === 0
     || typeof value.name !== "string"
@@ -214,9 +214,7 @@ export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinit
     id: value.id,
     name: value.name,
     characterIds: [...value.characterIds],
-    ...(value.firstNightOrder === undefined
-      ? {}
-      : { firstNightOrder: parseFirstNightOrderPlan(value.firstNightOrder) }),
+    firstNightOrder: parseFirstNightOrderPlan(value.firstNightOrder),
   });
 }
 

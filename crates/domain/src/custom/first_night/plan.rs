@@ -1,18 +1,22 @@
 use std::collections::HashSet;
 
 use crate::{
-    characters::{resolve_custom_script, ResolvedScriptContext},
+    characters::{
+        resolve_custom_script, resolve_custom_script_ids, validate_custom_script_definition,
+        validate_custom_script_definition_draft, ResolvedScriptContext,
+    },
     contracts::{
-        CustomFirstNightPlanResult, CustomScriptDefinition, FirstNightActionRef,
-        FirstNightOrderPlan, FirstNightPlanSource, SystemFirstNightActionId,
+        CustomFirstNightPlanResult, CustomScriptDefinition, CustomScriptDefinitionDraft,
+        FirstNightActionRef, FirstNightOrderPlan, FirstNightPlanSource, SystemFirstNightActionId,
     },
     error::{CoreError, ErrorKind},
 };
 
 // Snapshot of TPI botc-release resources/data/nightsheet.json `firstNight`, filtered to the
 // currently supported TB/S&V action catalog. This is deliberately not a merge of script-local
-// ranks. Persisted defaults must only change as an explicit contract migration.
-const GLOBAL_CHARACTER_ORDER: [(&str, &str); 18] = [
+// ranks. The ordered snapshot is used only when authoring a draft omits its order; the same
+// catalog supplies the Character action set used to validate completed definitions.
+const FIRST_NIGHT_ACTION_CATALOG: [(&str, &str); 18] = [
     ("philosopher", "chooseAbility"),
     ("poisoner", "choosePoisonTarget"),
     ("snakeCharmer", "choosePlayer"),
@@ -32,6 +36,7 @@ const GLOBAL_CHARACTER_ORDER: [(&str, &str); 18] = [
     ("spy", "inspectGrimoire"),
     ("mathematician", "learnCount"),
 ];
+const REQUIRED_SYSTEM_ACTION_IDS: [&str; 4] = ["dusk", "minionInfo", "demonInfo", "dawn"];
 
 fn character(character_id: &str, action_id: &str) -> FirstNightActionRef {
     FirstNightActionRef::Character {
@@ -42,7 +47,7 @@ fn character(character_id: &str, action_id: &str) -> FirstNightActionRef {
 
 fn default_plan(context: &ResolvedScriptContext) -> FirstNightOrderPlan {
     let mut entries = vec![FirstNightActionRef::system("dusk")];
-    for (character_id, action_id) in GLOBAL_CHARACTER_ORDER {
+    for (character_id, action_id) in FIRST_NIGHT_ACTION_CATALOG {
         if character_id == "poisoner" {
             entries.push(FirstNightActionRef::system("minionInfo"));
             entries.push(FirstNightActionRef::system("demonInfo"));
@@ -56,7 +61,19 @@ fn default_plan(context: &ResolvedScriptContext) -> FirstNightOrderPlan {
 }
 
 fn expected_actions(context: &ResolvedScriptContext) -> HashSet<FirstNightActionRef> {
-    default_plan(context).0.into_iter().collect()
+    let mut expected = HashSet::with_capacity(FIRST_NIGHT_ACTION_CATALOG.len() + 4);
+    expected.extend(
+        REQUIRED_SYSTEM_ACTION_IDS
+            .into_iter()
+            .map(FirstNightActionRef::system),
+    );
+    expected.extend(
+        FIRST_NIGHT_ACTION_CATALOG
+            .into_iter()
+            .filter(|(character_id, _)| context.contains(character_id))
+            .map(|(character_id, action_id)| character(character_id, action_id)),
+    );
+    expected
 }
 
 pub(crate) fn validate_plan(
@@ -94,10 +111,20 @@ pub(crate) fn validate_plan(
     Ok(())
 }
 
-pub(crate) fn effective_plan(
+pub(crate) fn plan_for_definition(
     definition: &CustomScriptDefinition,
-) -> Result<CustomFirstNightPlanResult, CoreError> {
+) -> Result<FirstNightOrderPlan, CoreError> {
+    validate_custom_script_definition(definition)?;
     let context = resolve_custom_script(definition)?;
+    validate_plan(&context, &definition.first_night_order)?;
+    Ok(definition.first_night_order.clone())
+}
+
+pub(crate) fn plan_for_draft(
+    definition: &CustomScriptDefinitionDraft,
+) -> Result<CustomFirstNightPlanResult, CoreError> {
+    validate_custom_script_definition_draft(definition)?;
+    let context = resolve_custom_script_ids(&definition.character_ids)?;
     if let Some(plan) = definition.first_night_order.clone() {
         validate_plan(&context, &plan)?;
         Ok(CustomFirstNightPlanResult {
@@ -110,10 +137,4 @@ pub(crate) fn effective_plan(
             plan: default_plan(&context),
         })
     }
-}
-
-pub(crate) fn plan_for_definition(
-    definition: &CustomScriptDefinition,
-) -> Result<FirstNightOrderPlan, CoreError> {
-    effective_plan(definition).map(|result| result.plan)
 }

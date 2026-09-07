@@ -2,7 +2,7 @@ import type {
   Command,
   CoreResult,
   CustomFirstNightPlanResult,
-  CustomScriptDefinition,
+  CustomScriptDefinitionDraft,
   GameFile,
   PhaseInputSuggestion,
   PhaseInputSuggestionRequest,
@@ -12,6 +12,7 @@ import type {
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
+import type { CustomDefinitionValidator } from "./customDefinitionValidator.js";
 import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
 import { withExpectedEventCount } from "./streamVersion.js";
 import {
@@ -107,13 +108,34 @@ export async function customScriptCatalog(): Promise<CustomScriptCatalogEntry[]>
 }
 
 export async function customFirstNightPlan(
-  customDefinition: CustomScriptDefinition,
+  customDefinition: CustomScriptDefinitionDraft,
 ): Promise<CoreResult<CustomFirstNightPlanResult>> {
   await ensureWasm();
+  return queryCustomFirstNightPlan(customDefinition);
+}
+
+function queryCustomFirstNightPlan(
+  customDefinition: CustomScriptDefinitionDraft,
+): CoreResult<CustomFirstNightPlanResult> {
   return parseCoreResult(
     JSON.parse(wasmCustomFirstNightPlan(JSON.stringify({ customDefinition }))),
     parseCustomFirstNightPlanResult,
   );
+}
+
+export async function loadCustomDefinitionValidator(): Promise<CustomDefinitionValidator> {
+  await ensureWasm();
+  return (definition) => {
+    // Validation must never enter the authoring query's missing-order proposal path.
+    if (!Array.isArray(definition.firstNightOrder)) {
+      throw new Error("커스텀 시나리오에 첫날 밤 순서가 필요합니다.");
+    }
+    const result = queryCustomFirstNightPlan(definition);
+    if (!result.ok) throw new Error(result.error.messageKo);
+    if (result.value.source !== "definition") {
+      throw new Error("커스텀 시나리오의 명시적 첫날 밤 순서를 검증하지 못했습니다.");
+    }
+  };
 }
 
 export const wasmCoreAdapter: CoreAdapter = {

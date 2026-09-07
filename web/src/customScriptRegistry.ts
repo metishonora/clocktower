@@ -43,5 +43,6 @@ export function resolveCustomScriptDefinition(
   return {
     ...definition,
     characterIds: [...definition.characterIds],
+    firstNightOrder: structuredClone(definition.firstNightOrder),
   };
 }

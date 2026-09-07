@@ -1,8 +1,8 @@
+import { createTestCustomScriptRepository } from "./customScriptRepositoryTestSupport.js";
 import { deepEqual, equal, ok } from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory } from "fake-indexeddb";
 import { CustomCanonicalSession } from "./customCanonicalSession.js";
-import { IndexedDbCustomScriptRepository } from "./customScriptRepository.js";
 import {
   IndexedDbCustomWebSessionStorageDriver,
   type CustomWebSessionSnapshot,
@@ -20,6 +20,7 @@ import type { CoreAdapter } from "./core/coreAdapter.js";
 
 const PLAN = [
   { kind: "system" as const, actionId: "dusk" as const },
+  { kind: "character" as const, characterId: "philosopher", actionId: "chooseAbility" },
   { kind: "system" as const, actionId: "minionInfo" as const },
   { kind: "system" as const, actionId: "demonInfo" as const },
   { kind: "system" as const, actionId: "dawn" as const },
@@ -125,7 +126,7 @@ test("repository edits never overwrite the session; exact revert restores resume
   const idb = new IDBFactory();
   const definition = customDefinition();
   const edited = { ...definition, characterIds: [...definition.characterIds, "poisoner"] };
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const storage = new IndexedDbCustomWebSessionStorageDriver<{ roster: string[] }, { activeTab: string }>(
     definition.id,
     idb,
@@ -231,7 +232,7 @@ function setupEvent(): GameEvent {
     id: "setup-1",
     type: "setupConfirmed",
     phase: "setup",
-    payload: { players: [], firstNightOrderPlan: PLAN },
+    payload: { players: [] },
     summary: "setup",
     createdAt: "2026-09-05T00:00:00.000Z",
   };
@@ -253,7 +254,7 @@ function actionEvent(): GameEvent {
 }
 
 function createCommand(): Command {
-  return { type: "createGame", payload: { players: [], firstNightOrderPlan: PLAN } };
+  return { type: "createGame", payload: { players: [] } };
 }
 
 function adapter(

@@ -1,4 +1,4 @@
-import { deepEqual, equal } from "node:assert/strict";
+import { deepEqual, equal, throws } from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory } from "fake-indexeddb";
 import {
@@ -189,6 +189,49 @@ test("import rejects a valid game belonging to a different script", () => {
   } catch (error) {
     equal(error instanceof Error ? error.message : "", "현재 페이지와 다른 스크립트의 게임 파일입니다.");
   }
+});
+
+test("import rejects custom definitions without an explicit order and removed setup fields", () => {
+  const custom = {
+    schemaVersion: 4,
+    game: {
+      script: {
+        type: "custom",
+        definition: {
+          id: "custom-order-contract",
+          name: "Custom order contract",
+          characterIds: ["washerwoman", "clockmaker", "imp"],
+          firstNightOrder: [
+            { kind: "system", actionId: "dusk" },
+            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+            { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
+            { kind: "system", actionId: "minionInfo" },
+            { kind: "system", actionId: "demonInfo" },
+            { kind: "system", actionId: "dawn" },
+          ],
+        },
+      },
+      id: "custom-order-game",
+      name: "Custom order contract",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      events: [],
+    },
+  };
+  const missingOrder = structuredClone(custom);
+  delete (missingOrder.game.script.definition as Record<string, unknown>).firstNightOrder;
+  throws(() => importGameFileJson(JSON.stringify(missingOrder)));
+
+  const removedSetupPlan = structuredClone(custom) as unknown as { game: { events: unknown[] } };
+  removedSetupPlan.game.events = [{
+    id: "setup-1",
+    type: "setupConfirmed",
+    phase: "setup",
+    payload: { players: [], firstNightOrderPlan: custom.game.script.definition.firstNightOrder },
+    summary: "setup",
+    createdAt: "2026-01-01T00:00:00.000Z",
+  }];
+  throws(() => importGameFileJson(JSON.stringify(removedSetupPlan)));
 });
 
 test("confirmed seat-layout UI metadata survives JSON export and import", () => {

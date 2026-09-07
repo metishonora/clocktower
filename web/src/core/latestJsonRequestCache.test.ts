@@ -90,6 +90,14 @@ test("a replay cache includes the complete custom definition in canonical reques
           id: "custom-stable-id",
           name: "Mixed roster",
           characterIds: ["washerwoman", "clockmaker"],
+          firstNightOrder: [
+            { kind: "system", actionId: "dusk" },
+            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+            { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
+            { kind: "system", actionId: "minionInfo" },
+            { kind: "system", actionId: "demonInfo" },
+            { kind: "system", actionId: "dawn" },
+          ],
         },
       },
       id: "custom-game",
@@ -116,6 +124,13 @@ test("a replay cache includes the complete custom definition in canonical reques
         definition: {
           ...firstInput.game.script.definition,
           characterIds: ["washerwoman", "imp"],
+          firstNightOrder: [
+            { kind: "system", actionId: "dusk" },
+            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+            { kind: "system", actionId: "minionInfo" },
+            { kind: "system", actionId: "demonInfo" },
+            { kind: "system", actionId: "dawn" },
+          ],
         },
       },
     },

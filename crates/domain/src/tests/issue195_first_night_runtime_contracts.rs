@@ -22,9 +22,20 @@ fn action(character_id: &str, action_id: &str) -> FirstNightActionRef {
     }
 }
 
-#[derive(Default)]
 struct FixtureRules {
     instances: HashMap<FirstNightActionRef, Vec<ActiveAbilityInstance>>,
+    minion_present: bool,
+    demon_present: bool,
+}
+
+impl Default for FixtureRules {
+    fn default() -> Self {
+        Self {
+            instances: HashMap::new(),
+            minion_present: true,
+            demon_present: true,
+        }
+    }
 }
 
 impl FirstNightRuleService for FixtureRules {
@@ -33,11 +44,11 @@ impl FirstNightRuleService for FixtureRules {
     }
 
     fn has_minion(&self) -> bool {
-        true
+        self.minion_present
     }
 
     fn has_demon(&self) -> bool {
-        true
+        self.demon_present
     }
 
     fn legal_demon_bluff_character_ids(&self) -> Vec<String> {
@@ -213,6 +224,90 @@ fn composer_projects_zero_one_or_many_instances_in_stable_identity_order_without
 }
 
 #[test]
+fn composer_skips_character_with_no_active_instances_before_handler_lookup() {
+    let skipped = action("fixtureCharacter", "skipped");
+    let handled = action("fixtureCharacter", "handled");
+    let registry =
+        ActionRegistry::new(vec![registration(handled.clone(), handled.clone())]).unwrap();
+    let mut rules = FixtureRules::default();
+    rules
+        .instances
+        .insert(handled.clone(), vec![instance(1, "p1", "setup-1")]);
+    let context = ActionContext {
+        rule_service: &rules,
+    };
+
+    let steps = compose_steps(
+        &FirstNightOrderPlan(vec![skipped, handled]),
+        &registry,
+        &context,
+    )
+    .unwrap();
+
+    assert_eq!(steps.len(), 1);
+    assert_eq!(steps[0].player_id.as_deref(), Some("p1"));
+}
+
+#[test]
+fn composer_errors_when_active_character_has_no_handler() {
+    let missing = action("fixtureCharacter", "missing");
+    let registry = ActionRegistry::new(Vec::new()).unwrap();
+    let mut rules = FixtureRules::default();
+    rules
+        .instances
+        .insert(missing.clone(), vec![instance(1, "p1", "setup-1")]);
+    let context = ActionContext {
+        rule_service: &rules,
+    };
+
+    let error =
+        compose_steps(&FirstNightOrderPlan(vec![missing]), &registry, &context).unwrap_err();
+
+    assert_eq!(error.code, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");
+}
+
+#[test]
+fn composer_preserves_relative_order_around_skipped_character_action() {
+    let before = action("fixtureCharacter", "before");
+    let skipped = action("fixtureCharacter", "skipped");
+    let after = action("fixtureCharacter", "after");
+    let registry = ActionRegistry::new(vec![
+        registration(before.clone(), before.clone()),
+        registration(after.clone(), after.clone()),
+    ])
+    .unwrap();
+    let mut rules = FixtureRules::default();
+    rules
+        .instances
+        .insert(before, vec![instance(1, "p1", "setup-1")]);
+    rules
+        .instances
+        .insert(after, vec![instance(2, "p2", "setup-2")]);
+    let context = ActionContext {
+        rule_service: &rules,
+    };
+
+    let steps = compose_steps(
+        &FirstNightOrderPlan(vec![
+            action("fixtureCharacter", "before"),
+            skipped,
+            action("fixtureCharacter", "after"),
+        ]),
+        &registry,
+        &context,
+    )
+    .unwrap();
+
+    assert_eq!(
+        steps
+            .iter()
+            .map(|step| step.player_id.as_deref().unwrap())
+            .collect::<Vec<_>>(),
+        ["p1", "p2"],
+    );
+}
+
+#[test]
 fn proposal_replay_validation_and_reducer_share_action_identity_and_events_alone_change_progress() {
     let alpha = action("fixtureCharacter", "alpha");
     let registry = ActionRegistry::new(vec![registration(alpha.clone(), alpha.clone())]).unwrap();
@@ -289,5 +384,34 @@ fn system_and_character_actions_interleave_in_one_ordered_composer() {
             "firstNight:system:demonInfo",
             "firstNight:system:dawn",
         ],
+    );
+}
+
+#[test]
+fn system_info_actions_are_skipped_when_alignment_is_absent() {
+    let registry = system_action_registry().unwrap();
+    let rules = FixtureRules {
+        minion_present: false,
+        demon_present: false,
+        ..FixtureRules::default()
+    };
+    let context = ActionContext {
+        rule_service: &rules,
+    };
+    let plan = FirstNightOrderPlan(vec![
+        FirstNightActionRef::system("dusk"),
+        FirstNightActionRef::system("minionInfo"),
+        FirstNightActionRef::system("demonInfo"),
+        FirstNightActionRef::system("dawn"),
+    ]);
+
+    let steps = compose_steps(&plan, &registry, &context).unwrap();
+
+    assert_eq!(
+        steps
+            .iter()
+            .map(|step| step.id.as_str())
+            .collect::<Vec<_>>(),
+        ["firstNight:system:dawn"],
     );
 }

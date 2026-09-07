@@ -359,13 +359,8 @@ pub(crate) fn propose_create_game(
     }
 
     let setup_choice_id = payload.setup_choice_id.clone();
-    let requested_first_night_plan = payload.first_night_order_plan.clone();
-    let mut confirmed_first_night_plan = None;
     let players = match &game_file.script {
         ScriptReference::Official { script_id } => {
-            if requested_first_night_plan.is_some() {
-                return Err(ErrorKind::CommandNotSupportedByScript.into_error());
-            }
             validate_setup_inputs_for_script(*script_id, &payload.players)?;
             let players = payload
                 .players
@@ -397,10 +392,7 @@ pub(crate) fn propose_create_game(
                 return Err(ErrorKind::InvalidSetupChoice.into_error());
             }
             let context = crate::characters::resolve_custom_script(definition)?;
-            let first_night_plan = requested_first_night_plan
-                .unwrap_or(crate::custom::first_night::plan_for_definition(definition)?);
-            crate::custom::first_night::validate_plan(&context, &first_night_plan)?;
-            confirmed_first_night_plan = Some(first_night_plan);
+            crate::custom::first_night::plan_for_definition(definition)?;
             validate_setup_inputs_for_custom(&context, &payload.players)?;
             let players = payload
                 .players
@@ -433,7 +425,6 @@ pub(crate) fn propose_create_game(
                 payload: SetupEventPayload {
                     players,
                     setup_choice_id,
-                    first_night_order_plan: confirmed_first_night_plan,
                 },
             },
             phase: Phase::Setup,

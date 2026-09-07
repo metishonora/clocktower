@@ -36,12 +36,12 @@ test("parses the exact ordered action-ref and plan-result contracts", () => {
   throws(() => parseCustomFirstNightPlanResult({ source: "default", plan, owner: "snv" }));
 });
 
-test("custom definition and setup plan round-trip without implementation ownership metadata", () => {
+test("definition-owned first-night order round-trips with a roster-only setup event", () => {
   const setupEvent = parseGameEvent({
     id: "setup-1",
     type: "setupConfirmed",
     phase: "setup",
-    payload: { players: [], firstNightOrderPlan: plan },
+    payload: { players: [] },
     summary: "setup",
     createdAt: "2026-09-04T00:00:00.000Z",
   });

@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use super::{sects_and_violets, trouble_brewing};
 use crate::{
-    contracts::CustomScriptDefinition,
+    contracts::{CustomScriptDefinition, CustomScriptDefinitionDraft},
     error::{CoreError, ErrorKind},
     model::CharacterKind,
 };
@@ -119,19 +119,39 @@ pub(crate) fn custom_script_catalog() -> Vec<CharacterRegistryEntry> {
 pub(crate) fn validate_custom_script_definition(
     definition: &CustomScriptDefinition,
 ) -> Result<(), CoreError> {
-    if definition.id.trim().is_empty()
-        || definition.name.trim().is_empty()
-        || definition
-            .character_ids
+    validate_custom_script_definition_fields(
+        &definition.id,
+        &definition.name,
+        &definition.character_ids,
+    )
+}
+
+pub(crate) fn validate_custom_script_definition_draft(
+    definition: &CustomScriptDefinitionDraft,
+) -> Result<(), CoreError> {
+    validate_custom_script_definition_fields(
+        &definition.id,
+        &definition.name,
+        &definition.character_ids,
+    )
+}
+
+fn validate_custom_script_definition_fields(
+    id: &str,
+    name: &str,
+    character_ids: &[String],
+) -> Result<(), CoreError> {
+    if id.trim().is_empty()
+        || name.trim().is_empty()
+        || character_ids
             .iter()
             .any(|character_id| character_id.trim().is_empty())
     {
         return Err(ErrorKind::MalformedCustomScriptDefinition.into_error());
     }
 
-    let mut unique = HashSet::with_capacity(definition.character_ids.len());
-    if definition
-        .character_ids
+    let mut unique = HashSet::with_capacity(character_ids.len());
+    if character_ids
         .iter()
         .any(|character_id| !unique.insert(character_id.as_str()))
     {
@@ -144,14 +164,20 @@ pub(crate) fn validate_custom_script_definition(
 pub(crate) fn resolve_custom_script(
     definition: &CustomScriptDefinition,
 ) -> Result<ResolvedScriptContext, CoreError> {
+    resolve_custom_script_ids(&definition.character_ids)
+}
+
+pub(crate) fn resolve_custom_script_ids(
+    character_ids: &[String],
+) -> Result<ResolvedScriptContext, CoreError> {
     let catalog = custom_script_catalog()
         .into_iter()
         .map(|entry| (entry.id, entry))
         .collect::<HashMap<_, _>>();
-    let mut seen = HashSet::with_capacity(definition.character_ids.len());
-    let mut entries = Vec::with_capacity(definition.character_ids.len());
+    let mut seen = HashSet::with_capacity(character_ids.len());
+    let mut entries = Vec::with_capacity(character_ids.len());
 
-    for character_id in &definition.character_ids {
+    for character_id in character_ids {
         if !seen.insert(character_id.as_str()) {
             return Err(ErrorKind::DuplicateCustomScriptCharacter.into_error());
         }

@@ -1,5 +1,14 @@
 import type { CustomScriptDefinition } from "./core/types.js";
 import { parseCustomScriptDefinition } from "./gameStorage.js";
+import type {
+  CustomDefinitionValidator,
+  LoadCustomDefinitionValidator,
+} from "./core/customDefinitionValidator.js";
+
+async function loadCanonicalValidator(): Promise<CustomDefinitionValidator> {
+  const { loadCustomDefinitionValidator } = await import("./core/wasmClient.js");
+  return loadCustomDefinitionValidator();
+}
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -45,10 +54,14 @@ export class CustomScriptRepositoryError extends Error {
 }
 
 export class IndexedDbCustomScriptRepository {
-  constructor(private readonly idb: IDBFactory = globalThis.indexedDB) {}
+  constructor(
+    private readonly idb: IDBFactory = globalThis.indexedDB,
+    private readonly loadValidator: LoadCustomDefinitionValidator = loadCanonicalValidator,
+  ) {}
 
   async load(id: string): Promise<CustomScriptDefinitionLoadResult> {
     validateStableId(id);
+    const validate = await this.loadValidator();
     const db = await this.openDb();
     try {
       const transaction = db.transaction(STORE_NAME, "readonly");
@@ -57,7 +70,7 @@ export class IndexedDbCustomScriptRepository {
       );
       if (stored === undefined) return { status: "missing" };
       try {
-        return { status: "loaded", record: parseStoredDefinition(stored, id) };
+        return { status: "loaded", record: parseStoredDefinition(stored, validate, id) };
       } catch (error) {
         return { status: "unreadable", id, error: unreadableError(error) };
       }
@@ -67,6 +80,7 @@ export class IndexedDbCustomScriptRepository {
   }
 
   async list(): Promise<CustomScriptDefinitionListResult> {
+    const validate = await this.loadValidator();
     const db = await this.openDb();
     try {
       const transaction = db.transaction(STORE_NAME, "readonly");
@@ -75,7 +89,7 @@ export class IndexedDbCustomScriptRepository {
       const unreadableIds: string[] = [];
       for (const { id, value } of entries) {
         try {
-          records.push(parseStoredDefinition(value, id));
+          records.push(parseStoredDefinition(value, validate, id));
         } catch {
           unreadableIds.push(id);
         }
@@ -89,7 +103,9 @@ export class IndexedDbCustomScriptRepository {
   }
 
   async save(record: StoredCustomScriptDefinition): Promise<void> {
-    const validated = parseStoredDefinition(record);
+    const candidate = snapshotRecord(record);
+    const validate = await this.loadValidator();
+    const validated = parseStoredDefinition(candidate, validate);
     const id = validated.definition.id;
     const db = await this.openDb();
     try {
@@ -99,7 +115,7 @@ export class IndexedDbCustomScriptRepository {
       const existing = await requestToPromise<unknown>(store.get(key));
       if (existing !== undefined) {
         try {
-          parseStoredDefinition(existing, id);
+          parseStoredDefinition(existing, validate, id);
         } catch (error) {
           transaction.abort();
           throw new CustomScriptRepositoryError(
@@ -118,7 +134,9 @@ export class IndexedDbCustomScriptRepository {
 
   async replaceUnreadable(id: string, record: StoredCustomScriptDefinition): Promise<void> {
     validateStableId(id);
-    const validated = parseStoredDefinition(record);
+    const candidate = snapshotRecord(record);
+    const validate = await this.loadValidator();
+    const validated = parseStoredDefinition(candidate, validate);
     if (validated.definition.id !== id) {
       throw new CustomScriptRepositoryError(
         "CUSTOM_DEFINITION_ID_MISMATCH",
@@ -134,7 +152,7 @@ export class IndexedDbCustomScriptRepository {
       let unreadable = existing !== undefined;
       if (existing !== undefined) {
         try {
-          parseStoredDefinition(existing, id);
+          parseStoredDefinition(existing, validate, id);
           unreadable = false;
         } catch {
           unreadable = true;
@@ -164,8 +182,17 @@ export class IndexedDbCustomScriptRepository {
   }
 }
 
+function snapshotRecord(record: StoredCustomScriptDefinition): StoredCustomScriptDefinition {
+  try {
+    return structuredClone(record);
+  } catch (error) {
+    throw invalidDefinition(error);
+  }
+}
+
 function parseStoredDefinition(
   value: unknown,
+  validate: CustomDefinitionValidator,
   expectedId?: string,
 ): StoredCustomScriptDefinition {
   if (
@@ -178,6 +205,7 @@ function parseStoredDefinition(
   let definition: CustomScriptDefinition;
   try {
     definition = parseCustomScriptDefinition(value.definition);
+    validate(definition);
   } catch (error) {
     throw invalidDefinition(error);
   }

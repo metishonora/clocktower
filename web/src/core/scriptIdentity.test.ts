@@ -30,7 +30,7 @@ test("complete custom ScriptReference identity is exact and ordered", () => {
   })), false);
   equal(sameScriptReference(reference, customReference({
     ...definition,
-    firstNightOrder: [...definition.firstNightOrder!].reverse(),
+    firstNightOrder: [...definition.firstNightOrder].reverse(),
   })), false);
   equal(sameScriptReference(reference, { type: "official", scriptId: "troubleBrewing" }), false);
 });
@@ -54,7 +54,7 @@ test("custom resume requires the current runtime definition to equal the immutab
   equal(customGameCanResumeWithDefinition(gameFile, {
     ...definition,
     firstNightOrder: undefined,
-  }), false);
+  } as unknown as CustomScriptDefinition), false);
   equal(customGameCanResumeWithDefinition(gameFile, structuredClone(definition)), true);
 
   const official: GameFile = {

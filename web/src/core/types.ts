@@ -4,6 +4,14 @@ export type CustomScriptDefinition = {
   id: string;
   name: string;
   characterIds: string[];
+  firstNightOrder: FirstNightOrderPlan;
+};
+
+/**
+ * Authoring input for the read-only custom first-night-plan query.
+ * Persisted and game-snapshot definitions always carry an explicit order.
+ */
+export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNightOrder"> & {
   firstNightOrder?: FirstNightOrderPlan;
 };
 
@@ -310,7 +318,6 @@ export type Command =
       payload: {
         players: SetupPlayerInput[];
         setupChoiceId?: SetupChoiceId;
-        firstNightOrderPlan?: FirstNightOrderPlan;
       };
     }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
@@ -848,7 +855,6 @@ export type GameEvent = EventCommon &
         payload: {
           players: SetupPlayerInput[];
           setupChoiceId?: SetupChoiceId;
-          firstNightOrderPlan?: FirstNightOrderPlan;
         };
       }
     | {

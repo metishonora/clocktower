@@ -1,3 +1,4 @@
+use super::custom_first_night_fixture::{complete_order, complete_order_json};
 use crate::{
     characters::{
         custom_ability_acquisition_character_ids, custom_demon_bluff_character_ids,
@@ -15,6 +16,7 @@ fn definition(character_ids: &[&str]) -> Value {
         "id": "custom-setup-contract",
         "name": "Custom setup contract",
         "characterIds": character_ids,
+        "firstNightOrder": complete_order_json(character_ids),
     })
 }
 
@@ -150,7 +152,7 @@ fn custom_candidate_policy_scopes_bluffs_ability_acquisition_and_transformation(
             .iter()
             .map(|character_id| (*character_id).to_string())
             .collect(),
-        first_night_order: None,
+        first_night_order: complete_order(&definition_order),
     })
     .unwrap();
 

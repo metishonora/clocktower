@@ -5,7 +5,8 @@ mod trouble_brewing;
 
 pub(crate) use registry::{
     custom_demon_bluff_character_ids, custom_script_catalog, resolve_custom_script,
-    validate_custom_script_definition, ResolvedScriptContext,
+    resolve_custom_script_ids, validate_custom_script_definition,
+    validate_custom_script_definition_draft, ResolvedScriptContext,
 };
 
 #[cfg(test)]
@@ -107,15 +108,6 @@ impl ScriptRules {
                 )
             })
         {
-            return Err(ErrorKind::EventNotSupportedByScript.into_error());
-        }
-        if events.iter().any(|event| {
-            matches!(
-                &event.kind,
-                GameEventKind::SetupConfirmed { payload }
-                    if payload.first_night_order_plan.is_some()
-            )
-        }) {
             return Err(ErrorKind::EventNotSupportedByScript.into_error());
         }
         if events.iter().any(|event| {
