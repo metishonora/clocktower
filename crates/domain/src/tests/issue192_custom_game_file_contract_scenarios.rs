@@ -1,3 +1,4 @@
+use super::custom_first_night_fixture::complete_order_json;
 use crate::replay_json;
 use serde_json::{json, Value};
 
@@ -16,12 +17,20 @@ fn game_v4(script: Value) -> Value {
 }
 
 fn custom_definition(character_ids: Value) -> Value {
+    let selected = character_ids
+        .as_array()
+        .expect("custom test fixture character ids should be an array")
+        .iter()
+        .filter_map(Value::as_str)
+        .collect::<Vec<_>>();
+    let first_night_order = complete_order_json(&selected);
     json!({
         "type": "custom",
         "definition": {
             "id": "custom-stable-id",
             "name": "Mixed roster",
-            "characterIds": character_ids
+            "characterIds": character_ids,
+            "firstNightOrder": first_night_order,
         }
     })
 }

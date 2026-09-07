@@ -56,6 +56,14 @@ test("generated WASM replays a custom snapshot with its complete identity", asyn
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: ["washerwoman", "clockmaker", "imp"],
+      firstNightOrder: [
+        { kind: "system", actionId: "dusk" },
+        { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+        { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
+        { kind: "system", actionId: "minionInfo" },
+        { kind: "system", actionId: "demonInfo" },
+        { kind: "system", actionId: "dawn" },
+      ],
     },
   }));
 
@@ -69,6 +77,14 @@ test("generated WASM replays a custom snapshot with its complete identity", asyn
         id: "custom-stable-id",
         name: "Mixed roster",
         characterIds: ["washerwoman", "clockmaker", "imp"],
+        firstNightOrder: [
+          { kind: "system", actionId: "dusk" },
+          { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+          { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
+          { kind: "system", actionId: "minionInfo" },
+          { kind: "system", actionId: "demonInfo" },
+          { kind: "system", actionId: "dawn" },
+        ],
       },
     },
     eventCount: 0,

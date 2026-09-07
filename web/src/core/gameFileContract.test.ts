@@ -34,6 +34,9 @@ function officialV4(scriptId: unknown) {
 }
 
 function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) {
+  const ids = Array.isArray(characterIds)
+    ? characterIds.filter((id): id is string => typeof id === "string")
+    : [];
   return {
     schemaVersion: 4,
     game: {
@@ -43,6 +46,7 @@ function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) 
           id: "custom-stable-id",
           name: "Mixed roster",
           characterIds,
+          firstNightOrder: firstNightOrderFor(ids),
         },
       },
       id: "custom-game",
@@ -101,6 +105,7 @@ test("round-trips the complete custom definition without reordering Characters",
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: ["washerwoman", "clockmaker", "imp"],
+      firstNightOrder: firstNightOrderFor(["washerwoman", "clockmaker", "imp"]),
     },
   });
   equal(JSON.parse(exported).exportedAt, "2026-09-02T01:00:00.000Z");
@@ -115,6 +120,7 @@ test("accepts an empty custom Character list as a structural contract", () => {
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: [],
+      firstNightOrder: firstNightOrderFor([]),
     },
   });
 });
@@ -232,3 +238,19 @@ test("rejects mixed, incomplete, and unknown schema-v4 script-reference arms", (
     throws(() => parseGameFileJson(JSON.stringify(candidate)));
   }
 });
+
+function firstNightOrderFor(characterIds: string[]) {
+  const characterActions = [
+    { characterId: "washerwoman", actionId: "learnTownsfolk" },
+    { characterId: "clockmaker", actionId: "learnSteps" },
+  ] as const;
+  return [
+    { kind: "system" as const, actionId: "dusk" as const },
+    ...characterActions
+      .filter(({ characterId }) => characterIds.includes(characterId))
+      .map(({ characterId, actionId }) => ({ kind: "character" as const, characterId, actionId })),
+    { kind: "system" as const, actionId: "minionInfo" as const },
+    { kind: "system" as const, actionId: "demonInfo" as const },
+    { kind: "system" as const, actionId: "dawn" as const },
+  ];
+}

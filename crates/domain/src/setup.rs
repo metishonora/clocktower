@@ -30,8 +30,8 @@ pub(crate) fn setup_distribution(
             if !(5..=15).contains(&request.player_count) {
                 return Err(ErrorKind::InvalidPlayerCount.into_error());
             }
-            crate::characters::validate_custom_script_definition(&request.custom_definition)?;
             let context = crate::characters::resolve_custom_script(&request.custom_definition)?;
+            crate::custom::first_night::plan_for_definition(&request.custom_definition)?;
             Ok(SetupDistributionResult::Distribution(
                 custom_setup_distribution(
                     &context,

@@ -1,22 +1,25 @@
+import { createTestCustomScriptRepository } from "./customScriptRepositoryTestSupport.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory, IDBObjectStore as FakeIDBObjectStore } from "fake-indexeddb";
-import {
-  IndexedDbCustomScriptRepository,
-  type StoredCustomScriptDefinition,
-} from "./customScriptRepository.js";
+import type { StoredCustomScriptDefinition } from "./customScriptRepository.js";
 import { IndexedDbGameStorageDriver } from "./gameStorage.js";
 import { IndexedDbWebSessionStorageDriver } from "./webSessionStorage.js";
+import type { FirstNightOrderPlan } from "./core/types.js";
 
-const FIRST_NIGHT_ORDER = [
+const FIRST_NIGHT_ORDER: FirstNightOrderPlan = [
   { kind: "system" as const, actionId: "dusk" as const },
+  { kind: "character" as const, characterId: "washerwoman", actionId: "learnTownsfolk" },
+  { kind: "character" as const, characterId: "clockmaker", actionId: "learnSteps" },
   { kind: "system" as const, actionId: "minionInfo" as const },
   { kind: "system" as const, actionId: "demonInfo" as const },
   { kind: "system" as const, actionId: "dawn" as const },
 ];
 
+const DEFAULT_CHARACTER_IDS = ["washerwoman", "clockmaker", "imp"];
+
 test("definition repository round-trips ordered runtime data and separate source metadata", async () => {
-  const repository = new IndexedDbCustomScriptRepository(new IDBFactory());
+  const repository = createTestCustomScriptRepository(new IDBFactory());
   const record = definitionRecord("mixed/a:1", {
     metadata: { author: "Storyteller", source: "officialCustomScriptJson" },
     firstNightOrder: FIRST_NIGHT_ORDER,
@@ -33,7 +36,7 @@ test("definition repository round-trips ordered runtime data and separate source
 
 test("saving the same stable ID atomically replaces the complete envelope without touching another ID", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const original = definitionRecord("custom-one", {
     metadata: { author: "Original", source: "manual" },
     firstNightOrder: FIRST_NIGHT_ORDER,
@@ -61,18 +64,49 @@ test("saving the same stable ID atomically replaces the complete envelope withou
   assert.equal(storedReplacement.status, "loaded");
   if (storedReplacement.status === "loaded") {
     assert.equal("metadata" in storedReplacement.record, false);
-    assert.equal("firstNightOrder" in storedReplacement.record.definition, false);
+    assert.equal("firstNightOrder" in storedReplacement.record.definition, true);
+    assert.deepEqual(
+      storedReplacement.record.definition.firstNightOrder,
+      replacement.definition.firstNightOrder,
+    );
   }
 });
 
 test("loading an absent stable ID is distinct from an unreadable record", async () => {
-  const repository = new IndexedDbCustomScriptRepository(new IDBFactory());
+  const repository = createTestCustomScriptRepository(new IDBFactory());
   assert.deepEqual(await repository.load("not-stored"), { status: "missing" });
+});
+
+test("stored definitions require an explicit first-night order and reject removed fields", async () => {
+  const idb = new IDBFactory();
+  const repository = createTestCustomScriptRepository(idb);
+  await putRaw(idb, definitionKey("missing-order"), {
+    version: 1,
+    definition: {
+      id: "missing-order",
+      name: "Missing order",
+      characterIds: ["imp"],
+    },
+  });
+  await putRaw(idb, definitionKey("removed-field"), {
+    version: 1,
+    definition: {
+      id: "removed-field",
+      name: "Removed field",
+      characterIds: ["imp"],
+      firstNightOrder: FIRST_NIGHT_ORDER,
+      firstNightOrderPlan: FIRST_NIGHT_ORDER,
+    },
+  });
+
+  assert.equal((await repository.load("missing-order")).status, "unreadable");
+  assert.equal((await repository.load("removed-field")).status, "unreadable");
+  assert.deepEqual((await repository.list()).unreadableIds, ["missing-order", "removed-field"]);
 });
 
 test("one unreadable definition does not hide valid definitions and cannot be overwritten by normal save", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const valid = definitionRecord("valid-definition");
   await repository.save(valid);
   await putRaw(idb, definitionKey("broken-definition"), { version: 99, damaged: true });
@@ -96,7 +130,7 @@ test("one unreadable definition does not hide valid definitions and cannot be ov
 
 test("explicit unreadable-definition recovery replaces only the requested damaged record", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const other = definitionRecord("other-definition");
   const recovered = definitionRecord("broken-definition", { name: "Recovered" });
   await repository.save(other);
@@ -129,7 +163,7 @@ test("explicit unreadable-definition recovery replaces only the requested damage
 });
 
 test("the repository accepts an empty roster and rejects registry-invalid definitions", async () => {
-  const repository = new IndexedDbCustomScriptRepository(new IDBFactory());
+  const repository = createTestCustomScriptRepository(new IDBFactory());
   const empty = definitionRecord("empty-definition", { characterIds: [] });
 
   await repository.save(empty);
@@ -147,7 +181,7 @@ test("the repository accepts an empty roster and rejects registry-invalid defini
 
 test("invalid records and storage-open failures preserve the previously durable record", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const original = definitionRecord("durable-definition");
   await repository.save(original);
 
@@ -163,7 +197,7 @@ test("invalid records and storage-open failures preserve the previously durable 
   failingFactory.open = (() => {
     throw new Error("simulated storage failure");
   }) as IDBFactory["open"];
-  const failingRepository = new IndexedDbCustomScriptRepository(failingFactory);
+  const failingRepository = createTestCustomScriptRepository(failingFactory);
   await expectRejection(
     failingRepository.save(definitionRecord("durable-definition", { name: "Lost" })),
   );
@@ -176,7 +210,7 @@ test("invalid records and storage-open failures preserve the previously durable 
 
 test("an aborted replacement transaction preserves the previous complete record", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const original = definitionRecord("atomic-definition", {
     metadata: { author: "Durable" },
     firstNightOrder: FIRST_NIGHT_ORDER,
@@ -219,7 +253,7 @@ test("definition writes and recovery preserve official game and web-session reco
   };
   const gameDriver = new IndexedDbGameStorageDriver("troubleBrewing", idb);
   const sessionDriver = new IndexedDbWebSessionStorageDriver("troubleBrewing", idb);
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   await gameDriver.saveLatestGame(officialGame);
   await sessionDriver.saveSession(officialSession);
 
@@ -255,11 +289,29 @@ function definitionRecord(
     definition: {
       id,
       name: overrides.name ?? `Definition ${id}`,
-      characterIds: overrides.characterIds ?? ["washerwoman", "clockmaker", "imp"],
-      ...(overrides.firstNightOrder ? { firstNightOrder: overrides.firstNightOrder } : {}),
+      characterIds: overrides.characterIds ?? DEFAULT_CHARACTER_IDS,
+      firstNightOrder: overrides.firstNightOrder ?? firstNightOrderFor(
+        overrides.characterIds ?? DEFAULT_CHARACTER_IDS,
+      ),
     },
     ...(overrides.metadata ? { metadata: overrides.metadata } : {}),
   };
+}
+
+function firstNightOrderFor(characterIds: string[]): FirstNightOrderPlan {
+  const characterActions = [
+    { characterId: "washerwoman", actionId: "learnTownsfolk" },
+    { characterId: "clockmaker", actionId: "learnSteps" },
+  ] as const;
+  return [
+    { kind: "system", actionId: "dusk" },
+    ...characterActions
+      .filter(({ characterId }) => characterIds.includes(characterId))
+      .map(({ characterId, actionId }) => ({ kind: "character" as const, characterId, actionId })),
+    { kind: "system", actionId: "minionInfo" },
+    { kind: "system", actionId: "demonInfo" },
+    { kind: "system", actionId: "dawn" },
+  ];
 }
 
 function definitionKey(id: string): string {

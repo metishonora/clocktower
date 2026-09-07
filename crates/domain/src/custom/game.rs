@@ -13,9 +13,8 @@ use crate::{
 };
 
 use super::first_night::{
-    compose_steps, plan_for_definition, reduce_progress, system_action_registry, validate_plan,
-    ActionContext, ActiveAbilityInstance, ConfirmedActionEvent, FirstNightProgress,
-    FirstNightRuleService,
+    compose_steps, plan_for_definition, reduce_progress, system_action_registry, ActionContext,
+    ActiveAbilityInstance, ConfirmedActionEvent, FirstNightProgress, FirstNightRuleService,
 };
 
 struct CustomRuleService<'a> {
@@ -238,11 +237,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         .iter()
         .map(|player| player_from_setup_input_for_custom(&context, player))
         .collect::<Result<Vec<_>, _>>()?;
-    let plan = payload
-        .first_night_order_plan
-        .clone()
-        .unwrap_or(plan_for_definition(definition)?);
-    validate_plan(&context, &plan)?;
+    let plan = plan_for_definition(definition)?;
 
     let rules = CustomRuleService {
         context: &context,

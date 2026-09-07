@@ -170,11 +170,10 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "setupConfirmed":
       if (
-        !hasOnlyKeys(payload, ["players", "setupChoiceId", "firstNightOrderPlan"]) ||
+        !hasOnlyKeys(payload, ["players", "setupChoiceId"]) ||
         !Array.isArray(payload.players) ||
         !payload.players.every(isSetupPlayer) ||
-        (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId)) ||
-        (payload.firstNightOrderPlan !== undefined && !isFirstNightOrderPlan(payload.firstNightOrderPlan))
+        (payload.setupChoiceId !== undefined && !isSetupChoiceId(payload.setupChoiceId))
       ) throw invalidEvent();
       break;
     case "phaseStepConfirmed":
@@ -627,7 +626,7 @@ function isCustomReplayScriptReference(value: unknown): boolean {
     !hasExactKeys(value, ["type", "definition"]) ||
     value.type !== "custom" ||
     !isRecord(value.definition) ||
-    !hasOnlyKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder"]) ||
+    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder"]) ||
     typeof value.definition.id !== "string" ||
     value.definition.id.trim().length === 0 ||
     typeof value.definition.name !== "string" ||
@@ -640,8 +639,7 @@ function isCustomReplayScriptReference(value: unknown): boolean {
   ) {
     return false;
   }
-  return value.definition.firstNightOrder === undefined ||
-    isFirstNightOrderPlan(value.definition.firstNightOrder);
+  return isFirstNightOrderPlan(value.definition.firstNightOrder);
 }
 
 export function parseProposal(value: unknown): Proposal {

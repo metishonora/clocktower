@@ -1,3 +1,4 @@
+use super::custom_first_night_fixture::complete_order_json;
 use crate::{custom_first_night_plan_json, propose_json, replay_json};
 use serde_json::{json, Value};
 
@@ -73,6 +74,14 @@ fn definition(character_ids: &[&str], first_night_order: Option<&[Value]>) -> Va
     definition
 }
 
+fn definition_with_fixture_order(character_ids: &[&str]) -> Value {
+    let order = complete_order_json(character_ids);
+    definition(
+        character_ids,
+        Some(order.as_array().expect("test plan should be an array")),
+    )
+}
+
 fn plan_query(definition: Value) -> Value {
     serde_json::from_str(&custom_first_night_plan_json(
         &json!({ "customDefinition": definition }).to_string(),
@@ -94,6 +103,20 @@ fn empty_game(definition: Value) -> Value {
     })
 }
 
+#[test]
+fn empty_game_does_not_synthesize_missing_definition_order() {
+    let supplied = definition(&["imp"], None);
+    let game = empty_game(supplied.clone());
+
+    assert_eq!(game["game"]["script"]["definition"], supplied);
+
+    let replay: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    assert_eq!(
+        replay["error"]["code"], "MALFORMED_CUSTOM_SCRIPT_DEFINITION",
+        "{replay}",
+    );
+}
+
 fn setup_players() -> Value {
     json!([
         { "seat": 1, "name": "A", "actualCharacter": "washerwoman" },
@@ -106,24 +129,27 @@ fn setup_players() -> Value {
     ])
 }
 
+const SYSTEM_ONLY_CHARACTERS: [&str; 12] = [
+    "undertaker",
+    "monk",
+    "ravenkeeper",
+    "virgin",
+    "slayer",
+    "scarletWoman",
+    "imp",
+    "soldier",
+    "mayor",
+    "saint",
+    "recluse",
+    "drunk",
+];
+
+fn system_only_draft() -> Value {
+    definition(&SYSTEM_ONLY_CHARACTERS, None)
+}
+
 fn system_only_definition() -> Value {
-    definition(
-        &[
-            "undertaker",
-            "monk",
-            "ravenkeeper",
-            "virgin",
-            "slayer",
-            "scarletWoman",
-            "imp",
-            "soldier",
-            "mayor",
-            "saint",
-            "recluse",
-            "drunk",
-        ],
-        None,
-    )
+    definition_with_fixture_order(&SYSTEM_ONLY_CHARACTERS)
 }
 
 fn system_only_players() -> Value {
@@ -142,11 +168,8 @@ fn propose_command(game: &Value, command: Value) -> Value {
     serde_json::from_str(&propose_json(&game.to_string(), &command.to_string())).unwrap()
 }
 
-fn create_game(game: &Value, first_night_order_plan: Option<&[Value]>) -> Value {
-    let mut payload = json!({ "players": setup_players() });
-    if let Some(plan) = first_night_order_plan {
-        payload["firstNightOrderPlan"] = Value::Array(plan.to_vec());
-    }
+fn create_game(game: &Value) -> Value {
+    let payload = json!({ "players": setup_players() });
     serde_json::from_str(&propose_json(
         &game.to_string(),
         &json!({ "type": "createGame", "payload": payload }).to_string(),
@@ -187,7 +210,7 @@ fn default_plan_contains_only_actions_from_the_definition_but_not_only_in_play_r
         ]),
     );
 
-    let system_only = plan_query(system_only_definition());
+    let system_only = plan_query(system_only_draft());
     assert_eq!(
         system_only["value"]["plan"],
         json!([
@@ -254,93 +277,113 @@ fn plan_validation_rejects_missing_duplicate_unknown_mismatch_and_bad_boundaries
 }
 
 #[test]
-fn setup_persists_one_canonical_current_game_plan_without_mutating_definition() {
+fn setup_event_contains_roster_only_without_mutating_definition() {
     let mut pool = MIXED_CHARACTERS.to_vec();
     pool.push("vortox");
-    let definition = definition(&pool, None);
+    let definition = definition_with_fixture_order(&pool);
     let game = empty_game(definition.clone());
-    let mut override_plan = combined_default();
-    let minion_info = override_plan.remove(2);
-    let dawn = override_plan.pop().unwrap();
-    override_plan.insert(8, minion_info);
-    override_plan.push(dawn);
 
-    let proposed = create_game(&game, Some(&override_plan));
+    let proposed = create_game(&game);
     assert_eq!(proposed["ok"], true, "{proposed}");
     assert_eq!(
-        proposed["value"]["event"]["payload"]["firstNightOrderPlan"],
-        Value::Array(override_plan.clone()),
+        proposed["value"]["event"]["payload"]["players"]
+            .as_array()
+            .expect("setup event players should be an array")
+            .iter()
+            .map(|player| (player["seat"].clone(), player["actualCharacter"].clone()))
+            .collect::<Vec<_>>(),
+        setup_players()
+            .as_array()
+            .expect("setup players should be an array")
+            .iter()
+            .map(|player| (player["seat"].clone(), player["actualCharacter"].clone()))
+            .collect::<Vec<_>>(),
     );
-    assert_eq!(game["game"]["script"]["definition"], definition);
+    assert!(proposed["value"]["event"]["payload"]
+        .get("firstNightOrderPlan")
+        .is_none());
+    assert_eq!(game["game"]["script"]["definition"], definition.clone());
+}
 
-    let fresh = create_game(&game, None);
-    assert_eq!(fresh["ok"], true, "{fresh}");
+#[test]
+fn definition_order_controls_custom_replay_and_setup_does_not_override_it() {
+    let definition = definition(
+        &[
+            "undertaker",
+            "monk",
+            "ravenkeeper",
+            "virgin",
+            "slayer",
+            "scarletWoman",
+            "imp",
+            "soldier",
+            "mayor",
+            "saint",
+            "recluse",
+            "drunk",
+        ],
+        Some(&[
+            system("dusk"),
+            system("demonInfo"),
+            system("minionInfo"),
+            system("dawn"),
+        ]),
+    );
+    let mut game = empty_game(definition);
+    let create = propose_command(
+        &game,
+        json!({ "type": "createGame", "payload": { "players": system_only_players() } }),
+    );
+    assert_eq!(create["ok"], true, "{create}");
     assert_eq!(
-        fresh["value"]["event"]["payload"]["firstNightOrderPlan"],
-        Value::Array(combined_default()),
+        create["value"]["event"]["payload"]
+            .get("firstNightOrderPlan")
+            .is_none(),
+        true,
+    );
+    game["game"]["events"] = json!([create["value"]["event"].clone()]);
+    let replay: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
+    assert_eq!(replay["ok"], true, "{replay}",);
+    assert_eq!(
+        replay["value"]["currentStep"]["id"],
+        "firstNight:system:demonInfo",
     );
 }
 
 #[test]
-fn setup_override_wins_over_definition_order_which_wins_over_default() {
+fn removed_setup_plan_is_rejected_in_commands_and_events_even_when_null() {
     let mut pool = MIXED_CHARACTERS.to_vec();
     pool.push("vortox");
-
-    let mut definition_order = combined_default();
-    let definition_minion = definition_order.remove(2);
-    let definition_dawn = definition_order.pop().unwrap();
-    definition_order.insert(8, definition_minion);
-    definition_order.push(definition_dawn);
-
-    let with_definition = definition(&pool, Some(&definition_order));
-    let queried = plan_query(with_definition.clone());
-    assert_eq!(queried["value"]["source"], "definition");
-    assert_eq!(queried["value"]["plan"], json!(definition_order));
-
-    let mut setup_order = combined_default();
-    let setup_demon = setup_order.remove(3);
-    let setup_dawn = setup_order.pop().unwrap();
-    setup_order.insert(10, setup_demon);
-    setup_order.push(setup_dawn);
-    let proposal = create_game(&empty_game(with_definition), Some(&setup_order));
-    assert_eq!(proposal["ok"], true, "{proposal}");
-    assert_eq!(
-        proposal["value"]["event"]["payload"]["firstNightOrderPlan"],
-        json!(setup_order),
-    );
-}
-
-#[test]
-fn setup_override_and_imported_setup_event_apply_the_same_strict_plan_validation() {
-    let mut pool = MIXED_CHARACTERS.to_vec();
-    pool.push("vortox");
-    let game = empty_game(definition(&pool, None));
+    let game = empty_game(definition_with_fixture_order(&pool));
     let mut invalid = combined_default();
     invalid.retain(|entry| entry != &system("minionInfo"));
 
-    let proposal = create_game(&game, Some(&invalid));
-    assert_eq!(
-        proposal["error"]["code"], "INVALID_FIRST_NIGHT_ORDER_PLAN",
-        "{proposal}",
-    );
+    for legacy_value in [Value::Array(invalid.clone()), Value::Null] {
+        let command = json!({
+            "type": "createGame",
+            "payload": {
+                "players": setup_players(),
+                "firstNightOrderPlan": legacy_value,
+            },
+        });
+        let proposal = propose_command(&game, command);
+        assert_eq!(proposal["error"]["code"], "MALFORMED_COMMAND", "{proposal}");
 
-    let mut imported = game;
-    imported["game"]["events"] = json!([{
-        "id": "setup-1",
-        "type": "setupConfirmed",
-        "phase": "setup",
-        "payload": {
-            "players": setup_players(),
-            "firstNightOrderPlan": invalid,
-        },
-        "summary": "초기 설정 확정: 7명",
-        "createdAt": "2026-09-04T00:00:00.000Z",
-    }]);
-    let replay: Value = serde_json::from_str(&replay_json(&imported.to_string())).unwrap();
-    assert_eq!(
-        replay["error"]["code"], "INVALID_FIRST_NIGHT_ORDER_PLAN",
-        "{replay}",
-    );
+        let mut imported = game.clone();
+        imported["game"]["events"] = json!([{
+            "id": "setup-1",
+            "type": "setupConfirmed",
+            "phase": "setup",
+            "payload": {
+                "players": setup_players(),
+                "firstNightOrderPlan": legacy_value,
+            },
+            "summary": "초기 설정 확정: 7명",
+            "createdAt": "2026-09-04T00:00:00.000Z",
+        }]);
+        let replay: Value = serde_json::from_str(&replay_json(&imported.to_string())).unwrap();
+        assert_eq!(replay["error"]["code"], "MALFORMED_EVENT", "{replay}");
+    }
 }
 
 #[test]
@@ -351,15 +394,9 @@ fn system_only_custom_game_replays_progress_and_event_removal_deterministically(
         json!({ "type": "createGame", "payload": { "players": system_only_players() } }),
     );
     assert_eq!(create["ok"], true, "{create}");
-    assert_eq!(
-        create["value"]["event"]["payload"]["firstNightOrderPlan"],
-        json!([
-            system("dusk"),
-            system("minionInfo"),
-            system("demonInfo"),
-            system("dawn"),
-        ]),
-    );
+    assert!(create["value"]["event"]["payload"]
+        .get("firstNightOrderPlan")
+        .is_none());
     game["game"]["events"] = json!([create["value"]["event"].clone()]);
 
     let after_setup: Value = serde_json::from_str(&replay_json(&game.to_string())).unwrap();
@@ -500,11 +537,11 @@ fn custom_boundary_rejects_stale_system_steps_and_forged_action_provenance() {
 }
 
 #[test]
-fn custom_setup_plan_round_trips_while_official_replay_meaning_stays_exact() {
+fn custom_definition_plan_replays_while_official_setup_shape_stays_exact() {
     let mut pool = MIXED_CHARACTERS.to_vec();
     pool.push("vortox");
-    let game = empty_game(definition(&pool, None));
-    let proposal = create_game(&game, None);
+    let game = empty_game(definition_with_fixture_order(&pool));
+    let proposal = create_game(&game);
     assert_eq!(proposal["ok"], true, "{proposal}");
 
     let mut with_setup = game.clone();
@@ -526,12 +563,6 @@ fn custom_setup_plan_round_trips_while_official_replay_meaning_stays_exact() {
             "events": [],
         }
     });
-    let official_create = create_game(&official, Some(&combined_default()));
-    assert_eq!(
-        official_create["error"]["code"], "COMMAND_NOT_SUPPORTED_BY_SCRIPT",
-        "{official_create}",
-    );
-
     let official_create = propose_command(
         &official,
         json!({

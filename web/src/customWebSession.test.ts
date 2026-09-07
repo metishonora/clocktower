@@ -1,7 +1,7 @@
-import { deepEqual, equal, ok } from "node:assert/strict";
+import { createTestCustomScriptRepository } from "./customScriptRepositoryTestSupport.js";
+import { deepEqual, equal, ok, throws } from "node:assert/strict";
 import test from "node:test";
 import { IDBFactory, IDBObjectStore as FakeIDBObjectStore } from "fake-indexeddb";
-import { IndexedDbCustomScriptRepository } from "./customScriptRepository.js";
 import {
   CoalescingCustomSessionAutosaveQueue,
   createCustomGameFile,
@@ -36,14 +36,14 @@ test("custom web sessions isolate stable IDs and preserve canonical first-night 
   equal("firstNightOrderPlan" in rawAlpha, false);
   deepEqual((rawAlpha.canonical as GameFile).game.events, alpha.canonical.game.events);
   const serialized = JSON.stringify(rawAlpha);
-  equal(serialized.match(/firstNightOrderPlan/g)?.length, 1);
+  equal(serialized.match(/firstNightOrderPlan/g)?.length ?? 0, 0);
   equal(serialized.match(/actionRef/g)?.length, 1);
   equal(serialized.match(/abilityUse/g)?.length, 1);
 });
 
 test("replacing a repository definition leaves the one active game on its immutable snapshot", async () => {
   const idb = new IDBFactory();
-  const repository = new IndexedDbCustomScriptRepository(idb);
+  const repository = createTestCustomScriptRepository(idb);
   const original = definition("stable-game");
   const edited = { ...original, name: "Edited definition", characterIds: [...original.characterIds, "poisoner"] };
   const session = customSession("stable-game", original);
@@ -184,8 +184,8 @@ test("custom game creation snapshots its source definition instead of retaining 
   );
   source.name = "Mutated after creation";
   source.characterIds.push("poisoner");
-  const sourceFirstAction = source.firstNightOrder?.[0];
-  if (sourceFirstAction?.kind === "system") sourceFirstAction.actionId = "dawn";
+  const sourceFirstAction = source.firstNightOrder[0];
+  if (sourceFirstAction.kind === "system") sourceFirstAction.actionId = "dawn";
 
   equal(gameFile.game.script.type, "custom");
   if (gameFile.game.script.type === "custom") {
@@ -193,6 +193,12 @@ test("custom game creation snapshots its source definition instead of retaining 
     deepEqual(gameFile.game.script.definition.characterIds, ["philosopher", "imp"]);
     deepEqual(gameFile.game.script.definition.firstNightOrder, expectedPlan);
   }
+});
+
+test("custom game creation rejects a definition without an explicit first-night order", () => {
+  const source = definition("missing-order");
+  const missingOrder = { ...source, firstNightOrder: undefined } as unknown as CustomScriptDefinition;
+  throws(() => createCustomGameFile(missingOrder, "missing-order-game"));
 });
 
 test("autosave coalesces pending changes and a durability waiter resolves only after storage completes", async () => {
@@ -261,7 +267,7 @@ function customEvents(): GameEvent[] {
       id: "setup-1",
       type: "setupConfirmed",
       phase: "setup",
-      payload: { players: [], firstNightOrderPlan: PLAN },
+      payload: { players: [] },
       summary: "setup",
       createdAt: "2026-09-05T00:00:00.000Z",
     },

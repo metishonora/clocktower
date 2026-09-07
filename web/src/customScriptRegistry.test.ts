@@ -10,6 +10,13 @@ import {
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters.js";
 import { characters } from "./setupDraft.js";
 
+const SYSTEM_ONLY_FIRST_NIGHT_ORDER = [
+  { kind: "system" as const, actionId: "dusk" as const },
+  { kind: "system" as const, actionId: "minionInfo" as const },
+  { kind: "system" as const, actionId: "demonInfo" as const },
+  { kind: "system" as const, actionId: "dawn" as const },
+];
+
 test("builds the exact unique TB and S&V custom allowlist with canonical kinds", () => {
   equal(customScriptCharacters.length, 47);
   equal(new Set(customScriptCharacters.map(({ id }) => id)).size, 47);
@@ -38,12 +45,25 @@ test("resolves supported definitions without changing order and rejects unsuppor
     id: "custom-registry-contract",
     name: "Registry contract",
     characterIds: ["imp", "clockmaker", "washerwoman"],
+    firstNightOrder: [
+      SYSTEM_ONLY_FIRST_NIGHT_ORDER[0],
+      { kind: "character" as const, characterId: "clockmaker", actionId: "learnSteps" },
+      { kind: "character" as const, characterId: "washerwoman", actionId: "learnTownsfolk" },
+      SYSTEM_ONLY_FIRST_NIGHT_ORDER[1],
+      SYSTEM_ONLY_FIRST_NIGHT_ORDER[2],
+      SYSTEM_ONLY_FIRST_NIGHT_ORDER[3],
+    ],
   };
 
   deepEqual(resolveCustomScriptDefinition(definition), definition);
-  deepEqual(resolveCustomScriptDefinition({ ...definition, characterIds: [] }), {
+  deepEqual(resolveCustomScriptDefinition({
     ...definition,
     characterIds: [],
+    firstNightOrder: SYSTEM_ONLY_FIRST_NIGHT_ORDER,
+  }), {
+    ...definition,
+    characterIds: [],
+    firstNightOrder: SYSTEM_ONLY_FIRST_NIGHT_ORDER,
   });
   for (const characterId of ["Imp", "futureCharacter", "grandmother"]) {
     throws(

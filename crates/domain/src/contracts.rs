@@ -57,6 +57,15 @@ pub(crate) struct CustomScriptDefinition {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) character_ids: Vec<String>,
+    pub(crate) first_night_order: FirstNightOrderPlan,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomScriptDefinitionDraft {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) character_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) first_night_order: Option<FirstNightOrderPlan>,
 }
@@ -109,7 +118,7 @@ pub(crate) struct FirstNightOrderPlan(pub(crate) Vec<FirstNightActionRef>);
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct CustomFirstNightPlanRequest {
-    pub(crate) custom_definition: CustomScriptDefinition,
+    pub(crate) custom_definition: CustomScriptDefinitionDraft,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -350,13 +359,11 @@ pub(crate) struct SetupPlayerInput {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct CreateGamePayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default)]
     pub(crate) setup_choice_id: Option<String>,
-    #[serde(default)]
-    pub(crate) first_night_order_plan: Option<FirstNightOrderPlan>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1785,13 +1792,11 @@ pub(crate) struct SmokeEventPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct SetupEventPayload {
     pub(crate) players: Vec<SetupPlayerInput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) setup_choice_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) first_night_order_plan: Option<FirstNightOrderPlan>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
