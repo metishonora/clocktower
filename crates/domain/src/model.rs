@@ -404,7 +404,7 @@ pub(crate) enum SetupInfoKind {
 
 pub(crate) type StepInput = Option<StepInputFields>;
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepInputFields {
     #[serde(default, skip_serializing_if = "Option::is_none")]

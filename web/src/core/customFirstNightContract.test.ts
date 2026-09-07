@@ -74,3 +74,76 @@ test("definition-owned first-night order round-trips with a roster-only setup ev
   equal(exported.includes("handlerPath"), false);
   equal(exported.includes("scriptOwner"), false);
 });
+
+test("parses the canonical custom action envelope and preserves its typed result", () => {
+  const event = {
+    id: "custom-action-1",
+    type: "customActionConfirmed" as const,
+    phase: "firstNight" as const,
+    payload: {
+      stepId: "firstNight:fixture:player-1:setup-1",
+      actionRef: {
+        kind: "character" as const,
+        characterId: "washerwoman",
+        actionId: "learnTownsfolk",
+      },
+      abilityUse: {
+        ownerPlayerId: "player-1",
+        characterId: "washerwoman",
+        abilityInstanceId: "setup-1:player-1",
+      },
+      input: null,
+      result: { kind: "noEffect" as const },
+    },
+    summary: "custom action",
+    createdAt: "2026-09-07T00:00:00.000Z",
+  };
+
+  deepEqual(parseGameEvent(event), event);
+});
+
+test("rejects custom envelope tampering without tightening legacy event payloads", () => {
+  const event = {
+    id: "custom-action-1",
+    type: "customActionConfirmed" as const,
+    phase: "firstNight" as const,
+    payload: {
+      stepId: "firstNight:fixture:player-1:setup-1",
+      actionRef: {
+        kind: "character" as const,
+        characterId: "washerwoman",
+        actionId: "learnTownsfolk",
+      },
+      abilityUse: {
+        ownerPlayerId: "player-1",
+        characterId: "washerwoman",
+        abilityInstanceId: "setup-1:player-1",
+      },
+      input: null,
+      result: { kind: "noEffect" as const },
+    },
+    summary: "custom action",
+    createdAt: "2026-09-07T00:00:00.000Z",
+  };
+
+  throws(() => parseGameEvent({ ...event, unexpected: true }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, unexpected: true },
+  }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, input: { patch: { alive: false } } },
+  }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: { ...event.payload, result: { kind: "fixture", value: { alive: false } } },
+  }));
+  throws(() => parseGameEvent({
+    ...event,
+    payload: {
+      ...event.payload,
+      abilityUse: { ...event.payload.abilityUse, characterId: "chef" },
+    },
+  }));
+});

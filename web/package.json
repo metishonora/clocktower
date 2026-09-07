@@ -45,6 +45,7 @@
     "test:unit": "tsc -p tsconfig.test.json && node --test .codex-tmp/web-tests/*.test.js .codex-tmp/web-tests/**/*.test.js",
     "test:integration": "pnpm --workspace-root build:wasm && pnpm run test:integration:run",
     "test:integration:run": "tsc -p tsconfig.integration.json --noEmit && vitest run",
+    "test:integration:issue206": "tsc -p tsconfig.issue206.json --noEmit && vitest run --config vitest.issue206.config.ts",
     "test:prototype": "pnpm --workspace-root build:wasm && tsc -p tsconfig.prototype.json --noEmit && vitest run --config vitest.prototype.config.ts",
     "test:browser:run": "tsc -p tsconfig.browser.json --noEmit && playwright test"
   },

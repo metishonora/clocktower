@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 
 use crate::{
-    contracts::{FirstNightActionRef, FirstNightOrderPlan},
+    contracts::{FirstNightActionRef, FirstNightOrderPlan, GameEvent, GameEventKind},
+    custom::event::{CustomActionEventDraft, CustomFactChanges},
     custom::first_night::{
-        compose_steps, reduce_progress, system_action_registry, ActionContext, ActionHandler,
-        ActionRegistry, ActionSpec, ActiveAbilityInstance, ConfirmedActionEvent,
-        FirstNightProgress, FirstNightRuleService, RegisteredAction,
+        project_pending_steps, system_action_registry, ActionContext, ActionEventDraft,
+        ActionHandler, ActionRegistry, ActionSpec, ActiveAbilityInstance, FirstNightRuleService,
+        NightScheduler, RegisteredAction,
     },
+    custom::state::{ActionOccurrence, FirstNightProgress},
     error::{CoreError, ErrorKind},
     model::{
         AbilityInstanceId, AbilityOrigin, AbilityUseRef, Phase, PhaseStep, PhaseStepSupport,
-        StepType,
+        StepInput, StepType,
     },
     phase::required_none,
 };
@@ -43,6 +45,13 @@ impl FirstNightRuleService for FixtureRules {
         self.instances.get(action_ref).cloned().unwrap_or_default()
     }
 
+    fn try_active_instances(
+        &self,
+        action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<ActiveAbilityInstance>, CoreError> {
+        Ok(self.active_instances(action_ref))
+    }
+
     fn has_minion(&self) -> bool {
         self.minion_present
     }
@@ -53,6 +62,12 @@ impl FirstNightRuleService for FixtureRules {
 
     fn legal_demon_bluff_character_ids(&self) -> Vec<String> {
         vec!["soldier".into(), "mayor".into(), "saint".into()]
+    }
+
+    fn validate_character_membership(&self, _character_id: &str) -> Result<(), CoreError> {
+        // This contract fixture uses synthetic action references; the production rule service
+        // performs the actual definition-membership check.
+        Ok(())
     }
 }
 
@@ -78,53 +93,71 @@ impl ActionHandler for FixtureHandler {
                     .cmp(&right.ability_use.ability_instance_id)
             })
         });
-        Ok(instances
+        instances
             .into_iter()
-            .map(|instance| PhaseStep {
-                id: format!(
-                    "firstNight:fixture:{}:{}",
-                    instance.seat,
-                    instance.ability_use.ability_instance_id.as_str(),
-                ),
-                phase: Phase::FirstNight,
-                step_type: StepType::Character,
-                character: Some(instance.ability_use.character_id.clone()),
-                player_id: Some(instance.ability_use.owner_player_id.clone()),
-                ability_use: Some(instance.ability_use),
-                ability_origin: Some(instance.ability_origin),
-                required_input: required_none(),
-                can_skip: false,
-                support: PhaseStepSupport::Automated,
-                information_prompt: None,
-                pre_action_reveal: None,
-                action_ref: Some(self.identity.clone()),
+            .map(|instance| {
+                let occurrence = ActionOccurrence::character(
+                    self.identity.clone(),
+                    instance.ability_use.clone(),
+                )?;
+                Ok(PhaseStep {
+                    id: occurrence.step_id()?,
+                    phase: Phase::FirstNight,
+                    step_type: StepType::Character,
+                    character: Some(instance.ability_use.character_id.clone()),
+                    player_id: Some(instance.ability_use.owner_player_id.clone()),
+                    ability_use: Some(instance.ability_use),
+                    ability_origin: Some(instance.ability_origin),
+                    required_input: required_none(),
+                    can_skip: false,
+                    support: PhaseStepSupport::Automated,
+                    information_prompt: None,
+                    pre_action_reveal: None,
+                    action_ref: Some(self.identity.clone()),
+                })
             })
-            .collect())
+            .collect()
     }
 
     fn propose(
         &self,
         _spec: &ActionSpec,
         _context: &ActionContext<'_>,
-        step: &PhaseStep,
-    ) -> Result<ConfirmedActionEvent, CoreError> {
-        Ok(ConfirmedActionEvent {
+        occurrence: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        if input.is_some() {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        let ability_use = occurrence
+            .ability_use
+            .clone()
+            .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+        Ok(ActionEventDraft::Custom(CustomActionEventDraft {
             action_ref: self.identity.clone(),
-            step_id: step.id.clone(),
-            ability_use: step.ability_use.clone(),
-        })
+            step_id: occurrence.step_id()?,
+            ability_use,
+            input: input.clone(),
+            result: crate::contracts::CustomActionResult::NoEffect,
+        }))
     }
 
     fn validate_event(
         &self,
         _spec: &ActionSpec,
         _context: &ActionContext<'_>,
-        event: &ConfirmedActionEvent,
-    ) -> Result<(), CoreError> {
-        if event.action_ref != self.identity {
+        _occurrence: &ActionOccurrence,
+        draft: &ActionEventDraft,
+    ) -> Result<CustomFactChanges, CoreError> {
+        let ActionEventDraft::Custom(event) = draft else {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        };
+        if event.input.is_some()
+            || !matches!(event.result, crate::contracts::CustomActionResult::NoEffect)
+        {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
-        Ok(())
+        Ok(CustomFactChanges::default())
     }
 }
 
@@ -206,19 +239,32 @@ fn composer_projects_zero_one_or_many_instances_in_stable_identity_order_without
     };
     let plan = FirstNightOrderPlan(vec![alpha, beta, gamma.clone()]);
 
-    let first = compose_steps(&plan, &registry, &context).unwrap();
-    let second = compose_steps(&plan, &registry, &context).unwrap();
+    let progress = FirstNightProgress::default();
+    let first = project_pending_steps(&plan, &registry, &context, &progress).unwrap();
+    let second = project_pending_steps(&plan, &registry, &context, &progress).unwrap();
     assert_eq!(first.len(), 4);
     assert_eq!(
         first
             .iter()
-            .map(|step| step.player_id.as_deref().unwrap())
+            .map(|projected| projected.step.player_id.as_deref().unwrap())
             .collect::<Vec<_>>(),
-        ["p2", "p1", "p3b", "p3"],
+        ["p2", "p1", "p3", "p3b"],
     );
     assert_eq!(
-        serde_json::to_value(first).unwrap(),
-        serde_json::to_value(second).unwrap(),
+        serde_json::to_value(
+            first
+                .iter()
+                .map(|projected| &projected.step)
+                .collect::<Vec<_>>()
+        )
+        .unwrap(),
+        serde_json::to_value(
+            second
+                .iter()
+                .map(|projected| &projected.step)
+                .collect::<Vec<_>>()
+        )
+        .unwrap(),
     );
     assert_eq!(rules.instances[&gamma].len(), 3);
 }
@@ -237,15 +283,16 @@ fn composer_skips_character_with_no_active_instances_before_handler_lookup() {
         rule_service: &rules,
     };
 
-    let steps = compose_steps(
+    let steps = project_pending_steps(
         &FirstNightOrderPlan(vec![skipped, handled]),
         &registry,
         &context,
+        &FirstNightProgress::default(),
     )
     .unwrap();
 
     assert_eq!(steps.len(), 1);
-    assert_eq!(steps[0].player_id.as_deref(), Some("p1"));
+    assert_eq!(steps[0].step.player_id.as_deref(), Some("p1"));
 }
 
 #[test]
@@ -260,8 +307,13 @@ fn composer_errors_when_active_character_has_no_handler() {
         rule_service: &rules,
     };
 
-    let error =
-        compose_steps(&FirstNightOrderPlan(vec![missing]), &registry, &context).unwrap_err();
+    let error = project_pending_steps(
+        &FirstNightOrderPlan(vec![missing]),
+        &registry,
+        &context,
+        &FirstNightProgress::default(),
+    )
+    .unwrap_err();
 
     assert_eq!(error.code, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");
 }
@@ -287,7 +339,7 @@ fn composer_preserves_relative_order_around_skipped_character_action() {
         rule_service: &rules,
     };
 
-    let steps = compose_steps(
+    let steps = project_pending_steps(
         &FirstNightOrderPlan(vec![
             action("fixtureCharacter", "before"),
             skipped,
@@ -295,13 +347,14 @@ fn composer_preserves_relative_order_around_skipped_character_action() {
         ]),
         &registry,
         &context,
+        &FirstNightProgress::default(),
     )
     .unwrap();
 
     assert_eq!(
         steps
             .iter()
-            .map(|step| step.player_id.as_deref().unwrap())
+            .map(|projected| projected.step.player_id.as_deref().unwrap())
             .collect::<Vec<_>>(),
         ["p1", "p2"],
     );
@@ -319,17 +372,32 @@ fn proposal_replay_validation_and_reducer_share_action_identity_and_events_alone
         rule_service: &rules,
     };
     let plan = FirstNightOrderPlan(vec![alpha.clone()]);
-    let steps = compose_steps(&plan, &registry, &context).unwrap();
+    let progress = FirstNightProgress::default();
+    let steps = project_pending_steps(&plan, &registry, &context, &progress).unwrap();
 
-    let event = registry.propose(&alpha, &context, &steps[0]).unwrap();
-    registry.validate_event(&alpha, &context, &event).unwrap();
-    let forged = ConfirmedActionEvent {
-        action_ref: action("fixtureCharacter", "beta"),
+    let occurrence = steps[0].occurrence.clone();
+    let input: StepInput = None;
+    let draft = registry
+        .propose(&alpha, &context, &occurrence, &input)
+        .unwrap();
+    let event = event_from_draft(&draft);
+    let validated = registry
+        .validate_event(&occurrence, &context, &event)
+        .unwrap();
+    let mut forged_payload = match &event.kind {
+        GameEventKind::CustomActionConfirmed { payload } => payload.clone(),
+        _ => unreachable!(),
+    };
+    forged_payload.action_ref = action("fixtureCharacter", "beta");
+    let forged = GameEvent {
+        kind: GameEventKind::CustomActionConfirmed {
+            payload: forged_payload,
+        },
         ..event.clone()
     };
     assert_eq!(
         registry
-            .validate_event(&alpha, &context, &forged)
+            .validate_event(&occurrence, &context, &forged)
             .unwrap_err()
             .code,
         "INVALID_FIRST_NIGHT_ACTION_PROVENANCE",
@@ -337,17 +405,27 @@ fn proposal_replay_validation_and_reducer_share_action_identity_and_events_alone
 
     let initial = FirstNightProgress::default();
     let unchanged = initial.clone();
-    registry.propose(&alpha, &context, &steps[0]).unwrap();
+    registry
+        .propose(&alpha, &context, &occurrence, &input)
+        .unwrap();
     assert_eq!(
         initial, unchanged,
         "handler invocation must not mutate replay state"
     );
-    let reduced = reduce_progress(&initial, &event).unwrap();
+    let reduced = NightScheduler::new(
+        &plan,
+        &registry,
+        &crate::custom::first_night::NoActionActivation,
+    )
+    .advance(&initial, &context, &context, &validated)
+    .unwrap();
     assert_eq!(
         initial, unchanged,
         "reducer returns new replay-derived state"
     );
-    assert!(reduced.completed_step_ids.contains(&event.step_id));
+    assert!(reduced
+        .completed_occurrences
+        .contains(&occurrence.identity()));
 }
 
 #[test]
@@ -372,19 +450,41 @@ fn system_and_character_actions_interleave_in_one_ordered_composer() {
         FirstNightActionRef::system("dawn"),
     ]);
 
-    let steps = compose_steps(&plan, &registry, &context).unwrap();
+    let steps =
+        project_pending_steps(&plan, &registry, &context, &FirstNightProgress::default()).unwrap();
+    let expected_character_step = ActionOccurrence::character(
+        action("fixtureCharacter", "alpha"),
+        instance(1, "p1", "setup-1").ability_use,
+    )
+    .unwrap()
+    .step_id()
+    .unwrap();
     assert_eq!(
         steps
             .iter()
-            .map(|step| step.id.as_str())
+            .map(|projected| projected.step.id.as_str())
             .collect::<Vec<_>>(),
         [
             "firstNight:system:minionInfo",
-            "firstNight:fixture:1:setup-1:p1",
+            expected_character_step.as_str(),
             "firstNight:system:demonInfo",
             "firstNight:system:dawn",
         ],
     );
+}
+
+fn event_from_draft(draft: &ActionEventDraft) -> GameEvent {
+    let ActionEventDraft::Custom(draft) = draft else {
+        unreachable!()
+    };
+    let payload = draft.clone().into_payload();
+    GameEvent {
+        id: "fixture-event-1".into(),
+        kind: GameEventKind::CustomActionConfirmed { payload },
+        phase: Phase::FirstNight,
+        summary: "fixture event".into(),
+        created_at: "2026-09-07T00:00:00.000Z".into(),
+    }
 }
 
 #[test]
@@ -405,12 +505,13 @@ fn system_info_actions_are_skipped_when_alignment_is_absent() {
         FirstNightActionRef::system("dawn"),
     ]);
 
-    let steps = compose_steps(&plan, &registry, &context).unwrap();
+    let steps =
+        project_pending_steps(&plan, &registry, &context, &FirstNightProgress::default()).unwrap();
 
     assert_eq!(
         steps
             .iter()
-            .map(|step| step.id.as_str())
+            .map(|projected| projected.step.id.as_str())
             .collect::<Vec<_>>(),
         ["firstNight:system:dawn"],
     );

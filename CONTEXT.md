@@ -1,5 +1,12 @@
 # Clocktower Storyteller App Context
 
+For shared domain relationships, state ownership, and the distinction between action
+definitions, occurrences, and Steps, see [DOMAIN_MODEL.md](DOMAIN_MODEL.md).
+The glossary below retains the concise product vocabulary; implementation architecture, including
+the implemented Issue #206 custom first-night runtime boundary, is documented in
+[ARCHITECTURE.md](ARCHITECTURE.md). The MVP scope below remains unchanged: custom scripts and
+house rules stay out of product scope.
+
 ## Goal
 
 Build a personal-use iPad-first local app that helps a Blood on the Clocktower Storyteller run Trouble Brewing without missing character order, state changes, or information reveals.

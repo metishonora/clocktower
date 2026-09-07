@@ -6,6 +6,12 @@ This document records system-level design decisions for the Clocktower Storytell
 
 Requirements stay in `CONTEXT.md`. UX and visual design direction stay in `DESIGN_BRIEF.md`.
 
+Shared domain definitions and state ownership are documented in
+[DOMAIN_MODEL.md](DOMAIN_MODEL.md). Its broader responsibility model remains conceptual outside
+the custom first-night runtime implemented for #206. The custom runtime details below describe
+that implementation; existing official scenario runtimes remain on their current paths and are
+not migrated onto it.
+
 ## Architecture Shape
 
 Use a static iPad-first PWA with a Rust domain core compiled to WebAssembly and a TypeScript UI.
@@ -175,11 +181,25 @@ characters/
   deterministic choice-token selection. Script-specific combination pools remain in
   `characters/<script_name>.rs`.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
-- `custom/game.rs` owns custom-game replay and proposal dispatch. For Issue #195 it executes only
-  Setup and the first-night system actions; production Character handlers arrive with Epic #190.
+- `custom/game.rs` owns custom-game replay and proposal dispatch. Its event-by-event fold validates
+  each event, calculates facts and first-night progress, and adopts them together only when the
+  whole transition succeeds.
+- `custom/state.rs` owns replay-derived `CustomGameState`, `CustomGameFacts`, action-occurrence
+  identity, and `FirstNightProgress`. Completion history and its Step/Reveal snapshots are internal
+  replay values; these types are not persisted.
+- `custom/event.rs` owns the finite typed fact-change handoff. `custom/first_night/registry.rs`
+  owns `ActionSpec`/handler registration, common provenance, membership, and input validation, and
+  constructs the private `ValidatedCustomEvent` accepted by the reducer and scheduler.
+- `custom/reducer.rs` calculates facts only from previous facts and a validated event. `custom/rules.rs`
+  supplies read-only facts, ownership, and ability-instance queries; it does not own action behavior
+  or a universal participation predicate.
 - `custom/first_night/plan.rs` owns canonical definition-order validation and the authoring-only
-  deterministic default proposal. `registry.rs`, `runtime.rs`, and `system.rs` own semantic action
-  registration, ordered projection, event-only progress reduction, and system handlers.
+  deterministic default proposal. `custom/first_night/runtime.rs` owns `NightScheduler`, which
+  calculates cursor, occurrence completion, exclusion, history, immediate queue, and activation
+  admission; `activation.rs` supplies the pure activation decision boundary. `system.rs` owns the
+  system handlers.
+- `custom/projection.rs` derives public `RuleState`, current Step, and phase overview from the
+  replay-derived facts and progress, retaining confirmed Step/Reveal snapshots for completed rows.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
 - `characters/registry.rs` resolves an ordered custom definition against the TB/S&V allowlist and
@@ -252,26 +272,38 @@ Progress advances only from confirmed events. Later first-night events persist t
 result and its provenance (`actionRef` and `abilityUse`); they do not persist a projected action
 list, step list, or progress projection.
 
-Runtime composition uses four explicit roles:
+The custom runtime uses an event-by-event pure fold. `custom/game.rs` replays the current prefix,
+then `propose_step` invokes the registered handler for the current occurrence and validates the
+candidate through the same boundary used by replay. The candidate facts and progress are discarded
+after proposal; only a later confirmation adds the event to the record.
+
+Runtime composition has explicit roles:
 
 - `ActionSpec` declares a stable action reference plus first-night participation, input kind, and
   support metadata.
-- A pure `ActionHandler` projects an action through read-only shared rule services and returns zero,
-  one, or multiple steps. Acquired abilities are distinguished by ability-instance provenance and
-  are deterministically ordered.
-- Shared rule services answer cross-Character facts and legality questions. They do not own a
-  Character's behavior and are not a generic rules DSL.
-- The event reducer is the only component that advances canonical state. Proposal and replay both
-  resolve the exact `(characterId, actionId)` registration and validate that same provenance.
+- A pure `ActionHandler` projects an action through read-only rule services and receives the current
+  occurrence and typed input when proposing a result. Character handlers return a typed custom result
+  in an event draft, while system handlers retain their existing system draft; acquired abilities
+  remain distinguished by ability-instance provenance and deterministic ordering.
+- The registry runs common and action-specific validation for the draft and persisted event,
+  including input, result, action, step, actor, instance, and membership checks. It is the only
+  production construction boundary for the private `ValidatedCustomEvent`.
+- The facts reducer is the only component that calculates canonical fact changes. `NightScheduler`
+  separately calculates cursor and occurrence progress from the event and before/after facts; it
+  owns completion, exclusion, immediate queue, and history.
+- The projector derives the public `RuleState`, current Step, and phase overview after a coherent
+  facts/progress pair has been adopted.
 
-The registry rejects duplicate registrations, spec/handler identity mismatches, and missing
-handlers. A missing handler for an active custom Character action is an explicit unsupported error;
-an action with no active instance is skipped after filtering. It never delegates to a TB or S&V
-module. Issue #195 supplies the complete contract and system handlers only. Epic #190 adds production
-Character `ActionSpec`/handler registrations while keeping script-specific rule details under
-`characters/<script_name>.rs`. Existing official TB, S&V, and BMR execution paths coexist unchanged
-apart from additive shared-contract plumbing and are not migrated onto this runtime. This seam adds
-no new UI, other-night runtime, or Character-specific or acquired-ability rule policy.
+The registry rejects duplicate registrations and spec/handler identity mismatches. An active
+ordered Character action with no registered handler returns an explicit unsupported-action error;
+an action with no active instance is skipped after filtering. The canonical Character event envelope
+is `customActionConfirmed` with `stepId`, `actionRef`, `abilityUse`, `input`, and typed `result`;
+system actions retain the existing `phaseStepConfirmed` wire format. Feature-gated fixture handlers
+are available only to the dedicated test/fixture build; production Character implementations are
+not added here. The runtime never delegates to a TB or S&V module. Existing official TB, S&V, and
+BMR execution paths coexist unchanged apart from additive shared-contract plumbing and are not
+migrated onto this runtime. This seam adds no new UI, other-night runtime, or Character-specific
+or acquired-ability rule policy.
 
 Use dependency layers in this order: contracts/models/errors <- character and flow rules <- replay/proposal <- JSON boundary and public entrypoints. Imports point left, toward the foundational layers. Feature modules must not depend back on replay or proposal. This keeps script additions from creating circular dependencies.
 

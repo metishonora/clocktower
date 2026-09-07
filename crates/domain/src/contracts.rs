@@ -936,6 +936,77 @@ pub(crate) struct GameEvent {
     pub(crate) created_at: String,
 }
 
+/// Typed result for the custom Character-action envelope.  Fixture-only result kinds are kept out
+/// of the default production contract and may be added by the dedicated fixture feature.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum CustomActionResult {
+    Information {
+        value: InformationResult,
+    },
+    NoEffect,
+    /// A bounded state-changing outcome used only by the dedicated fixture WASM build.  The
+    /// production contract intentionally has no fixture result discriminator.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureAbilityGranted {
+        target_character_id: String,
+    },
+    /// A bounded identity transition used only by the dedicated fixture WASM build.  The
+    /// reducer still derives the complete before/after identity from the preceding facts.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureIdentityChanged {
+        player_id: String,
+        target_character_id: String,
+    },
+    /// Remove one previously acquired ability instance.  The complete provenance is carried so
+    /// replay can reject a value that does not identify an existing grant exactly.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureAbilityRemoved {
+        owner_player_id: String,
+        character_id: String,
+        ability_instance_id: AbilityInstanceId,
+    },
+    /// Change one player's life fact.  This is a fixture transition, not a production death rule.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureLifeChanged {
+        player_id: String,
+        alive: bool,
+    },
+    /// Add a finite impairment fact; source event and source Character are established by the
+    /// validating handler rather than accepted from the wire.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureImpairmentAdded {
+        player_id: String,
+        impairment_kind: ImpairmentKind,
+    },
+    /// Remove an exact impairment fact, retaining its source provenance in the event envelope.
+    #[cfg(feature = "custom-runtime-fixtures")]
+    FixtureImpairmentRemoved {
+        player_id: String,
+        impairment_kind: ImpairmentKind,
+        source_event_id: String,
+        source_character_id: String,
+        expires: ImpairmentExpiry,
+    },
+}
+
+/// Persisted payload for a custom Character action confirmation.  This lives with the other wire
+/// contracts so `contracts.rs` does not depend on a feature module for its serialized schema.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomActionConfirmedPayload {
+    pub(crate) step_id: String,
+    pub(crate) action_ref: FirstNightActionRef,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) input: StepInput,
+    pub(crate) result: CustomActionResult,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub(crate) enum GameEventKind {
@@ -945,6 +1016,10 @@ pub(crate) enum GameEventKind {
     SetupConfirmed { payload: SetupEventPayload },
     #[serde(rename = "phaseStepConfirmed")]
     PhaseStepConfirmed { payload: Box<PhaseStepEventPayload> },
+    #[serde(rename = "customActionConfirmed")]
+    CustomActionConfirmed {
+        payload: CustomActionConfirmedPayload,
+    },
     #[serde(rename = "phaseStepSkipped")]
     PhaseStepSkipped { payload: StepIdPayload },
     #[serde(rename = "phaseStepNeedsFollowUp")]
@@ -1048,6 +1123,7 @@ impl GameEventKind {
         "smokeConfirmed",
         "setupConfirmed",
         "phaseStepConfirmed",
+        "customActionConfirmed",
         "phaseStepSkipped",
         "phaseStepNeedsFollowUp",
         "philosopherAbilityResolved",

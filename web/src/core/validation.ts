@@ -28,6 +28,7 @@ import { badMoonRisingCharacters } from "../badMoonRisingCharacters.js";
 import { isScriptId } from "./scripts.js";
 import { eventDiscriminatorSet } from "./wireDiscriminators.js";
 import { numberChoiceIdentity } from "./numberChoice.js";
+import { isCustomActionResult as validateCustomActionResult } from "./customActionResultValidation.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -164,6 +165,12 @@ export function parseGameEvent(value: unknown): GameEvent {
   if (!eventDiscriminatorSet.has(value.type)) {
     throw new Error("지원하지 않는 이벤트입니다.");
   }
+  if (
+    value.type === "customActionConfirmed" &&
+    !hasExactKeys(value, ["id", "type", "phase", "payload", "summary", "createdAt"])
+  ) {
+    throw invalidEvent();
+  }
   switch (value.type) {
     case "smokeConfirmed":
       if (typeof payload.source !== "string") throw invalidEvent();
@@ -184,6 +191,23 @@ export function parseGameEvent(value: unknown): GameEvent {
         (payload.actionRef !== undefined && !isFirstNightActionRef(payload.actionRef)) ||
         (payload.abilityUse !== undefined && !isAbilityUseRef(payload.abilityUse)) ||
         (payload.information !== undefined && !isConfirmedInformation(payload.information))
+      ) {
+        throw invalidEvent();
+      }
+      break;
+    case "customActionConfirmed":
+      if (
+        !hasExactKeys(payload, ["stepId", "actionRef", "abilityUse", "input", "result"]) ||
+        typeof payload.stepId !== "string" ||
+        payload.stepId.trim().length === 0 ||
+        !isCustomCharacterActionRef(payload.actionRef) ||
+        !isAbilityUseRef(payload.abilityUse) ||
+        !isCustomPhaseStepInput(payload.input) ||
+        !validateCustomActionResult(payload.result, isKnownCharacter, isSpyGrimoirePlayer) ||
+        payload.abilityUse.ownerPlayerId.trim().length === 0 ||
+        payload.abilityUse.characterId.trim().length === 0 ||
+        payload.abilityUse.abilityInstanceId.trim().length === 0 ||
+        payload.abilityUse.characterId !== payload.actionRef.characterId
       ) {
         throw invalidEvent();
       }
@@ -782,6 +806,41 @@ function isFirstNightActionRef(value: unknown): value is FirstNightActionRef {
     && value.characterId.trim().length > 0
     && typeof value.actionId === "string"
     && value.actionId.trim().length > 0;
+}
+
+function isCustomCharacterActionRef(
+  value: unknown,
+): value is Extract<FirstNightActionRef, { kind: "character" }> {
+  return isRecord(value) &&
+    hasExactKeys(value, ["kind", "characterId", "actionId"]) &&
+    value.kind === "character" &&
+    typeof value.characterId === "string" &&
+    value.characterId.trim().length > 0 &&
+    typeof value.actionId === "string" &&
+    value.actionId.trim().length > 0;
+}
+
+function isCustomPhaseStepInput(value: unknown): value is PhaseStepInput {
+  if (value === null) return true;
+  return isRecord(value) &&
+    hasOnlyKeys(value, [
+      "playerIds",
+      "characterIds",
+      "characterId",
+      "zeroOutsiders",
+      "value",
+      "trueValue",
+      "displayedValue",
+      "reason",
+      "nominatorId",
+      "nomineeId",
+      "voterIds",
+      "execute",
+      "died",
+      "mayorDecision",
+      "successorPlayerId",
+    ]) &&
+    isPhaseStepInput(value);
 }
 
 function isAbilityUseRef(value: unknown): value is AbilityUseRef {

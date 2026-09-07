@@ -1,11 +1,16 @@
 use crate::{
     contracts::{FirstNightActionRef, SystemFirstNightActionId},
+    custom::state::ActionOccurrence,
     error::{CoreError, ErrorKind},
-    model::{Phase, PhaseStep, PhaseStepSupport, RequiredInputKind, StepType},
+    model::{Phase, PhaseStep, PhaseStepSupport, RequiredInputKind, StepInput, StepType},
     phase::{phase_transition_step, required_characters, required_none, simple_step},
 };
 
-use super::{ActionContext, ActionHandler, ActionSpec, ConfirmedActionEvent, RegisteredAction};
+use super::{
+    ActionContext, ActionEventDraft, ActionHandler, ActionSpec, RegisteredAction,
+    SystemActionEventDraft,
+};
+use crate::custom::event::CustomFactChanges;
 
 struct SystemHandler {
     action_ref: FirstNightActionRef,
@@ -78,30 +83,71 @@ impl ActionHandler for SystemHandler {
     fn propose(
         &self,
         _spec: &ActionSpec,
-        _context: &ActionContext<'_>,
-        step: &PhaseStep,
-    ) -> Result<ConfirmedActionEvent, CoreError> {
-        if step.action_ref.as_ref() != Some(&self.action_ref) {
-            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
-        }
-        Ok(ConfirmedActionEvent {
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        validate_occurrence(&self.action_ref, occurrence)?;
+        validate_input(self.action_id(), context, input)?;
+        Ok(ActionEventDraft::System(SystemActionEventDraft {
             action_ref: self.action_ref.clone(),
-            step_id: step.id.clone(),
-            ability_use: step.ability_use.clone(),
-        })
+            step_id: occurrence.step_id()?,
+            input: input.clone(),
+        }))
     }
 
     fn validate_event(
         &self,
         _spec: &ActionSpec,
-        _context: &ActionContext<'_>,
-        event: &ConfirmedActionEvent,
-    ) -> Result<(), CoreError> {
-        if event.action_ref != self.action_ref || event.ability_use.is_some() {
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        draft: &ActionEventDraft,
+    ) -> Result<CustomFactChanges, CoreError> {
+        validate_occurrence(&self.action_ref, occurrence)?;
+        let ActionEventDraft::System(draft) = draft else {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        };
+        if draft.action_ref != self.action_ref || draft.step_id != occurrence.step_id()? {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
-        Ok(())
+        validate_input(self.action_id(), context, &draft.input)?;
+        Ok(CustomFactChanges::default())
     }
+}
+
+fn validate_occurrence(
+    action_ref: &FirstNightActionRef,
+    occurrence: &ActionOccurrence,
+) -> Result<(), CoreError> {
+    if occurrence.action_ref != *action_ref
+        || occurrence.ability_use.is_some()
+        || occurrence.step_id()?.trim().is_empty()
+    {
+        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+    }
+    Ok(())
+}
+
+fn validate_input(
+    action_id: SystemFirstNightActionId,
+    context: &ActionContext<'_>,
+    input: &StepInput,
+) -> Result<(), CoreError> {
+    let required = match action_id {
+        SystemFirstNightActionId::DemonInfo => required_characters(
+            3,
+            3,
+            Some(context.rule_service.legal_demon_bluff_character_ids()),
+            true,
+        ),
+        // The legacy phase validator treats these system steps as non-targeted inputs. Keep that
+        // behavior so the new handler boundary does not change existing system payload meaning.
+        SystemFirstNightActionId::Dusk
+        | SystemFirstNightActionId::MinionInfo
+        | SystemFirstNightActionId::Dawn
+        | SystemFirstNightActionId::Unknown => crate::phase::required_none(),
+    };
+    crate::phase::validate_required_input(&required, input, &[])
 }
 
 pub(super) fn registrations() -> Vec<RegisteredAction> {

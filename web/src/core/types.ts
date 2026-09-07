@@ -847,6 +847,23 @@ export type PhilosopherAbilityResolvedPayload = {
   outcome: PhilosopherAbilityOutcome;
 };
 
+/**
+ * Typed result carried by a custom Character action.  Fixture-only state-changing outcomes are
+ * intentionally absent from the production wire type and parser; the fixture test path may
+ * extend this boundary when it builds its dedicated WASM artifact.
+ */
+export type CustomActionResult =
+  | { kind: "information"; value: InformationResult }
+  | { kind: "noEffect" };
+
+export type CustomActionConfirmedPayload = {
+  stepId: string;
+  actionRef: Extract<FirstNightActionRef, { kind: "character" }>;
+  abilityUse: AbilityUseRef;
+  input: PhaseStepInput;
+  result: CustomActionResult;
+};
+
 export type GameEvent = EventCommon &
   (
     | { type: "smokeConfirmed"; payload: { source: string } }
@@ -866,6 +883,10 @@ export type GameEvent = EventCommon &
           input: PhaseStepInput;
           information?: ConfirmedInformation;
         };
+      }
+    | {
+        type: "customActionConfirmed";
+        payload: CustomActionConfirmedPayload;
       }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
