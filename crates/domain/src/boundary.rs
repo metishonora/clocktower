@@ -87,6 +87,12 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         .collect::<Result<Vec<_>, _>>()?;
     validate_event_references(&events)?;
     if let ScriptReference::Official { script_id } = &script {
+        if events
+            .iter()
+            .any(|event| matches!(event.kind, GameEventKind::CustomActionConfirmed { .. }))
+        {
+            return Err(ErrorKind::EventNotSupportedByScript.into_error());
+        }
         crate::characters::rules(*script_id).validate_replay_events(&events)?;
     }
 
@@ -309,7 +315,260 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
-    serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())
+    if discriminator.kind == "customActionConfirmed" {
+        validate_custom_action_event_json(&value)?;
+    }
+    let event: GameEvent =
+        serde_json::from_value(value).map_err(|_| ErrorKind::MalformedEvent.into_error())?;
+    if matches!(event.kind, GameEventKind::CustomActionConfirmed { .. }) {
+        crate::custom::event::validate_custom_event_shape(&event)
+            .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
+    }
+    Ok(event)
+}
+
+fn validate_custom_action_event_json(value: &Value) -> Result<(), CoreError> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    if !has_exact_json_keys(
+        object,
+        &["id", "type", "phase", "payload", "summary", "createdAt"],
+    ) {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    let payload = object
+        .get("payload")
+        .and_then(Value::as_object)
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    if !has_exact_json_keys(
+        payload,
+        &["stepId", "actionRef", "abilityUse", "input", "result"],
+    ) {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+
+    let action_ref = payload
+        .get("actionRef")
+        .and_then(Value::as_object)
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    if action_ref.get("kind").and_then(Value::as_str) != Some("character") {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    let ability_use = payload
+        .get("abilityUse")
+        .and_then(Value::as_object)
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    if !has_exact_json_keys(
+        ability_use,
+        &["ownerPlayerId", "characterId", "abilityInstanceId"],
+    ) {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    let input = payload
+        .get("input")
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    validate_custom_step_input_json(input)?;
+
+    validate_custom_action_result_json(
+        payload
+            .get("result")
+            .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?,
+    )?;
+    Ok(())
+}
+
+fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
+    let result = value
+        .as_object()
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    match result.get("kind").and_then(Value::as_str) {
+        Some("noEffect") if has_exact_json_keys(result, &["kind"]) => Ok(()),
+        Some("information") if has_exact_json_keys(result, &["kind", "value"]) => {
+            validate_custom_information_result_json(
+                result
+                    .get("value")
+                    .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?,
+            )
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureAbilityGranted")
+            if has_exact_json_keys(result, &["kind", "targetCharacterId"])
+                && result
+                    .get("targetCharacterId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|character_id| !character_id.trim().is_empty()) =>
+        {
+            Ok(())
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureIdentityChanged")
+            if has_exact_json_keys(result, &["kind", "playerId", "targetCharacterId"])
+                && result
+                    .get("playerId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|player_id| !player_id.trim().is_empty())
+                && result
+                    .get("targetCharacterId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|character_id| !character_id.trim().is_empty()) =>
+        {
+            Ok(())
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureAbilityRemoved")
+            if has_exact_json_keys(
+                result,
+                &["kind", "ownerPlayerId", "characterId", "abilityInstanceId"],
+            ) && ["ownerPlayerId", "characterId", "abilityInstanceId"]
+                .into_iter()
+                .all(|field| {
+                    result
+                        .get(field)
+                        .and_then(Value::as_str)
+                        .is_some_and(|value| !value.trim().is_empty())
+                }) =>
+        {
+            Ok(())
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureLifeChanged")
+            if has_exact_json_keys(result, &["kind", "playerId", "alive"])
+                && result
+                    .get("playerId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|player_id| !player_id.trim().is_empty())
+                && result.get("alive").and_then(Value::as_bool).is_some() =>
+        {
+            Ok(())
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureImpairmentAdded")
+            if has_exact_json_keys(result, &["kind", "playerId", "impairmentKind"])
+                && result
+                    .get("playerId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|player_id| !player_id.trim().is_empty())
+                && matches!(
+                    result.get("impairmentKind").and_then(Value::as_str),
+                    Some("poisoned") | Some("drunk")
+                ) =>
+        {
+            Ok(())
+        }
+        #[cfg(feature = "custom-runtime-fixtures")]
+        Some("fixtureImpairmentRemoved")
+            if has_exact_json_keys(
+                result,
+                &[
+                    "kind",
+                    "playerId",
+                    "impairmentKind",
+                    "sourceEventId",
+                    "sourceCharacterId",
+                    "expires",
+                ],
+            ) && result
+                .get("playerId")
+                .and_then(Value::as_str)
+                .is_some_and(|player_id| !player_id.trim().is_empty())
+                && matches!(
+                    result.get("impairmentKind").and_then(Value::as_str),
+                    Some("poisoned") | Some("drunk")
+                )
+                && result
+                    .get("sourceEventId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|event_id| !event_id.trim().is_empty())
+                && result
+                    .get("sourceCharacterId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|character_id| !character_id.trim().is_empty())
+                && matches!(
+                    result.get("expires").and_then(Value::as_str),
+                    Some("never") | Some("whileSourceAbilityActive")
+                ) =>
+        {
+            Ok(())
+        }
+        _ => Err(ErrorKind::MalformedEvent.into_error()),
+    }
+}
+
+fn validate_custom_information_result_json(value: &Value) -> Result<(), CoreError> {
+    let result = value
+        .as_object()
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    let kind = result
+        .get("kind")
+        .and_then(Value::as_str)
+        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
+    let fields = match kind {
+        "number" | "boolean" => &["kind", "value"][..],
+        "character" => &["kind", "characterId"][..],
+        "characterPair" => &["kind", "characterIds"][..],
+        "player" => &["kind", "playerId"][..],
+        "playerPair" => &["kind", "playerIds"][..],
+        "setupInfo" => &["kind", "playerIds", "characterId", "zeroOutsiders"][..],
+        "teamInfo" => &[
+            "kind",
+            "demonPlayerIds",
+            "minionPlayerIds",
+            "bluffCharacterIds",
+        ][..],
+        "spyGrimoire" => &["kind", "players"][..],
+        _ => return Err(ErrorKind::MalformedEvent.into_error()),
+    };
+    if kind == "setupInfo" {
+        let with_character = has_exact_json_keys(result, fields);
+        let without_character =
+            has_exact_json_keys(result, &["kind", "playerIds", "zeroOutsiders"]);
+        if !with_character && !without_character {
+            return Err(ErrorKind::MalformedEvent.into_error());
+        }
+    } else if !has_exact_json_keys(result, fields) {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    serde_json::from_value::<crate::model::InformationResult>(value.clone())
+        .map_err(|_| ErrorKind::MalformedEvent.into_error())
+        .map(|_| ())
+}
+
+fn validate_custom_step_input_json(value: &Value) -> Result<(), CoreError> {
+    let Some(input) = value.as_object() else {
+        if value.is_null() {
+            return Ok(());
+        }
+        return Err(ErrorKind::MalformedEvent.into_error());
+    };
+    const ALLOWED_KEYS: &[&str] = &[
+        "playerIds",
+        "characterIds",
+        "characterId",
+        "zeroOutsiders",
+        "value",
+        "trueValue",
+        "displayedValue",
+        "reason",
+        "nominatorId",
+        "nomineeId",
+        "voterIds",
+        "execute",
+        "died",
+        "mayorDecision",
+        "successorPlayerId",
+    ];
+    if input
+        .keys()
+        .any(|key| !ALLOWED_KEYS.contains(&key.as_str()))
+    {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
+    Ok(())
+}
+
+fn has_exact_json_keys(object: &serde_json::Map<String, Value>, expected: &[&str]) -> bool {
+    object.len() == expected.len() && expected.iter().all(|key| object.contains_key(*key))
 }
 
 pub(crate) fn to_json<T: Serialize>(result: Result<T, CoreError>) -> String {

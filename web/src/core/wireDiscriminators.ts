@@ -26,6 +26,7 @@ export const eventDiscriminators = [
   "smokeConfirmed",
   "setupConfirmed",
   "phaseStepConfirmed",
+  "customActionConfirmed",
   "phaseStepSkipped",
   "phaseStepNeedsFollowUp",
   "philosopherAbilityResolved",

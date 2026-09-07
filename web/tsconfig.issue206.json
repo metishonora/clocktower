@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.integration.json",
+  "include": [
+    "src/node-test.d.ts",
+    "src/vite-env.d.ts",
+    "test/issue206CustomRuntime.integration.test.tsx",
+    "test/issue206FixtureWasmHarness.ts",
+    "test/issue206FixtureCustomActionResultValidation.ts",
+    ".codex-tmp/issue206-wasm/clocktower_wasm.d.ts"
+  ],
+  "exclude": []
+}

@@ -28,6 +28,12 @@ mod issue194_custom_setup_scenarios;
 mod issue195_custom_first_night_scenarios;
 mod issue195_first_night_runtime_contracts;
 mod issue198_custom_definition_contract_scenarios;
+mod issue206_custom_action_contracts;
+mod issue206_custom_event_contracts;
+#[cfg(feature = "custom-runtime-fixtures")]
+mod issue206_custom_replay_scenarios;
+mod issue206_custom_state_contracts;
+mod issue206_night_scheduler_contracts;
 mod issue86_fortune_teller_former_imp_scenarios;
 mod issue88_butler_vote_scenarios;
 mod issue89_execution_succession_scenarios;

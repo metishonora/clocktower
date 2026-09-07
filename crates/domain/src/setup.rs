@@ -115,20 +115,31 @@ pub(crate) fn validate_setup_inputs_for_custom(
     if players.len() < 5 || players.len() > 15 {
         return Err(ErrorKind::InvalidPlayerCount.into_error());
     }
-    if players.iter().any(|player| {
-        !context.contains(&player.actual_character)
-            || player
-                .shown_character
-                .as_deref()
-                .is_some_and(|character| !context.contains(character))
-    }) {
-        return Err(ErrorKind::CharacterNotInScript.into_error());
+    for player in players {
+        validate_custom_character_membership(context, &player.actual_character)?;
+        if let Some(shown_character) = player.shown_character.as_deref() {
+            validate_custom_character_membership(context, shown_character)?;
+        }
     }
     validate_setup_input_contents(
         players,
         |character| context.character_kind(character),
         |character| context.character_kind(character) == Some(CharacterKind::Townsfolk),
     )
+}
+
+/// Validate membership in the resolved custom definition, as distinct from membership in the
+/// global Character catalog.  Setup, custom fact reduction, and later action validation share this
+/// boundary so an otherwise known Character cannot enter a game that does not include it.
+pub(crate) fn validate_custom_character_membership(
+    context: &ResolvedScriptContext,
+    character_id: &str,
+) -> Result<(), CoreError> {
+    if context.contains(character_id) {
+        Ok(())
+    } else {
+        Err(ErrorKind::CharacterNotInScript.into_error())
+    }
 }
 
 pub(crate) fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> {
