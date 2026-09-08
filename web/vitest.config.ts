@@ -8,7 +8,7 @@ export default defineConfig({
     include: ["test/**/*.test.tsx"],
     exclude: [
       "test/**/*Prototype.test.tsx",
-      "test/issue206CustomRuntime.integration.test.tsx",
+      "test/custom/**",
     ],
     setupFiles: ["./test/setup.ts"],
     restoreMocks: true,

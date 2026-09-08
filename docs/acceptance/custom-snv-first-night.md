@@ -8,8 +8,9 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 
 - Task 0: complete; baseline captured and read-only test-contract review incorporated.
 - Task 1: Rust/WASM separation implemented; Production compatibility verified.
-- Tasks 2–7: not started. No new SnV Production handlers yet.
-- Separation checkpoint: not reached.
+- Task 2: complete; independent TypeScript, storage, test/build paths and dependency guards verified.
+- Tasks 3–7: not started. No new SnV Production handlers yet.
+- Separation checkpoint: passed; this document is committed with the separation changes.
 
 ## Compatibility boundary
 
@@ -134,3 +135,10 @@ Do not silently broaden the implementation or send first-night exceptions out of
 - Fresh independent Production WASM matches all five replay prefixes, four proposals, and all 47 catalog entries in order.
 - Official Rust/WASM test targets compile after removal of custom dispatch and exports. Full official regression remains assigned to the Task 2 checkpoint.
 - An automatic approval review rejected a bundled unused-code cleanup/build command. That cleanup was not executed; the source-preserving WASM build was separately approved and passed. Unused-code warnings remain for review.
+
+- Task 2: custom web 62 tests, custom fixture WASM/session 13 tests, boundary negative fixtures 10 tests passed.
+- A fresh temporary workspace containing no official source or WASM passed custom Rust (73 domain + 6 WASM), fixture-feature domain (80), both WASM builds, custom TypeScript, and all custom web tests.
+- Official checkpoint: Rust domain 381 and WASM 4 tests passed; web unit 166 passed. Web integration initially passed 604/605: the remaining custom success case was migrated to the custom suite and replaced by an explicit official-boundary rejection; both tests in the affected official file passed on recheck.
+- A separate official-only workspace without custom source or WASM passed TB/SnV/BMR create, replay, real IndexedDB game/session save/load/resume, and legacy v2/v3 parsing checks.
+- Release web build (including both independent WASM artifacts) and PWA contract verification passed.
+- Dependency guard passes across Cargo, Rust source includes and resolved TypeScript imports, including transitive, type-only, dynamic, alias and symlink cases.

@@ -3,13 +3,10 @@ import type {
   AbilityOrigin,
   AbilityUseRef,
   ConfirmedInformation,
-  CustomFirstNightPlanResult,
   CoreResult,
   DayActionRecordInput,
   DeliveryReason,
   GameEvent,
-  FirstNightActionRef,
-  FirstNightOrderPlan,
   InformationPrompt,
   InformationResult,
   Phase,
@@ -28,7 +25,6 @@ import { badMoonRisingCharacters } from "../badMoonRisingCharacters.js";
 import { isScriptId } from "./scripts.js";
 import { eventDiscriminatorSet } from "./wireDiscriminators.js";
 import { numberChoiceIdentity } from "./numberChoice.js";
-import { isCustomActionResult as validateCustomActionResult } from "./customActionResultValidation.js";
 
 const phases = new Set<Phase>(["setup", "firstNight", "day", "night"]);
 const stepTypes = new Set<PhaseStep["stepType"]>([
@@ -165,12 +161,6 @@ export function parseGameEvent(value: unknown): GameEvent {
   if (!eventDiscriminatorSet.has(value.type)) {
     throw new Error("지원하지 않는 이벤트입니다.");
   }
-  if (
-    value.type === "customActionConfirmed" &&
-    !hasExactKeys(value, ["id", "type", "phase", "payload", "summary", "createdAt"])
-  ) {
-    throw invalidEvent();
-  }
   switch (value.type) {
     case "smokeConfirmed":
       if (typeof payload.source !== "string") throw invalidEvent();
@@ -188,26 +178,9 @@ export function parseGameEvent(value: unknown): GameEvent {
         !hasOnlyKeys(payload, ["stepId", "actionRef", "abilityUse", "input", "information"]) ||
         typeof payload.stepId !== "string" ||
         !isPhaseStepInput(payload.input) ||
-        (payload.actionRef !== undefined && !isFirstNightActionRef(payload.actionRef)) ||
+        payload.actionRef !== undefined ||
         (payload.abilityUse !== undefined && !isAbilityUseRef(payload.abilityUse)) ||
         (payload.information !== undefined && !isConfirmedInformation(payload.information))
-      ) {
-        throw invalidEvent();
-      }
-      break;
-    case "customActionConfirmed":
-      if (
-        !hasExactKeys(payload, ["stepId", "actionRef", "abilityUse", "input", "result"]) ||
-        typeof payload.stepId !== "string" ||
-        payload.stepId.trim().length === 0 ||
-        !isCustomCharacterActionRef(payload.actionRef) ||
-        !isAbilityUseRef(payload.abilityUse) ||
-        !isCustomPhaseStepInput(payload.input) ||
-        !validateCustomActionResult(payload.result, isKnownCharacter, isSpyGrimoirePlayer) ||
-        payload.abilityUse.ownerPlayerId.trim().length === 0 ||
-        payload.abilityUse.characterId.trim().length === 0 ||
-        payload.abilityUse.abilityInstanceId.trim().length === 0 ||
-        payload.abilityUse.characterId !== payload.actionRef.characterId
       ) {
         throw invalidEvent();
       }
@@ -637,34 +610,10 @@ export function parseReplayState(value: unknown): ReplayState {
   }
   return value as ReplayState;
 }
+function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return isScriptId(value.scriptId) && value.script === undefined; }
 
-function isReplayScriptIdentity(value: Record<string, unknown>): boolean {
-  const official = isScriptId(value.scriptId) && value.script === undefined;
-  const custom = value.scriptId === undefined && isCustomReplayScriptReference(value.script);
-  return official || custom;
-}
 
-function isCustomReplayScriptReference(value: unknown): boolean {
-  if (
-    !isRecord(value) ||
-    !hasExactKeys(value, ["type", "definition"]) ||
-    value.type !== "custom" ||
-    !isRecord(value.definition) ||
-    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder"]) ||
-    typeof value.definition.id !== "string" ||
-    value.definition.id.trim().length === 0 ||
-    typeof value.definition.name !== "string" ||
-    value.definition.name.trim().length === 0 ||
-    !Array.isArray(value.definition.characterIds) ||
-    !value.definition.characterIds.every(
-      (characterId) => typeof characterId === "string" && characterId.trim().length > 0,
-    ) ||
-    new Set(value.definition.characterIds).size !== value.definition.characterIds.length
-  ) {
-    return false;
-  }
-  return isFirstNightOrderPlan(value.definition.firstNightOrder);
-}
+
 
 export function parseProposal(value: unknown): Proposal {
   if (
@@ -700,22 +649,7 @@ export function parseSetupDistribution(value: unknown): SetupDistributionResult 
   return value as SetupDistributionResult;
 }
 
-export function parseFirstNightOrderPlan(value: unknown): FirstNightOrderPlan {
-  if (!isFirstNightOrderPlan(value)) throw invalidCoreResponse();
-  return value;
-}
 
-export function parseCustomFirstNightPlanResult(value: unknown): CustomFirstNightPlanResult {
-  if (
-    !isRecord(value) ||
-    !hasExactKeys(value, ["source", "plan"]) ||
-    (value.source !== "definition" && value.source !== "default") ||
-    !isFirstNightOrderPlan(value.plan)
-  ) {
-    throw invalidCoreResponse();
-  }
-  return value as CustomFirstNightPlanResult;
-}
 
 function isSetupDistribution(value: unknown): value is SetupDistribution {
   return isRecord(value) &&
@@ -784,64 +718,12 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     typeof value.canSkip === "boolean" &&
     (value.support === undefined || value.support === "automated" || value.support === "manual") &&
     (value.preActionReveal === undefined || isPreActionReveal(value.preActionReveal)) &&
-    (value.actionRef === undefined || isFirstNightActionRef(value.actionRef)) &&
     (value.informationPrompt === undefined ||
       isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
   );
 }
 
-function isFirstNightOrderPlan(value: unknown): value is FirstNightOrderPlan {
-  return Array.isArray(value) && value.every(isFirstNightActionRef);
-}
 
-function isFirstNightActionRef(value: unknown): value is FirstNightActionRef {
-  if (!isRecord(value) || typeof value.kind !== "string") return false;
-  if (value.kind === "system") {
-    return hasExactKeys(value, ["kind", "actionId"])
-      && ["dusk", "minionInfo", "demonInfo", "dawn"].includes(String(value.actionId));
-  }
-  return value.kind === "character"
-    && hasExactKeys(value, ["kind", "characterId", "actionId"])
-    && typeof value.characterId === "string"
-    && value.characterId.trim().length > 0
-    && typeof value.actionId === "string"
-    && value.actionId.trim().length > 0;
-}
-
-function isCustomCharacterActionRef(
-  value: unknown,
-): value is Extract<FirstNightActionRef, { kind: "character" }> {
-  return isRecord(value) &&
-    hasExactKeys(value, ["kind", "characterId", "actionId"]) &&
-    value.kind === "character" &&
-    typeof value.characterId === "string" &&
-    value.characterId.trim().length > 0 &&
-    typeof value.actionId === "string" &&
-    value.actionId.trim().length > 0;
-}
-
-function isCustomPhaseStepInput(value: unknown): value is PhaseStepInput {
-  if (value === null) return true;
-  return isRecord(value) &&
-    hasOnlyKeys(value, [
-      "playerIds",
-      "characterIds",
-      "characterId",
-      "zeroOutsiders",
-      "value",
-      "trueValue",
-      "displayedValue",
-      "reason",
-      "nominatorId",
-      "nomineeId",
-      "voterIds",
-      "execute",
-      "died",
-      "mayorDecision",
-      "successorPlayerId",
-    ]) &&
-    isPhaseStepInput(value);
-}
 
 function isAbilityUseRef(value: unknown): value is AbilityUseRef {
   return isRecord(value) &&
@@ -1044,7 +926,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
       && value.numberConstraint.max === Number.MAX_SAFE_INTEGER
       && (vortoxActive
         ? value.numberConstraint.excludedValues.length === 1
-          && value.numberConstraint.excludedValues[0] === computedValue
+        && value.numberConstraint.excludedValues[0] === computedValue
         : value.numberConstraint.excludedValues.length === 0);
   }
   return (
@@ -1507,23 +1389,23 @@ function isSlayerAbilityPayload(value: unknown): boolean {
   const impairmentValid = impairment.kind === "healthy"
     ? hasExactKeys(impairment, ["kind"])
     : impairment.kind === "poisoned" &&
-      hasExactKeys(impairment, ["kind", "sourcePlayerId", "sourceEventId"]) &&
-      typeof impairment.sourcePlayerId === "string" &&
-      typeof impairment.sourceEventId === "string";
+    hasExactKeys(impairment, ["kind", "sourcePlayerId", "sourceEventId"]) &&
+    typeof impairment.sourcePlayerId === "string" &&
+    typeof impairment.sourceEventId === "string";
   const registration = value.registrationContext;
   const registrationValid = registration.kind === "canonical"
     ? hasExactKeys(registration, ["kind", "registeredAsDemon"]) &&
-      typeof registration.registeredAsDemon === "boolean"
+    typeof registration.registeredAsDemon === "boolean"
     : registration.kind === "recluseDecision" &&
-      hasOnlyKeys(registration, ["kind", "registeredAsDemon", "registeredCharacterId"]) &&
-      typeof registration.registeredAsDemon === "boolean" &&
-      (registration.registeredCharacterId === undefined || registration.registeredCharacterId === "imp");
+    hasOnlyKeys(registration, ["kind", "registeredAsDemon", "registeredCharacterId"]) &&
+    typeof registration.registeredAsDemon === "boolean" &&
+    (registration.registeredCharacterId === undefined || registration.registeredCharacterId === "imp");
   const outcome = value.outcome;
   const outcomeValid = outcome.kind === "deathPending"
     ? hasExactKeys(outcome, ["kind", "playerId"]) && typeof outcome.playerId === "string"
     : outcome.kind === "noEffect" &&
-      hasExactKeys(outcome, ["kind", "reason"]) &&
-      ["actorPoisoned", "targetNotDemon", "targetAlreadyDead"].includes(String(outcome.reason));
+    hasExactKeys(outcome, ["kind", "reason"]) &&
+    ["actorPoisoned", "targetNotDemon", "targetAlreadyDead"].includes(String(outcome.reason));
   return impairmentValid && registrationValid && outcomeValid;
 }
 
@@ -1536,7 +1418,7 @@ function isNightActionResolution(value: unknown): boolean {
   }
   if (value.kind === "demonAttack") {
     if (!hasExactKeys(value, ["kind", "targetPlayerId", "outcome"]) ||
-        typeof value.targetPlayerId !== "string" || !isRecord(value.outcome)) return false;
+      typeof value.targetPlayerId !== "string" || !isRecord(value.outcome)) return false;
     const outcome = value.outcome;
     if (outcome.kind === "noEffect") {
       return hasExactKeys(outcome, ["kind", "reason"]) &&
@@ -1544,10 +1426,10 @@ function isNightActionResolution(value: unknown): boolean {
     }
     if (outcome.kind === "fangGuJump") {
       if (!hasExactKeys(outcome, ["kind", "death", "sourceAbilityInstanceId", "identityTransition"]) ||
-          typeof outcome.sourceAbilityInstanceId !== "string" ||
-          !isRecord(outcome.death) || !isRecord(outcome.death.cause) ||
-          !isRecord(outcome.identityTransition) || !isRecord(outcome.identityTransition.after) ||
-          !isNightDeath(outcome.death) || !isPlayerIdentityTransition(outcome.identityTransition)) return false;
+        typeof outcome.sourceAbilityInstanceId !== "string" ||
+        !isRecord(outcome.death) || !isRecord(outcome.death.cause) ||
+        !isRecord(outcome.identityTransition) || !isRecord(outcome.identityTransition.after) ||
+        !isNightDeath(outcome.death) || !isPlayerIdentityTransition(outcome.identityTransition)) return false;
       const death = outcome.death;
       const transition = outcome.identityTransition;
       const cause = death.cause as Record<string, unknown>;
@@ -1577,9 +1459,9 @@ function isNightActionResolution(value: unknown): boolean {
       ));
   }
   if (value.kind !== "impAttack" || !hasOnlyKeys(value, ["kind", "targetPlayerId", "mayorContext", "outcome"]) ||
-      typeof value.targetPlayerId !== "string" ||
-      (value.mayorContext !== undefined && !isMayorAttackContext(value.mayorContext)) ||
-      !isRecord(value.outcome)) return false;
+    typeof value.targetPlayerId !== "string" ||
+    (value.mayorContext !== undefined && !isMayorAttackContext(value.mayorContext)) ||
+    !isRecord(value.outcome)) return false;
   const outcome = value.outcome;
   if (outcome.kind === "death") return hasExactKeys(outcome, ["kind", "playerId"]) && typeof outcome.playerId === "string";
   if (outcome.kind === "prevented") return hasExactKeys(outcome, ["kind", "reason", "sourceEventId"]) &&
@@ -1674,7 +1556,7 @@ function isVirginImpairmentContext(value: unknown): boolean {
   return value.kind === "healthy"
     ? hasExactKeys(value, ["kind"])
     : value.kind === "poisoned" && hasExactKeys(value, ["kind", "sourcePlayerId", "sourceEventId"])
-      && typeof value.sourcePlayerId === "string" && typeof value.sourceEventId === "string";
+    && typeof value.sourcePlayerId === "string" && typeof value.sourceEventId === "string";
 }
 
 function isDemonSuccessionPayload(value: Record<string, unknown>): boolean {
@@ -1682,7 +1564,7 @@ function isDemonSuccessionPayload(value: Record<string, unknown>): boolean {
     "triggerImpDeathEventId", "deathCause", "previousImpPlayerId", "successorPlayerId",
     "successorPreviousActualCharacter", "newCharacter", "source",
   ]) && [value.triggerImpDeathEventId, value.previousImpPlayerId, value.successorPlayerId,
-    value.successorPreviousActualCharacter, value.newCharacter].every(isString)
+  value.successorPreviousActualCharacter, value.newCharacter].every(isString)
     && ["execution", "slayer", "impSelfKill"].includes(String(value.deathCause))
     && ["scarletWoman", "impSelfKill"].includes(String(value.source));
 }
@@ -1706,7 +1588,7 @@ function isMayorDecisionInput(value: unknown): boolean {
   return value.kind === "mayorDies"
     ? hasExactKeys(value, ["kind"])
     : value.kind === "bounce" && hasExactKeys(value, ["kind", "targetPlayerId"])
-      && typeof value.targetPlayerId === "string";
+    && typeof value.targetPlayerId === "string";
 }
 
 function isMayorAttackContext(value: unknown): boolean {
@@ -1856,9 +1738,9 @@ function isActiveImpairment(value: unknown): value is ActiveImpairment {
 
 function isPhilosopherAbilityResolvedPayload(value: unknown): boolean {
   if (!isRecord(value) || !hasOnlyKeys(value, ["stepId", "actor", "selectedCharacterId", "outcome"]) ||
-      typeof value.stepId !== "string" || !isAbilityUseRef(value.actor) ||
-      (value.selectedCharacterId !== undefined && typeof value.selectedCharacterId !== "string") ||
-      !isRecord(value.outcome)) {
+    typeof value.stepId !== "string" || !isAbilityUseRef(value.actor) ||
+    (value.selectedCharacterId !== undefined && typeof value.selectedCharacterId !== "string") ||
+    !isRecord(value.outcome)) {
     return false;
   }
   const outcome = value.outcome;
@@ -1942,12 +1824,12 @@ function isBarberConsequencePayload(value: unknown): boolean {
   return typeof value.chooserDemonPlayerId === "string"
     && isBarberDecision(value.decision)
     && ((value.outcome.kind === "declined" && hasExactKeys(value.outcome, ["kind"]))
-    || (value.outcome.kind === "noChangeSameCharacter" && hasExactKeys(value.outcome, ["kind"]))
-    || (value.outcome.kind === "swapped"
-      && hasExactKeys(value.outcome, ["kind", "identityTransitions"])
-      && Array.isArray(value.outcome.identityTransitions)
-      && value.outcome.identityTransitions.length === 2
-      && value.outcome.identityTransitions.every(isPlayerIdentityTransition)));
+      || (value.outcome.kind === "noChangeSameCharacter" && hasExactKeys(value.outcome, ["kind"]))
+      || (value.outcome.kind === "swapped"
+        && hasExactKeys(value.outcome, ["kind", "identityTransitions"])
+        && Array.isArray(value.outcome.identityTransitions)
+        && value.outcome.identityTransitions.length === 2
+        && value.outcome.identityTransitions.every(isPlayerIdentityTransition)));
 }
 
 function isKlutzConsequencePayload(value: unknown): boolean {
@@ -2074,8 +1956,8 @@ function isScriptTokenList(value: unknown): boolean {
     hasExactKeys(token, ["characterId", "tokenId"]) &&
     typeof token.characterId === "string" &&
     typeof token.tokenId === "string"
-      ? `${token.characterId}:${token.tokenId}`
-      : undefined);
+    ? `${token.characterId}:${token.tokenId}`
+    : undefined);
   return keys.every((key) => typeof key === "string" && scriptTokenKeys.has(key)) &&
     new Set(keys).size === keys.length;
 }

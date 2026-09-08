@@ -1,0 +1,115 @@
+import { equal, notEqual } from "node:assert/strict";
+
+import { test } from "vitest";
+
+import type { GameFile } from "../../src/custom/core/types.js";
+
+import { memoizeLatestJsonRequest, serializeReplayRequest } from "../../src/custom/core/latestJsonRequestCache.js";
+
+
+test("consecutive structurally identical requests reuse the latest replay result", async () => {
+  let requestCount = 0;
+  const request = memoizeLatestJsonRequest(async (serializedInput: string) => {
+    requestCount += 1;
+    return { serializedInput, requestCount };
+  });
+  const firstInput = { game: { updatedAt: "one", events: [{ id: "event-1" }] } };
+
+  const first = request(firstInput);
+  const duplicate = request(structuredClone(firstInput));
+
+  equal(first, duplicate);
+  equal((await duplicate).requestCount, 1);
+  equal(requestCount, 1);
+
+  const changed = request({ game: { updatedAt: "two", events: [{ id: "event-1" }] } });
+  notEqual(changed, first);
+  equal((await changed).requestCount, 2);
+  equal(requestCount, 2);
+});
+
+
+test("a rejected request is not retained as the latest replay result", async () => {
+  let requestCount = 0;
+  const request = memoizeLatestJsonRequest(async () => {
+    requestCount += 1;
+    if (requestCount === 1) throw new Error("temporary failure");
+    return requestCount;
+  });
+  const input = { game: { updatedAt: "one", events: [] } };
+
+  await request(input).catch(() => undefined);
+
+  equal(await request(input), 2);
+  equal(requestCount, 2);
+});
+
+
+test("a replay cache includes the complete custom definition in canonical request identity", async () => {
+  let requestCount = 0;
+  const request = memoizeLatestJsonRequest(
+    async (serializedInput: string) => {
+      requestCount += 1;
+      return { serializedInput, requestCount };
+    },
+    serializeReplayRequest,
+  );
+  const firstInput = {
+    schemaVersion: 4,
+    game: {
+      script: {
+        type: "custom",
+        definition: {
+          id: "custom-stable-id",
+          name: "Mixed roster",
+          characterIds: ["washerwoman", "clockmaker"],
+          firstNightOrder: [
+            { kind: "system", actionId: "dusk" },
+            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+            { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
+            { kind: "system", actionId: "minionInfo" },
+            { kind: "system", actionId: "demonInfo" },
+            { kind: "system", actionId: "dawn" },
+          ],
+        },
+      },
+      id: "custom-game",
+      name: "first game name",
+      createdAt: "created",
+      updatedAt: "one",
+      events: [],
+    },
+  } as const;
+
+  const first = request(firstInput as unknown as GameFile);
+  const metadataOnly = request({
+    ...firstInput,
+    game: { ...firstInput.game, name: "renamed game", updatedAt: "two" },
+  } as unknown as GameFile);
+  equal(first, metadataOnly);
+
+  const changedDefinition = request({
+    ...firstInput,
+    game: {
+      ...firstInput.game,
+      script: {
+        type: "custom",
+        definition: {
+          ...firstInput.game.script.definition,
+          characterIds: ["washerwoman", "imp"],
+          firstNightOrder: [
+            { kind: "system", actionId: "dusk" },
+            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
+            { kind: "system", actionId: "minionInfo" },
+            { kind: "system", actionId: "demonInfo" },
+            { kind: "system", actionId: "dawn" },
+          ],
+        },
+      },
+    },
+  } as unknown as GameFile);
+
+  notEqual(changedDefinition, first);
+  equal((await changedDefinition).requestCount, 2);
+  equal(requestCount, 2);
+});

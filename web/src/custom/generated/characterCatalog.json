@@ -1,0 +1,190 @@
+[
+  {
+    "id": "washerwoman",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "librarian",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "investigator",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "chef",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "empath",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "fortuneTeller",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "undertaker",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "monk",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "ravenkeeper",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "virgin",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "slayer",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "soldier",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "mayor",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "butler",
+    "kind": "Outsider"
+  },
+  {
+    "id": "drunk",
+    "kind": "Outsider"
+  },
+  {
+    "id": "recluse",
+    "kind": "Outsider"
+  },
+  {
+    "id": "saint",
+    "kind": "Outsider"
+  },
+  {
+    "id": "poisoner",
+    "kind": "Minion"
+  },
+  {
+    "id": "spy",
+    "kind": "Minion"
+  },
+  {
+    "id": "scarletWoman",
+    "kind": "Minion"
+  },
+  {
+    "id": "baron",
+    "kind": "Minion"
+  },
+  {
+    "id": "imp",
+    "kind": "Demon"
+  },
+  {
+    "id": "clockmaker",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "dreamer",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "snakeCharmer",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "mathematician",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "flowergirl",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "townCrier",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "oracle",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "savant",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "seamstress",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "philosopher",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "artist",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "juggler",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "sage",
+    "kind": "Townsfolk"
+  },
+  {
+    "id": "mutant",
+    "kind": "Outsider"
+  },
+  {
+    "id": "sweetheart",
+    "kind": "Outsider"
+  },
+  {
+    "id": "barber",
+    "kind": "Outsider"
+  },
+  {
+    "id": "klutz",
+    "kind": "Outsider"
+  },
+  {
+    "id": "evilTwin",
+    "kind": "Minion"
+  },
+  {
+    "id": "witch",
+    "kind": "Minion"
+  },
+  {
+    "id": "cerenovus",
+    "kind": "Minion"
+  },
+  {
+    "id": "pitHag",
+    "kind": "Minion"
+  },
+  {
+    "id": "fangGu",
+    "kind": "Demon"
+  },
+  {
+    "id": "vigormortis",
+    "kind": "Demon"
+  },
+  {
+    "id": "noDashii",
+    "kind": "Demon"
+  },
+  {
+    "id": "vortox",
+    "kind": "Demon"
+  }
+]

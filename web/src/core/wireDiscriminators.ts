@@ -1,7 +1,6 @@
 // Generated contract mirror. Rust's parity test fails if this file drifts from contracts.rs.
 export const scriptReferenceDiscriminators = [
   "official",
-  "custom",
 ] as const;
 
 export const commandDiscriminators = [
@@ -26,7 +25,6 @@ export const eventDiscriminators = [
   "smokeConfirmed",
   "setupConfirmed",
   "phaseStepConfirmed",
-  "customActionConfirmed",
   "phaseStepSkipped",
   "phaseStepNeedsFollowUp",
   "philosopherAbilityResolved",

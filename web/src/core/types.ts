@@ -1,44 +1,13 @@
 import type { ScriptId } from "./scripts.js";
 
-export type CustomScriptDefinition = {
-  id: string;
-  name: string;
-  characterIds: string[];
-  firstNightOrder: FirstNightOrderPlan;
-};
 
-/**
- * Authoring input for the read-only custom first-night-plan query.
- * Persisted and game-snapshot definitions always carry an explicit order.
- */
-export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNightOrder"> & {
-  firstNightOrder?: FirstNightOrderPlan;
-};
-
-export type SystemFirstNightActionId = "dusk" | "minionInfo" | "demonInfo" | "dawn";
-
-export type FirstNightActionRef =
-  | { kind: "system"; actionId: SystemFirstNightActionId }
-  | { kind: "character"; characterId: string; actionId: string };
-
-export type FirstNightOrderPlan = FirstNightActionRef[];
-
-export type CustomFirstNightPlanResult = {
-  source: "definition" | "default";
-  plan: FirstNightOrderPlan;
-};
 
 export type OfficialScriptReference = {
   type: "official";
   scriptId: ScriptId;
 };
+export type ScriptReference = OfficialScriptReference;
 
-export type CustomScriptReference = {
-  type: "custom";
-  definition: CustomScriptDefinition;
-};
-
-export type ScriptReference = OfficialScriptReference | CustomScriptReference;
 
 type GameFileMetadata = {
   ui?: {
@@ -154,30 +123,30 @@ export type InformationResult =
   | { kind: "player"; playerId: string }
   | { kind: "playerPair"; playerIds: [string, string] }
   | {
-      kind: "setupInfo";
-      playerIds: string[];
-      characterId?: string;
-      zeroOutsiders: boolean;
-    }
+    kind: "setupInfo";
+    playerIds: string[];
+    characterId?: string;
+    zeroOutsiders: boolean;
+  }
   | {
-      kind: "teamInfo";
-      demonPlayerIds: string[];
-      minionPlayerIds: string[];
-      bluffCharacterIds: string[];
-    }
+    kind: "teamInfo";
+    demonPlayerIds: string[];
+    minionPlayerIds: string[];
+    bluffCharacterIds: string[];
+  }
   | {
-      kind: "spyGrimoire";
-      players: Array<{
-        playerId: string;
-        seat: number;
-        name: string;
-        characterId: string;
-        alive?: boolean;
-        ghostVoteUsed?: boolean;
-        reminderTokens?: SpyReminderToken[];
-        automaticReminders?: AutomaticReminder[];
-      }>;
-    };
+    kind: "spyGrimoire";
+    players: Array<{
+      playerId: string;
+      seat: number;
+      name: string;
+      characterId: string;
+      alive?: boolean;
+      ghostVoteUsed?: boolean;
+      reminderTokens?: SpyReminderToken[];
+      automaticReminders?: AutomaticReminder[];
+    }>;
+  };
 
 export type MathematicianAudit = {
   records: MathematicianAuditRecord[];
@@ -202,24 +171,24 @@ export type MathematicianAuditEvidence = {
 
 export type MathematicianAuditOutcome =
   | {
-      kind: "incorrectInformation";
-      computedResult: InformationResult;
-      deliveredResult: InformationResult;
-    }
+    kind: "incorrectInformation";
+    computedResult: InformationResult;
+    deliveredResult: InformationResult;
+  }
   | { kind: "invalidSavantPattern"; truthfulCount: number }
   | {
-      kind: "effectFailure";
-      effect:
-        | "snakeCharmerSwap"
-        | "witchDeath"
-        | "sweetheartDrunkenness"
-        | "demonDeath"
-        | "pitHagCharacterChange"
-        | "noDashiiPoison"
-        | "vigormortisOngoingEffect"
-        | "vortoxFalseInformation"
-        | "vortoxExecution";
-    };
+    kind: "effectFailure";
+    effect:
+    | "snakeCharmerSwap"
+    | "witchDeath"
+    | "sweetheartDrunkenness"
+    | "demonDeath"
+    | "pitHagCharacterChange"
+    | "noDashiiPoison"
+    | "vigormortisOngoingEffect"
+    | "vortoxFalseInformation"
+    | "vortoxExecution";
+  };
 
 export type RegistrationJudgment = {
   playerId: string;
@@ -314,61 +283,61 @@ export type PhaseInputSuggestion = {
 export type Command =
   | { type: "smoke" }
   | {
-      type: "createGame";
-      payload: {
-        players: SetupPlayerInput[];
-        setupChoiceId?: SetupChoiceId;
-      };
-    }
+    type: "createGame";
+    payload: {
+      players: SetupPlayerInput[];
+      setupChoiceId?: SetupChoiceId;
+    };
+  }
   | { type: "confirmStep"; payload: PhaseStepCommandPayload }
   | {
-      type: "skipStep";
-      payload: { stepId: string; expectedEventCount?: number; input?: null };
-    }
+    type: "skipStep";
+    payload: { stepId: string; expectedEventCount?: number; input?: null };
+  }
   | {
-      type: "resolveManualStep";
-      payload: {
-        stepId: string;
-        expectedEventCount?: number;
-        outcome: "handled" | "notApplicable";
-      };
-    }
+    type: "resolveManualStep";
+    payload: {
+      stepId: string;
+      expectedEventCount?: number;
+      outcome: "handled" | "notApplicable";
+    };
+  }
   | { type: "useSlayerAbility"; payload: UseSlayerAbilityPayload }
   | { type: "recordDayAction"; payload: RecordDayActionPayload }
   | { type: "recordMadnessCheck"; payload: RecordMadnessCheckPayload }
   | { type: "executeMadness"; payload: ExecuteMadnessPayload }
   | {
-      type: "resolveVigormortisPoison";
-      payload: { sourceEventId: string; targetPlayerId: string; expectedEventCount: number };
-    }
+    type: "resolveVigormortisPoison";
+    payload: { sourceEventId: string; targetPlayerId: string; expectedEventCount: number };
+  }
   | {
-      type: "resolveSweetheartConsequence";
-      payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
-    }
+    type: "resolveSweetheartConsequence";
+    payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
+  }
   | {
-      type: "resolveBarberConsequence";
-      payload: {
-        stepId: string;
-        chooserDemonPlayerId?: string;
-        decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
-        expectedEventCount: number;
-      };
-    }
+    type: "resolveBarberConsequence";
+    payload: {
+      stepId: string;
+      chooserDemonPlayerId?: string;
+      decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+      expectedEventCount: number;
+    };
+  }
   | {
-      type: "resolveKlutzConsequence";
-      payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
-    }
+    type: "resolveKlutzConsequence";
+    payload: { stepId: string; targetPlayerId?: string; expectedEventCount: number };
+  }
   | { type: "endGame"; payload: { winningTeam: "good" | "evil"; expectedEventCount: number } }
   | {
-      type: "updatePlayerAnnotations";
-      payload: {
-        playerId: string;
-        expectedEventCount: number;
-        systemTokenIds: SystemTokenId[];
-        scriptTokens: ScriptTokenRef[];
-        notes: string;
-      };
+    type: "updatePlayerAnnotations";
+    payload: {
+      playerId: string;
+      expectedEventCount: number;
+      systemTokenIds: SystemTokenId[];
+      scriptTokens: ScriptTokenRef[];
+      notes: string;
     };
+  };
 
 export type UseSlayerAbilityPayload = {
   discussionStepId: string;
@@ -453,11 +422,8 @@ type ReplayStateBase = {
   pendingDeathConsequences?: PendingDeathConsequence[];
   pendingGameEnd?: PendingGameEnd;
 };
+export type ReplayState = ReplayStateBase & { scriptId: ScriptId; script?: never };
 
-export type ReplayState = ReplayStateBase & (
-  | { scriptId: ScriptId; script?: never }
-  | { scriptId?: never; script: CustomScriptReference }
-);
 
 export type PendingDeathConsequence = {
   stepId: string;
@@ -598,10 +564,10 @@ export type AbilityUseRef = {
 export type AbilityOrigin =
   | { kind: "identityBound" }
   | {
-      kind: "acquired";
-      acquisitionEventId: string;
-      source: AbilityUseRef;
-    };
+    kind: "acquired";
+    acquisitionEventId: string;
+    source: AbilityUseRef;
+  };
 
 export type OrderedDeathSource =
   | { kind: "ability"; abilityUse: AbilityUseRef; abilityOrigin: AbilityOrigin }
@@ -623,9 +589,9 @@ export type OrderedDeathOutcome =
   | { kind: "occurred"; playerId: string }
   | { kind: "prevented"; preventionSequence: number }
   | {
-      kind: "noEffect";
-      reason: "sourceInvalid" | "actorImpaired" | "targetAlreadyDead" | "targetIneligible";
-    };
+    kind: "noEffect";
+    reason: "sourceInvalid" | "actorImpaired" | "targetAlreadyDead" | "targetIneligible";
+  };
 
 export type OrderedDeathResolution = {
   sequence: number;
@@ -689,30 +655,30 @@ export type RevealIdentity = { seat: number; name: string };
 
 export type EvilInformationRevealPayload =
   | {
-      kind: "minionInformation";
-      demonPlayers: RevealIdentity[];
-      minionPlayers: RevealIdentity[];
-    }
+    kind: "minionInformation";
+    demonPlayers: RevealIdentity[];
+    minionPlayers: RevealIdentity[];
+  }
   | {
-      kind: "demonInformation";
-      minionPlayers: RevealIdentity[];
-      bluffCharacterIds: string[];
-    };
+    kind: "demonInformation";
+    minionPlayers: RevealIdentity[];
+    bluffCharacterIds: string[];
+  };
 
 export type SetupInformationRevealPayload =
   | {
-      kind: "setupInformation";
-      characterId: "washerwoman" | "librarian" | "investigator";
-      candidatePlayers: [RevealPlayer, RevealPlayer];
-      revealedCharacterId: string;
-      zeroOutsiders: false;
-    }
+    kind: "setupInformation";
+    characterId: "washerwoman" | "librarian" | "investigator";
+    candidatePlayers: [RevealPlayer, RevealPlayer];
+    revealedCharacterId: string;
+    zeroOutsiders: false;
+  }
   | {
-      kind: "setupInformation";
-      characterId: "librarian";
-      candidatePlayers: [];
-      zeroOutsiders: true;
-    };
+    kind: "setupInformation";
+    characterId: "librarian";
+    candidatePlayers: [];
+    zeroOutsiders: true;
+  };
 
 export type NumericInformationRevealPayload = {
   kind: "numericInformation";
@@ -792,20 +758,8 @@ export type RoleInformationRevealPayload =
   | EvilInformationRevealPayload;
 
 export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload;
+export type SetupDistributionRequest = { scriptId: ScriptId; playerCount: number; actualCharacters: string[] };
 
-export type SetupDistributionRequest =
-  | {
-      scriptId: ScriptId;
-      customDefinition?: never;
-      playerCount: number;
-      actualCharacters: string[];
-    }
-  | {
-      scriptId?: never;
-      customDefinition: CustomScriptDefinition;
-      playerCount: number;
-      actualCharacters: string[];
-    };
 
 export type SetupDistribution = {
   Townsfolk: number;
@@ -847,302 +801,282 @@ export type PhilosopherAbilityResolvedPayload = {
   outcome: PhilosopherAbilityOutcome;
 };
 
-/**
- * Typed result carried by a custom Character action.  Fixture-only state-changing outcomes are
- * intentionally absent from the production wire type and parser; the fixture test path may
- * extend this boundary when it builds its dedicated WASM artifact.
- */
-export type CustomActionResult =
-  | { kind: "information"; value: InformationResult }
-  | { kind: "noEffect" };
 
-export type CustomActionConfirmedPayload = {
-  stepId: string;
-  actionRef: Extract<FirstNightActionRef, { kind: "character" }>;
-  abilityUse: AbilityUseRef;
-  input: PhaseStepInput;
-  result: CustomActionResult;
-};
 
 export type GameEvent = EventCommon &
   (
     | { type: "smokeConfirmed"; payload: { source: string } }
     | {
-        type: "setupConfirmed";
-        payload: {
-          players: SetupPlayerInput[];
-          setupChoiceId?: SetupChoiceId;
-        };
-      }
+      type: "setupConfirmed";
+      payload: {
+        players: SetupPlayerInput[];
+        setupChoiceId?: SetupChoiceId;
+      };
+    }
     | {
-        type: "phaseStepConfirmed";
-        payload: {
-          stepId: string;
-          actionRef?: FirstNightActionRef;
-          abilityUse?: AbilityUseRef;
-          input: PhaseStepInput;
-          information?: ConfirmedInformation;
-        };
-      }
-    | {
-        type: "customActionConfirmed";
-        payload: CustomActionConfirmedPayload;
-      }
+      type: "phaseStepConfirmed";
+      payload: {
+        stepId: string;
+        abilityUse?: AbilityUseRef;
+        input: PhaseStepInput;
+        information?: ConfirmedInformation;
+      };
+    }
     | { type: "phaseStepSkipped"; payload: { stepId: string } }
     | { type: "phaseStepNeedsFollowUp"; payload: { stepId: string } }
     | { type: "philosopherAbilityResolved"; payload: PhilosopherAbilityResolvedPayload }
     | {
-        type: "manualPhaseStepResolved";
-        payload: { stepId: string; outcome: "handled" | "notApplicable" };
-      }
+      type: "manualPhaseStepResolved";
+      payload: { stepId: string; outcome: "handled" | "notApplicable" };
+    }
     | {
-        type: "nominationVoteConfirmed";
-        payload: {
-          stepId: string;
-          nominationEventId?: string;
-          nominatorId?: string;
-          nomineeId?: string;
-          voterIds: string[];
-          ghostVoteSpentPlayerIds: string[];
-        };
-      }
+      type: "nominationVoteConfirmed";
+      payload: {
+        stepId: string;
+        nominationEventId?: string;
+        nominatorId?: string;
+        nomineeId?: string;
+        voterIds: string[];
+        ghostVoteSpentPlayerIds: string[];
+      };
+    }
     | {
-        type: "nominationStarted";
-        payload: {
-          stepId: string;
-          nominatorId: string;
-          nomineeId: string;
-          registrationJudgments: RegistrationJudgment[];
-          virginResolution:
-            | { kind: "notApplicable" }
-            | { kind: "spentNoExecution"; virginPlayerId: string; impairmentContext: VirginImpairmentContext }
-            | { kind: "spentAndNominatorExecuted"; virginPlayerId: string; impairmentContext: VirginImpairmentContext };
-          witchResolution?:
-            | { kind: "notApplicable" }
-            | { kind: "deathPending"; curseEventId: string; witchPlayerId: string; sourceAbilityInstanceId: string };
-        };
-      }
+      type: "nominationStarted";
+      payload: {
+        stepId: string;
+        nominatorId: string;
+        nomineeId: string;
+        registrationJudgments: RegistrationJudgment[];
+        virginResolution:
+        | { kind: "notApplicable" }
+        | { kind: "spentNoExecution"; virginPlayerId: string; impairmentContext: VirginImpairmentContext }
+        | { kind: "spentAndNominatorExecuted"; virginPlayerId: string; impairmentContext: VirginImpairmentContext };
+        witchResolution?:
+        | { kind: "notApplicable" }
+        | { kind: "deathPending"; curseEventId: string; witchPlayerId: string; sourceAbilityInstanceId: string };
+      };
+    }
     | {
-        type: "witchCurseAssigned";
-        payload: {
-          stepId: string;
-          actorPlayerId: string;
-          targetPlayerId: string;
-          sourceAbilityInstanceId: string;
-          effective: boolean;
-        };
-      }
+      type: "witchCurseAssigned";
+      payload: {
+        stepId: string;
+        actorPlayerId: string;
+        targetPlayerId: string;
+        sourceAbilityInstanceId: string;
+        effective: boolean;
+      };
+    }
     | {
-        type: "evilTwinPairAssigned";
-        payload: {
-          stepId: string;
-          actorPlayerId: string;
-          twinPlayerId: string;
-          sourceAbilityInstanceId: string;
-          actorAlignment: "good" | "evil";
-          twinAlignment: "good" | "evil";
-        };
-      }
+      type: "evilTwinPairAssigned";
+      payload: {
+        stepId: string;
+        actorPlayerId: string;
+        twinPlayerId: string;
+        sourceAbilityInstanceId: string;
+        actorAlignment: "good" | "evil";
+        twinAlignment: "good" | "evil";
+      };
+    }
     | {
-        type: "executionConfirmed" | "noExecutionConfirmed";
-        payload: { stepId: string; input: { execute: boolean; playerId?: string | null } };
-      }
+      type: "executionConfirmed" | "noExecutionConfirmed";
+      payload: { stepId: string; input: { execute: boolean; playerId?: string | null } };
+    }
     | { type: "deathConfirmed"; payload: { playerId: string; stepId?: string } }
     | {
-        type: "orderedDeathResolved";
-        payload: { source: OrderedDeathSource; resolutions: OrderedDeathResolution[] };
-      }
+      type: "orderedDeathResolved";
+      payload: { source: OrderedDeathSource; resolutions: OrderedDeathResolution[] };
+    }
     | {
-        type: "executionSurvivalConfirmed";
-        payload: { stepId: string; playerId: string };
-      }
+      type: "executionSurvivalConfirmed";
+      payload: { stepId: string; playerId: string };
+    }
     | {
-        type: "redHerringAssigned";
-        payload: { stepId: string; playerId: string; registrationJudgments: RegistrationJudgment[] };
-      }
+      type: "redHerringAssigned";
+      payload: { stepId: string; playerId: string; registrationJudgments: RegistrationJudgment[] };
+    }
     | {
-        type: "nightActionResolved";
-        payload: {
-          stepId: string;
-          actorPlayerId: string;
-          actorCharacterId?: string;
-          resolution: NightActionResolution;
+      type: "nightActionResolved";
+      payload: {
+        stepId: string;
+        actorPlayerId: string;
+        actorCharacterId?: string;
+        resolution: NightActionResolution;
+      };
+    }
+    | {
+      type: "nightDeathsAnnounced";
+      payload: { stepId: string; playerIds: string[]; resurrectedPlayerIds?: string[] };
+    }
+    | {
+      type: "slayerAbilityUsed";
+      payload: {
+        discussionStepId: string;
+        actorPlayerId: string;
+        targetPlayerId: string;
+        impairmentContext: { kind: "healthy" } | { kind: "poisoned"; sourcePlayerId: string; sourceEventId: string };
+        registrationContext: { kind: "canonical"; registeredAsDemon: boolean } | { kind: "recluseDecision"; registeredAsDemon: boolean; registeredCharacterId?: "imp" };
+        outcome: { kind: "noEffect"; reason: "actorPoisoned" | "targetNotDemon" | "targetAlreadyDead" } | { kind: "deathPending"; playerId: string };
+      };
+    }
+    | {
+      type: "dayActionRecorded";
+      payload: {
+        dayId: string;
+        actorPlayerId: string;
+        characterId: "artist" | "savant" | "juggler";
+        record: DayActionRecordInput;
+        activeReasons: DeliveryReason[];
+      };
+    }
+    | {
+      type: "madnessAssigned";
+      payload: {
+        stepId: string;
+        sourcePlayerId: string;
+        targetPlayerId: string;
+        requiredCharacterId: string;
+      };
+    }
+    | {
+      type: "madnessCheckRecorded";
+      payload: {
+        assignmentId: string;
+        sourcePlayerId: string;
+        sourceCharacterId: "mutant" | "cerenovus";
+        targetPlayerId: string;
+        result: MadnessCheckResult;
+      };
+    }
+    | {
+      type: "madnessExecutionConfirmed";
+      payload: {
+        assignmentId: string;
+        checkEventId?: string;
+        sourcePlayerId: string;
+        sourceCharacterId: "mutant" | "cerenovus";
+        targetPlayerId: string;
+        interruptedStepId: string;
+      };
+    }
+    | {
+      type: "demonSuccessionConfirmed";
+      payload: {
+        triggerImpDeathEventId: string;
+        deathCause: "execution" | "slayer" | "impSelfKill";
+        previousImpPlayerId: string;
+        successorPlayerId: string;
+        successorPreviousActualCharacter: string;
+        newCharacter: string;
+        source: "scarletWoman" | "impSelfKill";
+      };
+    }
+    | {
+      type: "snakeCharmerActionResolved";
+      payload: {
+        stepId: string;
+        actorPlayerId: string;
+        targetPlayerId: string;
+        outcome:
+        | { kind: "noSwap"; reason: "targetNotDemon" | "actorImpaired" }
+        | {
+          kind: "swap";
+          identityTransitions: PlayerIdentityTransition[];
+          impairment: ActiveImpairment;
         };
-      }
+      };
+    }
     | {
-        type: "nightDeathsAnnounced";
-        payload: { stepId: string; playerIds: string[]; resurrectedPlayerIds?: string[] };
-      }
+      type: "pitHagTransformationResolved";
+      payload: {
+        stepId: string;
+        actorPlayerId: string;
+        targetPlayerId: string;
+        characterId: string;
+        outcome:
+        | { kind: "noChange"; reason: "characterAlreadyInPlay" | "actorImpaired" | "notActualCharacter" }
+        | { kind: "changed"; identityTransition: PlayerIdentityTransition; createdDemon: boolean };
+      };
+    }
     | {
-        type: "slayerAbilityUsed";
-        payload: {
-          discussionStepId: string;
-          actorPlayerId: string;
-          targetPlayerId: string;
-          impairmentContext: { kind: "healthy" } | { kind: "poisoned"; sourcePlayerId: string; sourceEventId: string };
-          registrationContext: { kind: "canonical"; registeredAsDemon: boolean } | { kind: "recluseDecision"; registeredAsDemon: boolean; registeredCharacterId?: "imp" };
-          outcome: { kind: "noEffect"; reason: "actorPoisoned" | "targetNotDemon" | "targetAlreadyDead" } | { kind: "deathPending"; playerId: string };
-        };
-      }
+      type: "pitHagArbitraryDeathsConfirmed";
+      payload: {
+        stepId: string;
+        sourceTransformationEventId: string;
+        deaths: NightDeath[];
+      };
+    }
     | {
-        type: "dayActionRecorded";
-        payload: {
-          dayId: string;
-          actorPlayerId: string;
-          characterId: "artist" | "savant" | "juggler";
-          record: DayActionRecordInput;
-          activeReasons: DeliveryReason[];
-        };
-      }
+      type: "playerTransitioned";
+      payload: {
+        stepId: string;
+        sourcePlayerId: string;
+        sourceCharacterId: string;
+        transitions: PlayerTransition[];
+      };
+    }
     | {
-        type: "madnessAssigned";
-        payload: {
-          stepId: string;
-          sourcePlayerId: string;
-          targetPlayerId: string;
-          requiredCharacterId: string;
-        };
-      }
+      type: "playerAnnotationsUpdated";
+      payload: {
+        playerId: string;
+        systemTokenIds: SystemTokenId[];
+        scriptTokens: ScriptTokenRef[];
+        notes: string;
+      };
+    }
     | {
-        type: "madnessCheckRecorded";
-        payload: {
-          assignmentId: string;
-          sourcePlayerId: string;
-          sourceCharacterId: "mutant" | "cerenovus";
-          targetPlayerId: string;
-          result: MadnessCheckResult;
-        };
-      }
+      type: "vigormortisPoisonTargetChanged";
+      payload: {
+        sourceEventId: string;
+        previousTargetPlayerId?: string;
+        targetPlayerId: string;
+      };
+    }
     | {
-        type: "madnessExecutionConfirmed";
-        payload: {
-          assignmentId: string;
-          checkEventId?: string;
-          sourcePlayerId: string;
-          sourceCharacterId: "mutant" | "cerenovus";
-          targetPlayerId: string;
-          interruptedStepId: string;
-        };
-      }
+      type: "sweetheartConsequenceResolved";
+      payload: {
+        stepId: string;
+        trigger: DeathTriggerRef;
+        targetPlayerId?: string;
+        outcome:
+        | { kind: "drunkApplied"; impairment: ActiveImpairment }
+        | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
+      };
+    }
     | {
-        type: "demonSuccessionConfirmed";
-        payload: {
-          triggerImpDeathEventId: string;
-          deathCause: "execution" | "slayer" | "impSelfKill";
-          previousImpPlayerId: string;
-          successorPlayerId: string;
-          successorPreviousActualCharacter: string;
-          newCharacter: string;
-          source: "scarletWoman" | "impSelfKill";
-        };
-      }
+      type: "barberConsequenceResolved";
+      payload: {
+        stepId: string;
+        trigger: DeathTriggerRef;
+        chooserDemonPlayerId?: string;
+        decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
+        outcome:
+        | { kind: "declined" }
+        | { kind: "swapped"; identityTransitions: PlayerIdentityTransition[] }
+        | { kind: "noChangeSameCharacter" }
+        | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
+      };
+    }
     | {
-        type: "snakeCharmerActionResolved";
-        payload: {
-          stepId: string;
-          actorPlayerId: string;
-          targetPlayerId: string;
-          outcome:
-            | { kind: "noSwap"; reason: "targetNotDemon" | "actorImpaired" }
-            | {
-                kind: "swap";
-                identityTransitions: PlayerIdentityTransition[];
-                impairment: ActiveImpairment;
-              };
-        };
-      }
+      type: "klutzChoiceResolved";
+      payload: {
+        stepId: string;
+        trigger: DeathTriggerRef;
+        targetPlayerId?: string;
+        actorAlignment?: "good" | "evil";
+        targetAlignment?: "good" | "evil";
+        outcome:
+        | { kind: "safe" }
+        | { kind: "actorImpaired" }
+        | { kind: "teamLost"; losingTeam: "good" | "evil"; winningTeam: "good" | "evil" };
+      };
+    }
     | {
-        type: "pitHagTransformationResolved";
-        payload: {
-          stepId: string;
-          actorPlayerId: string;
-          targetPlayerId: string;
-          characterId: string;
-          outcome:
-            | { kind: "noChange"; reason: "characterAlreadyInPlay" | "actorImpaired" | "notActualCharacter" }
-            | { kind: "changed"; identityTransition: PlayerIdentityTransition; createdDemon: boolean };
-        };
-      }
-    | {
-        type: "pitHagArbitraryDeathsConfirmed";
-        payload: {
-          stepId: string;
-          sourceTransformationEventId: string;
-          deaths: NightDeath[];
-        };
-      }
-    | {
-        type: "playerTransitioned";
-        payload: {
-          stepId: string;
-          sourcePlayerId: string;
-          sourceCharacterId: string;
-          transitions: PlayerTransition[];
-        };
-      }
-    | {
-        type: "playerAnnotationsUpdated";
-        payload: {
-          playerId: string;
-          systemTokenIds: SystemTokenId[];
-          scriptTokens: ScriptTokenRef[];
-          notes: string;
-        };
-      }
-    | {
-        type: "vigormortisPoisonTargetChanged";
-        payload: {
-          sourceEventId: string;
-          previousTargetPlayerId?: string;
-          targetPlayerId: string;
-        };
-      }
-    | {
-        type: "sweetheartConsequenceResolved";
-        payload: {
-          stepId: string;
-          trigger: DeathTriggerRef;
-          targetPlayerId?: string;
-          outcome:
-            | { kind: "drunkApplied"; impairment: ActiveImpairment }
-            | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
-        };
-      }
-    | {
-        type: "barberConsequenceResolved";
-        payload: {
-          stepId: string;
-          trigger: DeathTriggerRef;
-          chooserDemonPlayerId?: string;
-          decision?: { kind: "decline" } | { kind: "swap"; playerIds: [string, string] };
-          outcome:
-            | { kind: "declined" }
-            | { kind: "swapped"; identityTransitions: PlayerIdentityTransition[] }
-            | { kind: "noChangeSameCharacter" }
-            | { kind: "noEffect"; reason: DeathConsequenceNoEffectReason };
-        };
-      }
-    | {
-        type: "klutzChoiceResolved";
-        payload: {
-          stepId: string;
-          trigger: DeathTriggerRef;
-          targetPlayerId?: string;
-          actorAlignment?: "good" | "evil";
-          targetAlignment?: "good" | "evil";
-          outcome:
-            | { kind: "safe" }
-            | { kind: "actorImpaired" }
-            | { kind: "teamLost"; losingTeam: "good" | "evil"; winningTeam: "good" | "evil" };
-        };
-      }
-    | {
-        type: "gameEnded";
-        payload: {
-          winningTeam: "good" | "evil";
-          source?: { kind: "demonAbsent" | "twoLivingPlayers" | "saintExecution" | "mayorNoExecution" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
-        };
-      }
+      type: "gameEnded";
+      payload: {
+        winningTeam: "good" | "evil";
+        source?: { kind: "demonAbsent" | "twoLivingPlayers" | "saintExecution" | "mayorNoExecution" | "klutzChoice" | "witchCurseDeath" | "evilTwinExecution" | "vortoxNoExecution"; sourceEventId: string };
+      };
+    }
   );
 
 export type DeathTriggerRef = {
@@ -1162,60 +1096,60 @@ export type VirginImpairmentContext =
 
 export type NightActionResolution =
   | {
-      kind: "poison" | "monkProtection";
-      targetPlayerId: string;
-      applied: boolean;
-      noEffectReason?: "actorImpaired" | "notActualCharacter";
-    }
+    kind: "poison" | "monkProtection";
+    targetPlayerId: string;
+    applied: boolean;
+    noEffectReason?: "actorImpaired" | "notActualCharacter";
+  }
   | {
-      kind: "impAttack";
-      targetPlayerId: string;
-      mayorContext?:
-        | { kind: "notApplicable" }
-        | { kind: "mayorDies"; mayorPlayerId: string }
-        | { kind: "bounced"; mayorPlayerId: string; bounceTargetPlayerId: string };
-      outcome:
-        | { kind: "death"; playerId: string }
-        | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
-        | { kind: "soldierProtected"; playerId: string }
-        | { kind: "noDeath"; reason: "alreadyDead" | "actorImpaired" | "notActualCharacter" };
-    }
+    kind: "impAttack";
+    targetPlayerId: string;
+    mayorContext?:
+    | { kind: "notApplicable" }
+    | { kind: "mayorDies"; mayorPlayerId: string }
+    | { kind: "bounced"; mayorPlayerId: string; bounceTargetPlayerId: string };
+    outcome:
+    | { kind: "death"; playerId: string }
+    | { kind: "prevented"; reason: "monkProtection"; sourceEventId: string }
+    | { kind: "soldierProtected"; playerId: string }
+    | { kind: "noDeath"; reason: "alreadyDead" | "actorImpaired" | "notActualCharacter" };
+  }
   | {
-      kind: "demonAttack";
-      targetPlayerId: string;
-      outcome:
-        | {
-            kind: "deaths";
-            deaths: NightDeath[];
-            vigormortisEffect?: {
-              minionPlayerId: string;
-              sourceAbilityInstanceId: string;
-              poisonTargetPlayerId?: string;
-            };
-          }
-        | {
-            kind: "fangGuJump";
-            death: NightDeath;
-            sourceAbilityInstanceId: string;
-            identityTransition: PlayerIdentityTransition;
-          }
-        | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" | "pitHagCreatedDemon" };
-    };
+    kind: "demonAttack";
+    targetPlayerId: string;
+    outcome:
+    | {
+      kind: "deaths";
+      deaths: NightDeath[];
+      vigormortisEffect?: {
+        minionPlayerId: string;
+        sourceAbilityInstanceId: string;
+        poisonTargetPlayerId?: string;
+      };
+    }
+    | {
+      kind: "fangGuJump";
+      death: NightDeath;
+      sourceAbilityInstanceId: string;
+      identityTransition: PlayerIdentityTransition;
+    }
+    | { kind: "noEffect"; reason: "targetAlreadyDead" | "actorImpaired" | "notActualCharacter" | "pitHagCreatedDemon" };
+  };
 
 export type NightDeath = {
   playerId: string;
   cause:
-    | {
-        kind: "demonAttack";
-        actorPlayerId: string;
-        actorCharacterId: string;
-        targetPlayerId: string;
-      }
-    | {
-        kind: "pitHagArbitraryDeath";
-        actorPlayerId: string;
-        sourceTransformationEventId: string;
-      };
+  | {
+    kind: "demonAttack";
+    actorPlayerId: string;
+    actorCharacterId: string;
+    targetPlayerId: string;
+  }
+  | {
+    kind: "pitHagArbitraryDeath";
+    actorPlayerId: string;
+    sourceTransformationEventId: string;
+  };
 };
 
 export type Phase = "setup" | "firstNight" | "day" | "night";
@@ -1328,7 +1262,6 @@ export type PhaseStep = {
   support?: "automated" | "manual";
   informationPrompt?: InformationPrompt;
   preActionReveal?: PreActionReveal;
-  actionRef?: FirstNightActionRef;
 };
 
 export type PreActionReveal = CharacterChangeRevealPayload & {
@@ -1337,14 +1270,14 @@ export type PreActionReveal = CharacterChangeRevealPayload & {
 
 export type PhaseOverviewItem = PhaseStep & {
   status:
-    | "waiting"
-    | "current"
-    | "complete"
-    | "skipped"
-    | "needsFollowUp"
-    | "interrupted"
-    | "manualComplete"
-    | "notApplicable";
+  | "waiting"
+  | "current"
+  | "complete"
+  | "skipped"
+  | "needsFollowUp"
+  | "interrupted"
+  | "manualComplete"
+  | "notApplicable";
 };
 
 export type DayState = {

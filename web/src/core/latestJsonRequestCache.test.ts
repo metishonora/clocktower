@@ -1,7 +1,11 @@
 import { equal, notEqual } from "node:assert/strict";
+
 import test from "node:test";
+
 import type { GameFile } from "./types.js";
+
 import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
+
 
 test("consecutive structurally identical requests reuse the latest replay result", async () => {
   let requestCount = 0;
@@ -24,6 +28,7 @@ test("consecutive structurally identical requests reuse the latest replay result
   equal(requestCount, 2);
 });
 
+
 test("a rejected request is not retained as the latest replay result", async () => {
   let requestCount = 0;
   const request = memoizeLatestJsonRequest(async () => {
@@ -38,6 +43,7 @@ test("a rejected request is not retained as the latest replay result", async () 
   equal(await request(input), 2);
   equal(requestCount, 2);
 });
+
 
 test("a replay cache can ignore UI-only and timestamp changes", async () => {
   let requestCount = 0;
@@ -70,73 +76,4 @@ test("a replay cache can ignore UI-only and timestamp changes", async () => {
   equal(first, uiOnlyChange);
   equal((await uiOnlyChange).requestCount, 1);
   equal(requestCount, 1);
-});
-
-test("a replay cache includes the complete custom definition in canonical request identity", async () => {
-  let requestCount = 0;
-  const request = memoizeLatestJsonRequest(
-    async (serializedInput: string) => {
-      requestCount += 1;
-      return { serializedInput, requestCount };
-    },
-    serializeReplayRequest,
-  );
-  const firstInput = {
-    schemaVersion: 4,
-    game: {
-      script: {
-        type: "custom",
-        definition: {
-          id: "custom-stable-id",
-          name: "Mixed roster",
-          characterIds: ["washerwoman", "clockmaker"],
-          firstNightOrder: [
-            { kind: "system", actionId: "dusk" },
-            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
-            { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
-            { kind: "system", actionId: "minionInfo" },
-            { kind: "system", actionId: "demonInfo" },
-            { kind: "system", actionId: "dawn" },
-          ],
-        },
-      },
-      id: "custom-game",
-      name: "first game name",
-      createdAt: "created",
-      updatedAt: "one",
-      events: [],
-    },
-  } as const;
-
-  const first = request(firstInput as unknown as GameFile);
-  const metadataOnly = request({
-    ...firstInput,
-    game: { ...firstInput.game, name: "renamed game", updatedAt: "two" },
-  } as unknown as GameFile);
-  equal(first, metadataOnly);
-
-  const changedDefinition = request({
-    ...firstInput,
-    game: {
-      ...firstInput.game,
-      script: {
-        type: "custom",
-        definition: {
-          ...firstInput.game.script.definition,
-          characterIds: ["washerwoman", "imp"],
-          firstNightOrder: [
-            { kind: "system", actionId: "dusk" },
-            { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
-            { kind: "system", actionId: "minionInfo" },
-            { kind: "system", actionId: "demonInfo" },
-            { kind: "system", actionId: "dawn" },
-          ],
-        },
-      },
-    },
-  } as unknown as GameFile);
-
-  notEqual(changedDefinition, first);
-  equal((await changedDefinition).requestCount, 2);
-  equal(requestCount, 2);
 });

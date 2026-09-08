@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import manuscriptDollyMaster from "./assets/prototypes/issue-200/continuous-manuscript-dolly-master-v6.png";
 import { characterAsset } from "./characterAssets";
-import { customScriptCharacters } from "./customScriptRegistry";
+import { customScriptCharacters } from "./custom/characterCatalog";
 import { sectsAndVioletsCharacterAsset } from "./sectsAndVioletsCharacterAssets";
 import { sectsAndVioletsCharacters } from "./sectsAndVioletsCharacters";
 import { characters, type CharacterKind } from "./setupDraft";
@@ -34,10 +34,10 @@ const journeySteps: Array<{
   label: string;
   note: string;
 }> = [
-  { id: "scenario", number: "1", label: "시나리오", note: "첫 장을 고른다" },
-  { id: "characters", number: "2", label: "캐릭터", note: "초상을 꿰어 넣는다" },
-  { id: "review", number: "3", label: "검토", note: "구성을 바로잡는다" },
-];
+    { id: "scenario", number: "1", label: "시나리오", note: "첫 장을 고른다" },
+    { id: "characters", number: "2", label: "캐릭터", note: "초상을 꿰어 넣는다" },
+    { id: "review", number: "3", label: "검토", note: "구성을 바로잡는다" },
+  ];
 
 const kindOrder: CharacterKind[] = ["Townsfolk", "Outsider", "Minion", "Demon"];
 const kindLabels: Record<CharacterKind, string> = {
