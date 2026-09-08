@@ -1,11 +1,11 @@
 use crate::{
     contracts::{FirstNightActionRef, FirstNightOrderPlan},
-    custom::state::{
+    error::{CoreError, ErrorKind},
+    model::{AbilityOrigin, PhaseStep},
+    state::{
         ActionOccurrence, CompletedActionOccurrence, CompletedActionSnapshot,
         FirstNightProgress as SchedulerProgress,
     },
-    error::{CoreError, ErrorKind},
-    model::{AbilityOrigin, PhaseStep},
 };
 use std::cmp::Ordering;
 
@@ -224,11 +224,11 @@ pub(crate) fn project_pending_steps(
     let mut seen = Vec::new();
     for occurrence in &normalized.immediate_queue {
         if normalized.is_terminal(occurrence)
-            || seen.iter().any(
-                |identity: &crate::custom::state::ActionOccurrenceIdentity| {
+            || seen
+                .iter()
+                .any(|identity: &crate::state::ActionOccurrenceIdentity| {
                     *identity == occurrence.identity()
-                },
-            )
+                })
         {
             continue;
         }
@@ -460,11 +460,11 @@ fn dedupe_immediate_queue(progress: &mut SchedulerProgress) {
         let identity = occurrence.identity();
         if completed.contains(&identity)
             || excluded.contains(&identity)
-            || seen.iter().any(
-                |identity: &crate::custom::state::ActionOccurrenceIdentity| {
+            || seen
+                .iter()
+                .any(|identity: &crate::state::ActionOccurrenceIdentity| {
                     *identity == occurrence.identity()
-                },
-            )
+                })
         {
             return false;
         }

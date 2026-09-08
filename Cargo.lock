@@ -15,6 +15,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "clocktower-custom-domain"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "clocktower-custom-wasm"
+version = "0.1.0"
+dependencies = [
+ "clocktower-custom-domain",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "clocktower-domain"
 version = "0.1.0"
 dependencies = [

@@ -9,12 +9,10 @@ use crate::{
     contracts::{
         FirstNightActionRef, FirstNightOrderPlan, RevealIdentity, RevealPayload, RuleState,
     },
-    custom::{
-        first_night::{project_pending_steps, ActionContext, ActionRegistry},
-        state::{CustomGameFacts, FirstNightProgress},
-    },
     error::{CoreError, ErrorKind},
+    first_night::{project_pending_steps, ActionContext, ActionRegistry},
     model::{CharacterKind, PhaseOverviewItem, PhaseStep, PhaseStepStatus, StepInput},
+    state::{CustomGameFacts, FirstNightProgress},
 };
 
 /// The public first-night values calculated from one coherent facts/progress prefix.

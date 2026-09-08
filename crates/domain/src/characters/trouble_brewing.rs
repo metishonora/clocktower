@@ -1983,7 +1983,6 @@ pub(crate) fn character_steps(
                             },
                             information_prompt: None,
                             pre_action_reveal: None,
-                            action_ref: None,
                         }
                     }),
             )
@@ -2306,17 +2305,6 @@ pub(crate) fn character_required_input(character: &str) -> RequiredInput {
 
 pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     TbCharacterId::parse(character).map(|id| id.metadata().kind)
-}
-
-pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
-    TbCharacterId::ALL
-        .into_iter()
-        .map(|id| (id.as_str(), id.metadata().kind))
-        .collect()
-}
-
-pub(super) fn custom_setup_outsider_delta(character_id: &str) -> i8 {
-    i8::from(TbCharacterId::parse(character_id) == Some(TbCharacterId::Baron)) * 2
 }
 
 pub(crate) fn is_townsfolk(character: &str) -> bool {

@@ -496,7 +496,7 @@ fn completed_snapshots_keep_pre_identity_system_reveals() {
     );
 
     let parsed = crate::boundary::parse_game_file(&game.to_string()).expect("game should parse");
-    let snapshots = crate::custom::completed_snapshots_for_tests(parsed)
+    let snapshots = crate::game::completed_snapshots_for_tests(parsed)
         .expect("the actual replay fold should expose test snapshots");
     let demon_snapshot = snapshots
         .iter()

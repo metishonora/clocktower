@@ -2,7 +2,6 @@ mod annotations;
 mod boundary;
 mod characters;
 mod contracts;
-mod custom;
 mod day;
 mod death;
 mod error;
@@ -31,15 +30,6 @@ pub fn setup_distribution_json(request_json: &str) -> String {
 
 pub fn suggest_phase_input_json(game_file_json: &str, request_json: &str) -> String {
     boundary::suggest_phase_input_json(game_file_json, request_json)
-}
-
-pub fn custom_script_catalog_json() -> String {
-    serde_json::to_string(&characters::custom_script_catalog())
-        .expect("custom script catalog serialization should not fail")
-}
-
-pub fn custom_first_night_plan_json(request_json: &str) -> String {
-    boundary::custom_first_night_plan_json(request_json)
 }
 
 #[cfg(test)]

@@ -1,5 +1,7 @@
+use crate::contracts::*;
 use serde::{Deserialize, Serialize};
-
+use serde_json::Value;
+use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 pub(crate) enum Phase {
     #[serde(rename = "setup")]
@@ -376,8 +378,6 @@ pub(crate) struct NumberInformationChoice {
     pub(crate) registration_judgments: Vec<RegistrationJudgment>,
 }
 
-pub(crate) const MAX_SAFE_INFORMATION_NUMBER: u64 = 9_007_199_254_740_991;
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NumberInformationConstraint {
@@ -472,6 +472,8 @@ pub(crate) struct PhaseStep {
     pub(crate) information_prompt: Option<InformationPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) pre_action_reveal: Option<PreActionReveal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -557,27 +559,6 @@ pub(crate) struct MayorDecisionPrompt {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct SlayerAbilityState {
-    pub(crate) actor_player_id: String,
-    pub(crate) spent: bool,
-    pub(crate) can_use_now: bool,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct VirginAbilityState {
-    pub(crate) actor_player_id: String,
-    pub(crate) spent: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) spent_by_nomination_event_id: Option<String>,
-}
-
-fn is_false(value: &bool) -> bool {
-    !*value
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseOverviewItem {
     pub(crate) id: String,
     pub(crate) phase: Phase,
@@ -595,86 +576,9 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
     pub(crate) status: PhaseStepStatus,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct NominationVoteInput {
-    pub(crate) nominator_id: String,
-    pub(crate) nominee_id: String,
-    pub(crate) voter_ids: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct NominationInput {
-    pub(crate) nominator_id: String,
-    pub(crate) nominee_id: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ExecutionDecisionInput {
-    pub(crate) execute: bool,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct DayState {
-    pub(crate) nominations: Vec<NominationRecord>,
-    pub(crate) eligible_nominator_ids: Vec<String>,
-    pub(crate) eligible_nominee_ids: Vec<String>,
-    pub(crate) execution_vote_threshold: usize,
-    pub(crate) highest_vote_count: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) execution_candidate: Option<ExecutionCandidate>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) confirmed_execution: Option<ConfirmedExecution>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) active_nomination: Option<ActiveNomination>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ActiveNomination {
-    pub(crate) event_id: String,
-    pub(crate) step_id: String,
-    pub(crate) nominator_id: String,
-    pub(crate) nominee_id: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct NominationRecord {
-    pub(crate) step_id: String,
-    pub(crate) nominator_id: String,
-    pub(crate) nominee_id: String,
-    pub(crate) voter_ids: Vec<String>,
-    pub(crate) vote_count: usize,
-    pub(crate) ghost_vote_spent_player_ids: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ExecutionCandidate {
-    pub(crate) nominee_id: String,
-    pub(crate) vote_count: usize,
-}
-
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ExecutionStanding {
-    pub(crate) execution_vote_threshold: usize,
-    pub(crate) highest_vote_count: usize,
-    pub(crate) execution_candidate: Option<ExecutionCandidate>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ConfirmedExecution {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) player_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -708,7 +612,6 @@ pub(crate) struct AbilityInstance {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 #[serde(transparent)]
 pub(crate) struct AbilityInstanceId(String);
-
 impl AbilityInstanceId {
     pub(crate) fn new(source_event_id: &str, player_id: &str) -> Self {
         Self(format!("{source_event_id}:{player_id}"))
@@ -749,16 +652,6 @@ pub(crate) enum AbilityOrigin {
     },
 }
 
-/// A rule-layer view of an ability owner. `identity` always remains the
-/// canonical player identity; `ability` and `origin` describe what is acting.
-#[derive(Debug, Clone)]
-pub(crate) struct AbilityActor<'a> {
-    pub(crate) identity: &'a Player,
-    pub(crate) ability: AbilityUseRef,
-    pub(crate) origin: AbilityOrigin,
-    pub(crate) source_event_id: String,
-}
-
 /// A healthy Philosopher acquisition projected from the confirmed event
 /// stream. The grant does not alter the owning player's canonical identity.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -794,55 +687,6 @@ pub(crate) struct PlayerIdentityTransition {
     pub(crate) player_id: String,
     pub(crate) before: IdentityState,
     pub(crate) after: IdentityState,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct PlayerStateSnapshot {
-    pub(crate) actual_character: String,
-    pub(crate) shown_character: String,
-    pub(crate) alignment: Alignment,
-    pub(crate) alive: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub(crate) enum PlayerTransition {
-    CharacterChange {
-        player_id: String,
-        before: PlayerStateSnapshot,
-        after: PlayerStateSnapshot,
-    },
-    Resurrection {
-        player_id: String,
-        before: PlayerStateSnapshot,
-        after: PlayerStateSnapshot,
-    },
-}
-
-impl PlayerTransition {
-    pub(crate) fn player_id(&self) -> &str {
-        match self {
-            Self::CharacterChange { player_id, .. } | Self::Resurrection { player_id, .. } => {
-                player_id
-            }
-        }
-    }
-    pub(crate) fn before(&self) -> &PlayerStateSnapshot {
-        match self {
-            Self::CharacterChange { before, .. } | Self::Resurrection { before, .. } => before,
-        }
-    }
-    pub(crate) fn after(&self) -> &PlayerStateSnapshot {
-        match self {
-            Self::CharacterChange { after, .. } | Self::Resurrection { after, .. } => after,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -888,7 +732,6 @@ pub(crate) enum CharacterKind {
     Minion,
     Demon,
 }
-
 impl CharacterKind {
     pub(crate) fn alignment(self) -> Alignment {
         match self {
@@ -910,7 +753,6 @@ pub(crate) enum PhaseStepStatus {
     ManualComplete,
     NotApplicable,
 }
-
 impl PhaseStepStatus {
     pub(crate) fn is_done(self) -> bool {
         matches!(
@@ -921,4 +763,8 @@ impl PhaseStepStatus {
                 | PhaseStepStatus::NotApplicable
         )
     }
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }

@@ -7,7 +7,8 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 ## Execution status
 
 - Task 0: complete; baseline captured and read-only test-contract review incorporated.
-- Tasks 1–7: not started. No Production rule changes yet.
+- Task 1: Rust/WASM separation implemented; Production compatibility verified.
+- Tasks 2–7: not started. No new SnV Production handlers yet.
 - Separation checkpoint: not reached.
 
 ## Compatibility boundary
@@ -129,4 +130,7 @@ Do not silently broaden the implementation or send first-night exceptions out of
 - Existing definition repository and session storage both roundtripped the captured envelopes through IndexedDB.
 - Existing Rust #206 contract suite: 28 passed, 0 failed.
 - Read-only `test_contract_reviewer`: no blocker or Plan decision required; explicit coverage additions incorporated as I02/I06/I07/F04/W02/R04.
-- Production implementation and separation have not started.
+- Task 1: independent custom domain tests 73 passed; fixture-feature tests 77 passed (before three additional compatibility tests); custom WASM adapter tests 6 passed.
+- Fresh independent Production WASM matches all five replay prefixes, four proposals, and all 47 catalog entries in order.
+- Official Rust/WASM test targets compile after removal of custom dispatch and exports. Full official regression remains assigned to the Task 2 checkpoint.
+- An automatic approval review rejected a bundled unused-code cleanup/build command. That cleanup was not executed; the source-preserving WASM build was separately approved and passed. Unused-code warnings remain for review.

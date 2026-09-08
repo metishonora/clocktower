@@ -4,20 +4,18 @@ use crate::{
     contracts::{
         FirstNightActionRef, FirstNightOrderPlan, GameEvent, GameEventKind, PhaseStepEventPayload,
     },
-    custom::{
-        first_night::{
-            advance_progress, initial_progress, ActionContext, ActionEventDraft, ActionHandler,
-            ActionRegistry, ActionSpec, ActivationContext, ActivationDecision, ActivationRule,
-            ActiveAbilityInstance, FirstNightRuleService, RegisteredAction,
-        },
-        state::{ActionOccurrence, ActionOccurrenceIdentity, CustomGameFacts},
-    },
     error::{CoreError, ErrorKind},
+    first_night::{
+        advance_progress, initial_progress, ActionContext, ActionEventDraft, ActionHandler,
+        ActionRegistry, ActionSpec, ActivationContext, ActivationDecision, ActivationRule,
+        ActiveAbilityInstance, FirstNightRuleService, RegisteredAction,
+    },
+    input::required_none,
     model::{
         AbilityInstanceId, AbilityOrigin, AbilityUseRef, Phase, PhaseStep, PhaseStepSupport,
         RequiredInputKind, StepInput, StepType,
     },
-    phase::required_none,
+    state::{ActionOccurrence, ActionOccurrenceIdentity, CustomGameFacts},
 };
 
 #[derive(Clone)]
@@ -145,7 +143,7 @@ impl ActionHandler for FixtureHandler {
             return Err(ErrorKind::InvalidStepInput.into_error());
         }
         Ok(ActionEventDraft::Custom(
-            crate::custom::event::CustomActionEventDraft {
+            crate::event::CustomActionEventDraft {
                 step_id: occurrence.step_id()?,
                 action_ref: self.action_ref.clone(),
                 ability_use: occurrence
@@ -164,7 +162,7 @@ impl ActionHandler for FixtureHandler {
         _context: &ActionContext<'_>,
         _occurrence: &ActionOccurrence,
         draft: &ActionEventDraft,
-    ) -> Result<crate::custom::event::CustomFactChanges, CoreError> {
+    ) -> Result<crate::event::CustomFactChanges, CoreError> {
         let ActionEventDraft::Custom(custom) = draft else {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         };
@@ -176,7 +174,7 @@ impl ActionHandler for FixtureHandler {
         {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
-        Ok(crate::custom::event::CustomFactChanges::default())
+        Ok(crate::event::CustomFactChanges::default())
     }
 }
 
@@ -256,7 +254,7 @@ fn character_event(
     context: &ActionContext<'_>,
     occurrence: &ActionOccurrence,
     id: &str,
-) -> crate::custom::first_night::ValidatedActionEvent {
+) -> crate::first_night::ValidatedActionEvent {
     let draft = registry
         .propose(&occurrence.action_ref, context, occurrence, &None)
         .expect("fixture occurrence should produce a draft");
@@ -281,7 +279,7 @@ fn system_event(
     context: &ActionContext<'_>,
     action_ref: FirstNightActionRef,
     id: &str,
-) -> crate::custom::first_night::ValidatedActionEvent {
+) -> crate::first_night::ValidatedActionEvent {
     let occurrence = ActionOccurrence::system(action_ref.clone()).unwrap();
     let draft = registry
         .propose(&action_ref, context, &occurrence, &None)
@@ -311,7 +309,7 @@ fn system_event(
 
 fn registry(actions: &[FirstNightActionRef]) -> ActionRegistry {
     let mut registry =
-        crate::custom::first_night::system_action_registry().expect("system registry should build");
+        crate::first_night::system_action_registry().expect("system registry should build");
     for action_ref in actions {
         registry
             .register(registration(action_ref.clone()))
@@ -1271,7 +1269,7 @@ fn character_occurrence_step_ids_encode_actor_and_instance_lengths() {
 fn target_instance_occurrence(
     action_ref: &FirstNightActionRef,
     instance: &ActiveAbilityInstance,
-) -> crate::custom::state::ActionOccurrenceIdentity {
+) -> crate::state::ActionOccurrenceIdentity {
     ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())
         .unwrap()
         .identity()

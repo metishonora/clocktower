@@ -496,7 +496,6 @@ fn replay_context(events: &[GameEvent]) -> Result<BmrReplayContext, CoreError> {
             can_skip: step.can_skip,
             support: step.support,
             information_prompt: step.information_prompt,
-            action_ref: step.action_ref,
         })
         .collect();
     Ok(BmrReplayContext {
@@ -728,7 +727,6 @@ fn append_character_steps(
             support: PhaseStepSupport::Manual,
             information_prompt: None,
             pre_action_reveal: None,
-            action_ref: None,
         });
     }
 }

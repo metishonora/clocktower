@@ -2,19 +2,19 @@ use std::collections::HashMap;
 
 use crate::{
     contracts::{FirstNightActionRef, FirstNightOrderPlan, GameEvent, GameEventKind},
-    custom::event::{CustomActionEventDraft, CustomFactChanges},
-    custom::first_night::{
+    error::{CoreError, ErrorKind},
+    event::{CustomActionEventDraft, CustomFactChanges},
+    first_night::{
         project_pending_steps, system_action_registry, ActionContext, ActionEventDraft,
         ActionHandler, ActionRegistry, ActionSpec, ActiveAbilityInstance, FirstNightRuleService,
         NightScheduler, RegisteredAction,
     },
-    custom::state::{ActionOccurrence, FirstNightProgress},
-    error::{CoreError, ErrorKind},
+    input::required_none,
     model::{
         AbilityInstanceId, AbilityOrigin, AbilityUseRef, Phase, PhaseStep, PhaseStepSupport,
         StepInput, StepType,
     },
-    phase::required_none,
+    state::{ActionOccurrence, FirstNightProgress},
 };
 
 fn action(character_id: &str, action_id: &str) -> FirstNightActionRef {
@@ -412,13 +412,9 @@ fn proposal_replay_validation_and_reducer_share_action_identity_and_events_alone
         initial, unchanged,
         "handler invocation must not mutate replay state"
     );
-    let reduced = NightScheduler::new(
-        &plan,
-        &registry,
-        &crate::custom::first_night::NoActionActivation,
-    )
-    .advance(&initial, &context, &context, &validated)
-    .unwrap();
+    let reduced = NightScheduler::new(&plan, &registry, &crate::first_night::NoActionActivation)
+        .advance(&initial, &context, &context, &validated)
+        .unwrap();
     assert_eq!(
         initial, unchanged,
         "reducer returns new replay-derived state"

@@ -8,11 +8,9 @@
 
 use crate::{
     contracts::FirstNightActionRef,
-    custom::{
-        first_night::ValidatedActionEvent,
-        state::{ActionOccurrence, CustomGameFacts},
-    },
     error::{CoreError, ErrorKind},
+    first_night::ValidatedActionEvent,
+    state::{ActionOccurrence, CustomGameFacts},
 };
 
 /// How a newly owned occurrence is admitted to the first-night progress model.

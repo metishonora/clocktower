@@ -225,7 +225,7 @@ impl CustomActionEventDraft {
 // `ValidatedCustomEvent` is owned by the registry module.  Keeping only this re-export here lets
 // reducer/tests continue to use the event namespace while the private constructor remains outside
 // all action-handler modules.  A wire value can be shaped here, but it cannot become trusted here.
-pub(crate) use crate::custom::first_night::ValidatedCustomEvent;
+pub(crate) use crate::first_night::ValidatedCustomEvent;
 
 /// Check invariants that are intrinsic to the custom envelope itself.  This intentionally returns
 /// no trusted event value: preceding-state, current-occurrence, membership, and action-specific

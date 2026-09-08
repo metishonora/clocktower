@@ -4,18 +4,16 @@ use crate::{
         ActiveImpairment, CustomActionConfirmedPayload, CustomActionResult, FirstNightActionRef,
         GameEvent, GameEventKind, ImpairmentExpiry, ImpairmentKind, SetupPlayerInput,
     },
-    custom::{
-        event::{AbilityGrantChange, CustomFactChanges, PlayerLifeChange, ValidatedCustomEvent},
-        first_night::FirstNightRuleService,
-        reducer::{current_ability_instance, recorded_ability_instance, reduce_custom_facts},
-        rules::CustomRuleService,
-        state::{AbilityProvenance, CustomGameFacts},
-    },
+    event::{AbilityGrantChange, CustomFactChanges, PlayerLifeChange, ValidatedCustomEvent},
+    first_night::FirstNightRuleService,
     model::{
         AbilityInstanceId, AbilityOrigin, AbilityUseRef, Alignment, IdentityState, Phase, Player,
         PlayerIdentityTransition,
     },
+    reducer::{current_ability_instance, recorded_ability_instance, reduce_custom_facts},
+    rules::CustomRuleService,
     setup::player_from_setup_input_for_custom,
+    state::{AbilityProvenance, CustomGameFacts},
 };
 
 fn context(character_ids: &[&str]) -> ResolvedScriptContext {

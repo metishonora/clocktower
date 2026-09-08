@@ -32,24 +32,13 @@ use crate::{
     phase::validate_required_input,
     replay::{replay_rule_state, trouble_brewing_replay_context, TbReplayContext},
     setup::{
-        custom_setup_distribution, normalized_setup_player_for_custom,
-        normalized_setup_player_for_script, player_from_setup_input_for_custom,
-        player_from_setup_input_for_script, validate_new_setup_distribution,
-        validate_setup_inputs_for_custom, validate_setup_inputs_for_script,
+        normalized_setup_player_for_script, player_from_setup_input_for_script,
+        validate_new_setup_distribution, validate_setup_inputs_for_script,
     },
 };
 use serde_json::json;
 
 pub(crate) fn propose(game_file: GameFile, command: Command) -> Result<Proposal, CoreError> {
-    if matches!(&game_file.script, ScriptReference::Custom { .. }) {
-        if command
-            .expected_event_count()
-            .is_some_and(|expected| expected != game_file.game.events.len())
-        {
-            return Err(ErrorKind::StaleCommand.into_error());
-        }
-        return crate::custom::propose(&game_file, command);
-    }
     let rules = crate::characters::rules(game_file.official_script_id()?);
     rules.validate_command(&command)?;
     if command
@@ -383,34 +372,6 @@ pub(crate) fn propose_create_game(
             validate_new_setup_distribution(
                 &derived_players,
                 |character| crate::characters::rules(*script_id).character_kind(character),
-                expected,
-            )?;
-            players
-        }
-        ScriptReference::Custom { definition } => {
-            if setup_choice_id.is_some() {
-                return Err(ErrorKind::InvalidSetupChoice.into_error());
-            }
-            let context = crate::characters::resolve_custom_script(definition)?;
-            crate::custom::first_night::plan_for_definition(definition)?;
-            validate_setup_inputs_for_custom(&context, &payload.players)?;
-            let players = payload
-                .players
-                .iter()
-                .map(|player| normalized_setup_player_for_custom(&context, player))
-                .collect::<Result<Vec<_>, _>>()?;
-            let derived_players = players
-                .iter()
-                .map(|player| player_from_setup_input_for_custom(&context, player))
-                .collect::<Result<Vec<_>, _>>()?;
-            let actual_characters = derived_players
-                .iter()
-                .map(|player| player.actual_character.clone())
-                .collect::<Vec<_>>();
-            let expected = custom_setup_distribution(&context, players.len(), &actual_characters)?;
-            validate_new_setup_distribution(
-                &derived_players,
-                |character| context.character_kind(character),
                 expected,
             )?;
             players

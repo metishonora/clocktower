@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use serde_json::{json, Value};
 
 use crate::{
-    characters::{custom_script_catalog, resolve_custom_script, rules},
-    contracts::{CustomScriptDefinition, ScriptId},
+    characters::{custom_script_catalog, resolve_custom_script},
+    contracts::CustomScriptDefinition,
     model::CharacterKind,
     replay_json,
 };
@@ -59,13 +59,19 @@ fn custom_registry_exhaustively_projects_each_tb_and_snv_id_to_one_canonical_kin
 
     let mut kind_counts = [0; 4];
     for entry in &catalog {
-        let official_kinds = [ScriptId::TroubleBrewing, ScriptId::SectsAndViolets]
-            .into_iter()
-            .filter_map(|script_id| rules(script_id).character_kind(entry.id))
-            .collect::<Vec<_>>();
-        assert!(!official_kinds.is_empty(), "{}", entry.id);
-        assert!(
-            official_kinds.iter().all(|kind| *kind == entry.kind),
+        let baseline: Value = serde_json::from_str(include_str!(
+            "../../../../fixtures/acceptance/custom-first-night/compatibility/catalog.json"
+        ))
+        .unwrap();
+        let expected = baseline
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["id"] == entry.id)
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(entry.kind).unwrap(),
+            expected["kind"],
             "{}",
             entry.id
         );

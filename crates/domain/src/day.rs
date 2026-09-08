@@ -175,7 +175,6 @@ pub(crate) fn day_steps(
             support: crate::model::PhaseStepSupport::Automated,
             information_prompt: None,
             pre_action_reveal: None,
-            action_ref: None,
         });
     }
     steps.push(phase_transition_step(
@@ -216,7 +215,6 @@ fn witch_death_step(nomination_step_id: &str, nominator_id: String) -> PhaseStep
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     }
 }
 
@@ -253,7 +251,6 @@ pub(crate) fn nomination_step(prefix: &str, nomination_number: usize) -> PhaseSt
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     }
 }
 
@@ -310,7 +307,6 @@ pub(crate) fn nomination_vote_step(nomination_step_id: &str) -> PhaseStep {
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     }
 }
 
@@ -347,7 +343,6 @@ fn virgin_death_step(nomination_step_id: &str, player_id: String) -> PhaseStep {
         support: crate::model::PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     }
 }
 

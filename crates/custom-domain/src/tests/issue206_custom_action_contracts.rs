@@ -3,22 +3,20 @@ use crate::{
     contracts::{
         CustomActionResult, FirstNightActionRef, GameEvent, GameEventKind, SetupPlayerInput,
     },
-    custom::{
-        event::ValidatedCustomEvent,
-        first_night::{
-            fixture_action_registry, ActionContext, ActionEventDraft, ActionHandler,
-            ActionRegistry, ActionSpec, ActiveAbilityInstance, FirstNightRuleService,
-            RegisteredAction, SystemActionEventDraft,
-        },
-        rules::CustomRuleService,
-        state::{ActionOccurrence, CustomGameFacts},
-    },
     error::CoreError,
+    event::ValidatedCustomEvent,
+    first_night::{
+        fixture_action_registry, ActionContext, ActionEventDraft, ActionHandler, ActionRegistry,
+        ActionSpec, ActiveAbilityInstance, FirstNightRuleService, RegisteredAction,
+        SystemActionEventDraft,
+    },
     model::{
         AbilityInstanceId, AbilityUseRef, InformationResult, Phase, PhaseStep, PhaseStepSupport,
         RequiredInputKind, StepInput, StepInputFields,
     },
+    rules::CustomRuleService,
     setup::player_from_setup_input_for_custom,
+    state::{ActionOccurrence, CustomGameFacts},
 };
 
 fn context(character_ids: &[&str]) -> ResolvedScriptContext {
@@ -80,10 +78,8 @@ fn custom_event(draft: &ActionEventDraft, id: &str) -> GameEvent {
     }
 }
 
-fn validated_custom(
-    event: &crate::custom::first_night::ValidatedActionEvent,
-) -> &ValidatedCustomEvent {
-    let crate::custom::first_night::ValidatedActionEvent::Custom(event) = event else {
+fn validated_custom(event: &crate::first_night::ValidatedActionEvent) -> &ValidatedCustomEvent {
+    let crate::first_night::ValidatedActionEvent::Custom(event) = event else {
         unreachable!("fixture event should validate as custom")
     };
     event
@@ -274,8 +270,8 @@ impl ActionHandler for InputMismatchHandler {
         _context: &ActionContext<'_>,
         _occurrence: &ActionOccurrence,
         _draft: &ActionEventDraft,
-    ) -> Result<crate::custom::event::CustomFactChanges, CoreError> {
-        Ok(crate::custom::event::CustomFactChanges::default())
+    ) -> Result<crate::event::CustomFactChanges, CoreError> {
+        Ok(crate::event::CustomFactChanges::default())
     }
 }
 
@@ -387,7 +383,7 @@ fn feature_fixture_typed_grant_result_becomes_private_fact_changes_and_reduces()
         ability_use(&acting_player)
     );
 
-    let reduced = crate::custom::reducer::reduce_custom_facts(&context, &facts, custom)
+    let reduced = crate::reducer::reduce_custom_facts(&context, &facts, custom)
         .expect("validated fixture grant should reduce to facts");
     assert_eq!(reduced.players[0].actual_character, "philosopher");
     assert_eq!(reduced.ability_grants.len(), 1);

@@ -1,16 +1,16 @@
 use crate::{
     contracts::{FirstNightActionRef, SystemFirstNightActionId},
-    custom::state::ActionOccurrence,
     error::{CoreError, ErrorKind},
+    input::{phase_transition_step, required_characters, required_none, simple_step},
     model::{Phase, PhaseStep, PhaseStepSupport, RequiredInputKind, StepInput, StepType},
-    phase::{phase_transition_step, required_characters, required_none, simple_step},
+    state::ActionOccurrence,
 };
 
 use super::{
     ActionContext, ActionEventDraft, ActionHandler, ActionSpec, RegisteredAction,
     SystemActionEventDraft,
 };
-use crate::custom::event::CustomFactChanges;
+use crate::event::CustomFactChanges;
 
 struct SystemHandler {
     action_ref: FirstNightActionRef,
@@ -145,9 +145,9 @@ fn validate_input(
         SystemFirstNightActionId::Dusk
         | SystemFirstNightActionId::MinionInfo
         | SystemFirstNightActionId::Dawn
-        | SystemFirstNightActionId::Unknown => crate::phase::required_none(),
+        | SystemFirstNightActionId::Unknown => crate::input::required_none(),
     };
-    crate::phase::validate_required_input(&required, input, &[])
+    crate::input::validate_required_input(&required, input, &[])
 }
 
 pub(super) fn registrations() -> Vec<RegisteredAction> {

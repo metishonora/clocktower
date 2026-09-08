@@ -7,26 +7,26 @@
 
 use crate::{
     contracts::{CustomActionResult, FirstNightActionRef},
-    custom::state::ActionOccurrence,
     error::{CoreError, ErrorKind},
+    input::{required_none, validate_required_input},
     model::{
         Phase, PhaseStep, PhaseStepSupport, RequiredInput, RequiredInputKind, StepInput,
         StepInputFields, StepType,
     },
-    phase::{required_none, validate_required_input},
+    state::ActionOccurrence,
 };
 
 use super::{
     ActionContext, ActionEventDraft, ActionHandler, ActionSpec, ActiveAbilityInstance,
     RegisteredAction, ValidatedActionEvent,
 };
-use crate::custom::event::CustomFactChanges;
+use crate::event::CustomFactChanges;
 
 #[cfg(feature = "custom-runtime-fixtures")]
 use crate::{
     contracts::{ActiveImpairment, ImpairmentExpiry, ImpairmentKind},
+    input::required_characters,
     model::{AbilityUseRef, IdentityState, PlayerIdentityTransition},
-    phase::required_characters,
 };
 
 const FIXTURE_SOURCE_EVENT_ID: &str = "fixture-proposal";
@@ -185,7 +185,7 @@ impl ActionHandler for FixtureHandler {
             .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
         let result = propose_result(&self.action_ref, context, &ability_use, input)?;
         Ok(ActionEventDraft::Custom(
-            crate::custom::event::CustomActionEventDraft {
+            crate::event::CustomActionEventDraft {
                 step_id: occurrence.step_id()?,
                 action_ref: self.action_ref.clone(),
                 ability_use,
@@ -379,7 +379,7 @@ fn propose_result(
 fn validate_result(
     action_ref: &FirstNightActionRef,
     context: &ActionContext<'_>,
-    facts: &crate::custom::state::CustomGameFacts,
+    facts: &crate::state::CustomGameFacts,
     expected_ability: &crate::model::AbilityUseRef,
     input: &StepInput,
     result: &CustomActionResult,
@@ -396,7 +396,7 @@ fn validate_result(
         }
         context.rule_service.validate_character_membership(target)?;
         return Ok(CustomFactChanges::fixture_ability_grant(
-            crate::custom::event::AbilityGrantChange {
+            crate::event::AbilityGrantChange {
                 owner_player_id: expected_ability.owner_player_id.clone(),
                 character_id: target.to_string(),
                 source: expected_ability.clone(),
@@ -495,7 +495,7 @@ fn validate_result(
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
         return Ok(CustomFactChanges::fixture_life_change(
-            crate::custom::event::PlayerLifeChange {
+            crate::event::PlayerLifeChange {
                 player_id: player_id.clone(),
                 alive: false,
             },
@@ -623,7 +623,7 @@ fn one_player_input(input: &StepInput) -> Result<String, CoreError> {
 
 #[cfg(feature = "custom-runtime-fixtures")]
 fn ensure_player<'a>(
-    facts: &'a crate::custom::state::CustomGameFacts,
+    facts: &'a crate::state::CustomGameFacts,
     player_id: &str,
 ) -> Result<&'a crate::model::Player, CoreError> {
     facts
@@ -634,14 +634,12 @@ fn ensure_player<'a>(
 }
 
 #[cfg(feature = "custom-runtime-fixtures")]
-fn first_grant(
-    facts: &crate::custom::state::CustomGameFacts,
-) -> Option<&crate::model::AbilityGrant> {
+fn first_grant(facts: &crate::state::CustomGameFacts) -> Option<&crate::model::AbilityGrant> {
     facts.ability_grants.first()
 }
 
 #[cfg(feature = "custom-runtime-fixtures")]
-fn first_impairment(facts: &crate::custom::state::CustomGameFacts) -> Option<&ActiveImpairment> {
+fn first_impairment(facts: &crate::state::CustomGameFacts) -> Option<&ActiveImpairment> {
     facts.active_impairments.first()
 }
 

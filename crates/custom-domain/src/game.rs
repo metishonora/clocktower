@@ -5,9 +5,9 @@ use crate::{
         ReplayScriptIdentity, ReplayState, RuleState, ScriptReference,
     },
     error::{CoreError, ErrorKind},
+    input::validate_required_input,
     messages::{phase_step_event_summary, phase_step_preview},
     model::{Phase, PhaseOverviewItem, PhaseStep},
-    phase::validate_required_input,
     setup::{player_from_setup_input_for_custom, validate_setup_inputs_for_custom},
 };
 
@@ -57,19 +57,11 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             players: vec![],
             current_step: None,
             phase_overview: vec![],
-            setup_choice_id: None,
-            day_state: None,
+
             warnings: vec![],
             rule_state: RuleState::default(),
             game_end: None,
             pending_identity_reveals: vec![],
-            available_day_actions: vec![],
-            day_action_records: vec![],
-            madness_assignments: vec![],
-            pending_madness_execution: None,
-            pending_vigormortis_poison_choices: vec![],
-            pending_death_consequences: vec![],
-            pending_game_end: None,
         });
     }
     let components = replay_components(&game_file)?;
@@ -81,25 +73,17 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         players: components.state.facts.players.clone(),
         current_step: components.current_step,
         phase_overview: components.phase_overview,
-        setup_choice_id: None,
-        day_state: None,
+
         warnings: vec![],
         rule_state: rule_state(&components.state.facts),
         game_end: None,
         pending_identity_reveals: vec![],
-        available_day_actions: vec![],
-        day_action_records: vec![],
-        madness_assignments: vec![],
-        pending_madness_execution: None,
-        pending_vigormortis_poison_choices: vec![],
-        pending_death_consequences: vec![],
-        pending_game_end: None,
     })
 }
 
 pub(crate) fn propose(game_file: &GameFile, command: Command) -> Result<Proposal, CoreError> {
     match command {
-        Command::CreateGame { payload } => crate::proposal::propose_create_game(game_file, payload),
+        Command::CreateGame { payload } => crate::setup::propose_create_game(game_file, payload),
         Command::ConfirmStep { payload } => propose_step(game_file, payload),
         _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
