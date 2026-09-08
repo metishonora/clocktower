@@ -36,12 +36,12 @@ jobs:
         run: cargo test --workspace
       - name: Build custom Production WASM
         run: pnpm build:wasm:custom
+      - name: Test Issue #206 custom runtime fixture
+        run: pnpm test:custom-runtime
       - name: Test custom Production session and storage
         run: pnpm --dir web test:custom
       - name: Test web app
         run: pnpm --dir web test
-      - name: Test Issue #206 custom runtime fixture
-        run: pnpm test:custom-runtime
       - name: Test server lifecycle
         run: pnpm test:test-server
       - name: Install Chromium
