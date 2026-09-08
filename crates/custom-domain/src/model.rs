@@ -335,6 +335,10 @@ pub(crate) enum AbnormalAbilityOutcome {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AbnormalAbilityEffect {
+    PhilosopherAcquisition,
+    WitchCurse,
+    CerenovusMadness,
+    EvilTwinRelationship,
     SnakeCharmerSwap,
     WitchDeath,
     SweetheartDrunkenness,

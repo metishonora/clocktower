@@ -12,7 +12,8 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 - Task 3: common source, cause, typed facts, resolver input and scheduler contracts implemented and verified; ordering clarification approved.
 - Task 4: complete; Production Philosopher/Snake Charmer handlers, source-dependent impairment resolution and activation verified.
 - Task 5: implemented and verified; causal twin repairs and source-specific Witch/Cerenovus assignments.
-- Tasks 6–7: pending.
+- Task 6: implemented and verified; four information handlers, scoped registration, actual-truth Vortox policy and prefix-based Mathematician audit.
+- Task 7: pending.
 - Separation checkpoint: passed at `ca357fd`. Subsequent behavior changes stay inside custom ownership.
 
 ## Compatibility boundary
@@ -159,3 +160,9 @@ Other Task 3 verification so far: normal custom domain 79 + WASM 6 passed; fixtu
 - Task 4: custom domain 86, WASM 6, fixture-feature domain 90 and custom web 64 tests passed with fresh Production WASM. Reachable acquisition, failed acquisition/recovery, atomic acquired Snake Charmer swap, exact identity reveals and forged-result rejection are covered; bounded fact tests cover source loss and overlapping impairments. Unsupported-handler checks retain an unimplemented TB action.
 
 - Task 5: custom domain 90 + WASM 6, fixture-feature domain 90, fresh Production WASM and web 64 passed. An additional bounded impaired/dead-target Cerenovus test passed in the four-test assignment suite. Production tests cover opposed target validation, exact twin/instruction Reveals, causal repair and prefix Undo, forged cause rejection, target identity change and Day persistence. Bounded tests cover concurrent sources and source death independently.
+
+## Approved Vortox and registration clarification (2026-09-08)
+
+보르톡스의 거짓 여부는 Registration Judgment 적용 전의 실제 Character·진영·사실을 기준으로 판단한다. 오등록을 먼저 적용한 뒤 반전하여 실제 참인 정보를 허용하지 않는다. 예를 들어 선한 은둔자와 선한 예술가를 재봉사가 비교하면, 은둔자를 악으로 판정했더라도 보르톡스 아래에서는 «다르다»만 전달한다. 이는 2026-09-08 사용자가 승인한 앱의 고정 정책이며, 오등록과 보르톡스의 결합에 관한 유일한 공식 판정으로 표기하지 않는다.
+
+- Task 6: custom domain 104 + WASM 6, fixture-feature domain 90, fresh Production WASM and custom web 64 passed. Production tests cover every information shape under impairment/Vortox, same-night Clockmaker acquisition, registration without identity mutation, source-specific use, Mathematician prefix differences, real failed-Philosopher attribution and exact minimal Reveals. Bounded no-candidate coverage rejects an impossible Vortox Dreamer pair without adding characters.

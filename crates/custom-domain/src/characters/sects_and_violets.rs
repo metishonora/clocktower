@@ -348,6 +348,14 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
             RequiredInputKind::CharacterIds,
         ),
         ("snakeCharmer", "choosePlayer", RequiredInputKind::PlayerIds),
+        ("clockmaker", "learnSteps", RequiredInputKind::None),
+        ("dreamer", "learnCharacters", RequiredInputKind::PlayerIds),
+        (
+            "seamstress",
+            "compareAlignments",
+            RequiredInputKind::PlayerIds,
+        ),
+        ("mathematician", "learnCount", RequiredInputKind::None),
         ("evilTwin", "learnTwin", RequiredInputKind::PlayerIds),
         ("witch", "chooseCursedPlayer", RequiredInputKind::PlayerIds),
         (
@@ -419,7 +427,7 @@ impl SnvHandler {
                     .any(|e| e.event_id == cause.trigger_event_id));
         }
         Ok(current_ability_instance(facts, source)
-            && !(self.character() == "philosopher"
+            && !(matches!(self.character(), "philosopher" | "seamstress")
                 && facts
                     .ability_uses
                     .iter()
@@ -444,7 +452,7 @@ impl SnvHandler {
                 false,
             );
             input.optional = true;
-        } else {
+        } else if !matches!(self.character(), "clockmaker" | "mathematician") {
             input.kind = RequiredInputKind::PlayerIds;
             input.target = Some(InputTarget::Player);
             input.min_selections = Some(1);
@@ -469,6 +477,24 @@ impl SnvHandler {
             input.allowed_character_ids =
                 Some(custom_ability_acquisition_character_ids(definition));
         }
+        if matches!(self.character(), "dreamer" | "seamstress") {
+            input.allowed_player_ids = Some(
+                facts
+                    .players
+                    .iter()
+                    .filter(|p| Some(p.id.as_str()) != occurrence.actor_player_id())
+                    .map(|p| p.id.clone())
+                    .collect(),
+            );
+            let count = if self.character() == "seamstress" {
+                2
+            } else {
+                1
+            };
+            input.min_selections = Some(count);
+            input.max_selections = Some(count);
+            input.optional = self.character() == "seamstress";
+        }
         let origin = occurrence
             .ability_use
             .as_ref()
@@ -491,7 +517,11 @@ impl SnvHandler {
             required_input: input,
             can_skip: false,
             support: PhaseStepSupport::Automated,
-            information_prompt: None,
+            information_prompt: if self.is_information() {
+                Some(self.information_prompt(context, occurrence)?)
+            } else {
+                None
+            },
             pre_action_reveal: None,
             action_ref: Some(self.action_ref.clone()),
         })
@@ -505,6 +535,9 @@ impl SnvHandler {
     ) -> Result<(CustomActionResult, CustomFactChanges), CoreError> {
         if event_id.trim().is_empty() || !self.eligible(context, occurrence)? {
             return Err(provenance_error());
+        }
+        if self.is_information() {
+            return self.resolve_information(context, occurrence, input, event_id);
         }
         if input.delivered_result.is_some() || !input.registration_judgments.is_empty() {
             return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
@@ -562,6 +595,7 @@ impl SnvHandler {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
                         changes.audit.push(MalfunctionEvidence {
+                            cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
                             subject_player_id: actor.id.clone(),
@@ -646,6 +680,7 @@ impl SnvHandler {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
                         changes.audit.push(MalfunctionEvidence {
+                            cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
                             subject_player_id: actor.id.clone(),
@@ -823,7 +858,7 @@ impl ActionHandler for SnvHandler {
         &self.action_ref
     }
     fn permits_defer(&self) -> bool {
-        self.character() == "philosopher"
+        matches!(self.character(), "philosopher" | "seamstress")
     }
     fn project(
         &self,
@@ -936,4 +971,725 @@ impl ActionHandler for SnvHandler {
         }
         Ok(changes)
     }
+}
+
+use crate::information::equivalent;
+use crate::model::{
+    Alignment, ConfirmedInformation, DeliveryContext, DeliveryReason, InformationActor,
+    InformationDeliveryMode, InformationPrompt, InformationResult, NumberInformationChoice,
+    RegistrationJudgment, RegistrationValue, TargetInformationCheck, TargetInformationChoice,
+};
+
+struct InformationOptions {
+    actual: Vec<InformationResult>,
+    allowed: Vec<InformationResult>,
+    reasons: Vec<DeliveryReason>,
+    causes: Vec<AbilityUseRef>,
+}
+fn good_kind(kind: Option<CharacterKind>) -> bool {
+    matches!(
+        kind,
+        Some(CharacterKind::Townsfolk | CharacterKind::Outsider)
+    )
+}
+fn registration_source(facts: &CustomGameFacts, player_id: &str) -> Option<AbilityUseRef> {
+    if impaired(facts, player_id) {
+        return None;
+    }
+    // Both native misregistration abilities explicitly continue while dead.
+    facts
+        .ability_provenance
+        .iter()
+        .map(|p| p.ability_use.clone())
+        .find(|source| {
+            source.owner_player_id == player_id
+                && matches!(source.character_id.as_str(), "spy" | "recluse")
+                && current_ability_instance(facts, source)
+        })
+}
+impl SnvHandler {
+    fn is_information(&self) -> bool {
+        matches!(
+            self.character(),
+            "clockmaker" | "dreamer" | "seamstress" | "mathematician"
+        )
+    }
+    fn information_targets(
+        &self,
+        facts: &CustomGameFacts,
+        occurrence: &ActionOccurrence,
+        input: &StepInput,
+    ) -> Result<Vec<String>, CoreError> {
+        let actor = occurrence.actor_player_id().ok_or_else(provenance_error)?;
+        let ids = match self.character() {
+            "dreamer" => crate::information::targets(input, 1, actor)?,
+            "seamstress" => crate::information::targets(input, 2, actor)?,
+            _ => {
+                if input.is_some() {
+                    return Err(invalid());
+                }
+                vec![]
+            }
+        };
+        if ids.iter().any(|id| facts.player(id).is_none()) {
+            return Err(invalid());
+        }
+        Ok(ids)
+    }
+    fn truth(
+        &self,
+        definition: &ResolvedScriptContext,
+        facts: &CustomGameFacts,
+        actor: &str,
+        targets: &[String],
+        judgments: &[RegistrationJudgment],
+    ) -> Result<Vec<InformationResult>, CoreError> {
+        let mut kinds = facts
+            .players
+            .iter()
+            .map(|p| definition.character_kind(&p.actual_character))
+            .collect::<Vec<_>>();
+        let mut alignments = facts
+            .players
+            .iter()
+            .map(|p| p.alignment)
+            .collect::<Vec<_>>();
+        let mut characters = facts
+            .players
+            .iter()
+            .map(|p| p.actual_character.clone())
+            .collect::<Vec<_>>();
+        for (i, j) in judgments.iter().enumerate() {
+            if judgments[..i]
+                .iter()
+                .any(|previous| previous.player_id == j.player_id)
+            {
+                return Err(invalid());
+            }
+            let source = registration_source(facts, &j.player_id).ok_or_else(invalid)?;
+            if !super::trouble_brewing::registration_allowed(&source.character_id, j, definition) {
+                return Err(invalid());
+            }
+            let index = facts
+                .players
+                .iter()
+                .position(|p| p.id == j.player_id)
+                .ok_or_else(invalid)?;
+            match self.character() {
+                "dreamer" => {
+                    if !targets.contains(&j.player_id) || j.character_id.is_none() {
+                        return Err(invalid());
+                    }
+                    characters[index] = j.character_id.clone().unwrap();
+                }
+                "seamstress" => {
+                    if !targets.contains(&j.player_id)
+                        || !matches!(
+                            j.registered_as,
+                            RegistrationValue::Good | RegistrationValue::Evil
+                        )
+                        || j.character_id.is_some()
+                    {
+                        return Err(invalid());
+                    }
+                    alignments[index] = if j.registered_as == RegistrationValue::Good {
+                        Alignment::Good
+                    } else {
+                        Alignment::Evil
+                    };
+                }
+                "clockmaker" => {
+                    if j.character_id.is_some() {
+                        return Err(invalid());
+                    }
+                    kinds[index] = Some(match j.registered_as {
+                        RegistrationValue::Townsfolk => CharacterKind::Townsfolk,
+                        RegistrationValue::Outsider => CharacterKind::Outsider,
+                        RegistrationValue::Minion => CharacterKind::Minion,
+                        RegistrationValue::Demon => CharacterKind::Demon,
+                        _ => return Err(invalid()),
+                    });
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        match self.character() {
+            "clockmaker" => {
+                let mut seats = (0..facts.players.len()).collect::<Vec<_>>();
+                seats.sort_by_key(|i| facts.players[*i].seat);
+                let n = seats.len();
+                let mut distance = None;
+                for (a, i) in seats
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, i)| kinds[**i] == Some(CharacterKind::Demon))
+                {
+                    for (b, j) in seats
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, j)| kinds[**j] == Some(CharacterKind::Minion))
+                    {
+                        if i != j {
+                            let gap = a.abs_diff(b);
+                            let value = gap.min(n - gap) as u64;
+                            distance = Some(distance.map_or(value, |old: u64| old.min(value)));
+                        }
+                    }
+                }
+                Ok(vec![InformationResult::Number {
+                    value: distance.unwrap_or(0),
+                }])
+            }
+            "dreamer" => {
+                let index = facts
+                    .players
+                    .iter()
+                    .position(|p| p.id == targets[0])
+                    .ok_or_else(invalid)?;
+                let actual = &characters[index];
+                let good = good_kind(definition.character_kind(actual));
+                Ok(definition
+                    .character_ids()
+                    .into_iter()
+                    .filter(|id| good_kind(definition.character_kind(id)) != good)
+                    .map(|id| InformationResult::CharacterPair {
+                        character_ids: if good {
+                            vec![actual.clone(), id.into()]
+                        } else {
+                            vec![id.into(), actual.clone()]
+                        },
+                    })
+                    .collect())
+            }
+            "seamstress" => {
+                let values = targets
+                    .iter()
+                    .map(|id| {
+                        facts
+                            .players
+                            .iter()
+                            .position(|p| &p.id == id)
+                            .map(|i| alignments[i])
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or_else(invalid)?;
+                Ok(vec![InformationResult::Boolean {
+                    value: values[0] == values[1],
+                }])
+            }
+            "mathematician" => {
+                let subjects=facts.malfunction_audit.iter().filter(|e|!(e.subject_player_id==actor && matches!(&e.occurrence.action_ref,FirstNightActionRef::Character{character_id,..}if character_id=="mathematician"))).map(|e|e.subject_player_id.as_str()).collect::<std::collections::BTreeSet<_>>();
+                Ok(vec![InformationResult::Number {
+                    value: subjects.len() as u64,
+                }])
+            }
+            _ => Err(invalid()),
+        }
+    }
+    fn information_options(
+        &self,
+        definition: &ResolvedScriptContext,
+        facts: &CustomGameFacts,
+        occurrence: &ActionOccurrence,
+        targets: &[String],
+        judgments: &[RegistrationJudgment],
+    ) -> Result<InformationOptions, CoreError> {
+        let actor = occurrence.actor_player_id().ok_or_else(provenance_error)?;
+        let actual = self.truth(definition, facts, actor, targets, &[])?;
+        let judged = self.truth(definition, facts, actor, targets, judgments)?;
+        let mut reasons = vec![];
+        let mut causes = vec![];
+        for impairment in facts
+            .active_impairments
+            .iter()
+            .filter(|e| e.player_id == actor)
+        {
+            let reason = match impairment.kind {
+                ImpairmentKind::Drunk => DeliveryReason::Drunk,
+                ImpairmentKind::Poisoned => {
+                    let owner = facts
+                        .resolved_impairments
+                        .iter()
+                        .find(|e| e.impairment == *impairment)
+                        .map(|e| e.source_ability_use.owner_player_id.clone())
+                        .ok_or_else(provenance_error)?;
+                    DeliveryReason::Poisoned {
+                        poisoner_player_id: owner,
+                        poison_event_id: impairment.source_event_id.clone(),
+                    }
+                }
+            };
+            if !reasons.contains(&reason) {
+                reasons.push(reason);
+            }
+        }
+        causes.extend(impairment_causes(facts, actor));
+        for source in &facts.vortox_sources {
+            reasons.push(DeliveryReason::Vortox {
+                demon_player_id: source.owner_player_id.clone(),
+            });
+            if !causes.contains(source) {
+                causes.push(source.clone());
+            }
+        }
+        if !judgments.is_empty() {
+            reasons.push(DeliveryReason::RegistrationJudgment {
+                judgments: judgments.to_vec(),
+            });
+            for j in judgments {
+                let source = registration_source(facts, &j.player_id).ok_or_else(invalid)?;
+                if !causes.contains(&source) {
+                    causes.push(source);
+                }
+            }
+        }
+        let mut allowed = if impaired(facts, actor) || !facts.vortox_sources.is_empty() {
+            match self.character() {
+                "clockmaker" => (0..=(facts.players.len() / 2) as u64)
+                    .map(|value| InformationResult::Number { value })
+                    .collect(),
+                "mathematician" => (0..=facts.players.len() as u64)
+                    .map(|value| InformationResult::Number { value })
+                    .collect(),
+                "seamstress" => vec![
+                    InformationResult::Boolean { value: false },
+                    InformationResult::Boolean { value: true },
+                ],
+                "dreamer" => {
+                    let mut pairs = vec![];
+                    for good in definition
+                        .character_ids()
+                        .into_iter()
+                        .filter(|id| good_kind(definition.character_kind(id)))
+                    {
+                        for evil in definition
+                            .character_ids()
+                            .into_iter()
+                            .filter(|id| !good_kind(definition.character_kind(id)))
+                        {
+                            pairs.push(InformationResult::CharacterPair {
+                                character_ids: vec![good.into(), evil.into()],
+                            });
+                        }
+                    }
+                    pairs
+                }
+                _ => return Err(invalid()),
+            }
+        } else {
+            judged
+        };
+        // Approved policy: Vortox falsity is checked against actual facts before registration.
+        if !facts.vortox_sources.is_empty() {
+            allowed.retain(|candidate| !actual.iter().any(|truth| equivalent(candidate, truth)));
+        }
+        if actual.is_empty() || allowed.is_empty() {
+            return Err(ErrorKind::InvalidDeliveredInformation.into_error());
+        }
+        if self.character() == "dreamer" {
+            reasons.insert(0, DeliveryReason::AbilityChoice);
+        }
+        Ok(InformationOptions {
+            actual,
+            allowed,
+            reasons,
+            causes,
+        })
+    }
+    fn resolve_information(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &ActionInput,
+        event_id: &str,
+    ) -> Result<(CustomActionResult, CustomFactChanges), CoreError> {
+        if self.character() == "seamstress" && input.input.is_none() {
+            if input.delivered_result.is_some() || !input.registration_judgments.is_empty() {
+                return Err(invalid());
+            }
+            return Ok((
+                if occurrence.simulation_source.is_some() {
+                    CustomActionResult::Simulation {
+                        information: None,
+                        spent: false,
+                    }
+                } else {
+                    CustomActionResult::SeamstressDeferred
+                },
+                CustomFactChanges::default(),
+            ));
+        }
+        let facts = context.rule_service.facts().ok_or_else(provenance_error)?;
+        let definition = context
+            .rule_service
+            .definition()
+            .ok_or_else(provenance_error)?;
+        let targets = self.information_targets(facts, occurrence, &input.input)?;
+        let options = self.information_options(
+            definition,
+            facts,
+            occurrence,
+            &targets,
+            &input.registration_judgments,
+        )?;
+        let delivered = match &input.delivered_result {
+            Some(value) => options
+                .allowed
+                .iter()
+                .find(|candidate| equivalent(candidate, value))
+                .cloned()
+                .ok_or_else(|| ErrorKind::InvalidDeliveredInformation.into_error())?,
+            None if options.reasons.is_empty() && options.allowed.len() == 1 => {
+                options.allowed[0].clone()
+            }
+            None => return Err(ErrorKind::MissingDeliveredInformation.into_error()),
+        };
+        let actor = occurrence.actor_player_id().ok_or_else(provenance_error)?;
+        let mut changes = SnvFactChanges::default();
+        let spent = self.character() == "seamstress";
+        if spent {
+            if let Some(source) = &occurrence.ability_use {
+                changes.spent = Some(AbilityUseRecord {
+                    source_event_id: event_id.into(),
+                    ability_use: source.clone(),
+                });
+            }
+        }
+        if !options
+            .actual
+            .iter()
+            .any(|truth| equivalent(truth, &delivered))
+            && !options.causes.is_empty()
+        {
+            changes.audit.push(MalfunctionEvidence {
+                cause_details: options
+                    .reasons
+                    .iter()
+                    .filter(|r| !matches!(r, DeliveryReason::AbilityChoice))
+                    .cloned()
+                    .collect(),
+                event_id: event_id.into(),
+                occurrence: occurrence.clone(),
+                subject_player_id: actor.into(),
+                outcome: MalfunctionOutcome::IncorrectInformation {
+                    delivered_result: delivered.clone(),
+                },
+                causes: options.causes,
+            });
+        }
+        let information = ConfirmedInformation {
+            actor: Some(InformationActor {
+                player_id: actor.into(),
+                character_id: self.character().into(),
+            }),
+            target_player_ids: targets,
+            computed_result: options.actual.first().cloned(),
+            delivered_result: delivered,
+            delivery_context: if options.reasons.is_empty() {
+                DeliveryContext::Fixed
+            } else {
+                DeliveryContext::Discretionary {
+                    reasons: options.reasons,
+                }
+            },
+        };
+        let result = if occurrence.simulation_source.is_some() {
+            CustomActionResult::Simulation {
+                information: Some(information),
+                spent,
+            }
+        } else {
+            CustomActionResult::InformationDelivered { information, spent }
+        };
+        Ok((result, CustomFactChanges::resolved(vec![], vec![], changes)))
+    }
+    fn registration_variants(
+        &self,
+        definition: &ResolvedScriptContext,
+        facts: &CustomGameFacts,
+        targets: &[String],
+    ) -> Vec<Vec<RegistrationJudgment>> {
+        let mut variants = vec![vec![]];
+        for player in &facts.players {
+            let Some(source) = registration_source(facts, &player.id) else {
+                continue;
+            };
+            if self.character() == "mathematician"
+                || (self.character() != "clockmaker" && !targets.contains(&player.id))
+            {
+                continue;
+            }
+            let mut options = vec![];
+            let values = if source.character_id == "spy" {
+                vec![
+                    RegistrationValue::Good,
+                    RegistrationValue::Townsfolk,
+                    RegistrationValue::Outsider,
+                ]
+            } else {
+                vec![
+                    RegistrationValue::Evil,
+                    RegistrationValue::Minion,
+                    RegistrationValue::Demon,
+                ]
+            };
+            for value in values {
+                match self.character() {
+                    "seamstress"
+                        if matches!(value, RegistrationValue::Good | RegistrationValue::Evil) =>
+                    {
+                        options.push(RegistrationJudgment {
+                            player_id: player.id.clone(),
+                            registered_as: value,
+                            character_id: None,
+                        })
+                    }
+                    "clockmaker"
+                        if !matches!(value, RegistrationValue::Good | RegistrationValue::Evil) =>
+                    {
+                        options.push(RegistrationJudgment {
+                            player_id: player.id.clone(),
+                            registered_as: value,
+                            character_id: None,
+                        })
+                    }
+                    "dreamer" => {
+                        for id in definition.character_ids() {
+                            let j = RegistrationJudgment {
+                                player_id: player.id.clone(),
+                                registered_as: value,
+                                character_id: Some(id.into()),
+                            };
+                            if super::trouble_brewing::registration_allowed(
+                                &source.character_id,
+                                &j,
+                                definition,
+                            ) {
+                                options.push(j);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let previous = variants.clone();
+            for existing in previous {
+                for j in &options {
+                    let mut next = existing.clone();
+                    next.push(j.clone());
+                    variants.push(next);
+                }
+            }
+        }
+        variants
+    }
+    fn information_prompt(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<InformationPrompt, CoreError> {
+        let facts = context.rule_service.facts().ok_or_else(provenance_error)?;
+        let definition = context
+            .rule_service
+            .definition()
+            .ok_or_else(provenance_error)?;
+        let actor = occurrence.actor_player_id().ok_or_else(provenance_error)?;
+        let candidates = facts
+            .players
+            .iter()
+            .filter(|p| p.id != actor)
+            .map(|p| p.id.clone())
+            .collect::<Vec<_>>();
+        let target_sets = match self.character() {
+            "dreamer" => candidates.iter().map(|id| vec![id.clone()]).collect(),
+            "seamstress" => {
+                let mut pairs = vec![];
+                for (i, a) in candidates.iter().enumerate() {
+                    for b in &candidates[i + 1..] {
+                        pairs.push(vec![a.clone(), b.clone()]);
+                    }
+                }
+                pairs
+            }
+            _ => vec![vec![]],
+        };
+        let mut prompt = InformationPrompt {
+            computed_result: None,
+            delivery_mode: InformationDeliveryMode::Fixed,
+            active_reasons: vec![],
+            registration_candidate_player_ids: vec![],
+            number_choices: vec![],
+            number_constraint: None,
+            boolean_choices: vec![],
+            setup_info_registration_options: vec![],
+            target_checks: vec![],
+            mathematician_audit: None,
+        };
+        for targets in target_sets {
+            let mut choices = vec![];
+            let mut baseline = None;
+            for judgments in self.registration_variants(definition, facts, &targets) {
+                let options =
+                    self.information_options(definition, facts, occurrence, &targets, &judgments)?;
+                baseline = options.actual.first().cloned();
+                for reason in options.reasons {
+                    if !prompt.active_reasons.contains(&reason) {
+                        prompt.active_reasons.push(reason);
+                    }
+                }
+                for j in &judgments {
+                    if !prompt
+                        .registration_candidate_player_ids
+                        .contains(&j.player_id)
+                    {
+                        prompt
+                            .registration_candidate_player_ids
+                            .push(j.player_id.clone());
+                    }
+                }
+                for value in options.allowed {
+                    let is_computed = options.actual.iter().any(|truth| equivalent(&value, truth));
+                    if targets.is_empty() {
+                        if let InformationResult::Number { value } = value {
+                            prompt.number_choices.push(NumberInformationChoice {
+                                value,
+                                is_computed,
+                                registration_judgments: judgments.clone(),
+                            });
+                        }
+                    } else {
+                        choices.push(TargetInformationChoice {
+                            result: value,
+                            is_computed,
+                            registration_judgments: judgments.clone(),
+                        });
+                    }
+                }
+            }
+            if targets.is_empty() {
+                prompt.computed_result = baseline;
+            } else {
+                prompt.target_checks.push(TargetInformationCheck {
+                    target_player_ids: targets,
+                    computed_result: baseline.ok_or_else(invalid)?,
+                    choices,
+                });
+            }
+        }
+        if !prompt.active_reasons.is_empty() {
+            prompt.delivery_mode = InformationDeliveryMode::Selectable;
+        }
+        if self.character() == "mathematician" {
+            prompt.mathematician_audit = Some(mathematician_audit(facts, actor)?);
+        }
+        Ok(prompt)
+    }
+}
+
+fn mathematician_audit(
+    facts: &CustomGameFacts,
+    actor: &str,
+) -> Result<crate::model::MathematicianAudit, CoreError> {
+    use crate::model::{
+        AbnormalAbilityAuditRecord, AbnormalAbilityEffect, AbnormalAbilityEvidence,
+        AbnormalAbilityOutcome, MathematicianAudit,
+    };
+    let mut records: Vec<AbnormalAbilityAuditRecord> = vec![];
+    for evidence in &facts.malfunction_audit {
+        let FirstNightActionRef::Character { character_id, .. } = &evidence.occurrence.action_ref
+        else {
+            return Err(provenance_error());
+        };
+        if evidence.subject_player_id == actor && character_id == "mathematician" {
+            continue;
+        }
+        // A simulated action is attributed to the real failed Philosopher, never a fake grant.
+        let source = evidence
+            .occurrence
+            .ability_use
+            .as_ref()
+            .or_else(|| {
+                evidence
+                    .occurrence
+                    .simulation_source
+                    .as_ref()
+                    .map(|s| &s.source_ability_use)
+            })
+            .ok_or_else(provenance_error)?;
+        let event = facts
+            .confirmed_actions
+            .iter()
+            .find(|e| e.event_id == evidence.event_id)
+            .ok_or_else(provenance_error)?;
+        let info = match &event.result {
+            CustomActionResult::InformationDelivered { information, .. }
+            | CustomActionResult::Simulation {
+                information: Some(information),
+                ..
+            } => Some(information),
+            _ => None,
+        };
+        let outcome = match &evidence.outcome {
+            MalfunctionOutcome::IncorrectInformation { delivered_result } => {
+                AbnormalAbilityOutcome::IncorrectInformation {
+                    computed_result: info
+                        .and_then(|i| i.computed_result.clone())
+                        .ok_or_else(provenance_error)?,
+                    delivered_result: delivered_result.clone(),
+                }
+            }
+            MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
+                effect: match effect {
+                    FailedEffect::PhilosopherAcquisition => {
+                        AbnormalAbilityEffect::PhilosopherAcquisition
+                    }
+                    FailedEffect::SnakeCharmerSwap => AbnormalAbilityEffect::SnakeCharmerSwap,
+                    FailedEffect::WitchCurse => AbnormalAbilityEffect::WitchCurse,
+                    FailedEffect::CerenovusMadness => AbnormalAbilityEffect::CerenovusMadness,
+                    FailedEffect::EvilTwinRelationship => {
+                        AbnormalAbilityEffect::EvilTwinRelationship
+                    }
+                },
+            },
+        };
+        let causes = evidence.cause_details.clone();
+        let item = AbnormalAbilityEvidence {
+            resolution_event_id: evidence.event_id.clone(),
+            step_id: evidence.occurrence.step_id()?,
+            phase: Phase::FirstNight,
+            character_id: character_id.clone(),
+            ability_instance_id: source.ability_instance_id.clone(),
+            outcome,
+            causes,
+        };
+        if let Some(record) = records.iter_mut().find(|r| {
+            r.subject_player_id == evidence.subject_player_id
+                && r.ability_instance_id == source.ability_instance_id
+        }) {
+            record.evidence.push(item);
+        } else {
+            records.push(AbnormalAbilityAuditRecord {
+                subject_player_id: evidence.subject_player_id.clone(),
+                character_id: source.character_id.clone(),
+                ability_instance_id: source.ability_instance_id.clone(),
+                evidence: vec![item],
+            });
+        }
+    }
+    Ok(MathematicianAudit { records })
+}
+
+fn impairment_details(facts: &CustomGameFacts, actor: &str) -> Vec<DeliveryReason> {
+    facts
+        .resolved_impairments
+        .iter()
+        .filter(|e| e.impairment.player_id == actor)
+        .map(|e| match e.impairment.kind {
+            ImpairmentKind::Drunk => DeliveryReason::Drunk,
+            ImpairmentKind::Poisoned => DeliveryReason::Poisoned {
+                poisoner_player_id: e.source_ability_use.owner_player_id.clone(),
+                poison_event_id: e.impairment.source_event_id.clone(),
+            },
+        })
+        .collect()
 }

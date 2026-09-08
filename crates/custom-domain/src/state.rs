@@ -114,6 +114,7 @@ pub(crate) enum FailedEffect {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct MalfunctionEvidence {
+    pub(crate) cause_details: Vec<crate::model::DeliveryReason>,
     pub(crate) event_id: String,
     pub(crate) occurrence: ActionOccurrence,
     pub(crate) subject_player_id: String,

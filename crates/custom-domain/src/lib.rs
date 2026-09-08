@@ -6,6 +6,7 @@ mod event;
 mod first_night;
 mod game;
 mod identity;
+mod information;
 mod input;
 mod messages;
 mod model;

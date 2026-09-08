@@ -518,6 +518,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
   return value.kind === "effectFailure"
     && hasExactKeys(value, ["kind", "effect"])
     && [
+      "philosopherAcquisition", "witchCurse", "cerenovusMadness", "evilTwinRelationship",
       "snakeCharmerSwap", "witchDeath", "sweetheartDrunkenness", "demonDeath",
       "pitHagCharacterChange", "noDashiiPoison", "vigormortisOngoingEffect",
       "vortoxFalseInformation", "vortoxExecution",

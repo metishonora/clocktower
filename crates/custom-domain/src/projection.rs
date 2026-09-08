@@ -209,6 +209,34 @@ pub(crate) fn event_reveal(
         Some(crate::contracts::CustomActionResult::Information { value }) => {
             custom_information_reveal(action_ref, value)
         }
+        Some(crate::contracts::CustomActionResult::InformationDelivered {
+            information, ..
+        })
+        | Some(crate::contracts::CustomActionResult::Simulation {
+            information: Some(information),
+            ..
+        }) => {
+            if let crate::model::InformationResult::Boolean { value } =
+                &information.delivered_result
+            {
+                Some(RevealPayload::SeamstressInformation {
+                    kind: "seamstressInformation",
+                    target_players: information
+                        .target_player_ids
+                        .iter()
+                        .filter_map(|id| facts.player(id))
+                        .map(|p| crate::contracts::RevealPlayer {
+                            player_id: p.id.clone(),
+                            seat: p.seat,
+                            name: p.name.clone(),
+                        })
+                        .collect(),
+                    same_alignment: *value,
+                })
+            } else {
+                custom_information_reveal(action_ref, &information.delivered_result)
+            }
+        }
         Some(crate::contracts::CustomActionResult::EvilTwin {
             target_player_id, ..
         }) => {

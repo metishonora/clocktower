@@ -167,6 +167,10 @@ export type MathematicianAuditOutcome =
   | {
     kind: "effectFailure";
     effect:
+    | "philosopherAcquisition"
+    | "witchCurse"
+    | "cerenovusMadness"
+    | "evilTwinRelationship"
     | "snakeCharmerSwap"
     | "witchDeath"
     | "sweetheartDrunkenness"

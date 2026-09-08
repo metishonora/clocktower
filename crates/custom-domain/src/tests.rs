@@ -24,4 +24,8 @@ mod issue207_acquisition;
 mod issue207_assignments;
 mod issue207_impairments;
 #[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue207_information;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue207_mathematician;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue207_relationships;
