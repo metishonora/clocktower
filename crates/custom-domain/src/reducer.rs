@@ -43,7 +43,7 @@ pub(crate) fn reduce_custom_facts(
     let mut next = previous.clone();
     apply_changes(&mut next, event)?;
     apply_snv_facts(&mut next, event)?;
-    crate::characters::sects_and_violets::resolve_effects(context, &mut next)?;
+    crate::effects::resolve_effects(context, &mut next)?;
     Ok(next)
 }
 
@@ -564,7 +564,10 @@ fn apply_snv_facts(
     let occurrence = event.occurrence()?;
     if occurrence.simulation_source.is_some() && !event.fact_changes().is_empty() {
         // Simulated information may contribute audit, but cannot mutate a real ability or effect.
-        if changes.spent.is_some()
+        if event.fact_changes().poisoner_choice().is_some()
+            || event.fact_changes().master_choice().is_some()
+            || event.fact_changes().game_end().is_some()
+            || changes.spent.is_some()
             || changes.philosopher_choice.is_some()
             || changes.twin_relationship.is_some()
             || changes.witch_curse.is_some()
@@ -632,7 +635,7 @@ fn apply_snv_facts(
         }
         next.durable_impairments.push(impairment.clone());
     }
-    for evidence in &changes.audit {
+    for evidence in event.fact_changes().audit() {
         if evidence.event_id != event.id()
             || evidence.occurrence != occurrence
             || evidence.causes.is_empty()
@@ -667,8 +670,41 @@ fn apply_snv_facts(
                 });
         }
     }
+    let common = event.fact_changes();
+    for choice in [common.poisoner_choice(), common.master_choice()]
+        .into_iter()
+        .flatten()
+    {
+        if choice.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&choice.ability_use)
+            || next.player(&choice.target_player_id).is_none()
+        {
+            return Err(invalid_fact());
+        }
+    }
+    if let Some(choice) = common.poisoner_choice() {
+        next.poisoner_choices.push(choice.clone());
+    }
+    if let Some(choice) = common.master_choice() {
+        next.master_choices.push(choice.clone());
+    }
+    if common.preparation() {
+        next.preparations.push(crate::state::ConfirmedActionFact {
+            registration_judgments: event.payload().registration_judgments.clone(),
+            event_id: event.id().into(),
+            occurrence: occurrence.clone(),
+            result: event.payload().result.clone(),
+        });
+    }
+    if let Some(end) = common.game_end() {
+        if end.source_event_id != event.id() {
+            return Err(invalid_fact());
+        }
+        next.game_end = Some(end.clone());
+    }
     next.confirmed_actions
         .push(crate::state::ConfirmedActionFact {
+            registration_judgments: event.payload().registration_judgments.clone(),
             event_id: event.id().into(),
             occurrence,
             result: event.payload().result.clone(),

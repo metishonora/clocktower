@@ -6,6 +6,14 @@ pub(crate) fn targets(
     count: usize,
     actor: &str,
 ) -> Result<Vec<String>, CoreError> {
+    targets_with_policy(input, count, actor, false)
+}
+pub(crate) fn targets_with_policy(
+    input: &StepInput,
+    count: usize,
+    actor: &str,
+    allow_self: bool,
+) -> Result<Vec<String>, CoreError> {
     let fields = input
         .as_ref()
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
@@ -14,7 +22,7 @@ pub(crate) fn targets(
         .as_ref()
         .ok_or_else(|| ErrorKind::InvalidStepInput.into_error())?;
     if ids.len() != count
-        || ids.iter().any(|id| id == actor)
+        || (!allow_self && ids.iter().any(|id| id == actor))
         || ids.iter().enumerate().any(|(i, id)| ids[..i].contains(id))
         || *fields
             != (StepInputFields {

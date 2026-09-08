@@ -34,6 +34,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Test Rust workspace
         run: cargo test --workspace
+      - name: Build custom Production WASM
+        run: pnpm build:wasm:custom
+      - name: Test custom Production session and storage
+        run: pnpm --dir web test:custom
       - name: Test web app
         run: pnpm --dir web test
       - name: Test Issue #206 custom runtime fixture

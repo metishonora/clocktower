@@ -15,6 +15,7 @@ pub(crate) fn simple_step(
     PhaseStep {
         simulation_source: None,
         follow_up_cause: None,
+        action_cause: None,
         id: format!("{id_prefix}:{name}"),
         phase,
         step_type,
@@ -40,6 +41,7 @@ pub(crate) fn phase_transition_step(
     PhaseStep {
         simulation_source: None,
         follow_up_cause: None,
+        action_cause: None,
         id: format!("{id_prefix}:{name}"),
         phase,
         step_type: StepType::PhaseTransition,

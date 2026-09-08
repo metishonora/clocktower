@@ -103,6 +103,7 @@ impl ActionHandler for FixtureHandler {
                 Ok(PhaseStep {
                     simulation_source: None,
                     follow_up_cause: None,
+                    action_cause: None,
                     id: occurrence.step_id()?,
                     phase: Phase::FirstNight,
                     step_type: StepType::Character,
@@ -140,6 +141,7 @@ impl ActionHandler for FixtureHandler {
             registration_judgments: vec![],
             simulation_source: None,
             follow_up_cause: None,
+            action_cause: None,
             action_ref: self.identity.clone(),
             step_id: occurrence.step_id()?,
             ability_use: Some(ability_use),

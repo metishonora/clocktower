@@ -200,7 +200,9 @@ pub(crate) struct ReplayState {
     pub(crate) phase_overview: Vec<PhaseOverviewItem>,
     pub(crate) warnings: Vec<CoreWarning>,
     pub(crate) rule_state: RuleState,
-    pub(crate) game_end: Option<Value>,
+    pub(crate) game_end: Option<CustomGameEnd>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) available_actions: Vec<PhaseStep>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) pending_identity_reveals: Vec<PendingIdentityReveal>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -216,6 +218,14 @@ pub(crate) enum ReplayScriptIdentity {
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RuleState {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) preparations: Vec<PreparationRecord>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) poisoner_choices: Vec<TargetAssignment>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) master_choices: Vec<TargetAssignment>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) guidance: Vec<GuidanceRecord>,
     pub(crate) unannounced_night_death_player_ids: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
@@ -269,6 +279,12 @@ pub(crate) struct Proposal {
 #[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub(crate) enum RevealPayload {
+    MutantExecution {
+        kind: &'static str,
+        player: RevealPlayer,
+        executed: bool,
+        died: bool,
+    },
     SpyGrimoire {
         kind: &'static str,
         players: Vec<crate::model::InformationPlayer>,
@@ -421,6 +437,44 @@ pub(crate) struct GameEvent {
     deny_unknown_fields
 )]
 pub(crate) enum CustomActionResult {
+    RedHerringAssigned {
+        target_player_id: String,
+    },
+    InformationPrepared {
+        preparation: InformationPreparation,
+    },
+    PreparedInformationDelivered {
+        preparation_event_id: String,
+        information: ConfirmedInformation,
+        spent: bool,
+    },
+    TwinAssigned {
+        target_player_id: String,
+    },
+    TwinInformed {
+        relationship_event_id: String,
+        target_player_id: String,
+        effective: bool,
+    },
+    ShownCharacterAssigned {
+        character_id: String,
+    },
+    Poisoner {
+        target_player_id: String,
+        day: u16,
+        effective: bool,
+    },
+    Butler {
+        target_player_id: String,
+        day: u16,
+        effective: bool,
+    },
+    MutantExecution {
+        execute: bool,
+        executed: bool,
+        died: bool,
+    },
+
     Information {
         value: InformationResult,
     },
@@ -452,6 +506,10 @@ pub(crate) enum CustomActionResult {
     SeamstressDeferred,
     InformationDelivered {
         information: ConfirmedInformation,
+        spent: bool,
+    },
+    SimulationChoice {
+        character_id: Option<String>,
         spent: bool,
     },
     Simulation {
@@ -562,10 +620,66 @@ pub(crate) struct MadnessAssignment {
     pub(crate) effective: bool,
 }
 
+/// Reasons for additional occurrences; these refer to confirmed facts, never a saved cursor.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum ActionCause {
+    InitialPreparation {
+        source_event_id: String,
+    },
+    RequiredPreparation {
+        trigger_event_id: String,
+        previous_preparation_event_id: Option<String>,
+    },
+    Delivery {
+        preparation_event_id: String,
+    },
+    Optional {
+        prefix_event_id: String,
+    },
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum GuidanceCause {
+    InitialDrunk,
+    AcquiredDrunk,
+    Choice { parent_event_id: String },
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct CustomGameEnd {
+    pub(crate) winning_alignment: crate::model::Alignment,
+    pub(crate) reason: CustomGameEndReason,
+    pub(crate) source_event_id: String,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum CustomGameEndReason {
+    GoodTwinExecuted,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct InformationPreparation {
+    pub(crate) information: InformationResult,
+    pub(crate) correct_player_id: Option<String>,
+}
+
 /// Simulation provenance always points to the real Philosopher, never a fabricated grant.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct PhilosopherSimulationSource {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) guidance: Option<GuidanceCause>,
     pub(crate) selection_event_id: String,
     pub(crate) source_ability_use: AbilityUseRef,
 }
@@ -590,6 +704,8 @@ pub(crate) struct CustomActionConfirmedPayload {
     pub(crate) simulation_source: Option<PhilosopherSimulationSource>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) follow_up_cause: Option<FollowUpCause>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
     pub(crate) input: StepInput,
     pub(crate) result: CustomActionResult,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -652,4 +768,35 @@ impl FirstNightActionRef {
         };
         Self::System { action_id }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct TargetAssignment {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) target_player_id: String,
+    pub(crate) day: u16,
+    pub(crate) initially_effective: bool,
+    pub(crate) effective: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PreparationRecord {
+    pub(crate) source_event_id: String,
+    pub(crate) action_ref: FirstNightActionRef,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) simulation_source: Option<PhilosopherSimulationSource>,
+    pub(crate) result: CustomActionResult,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct GuidanceRecord {
+    pub(crate) source: PhilosopherSimulationSource,
+    pub(crate) character_id: String,
+    pub(crate) spent: bool,
 }

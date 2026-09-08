@@ -217,6 +217,7 @@ fn snv_activation_runs_new_clockmaker_immediately_and_does_not_reopen_passed_slo
         ability_use: Some(actual),
         simulation_source: None,
         follow_up_cause: None,
+        action_cause: None,
         input: None,
         delivered_result: None,
         registration_judgments: vec![],

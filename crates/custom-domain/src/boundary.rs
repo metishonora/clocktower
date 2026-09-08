@@ -77,6 +77,7 @@ fn validate_custom_action_event_json(value: &Value) -> Result<(), CoreError> {
         "abilityUse",
         "simulationSource",
         "followUpCause",
+        "actionCause",
         "deliveredResult",
     ] {
         if payload.get(key).is_some_and(Value::is_null) {
@@ -128,12 +129,25 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "cerenovus"
             | "seamstressDeferred"
             | "informationDelivered"
-            | "simulation",
+            | "simulationChoice"
+            | "simulation"
+            | "redHerringAssigned"
+            | "informationPrepared"
+            | "preparedInformationDelivered"
+            | "twinAssigned"
+            | "twinInformed"
+            | "shownCharacterAssigned"
+            | "poisoner"
+            | "butler"
+            | "mutantExecution",
         ) => {
             let typed: CustomActionResult = serde_json::from_value(value.clone())
                 .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
             let information = match typed {
-                CustomActionResult::InformationDelivered { information, .. } => Some(information),
+                CustomActionResult::InformationDelivered { information, .. }
+                | CustomActionResult::PreparedInformationDelivered { information, .. } => {
+                    Some(information)
+                }
                 CustomActionResult::Simulation { information, .. } => information,
                 _ => None,
             };
@@ -314,6 +328,7 @@ fn validate_custom_step_input_json(value: &Value) -> Result<(), CoreError> {
         "characterIds",
         "characterId",
         "zeroOutsiders",
+        "correctPlayerId",
         "value",
         "trueValue",
         "displayedValue",

@@ -116,6 +116,7 @@ impl ActionHandler for FixtureHandler {
                 Ok(PhaseStep {
                     simulation_source: None,
                     follow_up_cause: None,
+                    action_cause: None,
                     id: occurrence.step_id()?,
                     phase: Phase::FirstNight,
                     step_type: StepType::Character,
@@ -148,6 +149,7 @@ impl ActionHandler for FixtureHandler {
             crate::event::CustomActionEventDraft {
                 simulation_source: None,
                 follow_up_cause: None,
+                action_cause: None,
                 delivered_result: None,
                 registration_judgments: vec![],
                 step_id: occurrence.step_id()?,

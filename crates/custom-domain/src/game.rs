@@ -23,6 +23,7 @@ use super::{
 };
 
 struct ReplayComponents {
+    available_actions: Vec<PhaseStep>,
     state: CustomGameState,
     current_step: Option<PhaseStep>,
     phase_overview: Vec<PhaseOverviewItem>,
@@ -60,6 +61,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             warnings: vec![],
             rule_state: RuleState::default(),
             game_end: None,
+            available_actions: vec![],
             pending_identity_reveals: vec![],
             madness_assignments: vec![],
         });
@@ -76,7 +78,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
 
         warnings: vec![],
         rule_state: rule_state(&components.state.facts),
-        game_end: None,
+        game_end: components.state.facts.game_end.clone(),
+        available_actions: components.available_actions,
         pending_identity_reveals: components.state.facts.pending_identity_reveals.clone(),
         madness_assignments: components.state.facts.madness_assignments.clone(),
     })
@@ -95,10 +98,20 @@ fn propose_step(
     payload: PhaseStepCommandPayload,
 ) -> Result<Proposal, CoreError> {
     let components = replay_components(game_file)?;
+    if components.current_step.is_none() && components.available_actions.is_empty() {
+        return Err(ErrorKind::NoCurrentStep.into_error());
+    }
     let current_step = components
         .current_step
         .as_ref()
-        .ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
+        .filter(|s| s.id == payload.step_id)
+        .or_else(|| {
+            components
+                .available_actions
+                .iter()
+                .find(|s| s.id == payload.step_id)
+        })
+        .ok_or_else(|| ErrorKind::StaleStep.into_error())?;
     if payload.step_id != current_step.id {
         return Err(ErrorKind::StaleStep.into_error());
     }
@@ -234,7 +247,8 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         .collect::<Result<Vec<_>, _>>()?;
     let plan = plan_for_definition(definition)?;
     let mut facts = CustomGameFacts::from_players(players);
-    crate::characters::sects_and_violets::resolve_effects(&context, &mut facts)?;
+    facts.prefix_event_id = first.id.clone();
+    crate::effects::resolve_effects(&context, &mut facts)?;
     let initial_rules = CustomRuleService::new(&context, &facts);
     let initial_context = ActionContext {
         event_id: "",
@@ -259,7 +273,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         )?;
     }
 
-    let phase = if state.progress.ended {
+    let phase = if state.progress.ended && state.facts.game_end.is_none() {
         Phase::Day
     } else {
         Phase::FirstNight
@@ -275,8 +289,20 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
     } else {
         (None, Vec::new())
     };
+    let rules = CustomRuleService::new(&context, &state.facts);
+    let action_context = ActionContext {
+        event_id: "",
+        rule_service: &rules,
+    };
+    let available_actions = state
+        .progress
+        .available_occurrences
+        .iter()
+        .map(|o| project_occurrence_step(&registry, &action_context, o))
+        .collect::<Result<Vec<_>, _>>()?;
     state.phase = phase;
     Ok(ReplayComponents {
+        available_actions,
         state,
         current_step,
         phase_overview,
@@ -292,14 +318,25 @@ fn apply_event(
     previous: &CustomGameState,
     event: &GameEvent,
 ) -> Result<CustomGameState, CoreError> {
-    if previous.phase != Phase::FirstNight || previous.progress.ended {
+    if previous.phase != Phase::FirstNight
+        || previous.progress.ended
+        || previous.facts.game_end.is_some()
+    {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
+    let event_step_id = match &event.kind {
+        GameEventKind::CustomActionConfirmed { payload } => &payload.step_id,
+        GameEventKind::PhaseStepConfirmed { payload } => &payload.step_id,
+        _ => return Err(ErrorKind::EventNotSupportedByScript.into_error()),
+    };
     let occurrence = previous
         .progress
         .next_occurrence()
+        .into_iter()
+        .chain(previous.progress.available_occurrences.iter())
+        .find(|o| o.step_id().is_ok_and(|id| id == *event_step_id))
         .cloned()
-        .ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
+        .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
     let previous_rules = CustomRuleService::new(context, &previous.facts);
     let previous_context = ActionContext {
         event_id: &event.id,
@@ -317,12 +354,13 @@ fn apply_event(
 
     // Both pure transitions are calculated from the same pre-event prefix. Nothing is adopted
     // until both values and the historical snapshot have been computed successfully.
-    let next_facts = match &validated {
+    let mut next_facts = match &validated {
         ValidatedActionEvent::System(_) => previous.facts.clone(),
         ValidatedActionEvent::Custom(custom) => {
             reduce_custom_facts(context, &previous.facts, custom)?
         }
     };
+    next_facts.prefix_event_id = event.id.clone();
     let next_rules = CustomRuleService::new(context, &next_facts);
     let next_context = ActionContext {
         event_id: "",

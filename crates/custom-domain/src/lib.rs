@@ -33,3 +33,7 @@ pub fn custom_script_catalog_json() -> String {
 
 #[cfg(test)]
 mod tests;
+
+mod effects;
+
+mod simulation;

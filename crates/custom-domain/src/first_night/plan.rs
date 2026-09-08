@@ -12,30 +12,7 @@ use crate::{
     error::{CoreError, ErrorKind},
 };
 
-// Snapshot of TPI botc-release resources/data/nightsheet.json `firstNight`, filtered to the
-// currently supported TB/S&V action catalog. This is deliberately not a merge of script-local
-// ranks. The ordered snapshot is used only when authoring a draft omits its order; the same
-// catalog supplies the Character action set used to validate completed definitions.
-const FIRST_NIGHT_ACTION_CATALOG: [(&str, &str); 18] = [
-    ("philosopher", "chooseAbility"),
-    ("poisoner", "choosePoisonTarget"),
-    ("snakeCharmer", "choosePlayer"),
-    ("evilTwin", "learnTwin"),
-    ("witch", "chooseCursedPlayer"),
-    ("cerenovus", "assignMadness"),
-    ("washerwoman", "learnTownsfolk"),
-    ("librarian", "learnOutsider"),
-    ("investigator", "learnMinion"),
-    ("chef", "learnEvilPairs"),
-    ("empath", "learnEvilNeighbors"),
-    ("fortuneTeller", "checkDemon"),
-    ("butler", "chooseMaster"),
-    ("clockmaker", "learnSteps"),
-    ("dreamer", "learnCharacters"),
-    ("seamstress", "compareAlignments"),
-    ("spy", "inspectGrimoire"),
-    ("mathematician", "learnCount"),
-];
+use super::catalog::ORDERED_ACTIONS;
 const REQUIRED_SYSTEM_ACTION_IDS: [&str; 4] = ["dusk", "minionInfo", "demonInfo", "dawn"];
 
 fn character(character_id: &str, action_id: &str) -> FirstNightActionRef {
@@ -47,7 +24,7 @@ fn character(character_id: &str, action_id: &str) -> FirstNightActionRef {
 
 fn default_plan(context: &ResolvedScriptContext) -> FirstNightOrderPlan {
     let mut entries = vec![FirstNightActionRef::system("dusk")];
-    for (character_id, action_id) in FIRST_NIGHT_ACTION_CATALOG {
+    for (character_id, action_id) in ORDERED_ACTIONS {
         if character_id == "poisoner" {
             entries.push(FirstNightActionRef::system("minionInfo"));
             entries.push(FirstNightActionRef::system("demonInfo"));
@@ -61,14 +38,14 @@ fn default_plan(context: &ResolvedScriptContext) -> FirstNightOrderPlan {
 }
 
 fn expected_actions(context: &ResolvedScriptContext) -> HashSet<FirstNightActionRef> {
-    let mut expected = HashSet::with_capacity(FIRST_NIGHT_ACTION_CATALOG.len() + 4);
+    let mut expected = HashSet::with_capacity(ORDERED_ACTIONS.len() + 4);
     expected.extend(
         REQUIRED_SYSTEM_ACTION_IDS
             .into_iter()
             .map(FirstNightActionRef::system),
     );
     expected.extend(
-        FIRST_NIGHT_ACTION_CATALOG
+        ORDERED_ACTIONS
             .into_iter()
             .filter(|(character_id, _)| context.contains(character_id))
             .map(|(character_id, action_id)| character(character_id, action_id)),

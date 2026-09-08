@@ -1,6 +1,6 @@
 //! Production registry ownership is exact and independent of fixture registration.
 #[test]
-fn exactly_nine_distinct_snv_production_handlers_are_registered() {
+fn nine_ordered_snv_handlers_and_two_additional_actions_are_registered() {
     use crate::contracts::FirstNightActionRef;
     let registrations = crate::characters::sects_and_violets::registrations();
     let mut refs = registrations
@@ -20,15 +20,24 @@ fn exactly_nine_distinct_snv_production_handlers_are_registered() {
             "cerenovus:assignMadness",
             "clockmaker:learnSteps",
             "dreamer:learnCharacters",
+            "evilTwin:assignTwin",
             "evilTwin:learnTwin",
             "mathematician:learnCount",
+            "mutant:resolveMadnessExecution",
             "philosopher:chooseAbility",
             "seamstress:compareAlignments",
             "snakeCharmer:choosePlayer",
             "witch:chooseCursedPlayer"
         ]
     );
-    assert!(registrations.iter().all(
-        |r| r.spec.participates_in_first_night && r.spec.action_ref == *r.handler.action_ref()
-    ));
+    assert_eq!(
+        registrations
+            .iter()
+            .filter(|r| r.spec.participates_in_first_night)
+            .count(),
+        9
+    );
+    assert!(registrations
+        .iter()
+        .all(|r| r.spec.action_ref == *r.handler.action_ref()));
 }

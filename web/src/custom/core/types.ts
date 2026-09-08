@@ -85,7 +85,7 @@ export type SetupPlayerInput = {
 
 export type PhaseStepInput =
   | null
-  | { playerIds: string[]; characterId?: string; zeroOutsiders?: boolean }
+  | { playerIds: string[]; characterId?: string; zeroOutsiders?: boolean; correctPlayerId?: string }
   | { zeroOutsiders: true; playerIds?: string[] }
   | { characterIds: string[] }
   | { playerIds: string[]; characterIds: string[] }
@@ -125,6 +125,7 @@ export type InformationResult =
       seat: number;
       name: string;
       characterId: string;
+      alignment?: "good" | "evil";
       alive?: boolean;
       ghostVoteUsed?: boolean;
       reminderTokens?: SpyReminderToken[];
@@ -160,13 +161,15 @@ export type MathematicianAuditEvidence = {
 export type MathematicianAuditOutcome =
   | {
     kind: "incorrectInformation";
-    computedResult: InformationResult;
     deliveredResult: InformationResult;
   }
   | { kind: "invalidSavantPattern"; truthfulCount: number }
   | {
     kind: "effectFailure";
     effect:
+    | "poisonerPoison"
+    | "butlerMaster"
+    | "mutantExecution"
     | "philosopherAcquisition"
     | "witchCurse"
     | "cerenovusMadness"
@@ -184,6 +187,7 @@ export type MathematicianAuditOutcome =
 
 
 export type RegistrationJudgment = {
+  scope?: { kind: "adjacentPair"; playerIds: string[] };
   playerId: string;
   registeredAs: "good" | "evil" | "townsfolk" | "outsider" | "minion" | "demon";
   characterId?: string;
@@ -276,7 +280,7 @@ export type Command = { type: "createGame"; payload: { players: SetupPlayerInput
 export type CoreResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; messageKo: string } };
-export type ReplayState = { schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: null; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type ReplayState = { schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -284,7 +288,11 @@ export type PendingIdentityReveal = {
   sequence: number;
   payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
 };
-export type RuleState = { unannouncedNightDeathPlayerIds: string[]; activeImpairments?: ActiveImpairment[]; abilityGrants?: AbilityGrant[]; abilityUses?: AbilityUseRecord[]; philosopherChoices?: PhilosopherChoiceFact[]; witchCurses?: WitchCurse[]; twinRelationships?: TwinRelationship[] };
+export type RuleState = {
+  preparations?: PreparationRecord[];
+  poisonerChoices?: TargetAssignment[];
+  masterChoices?: TargetAssignment[];
+  guidance?: { source: PhilosopherSimulationSource; characterId: string; spent: boolean }[]; unannouncedNightDeathPlayerIds: string[]; activeImpairments?: ActiveImpairment[]; abilityGrants?: AbilityGrant[]; abilityUses?: AbilityUseRecord[]; philosopherChoices?: PhilosopherChoiceFact[]; witchCurses?: WitchCurse[]; twinRelationships?: TwinRelationship[] };
 
 
 export type ActiveImpairment = {
@@ -356,6 +364,7 @@ export type AutomaticReminder = {
 export type SpyGrimoireRevealPayload = {
   kind: "spyGrimoire";
   players: Array<{
+    alignment?: "good" | "evil";
     playerId: string;
     seat: number;
     name: string;
@@ -490,7 +499,8 @@ export type RoleInformationRevealPayload =
   | EvilInformationRevealPayload;
 
 
-export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
+export type MutantExecutionRevealPayload = { kind: "mutantExecution"; player: RevealPlayer; executed: boolean; died: boolean };
+export type RevealPayload = MutantExecutionRevealPayload | TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
 export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[] };
 
 
@@ -516,7 +526,22 @@ type EventCommon = {
  * intentionally absent from the production wire type and parser; the fixture test path may
  * extend this boundary when it builds its dedicated WASM artifact.
  */
+export type ActionCause =
+  | { kind: "initialPreparation"; sourceEventId: string }
+  | { kind: "requiredPreparation"; triggerEventId: string; previousPreparationEventId: string | null }
+  | { kind: "delivery"; preparationEventId: string }
+  | { kind: "optional"; prefixEventId: string };
+export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind: "choice"; parentEventId: string };
+export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"; sourceEventId: string };
+export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
+  | { kind: "redHerringAssigned" | "twinAssigned"; targetPlayerId: string }
+  | { kind: "informationPrepared"; preparation: InformationPreparation }
+  | { kind: "preparedInformationDelivered"; preparationEventId: string; information: ConfirmedInformation; spent: boolean }
+  | { kind: "twinInformed"; relationshipEventId: string; targetPlayerId: string; effective: boolean }
+  | { kind: "shownCharacterAssigned"; characterId: string }
+  | { kind: "poisoner" | "butler"; targetPlayerId: string; day: number; effective: boolean }
+  | { kind: "mutantExecution"; execute: boolean; executed: boolean; died: boolean }
   | { kind: "information"; value: InformationResult }
   | { kind: "noEffect" }
   | { kind: "philosopherDeferred" | "seamstressDeferred" }
@@ -526,10 +551,11 @@ export type CustomActionResult =
   | { kind: "witch"; targetPlayerId: string; day: number; effective: boolean }
   | { kind: "cerenovus"; targetPlayerId: string; characterId: string; day: number; effective: boolean }
   | { kind: "informationDelivered"; information: ConfirmedInformation; spent: boolean }
+  | { kind: "simulationChoice"; characterId: string | null; spent: boolean }
   | { kind: "simulation"; information: ConfirmedInformation | null; spent: boolean };
 
 
-export type PhilosopherSimulationSource = { selectionEventId: string; sourceAbilityUse: AbilityUseRef };
+export type PhilosopherSimulationSource = { guidance?: GuidanceCause; selectionEventId: string; sourceAbilityUse: AbilityUseRef };
 export type FollowUpCause = { triggerEventId: string; relationshipEventId: string };
 export type CustomActionSource =
   | { abilityUse: AbilityUseRef; simulationSource?: never }
@@ -538,6 +564,7 @@ export type CustomActionConfirmedPayload = CustomActionSource & {
   stepId: string;
   actionRef: Extract<FirstNightActionRef, { kind: "character" }>;
   followUpCause?: FollowUpCause;
+  actionCause?: ActionCause;
   deliveredResult?: InformationResult;
   registrationJudgments?: RegistrationJudgment[];
   input: PhaseStepInput;
@@ -641,6 +668,7 @@ export type PhaseStep = {
   abilityUse?: AbilityUseRef;
   simulationSource?: PhilosopherSimulationSource;
   followUpCause?: FollowUpCause;
+  actionCause?: ActionCause;
   abilityOrigin?: AbilityOrigin;
   requiredInput: RequiredInput;
   canSkip: boolean;
@@ -744,3 +772,6 @@ export type PhilosopherChoiceFact = AbilityUseRecord & { characterId: string; ou
 export type TwinRelationship = AbilityUseRecord & { targetPlayerId: string; effective: boolean };
 export type WitchCurse = TwinRelationship & { day: number; initiallyEffective: boolean };
 export type MadnessAssignment = WitchCurse & { characterId: string };
+
+export type TargetAssignment = { sourceEventId: string; abilityUse: AbilityUseRef; targetPlayerId: string; day: number; initiallyEffective: boolean; effective: boolean };
+export type PreparationRecord = { sourceEventId: string; actionRef: FirstNightActionRef; abilityUse?: AbilityUseRef; simulationSource?: PhilosopherSimulationSource; result: CustomActionResult; registrationJudgments: RegistrationJudgment[] };

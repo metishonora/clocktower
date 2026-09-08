@@ -3,6 +3,7 @@ import type { CharacterChangeRevealPayload, EvilTwinPairRevealPayload, MadnessAs
 const characterIds = new Set(customScriptCharacters.map(({ id }) => id));
 
 const troubleBrewingAutomaticReminderPairs = new Set([
+  "noDashii:poisoned", "snakeCharmer:poisoned", "philosopher:drunk", "philosopher:noAbility", "seamstress:noAbility", "witch:cursed", "cerenovus:mad", "evilTwin:twin",
   "butler:master",
   "drunk:isTheDrunk",
   "fortuneTeller:redHerring",
@@ -22,6 +23,7 @@ const troubleBrewingAutomaticReminderPairs = new Set([
 ]);
 const spyPayloadKeys = ["kind", "players"];
 const spyPlayerKeys = [
+  "alignment",
   "alive",
   "automaticReminders",
   "characterId",
@@ -40,6 +42,7 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
+  if (payload.kind === "mutantExecution") return hasExactKeys(payload,["died","executed","kind","player"]) && isRevealPlayer(payload.player) && payload.executed === true && typeof payload.died === "boolean";
   if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload) || isEvilTwinPairRevealPayload(payload) || isMadnessAssignmentRevealPayload(payload);
   if (!nonEmptyString(payload.messageKo)) return false;
   if (!optionalNonEmptyString(payload.previewMessageKo)) return false;
@@ -196,6 +199,7 @@ export function isSpyGrimoireRevealPayload(value: unknown): value is SpyGrimoire
       !nonEmptyString(player.name) ||
       !nonEmptyString(player.characterId) ||
       !characterIds.has(player.characterId) ||
+      (player.alignment !== undefined && player.alignment !== "good" && player.alignment !== "evil") ||
       typeof player.alive !== "boolean" ||
       typeof player.ghostVoteUsed !== "boolean" ||
       (player.reminderTokens !== undefined && !isOrderedReminderTokens(player.reminderTokens)) ||

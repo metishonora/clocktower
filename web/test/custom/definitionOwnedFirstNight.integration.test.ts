@@ -211,7 +211,7 @@ it("rejects wrong action provenance and out-of-order confirmed events", async ()
 });
 
 
-it("reports an explicit unavailable handler when a planned character action is active", async () => {
+it("projects required preparation before a planned TB delivery", async () => {
   const core = realWasmCore();
   const definition: CustomScriptDefinition = {
     id: "issue-198-active-handler",
@@ -235,7 +235,8 @@ it("reports an explicit unavailable handler when a planned character action is a
   expect(setup.ok).toBe(true);
   if (!setup.ok) return;
   const result = await core.replay(rawCustomGame(definition, [setup.value.event]));
-  expectCoreError(result, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");
+  expect(result.ok).toBe(true);
+  if (result.ok) expect(result.value.currentStep?.actionRef?.actionId).toBe("prepareInformation");
 });
 
 

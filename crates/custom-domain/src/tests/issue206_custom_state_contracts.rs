@@ -57,6 +57,7 @@ fn event(
     let payload = CustomActionConfirmedPayload {
         simulation_source: None,
         follow_up_cause: None,
+        action_cause: None,
         delivered_result: None,
         registration_judgments: vec![],
         step_id: format!("firstNight:{character_id}:{id}"),

@@ -198,7 +198,7 @@ impl FirstNightRuleService for CustomRuleService<'_> {
         &self,
         action_ref: &FirstNightActionRef,
     ) -> Result<Vec<crate::state::ActionOccurrence>, CoreError> {
-        crate::characters::sects_and_violets::simulation_occurrences(self.facts, action_ref)
+        crate::simulation::occurrences(self.facts, action_ref)
     }
     fn definition(&self) -> Option<&crate::characters::ResolvedScriptContext> {
         Some(self.context)

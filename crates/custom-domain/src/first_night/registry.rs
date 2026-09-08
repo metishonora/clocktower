@@ -148,11 +148,12 @@ impl ValidatedCustomEvent {
     }
 
     pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
-        ActionOccurrence::from_parts(
+        ActionOccurrence::from_all_parts(
             self.payload.action_ref.clone(),
             self.payload.ability_use.clone(),
             self.payload.simulation_source.clone(),
             self.payload.follow_up_cause.clone(),
+            self.payload.action_cause.clone(),
         )
     }
 
@@ -321,6 +322,21 @@ impl ValidatedActionEvent {
 /// input, then returns a canonical draft. It never receives mutable game state, a cursor, or a
 /// queue.
 pub(crate) trait ActionHandler {
+    fn required_occurrences(
+        &self,
+        _context: &ActionContext<'_>,
+        _progress: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
+    fn optional_occurrences(
+        &self,
+        _context: &ActionContext<'_>,
+        _progress: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
+
     fn permits_defer(&self) -> bool {
         false
     }
@@ -421,6 +437,44 @@ impl fmt::Debug for ActionRegistry {
 }
 
 impl ActionRegistry {
+    pub(crate) fn additional_candidates(
+        &self,
+        plan: &FirstNightOrderPlan,
+        context: &ActionContext<'_>,
+        progress: &crate::state::FirstNightProgress,
+        optional: bool,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if context.rule_service.facts().is_none() {
+            return Ok(vec![]);
+        }
+        let mut candidates = vec![];
+        for entry in self.entries.values() {
+            if let FirstNightActionRef::Character { character_id, .. } = &entry.spec.action_ref {
+                if context
+                    .rule_service
+                    .definition()
+                    .is_some_and(|d| !d.contains(character_id))
+                {
+                    continue;
+                }
+            }
+            for occurrence in if optional {
+                entry.handler.optional_occurrences(context, progress)?
+            } else {
+                entry.handler.required_occurrences(context, progress)?
+            } {
+                if occurrence.action_ref != entry.spec.action_ref {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+                if !progress.is_terminal(&occurrence) && !candidates.contains(&occurrence) {
+                    candidates.push(occurrence);
+                }
+            }
+        }
+        super::runtime::sort_additional_occurrences(plan, context, &mut candidates);
+        Ok(candidates)
+    }
+
     pub(crate) fn new(entries: Vec<RegisteredAction>) -> Result<Self, CoreError> {
         let mut registry = Self {
             entries: HashMap::with_capacity(entries.len()),
@@ -433,7 +487,8 @@ impl ActionRegistry {
 
     pub(crate) fn register(&mut self, entry: RegisteredAction) -> Result<(), CoreError> {
         if entry.spec.action_ref != *entry.handler.action_ref()
-            || !entry.spec.participates_in_first_night
+            || (!entry.spec.participates_in_first_night
+                && !super::catalog::is_additional(&entry.spec.action_ref))
             || self.entries.contains_key(&entry.spec.action_ref)
         {
             return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
@@ -442,6 +497,10 @@ impl ActionRegistry {
         Ok(())
     }
 
+    #[cfg(test)]
+    pub(crate) fn remove_for_tests(&mut self, action: &FirstNightActionRef) {
+        self.entries.remove(action);
+    }
     pub(crate) fn lookup(
         &self,
         action_ref: &FirstNightActionRef,
@@ -612,11 +671,12 @@ impl ActionRegistry {
         }
 
         if let ActionEventDraft::Custom(custom) = draft {
-            let source = ActionOccurrence::from_parts(
+            let source = ActionOccurrence::from_all_parts(
                 custom.action_ref.clone(),
                 custom.ability_use.clone(),
                 custom.simulation_source.clone(),
                 custom.follow_up_cause.clone(),
+                custom.action_cause.clone(),
             )?;
             if source.identity() != occurrence.identity() {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
@@ -663,7 +723,11 @@ impl ActionRegistry {
                 if !context
                     .rule_service
                     .simulation_occurrences(&entry.spec.action_ref)?
-                    .contains(occurrence)
+                    .iter()
+                    .any(|candidate| {
+                        candidate.action_ref == occurrence.action_ref
+                            && candidate.simulation_source == occurrence.simulation_source
+                    })
                 {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
@@ -706,11 +770,12 @@ fn validate_occurrence_reference(
     if occurrence.action_ref != *action_ref {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    ActionOccurrence::from_parts(
+    ActionOccurrence::from_all_parts(
         occurrence.action_ref.clone(),
         occurrence.ability_use.clone(),
         occurrence.simulation_source.clone(),
         occurrence.follow_up_cause.clone(),
+        occurrence.action_cause.clone(),
     )?;
     Ok(())
 }
@@ -742,6 +807,7 @@ fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreErro
             Ok(ActionEventDraft::Custom(CustomActionEventDraft {
                 simulation_source: payload.simulation_source.clone(),
                 follow_up_cause: payload.follow_up_cause.clone(),
+                action_cause: payload.action_cause.clone(),
                 delivered_result: payload.delivered_result.clone(),
                 registration_judgments: payload.registration_judgments.clone(),
                 step_id: payload.step_id.clone(),
@@ -762,7 +828,10 @@ pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
     #[allow(unused_mut)]
     let mut entries = system::registrations();
     #[cfg(not(feature = "custom-runtime-fixtures"))]
-    entries.extend(crate::characters::sects_and_violets::registrations());
+    {
+        entries.extend(crate::characters::sects_and_violets::registrations());
+        entries.extend(crate::characters::trouble_brewing::registrations());
+    }
     #[cfg(feature = "custom-runtime-fixtures")]
     entries.extend(super::fixtures::registrations());
     ActionRegistry::new(entries)

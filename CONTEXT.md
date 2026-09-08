@@ -397,16 +397,20 @@ Demon:
 - Abilities: https://wiki.bloodontheclocktower.com/Abilities
 - Setup: https://wiki.bloodontheclocktower.com/Setup
 
-## Custom first-night implementation (#207)
+## Custom first-night implementation (#207–#208)
 
 Custom catalog, Setup, first-night runtime and storage now have independent Rust/WASM/TypeScript
 ownership. Production supports Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker,
-Dreamer, Seamstress and Mathematician, plus their relevant first-night ongoing effects. Unsupported
-TB actions fail explicitly. No new play UI, later-night actions, nomination/execution processing or
-madness adjudication is added. Existing official TB/SnV/BMR play stays on its own runtime.
+Dreamer, Seamstress and Mathematician, plus the nine TB first-night actions. Additional actions
+prepare information, Red Herring, twin relationships and acquired Drunk guidance; an optional Mutant
+decision can execute and end the game through the first-night runtime. No new play UI or later-night
+handlers are added. Existing official TB/SnV/BMR play stays on its own runtime.
 
 The approved app policy preserves #206 original/acquired ordering. Vortox falsity uses actual
 facts before registration. Failed-Philosopher simulation/recovery uses official general rules plus
 community interpretation; these policy choices are not described as uniquely mandated official
 rulings. Acceptance evidence and independent verification commands are recorded in
 `docs/acceptance/custom-snv-first-night.md`.
+
+#208 acceptance and validation are recorded in `docs/acceptance/custom-tb-snv-first-night.md`.
+Mathematician consumes malfunction judgments and causes, without requiring a replacement answer.

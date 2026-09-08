@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn wasm_adapter_reports_missing_active_character_handlers_explicitly() {
+    fn wasm_adapter_requires_washerwoman_preparation_before_delivery() {
         let definition = r#"{
       "id": "issue-198-active-handler",
       "name": "Issue 198 active handler",
@@ -286,7 +286,11 @@ mod tests {
                 r#""shownCharacter": "washerwoman""#,
             );
         let result = replay(&custom_game(definition, &format!("[{event}]")));
-        assert_error(&result, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");
+        assert!(result.contains(r#""ok":true"#), "{result}");
+        assert!(
+            result.contains(r#""actionId":"prepareInformation"#),
+            "{result}"
+        );
     }
 
     fn custom_game(definition: &str, events: &str) -> String {

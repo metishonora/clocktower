@@ -1,0 +1,1095 @@
+[
+  {
+    "id": "drunk-empath-math",
+    "route": "production",
+    "input": {
+      "poisonerTarget": "monk",
+      "drunkEmpathDelivered": 0
+    },
+    "expected": {
+      "actualEvilNeighbors": 2,
+      "mathematicianCount": 1,
+      "drunkActualAbilityGranted": false,
+      "deliveredEmpath": 0,
+      "mathematicianSubjects": [
+        "drunk"
+      ],
+      "actualDrunkCharacter": "drunk",
+      "abilityGrants": []
+    },
+    "definition": {
+      "id": "drunk-empath-math",
+      "name": "drunk-empath-math",
+      "characterIds": [
+        "washerwoman",
+        "librarian",
+        "investigator",
+        "chef",
+        "empath",
+        "fortuneTeller",
+        "undertaker",
+        "monk",
+        "ravenkeeper",
+        "virgin",
+        "slayer",
+        "soldier",
+        "mayor",
+        "butler",
+        "drunk",
+        "recluse",
+        "saint",
+        "poisoner",
+        "spy",
+        "scarletWoman",
+        "baron",
+        "imp",
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "philosopher",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+        "evilTwin",
+        "witch",
+        "cerenovus",
+        "pitHag",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox"
+      ],
+      "firstNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "system",
+          "actionId": "minionInfo"
+        },
+        {
+          "kind": "system",
+          "actionId": "demonInfo"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "evilTwin",
+          "actionId": "learnTwin"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "washerwoman",
+          "actionId": "learnTownsfolk"
+        },
+        {
+          "kind": "character",
+          "characterId": "librarian",
+          "actionId": "learnOutsider"
+        },
+        {
+          "kind": "character",
+          "characterId": "investigator",
+          "actionId": "learnMinion"
+        },
+        {
+          "kind": "character",
+          "characterId": "chef",
+          "actionId": "learnEvilPairs"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "clockmaker",
+          "actionId": "learnSteps"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ]
+    },
+    "setupInput": {
+      "players": [
+        {
+          "id": "drunk",
+          "seat": 1,
+          "name": "drunk",
+          "actualCharacter": "drunk",
+          "shownCharacter": "empath"
+        },
+        {
+          "id": "imp",
+          "seat": 2,
+          "name": "imp",
+          "actualCharacter": "imp"
+        },
+        {
+          "id": "mathematician",
+          "seat": 3,
+          "name": "mathematician",
+          "actualCharacter": "mathematician"
+        },
+        {
+          "id": "monk",
+          "seat": 4,
+          "name": "monk",
+          "actualCharacter": "monk"
+        },
+        {
+          "id": "soldier",
+          "seat": 5,
+          "name": "soldier",
+          "actualCharacter": "soldier"
+        },
+        {
+          "id": "mayor",
+          "seat": 6,
+          "name": "mayor",
+          "actualCharacter": "mayor"
+        },
+        {
+          "id": "virgin",
+          "seat": 7,
+          "name": "virgin",
+          "actualCharacter": "virgin"
+        },
+        {
+          "id": "poisoner",
+          "seat": 8,
+          "name": "poisoner",
+          "actualCharacter": "poisoner"
+        }
+      ]
+    },
+    "systemInputs": {
+      "minionInfo": null,
+      "demonInfo": {
+        "characterIds": [
+          "artist",
+          "savant",
+          "juggler"
+        ]
+      }
+    },
+    "stopAt": "Assert the specified prefix, then separately continue to Day or gameEnd with explicit choices in the test. Never auto-skip unknown actions.",
+    "commands": [
+      {
+        "action": "poisoner.choosePoisonTarget",
+        "input": {
+          "playerIds": [
+            "monk"
+          ]
+        }
+      },
+      {
+        "action": "empath.learnEvilNeighbors",
+        "actor": "drunk",
+        "input": null,
+        "deliveredResult": {
+          "kind": "number",
+          "value": 0
+        }
+      },
+      {
+        "action": "mathematician.learnCount",
+        "input": null
+      }
+    ],
+    "contrasts": [
+      {
+        "deliveredEmpath": 2,
+        "expectedMathematicianCount": 0,
+        "expectedSubjects": []
+      },
+      {
+        "scenario": "drunk believes philosopher and chooses monk",
+        "expectedActualGrants": [],
+        "expectedMathematicianCount": 1,
+        "expectedSubjects": [
+          "drunk"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "chef-recluse-edge",
+    "route": "production",
+    "input": {
+      "chefDelivered": 1,
+      "edgeJudgments": {
+        "imp-recluse": "evil",
+        "recluse-poisoner": "good"
+      },
+      "poisonerTarget": "monk"
+    },
+    "expected": {
+      "chefAccepted": true,
+      "recluseActualAlignment": "good",
+      "deliveredChef": 1,
+      "recluseActualCharacter": "recluse",
+      "chefCompletionCount": 1
+    },
+    "definition": {
+      "id": "chef-recluse-edge",
+      "name": "chef-recluse-edge",
+      "characterIds": [
+        "washerwoman",
+        "librarian",
+        "investigator",
+        "chef",
+        "empath",
+        "fortuneTeller",
+        "undertaker",
+        "monk",
+        "ravenkeeper",
+        "virgin",
+        "slayer",
+        "soldier",
+        "mayor",
+        "butler",
+        "drunk",
+        "recluse",
+        "saint",
+        "poisoner",
+        "spy",
+        "scarletWoman",
+        "baron",
+        "imp",
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "philosopher",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+        "evilTwin",
+        "witch",
+        "cerenovus",
+        "pitHag",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox"
+      ],
+      "firstNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "system",
+          "actionId": "minionInfo"
+        },
+        {
+          "kind": "system",
+          "actionId": "demonInfo"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "evilTwin",
+          "actionId": "learnTwin"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "washerwoman",
+          "actionId": "learnTownsfolk"
+        },
+        {
+          "kind": "character",
+          "characterId": "librarian",
+          "actionId": "learnOutsider"
+        },
+        {
+          "kind": "character",
+          "characterId": "investigator",
+          "actionId": "learnMinion"
+        },
+        {
+          "kind": "character",
+          "characterId": "chef",
+          "actionId": "learnEvilPairs"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "clockmaker",
+          "actionId": "learnSteps"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ]
+    },
+    "setupInput": {
+      "players": [
+        {
+          "id": "imp",
+          "seat": 1,
+          "name": "imp",
+          "actualCharacter": "imp"
+        },
+        {
+          "id": "recluse",
+          "seat": 2,
+          "name": "recluse",
+          "actualCharacter": "recluse"
+        },
+        {
+          "id": "poisoner",
+          "seat": 3,
+          "name": "poisoner",
+          "actualCharacter": "poisoner"
+        },
+        {
+          "id": "chef",
+          "seat": 4,
+          "name": "chef",
+          "actualCharacter": "chef"
+        },
+        {
+          "id": "monk",
+          "seat": 5,
+          "name": "monk",
+          "actualCharacter": "monk"
+        },
+        {
+          "id": "soldier",
+          "seat": 6,
+          "name": "soldier",
+          "actualCharacter": "soldier"
+        },
+        {
+          "id": "mayor",
+          "seat": 7,
+          "name": "mayor",
+          "actualCharacter": "mayor"
+        },
+        {
+          "id": "virgin",
+          "seat": 8,
+          "name": "virgin",
+          "actualCharacter": "virgin"
+        }
+      ]
+    },
+    "systemInputs": {
+      "minionInfo": null,
+      "demonInfo": {
+        "characterIds": [
+          "artist",
+          "savant",
+          "juggler"
+        ]
+      }
+    },
+    "stopAt": "Assert the specified prefix, then separately continue to Day or gameEnd with explicit choices in the test. Never auto-skip unknown actions.",
+    "commands": [
+      {
+        "action": "poisoner.choosePoisonTarget",
+        "input": {
+          "playerIds": [
+            "monk"
+          ]
+        }
+      },
+      {
+        "action": "chef.learnEvilPairs",
+        "input": null,
+        "deliveredResult": {
+          "kind": "number",
+          "value": 1
+        },
+        "edgeJudgments": {
+          "imp-recluse": "evil",
+          "recluse-poisoner": "good"
+        }
+      }
+    ]
+  },
+  {
+    "id": "mutant-good-twin",
+    "route": "production",
+    "input": {
+      "assignTwin": "mutant",
+      "executeMutant": true
+    },
+    "expected": {
+      "mutantAlive": false,
+      "winner": "evil",
+      "phase": "firstNight",
+      "currentStep": null,
+      "availableActions": [],
+      "undoRestoresAliveAndProgress": true,
+      "mutantExecutionCount": 1,
+      "mutantDeathCount": 1,
+      "twinTarget": "mutant",
+      "nextDayExecutionConsumed": false,
+      "undoRestoresMutantAlive": true,
+      "undoRestoresGameEnd": null,
+      "gameEndReason": "goodTwinExecuted",
+      "gameEndCause": "confirmed mutant execution event",
+      "availableActionsMeaning": "no candidates; absent or [] accepted",
+      "undoCompareFields": [
+        "players",
+        "currentStep",
+        "availableActions",
+        "ruleState.twinRelationships",
+        "gameEnd"
+      ]
+    },
+    "definition": {
+      "id": "mutant-good-twin",
+      "name": "mutant-good-twin",
+      "characterIds": [
+        "washerwoman",
+        "librarian",
+        "investigator",
+        "chef",
+        "empath",
+        "fortuneTeller",
+        "undertaker",
+        "monk",
+        "ravenkeeper",
+        "virgin",
+        "slayer",
+        "soldier",
+        "mayor",
+        "butler",
+        "drunk",
+        "recluse",
+        "saint",
+        "poisoner",
+        "spy",
+        "scarletWoman",
+        "baron",
+        "imp",
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "philosopher",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+        "evilTwin",
+        "witch",
+        "cerenovus",
+        "pitHag",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox"
+      ],
+      "firstNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "system",
+          "actionId": "minionInfo"
+        },
+        {
+          "kind": "system",
+          "actionId": "demonInfo"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "evilTwin",
+          "actionId": "learnTwin"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "washerwoman",
+          "actionId": "learnTownsfolk"
+        },
+        {
+          "kind": "character",
+          "characterId": "librarian",
+          "actionId": "learnOutsider"
+        },
+        {
+          "kind": "character",
+          "characterId": "investigator",
+          "actionId": "learnMinion"
+        },
+        {
+          "kind": "character",
+          "characterId": "chef",
+          "actionId": "learnEvilPairs"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "clockmaker",
+          "actionId": "learnSteps"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ]
+    },
+    "setupInput": {
+      "players": [
+        {
+          "id": "evilTwin",
+          "seat": 1,
+          "name": "evilTwin",
+          "actualCharacter": "evilTwin"
+        },
+        {
+          "id": "mutant",
+          "seat": 2,
+          "name": "mutant",
+          "actualCharacter": "mutant"
+        },
+        {
+          "id": "imp",
+          "seat": 3,
+          "name": "imp",
+          "actualCharacter": "imp"
+        },
+        {
+          "id": "chef",
+          "seat": 4,
+          "name": "chef",
+          "actualCharacter": "chef"
+        },
+        {
+          "id": "monk",
+          "seat": 5,
+          "name": "monk",
+          "actualCharacter": "monk"
+        },
+        {
+          "id": "butler",
+          "seat": 6,
+          "name": "butler",
+          "actualCharacter": "butler"
+        },
+        {
+          "id": "empath",
+          "seat": 7,
+          "name": "empath",
+          "actualCharacter": "empath"
+        },
+        {
+          "id": "soldier",
+          "seat": 8,
+          "name": "soldier",
+          "actualCharacter": "soldier"
+        },
+        {
+          "id": "mayor",
+          "seat": 9,
+          "name": "mayor",
+          "actualCharacter": "mayor"
+        }
+      ]
+    },
+    "systemInputs": {
+      "minionInfo": null,
+      "demonInfo": {
+        "characterIds": [
+          "artist",
+          "savant",
+          "juggler"
+        ]
+      }
+    },
+    "stopAt": "Assert the specified prefix, then separately continue to Day or gameEnd with explicit choices in the test. Never auto-skip unknown actions.",
+    "commands": [
+      {
+        "action": "evilTwin.assignTwin",
+        "input": {
+          "playerIds": [
+            "mutant"
+          ]
+        }
+      },
+      {
+        "action": "mutant.resolveMadnessExecution",
+        "optional": true,
+        "decision": "execute"
+      }
+    ]
+  },
+  {
+    "id": "soldier-no-dashii",
+    "route": "production",
+    "input": {
+      "poisonerTarget": "empath"
+    },
+    "expected": {
+      "soldierPoisoned": false,
+      "empathPoisonSources": [
+        "poisoner"
+      ],
+      "monkPoisoned": true,
+      "poisonedPlayerIds": [
+        "empath",
+        "monk"
+      ],
+      "monkPoisonSources": [
+        "noDashii"
+      ],
+      "soldierPoisonSources": []
+    },
+    "definition": {
+      "id": "soldier-no-dashii",
+      "name": "soldier-no-dashii",
+      "characterIds": [
+        "washerwoman",
+        "librarian",
+        "investigator",
+        "chef",
+        "empath",
+        "fortuneTeller",
+        "undertaker",
+        "monk",
+        "ravenkeeper",
+        "virgin",
+        "slayer",
+        "soldier",
+        "mayor",
+        "butler",
+        "drunk",
+        "recluse",
+        "saint",
+        "poisoner",
+        "spy",
+        "scarletWoman",
+        "baron",
+        "imp",
+        "clockmaker",
+        "dreamer",
+        "snakeCharmer",
+        "mathematician",
+        "flowergirl",
+        "townCrier",
+        "oracle",
+        "savant",
+        "seamstress",
+        "philosopher",
+        "artist",
+        "juggler",
+        "sage",
+        "mutant",
+        "sweetheart",
+        "barber",
+        "klutz",
+        "evilTwin",
+        "witch",
+        "cerenovus",
+        "pitHag",
+        "fangGu",
+        "vigormortis",
+        "noDashii",
+        "vortox"
+      ],
+      "firstNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "system",
+          "actionId": "minionInfo"
+        },
+        {
+          "kind": "system",
+          "actionId": "demonInfo"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "evilTwin",
+          "actionId": "learnTwin"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "washerwoman",
+          "actionId": "learnTownsfolk"
+        },
+        {
+          "kind": "character",
+          "characterId": "librarian",
+          "actionId": "learnOutsider"
+        },
+        {
+          "kind": "character",
+          "characterId": "investigator",
+          "actionId": "learnMinion"
+        },
+        {
+          "kind": "character",
+          "characterId": "chef",
+          "actionId": "learnEvilPairs"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "clockmaker",
+          "actionId": "learnSteps"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ]
+    },
+    "setupInput": {
+      "players": [
+        {
+          "id": "noDashii",
+          "seat": 1,
+          "name": "noDashii",
+          "actualCharacter": "noDashii"
+        },
+        {
+          "id": "soldier",
+          "seat": 2,
+          "name": "soldier",
+          "actualCharacter": "soldier"
+        },
+        {
+          "id": "empath",
+          "seat": 3,
+          "name": "empath",
+          "actualCharacter": "empath"
+        },
+        {
+          "id": "monk",
+          "seat": 4,
+          "name": "monk",
+          "actualCharacter": "monk"
+        },
+        {
+          "id": "poisoner",
+          "seat": 5,
+          "name": "poisoner",
+          "actualCharacter": "poisoner"
+        }
+      ]
+    },
+    "systemInputs": {
+      "minionInfo": null,
+      "demonInfo": {
+        "characterIds": [
+          "artist",
+          "savant",
+          "juggler"
+        ]
+      }
+    },
+    "stopAt": "Assert the specified prefix, then separately continue to Day or gameEnd with explicit choices in the test. Never auto-skip unknown actions.",
+    "commands": [
+      {
+        "action": "poisoner.choosePoisonTarget",
+        "input": {
+          "playerIds": [
+            "empath"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "dead-demon-fortune-teller",
+    "route": "bounded-facts",
+    "given": {
+      "demonAlive": false,
+      "demonPoisoned": true,
+      "fortuneTellerAlive": true,
+      "fortuneTellerImpaired": false,
+      "fortuneTellerSource": "current actual fortuneTeller ability",
+      "demonCharacter": "imp",
+      "redHerringPlayerId": "anotherGoodPlayer",
+      "registrationJudgments": []
+    },
+    "input": {
+      "fortuneTellerTargets": [
+        "deadDemon",
+        "self"
+      ]
+    },
+    "expected": {
+      "normalInformation": true,
+      "deliveredResult": {
+        "kind": "boolean",
+        "value": true
+      },
+      "deadDemonAlive": false,
+      "deadDemonPoisoned": true,
+      "deadDemonCharacter": "imp",
+      "targetsDistinct": true
+    }
+  }
+]

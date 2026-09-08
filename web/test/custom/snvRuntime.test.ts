@@ -5,10 +5,10 @@ import { realWasmCore, replayOrThrow } from "./realCustomWasmHarness.js";
 import { createSession, take } from "./snvSupport.js";
 
 it("runs all nine Production handlers and simulation through real WASM, parser, session and IndexedDB", async () => {
-  const { session, storage } = await createSession(["philosopher", "snakeCharmer", "clockmaker", "dreamer", "seamstress", "mathematician", "artist", "savant", "juggler", "recluse", "mutant", "evilTwin", "witch", "cerenovus", "noDashii"]);
+  const { session, storage } = await createSession(["philosopher", "snakeCharmer", "clockmaker", "dreamer", "seamstress", "mathematician", "artist", "savant", "juggler", "recluse", "mutant", "evilTwin", "witch", "cerenovus", "noDashii"], undefined, "p2");
   const events = [];
   events.push((await take(session, "philosopher", { characterIds: ["seamstress"] })).proposal.event);
-  events.push((await take(session, "evilTwin", { playerIds: ["p2"] })).proposal.event);
+  events.push((await take(session, "evilTwin", null)).proposal.event);
   events.push((await take(session, "witch", { playerIds: ["p4"] })).proposal.event);
   const madness = await take(session, "cerenovus", { playerIds: ["p7"], characterId: "sage" }); events.push(madness.proposal.event);
   expect(madness.proposal.revealPayload).toEqual({ kind: "madnessAssignment", playerId: "p7", characterId: "sage" });

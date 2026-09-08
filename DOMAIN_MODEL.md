@@ -22,11 +22,17 @@ source-specific Philosopher choices/use, twin relationships, Witch curses, Ceren
 durable impairment sources, and confirmed malfunction evidence. Initial assignment and current
 effect validity are distinct. Day retains first-night facts without executing nominations or madness.
 
-An occurrence is either an actual ability instance or a simulated action tied to a failed
-Philosopher choice. Twin repairs additionally carry the causal event and prior relationship event.
+An occurrence is either an actual ability instance or guidance tied to a failed Philosopher
+choice, initial Drunk identity, or acquired Drunk assignment. Preparation and optional occurrences
+carry typed causal events; delivery references the confirmed preparation version. Twin assignment
+and notification are separate actions. RuleState exposes preparation records, guidance, Poisoner
+and Butler assignments; all are replay-derived. Required preparation blocks dependent delivery,
+while optional Mutant decisions preserve ordinary progress. Effective good-twin execution records
+a typed game end, clears actions, and is reversible by prefix replay.
 Completion snapshots preserve the original delivered information. Mathematician reads the preceding
 audit prefix, counts subjects once and excludes its own malfunction. Audit attribution for simulation
-uses the real Philosopher source. Information truth, permitted delivery and actual delivery are
+uses the real source. Its incorrect-information evidence contains actual delivery and causes,
+with no computed-answer dependency. Information truth, permitted delivery and actual delivery are
 separate; the approved Vortox policy tests falsity against actual facts before registration.
 
 Related documents:

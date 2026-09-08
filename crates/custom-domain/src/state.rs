@@ -16,6 +16,11 @@ use crate::{
 /// ability or an impairment's provenance.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CustomGameFacts {
+    pub(crate) prefix_event_id: String,
+    pub(crate) poisoner_choices: Vec<crate::contracts::TargetAssignment>,
+    pub(crate) master_choices: Vec<crate::contracts::TargetAssignment>,
+    pub(crate) preparations: Vec<ConfirmedActionFact>,
+    pub(crate) game_end: Option<crate::contracts::CustomGameEnd>,
     pub(crate) players: Vec<Player>,
     pub(crate) ability_grants: Vec<AbilityGrant>,
     pub(crate) active_impairments: Vec<ActiveImpairment>,
@@ -91,6 +96,7 @@ pub(crate) struct DurableImpairment {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ConfirmedActionFact {
+    pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
     pub(crate) event_id: String,
     pub(crate) occurrence: ActionOccurrence,
     pub(crate) result: crate::contracts::CustomActionResult,
@@ -106,6 +112,9 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    PoisonerPoison,
+    ButlerMaster,
+    MutantExecution,
     PhilosopherAcquisition,
     SnakeCharmerSwap,
     WitchCurse,
@@ -133,6 +142,7 @@ pub(crate) struct ActionOccurrence {
     pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
     pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
 }
 
 /// One concrete source. Public DTOs preserve the legacy actual-ability field.
@@ -144,11 +154,12 @@ pub(crate) enum ActionSource {
 
 impl ActionOccurrence {
     pub(crate) fn from_step(step: &PhaseStep) -> Result<Self, crate::error::CoreError> {
-        let occurrence = Self::from_parts(
+        let occurrence = Self::from_all_parts(
             step.action_ref.clone().ok_or_else(invalid_occurrence)?,
             step.ability_use.clone(),
             step.simulation_source.clone(),
             step.follow_up_cause.clone(),
+            step.action_cause.clone(),
         )?;
         if occurrence.step_id()? != step.id {
             return Err(invalid_occurrence());
@@ -162,11 +173,28 @@ impl ActionOccurrence {
         simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
         follow_up_cause: Option<crate::contracts::FollowUpCause>,
     ) -> Result<Self, crate::error::CoreError> {
+        Self::from_all_parts(
+            action_ref,
+            ability_use,
+            simulation_source,
+            follow_up_cause,
+            None,
+        )
+    }
+
+    pub(crate) fn from_all_parts(
+        action_ref: FirstNightActionRef,
+        ability_use: Option<AbilityUseRef>,
+        simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+        follow_up_cause: Option<crate::contracts::FollowUpCause>,
+        action_cause: Option<crate::contracts::ActionCause>,
+    ) -> Result<Self, crate::error::CoreError> {
         let value = Self {
             action_ref,
             ability_use,
             simulation_source,
             follow_up_cause,
+            action_cause,
         };
         match (
             &value.action_ref,
@@ -175,14 +203,16 @@ impl ActionOccurrence {
         ) {
             (FirstNightActionRef::System { action_id }, None, None) => {
                 system_action_id(action_id)?;
-                if value.follow_up_cause.is_some() {
+                if value.follow_up_cause.is_some() || value.action_cause.is_some() {
                     return Err(invalid_occurrence());
                 }
             }
             (FirstNightActionRef::Character { character_id, .. }, Some(source), None)
                 if character_id == &source.character_id && valid_source(source) => {}
             (FirstNightActionRef::Character { .. }, None, Some(source))
-                if source.source_ability_use.character_id == "philosopher"
+                if (source.source_ability_use.character_id == "philosopher"
+                    || (source.guidance.is_some()
+                        && source.source_ability_use.character_id == "drunk"))
                     && valid_source(&source.source_ability_use)
                     && !source.selection_event_id.trim().is_empty() => {}
             _ => return Err(invalid_occurrence()),
@@ -193,6 +223,48 @@ impl ActionOccurrence {
                 || !matches!(&value.action_ref, FirstNightActionRef::Character { character_id, .. } if character_id == "evilTwin")
                 || value.simulation_source.is_some()
             {
+                return Err(invalid_occurrence());
+            }
+        }
+        if value.action_cause.is_some() && value.follow_up_cause.is_some() {
+            return Err(invalid_occurrence());
+        }
+        if let Some(cause) = &value.action_cause {
+            use crate::contracts::ActionCause;
+            let valid = match cause {
+                ActionCause::InitialPreparation { source_event_id } => {
+                    !source_event_id.trim().is_empty()
+                }
+                ActionCause::RequiredPreparation {
+                    trigger_event_id,
+                    previous_preparation_event_id,
+                } => {
+                    !trigger_event_id.trim().is_empty()
+                        && previous_preparation_event_id
+                            .as_ref()
+                            .is_none_or(|id| !id.trim().is_empty())
+                }
+                ActionCause::Delivery {
+                    preparation_event_id,
+                } => !preparation_event_id.trim().is_empty(),
+                ActionCause::Optional { prefix_event_id } => !prefix_event_id.trim().is_empty(),
+            };
+            if !valid {
+                return Err(invalid_occurrence());
+            }
+        }
+        if let Some(source) = &value.simulation_source {
+            use crate::contracts::GuidanceCause;
+            let valid = match &source.guidance {
+                None => source.source_ability_use.character_id == "philosopher",
+                Some(GuidanceCause::InitialDrunk | GuidanceCause::AcquiredDrunk) => {
+                    source.source_ability_use.character_id == "drunk"
+                }
+                Some(GuidanceCause::Choice { parent_event_id }) => {
+                    !parent_event_id.trim().is_empty()
+                }
+            };
+            if !valid {
                 return Err(invalid_occurrence());
             }
         }
@@ -241,6 +313,7 @@ impl ActionOccurrence {
             ability_use: self.ability_use.clone(),
             simulation_source: self.simulation_source.clone(),
             follow_up_cause: self.follow_up_cause.clone(),
+            action_cause: self.action_cause.clone(),
         }
     }
 
@@ -285,6 +358,15 @@ impl ActionOccurrence {
                 encode_part(&cause.relationship_event_id)
             ));
         }
+        if let Some(cause) = &self.action_cause {
+            if self.follow_up_cause.is_some() {
+                return Err(invalid_occurrence());
+            }
+            id.push_str(":cause");
+            id.push_str(&encode_part(
+                &serde_json::to_string(cause).map_err(|_| invalid_occurrence())?,
+            ));
+        }
         Ok(id)
     }
 }
@@ -309,6 +391,7 @@ pub(crate) struct ActionOccurrenceIdentity {
     pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
     pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
 }
 
 pub(crate) type ActionOccurrenceKey = ActionOccurrenceIdentity;
@@ -375,6 +458,8 @@ pub(crate) type ActionCompletion = CompletedActionOccurrence;
 /// persistence contract.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub(crate) struct FirstNightProgress {
+    pub(crate) required_queue: Vec<ActionOccurrence>,
+    pub(crate) available_occurrences: Vec<ActionOccurrence>,
     pub(crate) cursor: usize,
     pub(crate) current_occurrences: Vec<ActionOccurrence>,
     pub(crate) completed_occurrences: Vec<ActionOccurrenceIdentity>,
@@ -403,8 +488,9 @@ impl FirstNightProgress {
     /// Return the next occurrence to expose to a caller.  Immediate work always precedes the
     /// current ordered entry, while the ordered cursor itself never moves backwards.
     pub(crate) fn next_occurrence(&self) -> Option<&ActionOccurrence> {
-        self.immediate_queue
+        self.required_queue
             .first()
+            .or_else(|| self.immediate_queue.first())
             .or_else(|| self.current_occurrences.first())
     }
 }
