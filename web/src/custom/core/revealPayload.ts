@@ -40,7 +40,7 @@ export function proposalRevealPayload(proposal?: Proposal): RevealPayload | unde
 export function isRevealPayload(value: unknown): value is RevealPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
-  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload) || isEvilTwinPairRevealPayload(payload);
+  if ("kind" in payload) return isSpyGrimoireRevealPayload(payload) || isRoleInformationRevealPayload(payload) || isEvilTwinPairRevealPayload(payload) || isMadnessAssignmentRevealPayload(payload);
   if (!nonEmptyString(payload.messageKo)) return false;
   if (!optionalNonEmptyString(payload.previewMessageKo)) return false;
   if (!optionalNonEmptyString(payload.labelKo) || !optionalNonEmptyString(payload.valueKo)) return false;

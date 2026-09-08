@@ -490,7 +490,7 @@ export type RoleInformationRevealPayload =
   | EvilInformationRevealPayload;
 
 
-export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload;
+export type RevealPayload = TextRevealPayload | SpyGrimoireRevealPayload | RoleInformationRevealPayload | EvilTwinPairRevealPayload | MadnessAssignmentRevealPayload;
 export type SetupDistributionRequest = { customDefinition: CustomScriptDefinition; playerCount: number; actualCharacters: string[] };
 
 

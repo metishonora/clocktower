@@ -25,9 +25,8 @@ pub(crate) use runtime::{
     project_pending_steps, NightScheduler, ProjectedOccurrenceStep,
 };
 
-/// Select the activation policy for this build. Production has no Character-specific policy yet;
-/// the dedicated fixture build supplies its own rule so fixture replay still traverses the exact
-/// runtime fold without teaching production code about fixture outcomes.
+/// Select the separately owned Production SnV or fixture activation policy. Both traverse
+/// the same custom runtime fold without registering fixture outcomes in Production.
 pub(crate) fn activation_rule() -> Box<dyn ActivationRule> {
     #[cfg(feature = "custom-runtime-fixtures")]
     {

@@ -21,6 +21,8 @@ mod issue207_scheduler;
 mod issue207_acquisition;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue207_acceptance;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue207_assignments;
 mod issue207_impairments;
 #[cfg(not(feature = "custom-runtime-fixtures"))]

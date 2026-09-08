@@ -1,10 +1,9 @@
 //! Pure activation decisions for newly owned first-night ability instances.
 //!
 //! The scheduler owns the cursor and queues, while this module owns only the small rule boundary
-//! that decides how a newly available instance enters the current night.  Production currently
-//! has no Character activation policy here: [`NoActionActivation`] deliberately suppresses new
-//! instances until a Character rule supplies an explicit decision.  Tests and the fixture build
-//! can inject a rule without teaching the common scheduler any Character-specific behavior.
+//! that decides how a newly available instance enters the current night. Production supplies
+//! the SnV policy from its character module; fixture builds supply their own bounded policy.
+//! [`NoActionActivation`] remains available for tests and explicit suppression of new instances.
 
 use crate::{
     contracts::FirstNightActionRef,
@@ -48,7 +47,7 @@ pub(crate) trait ActivationRule {
     fn decide(&self, context: &ActivationContext<'_>) -> Result<ActivationDecision, CoreError>;
 }
 
-/// Common production boundary until Character-specific activation policies are implemented.
+/// Explicit suppression policy for callers that do not admit newly created occurrences.
 /// Existing ownership is still projected by the scheduler; only newly owned instances receive
 /// this default and therefore do not auto-run merely because they exist.
 #[derive(Debug, Copy, Clone, Default)]

@@ -110,3 +110,129 @@ fn twin_swap_creates_one_causal_repair_and_undo_restores_both_prefixes() {
     let result: Value = serde_json::from_str(&crate::replay_json(&forged.to_string())).unwrap();
     assert_eq!(result["ok"], false);
 }
+
+#[test]
+fn bounded_twin_followup_ignores_name_and_death_and_disappears_when_no_longer_needed() {
+    use super::issue207_impairments::{facts, source};
+    use crate::{
+        contracts::{
+            CustomActionConfirmedPayload, CustomActionResult, FirstNightActionRef, GameEvent,
+            GameEventKind, TwinRelationship,
+        },
+        event::CustomFactChanges,
+        first_night::{ActionContext, FollowUpContext, ValidatedActionEvent, ValidatedCustomEvent},
+        model::{Alignment, Phase},
+        rules::CustomRuleService,
+        state::{ActionOccurrence, ConfirmedActionFact},
+    };
+    let (definition, mut before) = facts(&["evilTwin", "snakeCharmer", "artist", "imp"]);
+    let twin_source = source(&before, 0);
+    before.twin_relationships.push(TwinRelationship {
+        source_event_id: "pair".into(),
+        ability_use: twin_source,
+        effective: true,
+        target_player_id: "p2".into(),
+    });
+    let action_ref = FirstNightActionRef::Character {
+        character_id: "snakeCharmer".into(),
+        action_id: "choosePlayer".into(),
+    };
+    let occurrence = ActionOccurrence::character(action_ref.clone(), source(&before, 1)).unwrap();
+    let payload = CustomActionConfirmedPayload {
+        step_id: occurrence.step_id().unwrap(),
+        action_ref,
+        ability_use: occurrence.ability_use.clone(),
+        simulation_source: None,
+        follow_up_cause: None,
+        input: None,
+        result: CustomActionResult::NoEffect,
+        delivered_result: None,
+        registration_judgments: vec![],
+    };
+    let event = ValidatedActionEvent::Custom(ValidatedCustomEvent::for_tests(
+        GameEvent {
+            id: "trigger".into(),
+            phase: Phase::FirstNight,
+            summary: "bounded transition".into(),
+            created_at: "t".into(),
+            kind: GameEventKind::CustomActionConfirmed {
+                payload: payload.clone(),
+            },
+        },
+        payload,
+        CustomFactChanges::default(),
+    ));
+    let entry=crate::characters::sects_and_violets::registrations().into_iter().find(|r|matches!(&r.spec.action_ref,FirstNightActionRef::Character{character_id,..}if character_id=="evilTwin")).unwrap();
+    let followup = entry.handler.follow_up_rule().unwrap();
+    let mut changed = before.clone();
+    changed.players[1].name = "renamed".into();
+    changed.players[1].alive = false;
+    assert!(followup
+        .candidates(&FollowUpContext {
+            previous_facts: &before,
+            next_facts: &changed,
+            event: &event,
+            event_stream_index: 1
+        })
+        .unwrap()
+        .is_empty());
+    let mut changed = before.clone();
+    changed.players[1].alignment = Alignment::Evil;
+    changed.confirmed_actions.push(ConfirmedActionFact {
+        event_id: "trigger".into(),
+        occurrence,
+        result: CustomActionResult::NoEffect,
+    });
+    let candidates = followup
+        .candidates(&FollowUpContext {
+            previous_facts: &before,
+            next_facts: &changed,
+            event: &event,
+            event_stream_index: 1,
+        })
+        .unwrap();
+    assert_eq!(candidates.len(), 1);
+    assert!(followup
+        .candidates(&FollowUpContext {
+            previous_facts: &changed,
+            next_facts: &changed,
+            event: &event,
+            event_stream_index: 2
+        })
+        .unwrap()
+        .is_empty());
+    let rules = CustomRuleService::new(&definition, &changed);
+    let context = ActionContext {
+        rule_service: &rules,
+        event_id: "",
+    };
+    let first = entry
+        .handler
+        .project_occurrence(&entry.spec, &context, &candidates[0])
+        .unwrap()
+        .unwrap();
+    assert_eq!(first.id, candidates[0].step_id().unwrap());
+    changed.players[1].alignment = Alignment::Good;
+    let rules = CustomRuleService::new(&definition, &changed);
+    let context = ActionContext {
+        rule_service: &rules,
+        event_id: "",
+    };
+    assert!(entry
+        .handler
+        .project_occurrence(&entry.spec, &context, &candidates[0])
+        .unwrap()
+        .is_none());
+    changed.players[1].alignment = Alignment::Evil;
+    changed.players[0].alive = false;
+    let rules = CustomRuleService::new(&definition, &changed);
+    let context = ActionContext {
+        rule_service: &rules,
+        event_id: "",
+    };
+    assert!(entry
+        .handler
+        .project_occurrence(&entry.spec, &context, &candidates[0])
+        .unwrap()
+        .is_none());
+}

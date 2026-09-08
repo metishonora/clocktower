@@ -13,7 +13,7 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 - Task 4: complete; Production Philosopher/Snake Charmer handlers, source-dependent impairment resolution and activation verified.
 - Task 5: implemented and verified; causal twin repairs and source-specific Witch/Cerenovus assignments.
 - Task 6: implemented and verified; four information handlers, scoped registration, actual-truth Vortox policy and prefix-based Mathematician audit.
-- Task 7: pending.
+- Task 7: complete; Production acceptance, restoration, independent build, release/PWA and ownership documentation verified.
 - Separation checkpoint: passed at `ca357fd`. Subsequent behavior changes stay inside custom ownership.
 
 ## Compatibility boundary
@@ -166,3 +166,25 @@ Other Task 3 verification so far: normal custom domain 79 + WASM 6 passed; fixtu
 보르톡스의 거짓 여부는 Registration Judgment 적용 전의 실제 Character·진영·사실을 기준으로 판단한다. 오등록을 먼저 적용한 뒤 반전하여 실제 참인 정보를 허용하지 않는다. 예를 들어 선한 은둔자와 선한 예술가를 재봉사가 비교하면, 은둔자를 악으로 판정했더라도 보르톡스 아래에서는 «다르다»만 전달한다. 이는 2026-09-08 사용자가 승인한 앱의 고정 정책이며, 오등록과 보르톡스의 결합에 관한 유일한 공식 판정으로 표기하지 않는다.
 
 - Task 6: custom domain 104 + WASM 6, fixture-feature domain 90, fresh Production WASM and custom web 64 passed. Production tests cover every information shape under impairment/Vortox, same-night Clockmaker acquisition, registration without identity mutation, source-specific use, Mathematician prefix differences, real failed-Philosopher attribution and exact minimal Reveals. Bounded no-candidate coverage rejects an impossible Vortox Dreamer pair without adding characters.
+
+## Final Production acceptance evidence
+
+- `issue207_acceptance.rs` asserts the exact nine Production registrations with no duplicate or system handler substitution.
+- `snvRuntime.test.ts` runs all nine actions plus failed-Philosopher simulation through real WASM, TypeScript parsing, canonical controller and IndexedDB to Day. It also checks the approved Vortox/registration policy at the adapter boundary.
+- `storageReplay.test.ts` verifies causal twin repair reload, two successive durable Undo operations, forged incoming source/cause/result rejection, stale commands, and completed simulation recovery without a retroactive grant. Incoming records are parsed and replay-validated before adoption; rejection preserves the canonical and durable state.
+- `revealBoundary.test.ts` verifies exact individual identity notifications and rejects secret fields in all delivered information/instruction shapes.
+- Production Rust scenarios cover acquisition/deferral, actual identity swaps, first-night entry timing, assignments, every information shape, audit deduplication and prefix snapshots. Separately labeled bounded tests cover otherwise unreachable multiple sources, dead targets, source invalidation and impossible candidate pools.
+
+The real WASM acceptance caught custom TypeScript adapter omissions for Cerenovus Reveal payloads,
+zero-based per-event identity notification sequence, and distinct registration choices sharing one
+actual numeric answer. These are corrected only in custom validators. Numeric `isComputed` flags
+must still agree with the actual number, Vortox candidates must be false, exact payload keys remain
+required, and source/cause/result semantics remain Rust-validated.
+
+Final direct verification: custom domain 106 + custom WASM 6 tests, custom TypeScript/web 71 tests,
+boundary negative fixtures 10 tests, Rust formatting and diff whitespace checks passed. The release
+web build and PWA contract passed. Official implementation/DTO/validator/WASM source paths have no
+diff after the separation checkpoint `ca357fd`; official scenario regression is not repeated for
+these custom-only behavior changes.
+
+Final isolated workspace verification also passed: custom Rust and fixture-feature Rust, fresh Production and fixture WASM, custom TypeScript, Production web tests and 13 fixture WASM/session tests, with official sources and artifacts absent. No unresolved implementation decision remains in the approved scope.

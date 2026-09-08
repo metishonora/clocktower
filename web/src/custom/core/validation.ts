@@ -407,18 +407,6 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   const impaired = value.activeReasons.some(
     (reason) => isRecord(reason) && (reason.type === "drunk" || reason.type === "poisoned"),
   );
-  if (
-    impaired &&
-    value.numberChoices.some(
-      (choice) =>
-        isRecord(choice) &&
-        Array.isArray(choice.registrationJudgments) &&
-        choice.registrationJudgments.length > 0,
-    )
-  ) {
-    return false;
-  }
-
   const vortoxActive = value.activeReasons.some(
     (reason) => isRecord(reason) && reason.type === "vortox",
   );
@@ -443,7 +431,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
     const computedChoices = choices.filter((choice) => choice.isComputed);
     const computedChoiceIsValid = vortoxActive
       ? computedChoices.length === 0 && choices.every((choice) => choice.value !== computedValue)
-      : computedChoices.length === 1 && computedChoices[0]?.value === computedValue;
+      : computedChoices.length >= 1 && computedChoices.every(choice => choice.value === computedValue);
     return value.numberChoices.length === 0 && value.numberConstraint === undefined && computedChoiceIsValid &&
       new Set(choices.map((choice) => choice.value)).size === choices.length;
   }
@@ -469,7 +457,8 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
   return (
     (vortoxActive
       ? computedChoices.length === 0 && value.numberChoices.every((choice) => choice.value !== computedValue)
-      : computedChoices.length === 1 && computedChoices[0]?.value === computedValue) &&
+      : computedChoices.length >= 1 && computedChoices.every(choice => choice.value === computedValue)) &&
+    value.numberChoices.every(choice => choice.isComputed === (choice.value === computedValue)) &&
     uniqueChoices.size === value.numberChoices.length &&
     (value.booleanChoices?.length ?? 0) === 0
   );
@@ -1002,16 +991,25 @@ function isPendingIdentityReveal(value: unknown): boolean {
     hasExactKeys(value, ["sourceEventId", "sequence", "payload"]) &&
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
-    (value.sequence as number) > 0 &&
+    (value.sequence as number) >= 0 &&
     (isCharacterChangeRevealPayload(value.payload) || isMadnessAssignmentRevealPayload(value.payload) || isEvilTwinPairRevealPayload(value.payload));
 }
 
 
 function isPendingIdentityRevealList(value: unknown): boolean {
   if (!Array.isArray(value) || !value.every(isPendingIdentityReveal)) return false;
-  const sourceEventId = value[0]?.sourceEventId;
-  return value.every((reveal, index) =>
-    reveal.sourceEventId === sourceEventId && reveal.sequence === index + 1);
+  const seen = new Set<string>();
+  let sourceEventId: string | undefined;
+  let nextSequence = 0;
+  return value.every(reveal => {
+    if (reveal.sourceEventId !== sourceEventId) {
+      if (seen.has(reveal.sourceEventId)) return false;
+      sourceEventId = reveal.sourceEventId;
+      seen.add(reveal.sourceEventId);
+      nextSequence = 0;
+    }
+    return reveal.sequence === nextSequence++;
+  });
 }
 
 
