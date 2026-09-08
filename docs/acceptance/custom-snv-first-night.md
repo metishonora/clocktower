@@ -11,7 +11,8 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 - Task 2: complete; independent TypeScript, storage, test/build paths and dependency guards verified.
 - Task 3: common source, cause, typed facts, resolver input and scheduler contracts implemented and verified; ordering clarification approved.
 - Task 4: complete; Production Philosopher/Snake Charmer handlers, source-dependent impairment resolution and activation verified.
-- Tasks 5–7: pending.
+- Task 5: implemented and verified; causal twin repairs and source-specific Witch/Cerenovus assignments.
+- Tasks 6–7: pending.
 - Separation checkpoint: passed at `ca357fd`. Subsequent behavior changes stay inside custom ownership.
 
 ## Compatibility boundary
@@ -156,3 +157,5 @@ Other Task 3 verification so far: normal custom domain 79 + WASM 6 passed; fixtu
 - After restoring the existing comparator: fixture-feature Rust 86, fresh fixture WASM/session 13, custom TypeScript/web 64 and dependency-guard negative fixtures 10 passed. No official implementation file changed after `ca357fd`. The ordering decision is resolved; Task 3 can now be committed.
 
 - Task 4: custom domain 86, WASM 6, fixture-feature domain 90 and custom web 64 tests passed with fresh Production WASM. Reachable acquisition, failed acquisition/recovery, atomic acquired Snake Charmer swap, exact identity reveals and forged-result rejection are covered; bounded fact tests cover source loss and overlapping impairments. Unsupported-handler checks retain an unimplemented TB action.
+
+- Task 5: custom domain 90 + WASM 6, fixture-feature domain 90, fresh Production WASM and web 64 passed. An additional bounded impaired/dead-target Cerenovus test passed in the four-test assignment suite. Production tests cover opposed target validation, exact twin/instruction Reveals, causal repair and prefix Undo, forged cause rejection, target identity change and Day persistence. Bounded tests cover concurrent sources and source death independently.

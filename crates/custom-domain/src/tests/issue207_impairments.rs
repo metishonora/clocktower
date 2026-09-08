@@ -14,7 +14,7 @@ use crate::{
     rules::CustomRuleService,
     state::{AbilityProvenance, CustomGameFacts, DurableImpairment},
 };
-fn facts(roster: &[&str]) -> (ResolvedScriptContext, CustomGameFacts) {
+pub(super) fn facts(roster: &[&str]) -> (ResolvedScriptContext, CustomGameFacts) {
     let mut pool = roster.iter().map(|id| id.to_string()).collect::<Vec<_>>();
     pool.extend([
         "artist".into(),
@@ -45,7 +45,7 @@ fn facts(roster: &[&str]) -> (ResolvedScriptContext, CustomGameFacts) {
         .collect();
     (context, CustomGameFacts::from_players(players))
 }
-fn source(facts: &CustomGameFacts, index: usize) -> AbilityUseRef {
+pub(super) fn source(facts: &CustomGameFacts, index: usize) -> AbilityUseRef {
     let p = &facts.players[index];
     AbilityUseRef {
         owner_player_id: p.id.clone(),

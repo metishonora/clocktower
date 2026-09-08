@@ -187,6 +187,13 @@ fn propose_step(
         &context,
         event_input,
         custom_result,
+        match &event.kind {
+            GameEventKind::CustomActionConfirmed { payload } => payload
+                .ability_use
+                .as_ref()
+                .map(|s| s.owner_player_id.as_str()),
+            _ => None,
+        },
     );
     Ok(Proposal {
         event,
@@ -332,6 +339,7 @@ fn apply_event(
                 ValidatedActionEvent::Custom(custom) => Some(&custom.payload().result),
                 ValidatedActionEvent::System(_) => None,
             },
+            occurrence.actor_player_id(),
         ),
     };
     let scheduler = NightScheduler::new(plan, registry, activation);

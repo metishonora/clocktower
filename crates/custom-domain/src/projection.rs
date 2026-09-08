@@ -203,11 +203,40 @@ pub(crate) fn event_reveal(
     context: &ResolvedScriptContext,
     input: &StepInput,
     custom_result: Option<&crate::contracts::CustomActionResult>,
+    actor_player_id: Option<&str>,
 ) -> Option<RevealPayload> {
     match custom_result {
         Some(crate::contracts::CustomActionResult::Information { value }) => {
             custom_information_reveal(action_ref, value)
         }
+        Some(crate::contracts::CustomActionResult::EvilTwin {
+            target_player_id, ..
+        }) => {
+            let actor = facts.player(actor_player_id?)?;
+            let target = facts.player(target_player_id)?;
+            Some(RevealPayload::EvilTwinPair {
+                kind: "evilTwinPair",
+                players: [actor, target]
+                    .into_iter()
+                    .map(|p| crate::contracts::EvilTwinRevealPlayer {
+                        player_id: p.id.clone(),
+                        seat: p.seat,
+                        name: p.name.clone(),
+                        alignment: p.alignment,
+                        character_id: p.actual_character.clone(),
+                    })
+                    .collect(),
+            })
+        }
+        Some(crate::contracts::CustomActionResult::Cerenovus {
+            target_player_id,
+            character_id,
+            ..
+        }) => Some(RevealPayload::MadnessAssignment {
+            kind: "madnessAssignment",
+            player_id: target_player_id.clone(),
+            character_id: character_id.clone(),
+        }),
         Some(_) => None,
         None => system_reveal(action_ref, facts, context, input),
     }

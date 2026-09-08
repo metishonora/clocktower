@@ -89,9 +89,9 @@ pub(crate) fn simulation_occurrences(
 use crate::{
     characters::{custom_ability_acquisition_character_ids, ResolvedScriptContext},
     contracts::{
-        AbilityUseRecord, ActiveImpairment, CustomActionResult, FirstNightActionRef,
-        ImpairmentExpiry, ImpairmentKind, PhilosopherChoiceFact, PhilosopherChoiceOutcome,
-        SnakeCharmerOutcome,
+        AbilityUseRecord, ActiveImpairment, CustomActionResult, FirstNightActionRef, FollowUpCause,
+        ImpairmentExpiry, ImpairmentKind, MadnessAssignment, PhilosopherChoiceFact,
+        PhilosopherChoiceOutcome, SnakeCharmerOutcome, TwinRelationship, WitchCurse,
     },
     error::{CoreError, ErrorKind},
     event::{AbilityGrantChange, CustomActionEventDraft, CustomFactChanges, SnvFactChanges},
@@ -247,6 +247,41 @@ pub(crate) fn resolve_effects(
         }
     }
     facts.resolved_impairments = effects;
+    let curses = facts
+        .witch_curses
+        .iter()
+        .map(|r| {
+            r.initially_effective
+                && effective(facts, &r.ability_use)
+                && facts.players.iter().filter(|p| p.alive).count() > 3
+        })
+        .collect::<Vec<_>>();
+    for (r, active) in facts.witch_curses.iter_mut().zip(curses) {
+        r.effective = active;
+    }
+    let madness = facts
+        .madness_assignments
+        .iter()
+        .map(|r| r.initially_effective && effective(facts, &r.ability_use))
+        .collect::<Vec<_>>();
+    for (r, active) in facts.madness_assignments.iter_mut().zip(madness) {
+        r.effective = active;
+    }
+    let twins = facts
+        .twin_relationships
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            effective(facts, &r.ability_use)
+                && !facts.twin_relationships[i + 1..]
+                    .iter()
+                    .any(|later| later.ability_use == r.ability_use)
+        })
+        .collect::<Vec<_>>();
+    for (r, active) in facts.twin_relationships.iter_mut().zip(twins) {
+        r.effective = active;
+    }
+
     facts.vortox_sources = facts
         .players
         .iter()
@@ -313,6 +348,13 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
             RequiredInputKind::CharacterIds,
         ),
         ("snakeCharmer", "choosePlayer", RequiredInputKind::PlayerIds),
+        ("evilTwin", "learnTwin", RequiredInputKind::PlayerIds),
+        ("witch", "chooseCursedPlayer", RequiredInputKind::PlayerIds),
+        (
+            "cerenovus",
+            "assignMadness",
+            RequiredInputKind::MadnessAssignment,
+        ),
     ]
     .into_iter()
     .map(|(character, id, kind)| {
@@ -345,7 +387,7 @@ impl SnvHandler {
         occurrence: &ActionOccurrence,
     ) -> Result<bool, CoreError> {
         let facts = context.rule_service.facts().ok_or_else(provenance_error)?;
-        if occurrence.action_ref != self.action_ref || occurrence.follow_up_cause.is_some() {
+        if occurrence.action_ref != self.action_ref {
             return Ok(false);
         }
         if !occurrence
@@ -362,6 +404,20 @@ impl SnvHandler {
             .ability_use
             .as_ref()
             .ok_or_else(provenance_error)?;
+        if let Some(cause) = &occurrence.follow_up_cause {
+            return Ok(self.character() == "evilTwin"
+                && twin_needs_repair(facts, source)
+                && facts
+                    .twin_relationships
+                    .iter()
+                    .rev()
+                    .find(|r| r.ability_use == *source)
+                    .is_some_and(|r| r.source_event_id == cause.relationship_event_id)
+                && facts
+                    .confirmed_actions
+                    .iter()
+                    .any(|e| e.event_id == cause.trigger_event_id));
+        }
         Ok(current_ability_instance(facts, source)
             && !(self.character() == "philosopher"
                 && facts
@@ -397,10 +453,21 @@ impl SnvHandler {
                 facts
                     .players
                     .iter()
-                    .filter(|p| p.alive)
+                    .filter(|p| self.character() != "snakeCharmer" || p.alive)
+                    .filter(|p| {
+                        self.character() != "evilTwin"
+                            || facts
+                                .player(occurrence.actor_player_id().unwrap_or(""))
+                                .is_some_and(|a| a.alignment != p.alignment)
+                    })
                     .map(|p| p.id.clone())
                     .collect(),
             );
+        }
+        if self.character() == "cerenovus" {
+            input.kind = RequiredInputKind::MadnessAssignment;
+            input.allowed_character_ids =
+                Some(custom_ability_acquisition_character_ids(definition));
         }
         let origin = occurrence
             .ability_use
@@ -597,6 +664,89 @@ impl SnvHandler {
                     CustomFactChanges::resolved(identities, vec![], changes),
                 ))
             }
+            "evilTwin" | "witch" | "cerenovus" => {
+                let fields = input.input.as_ref().ok_or_else(invalid)?;
+                let ids = fields.player_ids.as_ref().ok_or_else(invalid)?;
+                if ids.len() != 1 {
+                    return Err(invalid());
+                }
+                let selected_character = if self.character() == "cerenovus" {
+                    let character = fields.character_id.as_ref().ok_or_else(invalid)?;
+                    if !custom_ability_acquisition_character_ids(definition).contains(character) {
+                        return Err(invalid());
+                    }
+                    Some(character.clone())
+                } else {
+                    None
+                };
+                if *fields
+                    != (StepInputFields {
+                        player_ids: Some(ids.clone()),
+                        character_id: selected_character.clone(),
+                        ..Default::default()
+                    })
+                {
+                    return Err(invalid());
+                }
+                let target = facts.player(&ids[0]).ok_or_else(invalid)?;
+                if self.character() == "evilTwin" && target.alignment == actor.alignment {
+                    return Err(invalid());
+                }
+                let source = occurrence
+                    .ability_use
+                    .clone()
+                    .ok_or_else(provenance_error)?;
+                let active = effective(facts, &source);
+                let result = match self.character() {
+                    "evilTwin" => {
+                        changes.twin_relationship = Some(TwinRelationship {
+                            source_event_id: event_id.into(),
+                            ability_use: source,
+                            target_player_id: target.id.clone(),
+                            effective: active,
+                        });
+                        CustomActionResult::EvilTwin {
+                            target_player_id: target.id.clone(),
+                            effective: active,
+                        }
+                    }
+                    "witch" => {
+                        let active = active && facts.players.iter().filter(|p| p.alive).count() > 3;
+                        changes.witch_curse = Some(WitchCurse {
+                            source_event_id: event_id.into(),
+                            ability_use: source,
+                            target_player_id: target.id.clone(),
+                            day: 1,
+                            initially_effective: active,
+                            effective: active,
+                        });
+                        CustomActionResult::Witch {
+                            target_player_id: target.id.clone(),
+                            day: 1,
+                            effective: active,
+                        }
+                    }
+                    _ => {
+                        let character_id = selected_character.unwrap();
+                        changes.madness_assignment = Some(MadnessAssignment {
+                            source_event_id: event_id.into(),
+                            ability_use: source,
+                            target_player_id: target.id.clone(),
+                            character_id: character_id.clone(),
+                            day: 1,
+                            initially_effective: active,
+                            effective: active,
+                        });
+                        CustomActionResult::Cerenovus {
+                            target_player_id: target.id.clone(),
+                            character_id,
+                            day: 1,
+                            effective: active,
+                        }
+                    }
+                };
+                Ok((result, CustomFactChanges::resolved(vec![], vec![], changes)))
+            }
             _ => Err(ErrorKind::FirstNightActionHandlerUnavailable.into_error()),
         }
     }
@@ -615,7 +765,60 @@ fn one_player(input: &StepInput) -> Result<&str, CoreError> {
     }
     Ok(&ids[0])
 }
+fn twin_needs_repair(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
+    effective(facts, source)
+        && facts
+            .twin_relationships
+            .iter()
+            .rev()
+            .find(|r| r.ability_use == *source)
+            .is_some_and(|r| {
+                facts
+                    .player(&source.owner_player_id)
+                    .zip(facts.player(&r.target_player_id))
+                    .is_some_and(|(a, b)| a.alignment == b.alignment)
+            })
+}
+impl crate::first_night::FollowUpRule for SnvHandler {
+    fn candidates(
+        &self,
+        context: &crate::first_night::FollowUpContext<'_>,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if self.character() != "evilTwin" {
+            return Ok(vec![]);
+        }
+        let mut result = vec![];
+        for relation in &context.next_facts.twin_relationships {
+            let source = &relation.ability_use;
+            if !twin_needs_repair(context.previous_facts, source)
+                && twin_needs_repair(context.next_facts, source)
+                && context
+                    .next_facts
+                    .twin_relationships
+                    .iter()
+                    .rev()
+                    .find(|r| r.ability_use == *source)
+                    .is_some_and(|r| r.source_event_id == relation.source_event_id)
+            {
+                result.push(ActionOccurrence::from_parts(
+                    self.action_ref.clone(),
+                    Some(source.clone()),
+                    None,
+                    Some(FollowUpCause {
+                        trigger_event_id: context.event.event_id().into(),
+                        relationship_event_id: relation.source_event_id.clone(),
+                    }),
+                )?);
+            }
+        }
+        Ok(result)
+    }
+}
 impl ActionHandler for SnvHandler {
+    fn follow_up_rule(&self) -> Option<&dyn crate::first_night::FollowUpRule> {
+        (self.character() == "evilTwin").then_some(self)
+    }
+
     fn action_ref(&self) -> &FirstNightActionRef {
         &self.action_ref
     }
