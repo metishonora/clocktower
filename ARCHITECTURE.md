@@ -31,9 +31,40 @@ HTTPS host -> iPad Safari -> Add to Home Screen
 
 Do not require a localhost server during play.
 
+## Independent official and custom runtimes (#207)
+
+Official execution lives in `crates/domain`, `crates/wasm` and `web/src/core`.
+Custom execution lives in `crates/custom-domain`, `crates/custom-wasm` and
+`web/src/custom/{core,storage}`, with its session in `web/src/custom/session.ts`.
+Neither runtime imports the other's domain, DTOs, validators, storage helpers or generated WASM.
+The two WASM artifacts have separate adapters and initialization failures. The custom catalog
+is emitted from custom-owned Rust data, including the custom TB/SnV metadata it permits.
+
+Custom SnV rules, information candidates, active effects and causal twin repairs are owned by
+`crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
+in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
+shapes; it does not import official rule implementations. The scheduler owns progress and stable
+occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a
+real failed Philosopher choice and cannot acquire a fictional ability instance.
+
+Production registers exactly nine SnV actions; fixture builds separately register only system
+and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
+including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
+`node --test scripts/check-custom-boundaries.test.mjs`.
+
+The separation checkpoint is `ca357fd`. Custom-only changes after this checkpoint run
+`cargo test -p clocktower-custom-domain -p clocktower-custom-wasm`,
+`pnpm build:wasm:custom`, `pnpm --dir web test:custom`, and `pnpm test:custom-runtime`.
+`node scripts/verify-custom-runtime-isolation.mjs` builds and tests custom in a temporary workspace
+with official source and artifacts absent. The optional `--official` checkpoint verification
+runs official TB/SnV/BMR without custom; it is not required again for custom-only behavior changes.
+Release validation still includes `pnpm --dir web build` and PWA verification.
+
 ## Rust and TypeScript Boundary
 
-Keep the WebAssembly boundary small and JSON-based for MVP.
+Keep the WebAssembly boundary small and JSON-based for MVP. The APIs below describe adapter
+capabilities across the app, not one combined WASM export surface. Official WASM accepts only
+official records; custom WASM owns custom catalog, plan, Setup, propose and replay exports.
 
 ```ts
 core.propose(gameFileJson, commandJson) -> proposalJson
@@ -150,15 +181,6 @@ phase.rs
 day.rs
 night.rs
 messages.rs
-custom/
-  mod.rs
-  game.rs
-  first_night/
-    mod.rs
-    plan.rs
-    registry.rs
-    runtime.rs
-    system.rs
 characters/
   mod.rs
   registry.rs
@@ -181,30 +203,30 @@ characters/
   deterministic choice-token selection. Script-specific combination pools remain in
   `characters/<script_name>.rs`.
 - `setup.rs`, `phase.rs`, `day.rs`, and `night.rs` own their respective rule and flow logic.
-- `custom/game.rs` owns custom-game replay and proposal dispatch. Its event-by-event fold validates
+- `crates/custom-domain/src/game.rs` owns custom-game replay and proposal dispatch. Its event-by-event fold validates
   each event, calculates facts and first-night progress, and adopts them together only when the
   whole transition succeeds.
-- `custom/state.rs` owns replay-derived `CustomGameState`, `CustomGameFacts`, action-occurrence
+- `crates/custom-domain/src/state.rs` owns replay-derived `CustomGameState`, `CustomGameFacts`, action-occurrence
   identity, and `FirstNightProgress`. Completion history and its Step/Reveal snapshots are internal
   replay values; these types are not persisted.
-- `custom/event.rs` owns the finite typed fact-change handoff. `custom/first_night/registry.rs`
+- `crates/custom-domain/src/event.rs` owns the finite typed fact-change handoff. `crates/custom-domain/src/first_night/registry.rs`
   owns `ActionSpec`/handler registration, common provenance, membership, and input validation, and
   constructs the private `ValidatedCustomEvent` accepted by the reducer and scheduler.
-- `custom/reducer.rs` calculates facts only from previous facts and a validated event. `custom/rules.rs`
+- `crates/custom-domain/src/reducer.rs` calculates facts only from previous facts and a validated event. `crates/custom-domain/src/rules.rs`
   supplies read-only facts, ownership, and ability-instance queries; it does not own action behavior
   or a universal participation predicate.
-- `custom/first_night/plan.rs` owns canonical definition-order validation and the authoring-only
-  deterministic default proposal. `custom/first_night/runtime.rs` owns `NightScheduler`, which
+- `crates/custom-domain/src/first_night/plan.rs` owns canonical definition-order validation and the authoring-only
+  deterministic default proposal. `crates/custom-domain/src/first_night/runtime.rs` owns `NightScheduler`, which
   calculates cursor, occurrence completion, exclusion, history, immediate queue, and activation
   admission; `activation.rs` supplies the pure activation decision boundary. `system.rs` owns the
   system handlers.
-- `custom/projection.rs` derives public `RuleState`, current Step, and phase overview from the
+- `crates/custom-domain/src/projection.rs` derives public `RuleState`, current Step, and phase overview from the
   replay-derived facts and progress, retaining confirmed Step/Reveal snapshots for completed rows.
 - `messages.rs` owns confirmed-event summaries, reveal and preview messages, compact warnings, and labels.
 - `characters/mod.rs` owns the common script-selection interface. It must not accumulate one branch per character.
 - `characters/registry.rs` resolves an ordered custom definition against the TB/S&V allowlist and
   exposes roster-scoped membership and canonical `CharacterKind`. The registry does not assign a
-  script owner; official script modules supply only their typed ID/kind projections.
+  script owner; custom-owned character modules supply the typed ID/kind projections; official runtime data is not imported.
 - `identity.rs` owns validated event identities used while crossing the import/replay boundary.
 - `characters/sects_and_violets/step_key.rs` owns S&V step-key parsing and semantic classification.
   Reducers and proposal rules consume the typed result instead of repeating string-prefix logic.
@@ -272,7 +294,7 @@ Progress advances only from confirmed events. Later first-night events persist t
 result and its provenance (`actionRef` and `abilityUse`); they do not persist a projected action
 list, step list, or progress projection.
 
-The custom runtime uses an event-by-event pure fold. `custom/game.rs` replays the current prefix,
+The custom runtime uses an event-by-event pure fold. `crates/custom-domain/src/game.rs` replays the current prefix,
 then `propose_step` invokes the registered handler for the current occurrence and validates the
 candidate through the same boundary used by replay. The candidate facts and progress are discarded
 after proposal; only a later confirmation adds the event to the record.

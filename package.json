@@ -11,11 +11,12 @@
     "generate:acceptance:snv": "pnpm build:wasm && node scripts/generate-sects-and-violets-acceptance-fixtures.mjs",
     "build": "pnpm --dir web build",
     "test": "cargo test --workspace",
-    "build:wasm:custom-runtime": "wasm-pack build crates/wasm --target web --out-dir ../../web/.codex-tmp/issue206-wasm -- --features custom-runtime-fixtures",
-    "test:custom-runtime": "cargo test -p clocktower-domain --features custom-runtime-fixtures issue206 -- --nocapture && pnpm run build:wasm:custom-runtime && pnpm --dir web run test:integration:issue206",
+    "build:wasm:custom-runtime": "wasm-pack build crates/custom-wasm --target web --out-dir ../../web/.codex-tmp/custom-fixture-wasm -- --features custom-runtime-fixtures",
+    "test:custom-runtime": "cargo test -p clocktower-custom-domain --features custom-runtime-fixtures && pnpm run build:wasm:custom-runtime && pnpm --dir web run test:custom:fixtures",
     "test:web": "pnpm --dir web test",
     "test:browser": "pnpm --dir web build && pnpm --dir web run test:browser:run",
     "test-server": "node scripts/test-server-manager.mjs",
-    "test:test-server": "node --test scripts/test-server-manifest.test.mjs .codex/hooks/worktree-maintenance.test.mjs"
+    "test:test-server": "node --test scripts/test-server-manifest.test.mjs .codex/hooks/worktree-maintenance.test.mjs",
+    "build:wasm:custom": "wasm-pack build crates/custom-wasm --target web --out-dir ../../web/src/generated/clocktower_custom_wasm"
   }
 }

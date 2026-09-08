@@ -22,9 +22,6 @@ impl GameFile {
     pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
         match &self.script {
             ScriptReference::Official { script_id } => Ok(*script_id),
-            ScriptReference::Custom { .. } => {
-                Err(crate::error::ErrorKind::CustomScriptNotResolved.into_error())
-            }
         }
     }
 }
@@ -42,97 +39,11 @@ pub(crate) enum ScriptId {
 pub(crate) enum ScriptReference {
     #[serde(rename = "official", rename_all = "camelCase")]
     Official { script_id: ScriptId },
-    #[serde(rename = "custom", rename_all = "camelCase")]
-    Custom { definition: CustomScriptDefinition },
 }
 
 impl ScriptReference {
     #[cfg(test)]
-    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["official", "custom"];
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct CustomScriptDefinition {
-    pub(crate) id: String,
-    pub(crate) name: String,
-    pub(crate) character_ids: Vec<String>,
-    pub(crate) first_night_order: FirstNightOrderPlan,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct CustomScriptDefinitionDraft {
-    pub(crate) id: String,
-    pub(crate) name: String,
-    pub(crate) character_ids: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) first_night_order: Option<FirstNightOrderPlan>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub(crate) enum SystemFirstNightActionId {
-    Dusk,
-    MinionInfo,
-    DemonInfo,
-    Dawn,
-    #[serde(other)]
-    Unknown,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Hash)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub(crate) enum FirstNightActionRef {
-    System {
-        action_id: SystemFirstNightActionId,
-    },
-    Character {
-        character_id: String,
-        action_id: String,
-    },
-}
-
-impl FirstNightActionRef {
-    pub(crate) fn system(action_id: &str) -> Self {
-        let action_id = match action_id {
-            "dusk" => SystemFirstNightActionId::Dusk,
-            "minionInfo" => SystemFirstNightActionId::MinionInfo,
-            "demonInfo" => SystemFirstNightActionId::DemonInfo,
-            "dawn" => SystemFirstNightActionId::Dawn,
-            _ => panic!("unknown system first-night action: {action_id}"),
-        };
-        Self::System { action_id }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-#[serde(transparent)]
-pub(crate) struct FirstNightOrderPlan(pub(crate) Vec<FirstNightActionRef>);
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct CustomFirstNightPlanRequest {
-    pub(crate) custom_definition: CustomScriptDefinitionDraft,
-}
-
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct CustomFirstNightPlanResult {
-    pub(crate) source: FirstNightPlanSource,
-    pub(crate) plan: FirstNightOrderPlan,
-}
-
-#[derive(Debug, Serialize, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub(crate) enum FirstNightPlanSource {
-    Definition,
-    Default,
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["official"];
 }
 
 #[derive(Debug)]
@@ -424,22 +335,12 @@ impl Command {
 #[serde(untagged)]
 pub(crate) enum SetupDistributionRequest {
     Official(OfficialSetupDistributionRequest),
-    Custom(CustomSetupDistributionRequest),
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct OfficialSetupDistributionRequest {
     pub(crate) script_id: ScriptId,
-    pub(crate) player_count: usize,
-    #[serde(default)]
-    pub(crate) actual_characters: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct CustomSetupDistributionRequest {
-    pub(crate) custom_definition: CustomScriptDefinition,
     pub(crate) player_count: usize,
     #[serde(default)]
     pub(crate) actual_characters: Vec<String>,
@@ -529,18 +430,12 @@ pub(crate) enum ReplayScriptIdentity {
         #[serde(rename = "scriptId")]
         script_id: ScriptId,
     },
-    Custom {
-        script: ScriptReference,
-    },
 }
 
 impl ReplayScriptIdentity {
     pub(crate) fn official_script_id(&self) -> Result<ScriptId, crate::error::CoreError> {
         match self {
             Self::Official { script_id } => Ok(*script_id),
-            Self::Custom { .. } => {
-                Err(crate::error::ErrorKind::CustomScriptNotResolved.into_error())
-            }
         }
     }
 }
@@ -936,77 +831,6 @@ pub(crate) struct GameEvent {
     pub(crate) created_at: String,
 }
 
-/// Typed result for the custom Character-action envelope.  Fixture-only result kinds are kept out
-/// of the default production contract and may be added by the dedicated fixture feature.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub(crate) enum CustomActionResult {
-    Information {
-        value: InformationResult,
-    },
-    NoEffect,
-    /// A bounded state-changing outcome used only by the dedicated fixture WASM build.  The
-    /// production contract intentionally has no fixture result discriminator.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureAbilityGranted {
-        target_character_id: String,
-    },
-    /// A bounded identity transition used only by the dedicated fixture WASM build.  The
-    /// reducer still derives the complete before/after identity from the preceding facts.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureIdentityChanged {
-        player_id: String,
-        target_character_id: String,
-    },
-    /// Remove one previously acquired ability instance.  The complete provenance is carried so
-    /// replay can reject a value that does not identify an existing grant exactly.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureAbilityRemoved {
-        owner_player_id: String,
-        character_id: String,
-        ability_instance_id: AbilityInstanceId,
-    },
-    /// Change one player's life fact.  This is a fixture transition, not a production death rule.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureLifeChanged {
-        player_id: String,
-        alive: bool,
-    },
-    /// Add a finite impairment fact; source event and source Character are established by the
-    /// validating handler rather than accepted from the wire.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureImpairmentAdded {
-        player_id: String,
-        impairment_kind: ImpairmentKind,
-    },
-    /// Remove an exact impairment fact, retaining its source provenance in the event envelope.
-    #[cfg(feature = "custom-runtime-fixtures")]
-    FixtureImpairmentRemoved {
-        player_id: String,
-        impairment_kind: ImpairmentKind,
-        source_event_id: String,
-        source_character_id: String,
-        expires: ImpairmentExpiry,
-    },
-}
-
-/// Persisted payload for a custom Character action confirmation.  This lives with the other wire
-/// contracts so `contracts.rs` does not depend on a feature module for its serialized schema.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(crate) struct CustomActionConfirmedPayload {
-    pub(crate) step_id: String,
-    pub(crate) action_ref: FirstNightActionRef,
-    pub(crate) ability_use: AbilityUseRef,
-    pub(crate) input: StepInput,
-    pub(crate) result: CustomActionResult,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub(crate) enum GameEventKind {
@@ -1016,10 +840,6 @@ pub(crate) enum GameEventKind {
     SetupConfirmed { payload: SetupEventPayload },
     #[serde(rename = "phaseStepConfirmed")]
     PhaseStepConfirmed { payload: Box<PhaseStepEventPayload> },
-    #[serde(rename = "customActionConfirmed")]
-    CustomActionConfirmed {
-        payload: CustomActionConfirmedPayload,
-    },
     #[serde(rename = "phaseStepSkipped")]
     PhaseStepSkipped { payload: StepIdPayload },
     #[serde(rename = "phaseStepNeedsFollowUp")]
@@ -1123,7 +943,6 @@ impl GameEventKind {
         "smokeConfirmed",
         "setupConfirmed",
         "phaseStepConfirmed",
-        "customActionConfirmed",
         "phaseStepSkipped",
         "phaseStepNeedsFollowUp",
         "philosopherAbilityResolved",
@@ -1914,7 +1733,7 @@ pub(crate) enum PhilosopherAbilityOutcome {
 pub(crate) struct PhaseStepEventPayload {
     pub(crate) step_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) action_ref: Option<FirstNightActionRef>,
+    pub(crate) action_ref: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) ability_use: Option<AbilityUseRef>,
     #[serde(default)]

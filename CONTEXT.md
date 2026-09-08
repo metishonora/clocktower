@@ -396,3 +396,17 @@ Demon:
 - States: https://wiki.bloodontheclocktower.com/States
 - Abilities: https://wiki.bloodontheclocktower.com/Abilities
 - Setup: https://wiki.bloodontheclocktower.com/Setup
+
+## Custom first-night implementation (#207)
+
+Custom catalog, Setup, first-night runtime and storage now have independent Rust/WASM/TypeScript
+ownership. Production supports Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker,
+Dreamer, Seamstress and Mathematician, plus their relevant first-night ongoing effects. Unsupported
+TB actions fail explicitly. No new play UI, later-night actions, nomination/execution processing or
+madness adjudication is added. Existing official TB/SnV/BMR play stays on its own runtime.
+
+The approved app policy preserves #206 original/acquired ordering. Vortox falsity uses actual
+facts before registration. Failed-Philosopher simulation/recovery uses official general rules plus
+community interpretation; these policy choices are not described as uniquely mandated official
+rulings. Acceptance evidence and independent verification commands are recorded in
+`docs/acceptance/custom-snv-first-night.md`.

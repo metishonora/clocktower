@@ -472,8 +472,6 @@ pub(crate) struct PhaseStep {
     pub(crate) information_prompt: Option<InformationPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) pre_action_reveal: Option<PreActionReveal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -597,8 +595,6 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) support: PhaseStepSupport,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) information_prompt: Option<InformationPrompt>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
     pub(crate) status: PhaseStepStatus,
 }
 

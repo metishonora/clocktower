@@ -1,12 +1,11 @@
 import type {
-  CustomScriptDefinition,
   GameEvent,
   GameFile,
   GameFileV4,
   ScriptReference,
   SeatLayoutState,
 } from "./core/types.js";
-import { parseFirstNightOrderPlan, parseGameEvent } from "./core/validation.js";
+import { parseGameEvent } from "./core/validation.js";
 import {
   isScriptId,
   officialGameFileScriptId,
@@ -14,7 +13,6 @@ import {
   TROUBLE_BREWING,
   type ScriptId,
 } from "./core/scripts.js";
-import { resolveCustomScriptDefinition } from "./customScriptRegistry.js";
 
 const DB_NAME = "clocktower";
 const DB_VERSION = 1;
@@ -30,7 +28,7 @@ export class IndexedDbGameStorageDriver implements GameStorageDriver {
   constructor(
     private readonly scriptId: ScriptId,
     private readonly idb: IDBFactory = globalThis.indexedDB,
-  ) {}
+  ) { }
 
   async loadLatestGame(): Promise<GameFile | undefined> {
     const db = await this.openDb();
@@ -185,54 +183,26 @@ function parseScriptReference(value: unknown): ScriptReference {
     }
     return { type: "official", scriptId: value.scriptId };
   }
-  if (value.type === "custom") {
-    if (!hasExactKeys(value, ["type", "definition"])) throw malformedGameFile();
-    return { type: "custom", definition: parseCustomScriptDefinition(value.definition) };
-  }
   throw malformedGameFile();
 }
 
-export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
-  if (
-    !isRecord(value)
-    || !hasExactKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
-    || typeof value.id !== "string"
-    || value.id.trim().length === 0
-    || typeof value.name !== "string"
-    || value.name.trim().length === 0
-    || !Array.isArray(value.characterIds)
-    || !value.characterIds.every(
-      (characterId) => typeof characterId === "string" && characterId.trim().length > 0,
-    )
-  ) {
-    throw new Error("커스텀 시나리오 정의가 올바르지 않습니다.");
-  }
-  if (new Set(value.characterIds).size !== value.characterIds.length) {
-    throw new Error("커스텀 시나리오에 중복된 캐릭터가 있습니다.");
-  }
-  return resolveCustomScriptDefinition({
-    id: value.id,
-    name: value.name,
-    characterIds: [...value.characterIds],
-    firstNightOrder: parseFirstNightOrderPlan(value.firstNightOrder),
-  });
-}
+
 
 function canonicalGameFile(gameFile: GameFile): GameFileV4 {
   return gameFile.schemaVersion === 4
     ? gameFile
     : {
-        ...gameFile,
-        schemaVersion: 4,
-        game: {
-          script: { type: "official", scriptId: gameFile.game.scriptId },
-          id: gameFile.game.id,
-          name: gameFile.game.name,
-          createdAt: gameFile.game.createdAt,
-          updatedAt: gameFile.game.updatedAt,
-          events: gameFile.game.events,
-        },
-      };
+      ...gameFile,
+      schemaVersion: 4,
+      game: {
+        script: { type: "official", scriptId: gameFile.game.scriptId },
+        id: gameFile.game.id,
+        name: gameFile.game.name,
+        createdAt: gameFile.game.createdAt,
+        updatedAt: gameFile.game.updatedAt,
+        events: gameFile.game.events,
+      },
+    };
 }
 
 function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {

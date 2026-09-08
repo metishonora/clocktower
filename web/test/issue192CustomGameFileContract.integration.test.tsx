@@ -49,46 +49,7 @@ test("generated WASM replays a schema-v4 official reference", async () => {
   });
 });
 
-test("generated WASM replays a custom snapshot with its complete identity", async () => {
-  const result = await wasmCoreAdapter.replay(game({
-    type: "custom",
-    definition: {
-      id: "custom-stable-id",
-      name: "Mixed roster",
-      characterIds: ["washerwoman", "clockmaker", "imp"],
-      firstNightOrder: [
-        { kind: "system", actionId: "dusk" },
-        { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
-        { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
-        { kind: "system", actionId: "minionInfo" },
-        { kind: "system", actionId: "demonInfo" },
-        { kind: "system", actionId: "dawn" },
-      ],
-    },
-  }));
-
-  expect(result.ok).toBe(true);
-  if (!result.ok) return;
-  expect(result.value).toMatchObject({
-    schemaVersion: 4,
-    script: {
-      type: "custom",
-      definition: {
-        id: "custom-stable-id",
-        name: "Mixed roster",
-        characterIds: ["washerwoman", "clockmaker", "imp"],
-        firstNightOrder: [
-          { kind: "system", actionId: "dusk" },
-          { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
-          { kind: "character", characterId: "clockmaker", actionId: "learnSteps" },
-          { kind: "system", actionId: "minionInfo" },
-          { kind: "system", actionId: "demonInfo" },
-          { kind: "system", actionId: "dawn" },
-        ],
-      },
-    },
-    eventCount: 0,
-    phase: "setup",
-  });
-  expect(result.value).not.toHaveProperty("scriptId");
+test("official WASM rejects a custom script reference without runtime fallback", async () => {
+  const result = await wasmCoreAdapter.replay(game({ type: "custom", definition: { id: "custom-boundary", name: "Custom boundary", characterIds: [], firstNightOrder: [{ kind: "system", actionId: "dusk" }, { kind: "system", actionId: "minionInfo" }, { kind: "system", actionId: "demonInfo" }, { kind: "system", actionId: "dawn" }] } }));
+  expect(result).toMatchObject({ ok: false, error: { code: "MALFORMED_GAME_FILE" } });
 });

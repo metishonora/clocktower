@@ -1,18 +1,6 @@
 mod bad_moon_rising;
-pub(crate) mod registry;
 mod sects_and_violets;
 mod trouble_brewing;
-
-pub(crate) use registry::{
-    custom_demon_bluff_character_ids, custom_script_catalog, resolve_custom_script,
-    resolve_custom_script_ids, validate_custom_script_definition,
-    validate_custom_script_definition_draft, ResolvedScriptContext,
-};
-
-#[cfg(test)]
-pub(crate) use registry::{
-    custom_ability_acquisition_character_ids, custom_transformation_character_ids,
-};
 
 #[cfg(test)]
 pub(crate) use sects_and_violets::{

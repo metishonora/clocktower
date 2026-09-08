@@ -13,8 +13,7 @@
   "exclude": [
     "test/**/*Prototype.test.tsx",
     "test/browser/**",
-    "test/issue206CustomRuntime.integration.test.tsx",
-    "test/issue206FixtureWasmHarness.ts",
-    "test/issue206FixtureCustomActionResultValidation.ts"
+    "src/custom/**",
+    "test/custom/**"
   ]
 }

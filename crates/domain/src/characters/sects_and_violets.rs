@@ -1093,21 +1093,6 @@ pub(crate) fn character_kind(character: &str) -> Option<CharacterKind> {
     SnvCharacterId::parse(character).map(|id| id.metadata().kind)
 }
 
-pub(super) fn custom_registry_entries() -> Vec<(&'static str, CharacterKind)> {
-    SnvCharacterId::ALL
-        .into_iter()
-        .map(|id| (id.as_str(), id.metadata().kind))
-        .collect()
-}
-
-pub(super) fn custom_setup_outsider_delta(character_id: &str) -> i8 {
-    match SnvCharacterId::parse(character_id) {
-        Some(SnvCharacterId::FangGu) => 1,
-        Some(SnvCharacterId::Vigormortis) => -1,
-        _ => 0,
-    }
-}
-
 fn nearest_townsfolk_neighbors(players: &[Player], source_player_id: &str) -> Vec<String> {
     let mut seated = players.iter().collect::<Vec<_>>();
     seated.sort_by_key(|player| player.seat);
@@ -1317,7 +1302,6 @@ fn character_step(
         support: metadata.support,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     }
 }
 
@@ -1887,7 +1871,6 @@ fn demon_step(players: &[Player], events: &[GameEvent], prefix: &str) -> Option<
         support: PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     })
 }
 
@@ -1954,7 +1937,6 @@ fn pit_hag_arbitrary_deaths_step(
         support: PhaseStepSupport::Automated,
         information_prompt: None,
         pre_action_reveal: None,
-        action_ref: None,
     })
 }
 
@@ -6628,7 +6610,6 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
             support: PhaseStepSupport::Automated,
             information_prompt: None,
             pre_action_reveal: None,
-            action_ref: None,
         };
         let mut overview = steps
             .into_iter()
@@ -6652,7 +6633,6 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 can_skip: step.can_skip,
                 support: step.support,
                 information_prompt: None,
-                action_ref: step.action_ref,
             })
             .collect::<Vec<_>>();
         let insert_at = overview
@@ -6673,7 +6653,6 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                 can_skip: false,
                 support: PhaseStepSupport::Automated,
                 information_prompt: None,
-                action_ref: None,
                 status: PhaseStepStatus::Current,
             },
         );
@@ -6755,7 +6734,6 @@ fn replay_context(events: &[GameEvent]) -> Result<SnvReplayContext, CoreError> {
                     can_skip: step.can_skip,
                     support: step.support,
                     information_prompt,
-                    action_ref: step.action_ref,
                 })
             })
             .collect::<Result<Vec<_>, _>>()?

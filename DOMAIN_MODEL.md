@@ -8,14 +8,26 @@ class hierarchy, module layout, or new persistence format.
 
 The model was established during [Issue #206](https://github.com/metishonora/clocktower/issues/206).
 Issue #206's custom first-night runtime now implements this responsibility model. Its
-event-by-event fold in `custom/game.rs` validates each event, calculates next `CustomGameFacts`
-through `custom/reducer.rs`, calculates next `FirstNightProgress` through
-`custom/first_night/runtime.rs`, and adopts both only when processing succeeds. The public
-`RuleState`, current Step, and phase overview come from `custom/projection.rs`; the aggregate,
+event-by-event fold in `crates/custom-domain/src/game.rs` validates each event, calculates next `CustomGameFacts`
+through `crates/custom-domain/src/reducer.rs`, calculates next `FirstNightProgress` through
+`crates/custom-domain/src/first_night/runtime.rs`, and adopts both only when processing succeeds. The public
+`RuleState`, current Step, and phase overview come from `crates/custom-domain/src/projection.rs`; the aggregate,
 progress, and completion Step/Reveal snapshots remain replay-derived in memory and are not
 persisted. The broader model remains conceptual outside this custom first-night runtime, and
 existing official scenario runtimes are unchanged. Issue-specific behavior and acceptance
 conditions remain in the approved issue spec.
+
+Issue #207 places this runtime in the independent `clocktower-custom-domain` crate. Facts include
+source-specific Philosopher choices/use, twin relationships, Witch curses, Cerenovus instructions,
+durable impairment sources, and confirmed malfunction evidence. Initial assignment and current
+effect validity are distinct. Day retains first-night facts without executing nominations or madness.
+
+An occurrence is either an actual ability instance or a simulated action tied to a failed
+Philosopher choice. Twin repairs additionally carry the causal event and prior relationship event.
+Completion snapshots preserve the original delivered information. Mathematician reads the preceding
+audit prefix, counts subjects once and excludes its own malfunction. Audit attribution for simulation
+uses the real Philosopher source. Information truth, permitted delivery and actual delivery are
+separate; the approved Vortox policy tests falsity against actual facts before registration.
 
 Related documents:
 

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    characters::{character_kind, is_townsfolk, registry::ResolvedScriptContext},
+    characters::{character_kind, is_townsfolk},
     contracts::{
         ScriptId, SetupDistribution, SetupDistributionRequest, SetupDistributionResult,
         SetupPlayerInput,
@@ -26,57 +26,7 @@ pub(crate) fn setup_distribution(
                 &request.actual_characters,
             ))
         }
-        SetupDistributionRequest::Custom(request) => {
-            if !(5..=15).contains(&request.player_count) {
-                return Err(ErrorKind::InvalidPlayerCount.into_error());
-            }
-            let context = crate::characters::resolve_custom_script(&request.custom_definition)?;
-            crate::custom::first_night::plan_for_definition(&request.custom_definition)?;
-            Ok(SetupDistributionResult::Distribution(
-                custom_setup_distribution(
-                    &context,
-                    request.player_count,
-                    &request.actual_characters,
-                )?,
-            ))
-        }
     }
-}
-
-pub(crate) fn custom_setup_distribution(
-    context: &ResolvedScriptContext,
-    player_count: usize,
-    actual_characters: &[String],
-) -> Result<SetupDistribution, CoreError> {
-    if actual_characters
-        .iter()
-        .any(|character| !context.contains(character))
-    {
-        return Err(ErrorKind::CharacterNotInScript.into_error());
-    }
-
-    let base = base_distribution(player_count);
-    let requested_delta = context.setup_outsider_delta(actual_characters);
-    let applied_delta = requested_delta.clamp(-(base.outsider as i32), base.townsfolk as i32);
-    let expected = SetupDistribution {
-        townsfolk: (base.townsfolk as i32 - applied_delta) as usize,
-        outsider: (base.outsider as i32 + applied_delta) as usize,
-        ..base
-    };
-
-    let enough_candidates = [
-        (CharacterKind::Townsfolk, expected.townsfolk),
-        (CharacterKind::Outsider, expected.outsider),
-        (CharacterKind::Minion, expected.minion),
-        (CharacterKind::Demon, expected.demon),
-    ]
-    .into_iter()
-    .all(|(kind, required)| context.character_ids_of_kind(kind).len() >= required);
-    if !enough_candidates {
-        return Err(ErrorKind::InsufficientSetupRoster.into_error());
-    }
-
-    Ok(expected)
 }
 
 pub(crate) fn validate_setup_inputs_for_script(
@@ -106,40 +56,6 @@ pub(crate) fn validate_setup_inputs_for_script(
         |character| rules.is_townsfolk(character),
     )?;
     Ok(())
-}
-
-pub(crate) fn validate_setup_inputs_for_custom(
-    context: &ResolvedScriptContext,
-    players: &[SetupPlayerInput],
-) -> Result<(), CoreError> {
-    if players.len() < 5 || players.len() > 15 {
-        return Err(ErrorKind::InvalidPlayerCount.into_error());
-    }
-    for player in players {
-        validate_custom_character_membership(context, &player.actual_character)?;
-        if let Some(shown_character) = player.shown_character.as_deref() {
-            validate_custom_character_membership(context, shown_character)?;
-        }
-    }
-    validate_setup_input_contents(
-        players,
-        |character| context.character_kind(character),
-        |character| context.character_kind(character) == Some(CharacterKind::Townsfolk),
-    )
-}
-
-/// Validate membership in the resolved custom definition, as distinct from membership in the
-/// global Character catalog.  Setup, custom fact reduction, and later action validation share this
-/// boundary so an otherwise known Character cannot enter a game that does not include it.
-pub(crate) fn validate_custom_character_membership(
-    context: &ResolvedScriptContext,
-    character_id: &str,
-) -> Result<(), CoreError> {
-    if context.contains(character_id) {
-        Ok(())
-    } else {
-        Err(ErrorKind::CharacterNotInScript.into_error())
-    }
 }
 
 pub(crate) fn validate_setup_inputs(players: &[SetupPlayerInput]) -> Result<(), CoreError> {
@@ -217,15 +133,6 @@ pub(crate) fn normalized_setup_player_for_script(
     })
 }
 
-pub(crate) fn normalized_setup_player_for_custom(
-    context: &ResolvedScriptContext,
-    player: &SetupPlayerInput,
-) -> Result<SetupPlayerInput, CoreError> {
-    normalized_setup_player_with_townsfolk(player, |character| {
-        context.character_kind(character) == Some(CharacterKind::Townsfolk)
-    })
-}
-
 pub(crate) fn normalized_setup_player(
     player: &SetupPlayerInput,
 ) -> Result<SetupPlayerInput, CoreError> {
@@ -271,14 +178,6 @@ pub(crate) fn player_from_setup_input_for_script(
     player_from_normalized_setup_input(normalized, |character| {
         crate::characters::rules(script_id).character_kind(character)
     })
-}
-
-pub(crate) fn player_from_setup_input_for_custom(
-    context: &ResolvedScriptContext,
-    player: &SetupPlayerInput,
-) -> Result<Player, CoreError> {
-    let normalized = normalized_setup_player_for_custom(context, player)?;
-    player_from_normalized_setup_input(normalized, |character| context.character_kind(character))
 }
 
 pub(crate) fn player_from_setup_input(player: &SetupPlayerInput) -> Result<Player, CoreError> {

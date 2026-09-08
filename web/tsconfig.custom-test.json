@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.custom.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/custom/**/*.ts",
+    "test/custom/**/*.ts",
+    "src/vite-env.d.ts",
+    "vitest.custom.config.ts",
+    "vitest.custom-fixtures.config.ts"
+  ]
+}

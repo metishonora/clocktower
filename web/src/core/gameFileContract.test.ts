@@ -1,9 +1,12 @@
 import { deepEqual, equal, throws } from "node:assert/strict";
+
 import test from "node:test";
+
 import {
   exportGameFileJson,
   parseGameFileJson,
 } from "../gameStorage.js";
+
 
 function officialV3(scriptId = "sectsAndViolets") {
   return {
@@ -19,6 +22,7 @@ function officialV3(scriptId = "sectsAndViolets") {
   };
 }
 
+
 function officialV4(scriptId: unknown) {
   return {
     schemaVersion: 4,
@@ -32,6 +36,7 @@ function officialV4(scriptId: unknown) {
     },
   };
 }
+
 
 function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) {
   const ids = Array.isArray(characterIds)
@@ -58,6 +63,7 @@ function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) 
   };
 }
 
+
 test("normalizes script-less schema-v2 Trouble Brewing to the canonical schema-v4 reference", () => {
   const legacy = structuredClone(officialV3("troubleBrewing")) as unknown as {
     schemaVersion: number;
@@ -75,6 +81,7 @@ test("normalizes script-less schema-v2 Trouble Brewing to the canonical schema-v
   });
 });
 
+
 test("normalizes every schema-v3 official identity to the canonical schema-v4 reference", () => {
   for (const scriptId of ["troubleBrewing", "sectsAndViolets", "badMoonRising"] as const) {
     const parsed = parseGameFileJson(JSON.stringify(officialV3(scriptId)));
@@ -85,6 +92,7 @@ test("normalizes every schema-v3 official identity to the canonical schema-v4 re
   }
 });
 
+
 test("parses every raw schema-v4 official reference and rejects an unknown official ID", () => {
   for (const scriptId of ["troubleBrewing", "sectsAndViolets", "badMoonRising"] as const) {
     const parsed = parseGameFileJson(JSON.stringify(officialV4(scriptId)));
@@ -94,111 +102,6 @@ test("parses every raw schema-v4 official reference and rejects an unknown offic
   throws(() => parseGameFileJson(JSON.stringify(officialV4("notOfficial"))));
 });
 
-test("round-trips the complete custom definition without reordering Characters", () => {
-  const first = parseGameFileJson(JSON.stringify(customV4()));
-  const exported = exportGameFileJson(first, new Date("2026-09-02T01:00:00.000Z"));
-  const second = parseGameFileJson(exported);
-
-  deepEqual(second.game.script, {
-    type: "custom",
-    definition: {
-      id: "custom-stable-id",
-      name: "Mixed roster",
-      characterIds: ["washerwoman", "clockmaker", "imp"],
-      firstNightOrder: firstNightOrderFor(["washerwoman", "clockmaker", "imp"]),
-    },
-  });
-  equal(JSON.parse(exported).exportedAt, "2026-09-02T01:00:00.000Z");
-});
-
-test("accepts an empty custom Character list as a structural contract", () => {
-  const parsed = parseGameFileJson(JSON.stringify(customV4([])));
-
-  deepEqual(parsed.game.script, {
-    type: "custom",
-    definition: {
-      id: "custom-stable-id",
-      name: "Mixed roster",
-      characterIds: [],
-      firstNightOrder: firstNightOrderFor([]),
-    },
-  });
-});
-
-test("rejects unknown, case-different, and BMR Character IDs at Registry resolution", () => {
-  for (const characterIds of [
-    ["washerwoman", "futureCharacter", "imp"],
-    ["imp", "Imp"],
-    ["imp", "grandmother"],
-  ]) {
-    throws(() => parseGameFileJson(JSON.stringify(customV4(characterIds))));
-  }
-});
-
-test("rejects malformed and versioned custom definitions", () => {
-  const candidates = [
-    customV4(["washerwoman", ""]),
-    customV4(["washerwoman", 1]),
-    {
-      ...customV4(),
-      game: {
-        ...customV4().game,
-        script: {
-          type: "custom",
-          definition: { id: " ", name: "Mixed roster", characterIds: [] },
-        },
-      },
-    },
-    {
-      ...customV4(),
-      game: {
-        ...customV4().game,
-        script: {
-          type: "custom",
-          definition: { id: "custom-stable-id", name: "\n", characterIds: [] },
-        },
-      },
-    },
-    {
-      ...customV4(),
-      game: {
-        ...customV4().game,
-        script: {
-          type: "custom",
-          definition: {
-            id: "custom-stable-id",
-            name: "Mixed roster",
-            characterIds: [],
-            revision: 1,
-          },
-        },
-      },
-    },
-    {
-      ...customV4(),
-      game: {
-        ...customV4().game,
-        script: {
-          type: "custom",
-          definition: {
-            id: "custom-stable-id",
-            name: "Mixed roster",
-            characterIds: [],
-            customScriptSchemaVersion: 1,
-          },
-        },
-      },
-    },
-  ];
-
-  for (const candidate of candidates) {
-    throws(() => parseGameFileJson(JSON.stringify(candidate)));
-  }
-});
-
-test("rejects duplicate custom Character IDs atomically", () => {
-  throws(() => parseGameFileJson(JSON.stringify(customV4(["imp", "clockmaker", "imp"]))));
-});
 
 test("rejects mixed, incomplete, and unknown schema-v4 script-reference arms", () => {
   const mixed = customV4() as ReturnType<typeof customV4> & {
@@ -238,6 +141,7 @@ test("rejects mixed, incomplete, and unknown schema-v4 script-reference arms", (
     throws(() => parseGameFileJson(JSON.stringify(candidate)));
   }
 });
+
 
 function firstNightOrderFor(characterIds: string[]) {
   const characterActions = [
