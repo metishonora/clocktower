@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "definition": {
+    "id": "issue-207-compatibility",
+    "name": "Production custom compatibility",
+    "characterIds": [
+      "undertaker",
+      "monk",
+      "ravenkeeper",
+      "virgin",
+      "slayer",
+      "scarletWoman",
+      "imp",
+      "soldier",
+      "mayor",
+      "saint",
+      "recluse",
+      "drunk"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  },
+  "metadata": {
+    "author": "Compatibility capture",
+    "source": "develop d35389e"
+  }
+}
