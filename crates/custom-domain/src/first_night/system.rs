@@ -77,6 +77,7 @@ impl ActionHandler for SystemHandler {
         Ok(vec![PhaseStep {
             simulation_source: None,
             follow_up_cause: None,
+            action_cause: None,
             action_ref: Some(self.action_ref.clone()),
             ..step
         }])

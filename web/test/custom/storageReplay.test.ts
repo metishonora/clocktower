@@ -8,11 +8,11 @@ import type { GameEvent } from "../../src/custom/core/types.js";
 
 it("reloads a causal twin repair and undoes repair then swap through durable sessions", async () => {
   const { session, storage } = await createSession(["snakeCharmer", "artist", "savant", "juggler", "sage", "evilTwin", "imp"]);
-  const first = await take(session, "evilTwin", { playerIds: ["p1"] });
+  const first = await take(session, "evilTwin", null);
   const beforeSwap = await replayOrThrow(session.snapshot.canonical);
   const swap = await take(session, "snakeCharmer", { playerIds: ["p7"] });
   const pending = await replayOrThrow(session.snapshot.canonical);
-  expect(pending.currentStep?.followUpCause).toEqual({ triggerEventId: swap.proposal.event.id, relationshipEventId: first.proposal.event.id });
+  expect(pending.currentStep?.actionCause).toEqual({ kind: "requiredPreparation", triggerEventId: swap.proposal.event.id, previousPreparationEventId: beforeSwap.ruleState.twinRelationships![0]!.sourceEventId });
   const reloaded = await CustomCanonicalSession.load({ core: realWasmCore(), storage }); if (reloaded.status !== "loaded") throw new Error(reloaded.status);
   expect(await replayOrThrow(reloaded.session.snapshot.canonical)).toEqual(pending);
   const repair = await take(reloaded.session, "evilTwin", { playerIds: ["p2"] });
@@ -28,7 +28,7 @@ it("reloads a causal twin repair and undoes repair then swap through durable ses
 
 it("rejects forged incoming source/cause/result and stale commands without replacing saved state", async () => {
   const { session, storage } = await createSession(["snakeCharmer", "artist", "savant", "juggler", "sage", "evilTwin", "imp"]);
-  await take(session, "evilTwin", { playerIds: ["p1"] }); await take(session, "snakeCharmer", { playerIds: ["p7"] });
+  await take(session, "evilTwin", null); await take(session, "snakeCharmer", { playerIds: ["p7"] });
   const canonical = structuredClone(session.snapshot.canonical);
   const state = await replayOrThrow(canonical); const saved = await storage.loadSession();
   const command = { type: "confirmStep" as const, payload: { stepId: state.currentStep!.id, input: { playerIds: ["p2"] } } };
@@ -38,8 +38,8 @@ it("rejects forged incoming source/cause/result and stale commands without repla
   const replay = await controller.replay(canonical); if (!replay.ok) throw new Error(replay.error.code);
   for (const mutate of [
     (event: GameEvent) => { if (event.type === "customActionConfirmed") event.payload.abilityUse!.abilityInstanceId = "not-an-instance"; },
-    (event: GameEvent) => { if (event.type === "customActionConfirmed") event.payload.followUpCause!.triggerEventId = "future-event"; },
-    (event: GameEvent) => { if (event.type === "customActionConfirmed" && event.payload.result.kind === "evilTwin") event.payload.result.targetPlayerId = "p3"; },
+    (event: GameEvent) => { if (event.type === "customActionConfirmed") if (event.payload.actionCause?.kind === "requiredPreparation") event.payload.actionCause.triggerEventId = "future-event"; },
+    (event: GameEvent) => { if (event.type === "customActionConfirmed" && event.payload.result.kind === "twinAssigned") event.payload.result.targetPlayerId = "p3"; },
   ]) {
     const event = structuredClone(proposal.value.event); mutate(event);
     expect((await controller.apply(canonical, replay.value, event)).ok).toBe(false);

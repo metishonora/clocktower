@@ -5,7 +5,7 @@ import type { CustomScriptDefinition, GameEvent, GameFileV4 } from "../../src/cu
 import { realWasmCore } from "./realCustomWasmHarness.js";
 
 describe("Issue #206 production custom-runtime isolation", () => {
-  it("keeps an active unimplemented Character action unsupported in ordinary generated WASM", async () => {
+  it("requires real TB preparation before the planned delivery in ordinary generated WASM", async () => {
     const definition = productionDefinition();
     definition.characterIds = definition.characterIds.map(id => id === "philosopher" ? "washerwoman" : id);
     definition.firstNightOrder = definition.firstNightOrder.map(ref => ref.kind === "character" ? { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" } : ref);
@@ -25,7 +25,8 @@ describe("Issue #206 production custom-runtime isolation", () => {
       game: { ...empty.game, events: [setup.value.event] },
     };
     const replayed = await realWasmCore().replay(setupGame);
-    expectCoreError(replayed, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");
+    expect(replayed.ok).toBe(true);
+    if (replayed.ok) expect(replayed.value.currentStep?.actionRef?.actionId).toBe("prepareInformation");
   });
 
   it("rejects fixture result discriminators at the production Rust and TypeScript boundaries", async () => {

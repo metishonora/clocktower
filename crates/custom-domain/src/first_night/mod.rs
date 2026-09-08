@@ -1,4 +1,5 @@
 mod activation;
+pub(crate) mod catalog;
 #[cfg(any(test, feature = "custom-runtime-fixtures"))]
 mod fixtures;
 mod plan;
@@ -34,6 +35,19 @@ pub(crate) fn activation_rule() -> Box<dyn ActivationRule> {
     }
     #[cfg(not(feature = "custom-runtime-fixtures"))]
     {
-        Box::new(crate::characters::sects_and_violets::SnvActivation)
+        Box::new(CharacterActivation)
+    }
+}
+
+struct CharacterActivation;
+impl ActivationRule for CharacterActivation {
+    fn decide(
+        &self,
+        context: &ActivationContext<'_>,
+    ) -> Result<ActivationDecision, crate::error::CoreError> {
+        if let Some(decision) = crate::characters::trouble_brewing::activation(context) {
+            return Ok(decision);
+        }
+        crate::characters::sects_and_violets::SnvActivation.decide(context)
     }
 }

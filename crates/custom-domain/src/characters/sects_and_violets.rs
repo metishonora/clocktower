@@ -36,55 +36,7 @@ pub(super) fn custom_setup_outsider_delta(character_id: &str) -> i8 {
     }
 }
 
-/// Failed-choice participation references the real source and exists only while impairment lasts.
-pub(crate) fn simulation_occurrences(
-    facts: &crate::state::CustomGameFacts,
-    action_ref: &crate::contracts::FirstNightActionRef,
-) -> Result<Vec<crate::state::ActionOccurrence>, crate::error::CoreError> {
-    use crate::contracts::{
-        FirstNightActionRef, PhilosopherChoiceOutcome, PhilosopherSimulationSource,
-    };
-    let FirstNightActionRef::Character { character_id, .. } = action_ref else {
-        return Ok(vec![]);
-    };
-    let mut choices = facts
-        .philosopher_choices
-        .iter()
-        .filter(|choice| {
-            choice.outcome == PhilosopherChoiceOutcome::Failed
-                && choice.character_id != "philosopher"
-                && choice.character_id == *character_id
-                && crate::reducer::current_ability_instance(facts, &choice.ability_use)
-                && facts
-                    .player(&choice.ability_use.owner_player_id)
-                    .is_some_and(|p| p.alive)
-                && facts
-                    .active_impairments
-                    .iter()
-                    .any(|i| i.player_id == choice.ability_use.owner_player_id)
-        })
-        .collect::<Vec<_>>();
-    // Stable sort retains confirmation order for the same owner.
-    choices.sort_by_key(|choice| {
-        facts
-            .player(&choice.ability_use.owner_player_id)
-            .map(|p| (p.seat, p.id.clone()))
-    });
-    choices
-        .into_iter()
-        .map(|choice| {
-            crate::state::ActionOccurrence::from_parts(
-                action_ref.clone(),
-                None,
-                Some(PhilosopherSimulationSource {
-                    selection_event_id: choice.source_event_id.clone(),
-                    source_ability_use: choice.ability_use.clone(),
-                }),
-                None,
-            )
-        })
-        .collect()
-}
+pub(crate) use crate::simulation::occurrences as simulation_occurrences;
 
 use crate::{
     characters::{custom_ability_acquisition_character_ids, ResolvedScriptContext},
@@ -137,60 +89,26 @@ fn player_source(player: &Player) -> AbilityUseRef {
         ability_instance_id: player.ability_instance.id.clone(),
     }
 }
-pub(crate) fn impaired(facts: &CustomGameFacts, player_id: &str) -> bool {
-    facts
-        .active_impairments
-        .iter()
-        .any(|effect| effect.player_id == player_id)
-}
-pub(crate) fn effective(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
-    current_ability_instance(facts, source)
-        && facts
-            .player(&source.owner_player_id)
-            .is_some_and(|p| p.alive)
-        && !impaired(facts, &source.owner_player_id)
-}
-
-/// Rebuild only derived effects, retaining independent fixture/other durable impairment facts.
-/// No Dashii checks current Townsfolk identity, including dead neighbours (official almanac).
-pub(crate) fn resolve_effects(
+pub(crate) use crate::effects::{effective, impaired, impairment_causes, resolve_effects};
+pub(crate) fn impairment_candidates(
     context: &ResolvedScriptContext,
-    facts: &mut CustomGameFacts,
-) -> Result<(), CoreError> {
-    let previous_effects = std::mem::take(&mut facts.resolved_impairments);
-    facts.active_impairments.retain(|impairment| {
-        !previous_effects
-            .iter()
-            .any(|old| old.impairment == *impairment)
-    });
-    let lost_choices = facts
-        .philosopher_choices
-        .iter()
-        .filter(|choice| !current_ability_instance(facts, &choice.ability_use))
-        .map(|choice| choice.source_event_id.clone())
-        .collect::<Vec<_>>();
-    facts
-        .ability_grants
-        .retain(|grant| !lost_choices.contains(&grant.source_event_id));
-    let mut effects = facts.durable_impairments.clone();
-    for effect in &effects {
-        if !facts.active_impairments.contains(&effect.impairment) {
-            facts.active_impairments.push(effect.impairment.clone());
-        }
-    }
+    facts: &CustomGameFacts,
+) -> Vec<crate::effects::ImpairmentEffect> {
+    use crate::effects::ImpairmentEffect;
+    let mut candidates = vec![];
     let mut players = facts.players.clone();
     players.sort_by_key(|p| p.seat);
     for (index, player) in players.iter().enumerate() {
-        if player.actual_character != "noDashii" || !effective(facts, &player_source(player)) {
+        if player.actual_character != "noDashii" {
             continue;
         }
         for clockwise in [true, false] {
             let target = (1..players.len())
-                .map(|distance| {
+                .map(|d| {
                     if clockwise {
-                        (index + distance) % players.len()
+                        (index + d) % players.len()
                     } else {
-                        (index + players.len() - distance) % players.len()
+                        (index + players.len() - d) % players.len()
                     }
                 })
                 .map(|i| &players[i])
@@ -198,27 +116,26 @@ pub(crate) fn resolve_effects(
                     context.character_kind(&p.actual_character) == Some(CharacterKind::Townsfolk)
                 });
             if let Some(target) = target {
-                let effect = DurableImpairment {
-                    source_ability_use: player_source(player),
-                    impairment: ActiveImpairment {
-                        kind: ImpairmentKind::Poisoned,
-                        player_id: target.id.clone(),
-                        source_event_id: player.ability_instance.source_event_id.clone(),
-                        source_character_id: "noDashii".into(),
-                        expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                candidates.push(ImpairmentEffect {
+                    effect: DurableImpairment {
+                        source_ability_use: player_source(player),
+                        impairment: ActiveImpairment {
+                            kind: ImpairmentKind::Poisoned,
+                            player_id: target.id.clone(),
+                            source_event_id: player.ability_instance.source_event_id.clone(),
+                            source_character_id: "noDashii".into(),
+                            expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                        },
                     },
-                };
-                if !effects.contains(&effect) {
-                    facts.active_impairments.push(effect.impairment.clone());
-                    effects.push(effect);
-                }
+                    requires_source: true,
+                    ignore_self: false,
+                    demon_harm: true,
+                });
             }
         }
     }
-    for choice in facts.philosopher_choices.clone() {
-        if choice.outcome == PhilosopherChoiceOutcome::Failed
-            || !effective(facts, &choice.ability_use)
-        {
+    for choice in &facts.philosopher_choices {
+        if choice.outcome == PhilosopherChoiceOutcome::Failed {
             continue;
         }
         let targets = if choice.outcome == PhilosopherChoiceOutcome::SelfDrunk {
@@ -231,22 +148,27 @@ pub(crate) fn resolve_effects(
                 .map(|p| p.id.clone())
                 .collect()
         };
-        for target in targets {
-            let effect = DurableImpairment {
-                source_ability_use: choice.ability_use.clone(),
-                impairment: ActiveImpairment {
-                    kind: ImpairmentKind::Drunk,
-                    player_id: target,
-                    source_event_id: choice.source_event_id.clone(),
-                    source_character_id: "philosopher".into(),
-                    expires: ImpairmentExpiry::WhileSourceAbilityActive,
+        for player_id in targets {
+            candidates.push(ImpairmentEffect {
+                effect: DurableImpairment {
+                    source_ability_use: choice.ability_use.clone(),
+                    impairment: ActiveImpairment {
+                        kind: ImpairmentKind::Drunk,
+                        player_id,
+                        source_event_id: choice.source_event_id.clone(),
+                        source_character_id: "philosopher".into(),
+                        expires: ImpairmentExpiry::WhileSourceAbilityActive,
+                    },
                 },
-            };
-            facts.active_impairments.push(effect.impairment.clone());
-            effects.push(effect);
+                requires_source: true,
+                ignore_self: choice.outcome == PhilosopherChoiceOutcome::SelfDrunk,
+                demon_harm: false,
+            });
         }
     }
-    facts.resolved_impairments = effects;
+    candidates
+}
+pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) -> Result<(), CoreError> {
     let curses = facts
         .witch_curses
         .iter()
@@ -291,21 +213,6 @@ pub(crate) fn resolve_effects(
         .collect();
     Ok(())
 }
-
-pub(crate) fn impairment_causes(facts: &CustomGameFacts, player_id: &str) -> Vec<AbilityUseRef> {
-    let mut sources = vec![];
-    for effect in facts
-        .resolved_impairments
-        .iter()
-        .filter(|effect| effect.impairment.player_id == player_id)
-    {
-        if !sources.contains(&effect.source_ability_use) {
-            sources.push(effect.source_ability_use.clone());
-        }
-    }
-    sources
-}
-
 pub(crate) struct SnvActivation;
 impl ActivationRule for SnvActivation {
     fn decide(&self, context: &ActivationContext<'_>) -> Result<ActivationDecision, CoreError> {
@@ -356,7 +263,13 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
             RequiredInputKind::PlayerIds,
         ),
         ("mathematician", "learnCount", RequiredInputKind::None),
-        ("evilTwin", "learnTwin", RequiredInputKind::PlayerIds),
+        ("evilTwin", "learnTwin", RequiredInputKind::None),
+        ("evilTwin", "assignTwin", RequiredInputKind::PlayerIds),
+        (
+            "mutant",
+            "resolveMadnessExecution",
+            RequiredInputKind::ExecutionDecision,
+        ),
         ("witch", "chooseCursedPlayer", RequiredInputKind::PlayerIds),
         (
             "cerenovus",
@@ -370,7 +283,10 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
         RegisteredAction {
             spec: ActionSpec {
                 action_ref: action_ref.clone(),
-                participates_in_first_night: true,
+                participates_in_first_night: !matches!(
+                    id,
+                    "assignTwin" | "resolveMadnessExecution"
+                ),
                 required_input_kind: kind,
                 support: PhaseStepSupport::Automated,
             },
@@ -383,6 +299,101 @@ struct SnvHandler {
     action_ref: FirstNightActionRef,
 }
 impl SnvHandler {
+    fn id(&self) -> &str {
+        match &self.action_ref {
+            FirstNightActionRef::Character { action_id, .. } => action_id,
+            _ => unreachable!(),
+        }
+    }
+    fn mutant_candidates(&self, c: &ActionContext<'_>) -> Result<Vec<ActionOccurrence>, CoreError> {
+        if self.character() != "mutant" {
+            return Ok(vec![]);
+        }
+        let facts = c.rule_service.facts().ok_or_else(invalid)?;
+        if facts.game_end.is_some() {
+            return Ok(vec![]);
+        }
+        c.rule_service
+            .try_owned_instances(&self.action_ref)?
+            .into_iter()
+            .filter(|i| {
+                facts
+                    .player(&i.ability_use.owner_player_id)
+                    .is_some_and(|p| p.alive)
+            })
+            .map(|i| {
+                ActionOccurrence::from_all_parts(
+                    self.action_ref.clone(),
+                    Some(i.ability_use),
+                    None,
+                    None,
+                    Some(crate::contracts::ActionCause::Optional {
+                        prefix_event_id: facts.prefix_event_id.clone(),
+                    }),
+                )
+            })
+            .collect()
+    }
+    fn twin_candidates(
+        &self,
+        context: &ActionContext<'_>,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        use crate::contracts::ActionCause;
+        if self.character() != "evilTwin" {
+            return Ok(vec![]);
+        }
+        let facts = context.rule_service.facts().ok_or_else(invalid)?;
+        let mut result = vec![];
+        for instance in context.rule_service.try_owned_instances(&self.action_ref)? {
+            let source = instance.ability_use;
+            if !facts
+                .player(&source.owner_player_id)
+                .is_some_and(|p| p.alive)
+            {
+                continue;
+            }
+            let relation = facts
+                .twin_relationships
+                .iter()
+                .rev()
+                .find(|r| r.ability_use == source);
+            let prior_informed = facts.confirmed_actions.iter().any(|f| {
+                f.occurrence.ability_use.as_ref() == Some(&source)
+                    && matches!(f.result, CustomActionResult::TwinInformed { .. })
+            });
+            let cause = if self.id() == "assignTwin" {
+                match relation {
+                    None => Some(ActionCause::InitialPreparation {
+                        source_event_id: facts
+                            .player(&source.owner_player_id)
+                            .unwrap()
+                            .ability_instance
+                            .source_event_id
+                            .clone(),
+                    }),
+                    Some(r) if twin_needs_repair(facts, &source) => {
+                        Some(ActionCause::RequiredPreparation {
+                            trigger_event_id: facts.prefix_event_id.clone(),
+                            previous_preparation_event_id: Some(r.source_event_id.clone()),
+                        })
+                    }
+                    _ => None,
+                }
+            } else {
+                relation.filter(|r|prior_informed&&!twin_needs_repair(facts,&source)&&!facts.confirmed_actions.iter().any(|f|matches!(&f.result,CustomActionResult::TwinInformed{relationship_event_id,..} if *relationship_event_id==r.source_event_id))).map(|r|ActionCause::Delivery{preparation_event_id:r.source_event_id.clone()})
+            };
+            if let Some(cause) = cause {
+                result.push(ActionOccurrence::from_all_parts(
+                    self.action_ref.clone(),
+                    Some(source),
+                    None,
+                    None,
+                    Some(cause),
+                )?);
+            }
+        }
+        Ok(result)
+    }
     fn character(&self) -> &str {
         match &self.action_ref {
             FirstNightActionRef::Character { character_id, .. } => character_id,
@@ -406,25 +417,38 @@ impl SnvHandler {
             return Ok(false);
         }
         if occurrence.simulation_source.is_some() {
-            return Ok(simulation_occurrences(facts, &self.action_ref)?.contains(occurrence));
+            return Ok(
+                simulation_occurrences(facts, &self.action_ref)?.contains(occurrence)
+                    && !(matches!(self.character(), "philosopher" | "seamstress")
+                        && crate::simulation::spent(
+                            facts,
+                            occurrence.simulation_source.as_ref().unwrap(),
+                        )),
+            );
         }
         let source = occurrence
             .ability_use
             .as_ref()
             .ok_or_else(provenance_error)?;
-        if let Some(cause) = &occurrence.follow_up_cause {
-            return Ok(self.character() == "evilTwin"
-                && twin_needs_repair(facts, source)
+        if self.character() == "mutant" {
+            return Ok(self.mutant_candidates(context)?.contains(occurrence));
+        }
+        if self.character() == "evilTwin" {
+            if occurrence.follow_up_cause.is_some() {
+                return Ok(false);
+            }
+            if self.id() == "assignTwin" || occurrence.action_cause.is_some() {
+                return Ok(self.twin_candidates(context)?.contains(occurrence));
+            }
+            return Ok(current_ability_instance(facts, source)
                 && facts
                     .twin_relationships
                     .iter()
-                    .rev()
-                    .find(|r| r.ability_use == *source)
-                    .is_some_and(|r| r.source_event_id == cause.relationship_event_id)
-                && facts
-                    .confirmed_actions
-                    .iter()
-                    .any(|e| e.event_id == cause.trigger_event_id));
+                    .any(|r| r.ability_use == *source)
+                && !facts.confirmed_actions.iter().any(|f| {
+                    f.occurrence.ability_use.as_ref() == Some(source)
+                        && matches!(f.result, CustomActionResult::TwinInformed { .. })
+                }));
         }
         Ok(current_ability_instance(facts, source)
             && !(matches!(self.character(), "philosopher" | "seamstress")
@@ -495,6 +519,13 @@ impl SnvHandler {
             input.max_selections = Some(count);
             input.optional = self.character() == "seamstress";
         }
+        if self.character() == "evilTwin" && self.id() == "learnTwin" {
+            input = crate::input::required_none();
+        }
+        if self.character() == "mutant" {
+            input = crate::input::required_none();
+            input.kind = RequiredInputKind::ExecutionDecision;
+        }
         let origin = occurrence
             .ability_use
             .as_ref()
@@ -514,6 +545,7 @@ impl SnvHandler {
             ability_origin: origin,
             simulation_source: occurrence.simulation_source.clone(),
             follow_up_cause: occurrence.follow_up_cause.clone(),
+            action_cause: occurrence.action_cause.clone(),
             required_input: input,
             can_skip: false,
             support: PhaseStepSupport::Automated,
@@ -550,12 +582,108 @@ impl SnvHandler {
         let actor = facts
             .player(occurrence.actor_player_id().ok_or_else(provenance_error)?)
             .ok_or_else(provenance_error)?;
+        if self.character() == "mutant" {
+            let fields = input.input.as_ref().ok_or_else(invalid)?;
+            let execute = fields.execute.ok_or_else(invalid)?;
+            if *fields
+                != (StepInputFields {
+                    execute: Some(execute),
+                    ..Default::default()
+                })
+            {
+                return Err(invalid());
+            }
+            let source = occurrence.ability_use.as_ref().ok_or_else(invalid)?;
+            let executed = execute && effective(facts, source);
+            let died = executed && actor.alive;
+            let causes = impairment_causes(facts, &actor.id);
+            let audit = if execute && !executed && !causes.is_empty() {
+                vec![MalfunctionEvidence {
+                    event_id: event_id.into(),
+                    occurrence: occurrence.clone(),
+                    subject_player_id: actor.id.clone(),
+                    outcome: MalfunctionOutcome::EffectFailure {
+                        effect: FailedEffect::MutantExecution,
+                    },
+                    causes,
+                    cause_details: impairment_details(facts, &actor.id),
+                }]
+            } else {
+                vec![]
+            };
+            let good_twin = actor.alignment == crate::model::Alignment::Good
+                && facts.twin_relationships.iter().any(|r| {
+                    r.effective
+                        && (r.target_player_id == actor.id
+                            || r.ability_use.owner_player_id == actor.id)
+                });
+            let end = if executed && good_twin {
+                Some(crate::contracts::CustomGameEnd {
+                    winning_alignment: crate::model::Alignment::Evil,
+                    reason: crate::contracts::CustomGameEndReason::GoodTwinExecuted,
+                    source_event_id: event_id.into(),
+                })
+            } else {
+                None
+            };
+            return Ok((
+                CustomActionResult::MutantExecution {
+                    execute,
+                    executed,
+                    died,
+                },
+                CustomFactChanges::default()
+                    .with_execution(
+                        if died {
+                            Some(crate::event::PlayerLifeChange {
+                                player_id: actor.id.clone(),
+                                alive: false,
+                            })
+                        } else {
+                            None
+                        },
+                        end,
+                    )
+                    .with_audit(audit),
+            ));
+        }
+        if self.character() == "evilTwin" && self.id() == "learnTwin" {
+            if input.input.is_some() {
+                return Err(invalid());
+            }
+            let source = occurrence
+                .ability_use
+                .as_ref()
+                .ok_or_else(provenance_error)?;
+            let relation = facts
+                .twin_relationships
+                .iter()
+                .rev()
+                .find(|r| r.ability_use == *source)
+                .ok_or_else(invalid)?;
+            return Ok((
+                CustomActionResult::TwinInformed {
+                    relationship_event_id: relation.source_event_id.clone(),
+                    target_player_id: relation.target_player_id.clone(),
+                    effective: effective(facts, source),
+                },
+                CustomFactChanges::default(),
+            ));
+        }
         let mut changes = SnvFactChanges::default();
+        let mut audit = vec![];
         match self.character() {
             "philosopher" => {
                 let Some(fields) = &input.input else {
                     return Ok((
-                        CustomActionResult::PhilosopherDeferred,
+                        if occurrence.simulation_source.is_some() {
+                            CustomActionResult::SimulationChoice {
+                                character_id: None,
+                                spent: false,
+                            }
+                        } else {
+                            CustomActionResult::PhilosopherDeferred
+                        },
                         CustomFactChanges::default(),
                     ));
                 };
@@ -569,6 +697,32 @@ impl SnvHandler {
                     || !custom_ability_acquisition_character_ids(definition).contains(&choices[0])
                 {
                     return Err(invalid());
+                }
+                if let Some(sim) = &occurrence.simulation_source {
+                    let causes = if sim.source_ability_use.character_id == "drunk" {
+                        vec![sim.source_ability_use.clone()]
+                    } else {
+                        impairment_causes(facts, &actor.id)
+                    };
+                    if !causes.is_empty() {
+                        audit.push(MalfunctionEvidence {
+                            cause_details: vec![DeliveryReason::Drunk],
+                            event_id: event_id.into(),
+                            occurrence: occurrence.clone(),
+                            subject_player_id: actor.id.clone(),
+                            outcome: MalfunctionOutcome::EffectFailure {
+                                effect: FailedEffect::PhilosopherAcquisition,
+                            },
+                            causes,
+                        });
+                    }
+                    return Ok((
+                        CustomActionResult::SimulationChoice {
+                            character_id: Some(choices[0].clone()),
+                            spent: true,
+                        },
+                        CustomFactChanges::default().with_audit(audit),
+                    ));
                 }
                 let source = occurrence
                     .ability_use
@@ -594,7 +748,7 @@ impl SnvHandler {
                 if outcome == PhilosopherChoiceOutcome::Failed {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
-                        changes.audit.push(MalfunctionEvidence {
+                        audit.push(MalfunctionEvidence {
                             cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
@@ -620,7 +774,7 @@ impl SnvHandler {
                         character_id: choices[0].clone(),
                         outcome,
                     },
-                    CustomFactChanges::resolved(vec![], grants, changes),
+                    CustomFactChanges::resolved(vec![], grants, changes).with_audit(audit),
                 ))
             }
             "snakeCharmer" => {
@@ -629,13 +783,33 @@ impl SnvHandler {
                     .player(target_id)
                     .filter(|p| p.alive)
                     .ok_or_else(invalid)?;
-                if occurrence.simulation_source.is_some() {
+                if let Some(sim) = &occurrence.simulation_source {
+                    let causes = if sim.source_ability_use.character_id == "drunk" {
+                        vec![sim.source_ability_use.clone()]
+                    } else {
+                        impairment_causes(facts, &actor.id)
+                    };
+                    if definition.character_kind(&target.actual_character)
+                        == Some(CharacterKind::Demon)
+                        && !causes.is_empty()
+                    {
+                        audit.push(MalfunctionEvidence {
+                            event_id: event_id.into(),
+                            occurrence: occurrence.clone(),
+                            subject_player_id: actor.id.clone(),
+                            outcome: MalfunctionOutcome::EffectFailure {
+                                effect: FailedEffect::SnakeCharmerSwap,
+                            },
+                            causes,
+                            cause_details: vec![DeliveryReason::Drunk],
+                        });
+                    }
                     return Ok((
                         CustomActionResult::Simulation {
                             information: None,
                             spent: false,
                         },
-                        CustomFactChanges::default(),
+                        CustomFactChanges::default().with_audit(audit),
                     ));
                 }
                 let source = occurrence
@@ -679,7 +853,7 @@ impl SnvHandler {
                 } else if outcome == SnakeCharmerOutcome::Impaired {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
-                        changes.audit.push(MalfunctionEvidence {
+                        audit.push(MalfunctionEvidence {
                             cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
@@ -696,7 +870,7 @@ impl SnvHandler {
                         target_player_id: target.id.clone(),
                         outcome,
                     },
-                    CustomFactChanges::resolved(identities, vec![], changes),
+                    CustomFactChanges::resolved(identities, vec![], changes).with_audit(audit),
                 ))
             }
             "evilTwin" | "witch" | "cerenovus" => {
@@ -740,9 +914,8 @@ impl SnvHandler {
                             target_player_id: target.id.clone(),
                             effective: active,
                         });
-                        CustomActionResult::EvilTwin {
+                        CustomActionResult::TwinAssigned {
                             target_player_id: target.id.clone(),
-                            effective: active,
                         }
                     }
                     "witch" => {
@@ -780,7 +953,15 @@ impl SnvHandler {
                         }
                     }
                 };
-                Ok((result, CustomFactChanges::resolved(vec![], vec![], changes)))
+                Ok((result, {
+                    let changes =
+                        CustomFactChanges::resolved(vec![], vec![], changes).with_audit(audit);
+                    if self.id() == "assignTwin" {
+                        changes.with_preparation()
+                    } else {
+                        changes
+                    }
+                }))
             }
             _ => Err(ErrorKind::FirstNightActionHandlerUnavailable.into_error()),
         }
@@ -814,44 +995,24 @@ fn twin_needs_repair(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
                     .is_some_and(|(a, b)| a.alignment == b.alignment)
             })
 }
-impl crate::first_night::FollowUpRule for SnvHandler {
-    fn candidates(
-        &self,
-        context: &crate::first_night::FollowUpContext<'_>,
-    ) -> Result<Vec<ActionOccurrence>, CoreError> {
-        if self.character() != "evilTwin" {
-            return Ok(vec![]);
-        }
-        let mut result = vec![];
-        for relation in &context.next_facts.twin_relationships {
-            let source = &relation.ability_use;
-            if !twin_needs_repair(context.previous_facts, source)
-                && twin_needs_repair(context.next_facts, source)
-                && context
-                    .next_facts
-                    .twin_relationships
-                    .iter()
-                    .rev()
-                    .find(|r| r.ability_use == *source)
-                    .is_some_and(|r| r.source_event_id == relation.source_event_id)
-            {
-                result.push(ActionOccurrence::from_parts(
-                    self.action_ref.clone(),
-                    Some(source.clone()),
-                    None,
-                    Some(FollowUpCause {
-                        trigger_event_id: context.event.event_id().into(),
-                        relationship_event_id: relation.source_event_id.clone(),
-                    }),
-                )?);
-            }
-        }
-        Ok(result)
-    }
-}
 impl ActionHandler for SnvHandler {
+    fn required_occurrences(
+        &self,
+        c: &ActionContext<'_>,
+        _: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        self.twin_candidates(c)
+    }
+
+    fn optional_occurrences(
+        &self,
+        c: &ActionContext<'_>,
+        _: &crate::state::FirstNightProgress,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        self.mutant_candidates(c)
+    }
     fn follow_up_rule(&self) -> Option<&dyn crate::first_night::FollowUpRule> {
-        (self.character() == "evilTwin").then_some(self)
+        None
     }
 
     fn action_ref(&self) -> &FirstNightActionRef {
@@ -865,6 +1026,13 @@ impl ActionHandler for SnvHandler {
         _spec: &ActionSpec,
         context: &ActionContext<'_>,
     ) -> Result<Vec<PhaseStep>, CoreError> {
+        if self.character() == "mutant" {
+            return self
+                .mutant_candidates(context)?
+                .iter()
+                .map(|o| self.step(context, o))
+                .collect();
+        }
         let mut occurrences = context
             .rule_service
             .try_owned_instances(&self.action_ref)?
@@ -930,6 +1098,7 @@ impl ActionHandler for SnvHandler {
             ability_use: occurrence.ability_use.clone(),
             simulation_source: occurrence.simulation_source.clone(),
             follow_up_cause: occurrence.follow_up_cause.clone(),
+            action_cause: occurrence.action_cause.clone(),
             input: input.input.clone(),
             delivered_result: input.delivered_result.clone(),
             registration_judgments: input.registration_judgments.clone(),
@@ -1060,6 +1229,9 @@ impl SnvHandler {
             .map(|p| p.actual_character.clone())
             .collect::<Vec<_>>();
         for (i, j) in judgments.iter().enumerate() {
+            if j.scope.is_some() {
+                return Err(invalid());
+            }
             if judgments[..i]
                 .iter()
                 .any(|previous| previous.player_id == j.player_id)
@@ -1224,7 +1396,22 @@ impl SnvHandler {
             }
         }
         causes.extend(impairment_causes(facts, actor));
-        for source in &facts.vortox_sources {
+        if let Some(sim) = &occurrence.simulation_source {
+            if !reasons.contains(&DeliveryReason::Drunk) {
+                reasons.push(DeliveryReason::Drunk);
+            }
+            if sim.source_ability_use.character_id == "drunk"
+                && !causes.contains(&sim.source_ability_use)
+            {
+                causes.push(sim.source_ability_use.clone());
+            }
+        }
+        let vortox_applies = !facts.vortox_sources.is_empty()
+            && !occurrence
+                .simulation_source
+                .as_ref()
+                .is_some_and(|s| s.source_ability_use.character_id == "drunk");
+        for source in facts.vortox_sources.iter().filter(|_| vortox_applies) {
             reasons.push(DeliveryReason::Vortox {
                 demon_player_id: source.owner_player_id.clone(),
             });
@@ -1243,44 +1430,45 @@ impl SnvHandler {
                 }
             }
         }
-        let mut allowed = if impaired(facts, actor) || !facts.vortox_sources.is_empty() {
-            match self.character() {
-                "clockmaker" => (0..=(facts.players.len() / 2) as u64)
-                    .map(|value| InformationResult::Number { value })
-                    .collect(),
-                "mathematician" => (0..=facts.players.len() as u64)
-                    .map(|value| InformationResult::Number { value })
-                    .collect(),
-                "seamstress" => vec![
-                    InformationResult::Boolean { value: false },
-                    InformationResult::Boolean { value: true },
-                ],
-                "dreamer" => {
-                    let mut pairs = vec![];
-                    for good in definition
-                        .character_ids()
-                        .into_iter()
-                        .filter(|id| good_kind(definition.character_kind(id)))
-                    {
-                        for evil in definition
+        let mut allowed =
+            if impaired(facts, actor) || occurrence.simulation_source.is_some() || vortox_applies {
+                match self.character() {
+                    "clockmaker" => (0..=(facts.players.len() / 2) as u64)
+                        .map(|value| InformationResult::Number { value })
+                        .collect(),
+                    "mathematician" => (0..=facts.players.len() as u64)
+                        .map(|value| InformationResult::Number { value })
+                        .collect(),
+                    "seamstress" => vec![
+                        InformationResult::Boolean { value: false },
+                        InformationResult::Boolean { value: true },
+                    ],
+                    "dreamer" => {
+                        let mut pairs = vec![];
+                        for good in definition
                             .character_ids()
                             .into_iter()
-                            .filter(|id| !good_kind(definition.character_kind(id)))
+                            .filter(|id| good_kind(definition.character_kind(id)))
                         {
-                            pairs.push(InformationResult::CharacterPair {
-                                character_ids: vec![good.into(), evil.into()],
-                            });
+                            for evil in definition
+                                .character_ids()
+                                .into_iter()
+                                .filter(|id| !good_kind(definition.character_kind(id)))
+                            {
+                                pairs.push(InformationResult::CharacterPair {
+                                    character_ids: vec![good.into(), evil.into()],
+                                });
+                            }
                         }
+                        pairs
                     }
-                    pairs
+                    _ => return Err(invalid()),
                 }
-                _ => return Err(invalid()),
-            }
-        } else {
-            judged
-        };
+            } else {
+                judged
+            };
         // Approved policy: Vortox falsity is checked against actual facts before registration.
-        if !facts.vortox_sources.is_empty() {
+        if vortox_applies {
             allowed.retain(|candidate| !actual.iter().any(|truth| equivalent(candidate, truth)));
         }
         if actual.is_empty() || allowed.is_empty() {
@@ -1346,6 +1534,7 @@ impl SnvHandler {
         };
         let actor = occurrence.actor_player_id().ok_or_else(provenance_error)?;
         let mut changes = SnvFactChanges::default();
+        let mut audit = vec![];
         let spent = self.character() == "seamstress";
         if spent {
             if let Some(source) = &occurrence.ability_use {
@@ -1361,7 +1550,7 @@ impl SnvHandler {
             .any(|truth| equivalent(truth, &delivered))
             && !options.causes.is_empty()
         {
-            changes.audit.push(MalfunctionEvidence {
+            audit.push(MalfunctionEvidence {
                 cause_details: options
                     .reasons
                     .iter()
@@ -1401,7 +1590,10 @@ impl SnvHandler {
         } else {
             CustomActionResult::InformationDelivered { information, spent }
         };
-        Ok((result, CustomFactChanges::resolved(vec![], vec![], changes)))
+        Ok((
+            result,
+            CustomFactChanges::resolved(vec![], vec![], changes).with_audit(audit),
+        ))
     }
     fn registration_variants(
         &self,
@@ -1439,6 +1631,7 @@ impl SnvHandler {
                         if matches!(value, RegistrationValue::Good | RegistrationValue::Evil) =>
                     {
                         options.push(RegistrationJudgment {
+                            scope: None,
                             player_id: player.id.clone(),
                             registered_as: value,
                             character_id: None,
@@ -1448,6 +1641,7 @@ impl SnvHandler {
                         if !matches!(value, RegistrationValue::Good | RegistrationValue::Evil) =>
                     {
                         options.push(RegistrationJudgment {
+                            scope: None,
                             player_id: player.id.clone(),
                             registered_as: value,
                             character_id: None,
@@ -1456,6 +1650,7 @@ impl SnvHandler {
                     "dreamer" => {
                         for id in definition.character_ids() {
                             let j = RegistrationJudgment {
+                                scope: None,
                                 player_id: player.id.clone(),
                                 registered_as: value,
                                 character_id: Some(id.into()),
@@ -1616,30 +1811,17 @@ fn mathematician_audit(
                     .map(|s| &s.source_ability_use)
             })
             .ok_or_else(provenance_error)?;
-        let event = facts
-            .confirmed_actions
-            .iter()
-            .find(|e| e.event_id == evidence.event_id)
-            .ok_or_else(provenance_error)?;
-        let info = match &event.result {
-            CustomActionResult::InformationDelivered { information, .. }
-            | CustomActionResult::Simulation {
-                information: Some(information),
-                ..
-            } => Some(information),
-            _ => None,
-        };
         let outcome = match &evidence.outcome {
             MalfunctionOutcome::IncorrectInformation { delivered_result } => {
                 AbnormalAbilityOutcome::IncorrectInformation {
-                    computed_result: info
-                        .and_then(|i| i.computed_result.clone())
-                        .ok_or_else(provenance_error)?,
                     delivered_result: delivered_result.clone(),
                 }
             }
             MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
                 effect: match effect {
+                    FailedEffect::PoisonerPoison => AbnormalAbilityEffect::PoisonerPoison,
+                    FailedEffect::ButlerMaster => AbnormalAbilityEffect::ButlerMaster,
+                    FailedEffect::MutantExecution => AbnormalAbilityEffect::MutantExecution,
                     FailedEffect::PhilosopherAcquisition => {
                         AbnormalAbilityEffect::PhilosopherAcquisition
                     }

@@ -44,6 +44,9 @@ pub(super) fn game(minion: &str) -> Value {
         .as_array_mut()
         .unwrap()
         .push(result["value"]["event"].clone());
+    if minion == "evilTwin" {
+        return game;
+    }
     assert_eq!(
         replay(&game)["currentStep"]["id"],
         "firstNight:system:minionInfo"
@@ -60,179 +63,101 @@ pub(super) fn game(minion: &str) -> Value {
     game
 }
 #[test]
-fn twin_swap_creates_one_causal_repair_and_undo_restores_both_prefixes() {
+fn twin_swap_creates_separate_assignment_and_delivery_with_causal_undo() {
     let mut game = game("evilTwin");
-    assert_eq!(replay(&game)["currentStep"]["character"], "evilTwin");
+    assert_eq!(
+        replay(&game)["currentStep"]["actionRef"]["actionId"],
+        "assignTwin"
+    );
     assert_eq!(propose(&game, json!({"playerIds":["p7"]}))["ok"], false);
-    let proposal = propose(&game, json!({"playerIds":["p1"]}));
+    let assignment = confirm(&mut game, json!({"playerIds":["p1"]}));
+    assert!(propose(&game, Value::Null)["value"]["revealPayload"].is_object()); // minion information, not twin delivery
+    confirm(&mut game, Value::Null);
+    confirm(
+        &mut game,
+        json!({"characterIds":["soldier","mayor","virgin"]}),
+    );
+    assert_eq!(
+        replay(&game)["currentStep"]["actionRef"]["actionId"],
+        "learnTwin"
+    );
+    let proposal = propose(&game, Value::Null);
     assert_eq!(
         proposal["value"]["revealPayload"],
         json!({"kind":"evilTwinPair","players":[{"playerId":"p6","seat":6,"name":"P6","alignment":"evil","characterId":"evilTwin"},{"playerId":"p1","seat":1,"name":"P1","alignment":"good","characterId":"snakeCharmer"}]})
     );
-    let first = confirm(&mut game, json!({"playerIds":["p1"]}));
+    let first = confirm(&mut game, Value::Null);
+    assert_eq!(
+        first["payload"]["result"]["relationshipEventId"],
+        assignment["id"]
+    );
     let before_swap = game.clone();
     let swap = confirm(&mut game, json!({"playerIds":["p7"]}));
-    let state = replay(&game);
-    assert_eq!(state["currentStep"]["character"], "evilTwin");
     assert_eq!(
-        state["currentStep"]["followUpCause"],
-        json!({"triggerEventId":swap["id"],"relationshipEventId":first["id"]})
+        replay(&game)["currentStep"]["actionCause"],
+        json!({"kind":"requiredPreparation","triggerEventId":swap["id"],"previousPreparationEventId":assignment["id"]})
     );
     let pending = game.clone();
     let repair = propose(&game, json!({"playerIds":["p2"]}));
-    assert_eq!(repair, propose(&game, json!({"playerIds":["p2"]})));
-    confirm(&mut game, json!({"playerIds":["p2"]}));
-    let state = replay(&game);
-    assert_eq!(state["currentStep"]["id"], "firstNight:system:dawn");
+    let reassignment = confirm(&mut game, json!({"playerIds":["p2"]}));
+    let before_delivery = game.clone();
     assert_eq!(
-        state["ruleState"]["twinRelationships"]
-            .as_array()
-            .unwrap()
-            .len(),
-        2
+        replay(&game)["currentStep"]["actionCause"],
+        json!({"kind":"delivery","preparationEventId":reassignment["id"]})
     );
+    confirm(&mut game, Value::Null);
+    assert_eq!(replay(&game)["currentStep"]["id"], "firstNight:system:dawn");
     assert_eq!(
-        state["ruleState"]["twinRelationships"][0]["effective"],
-        false
-    );
-    assert_eq!(
-        state["ruleState"]["twinRelationships"][1]["targetPlayerId"],
+        replay(&game)["ruleState"]["twinRelationships"][1]["targetPlayerId"],
         "p2"
     );
-    game["game"]["events"].as_array_mut().unwrap().pop();
-    assert_eq!(replay(&game), replay(&pending));
-    game["game"]["events"].as_array_mut().unwrap().pop();
-    assert_eq!(replay(&game), replay(&before_swap));
-    let mut forged = pending.clone();
+    for expected in [&before_delivery, &pending, &before_swap] {
+        game["game"]["events"].as_array_mut().unwrap().pop();
+        assert_eq!(replay(&game), replay(expected));
+    }
+    let mut forged = pending;
     let mut bad = repair["value"]["event"].clone();
-    bad["payload"]["followUpCause"]["triggerEventId"] = json!(first["id"]);
+    bad["payload"]["actionCause"]["triggerEventId"] = assignment["id"].clone();
     forged["game"]["events"].as_array_mut().unwrap().push(bad);
     let result: Value = serde_json::from_str(&crate::replay_json(&forged.to_string())).unwrap();
     assert_eq!(result["ok"], false);
 }
-
 #[test]
-fn bounded_twin_followup_ignores_name_and_death_and_disappears_when_no_longer_needed() {
+fn bounded_twin_assignment_ignores_name_and_death_but_repairs_same_alignment() {
     use super::issue207_impairments::{facts, source};
     use crate::{
-        contracts::{
-            CustomActionConfirmedPayload, CustomActionResult, FirstNightActionRef, GameEvent,
-            GameEventKind, TwinRelationship,
-        },
-        event::CustomFactChanges,
-        first_night::{ActionContext, FollowUpContext, ValidatedActionEvent, ValidatedCustomEvent},
-        model::{Alignment, Phase},
-        rules::CustomRuleService,
-        state::{ActionOccurrence, ConfirmedActionFact},
+        contracts::TwinRelationship, first_night::ActionContext, model::Alignment,
+        rules::CustomRuleService, state::FirstNightProgress,
     };
-    let (definition, mut before) = facts(&["evilTwin", "snakeCharmer", "artist", "imp"]);
-    let twin_source = source(&before, 0);
-    before.twin_relationships.push(TwinRelationship {
+    let (definition, mut state) = facts(&["evilTwin", "snakeCharmer", "artist", "imp"]);
+    state.prefix_event_id = "trigger".into();
+    state.twin_relationships.push(TwinRelationship {
         source_event_id: "pair".into(),
-        ability_use: twin_source,
-        effective: true,
+        ability_use: source(&state, 0),
         target_player_id: "p2".into(),
+        effective: true,
     });
-    let action_ref = FirstNightActionRef::Character {
-        character_id: "snakeCharmer".into(),
-        action_id: "choosePlayer".into(),
+    let registrations = crate::characters::sects_and_violets::registrations();
+    let entry=registrations.iter().find(|r|matches!(&r.spec.action_ref,crate::contracts::FirstNightActionRef::Character{action_id,..}if action_id=="assignTwin")).unwrap();
+    let candidates = |facts: &crate::state::CustomGameFacts| {
+        let rules = CustomRuleService::new(&definition, facts);
+        entry
+            .handler
+            .required_occurrences(
+                &ActionContext {
+                    event_id: "",
+                    rule_service: &rules,
+                },
+                &FirstNightProgress::default(),
+            )
+            .unwrap()
     };
-    let occurrence = ActionOccurrence::character(action_ref.clone(), source(&before, 1)).unwrap();
-    let payload = CustomActionConfirmedPayload {
-        step_id: occurrence.step_id().unwrap(),
-        action_ref,
-        ability_use: occurrence.ability_use.clone(),
-        simulation_source: None,
-        follow_up_cause: None,
-        input: None,
-        result: CustomActionResult::NoEffect,
-        delivered_result: None,
-        registration_judgments: vec![],
-    };
-    let event = ValidatedActionEvent::Custom(ValidatedCustomEvent::for_tests(
-        GameEvent {
-            id: "trigger".into(),
-            phase: Phase::FirstNight,
-            summary: "bounded transition".into(),
-            created_at: "t".into(),
-            kind: GameEventKind::CustomActionConfirmed {
-                payload: payload.clone(),
-            },
-        },
-        payload,
-        CustomFactChanges::default(),
-    ));
-    let entry=crate::characters::sects_and_violets::registrations().into_iter().find(|r|matches!(&r.spec.action_ref,FirstNightActionRef::Character{character_id,..}if character_id=="evilTwin")).unwrap();
-    let followup = entry.handler.follow_up_rule().unwrap();
-    let mut changed = before.clone();
-    changed.players[1].name = "renamed".into();
-    changed.players[1].alive = false;
-    assert!(followup
-        .candidates(&FollowUpContext {
-            previous_facts: &before,
-            next_facts: &changed,
-            event: &event,
-            event_stream_index: 1
-        })
-        .unwrap()
-        .is_empty());
-    let mut changed = before.clone();
-    changed.players[1].alignment = Alignment::Evil;
-    changed.confirmed_actions.push(ConfirmedActionFact {
-        event_id: "trigger".into(),
-        occurrence,
-        result: CustomActionResult::NoEffect,
-    });
-    let candidates = followup
-        .candidates(&FollowUpContext {
-            previous_facts: &before,
-            next_facts: &changed,
-            event: &event,
-            event_stream_index: 1,
-        })
-        .unwrap();
-    assert_eq!(candidates.len(), 1);
-    assert!(followup
-        .candidates(&FollowUpContext {
-            previous_facts: &changed,
-            next_facts: &changed,
-            event: &event,
-            event_stream_index: 2
-        })
-        .unwrap()
-        .is_empty());
-    let rules = CustomRuleService::new(&definition, &changed);
-    let context = ActionContext {
-        rule_service: &rules,
-        event_id: "",
-    };
-    let first = entry
-        .handler
-        .project_occurrence(&entry.spec, &context, &candidates[0])
-        .unwrap()
-        .unwrap();
-    assert_eq!(first.id, candidates[0].step_id().unwrap());
-    changed.players[1].alignment = Alignment::Good;
-    let rules = CustomRuleService::new(&definition, &changed);
-    let context = ActionContext {
-        rule_service: &rules,
-        event_id: "",
-    };
-    assert!(entry
-        .handler
-        .project_occurrence(&entry.spec, &context, &candidates[0])
-        .unwrap()
-        .is_none());
-    changed.players[1].alignment = Alignment::Evil;
-    changed.players[0].alive = false;
-    let rules = CustomRuleService::new(&definition, &changed);
-    let context = ActionContext {
-        rule_service: &rules,
-        event_id: "",
-    };
-    assert!(entry
-        .handler
-        .project_occurrence(&entry.spec, &context, &candidates[0])
-        .unwrap()
-        .is_none());
+    assert!(candidates(&state).is_empty());
+    state.players[1].name = "renamed".into();
+    state.players[1].alive = false;
+    assert!(candidates(&state).is_empty());
+    state.players[1].alignment = Alignment::Evil;
+    assert_eq!(candidates(&state).len(), 1);
+    state.players[1].alignment = Alignment::Good;
+    assert!(candidates(&state).is_empty());
 }

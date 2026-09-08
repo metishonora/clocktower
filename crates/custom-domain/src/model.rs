@@ -152,6 +152,8 @@ pub(crate) enum InformationResult {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct InformationPlayer {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) alignment: Option<Alignment>,
     pub(crate) player_id: String,
     pub(crate) seat: u8,
     pub(crate) name: String,
@@ -204,12 +206,25 @@ pub(crate) enum RegistrationValue {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct RegistrationJudgment {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) scope: Option<RegistrationScope>,
     pub(crate) player_id: String,
     pub(crate) registered_as: RegistrationValue,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) character_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(crate) enum RegistrationScope {
+    AdjacentPair { player_ids: Vec<String> },
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -320,21 +335,17 @@ pub(crate) struct AbnormalAbilityEvidence {
     rename_all_fields = "camelCase"
 )]
 pub(crate) enum AbnormalAbilityOutcome {
-    IncorrectInformation {
-        computed_result: InformationResult,
-        delivered_result: InformationResult,
-    },
-    InvalidSavantPattern {
-        truthful_count: u8,
-    },
-    EffectFailure {
-        effect: AbnormalAbilityEffect,
-    },
+    IncorrectInformation { delivered_result: InformationResult },
+    InvalidSavantPattern { truthful_count: u8 },
+    EffectFailure { effect: AbnormalAbilityEffect },
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AbnormalAbilityEffect {
+    PoisonerPoison,
+    ButlerMaster,
+    MutantExecution,
     PhilosopherAcquisition,
     WitchCurse,
     CerenovusMadness,
@@ -412,6 +423,8 @@ pub(crate) type StepInput = Option<StepInputFields>;
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepInputFields {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) correct_player_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) player_ids: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) character_ids: Option<Vec<String>>,
@@ -482,6 +495,8 @@ pub(crate) struct PhaseStep {
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -591,6 +606,8 @@ pub(crate) struct PhaseOverviewItem {
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
 }
 
 #[derive(Debug, Serialize, Clone)]

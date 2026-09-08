@@ -547,8 +547,17 @@ fn custom_definition_plan_replays_while_official_setup_shape_stays_exact() {
     let mut with_setup = game.clone();
     with_setup["game"]["events"] = json!([proposal["value"]["event"].clone()]);
     let custom_replay: Value = serde_json::from_str(&replay_json(&with_setup.to_string())).unwrap();
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    {
+        assert_eq!(custom_replay["ok"], true, "{custom_replay}");
+        assert_eq!(
+            custom_replay["value"]["currentStep"]["actionRef"]["actionId"],
+            "prepareInformation"
+        );
+    }
+    #[cfg(feature = "custom-runtime-fixtures")]
     assert_eq!(
-        custom_replay["error"]["code"], "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE",
-        "{custom_replay}",
+        custom_replay["error"]["code"],
+        "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE"
     );
 }

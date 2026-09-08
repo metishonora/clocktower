@@ -44,10 +44,18 @@ Custom SnV rules, information candidates, active effects and causal twin repairs
 `crates/custom-domain/src/characters/sects_and_violets.rs`. Custom TB registration semantics stay
 in that crate's `characters/trouble_brewing.rs`. `information.rs` validates common input/result
 shapes; it does not import official rule implementations. The scheduler owns progress and stable
-occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a
-real failed Philosopher choice and cannot acquire a fictional ability instance.
+occurrence identity, while handlers own eligibility and typed facts. A simulation refers to a real failed Philosopher choice, initial Drunk identity, or acquired Drunk guidance; it cannot acquire a fictional ability instance.
 
-Production registers exactly nine SnV actions; fixture builds separately register only system
+Custom `effects.rs` resolves character-owned effect candidates against a common fact view.
+`simulation.rs` derives guidance and its usage from real sources and confirmed choices.
+The scheduler owns required preparation and optional candidates separately from ordered progress.
+Preparation records link each delivery to the chosen version; optional events cannot consume ordinary progress.
+Mutant execution uses a typed terminal result and clears all pending actions without entering Day.
+Custom Mathematician audit consumes character-owned malfunction evidence and causes. It retains
+actual delivered information but never requires or emits a replacement computed answer; ordinary
+character information calculations retain their own computed values.
+
+Production registers 18 ordered TB/SnV character actions and seven additional preparation or optional actions; fixture builds separately register only system
 and test handlers. `scripts/check-custom-boundaries.mjs` rejects imports across the boundary,
 including indirect Cargo/TypeScript and source-include dependencies. Run its negative tests with
 `node --test scripts/check-custom-boundaries.test.mjs`.

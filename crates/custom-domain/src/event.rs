@@ -30,6 +30,11 @@ pub(crate) struct CustomFactChanges {
     impairment_additions: Vec<ActiveImpairment>,
     impairment_removals: Vec<ActiveImpairment>,
     snv: SnvFactChanges,
+    audit: Vec<crate::state::MalfunctionEvidence>,
+    preparation: bool,
+    poisoner_choice: Option<crate::contracts::TargetAssignment>,
+    master_choice: Option<crate::contracts::TargetAssignment>,
+    game_end: Option<crate::contracts::CustomGameEnd>,
 }
 
 /// Finite facts calculated by an SnV resolver. These become trusted only after registry validation.
@@ -41,7 +46,6 @@ pub(crate) struct SnvFactChanges {
     pub(crate) witch_curse: Option<crate::contracts::WitchCurse>,
     pub(crate) madness_assignment: Option<crate::contracts::MadnessAssignment>,
     pub(crate) durable_impairments: Vec<crate::state::DurableImpairment>,
-    pub(crate) audit: Vec<crate::state::MalfunctionEvidence>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +62,47 @@ pub(crate) struct PlayerLifeChange {
 }
 
 impl CustomFactChanges {
+    pub(crate) fn with_audit(mut self, audit: Vec<crate::state::MalfunctionEvidence>) -> Self {
+        self.audit = audit;
+        self
+    }
+    pub(crate) fn audit(&self) -> &[crate::state::MalfunctionEvidence] {
+        &self.audit
+    }
+    pub(crate) fn with_preparation(mut self) -> Self {
+        self.preparation = true;
+        self
+    }
+    pub(crate) fn preparation(&self) -> bool {
+        self.preparation
+    }
+    pub(crate) fn with_poisoner(mut self, choice: crate::contracts::TargetAssignment) -> Self {
+        self.poisoner_choice = Some(choice);
+        self
+    }
+    pub(crate) fn poisoner_choice(&self) -> Option<&crate::contracts::TargetAssignment> {
+        self.poisoner_choice.as_ref()
+    }
+    pub(crate) fn with_master(mut self, choice: crate::contracts::TargetAssignment) -> Self {
+        self.master_choice = Some(choice);
+        self
+    }
+    pub(crate) fn master_choice(&self) -> Option<&crate::contracts::TargetAssignment> {
+        self.master_choice.as_ref()
+    }
+    pub(crate) fn with_execution(
+        mut self,
+        death: Option<PlayerLifeChange>,
+        game_end: Option<crate::contracts::CustomGameEnd>,
+    ) -> Self {
+        self.life_changes = death.into_iter().collect();
+        self.game_end = game_end;
+        self
+    }
+    pub(crate) fn game_end(&self) -> Option<&crate::contracts::CustomGameEnd> {
+        self.game_end.as_ref()
+    }
+
     pub(crate) fn resolved(
         identity_changes: Vec<PlayerIdentityTransition>,
         ability_grants: Vec<AbilityGrantChange>,
@@ -75,7 +120,12 @@ impl CustomFactChanges {
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.identity_changes.is_empty()
+        self.audit.is_empty()
+            && !self.preparation
+            && self.poisoner_choice.is_none()
+            && self.master_choice.is_none()
+            && self.game_end.is_none()
+            && self.identity_changes.is_empty()
             && self.ability_grants.is_empty()
             && self.ability_removals.is_empty()
             && self.life_changes.is_empty()
@@ -241,6 +291,7 @@ pub(crate) struct CustomActionEventDraft {
     pub(crate) result: CustomActionResult,
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
     pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    pub(crate) action_cause: Option<crate::contracts::ActionCause>,
     pub(crate) delivered_result: Option<crate::model::InformationResult>,
     pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
 }
@@ -250,6 +301,7 @@ impl CustomActionEventDraft {
         CustomActionConfirmedPayload {
             simulation_source: self.simulation_source,
             follow_up_cause: self.follow_up_cause,
+            action_cause: self.action_cause,
             delivered_result: self.delivered_result,
             registration_judgments: self.registration_judgments,
             step_id: self.step_id,
@@ -285,16 +337,27 @@ fn validate_envelope_fields(
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    if payload.simulation_source.is_some()
-        != matches!(payload.result, CustomActionResult::Simulation { .. })
+    let simulation_result = matches!(
+        payload.result,
+        CustomActionResult::Simulation { .. } | CustomActionResult::SimulationChoice { .. }
+    );
+    if (simulation_result && payload.simulation_source.is_none())
+        || (payload.simulation_source.is_some()
+            && !simulation_result
+            && !matches!(
+                payload.result,
+                CustomActionResult::InformationPrepared { .. }
+                    | CustomActionResult::PreparedInformationDelivered { .. }
+            ))
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    let _occurrence = crate::state::ActionOccurrence::from_parts(
+    let _occurrence = crate::state::ActionOccurrence::from_all_parts(
         payload.action_ref.clone(),
         payload.ability_use.clone(),
         payload.simulation_source.clone(),
         payload.follow_up_cause.clone(),
+        payload.action_cause.clone(),
     )?;
     if payload.step_id.trim().is_empty() {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());

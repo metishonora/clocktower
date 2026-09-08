@@ -93,12 +93,21 @@ impl<'a> NightScheduler<'a> {
         if next.is_completed(&occurrence) || next.is_excluded(&occurrence) {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
-        // Immediate work has strict precedence over the ordered cursor.  Likewise, only the
-        // first occurrence in an entry may be confirmed at a time.
-        if !next.immediate_queue.is_empty() && !is_immediate {
+        let is_required = next
+            .required_queue
+            .first()
+            .is_some_and(|candidate| candidate == &occurrence);
+        let is_optional = next.available_occurrences.contains(&occurrence);
+        // Required preparations cannot be bypassed. Optional choices otherwise preserve cursor.
+        if !next.required_queue.is_empty() && !is_required {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
-        if next.immediate_queue.is_empty() && !is_current {
+        // Immediate work has strict precedence over the ordered cursor.  Likewise, only the
+        // first occurrence in an entry may be confirmed at a time.
+        if !is_required && !is_optional && !next.immediate_queue.is_empty() && !is_immediate {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
+        if !is_required && !is_optional && next.immediate_queue.is_empty() && !is_current {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
 
@@ -108,7 +117,12 @@ impl<'a> NightScheduler<'a> {
         let event_stream_index = next.completed_history.len();
         mark_completed(&mut next, &occurrence, event.event_id(), snapshot)?;
 
-        if is_immediate {
+        if is_required {
+            next.required_queue.remove(0);
+        } else if is_optional {
+            next.available_occurrences
+                .retain(|candidate| candidate != &occurrence);
+        } else if is_immediate {
             next.immediate_queue.remove(0);
         } else {
             next.current_occurrences.remove(0);
@@ -119,6 +133,8 @@ impl<'a> NightScheduler<'a> {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
             }
             next.current_occurrences.clear();
+            next.required_queue.clear();
+            next.available_occurrences.clear();
             next.ended = true;
             next.cursor = self.plan.0.len();
             return Ok(next);
@@ -234,6 +250,13 @@ pub(crate) fn project_pending_steps(
     context: &ActionContext<'_>,
     progress: &SchedulerProgress,
 ) -> Result<Vec<ProjectedOccurrenceStep>, CoreError> {
+    if context
+        .rule_service
+        .facts()
+        .is_some_and(|f| f.game_end.is_some())
+    {
+        return Ok(vec![]);
+    }
     let mut normalized = progress.clone();
     dedupe_immediate_queue(&mut normalized);
     retain_live_immediate_queue(&mut normalized, registry, context)?;
@@ -241,7 +264,11 @@ pub(crate) fn project_pending_steps(
 
     let mut projected = Vec::new();
     let mut seen = Vec::new();
-    for occurrence in &normalized.immediate_queue {
+    for occurrence in normalized
+        .required_queue
+        .iter()
+        .chain(&normalized.immediate_queue)
+    {
         if normalized.is_terminal(occurrence)
             || seen
                 .iter()
@@ -305,8 +332,25 @@ fn normalize_progress(
     context: &ActionContext<'_>,
     progress: &mut SchedulerProgress,
 ) -> Result<(), CoreError> {
-    if progress.ended {
+    if progress.ended
+        || context
+            .rule_service
+            .facts()
+            .is_some_and(|facts| facts.game_end.is_some())
+    {
         progress.current_occurrences.clear();
+        progress.immediate_queue.clear();
+        progress.required_queue.clear();
+        progress.available_occurrences.clear();
+        return Ok(());
+    }
+    progress.required_queue = registry.additional_candidates(plan, context, progress, false)?;
+    progress.available_occurrences = if progress.required_queue.is_empty() {
+        registry.additional_candidates(plan, context, progress, true)?
+    } else {
+        vec![]
+    };
+    if !progress.required_queue.is_empty() {
         return Ok(());
     }
 
@@ -706,4 +750,41 @@ fn occurrence_ability_key(occurrence: &ActionOccurrence) -> (&str, &str) {
         ),
         None => ("", ""),
     }
+}
+
+pub(super) fn sort_additional_occurrences(
+    plan: &FirstNightOrderPlan,
+    context: &ActionContext<'_>,
+    occurrences: &mut [ActionOccurrence],
+) {
+    let index = |o: &ActionOccurrence| {
+        super::catalog::linked_action(&o.action_ref)
+            .and_then(|a| plan.0.iter().position(|p| *p == a))
+            .unwrap_or(plan.0.len())
+    };
+    let projected = |o: &ActionOccurrence| ProjectedOccurrence {
+        occurrence: o.clone(),
+        seat: context
+            .rule_service
+            .facts()
+            .and_then(|f| o.actor_player_id().and_then(|id| f.player(id)))
+            .map(|p| p.seat)
+            .unwrap_or(0),
+        origin: context
+            .rule_service
+            .facts()
+            .and_then(|f| {
+                o.ability_use
+                    .as_ref()
+                    .and_then(|source| crate::reducer::recorded_ability(f, source))
+            })
+            .map(|p| p.origin.clone())
+            .unwrap_or(AbilityOrigin::IdentityBound),
+    };
+    occurrences.sort_by(|a, b| {
+        index(a)
+            .cmp(&index(b))
+            .then_with(|| compare_projected_occurrences(&projected(a), &projected(b)))
+            .then_with(|| a.step_id().ok().cmp(&b.step_id().ok()))
+    });
 }

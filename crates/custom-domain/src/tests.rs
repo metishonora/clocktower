@@ -31,3 +31,18 @@ mod issue207_information;
 mod issue207_mathematician;
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue207_relationships;
+
+mod issue208_contracts;
+
+mod issue208_effects;
+mod issue208_simulation;
+
+mod issue208_scheduler;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue208_information;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue208_mutant;
+mod issue208_preparations;
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue208_twins;

@@ -26,6 +26,28 @@ pub(crate) struct FirstNightProjection {
 /// not part of the custom runtime remain at their established empty values.
 pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     let mut state = RuleState::default();
+    state.preparations = facts
+        .preparations
+        .iter()
+        .map(|p| crate::contracts::PreparationRecord {
+            source_event_id: p.event_id.clone(),
+            action_ref: p.occurrence.action_ref.clone(),
+            ability_use: p.occurrence.ability_use.clone(),
+            simulation_source: p.occurrence.simulation_source.clone(),
+            result: p.result.clone(),
+            registration_judgments: p.registration_judgments.clone(),
+        })
+        .collect();
+    state.poisoner_choices = facts.poisoner_choices.clone();
+    state.master_choices = facts.master_choices.clone();
+    state.guidance = crate::simulation::sources(facts)
+        .into_iter()
+        .map(|g| crate::contracts::GuidanceRecord {
+            spent: crate::simulation::spent(facts, &g.source),
+            source: g.source,
+            character_id: g.character_id,
+        })
+        .collect();
     if !facts.active_impairments.is_empty() {
         state.active_impairments = Some(facts.active_impairments.clone());
     }
@@ -63,16 +85,20 @@ pub(crate) fn first_night(
     };
 
     let mut rows = Vec::new();
+    let mut last_linked_entry = 0;
     for (sequence, completion) in progress.completed_history.iter().enumerate() {
         let snapshot = completion
             .snapshot
             .as_ref()
             .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
-        let entry_index = plan
-            .0
-            .iter()
-            .position(|action_ref| Some(action_ref) == snapshot.step.action_ref.as_ref())
-            .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+        let entry_index = snapshot
+            .step
+            .action_ref
+            .as_ref()
+            .and_then(crate::first_night::catalog::linked_action)
+            .and_then(|a| plan.0.iter().position(|p| *p == a))
+            .unwrap_or(last_linked_entry);
+        last_linked_entry = entry_index;
         rows.push(OverviewRow {
             entry_index,
             sequence,
@@ -83,11 +109,10 @@ pub(crate) fn first_night(
     }
 
     for (sequence, projected) in pending.into_iter().enumerate() {
-        let entry_index = plan
-            .0
-            .iter()
-            .position(|action_ref| *action_ref == projected.occurrence.action_ref)
-            .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
+        let entry_index =
+            crate::first_night::catalog::linked_action(&projected.occurrence.action_ref)
+                .and_then(|a| plan.0.iter().position(|p| *p == a))
+                .unwrap_or(sequence);
         let status = if next_identity
             .as_ref()
             .is_some_and(|identity| *identity == projected.occurrence.identity())
@@ -183,6 +208,12 @@ pub(crate) fn custom_information_reveal(
                 value: *value,
             })
         }
+        crate::model::InformationResult::SpyGrimoire { players } => {
+            Some(RevealPayload::SpyGrimoire {
+                kind: "spyGrimoire",
+                players: players.clone(),
+            })
+        }
         crate::model::InformationResult::CharacterPair { character_ids } => {
             Some(RevealPayload::DreamerInformation {
                 kind: "dreamerInformation",
@@ -212,13 +243,63 @@ pub(crate) fn event_reveal(
         Some(crate::contracts::CustomActionResult::InformationDelivered {
             information, ..
         })
+        | Some(crate::contracts::CustomActionResult::PreparedInformationDelivered {
+            information,
+            ..
+        })
         | Some(crate::contracts::CustomActionResult::Simulation {
             information: Some(information),
             ..
         }) => {
+            if let crate::model::InformationResult::SetupInfo {
+                player_ids,
+                character_id,
+                zero_outsiders,
+            } = &information.delivered_result
+            {
+                let FirstNightActionRef::Character {
+                    character_id: source,
+                    ..
+                } = action_ref
+                else {
+                    return None;
+                };
+                return Some(RevealPayload::SetupInformation {
+                    kind: "setupInformation",
+                    character_id: source.clone(),
+                    candidate_players: player_ids
+                        .iter()
+                        .filter_map(|id| facts.player(id))
+                        .map(|p| crate::contracts::RevealPlayer {
+                            player_id: p.id.clone(),
+                            seat: p.seat,
+                            name: p.name.clone(),
+                        })
+                        .collect(),
+                    revealed_character_id: character_id.clone(),
+                    zero_outsiders: *zero_outsiders,
+                });
+            }
             if let crate::model::InformationResult::Boolean { value } =
                 &information.delivered_result
             {
+                if matches!(action_ref, FirstNightActionRef::Character { character_id, .. } if character_id == "fortuneTeller")
+                {
+                    return Some(RevealPayload::FortuneTellerInformation {
+                        kind: "fortuneTellerInformation",
+                        target_players: information
+                            .target_player_ids
+                            .iter()
+                            .filter_map(|id| facts.player(id))
+                            .map(|p| crate::contracts::RevealPlayer {
+                                player_id: p.id.clone(),
+                                seat: p.seat,
+                                name: p.name.clone(),
+                            })
+                            .collect(),
+                        has_demon: *value,
+                    });
+                }
                 Some(RevealPayload::SeamstressInformation {
                     kind: "seamstressInformation",
                     target_players: information
@@ -237,7 +318,24 @@ pub(crate) fn event_reveal(
                 custom_information_reveal(action_ref, &information.delivered_result)
             }
         }
-        Some(crate::contracts::CustomActionResult::EvilTwin {
+        Some(crate::contracts::CustomActionResult::MutantExecution {
+            executed: true,
+            died,
+            ..
+        }) => {
+            let actor = facts.player(actor_player_id?)?;
+            Some(RevealPayload::MutantExecution {
+                kind: "mutantExecution",
+                player: crate::contracts::RevealPlayer {
+                    player_id: actor.id.clone(),
+                    seat: actor.seat,
+                    name: actor.name.clone(),
+                },
+                executed: true,
+                died: *died,
+            })
+        }
+        Some(crate::contracts::CustomActionResult::TwinInformed {
             target_player_id, ..
         }) => {
             let actor = facts.player(actor_player_id?)?;
@@ -274,6 +372,7 @@ fn overview(step: PhaseStep, status: PhaseStepStatus) -> PhaseOverviewItem {
     PhaseOverviewItem {
         simulation_source: step.simulation_source.clone(),
         follow_up_cause: step.follow_up_cause.clone(),
+        action_cause: step.action_cause.clone(),
         id: step.id,
         phase: step.phase,
         step_type: step.step_type,

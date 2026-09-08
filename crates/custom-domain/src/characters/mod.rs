@@ -1,6 +1,6 @@
 pub(crate) mod registry;
 pub(crate) mod sects_and_violets;
-mod trouble_brewing;
+pub(crate) mod trouble_brewing;
 pub(crate) use registry::*;
 
 pub(crate) fn character_kind(id: &str) -> Option<crate::model::CharacterKind> {

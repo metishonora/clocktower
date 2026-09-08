@@ -21,12 +21,13 @@ export const definition: CustomScriptDefinition = {
     { kind: "system", actionId: "dawn" },
   ],
 };
-export async function createSession(roster: string[], script = definition) {
+export async function createSession(roster: string[], script = definition, initialTwinTarget = "p1") {
   const players: SetupPlayerInput[] = roster.map((actualCharacter, i) => ({ id: `p${i + 1}`, seat: i + 1, name: `P${i + 1}`, actualCharacter }));
   const storage = new IndexedDbCustomWebSessionStorageDriver(script.id, new IDBFactory());
   const session = CustomCanonicalSession.create({ definition: script, core: realWasmCore(), storage, setupDraft: { players }, presentation: { activeTab: "play" }, gameId: script.id, now: new Date("2026-09-08T00:00:00.000Z") });
   const setup = await session.confirmSetup({ type: "createGame", payload: { players } });
   if (!setup.ok) throw new Error(`${setup.error.code}: ${setup.error.messageKo}`);
+  if (roster.includes("evilTwin")) await take(session, "evilTwin", { playerIds: [initialTwinTarget] });
   await take(session, "minionInfo", null);
   await take(session, "demonInfo", { characterIds: ["soldier", "mayor", "virgin"] });
   return { session, storage };

@@ -22,6 +22,7 @@ fn source(id: &str) -> AbilityUseRef {
 fn actual_and_simulated_sources_are_exclusive_and_have_distinct_completion_keys() {
     let actual = ActionOccurrence::character(action("dreamer"), source("dreamer")).unwrap();
     let simulation = PhilosopherSimulationSource {
+        guidance: None,
         selection_event_id: "choice:1".into(),
         source_ability_use: source("philosopher"),
     };
