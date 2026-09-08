@@ -642,6 +642,31 @@ fn apply_snv_facts(
         }
         next.malfunction_audit.push(evidence.clone());
     }
+    for (sequence, transition) in event.fact_changes().identity_changes().iter().enumerate() {
+        if matches!(
+            event.payload().result,
+            crate::contracts::CustomActionResult::SnakeCharmer {
+                outcome: crate::contracts::SnakeCharmerOutcome::Swapped,
+                ..
+            }
+        ) {
+            next.pending_identity_reveals
+                .push(crate::contracts::PendingIdentityReveal {
+                    source_event_id: event.id().into(),
+                    sequence: sequence as u8,
+                    payload: crate::contracts::RevealPayload::CharacterChange {
+                        kind: "characterChange",
+                        player_id: transition.player_id.clone(),
+                        character_id: transition.after.shown_character.clone(),
+                        alignment: match transition.after.alignment {
+                            crate::model::Alignment::Good => "good",
+                            crate::model::Alignment::Evil => "evil",
+                        }
+                        .into(),
+                    },
+                });
+        }
+    }
     next.confirmed_actions
         .push(crate::state::ConfirmedActionFact {
             event_id: event.id().into(),

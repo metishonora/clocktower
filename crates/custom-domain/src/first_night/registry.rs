@@ -761,6 +761,8 @@ fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreErro
 pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
     #[allow(unused_mut)]
     let mut entries = system::registrations();
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    entries.extend(crate::characters::sects_and_violets::registrations());
     #[cfg(feature = "custom-runtime-fixtures")]
     entries.extend(super::fixtures::registrations());
     ActionRegistry::new(entries)

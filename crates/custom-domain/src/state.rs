@@ -33,6 +33,7 @@ pub(crate) struct CustomGameFacts {
     pub(crate) malfunction_audit: Vec<MalfunctionEvidence>,
     pub(crate) pending_identity_reveals: Vec<crate::contracts::PendingIdentityReveal>,
     pub(crate) vortox_sources: Vec<AbilityUseRef>,
+    pub(crate) resolved_impairments: Vec<DurableImpairment>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -266,10 +266,10 @@ mod tests {
         let definition = r#"{
       "id": "issue-198-active-handler",
       "name": "Issue 198 active handler",
-      "characterIds": ["undertaker", "monk", "ravenkeeper", "virgin", "philosopher", "scarletWoman", "imp"],
+      "characterIds": ["undertaker", "monk", "ravenkeeper", "virgin", "washerwoman", "scarletWoman", "imp"],
       "firstNightOrder": [
         { "kind": "system", "actionId": "dusk" },
-        { "kind": "character", "characterId": "philosopher", "actionId": "chooseAbility" },
+        { "kind": "character", "characterId": "washerwoman", "actionId": "learnTownsfolk" },
         { "kind": "system", "actionId": "minionInfo" },
         { "kind": "system", "actionId": "demonInfo" },
         { "kind": "system", "actionId": "dawn" }
@@ -278,12 +278,12 @@ mod tests {
         let event = SETUP_EVENT
             .replace(
                 r#""actualCharacter": "slayer""#,
-                r#""actualCharacter": "philosopher""#,
+                r#""actualCharacter": "washerwoman""#,
             )
-            .replace(r#""name": "Slayer""#, r#""name": "Philosopher""#)
+            .replace(r#""name": "Slayer""#, r#""name": "Washerwoman""#)
             .replace(
                 r#""shownCharacter": "slayer""#,
-                r#""shownCharacter": "philosopher""#,
+                r#""shownCharacter": "washerwoman""#,
             );
         let result = replay(&custom_game(definition, &format!("[{event}]")));
         assert_error(&result, "FIRST_NIGHT_ACTION_HANDLER_UNAVAILABLE");

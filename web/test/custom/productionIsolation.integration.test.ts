@@ -7,6 +7,8 @@ import { realWasmCore } from "./realCustomWasmHarness.js";
 describe("Issue #206 production custom-runtime isolation", () => {
   it("keeps an active unimplemented Character action unsupported in ordinary generated WASM", async () => {
     const definition = productionDefinition();
+    definition.characterIds = definition.characterIds.map(id => id === "philosopher" ? "washerwoman" : id);
+    definition.firstNightOrder = definition.firstNightOrder.map(ref => ref.kind === "character" ? { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" } : ref);
     const empty = createCustomGameFile(
       definition,
       "issue-206-production-unsupported",
@@ -14,7 +16,7 @@ describe("Issue #206 production custom-runtime isolation", () => {
     );
     const setup = await realWasmCore().propose(empty, {
       type: "createGame",
-      payload: { players: productionPlayers() },
+      payload: { players: productionPlayers().map(player => player.actualCharacter === "philosopher" ? { ...player, actualCharacter: "washerwoman" } : player) },
     });
     expect(setup.ok).toBe(true);
     if (!setup.ok) return;

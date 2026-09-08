@@ -216,10 +216,10 @@ it("reports an explicit unavailable handler when a planned character action is a
   const definition: CustomScriptDefinition = {
     id: "issue-198-active-handler",
     name: "Issue 198 active handler",
-    characterIds: ["undertaker", "monk", "ravenkeeper", "virgin", "philosopher", "scarletWoman", "imp"],
+    characterIds: ["undertaker", "monk", "ravenkeeper", "virgin", "washerwoman", "scarletWoman", "imp"],
     firstNightOrder: [
       { kind: "system", actionId: "dusk" },
-      { kind: "character", characterId: "philosopher", actionId: "chooseAbility" },
+      { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" },
       { kind: "system", actionId: "minionInfo" },
       { kind: "system", actionId: "demonInfo" },
       { kind: "system", actionId: "dawn" },
@@ -227,7 +227,7 @@ it("reports an explicit unavailable handler when a planned character action is a
   };
   const players = PLAYERS.map((player) =>
     player.actualCharacter === "slayer"
-      ? { ...player, name: "Philosopher", actualCharacter: "philosopher", shownCharacter: "philosopher" }
+      ? { ...player, name: "Washerwoman", actualCharacter: "washerwoman", shownCharacter: "washerwoman" }
       : player,
   );
   const empty = createCustomGameFile(definition, "issue-198-active-handler", new Date("2026-09-07T00:00:00.000Z"));

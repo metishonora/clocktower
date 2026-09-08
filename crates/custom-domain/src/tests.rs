@@ -16,3 +16,8 @@ mod issue206_night_scheduler_contracts;
 mod issue207_contracts;
 mod issue207_rule_state;
 mod issue207_scheduler;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue207_acquisition;
+
+mod issue207_impairments;

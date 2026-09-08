@@ -35,6 +35,6 @@ pub(crate) fn activation_rule() -> Box<dyn ActivationRule> {
     }
     #[cfg(not(feature = "custom-runtime-fixtures"))]
     {
-        Box::new(NoActionActivation)
+        Box::new(crate::characters::sects_and_violets::SnvActivation)
     }
 }
