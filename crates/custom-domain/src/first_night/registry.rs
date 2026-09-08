@@ -485,6 +485,29 @@ impl ActionRegistry {
         Ok(registry)
     }
 
+    /// Validate the full production catalog separately from partial and fixture registries.
+    #[cfg_attr(feature = "custom-runtime-fixtures", allow(dead_code))]
+    pub(crate) fn validate_production_completeness(&self) -> Result<(), CoreError> {
+        let mut expected = HashMap::new();
+        for (action_ref, ordered) in super::catalog::production_actions() {
+            if expected.insert(action_ref, ordered).is_some() {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+        }
+        for (action_ref, entry) in &self.entries {
+            if expected.get(action_ref) != Some(&entry.spec.participates_in_first_night)
+                || action_ref != &entry.spec.action_ref
+                || action_ref != entry.handler.action_ref()
+            {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+        }
+        for action_ref in expected.keys() {
+            self.lookup(action_ref)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn register(&mut self, entry: RegisteredAction) -> Result<(), CoreError> {
         if entry.spec.action_ref != *entry.handler.action_ref()
             || (!entry.spec.participates_in_first_night
@@ -821,9 +844,8 @@ fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreErro
     }
 }
 
-/// Build the exact registry used by the custom runtime. Production has system registrations only
-/// until Character handlers arrive in their owning script modules. Feature-gated fixture
-/// registrations are additive and never enter the default bundle.
+/// Build and validate the complete production system + TB + S&V registry. The fixture feature
+/// selects a separate system + fixture composition and never adds fixture handlers to production.
 pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
     #[allow(unused_mut)]
     let mut entries = system::registrations();
@@ -834,7 +856,10 @@ pub(crate) fn action_registry() -> Result<ActionRegistry, CoreError> {
     }
     #[cfg(feature = "custom-runtime-fixtures")]
     entries.extend(super::fixtures::registrations());
-    ActionRegistry::new(entries)
+    let registry = ActionRegistry::new(entries)?;
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    registry.validate_production_completeness()?;
+    Ok(registry)
 }
 
 fn validate_custom_event(
@@ -862,8 +887,8 @@ pub(crate) fn fixture_action_registry() -> Result<ActionRegistry, CoreError> {
     ActionRegistry::new(entries)
 }
 
-/// Historical name retained for system-only callers while the composed builder is introduced. It
-/// follows the feature flag, so production callers never gain fixture behavior accidentally.
+/// Historical alias for the composed builder. It follows the feature flag, so production
+/// callers never gain fixture behavior accidentally.
 pub(crate) fn system_action_registry() -> Result<ActionRegistry, CoreError> {
     action_registry()
 }

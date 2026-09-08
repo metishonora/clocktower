@@ -26,7 +26,7 @@ pub(crate) use runtime::{
     project_pending_steps, NightScheduler, ProjectedOccurrenceStep,
 };
 
-/// Select the separately owned Production SnV or fixture activation policy. Both traverse
+/// Select the separately owned production TB/S&V or fixture activation policy. Both traverse
 /// the same custom runtime fold without registering fixture outcomes in Production.
 pub(crate) fn activation_rule() -> Box<dyn ActivationRule> {
     #[cfg(feature = "custom-runtime-fixtures")]

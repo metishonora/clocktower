@@ -372,7 +372,7 @@ export type SpyGrimoireRevealPayload = {
     alive: boolean;
     ghostVoteUsed: boolean;
     reminderTokens?: SpyReminderToken[];
-    automaticReminders?: AutomaticReminder[];
+    automaticReminders?: Array<Omit<AutomaticReminder, "sourceEventId">>;
   }>;
 };
 
