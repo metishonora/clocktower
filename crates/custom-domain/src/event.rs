@@ -29,6 +29,19 @@ pub(crate) struct CustomFactChanges {
     life_changes: Vec<PlayerLifeChange>,
     impairment_additions: Vec<ActiveImpairment>,
     impairment_removals: Vec<ActiveImpairment>,
+    snv: SnvFactChanges,
+}
+
+/// Finite facts calculated by an SnV resolver. These become trusted only after registry validation.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct SnvFactChanges {
+    pub(crate) spent: Option<crate::contracts::AbilityUseRecord>,
+    pub(crate) philosopher_choice: Option<crate::contracts::PhilosopherChoiceFact>,
+    pub(crate) twin_relationship: Option<crate::contracts::TwinRelationship>,
+    pub(crate) witch_curse: Option<crate::contracts::WitchCurse>,
+    pub(crate) madness_assignment: Option<crate::contracts::MadnessAssignment>,
+    pub(crate) durable_impairments: Vec<crate::state::DurableImpairment>,
+    pub(crate) audit: Vec<crate::state::MalfunctionEvidence>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +58,22 @@ pub(crate) struct PlayerLifeChange {
 }
 
 impl CustomFactChanges {
+    pub(crate) fn resolved(
+        identity_changes: Vec<PlayerIdentityTransition>,
+        ability_grants: Vec<AbilityGrantChange>,
+        snv: SnvFactChanges,
+    ) -> Self {
+        Self {
+            identity_changes,
+            ability_grants,
+            snv,
+            ..Self::default()
+        }
+    }
+    pub(crate) fn snv(&self) -> &SnvFactChanges {
+        &self.snv
+    }
+
     pub(crate) fn is_empty(&self) -> bool {
         self.identity_changes.is_empty()
             && self.ability_grants.is_empty()
@@ -52,6 +81,7 @@ impl CustomFactChanges {
             && self.life_changes.is_empty()
             && self.impairment_additions.is_empty()
             && self.impairment_removals.is_empty()
+            && self.snv == SnvFactChanges::default()
     }
 
     pub(crate) fn identity_changes(&self) -> &[PlayerIdentityTransition] {
@@ -195,6 +225,7 @@ impl CustomFactChanges {
             life_changes,
             impairment_additions,
             impairment_removals,
+            ..Self::default()
         }
     }
 }
@@ -205,14 +236,22 @@ impl CustomFactChanges {
 pub(crate) struct CustomActionEventDraft {
     pub(crate) step_id: String,
     pub(crate) action_ref: FirstNightActionRef,
-    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) input: StepInput,
     pub(crate) result: CustomActionResult,
+    pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+    pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    pub(crate) delivered_result: Option<crate::model::InformationResult>,
+    pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
 }
 
 impl CustomActionEventDraft {
     pub(crate) fn into_payload(self) -> CustomActionConfirmedPayload {
         CustomActionConfirmedPayload {
+            simulation_source: self.simulation_source,
+            follow_up_cause: self.follow_up_cause,
+            delivered_result: self.delivered_result,
+            registration_judgments: self.registration_judgments,
             step_id: self.step_id,
             action_ref: self.action_ref,
             ability_use: self.ability_use,
@@ -242,23 +281,22 @@ fn validate_envelope_fields(
     payload: &CustomActionConfirmedPayload,
 ) -> Result<(), CoreError> {
     if phase != Phase::FirstNight
-        || payload.step_id.trim().is_empty()
         || !matches!(payload.action_ref, FirstNightActionRef::Character { .. })
-        || payload.ability_use.owner_player_id.trim().is_empty()
-        || payload.ability_use.character_id.trim().is_empty()
-        || payload
-            .ability_use
-            .ability_instance_id
-            .as_str()
-            .trim()
-            .is_empty()
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    let FirstNightActionRef::Character { character_id, .. } = &payload.action_ref else {
-        unreachable!("custom event action refs are Character refs")
-    };
-    if character_id != &payload.ability_use.character_id {
+    if payload.simulation_source.is_some()
+        != matches!(payload.result, CustomActionResult::Simulation { .. })
+    {
+        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+    }
+    let _occurrence = crate::state::ActionOccurrence::from_parts(
+        payload.action_ref.clone(),
+        payload.ability_use.clone(),
+        payload.simulation_source.clone(),
+        payload.follow_up_cause.clone(),
+    )?;
+    if payload.step_id.trim().is_empty() {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
     Ok(())

@@ -124,6 +124,8 @@ fn state_scaffold_keeps_occurrence_identity_and_progress_separate_from_wire_cont
         cursor: 1,
         current_occurrences: vec![occurrence.clone()],
         completed_occurrences: vec![ActionOccurrenceIdentity {
+            simulation_source: None,
+            follow_up_cause: None,
             action_ref: crate::contracts::FirstNightActionRef::system("dusk"),
             ability_use: None,
         }],

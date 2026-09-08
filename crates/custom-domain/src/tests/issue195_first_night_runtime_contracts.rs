@@ -101,6 +101,8 @@ impl ActionHandler for FixtureHandler {
                     instance.ability_use.clone(),
                 )?;
                 Ok(PhaseStep {
+                    simulation_source: None,
+                    follow_up_cause: None,
                     id: occurrence.step_id()?,
                     phase: Phase::FirstNight,
                     step_type: StepType::Character,
@@ -134,9 +136,13 @@ impl ActionHandler for FixtureHandler {
             .clone()
             .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
         Ok(ActionEventDraft::Custom(CustomActionEventDraft {
+            delivered_result: None,
+            registration_judgments: vec![],
+            simulation_source: None,
+            follow_up_cause: None,
             action_ref: self.identity.clone(),
             step_id: occurrence.step_id()?,
-            ability_use,
+            ability_use: Some(ability_use),
             input: input.clone(),
             result: crate::contracts::CustomActionResult::NoEffect,
         }))
@@ -235,6 +241,7 @@ fn composer_projects_zero_one_or_many_instances_in_stable_identity_order_without
         ],
     );
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let plan = FirstNightOrderPlan(vec![alpha, beta, gamma.clone()]);
@@ -280,6 +287,7 @@ fn composer_skips_character_with_no_active_instances_before_handler_lookup() {
         .instances
         .insert(handled.clone(), vec![instance(1, "p1", "setup-1")]);
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
 
@@ -304,6 +312,7 @@ fn composer_errors_when_active_character_has_no_handler() {
         .instances
         .insert(missing.clone(), vec![instance(1, "p1", "setup-1")]);
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
 
@@ -336,6 +345,7 @@ fn composer_preserves_relative_order_around_skipped_character_action() {
         .instances
         .insert(after, vec![instance(2, "p2", "setup-2")]);
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
 
@@ -369,6 +379,7 @@ fn proposal_replay_validation_and_reducer_share_action_identity_and_events_alone
         .instances
         .insert(alpha.clone(), vec![instance(1, "p1", "setup-1")]);
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let plan = FirstNightOrderPlan(vec![alpha.clone()]);
@@ -436,6 +447,7 @@ fn system_and_character_actions_interleave_in_one_ordered_composer() {
         .instances
         .insert(character.clone(), vec![instance(1, "p1", "setup-1")]);
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let plan = FirstNightOrderPlan(vec![
@@ -492,6 +504,7 @@ fn system_info_actions_are_skipped_when_alignment_is_absent() {
         ..FixtureRules::default()
     };
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let plan = FirstNightOrderPlan(vec![

@@ -114,6 +114,8 @@ impl ActionHandler for FixtureHandler {
                     instance.ability_use.clone(),
                 )?;
                 Ok(PhaseStep {
+                    simulation_source: None,
+                    follow_up_cause: None,
                     id: occurrence.step_id()?,
                     phase: Phase::FirstNight,
                     step_type: StepType::Character,
@@ -144,12 +146,13 @@ impl ActionHandler for FixtureHandler {
         }
         Ok(ActionEventDraft::Custom(
             crate::event::CustomActionEventDraft {
+                simulation_source: None,
+                follow_up_cause: None,
+                delivered_result: None,
+                registration_judgments: vec![],
                 step_id: occurrence.step_id()?,
                 action_ref: self.action_ref.clone(),
-                ability_use: occurrence
-                    .ability_use
-                    .clone()
-                    .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?,
+                ability_use: occurrence.ability_use.clone(),
                 input: input.clone(),
                 result: crate::contracts::CustomActionResult::NoEffect,
             },
@@ -245,6 +248,7 @@ fn registration(action_ref: FirstNightActionRef) -> RegisteredAction {
 
 fn context(rules: &SchedulerRules) -> ActionContext<'_> {
     ActionContext {
+        event_id: "",
         rule_service: rules,
     }
 }

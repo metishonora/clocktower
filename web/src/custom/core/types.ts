@@ -272,7 +272,7 @@ export type Command = { type: "createGame"; payload: { players: SetupPlayerInput
 export type CoreResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; messageKo: string } };
-export type ReplayState = { schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: null; pendingIdentityReveals?: PendingIdentityReveal[] };
+export type ReplayState = { schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: null; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -280,7 +280,7 @@ export type PendingIdentityReveal = {
   sequence: number;
   payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
 };
-export type RuleState = { unannouncedNightDeathPlayerIds: string[]; activeImpairments?: ActiveImpairment[]; abilityGrants?: AbilityGrant[] };
+export type RuleState = { unannouncedNightDeathPlayerIds: string[]; activeImpairments?: ActiveImpairment[]; abilityGrants?: AbilityGrant[]; abilityUses?: AbilityUseRecord[]; philosopherChoices?: PhilosopherChoiceFact[]; witchCurses?: WitchCurse[]; twinRelationships?: TwinRelationship[] };
 
 
 export type ActiveImpairment = {
@@ -514,13 +514,28 @@ type EventCommon = {
  */
 export type CustomActionResult =
   | { kind: "information"; value: InformationResult }
-  | { kind: "noEffect" };
+  | { kind: "noEffect" }
+  | { kind: "philosopherDeferred" | "seamstressDeferred" }
+  | { kind: "philosopherChoice"; characterId: string; outcome: "acquired" | "selfDrunk" | "failed" }
+  | { kind: "snakeCharmer"; targetPlayerId: string; outcome: "swapped" | "impaired" | "notDemon" }
+  | { kind: "evilTwin"; targetPlayerId: string; effective: boolean }
+  | { kind: "witch"; targetPlayerId: string; day: number; effective: boolean }
+  | { kind: "cerenovus"; targetPlayerId: string; characterId: string; day: number; effective: boolean }
+  | { kind: "informationDelivered"; information: ConfirmedInformation; spent: boolean }
+  | { kind: "simulation"; information: ConfirmedInformation | null; spent: boolean };
 
 
-export type CustomActionConfirmedPayload = {
+export type PhilosopherSimulationSource = { selectionEventId: string; sourceAbilityUse: AbilityUseRef };
+export type FollowUpCause = { triggerEventId: string; relationshipEventId: string };
+export type CustomActionSource =
+  | { abilityUse: AbilityUseRef; simulationSource?: never }
+  | { abilityUse?: never; simulationSource: PhilosopherSimulationSource };
+export type CustomActionConfirmedPayload = CustomActionSource & {
   stepId: string;
   actionRef: Extract<FirstNightActionRef, { kind: "character" }>;
-  abilityUse: AbilityUseRef;
+  followUpCause?: FollowUpCause;
+  deliveredResult?: InformationResult;
+  registrationJudgments?: RegistrationJudgment[];
   input: PhaseStepInput;
   result: CustomActionResult;
 };
@@ -620,6 +635,8 @@ export type PhaseStep = {
   character?: string;
   playerId?: string;
   abilityUse?: AbilityUseRef;
+  simulationSource?: PhilosopherSimulationSource;
+  followUpCause?: FollowUpCause;
   abilityOrigin?: AbilityOrigin;
   requiredInput: RequiredInput;
   canSkip: boolean;
@@ -717,3 +734,9 @@ export type MayorDecisionPrompt = {
 export type DemonSuccessionPrompt =
   | { kind: "fixed"; triggerEventId: string; successorPlayerId: string }
   | { kind: "selectable"; triggerEventId: string; allowedPlayerIds: string[] };
+
+export type AbilityUseRecord = { sourceEventId: string; abilityUse: AbilityUseRef };
+export type PhilosopherChoiceFact = AbilityUseRecord & { characterId: string; outcome: "acquired" | "selfDrunk" | "failed" };
+export type TwinRelationship = AbilityUseRecord & { targetPlayerId: string; effective: boolean };
+export type WitchCurse = TwinRelationship & { day: number; initiallyEffective: boolean };
+export type MadnessAssignment = WitchCurse & { characterId: string };

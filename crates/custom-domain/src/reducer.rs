@@ -42,6 +42,8 @@ pub(crate) fn reduce_custom_facts(
 
     let mut next = previous.clone();
     apply_changes(&mut next, event)?;
+    apply_snv_facts(&mut next, event)?;
+    crate::characters::sects_and_violets::resolve_effects(context, &mut next)?;
     Ok(next)
 }
 
@@ -552,4 +554,99 @@ fn impairment_expiry_rank(expiry: crate::contracts::ImpairmentExpiry) -> u8 {
 
 fn invalid_fact() -> CoreError {
     ErrorKind::InvalidFirstNightActionProvenance.into_error()
+}
+
+fn apply_snv_facts(
+    next: &mut CustomGameFacts,
+    event: &ValidatedCustomEvent,
+) -> Result<(), CoreError> {
+    let changes = event.fact_changes().snv();
+    let occurrence = event.occurrence()?;
+    if occurrence.simulation_source.is_some() && !event.fact_changes().is_empty() {
+        // Simulated information may contribute audit, but cannot mutate a real ability or effect.
+        if changes.spent.is_some()
+            || changes.philosopher_choice.is_some()
+            || changes.twin_relationship.is_some()
+            || changes.witch_curse.is_some()
+            || changes.madness_assignment.is_some()
+            || !changes.durable_impairments.is_empty()
+            || !event.fact_changes().identity_changes().is_empty()
+            || !event.fact_changes().ability_grants().is_empty()
+            || !event.fact_changes().ability_removals().is_empty()
+            || !event.fact_changes().life_changes().is_empty()
+            || !event.fact_changes().impairment_additions().is_empty()
+            || !event.fact_changes().impairment_removals().is_empty()
+        {
+            return Err(invalid_fact());
+        }
+    }
+    if let Some(spent) = &changes.spent {
+        if spent.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&spent.ability_use)
+            || next
+                .ability_uses
+                .iter()
+                .any(|used| used.ability_use == spent.ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.ability_uses.push(spent.clone());
+    }
+    if let Some(choice) = &changes.philosopher_choice {
+        if choice.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&choice.ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.philosopher_choices.push(choice.clone());
+    }
+    if let Some(relation) = &changes.twin_relationship {
+        if relation.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&relation.ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.twin_relationships.push(relation.clone());
+    }
+    if let Some(curse) = &changes.witch_curse {
+        if curse.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&curse.ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.witch_curses.push(curse.clone());
+    }
+    if let Some(assignment) = &changes.madness_assignment {
+        if assignment.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&assignment.ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.madness_assignments.push(assignment.clone());
+    }
+    for impairment in &changes.durable_impairments {
+        if impairment.impairment.source_event_id != event.id()
+            || occurrence.ability_use.as_ref() != Some(&impairment.source_ability_use)
+        {
+            return Err(invalid_fact());
+        }
+        next.durable_impairments.push(impairment.clone());
+    }
+    for evidence in &changes.audit {
+        if evidence.event_id != event.id()
+            || evidence.occurrence != occurrence
+            || evidence.causes.is_empty()
+            || next.player(&evidence.subject_player_id).is_none()
+        {
+            return Err(invalid_fact());
+        }
+        next.malfunction_audit.push(evidence.clone());
+    }
+    next.confirmed_actions
+        .push(crate::state::ConfirmedActionFact {
+            event_id: event.id().into(),
+            occurrence,
+            result: event.payload().result.clone(),
+        });
+    Ok(())
 }

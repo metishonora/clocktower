@@ -173,17 +173,14 @@ export function parseGameEvent(value: unknown): GameEvent {
       break;
     case "customActionConfirmed":
       if (
-        !hasExactKeys(payload, ["stepId", "actionRef", "abilityUse", "input", "result"]) ||
-        typeof payload.stepId !== "string" ||
-        payload.stepId.trim().length === 0 ||
-        !isCustomCharacterActionRef(payload.actionRef) ||
-        !isAbilityUseRef(payload.abilityUse) ||
+        !hasOnlyKeys(payload, ["stepId", "actionRef", "abilityUse", "simulationSource", "followUpCause", "deliveredResult", "registrationJudgments", "input", "result"]) ||
+        typeof payload.stepId !== "string" || payload.stepId.trim().length === 0 ||
+        !isCustomCharacterActionRef(payload.actionRef) || !isOccurrenceSource(payload) ||
+        !isRecord(payload.result) || ((payload.simulationSource !== undefined) !== (payload.result.kind === "simulation")) ||
         !isCustomPhaseStepInput(payload.input) ||
-        !validateCustomActionResult(payload.result, isKnownCharacter, isSpyGrimoirePlayer) ||
-        payload.abilityUse.ownerPlayerId.trim().length === 0 ||
-        payload.abilityUse.characterId.trim().length === 0 ||
-        payload.abilityUse.abilityInstanceId.trim().length === 0 ||
-        payload.abilityUse.characterId !== payload.actionRef.characterId
+        (payload.deliveredResult !== undefined && !isInformationResult(payload.deliveredResult)) ||
+        (payload.registrationJudgments !== undefined && (!Array.isArray(payload.registrationJudgments) || !payload.registrationJudgments.every(isRegistrationJudgment))) ||
+        !validateCustomActionResult(payload.result, isKnownCharacter, isSpyGrimoirePlayer)
       ) {
         throw invalidEvent();
       }
@@ -194,7 +191,7 @@ export function parseGameEvent(value: unknown): GameEvent {
   return value as GameEvent;
 }
 export function parseReplayState(value: unknown): ReplayState {
-  if (!isRecord(value) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null)) throw invalidCoreResponse();
+  if (!isRecord(value) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null)) throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
@@ -278,10 +275,7 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     stepTypes.has(value.stepType as PhaseStep["stepType"]) &&
     isOptionalString(value.character) &&
     isOptionalString(value.playerId) &&
-    ((value.abilityUse === undefined && value.abilityOrigin === undefined)
-      || (isAbilityContext(value.abilityUse, value.abilityOrigin)
-        && value.abilityUse.ownerPlayerId === value.playerId
-        && value.abilityUse.characterId === value.character)) &&
+    isStepSource(value) &&
     isRequiredInput(value.requiredInput) &&
     typeof value.canSkip === "boolean" &&
     (value.support === undefined || value.support === "automated" || value.support === "manual") &&
@@ -829,7 +823,24 @@ function isTargetCheck(value: unknown): boolean {
     )
   );
 }
-function isRuleState(value: unknown): boolean { return isRecord(value) && hasOnlyKeys(value, ["unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants"]) && Array.isArray(value.unannouncedNightDeathPlayerIds) && value.unannouncedNightDeathPlayerIds.every(isString) && (value.activeImpairments === undefined || (Array.isArray(value.activeImpairments) && value.activeImpairments.every(isActiveImpairment))) && (value.abilityGrants === undefined || (Array.isArray(value.abilityGrants) && value.abilityGrants.every(isAbilityGrant))); }
+function isRuleState(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships"]) &&
+    Array.isArray(value.unannouncedNightDeathPlayerIds) && value.unannouncedNightDeathPlayerIds.every(isString) &&
+    optionalList(value.activeImpairments, isActiveImpairment) && optionalList(value.abilityGrants, isAbilityGrant) &&
+    optionalList(value.abilityUses, v => isRecord(v) && hasExactKeys(v, ["sourceEventId", "abilityUse"]) && isUseFact(v)) &&
+    optionalList(value.philosopherChoices, v => isRecord(v) && hasExactKeys(v, ["sourceEventId", "abilityUse", "characterId", "outcome"]) && isUseFact(v) && isKnownCharacter(v.characterId) && ["acquired", "selfDrunk", "failed"].includes(v.outcome as string)) &&
+    optionalList(value.witchCurses, v => isAssignment(v, false)) &&
+    optionalList(value.twinRelationships, v => isRecord(v) && hasExactKeys(v, ["sourceEventId", "abilityUse", "targetPlayerId", "effective"]) && isUseFact(v) && nonempty(v.targetPlayerId) && typeof v.effective === "boolean");
+}
+function optionalList(value: unknown, predicate: (v: unknown) => boolean): boolean { return value === undefined || (Array.isArray(value) && value.every(predicate)); }
+function isUseFact(v: Record<string, unknown>): boolean { return nonempty(v.sourceEventId) && isAbilityUseRef(v.abilityUse) && nonempty(v.abilityUse.ownerPlayerId) && nonempty(v.abilityUse.abilityInstanceId); }
+function isAssignment(v: unknown, madness: boolean): boolean {
+  const keys = ["sourceEventId", "abilityUse", "targetPlayerId", "day", "initiallyEffective", "effective"];
+  if (madness) keys.push("characterId");
+  return isRecord(v) && hasExactKeys(v, keys) && isUseFact(v) && nonempty(v.targetPlayerId) &&
+    Number.isInteger(v.day) && (v.day as number) >= 1 && (v.day as number) <= 65535 &&
+    typeof v.initiallyEffective === "boolean" && typeof v.effective === "boolean" && (!madness || isKnownCharacter(v.characterId));
+}
 
 
 function isAbilityGrant(value: unknown): boolean {
@@ -1101,4 +1112,37 @@ function normalizedRegistrationJudgments(judgments: RegistrationJudgment[]): str
       || leftValue.localeCompare(rightValue)
       || leftCharacterId.localeCompare(rightCharacterId),
     );
+}
+
+function nonempty(value: unknown): value is string { return typeof value === "string" && value.trim().length > 0; }
+function isSimulationSource(value: unknown): boolean {
+  return isRecord(value) && hasExactKeys(value, ["selectionEventId", "sourceAbilityUse"]) &&
+    nonempty(value.selectionEventId) && isAbilityUseRef(value.sourceAbilityUse) &&
+    value.sourceAbilityUse.characterId === "philosopher" && nonempty(value.sourceAbilityUse.ownerPlayerId) &&
+    nonempty(value.sourceAbilityUse.abilityInstanceId);
+}
+function isOccurrenceSource(value: Record<string, unknown>): boolean {
+  if (!isCustomCharacterActionRef(value.actionRef)) return false;
+  const actual = isAbilityUseRef(value.abilityUse) && nonempty(value.abilityUse.ownerPlayerId) &&
+    nonempty(value.abilityUse.abilityInstanceId) && value.abilityUse.characterId === value.actionRef.characterId;
+  const simulation = isSimulationSource(value.simulationSource);
+  if (!(actual && value.simulationSource === undefined) && !(simulation && value.abilityUse === undefined)) return false;
+  if (value.followUpCause !== undefined) {
+    const cause = value.followUpCause;
+    if (!actual || value.actionRef.characterId !== "evilTwin" || !isRecord(cause) ||
+      !hasExactKeys(cause, ["triggerEventId", "relationshipEventId"]) ||
+      !nonempty(cause.triggerEventId) || !nonempty(cause.relationshipEventId)) return false;
+  }
+  return true;
+}
+function isStepSource(value: Record<string, unknown>): boolean {
+  if (isCustomCharacterActionRef(value.actionRef)) {
+    if (!isOccurrenceSource(value)) return false;
+    if (isAbilityUseRef(value.abilityUse)) return isAbilityContext(value.abilityUse, value.abilityOrigin) &&
+      value.abilityUse.ownerPlayerId === value.playerId && value.abilityUse.characterId === value.character;
+    return isRecord(value.simulationSource) && isAbilityUseRef(value.simulationSource.sourceAbilityUse) &&
+      value.simulationSource.sourceAbilityUse.ownerPlayerId === value.playerId && value.abilityOrigin === undefined &&
+      value.character === value.actionRef.characterId;
+  }
+  return value.abilityUse === undefined && value.abilityOrigin === undefined && value.simulationSource === undefined && value.followUpCause === undefined;
 }

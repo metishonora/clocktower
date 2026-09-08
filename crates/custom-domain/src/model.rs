@@ -474,6 +474,10 @@ pub(crate) struct PhaseStep {
     pub(crate) pre_action_reveal: Option<PreActionReveal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -579,6 +583,10 @@ pub(crate) struct PhaseOverviewItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) action_ref: Option<crate::contracts::FirstNightActionRef>,
     pub(crate) status: PhaseStepStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
 }
 
 #[derive(Debug, Serialize, Clone)]

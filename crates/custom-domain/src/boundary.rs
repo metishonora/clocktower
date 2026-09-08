@@ -73,22 +73,26 @@ fn validate_custom_action_event_json(value: &Value) -> Result<(), CoreError> {
         .get("payload")
         .and_then(Value::as_object)
         .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
-    if !has_exact_json_keys(
-        payload,
-        &["stepId", "actionRef", "abilityUse", "input", "result"],
-    ) {
-        return Err(ErrorKind::MalformedEvent.into_error());
+    for key in [
+        "abilityUse",
+        "simulationSource",
+        "followUpCause",
+        "deliveredResult",
+    ] {
+        if payload.get(key).is_some_and(Value::is_null) {
+            return Err(ErrorKind::MalformedEvent.into_error());
+        }
     }
-
-    let action_ref = payload
-        .get("actionRef")
-        .and_then(Value::as_object)
-        .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
-    if action_ref.get("kind").and_then(Value::as_str) != Some("character") {
-        return Err(ErrorKind::MalformedEvent.into_error());
-    }
+    let _typed: CustomActionConfirmedPayload =
+        serde_json::from_value(Value::Object(payload.clone()))
+            .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
     let ability_use = payload
         .get("abilityUse")
+        .or_else(|| {
+            payload
+                .get("simulationSource")
+                .and_then(|source| source.get("sourceAbilityUse"))
+        })
         .and_then(Value::as_object)
         .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
     if !has_exact_json_keys(
@@ -115,6 +119,38 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
         .as_object()
         .ok_or_else(|| ErrorKind::MalformedEvent.into_error())?;
     match result.get("kind").and_then(Value::as_str) {
+        Some(
+            "philosopherDeferred"
+            | "philosopherChoice"
+            | "snakeCharmer"
+            | "evilTwin"
+            | "witch"
+            | "cerenovus"
+            | "seamstressDeferred"
+            | "informationDelivered"
+            | "simulation",
+        ) => {
+            let typed: CustomActionResult = serde_json::from_value(value.clone())
+                .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
+            let information = match typed {
+                CustomActionResult::InformationDelivered { information, .. } => Some(information),
+                CustomActionResult::Simulation { information, .. } => information,
+                _ => None,
+            };
+            if let Some(info) = information {
+                validate_custom_information_result_json(
+                    &serde_json::to_value(info.delivered_result)
+                        .map_err(|_| ErrorKind::MalformedEvent.into_error())?,
+                )?;
+                if let Some(computed) = info.computed_result {
+                    validate_custom_information_result_json(
+                        &serde_json::to_value(computed)
+                            .map_err(|_| ErrorKind::MalformedEvent.into_error())?,
+                    )?;
+                }
+            }
+            Ok(())
+        }
         Some("noEffect") if has_exact_json_keys(result, &["kind"]) => Ok(()),
         Some("information") if has_exact_json_keys(result, &["kind", "value"]) => {
             validate_custom_information_result_json(

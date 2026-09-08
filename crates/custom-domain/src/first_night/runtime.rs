@@ -137,6 +137,25 @@ impl<'a> NightScheduler<'a> {
             event_stream_index,
             self.activation,
         )?;
+        if let (Some(previous_facts), Some(next_facts)) = (
+            previous_context.rule_service.facts(),
+            next_context.rule_service.facts(),
+        ) {
+            let followups = self.registry.follow_up_candidates(
+                self.plan,
+                &super::activation::FollowUpContext {
+                    previous_facts,
+                    next_facts,
+                    event,
+                    event_stream_index,
+                },
+            )?;
+            for occurrence in followups {
+                if !next.is_terminal(&occurrence) && !next.immediate_queue.contains(&occurrence) {
+                    next.immediate_queue.push(occurrence);
+                }
+            }
+        }
         // Admission can add an immediate candidate whose action-specific projection is currently
         // suppressed.  Run the same projection-based cleanup after admission so stale queue rows
         // do not survive merely because ownership exists in the common rule service.
@@ -271,14 +290,8 @@ pub(crate) fn project_occurrence_step(
     context: &ActionContext<'_>,
     occurrence: &ActionOccurrence,
 ) -> Result<PhaseStep, CoreError> {
-    let steps = registry.project(&occurrence.action_ref, context)?;
-    steps
-        .into_iter()
-        .find(|step| {
-            occurrence_from_step(step)
-                .map(|candidate| candidate.identity() == occurrence.identity())
-                .unwrap_or(false)
-        })
+    registry
+        .project_occurrence(context, occurrence)?
         .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())
 }
 
@@ -353,6 +366,11 @@ fn character_entry_has_no_nonterminal_occurrence(
         return Ok(false);
     }
     let active_instances = context.rule_service.try_active_instances(action_ref)?;
+    for occurrence in context.rule_service.simulation_occurrences(action_ref)? {
+        if !progress.is_terminal(&occurrence) || progress.immediate_queue.contains(&occurrence) {
+            return Ok(false);
+        }
+    }
     if active_instances.is_empty() {
         return Ok(true);
     }
@@ -379,6 +397,10 @@ fn project_occurrences(
             .rule_service
             .try_active_instances(action_ref)?
             .is_empty()
+        && context
+            .rule_service
+            .simulation_occurrences(action_ref)?
+            .is_empty()
     {
         return Ok(Vec::new());
     }
@@ -404,6 +426,15 @@ fn project_occurrences(
                         .iter()
                         .find(|instance| instance.ability_use == *ability_use)
                         .map(|instance| instance.seat)
+                })
+                .or_else(|| {
+                    context
+                        .rule_service
+                        .facts()
+                        .and_then(|facts| {
+                            occurrence.actor_player_id().and_then(|id| facts.player(id))
+                        })
+                        .map(|p| p.seat)
                 })
                 .unwrap_or(0),
             origin: occurrence
@@ -484,14 +515,8 @@ fn retain_live_immediate_queue(
             retained.push(occurrence);
             continue;
         };
-        if occurrence.ability_use.is_none() {
-            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
-        }
-        let projected = project_occurrences(action_ref, registry, context)?;
-        if projected
-            .iter()
-            .any(|candidate| candidate.identity() == occurrence.identity())
-        {
+        let _ = action_ref;
+        if registry.project_occurrence(context, &occurrence)?.is_some() {
             retained.push(occurrence);
         }
     }
@@ -513,6 +538,29 @@ fn admit_new_instances(
         let FirstNightActionRef::Character { .. } = action_ref else {
             continue;
         };
+        let previous_simulations = previous_context
+            .rule_service
+            .simulation_occurrences(action_ref)?;
+        for occurrence in next_context
+            .rule_service
+            .simulation_occurrences(action_ref)?
+        {
+            if previous_simulations.contains(&occurrence) {
+                continue;
+            }
+            let seat = next_context
+                .rule_service
+                .facts()
+                .and_then(|facts| occurrence.actor_player_id().and_then(|id| facts.player(id)))
+                .map(|player| player.seat)
+                .unwrap_or(0);
+            candidates.push(NewOccurrence {
+                entry_index,
+                occurrence,
+                seat,
+                origin: AbilityOrigin::IdentityBound,
+            });
+        }
         let previous_owned = previous_context
             .rule_service
             .try_owned_instances(action_ref)?;

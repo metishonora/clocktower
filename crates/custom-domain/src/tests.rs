@@ -12,3 +12,7 @@ mod issue206_custom_event_contracts;
 mod issue206_custom_replay_scenarios;
 mod issue206_custom_state_contracts;
 mod issue206_night_scheduler_contracts;
+
+mod issue207_contracts;
+mod issue207_rule_state;
+mod issue207_scheduler;

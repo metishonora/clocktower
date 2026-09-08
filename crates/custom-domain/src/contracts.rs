@@ -203,6 +203,8 @@ pub(crate) struct ReplayState {
     pub(crate) game_end: Option<Value>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(crate) pending_identity_reveals: Vec<PendingIdentityReveal>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) madness_assignments: Vec<MadnessAssignment>,
 }
 
 #[derive(Debug, Serialize)]
@@ -219,6 +221,14 @@ pub(crate) struct RuleState {
     pub(crate) active_impairments: Option<Vec<ActiveImpairment>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) ability_grants: Option<Vec<AbilityGrant>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) ability_uses: Vec<AbilityUseRecord>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) philosopher_choices: Vec<PhilosopherChoiceFact>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) witch_curses: Vec<WitchCurse>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) twin_relationships: Vec<TwinRelationship>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -415,6 +425,39 @@ pub(crate) enum CustomActionResult {
         value: InformationResult,
     },
     NoEffect,
+    PhilosopherDeferred,
+    PhilosopherChoice {
+        character_id: String,
+        outcome: PhilosopherChoiceOutcome,
+    },
+    SnakeCharmer {
+        target_player_id: String,
+        outcome: SnakeCharmerOutcome,
+    },
+    EvilTwin {
+        target_player_id: String,
+        effective: bool,
+    },
+    Witch {
+        target_player_id: String,
+        day: u16,
+        effective: bool,
+    },
+    Cerenovus {
+        target_player_id: String,
+        character_id: String,
+        day: u16,
+        effective: bool,
+    },
+    SeamstressDeferred,
+    InformationDelivered {
+        information: ConfirmedInformation,
+        spent: bool,
+    },
+    Simulation {
+        information: Option<ConfirmedInformation>,
+        spent: bool,
+    },
     /// A bounded state-changing outcome used only by the dedicated fixture WASM build.  The
     /// production contract intentionally has no fixture result discriminator.
     #[cfg(feature = "custom-runtime-fixtures")]
@@ -460,6 +503,80 @@ pub(crate) enum CustomActionResult {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum PhilosopherChoiceOutcome {
+    Acquired,
+    SelfDrunk,
+    Failed,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SnakeCharmerOutcome {
+    Swapped,
+    Impaired,
+    NotDemon,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AbilityUseRecord {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PhilosopherChoiceFact {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) character_id: String,
+    pub(crate) outcome: PhilosopherChoiceOutcome,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct TwinRelationship {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) target_player_id: String,
+    pub(crate) effective: bool,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct WitchCurse {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) target_player_id: String,
+    pub(crate) day: u16,
+    pub(crate) initially_effective: bool,
+    pub(crate) effective: bool,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MadnessAssignment {
+    pub(crate) source_event_id: String,
+    pub(crate) ability_use: AbilityUseRef,
+    pub(crate) target_player_id: String,
+    pub(crate) character_id: String,
+    pub(crate) day: u16,
+    pub(crate) initially_effective: bool,
+    pub(crate) effective: bool,
+}
+
+/// Simulation provenance always points to the real Philosopher, never a fabricated grant.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct PhilosopherSimulationSource {
+    pub(crate) selection_event_id: String,
+    pub(crate) source_ability_use: AbilityUseRef,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct FollowUpCause {
+    pub(crate) trigger_event_id: String,
+    pub(crate) relationship_event_id: String,
+}
+
 /// Persisted payload for a custom Character action confirmation.  This lives with the other wire
 /// contracts so `contracts.rs` does not depend on a feature module for its serialized schema.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -467,9 +584,18 @@ pub(crate) enum CustomActionResult {
 pub(crate) struct CustomActionConfirmedPayload {
     pub(crate) step_id: String,
     pub(crate) action_ref: FirstNightActionRef,
-    pub(crate) ability_use: AbilityUseRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) ability_use: Option<AbilityUseRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) simulation_source: Option<PhilosopherSimulationSource>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) follow_up_cause: Option<FollowUpCause>,
     pub(crate) input: StepInput,
     pub(crate) result: CustomActionResult,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) delivered_result: Option<crate::model::InformationResult>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

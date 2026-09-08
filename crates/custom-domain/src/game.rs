@@ -5,7 +5,6 @@ use crate::{
         ReplayScriptIdentity, ReplayState, RuleState, ScriptReference,
     },
     error::{CoreError, ErrorKind},
-    input::validate_required_input,
     messages::{phase_step_event_summary, phase_step_preview},
     model::{Phase, PhaseOverviewItem, PhaseStep},
     setup::{player_from_setup_input_for_custom, validate_setup_inputs_for_custom},
@@ -62,6 +61,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
             rule_state: RuleState::default(),
             game_end: None,
             pending_identity_reveals: vec![],
+            madness_assignments: vec![],
         });
     }
     let components = replay_components(&game_file)?;
@@ -77,7 +77,8 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
         warnings: vec![],
         rule_state: rule_state(&components.state.facts),
         game_end: None,
-        pending_identity_reveals: vec![],
+        pending_identity_reveals: components.state.facts.pending_identity_reveals.clone(),
+        madness_assignments: components.state.facts.madness_assignments.clone(),
     })
 }
 
@@ -101,21 +102,15 @@ fn propose_step(
     if payload.step_id != current_step.id {
         return Err(ErrorKind::StaleStep.into_error());
     }
-    validate_required_input(
-        &current_step.required_input,
-        &payload.input,
-        &components.state.facts.players,
-    )?;
-    if payload.delivered_result.is_some() || !payload.registration_judgments.is_empty() {
-        return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
-    }
 
     let ScriptReference::Custom { definition } = &game_file.script else {
         unreachable!()
     };
     let context = resolve_custom_script(definition)?;
     let rules = CustomRuleService::new(&context, &components.state.facts);
+    let event_id = format!("phase-step-{}", game_file.game.events.len() + 1);
     let action_context = ActionContext {
+        event_id: &event_id,
         rule_service: &rules,
     };
     let registry = action_registry()?;
@@ -124,8 +119,22 @@ fn propose_step(
         .as_ref()
         .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
     let occurrence = ActionOccurrence::from_step(current_step)?;
-    let handler_draft =
-        registry.propose(action_ref, &action_context, &occurrence, &payload.input)?;
+    registry.validate_input(
+        &occurrence,
+        current_step,
+        &payload.input,
+        &components.state.facts.players,
+    )?;
+    let handler_draft = registry.propose_input(
+        action_ref,
+        &action_context,
+        &occurrence,
+        &crate::first_night::ActionInput {
+            input: payload.input.clone(),
+            delivered_result: payload.delivered_result.clone(),
+            registration_judgments: payload.registration_judgments.clone(),
+        },
+    )?;
     let summary = phase_step_event_summary(
         current_step,
         &components.state.facts.players,
@@ -133,7 +142,7 @@ fn propose_step(
         None,
         false,
     );
-    let event_id = format!("phase-step-{}", game_file.game.events.len() + 1);
+
     let event = event_from_draft(
         event_id,
         current_step.phase,
@@ -162,6 +171,7 @@ fn propose_step(
     if candidate.phase == Phase::FirstNight {
         let candidate_rules = CustomRuleService::new(&context, &candidate.facts);
         let candidate_context = ActionContext {
+            event_id: "",
             rule_service: &candidate_rules,
         };
         project_first_night(&plan, &registry, &candidate_context, &candidate.progress)?;
@@ -216,9 +226,11 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         .map(|player| player_from_setup_input_for_custom(&context, player))
         .collect::<Result<Vec<_>, _>>()?;
     let plan = plan_for_definition(definition)?;
-    let facts = CustomGameFacts::from_players(players);
+    let mut facts = CustomGameFacts::from_players(players);
+    crate::characters::sects_and_violets::resolve_effects(&context, &mut facts)?;
     let initial_rules = CustomRuleService::new(&context, &facts);
     let initial_context = ActionContext {
+        event_id: "",
         rule_service: &initial_rules,
     };
     let registry = action_registry()?;
@@ -248,6 +260,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
     let (current_step, phase_overview) = if phase == Phase::FirstNight {
         let rules = CustomRuleService::new(&context, &state.facts);
         let action_context = ActionContext {
+            event_id: "",
             rule_service: &rules,
         };
         let projection = project_first_night(&plan, &registry, &action_context, &state.progress)?;
@@ -282,13 +295,15 @@ fn apply_event(
         .ok_or_else(|| ErrorKind::NoCurrentStep.into_error())?;
     let previous_rules = CustomRuleService::new(context, &previous.facts);
     let previous_context = ActionContext {
+        event_id: &event.id,
         rule_service: &previous_rules,
     };
     let validated = registry.validate_event(&occurrence, &previous_context, event)?;
     let expected_step = project_occurrence_step(registry, &previous_context, &occurrence)?;
     let event_input = validated.input();
-    validate_required_input(
-        &expected_step.required_input,
+    registry.validate_input(
+        &occurrence,
+        &expected_step,
         event_input,
         &previous.facts.players,
     )?;
@@ -303,6 +318,7 @@ fn apply_event(
     };
     let next_rules = CustomRuleService::new(context, &next_facts);
     let next_context = ActionContext {
+        event_id: "",
         rule_service: &next_rules,
     };
     let snapshot = CompletedActionSnapshot {

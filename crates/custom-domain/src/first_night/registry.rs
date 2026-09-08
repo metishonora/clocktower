@@ -59,6 +59,15 @@ pub(crate) trait FirstNightRuleService {
     fn facts(&self) -> Option<&CustomGameFacts> {
         None
     }
+    fn definition(&self) -> Option<&crate::characters::ResolvedScriptContext> {
+        None
+    }
+    fn simulation_occurrences(
+        &self,
+        _action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        Ok(vec![])
+    }
     fn has_minion(&self) -> bool;
     fn has_demon(&self) -> bool;
     fn legal_demon_bluff_character_ids(&self) -> Vec<String>;
@@ -70,8 +79,16 @@ pub(crate) trait FirstNightRuleService {
 
 pub(crate) use FirstNightRuleService as CustomRuleService;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ActionInput {
+    pub(crate) input: StepInput,
+    pub(crate) delivered_result: Option<crate::model::InformationResult>,
+    pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
+}
+
 pub(crate) struct ActionContext<'a> {
     pub(crate) rule_service: &'a dyn FirstNightRuleService,
+    pub(crate) event_id: &'a str,
 }
 
 /// Event facts after custom-envelope, occurrence, membership, ownership, and handler validation.
@@ -130,8 +147,13 @@ impl ValidatedCustomEvent {
         &self.payload.action_ref
     }
 
-    pub(crate) fn ability_use(&self) -> &AbilityUseRef {
-        &self.payload.ability_use
+    pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
+        ActionOccurrence::from_parts(
+            self.payload.action_ref.clone(),
+            self.payload.ability_use.clone(),
+            self.payload.simulation_source.clone(),
+            self.payload.follow_up_cause.clone(),
+        )
     }
 
     pub(crate) fn step_id(&self) -> &str {
@@ -269,9 +291,7 @@ impl ValidatedActionEvent {
     pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
         match self {
             Self::System(event) => ActionOccurrence::system(event.action_ref.clone()),
-            Self::Custom(event) => {
-                ActionOccurrence::character(event.action_ref().clone(), event.ability_use().clone())
-            }
+            Self::Custom(event) => event.occurrence(),
         }
     }
 
@@ -301,6 +321,12 @@ impl ValidatedActionEvent {
 /// input, then returns a canonical draft. It never receives mutable game state, a cursor, or a
 /// queue.
 pub(crate) trait ActionHandler {
+    fn permits_defer(&self) -> bool {
+        false
+    }
+    fn follow_up_rule(&self) -> Option<&dyn super::activation::FollowUpRule> {
+        None
+    }
     fn action_ref(&self) -> &FirstNightActionRef;
     fn project(
         &self,
@@ -314,6 +340,29 @@ pub(crate) trait ActionHandler {
         occurrence: &ActionOccurrence,
         input: &StepInput,
     ) -> Result<ActionEventDraft, CoreError>;
+    fn propose_input(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        if input.delivered_result.is_some() || !input.registration_judgments.is_empty() {
+            return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+        }
+        self.propose(spec, context, occurrence, &input.input)
+    }
+    fn project_occurrence(
+        &self,
+        spec: &ActionSpec,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        Ok(self.project(spec, context)?.into_iter().find(|step| {
+            ActionOccurrence::from_step(step).is_ok_and(|candidate| candidate == *occurrence)
+        }))
+    }
+
     fn validate_event(
         &self,
         spec: &ActionSpec,
@@ -334,6 +383,11 @@ pub(crate) trait ActionHandler {
         draft: &ActionEventDraft,
         _event_id: &str,
     ) -> Result<CustomFactChanges, CoreError> {
+        if let ActionEventDraft::Custom(draft) = draft {
+            if draft.delivered_result.is_some() || !draft.registration_judgments.is_empty() {
+                return Err(ErrorKind::UnexpectedDeliveredInformation.into_error());
+            }
+        }
         self.validate_event(spec, context, occurrence, draft)
     }
 }
@@ -422,6 +476,94 @@ impl ActionRegistry {
         Ok(draft)
     }
 
+    pub(crate) fn propose_input(
+        &self,
+        action_ref: &FirstNightActionRef,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        input: &ActionInput,
+    ) -> Result<ActionEventDraft, CoreError> {
+        let entry = self.lookup(action_ref)?;
+        validate_occurrence_reference(action_ref, occurrence)?;
+        let draft = entry
+            .handler
+            .propose_input(&entry.spec, context, occurrence, input)?;
+        if draft.input() != &input.input {
+            return Err(ErrorKind::InvalidStepInput.into_error());
+        }
+        if let ActionEventDraft::Custom(draft) = &draft {
+            if draft.delivered_result != input.delivered_result
+                || draft.registration_judgments != input.registration_judgments
+            {
+                return Err(ErrorKind::InvalidStepInput.into_error());
+            }
+        }
+        self.validate_draft(entry, context, occurrence, &draft)?;
+        entry.handler.validate_event_with_id(
+            &entry.spec,
+            context,
+            occurrence,
+            &draft,
+            context.event_id,
+        )?;
+        Ok(draft)
+    }
+
+    pub(crate) fn validate_input(
+        &self,
+        occurrence: &ActionOccurrence,
+        step: &PhaseStep,
+        input: &StepInput,
+        players: &[crate::model::Player],
+    ) -> Result<(), CoreError> {
+        if input.is_none() && self.lookup(&occurrence.action_ref)?.handler.permits_defer() {
+            return Ok(());
+        }
+        crate::input::validate_required_input(&step.required_input, input, players)
+    }
+
+    pub(crate) fn follow_up_candidates(
+        &self,
+        plan: &FirstNightOrderPlan,
+        context: &super::activation::FollowUpContext<'_>,
+    ) -> Result<Vec<ActionOccurrence>, CoreError> {
+        let mut result = vec![];
+        for action_ref in &plan.0 {
+            let Some(entry) = self.entries.get(action_ref) else {
+                continue;
+            };
+            let Some(rule) = entry.handler.follow_up_rule() else {
+                continue;
+            };
+            for occurrence in rule.candidates(context)? {
+                if occurrence.action_ref != *action_ref || occurrence.follow_up_cause.is_none() {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+                if !result.contains(&occurrence) {
+                    result.push(occurrence);
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    pub(crate) fn project_occurrence(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        let entry = self.lookup(&occurrence.action_ref)?;
+        let step = entry
+            .handler
+            .project_occurrence(&entry.spec, context, occurrence)?;
+        if let Some(step) = &step {
+            if ActionOccurrence::from_step(step)? != *occurrence {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+        Ok(step)
+    }
+
     /// Validate a persisted event against the preceding occurrence. The returned custom event is
     /// the only trusted value accepted by a reducer; malformed or mismatched wire values never
     /// cross this boundary.
@@ -469,6 +611,18 @@ impl ActionRegistry {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
 
+        if let ActionEventDraft::Custom(custom) = draft {
+            let source = ActionOccurrence::from_parts(
+                custom.action_ref.clone(),
+                custom.ability_use.clone(),
+                custom.simulation_source.clone(),
+                custom.follow_up_cause.clone(),
+            )?;
+            if source.identity() != occurrence.identity() {
+                return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            }
+        }
+
         match (
             &entry.spec.action_ref,
             occurrence.ability_use.as_ref(),
@@ -487,7 +641,7 @@ impl ActionRegistry {
                     .rule_service
                     .validate_character_membership(&expected_ability.character_id)?;
                 if expected_ability.character_id != *character_id
-                    || custom.ability_use != *expected_ability
+                    || custom.ability_use.as_ref() != Some(expected_ability)
                     || custom.action_ref != entry.spec.action_ref
                     || !context
                         .rule_service
@@ -498,7 +652,26 @@ impl ActionRegistry {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
             }
+            (
+                FirstNightActionRef::Character { character_id, .. },
+                None,
+                ActionEventDraft::Custom(_),
+            ) => {
+                context
+                    .rule_service
+                    .validate_character_membership(character_id)?;
+                if !context
+                    .rule_service
+                    .simulation_occurrences(&entry.spec.action_ref)?
+                    .contains(occurrence)
+                {
+                    return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+                }
+            }
             _ => return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error()),
+        }
+        if self.project_occurrence(context, occurrence)?.is_none() {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
         }
         Ok(())
     }
@@ -533,31 +706,17 @@ fn validate_occurrence_reference(
     if occurrence.action_ref != *action_ref {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    match (&occurrence.action_ref, &occurrence.ability_use) {
-        (FirstNightActionRef::System { .. }, None)
-        | (FirstNightActionRef::Character { .. }, Some(_)) => Ok(()),
-        _ => Err(ErrorKind::InvalidFirstNightActionProvenance.into_error()),
-    }
+    ActionOccurrence::from_parts(
+        occurrence.action_ref.clone(),
+        occurrence.ability_use.clone(),
+        occurrence.simulation_source.clone(),
+        occurrence.follow_up_cause.clone(),
+    )?;
+    Ok(())
 }
 
 fn occurrence_from_step(step: &PhaseStep) -> Result<ActionOccurrence, CoreError> {
-    let action_ref = step
-        .action_ref
-        .clone()
-        .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?;
-    let occurrence = match action_ref {
-        FirstNightActionRef::System { .. } => ActionOccurrence::system(action_ref)?,
-        action_ref @ FirstNightActionRef::Character { .. } => ActionOccurrence::character(
-            action_ref,
-            step.ability_use
-                .clone()
-                .ok_or_else(|| ErrorKind::InvalidFirstNightActionProvenance.into_error())?,
-        )?,
-    };
-    if occurrence.step_id()? != step.id {
-        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
-    }
-    Ok(occurrence)
+    ActionOccurrence::from_step(step)
 }
 
 fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreError> {
@@ -581,6 +740,10 @@ fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreErro
         }
         GameEventKind::CustomActionConfirmed { payload } => {
             Ok(ActionEventDraft::Custom(CustomActionEventDraft {
+                simulation_source: payload.simulation_source.clone(),
+                follow_up_cause: payload.follow_up_cause.clone(),
+                delivered_result: payload.delivered_result.clone(),
+                registration_judgments: payload.registration_judgments.clone(),
                 step_id: payload.step_id.clone(),
                 action_ref: payload.action_ref.clone(),
                 ability_use: payload.ability_use.clone(),

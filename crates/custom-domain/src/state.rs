@@ -23,6 +23,16 @@ pub(crate) struct CustomGameFacts {
     /// remains the existing public projection; this ledger retains the exact source use so a grant
     /// can still be explained after its source Player changes identity.
     pub(crate) ability_provenance: Vec<AbilityProvenance>,
+    pub(crate) ability_uses: Vec<crate::contracts::AbilityUseRecord>,
+    pub(crate) philosopher_choices: Vec<crate::contracts::PhilosopherChoiceFact>,
+    pub(crate) twin_relationships: Vec<crate::contracts::TwinRelationship>,
+    pub(crate) witch_curses: Vec<crate::contracts::WitchCurse>,
+    pub(crate) madness_assignments: Vec<crate::contracts::MadnessAssignment>,
+    pub(crate) durable_impairments: Vec<DurableImpairment>,
+    pub(crate) confirmed_actions: Vec<ConfirmedActionFact>,
+    pub(crate) malfunction_audit: Vec<MalfunctionEvidence>,
+    pub(crate) pending_identity_reveals: Vec<crate::contracts::PendingIdentityReveal>,
+    pub(crate) vortox_sources: Vec<AbilityUseRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +59,7 @@ impl CustomGameFacts {
             ability_grants: Vec::new(),
             active_impairments: Vec::new(),
             ability_provenance,
+            ..Self::default()
         }
     }
 
@@ -63,12 +74,50 @@ impl CustomGameFacts {
             ability_grants,
             active_impairments,
             ability_provenance,
+            ..Self::default()
         }
     }
 
     pub(crate) fn player(&self, player_id: &str) -> Option<&Player> {
         self.players.iter().find(|player| player.id == player_id)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct DurableImpairment {
+    pub(crate) impairment: ActiveImpairment,
+    pub(crate) source_ability_use: AbilityUseRef,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ConfirmedActionFact {
+    pub(crate) event_id: String,
+    pub(crate) occurrence: ActionOccurrence,
+    pub(crate) result: crate::contracts::CustomActionResult,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum MalfunctionOutcome {
+    IncorrectInformation {
+        delivered_result: crate::model::InformationResult,
+    },
+    EffectFailure {
+        effect: FailedEffect,
+    },
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FailedEffect {
+    PhilosopherAcquisition,
+    SnakeCharmerSwap,
+    WitchCurse,
+    CerenovusMadness,
+    EvilTwinRelationship,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct MalfunctionEvidence {
+    pub(crate) event_id: String,
+    pub(crate) occurrence: ActionOccurrence,
+    pub(crate) subject_player_id: String,
+    pub(crate) outcome: MalfunctionOutcome,
+    pub(crate) causes: Vec<AbilityUseRef>,
 }
 
 /// A concrete first-night action identity.
@@ -80,109 +129,174 @@ impl CustomGameFacts {
 pub(crate) struct ActionOccurrence {
     pub(crate) action_ref: FirstNightActionRef,
     pub(crate) ability_use: Option<AbilityUseRef>,
+    pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+    pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
+}
+
+/// One concrete source. Public DTOs preserve the legacy actual-ability field.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum ActionSource {
+    ActualAbility(AbilityUseRef),
+    PhilosopherSimulation(crate::contracts::PhilosopherSimulationSource),
 }
 
 impl ActionOccurrence {
-    /// Reconstruct the occurrence identity projected by a public first-night step.  The step ID
-    /// is checked against the identity-derived value so callers cannot substitute a cursor or
-    /// arbitrary display ID for the actor/instance provenance.
     pub(crate) fn from_step(step: &PhaseStep) -> Result<Self, crate::error::CoreError> {
-        let action_ref = step.action_ref.clone().ok_or_else(|| {
-            crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error()
-        })?;
-        let occurrence = match action_ref {
-            FirstNightActionRef::System { .. } => Self::system(action_ref)?,
-            action_ref @ FirstNightActionRef::Character { .. } => Self::character(
-                action_ref,
-                step.ability_use.clone().ok_or_else(|| {
-                    crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error()
-                })?,
-            )?,
-        };
+        let occurrence = Self::from_parts(
+            step.action_ref.clone().ok_or_else(invalid_occurrence)?,
+            step.ability_use.clone(),
+            step.simulation_source.clone(),
+            step.follow_up_cause.clone(),
+        )?;
         if occurrence.step_id()? != step.id {
-            return Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            return Err(invalid_occurrence());
         }
         Ok(occurrence)
     }
 
-    pub(crate) fn system(action_ref: FirstNightActionRef) -> Result<Self, crate::error::CoreError> {
-        if !matches!(
+    pub(crate) fn from_parts(
+        action_ref: FirstNightActionRef,
+        ability_use: Option<AbilityUseRef>,
+        simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+        follow_up_cause: Option<crate::contracts::FollowUpCause>,
+    ) -> Result<Self, crate::error::CoreError> {
+        let value = Self {
             action_ref,
-            FirstNightActionRef::System {
-                action_id: crate::contracts::SystemFirstNightActionId::Dusk
-                    | crate::contracts::SystemFirstNightActionId::MinionInfo
-                    | crate::contracts::SystemFirstNightActionId::DemonInfo
-                    | crate::contracts::SystemFirstNightActionId::Dawn
-            }
+            ability_use,
+            simulation_source,
+            follow_up_cause,
+        };
+        match (
+            &value.action_ref,
+            &value.ability_use,
+            &value.simulation_source,
         ) {
-            return Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error());
+            (FirstNightActionRef::System { action_id }, None, None) => {
+                system_action_id(action_id)?;
+                if value.follow_up_cause.is_some() {
+                    return Err(invalid_occurrence());
+                }
+            }
+            (FirstNightActionRef::Character { character_id, .. }, Some(source), None)
+                if character_id == &source.character_id && valid_source(source) => {}
+            (FirstNightActionRef::Character { .. }, None, Some(source))
+                if source.source_ability_use.character_id == "philosopher"
+                    && valid_source(&source.source_ability_use)
+                    && !source.selection_event_id.trim().is_empty() => {}
+            _ => return Err(invalid_occurrence()),
         }
-        Ok(Self {
-            action_ref,
-            ability_use: None,
-        })
+        if let Some(cause) = &value.follow_up_cause {
+            if cause.trigger_event_id.trim().is_empty()
+                || cause.relationship_event_id.trim().is_empty()
+                || !matches!(&value.action_ref, FirstNightActionRef::Character { character_id, .. } if character_id == "evilTwin")
+                || value.simulation_source.is_some()
+            {
+                return Err(invalid_occurrence());
+            }
+        }
+        Ok(value)
+    }
+
+    pub(crate) fn system(action_ref: FirstNightActionRef) -> Result<Self, crate::error::CoreError> {
+        if !matches!(action_ref, FirstNightActionRef::System { .. }) {
+            return Err(invalid_occurrence());
+        }
+        Self::from_parts(action_ref, None, None, None)
     }
 
     pub(crate) fn character(
         action_ref: FirstNightActionRef,
         ability_use: AbilityUseRef,
     ) -> Result<Self, crate::error::CoreError> {
-        let FirstNightActionRef::Character { character_id, .. } = &action_ref else {
-            return Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error());
-        };
-        if character_id != &ability_use.character_id
-            || ability_use.owner_player_id.trim().is_empty()
-            || ability_use.ability_instance_id.as_str().trim().is_empty()
-        {
-            return Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error());
-        }
-        Ok(Self {
-            action_ref,
-            ability_use: Some(ability_use),
-        })
+        Self::from_parts(action_ref, Some(ability_use), None, None)
+    }
+
+    pub(crate) fn source(&self) -> Option<ActionSource> {
+        self.ability_use
+            .clone()
+            .map(ActionSource::ActualAbility)
+            .or_else(|| {
+                self.simulation_source
+                    .clone()
+                    .map(ActionSource::PhilosopherSimulation)
+            })
     }
 
     pub(crate) fn actor_player_id(&self) -> Option<&str> {
         self.ability_use
             .as_ref()
-            .map(|ability_use| ability_use.owner_player_id.as_str())
+            .map(|source| source.owner_player_id.as_str())
+            .or_else(|| {
+                self.simulation_source
+                    .as_ref()
+                    .map(|source| source.source_ability_use.owner_player_id.as_str())
+            })
     }
 
-    /// Stable identity used by completion and queue de-duplication.
     pub(crate) fn identity(&self) -> ActionOccurrenceIdentity {
         ActionOccurrenceIdentity {
             action_ref: self.action_ref.clone(),
             ability_use: self.ability_use.clone(),
+            simulation_source: self.simulation_source.clone(),
+            follow_up_cause: self.follow_up_cause.clone(),
         }
     }
 
-    /// Derive the public first-night Step ID from this occurrence's identity.
-    ///
-    /// The exact action reference and ability instance are retained in the occurrence even when a
-    /// caller only needs the Step ID.  This keeps Step IDs a projection rather than a source of
-    /// truth for facts or progress.
     pub(crate) fn step_id(&self) -> Result<String, crate::error::CoreError> {
-        match (&self.action_ref, &self.ability_use) {
-            (FirstNightActionRef::System { action_id }, None) => Ok(format!(
-                "firstNight:system:{}",
-                system_action_id(action_id)?
-            )),
+        let mut id = match (&self.action_ref, &self.ability_use, &self.simulation_source) {
+            (FirstNightActionRef::System { action_id }, None, None) => {
+                format!("firstNight:system:{}", system_action_id(action_id)?)
+            }
             (
                 FirstNightActionRef::Character {
                     character_id,
                     action_id,
                 },
-                Some(ability_use),
-            ) => Ok(format!(
+                Some(source),
+                None,
+            ) => format!(
                 "firstNight:{character_id}:{action_id}:owner{}:{}:instance{}:{}",
-                ability_use.owner_player_id.len(),
-                ability_use.owner_player_id,
-                ability_use.ability_instance_id.as_str().len(),
-                ability_use.ability_instance_id.as_str(),
-            )),
-            _ => Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error()),
+                source.owner_player_id.len(),
+                source.owner_player_id,
+                source.ability_instance_id.as_str().len(),
+                source.ability_instance_id.as_str()
+            ),
+            (
+                FirstNightActionRef::Character {
+                    character_id,
+                    action_id,
+                },
+                None,
+                Some(source),
+            ) => format!(
+                "firstNight:{character_id}:{action_id}:simulation{}{}{}",
+                encode_part(&source.selection_event_id),
+                encode_part(&source.source_ability_use.owner_player_id),
+                encode_part(source.source_ability_use.ability_instance_id.as_str())
+            ),
+            _ => return Err(invalid_occurrence()),
+        };
+        if let Some(cause) = &self.follow_up_cause {
+            id.push_str(&format!(
+                ":followUp{}{}",
+                encode_part(&cause.trigger_event_id),
+                encode_part(&cause.relationship_event_id)
+            ));
         }
+        Ok(id)
     }
+}
+
+fn encode_part(value: &str) -> String {
+    format!("{}:{value}", value.len())
+}
+fn valid_source(source: &AbilityUseRef) -> bool {
+    !source.owner_player_id.trim().is_empty()
+        && !source.character_id.trim().is_empty()
+        && !source.ability_instance_id.as_str().trim().is_empty()
+}
+fn invalid_occurrence() -> crate::error::CoreError {
+    crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error()
 }
 
 /// The identity portion of an Action occurrence.  It is independent of a projected Step's
@@ -191,6 +305,8 @@ impl ActionOccurrence {
 pub(crate) struct ActionOccurrenceIdentity {
     pub(crate) action_ref: FirstNightActionRef,
     pub(crate) ability_use: Option<AbilityUseRef>,
+    pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
+    pub(crate) follow_up_cause: Option<crate::contracts::FollowUpCause>,
 }
 
 pub(crate) type ActionOccurrenceKey = ActionOccurrenceIdentity;

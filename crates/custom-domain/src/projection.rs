@@ -32,6 +32,10 @@ pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     if !facts.ability_grants.is_empty() {
         state.ability_grants = Some(facts.ability_grants.clone());
     }
+    state.ability_uses = facts.ability_uses.clone();
+    state.philosopher_choices = facts.philosopher_choices.clone();
+    state.witch_curses = facts.witch_curses.clone();
+    state.twin_relationships = facts.twin_relationships.clone();
     state
 }
 
@@ -211,6 +215,8 @@ pub(crate) fn event_reveal(
 
 fn overview(step: PhaseStep, status: PhaseStepStatus) -> PhaseOverviewItem {
     PhaseOverviewItem {
+        simulation_source: step.simulation_source.clone(),
+        follow_up_cause: step.follow_up_cause.clone(),
         id: step.id,
         phase: step.phase,
         step_type: step.step_type,

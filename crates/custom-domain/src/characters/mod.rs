@@ -1,5 +1,5 @@
 pub(crate) mod registry;
-mod sects_and_violets;
+pub(crate) mod sects_and_violets;
 mod trouble_brewing;
 pub(crate) use registry::*;
 

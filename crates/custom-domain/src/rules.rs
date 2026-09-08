@@ -194,6 +194,16 @@ impl FirstNightRuleService for CustomRuleService<'_> {
         Some(self.facts)
     }
 
+    fn simulation_occurrences(
+        &self,
+        action_ref: &FirstNightActionRef,
+    ) -> Result<Vec<crate::state::ActionOccurrence>, CoreError> {
+        crate::characters::sects_and_violets::simulation_occurrences(self.facts, action_ref)
+    }
+    fn definition(&self) -> Option<&crate::characters::ResolvedScriptContext> {
+        Some(self.context)
+    }
+
     fn has_minion(&self) -> bool {
         self.facts.players.iter().any(|player| {
             self.context.character_kind(&player.actual_character) == Some(CharacterKind::Minion)

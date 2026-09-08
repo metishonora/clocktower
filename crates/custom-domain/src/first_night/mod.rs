@@ -8,7 +8,7 @@ mod system;
 
 pub(crate) use activation::{
     ActivationContext, ActivationDecision, ActivationRule, FirstNightActivationRule,
-    NoActionActivation,
+    FollowUpContext, FollowUpRule, NoActionActivation,
 };
 pub(crate) use plan::{plan_for_definition, plan_for_draft};
 #[cfg(test)]
@@ -16,9 +16,9 @@ pub(crate) use registry::fixture_action_registry;
 #[allow(unused_imports)]
 pub(crate) use registry::{
     action_registry, system_action_registry, ActionContext, ActionEventDraft, ActionHandler,
-    ActionRegistry, ActionSpec, ActiveAbilityInstance, CustomRuleService, FirstNightRuleService,
-    RegisteredAction, SystemActionEventDraft, ValidatedActionEvent, ValidatedCustomEvent,
-    ValidatedSystemActionEvent,
+    ActionInput, ActionRegistry, ActionSpec, ActiveAbilityInstance, CustomRuleService,
+    FirstNightRuleService, RegisteredAction, SystemActionEventDraft, ValidatedActionEvent,
+    ValidatedCustomEvent, ValidatedSystemActionEvent,
 };
 pub(crate) use runtime::{
     advance_progress, advance_progress_with_snapshot, initial_progress, project_occurrence_step,

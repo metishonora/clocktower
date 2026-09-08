@@ -56,7 +56,7 @@ pub(crate) struct NoActionActivation;
 
 impl ActivationRule for NoActionActivation {
     fn decide(&self, context: &ActivationContext<'_>) -> Result<ActivationDecision, CoreError> {
-        if context.occurrence.ability_use.is_none()
+        if context.occurrence.source().is_none()
             || !matches!(context.action_ref, FirstNightActionRef::Character { .. })
         {
             return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
@@ -68,3 +68,15 @@ impl ActivationRule for NoActionActivation {
 /// Naming used by the scheduler and fixture tests.  The alias keeps the public concept focused on
 /// the first-night boundary while allowing callers to provide any pure rule implementation.
 pub(crate) use ActivationRule as FirstNightActivationRule;
+
+/// A bounded, action-owned follow-up query. No mutable progress or raw event replay is exposed.
+pub(crate) struct FollowUpContext<'a> {
+    pub(crate) previous_facts: &'a CustomGameFacts,
+    pub(crate) next_facts: &'a CustomGameFacts,
+    pub(crate) event: &'a ValidatedActionEvent,
+    pub(crate) event_stream_index: usize,
+}
+pub(crate) trait FollowUpRule {
+    fn candidates(&self, context: &FollowUpContext<'_>)
+        -> Result<Vec<ActionOccurrence>, CoreError>;
+}

@@ -186,9 +186,13 @@ impl ActionHandler for FixtureHandler {
         let result = propose_result(&self.action_ref, context, &ability_use, input)?;
         Ok(ActionEventDraft::Custom(
             crate::event::CustomActionEventDraft {
+                simulation_source: None,
+                follow_up_cause: None,
+                delivered_result: None,
+                registration_judgments: vec![],
                 step_id: occurrence.step_id()?,
                 action_ref: self.action_ref.clone(),
-                ability_use,
+                ability_use: Some(ability_use),
                 input: input.clone(),
                 result,
             },
@@ -697,6 +701,8 @@ fn project_instance(
 ) -> Result<PhaseStep, CoreError> {
     let occurrence = ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())?;
     Ok(PhaseStep {
+        simulation_source: None,
+        follow_up_cause: None,
         id: occurrence.step_id()?,
         phase: Phase::FirstNight,
         step_type: StepType::Character,

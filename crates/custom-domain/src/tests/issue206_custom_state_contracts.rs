@@ -55,9 +55,13 @@ fn event(
 ) -> ValidatedCustomEvent {
     let action_ref = action(character_id);
     let payload = CustomActionConfirmedPayload {
+        simulation_source: None,
+        follow_up_cause: None,
+        delivered_result: None,
+        registration_judgments: vec![],
         step_id: format!("firstNight:{character_id}:{id}"),
         action_ref: action_ref.clone(),
-        ability_use,
+        ability_use: Some(ability_use),
         input: None,
         result: CustomActionResult::NoEffect,
     };

@@ -92,6 +92,7 @@ fn custom_fixture_proposal_and_replay_share_one_canonical_event_boundary() {
     let facts = CustomGameFacts::from_players(vec![acting_player.clone()]);
     let rules = CustomRuleService::new(&context, &facts);
     let action_context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let registry = fixture_action_registry().expect("test fixture registration should compose");
@@ -138,6 +139,7 @@ fn custom_boundary_rejects_step_action_actor_instance_input_and_result_tampering
     let facts = CustomGameFacts::from_players(vec![acting_player.clone()]);
     let rules = CustomRuleService::new(&context, &facts);
     let action_context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let registry = fixture_action_registry().expect("test fixture registration should compose");
@@ -167,14 +169,15 @@ fn custom_boundary_rejects_step_action_actor_instance_input_and_result_tampering
     let GameEventKind::CustomActionConfirmed { payload } = &mut actor_tampered.kind else {
         unreachable!()
     };
-    payload.ability_use.owner_player_id = "other-player".to_string();
+    payload.ability_use.as_mut().unwrap().owner_player_id = "other-player".to_string();
     tampered.push(actor_tampered);
 
     let mut instance_tampered = valid.clone();
     let GameEventKind::CustomActionConfirmed { payload } = &mut instance_tampered.kind else {
         unreachable!()
     };
-    payload.ability_use.ability_instance_id = AbilityInstanceId::new("forged", "other-player");
+    payload.ability_use.as_mut().unwrap().ability_instance_id =
+        AbilityInstanceId::new("forged", "other-player");
     tampered.push(instance_tampered);
 
     let mut input_tampered = valid.clone();
@@ -213,6 +216,7 @@ fn custom_boundary_requires_definition_membership_even_for_a_registered_action()
     let facts = CustomGameFacts::from_players(vec![acting_player.clone()]);
     let rules = CustomRuleService::new(&context, &facts);
     let action_context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let registry = fixture_action_registry().expect("test fixture registration should compose");
@@ -323,6 +327,7 @@ fn proposal_rejects_a_handler_that_changes_the_command_input() {
     .unwrap();
     let rules = SystemRules;
     let context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let occurrence = ActionOccurrence::system(action_ref.clone()).unwrap();
@@ -345,6 +350,7 @@ fn feature_fixture_typed_grant_result_becomes_private_fact_changes_and_reduces()
     let facts = CustomGameFacts::from_players(vec![acting_player.clone()]);
     let rules = CustomRuleService::new(&context, &facts);
     let action_context = ActionContext {
+        event_id: "",
         rule_service: &rules,
     };
     let registry = fixture_action_registry().expect("feature fixture registration should compose");

@@ -9,8 +9,9 @@ and [Plan](https://github.com/metishonora/clocktower/issues/207#issuecomment-557
 - Task 0: complete; baseline captured and read-only test-contract review incorporated.
 - Task 1: Rust/WASM separation implemented; Production compatibility verified.
 - Task 2: complete; independent TypeScript, storage, test/build paths and dependency guards verified.
-- Tasks 3–7: not started. No new SnV Production handlers yet.
-- Separation checkpoint: passed; this document is committed with the separation changes.
+- Task 3: common source, cause, typed facts, resolver input and scheduler contracts implemented and verified; ordering clarification approved.
+- Tasks 4–7: not started. No new SnV Production handlers yet.
+- Separation checkpoint: passed at `ca357fd`. Subsequent behavior changes stay inside custom ownership.
 
 ## Compatibility boundary
 
@@ -142,3 +143,13 @@ Do not silently broaden the implementation or send first-night exceptions out of
 - A separate official-only workspace without custom source or WASM passed TB/SnV/BMR create, replay, real IndexedDB game/session save/load/resume, and legacy v2/v3 parsing checks.
 - Release web build (including both independent WASM artifacts) and PWA contract verification passed.
 - Dependency guard passes across Cargo, Rust source includes and resolved TypeScript imports, including transitive, type-only, dynamic, alias and symlink cases.
+
+## Approved ordering clarification (2026-09-08)
+
+Task 3 testing found an inconsistency in Plan §4.2: it names seat/owner/ability/source/instance ordering while also requiring preservation of #206. The actual #206 scheduler compares origin source first, then seat, then owner/instance; its real WASM fixture explicitly expects the original owner at seat 2 before the acquired owner at seat 1. Applying seat-first ordering produced [p1,p2] instead of [p2,p1] in `web/test/custom/runtime.fixture.test.ts`.
+
+The user approved preserving the existing #206 order after rule research. Original owners precede acquired owners, with the existing source/seat/owner/instance comparison retained. This is the application's fixed policy, not a uniquely mandated rules order. No Storyteller order-selection feature is added. The Spec and Plan wording is corrected accordingly.
+
+Other Task 3 verification so far: normal custom domain 79 + WASM 6 passed; fixture-feature domain 86 passed; custom TypeScript/web 64 passed. A fresh Production WASM build passed. Fixture WASM tests initially passed 12/13; the remaining failure is the ordering conflict described above, not a weakened or removed assertion. Recheck after comparator restoration is recorded separately when complete.
+
+- After restoring the existing comparator: fixture-feature Rust 86, fresh fixture WASM/session 13, custom TypeScript/web 64 and dependency-guard negative fixtures 10 passed. No official implementation file changed after `ca357fd`. The ordering decision is resolved; Task 3 can now be committed.
