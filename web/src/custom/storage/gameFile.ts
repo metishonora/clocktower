@@ -1,6 +1,7 @@
-import type { GameFile, GameFileV4, ScriptReference, CustomScriptDefinition, GameEvent, SeatLayoutState } from "../core/types.js";
-import { parseFirstNightOrderPlan, parseGameEvent } from "../core/validation.js";
-import { resolveCustomScriptDefinition } from "../characterCatalog.js";
+import type { GameFile, GameFileV4, ScriptReference, GameEvent, SeatLayoutState } from "../core/types.js";
+import { parseGameEvent } from "../core/validation.js";
+import { parseCustomScriptDefinition } from "../core/definition.js";
+export { parseCustomScriptDefinition } from "../core/definition.js";
 
 
 export function exportGameFileJson(gameFile: GameFile, exportedAt = new Date()): string {
@@ -70,31 +71,6 @@ function parseStoredScriptReference(_schemaVersion: unknown, game: Record<string
 function parseScriptReference(value: unknown): ScriptReference { if (!isRecord(value) || value.type !== "custom" || !hasExactKeys(value, ["type", "definition"])) throw malformedGameFile(); return { type: "custom", definition: parseCustomScriptDefinition(value.definition) }; }
 
 
-export function parseCustomScriptDefinition(value: unknown): CustomScriptDefinition {
-  if (
-    !isRecord(value)
-    || !hasExactKeys(value, ["id", "name", "characterIds", "firstNightOrder"])
-    || typeof value.id !== "string"
-    || value.id.trim().length === 0
-    || typeof value.name !== "string"
-    || value.name.trim().length === 0
-    || !Array.isArray(value.characterIds)
-    || !value.characterIds.every(
-      (characterId) => typeof characterId === "string" && characterId.trim().length > 0,
-    )
-  ) {
-    throw new Error("커스텀 시나리오 정의가 올바르지 않습니다.");
-  }
-  if (new Set(value.characterIds).size !== value.characterIds.length) {
-    throw new Error("커스텀 시나리오에 중복된 캐릭터가 있습니다.");
-  }
-  return resolveCustomScriptDefinition({
-    id: value.id,
-    name: value.name,
-    characterIds: [...value.characterIds],
-    firstNightOrder: parseFirstNightOrderPlan(value.firstNightOrder),
-  });
-}
 function canonicalGameFile(gameFile: GameFile): GameFileV4 { return validateGameFile(gameFile); }
 
 

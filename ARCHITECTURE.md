@@ -924,3 +924,49 @@ Do not create automatic backup copies for MVP.
 - Web Worker for the Rust core. Add only if replay/propose blocks the UI on real iPad hardware.
 - Native wrapper such as Capacitor. Add only if PWA storage or lifecycle behavior becomes a real problem.
 - Generic rules DSL. Out of scope for Trouble Brewing MVP.
+
+## Custom scenario authoring and portable JSON (#197)
+
+The Production landing composes `ScriptLanding.additionalChoice` with a lazy custom authoring
+editor. The composition root owns the approved ink transition; custom components never import
+an official UI helper, catalog, validator, or game runtime. Custom-owned presentation metadata
+supplies labels, descriptions, and paths to static character artwork. Support membership and
+kind still come exclusively from the generated custom catalog.
+
+A portable scenario file is `{ type: "clocktower-custom-scenario", version: 1, scenario: {
+name, characterIds, firstNightOrder } }`. Version 1 is a first-night-only file contract, independent
+of GameFile schema and repository versions. It contains neither the local definition ID nor
+metadata, roster, events, session state, or other-night data. Names and array order are preserved;
+only the suggested download filename is sanitized. Unknown fields, unsupported versions, and
+other file kinds are rejected rather than discarded or converted.
+
+`ScenarioEditorController` owns the in-memory draft and its local ID, navigation, request
+identities, and immutable validation snapshot. File reading produces a separate candidate;
+only a successfully validated, still-current request can replace the draft. New authoring and
+successful file imports use fresh local identities. No file operation reads or writes IndexedDB,
+repository records, or game sessions. The UI does not pretend to start or resume a game; those
+connections and stored-definition management remain #205.
+
+`core/definition.ts` owns the existing definition parser, re-exported from `storage/gameFile.ts`
+for current consumers. Authoring, file import, and existing persistence reuse this parser and
+the existing WASM definition validator. The file codec owns only the envelope and conversion;
+it has no character action catalog, exact-set validator, or automatic order repair. Operational
+initialization failure is distinguished from invalid input. The current draft must have a matching
+successful validation snapshot before serialization, so saving does not repeat domain validation.
+Editing invalidates that snapshot; navigation alone does not. Snapshots and request counters are
+not serialized as revisions.
+
+The authoring query provides initial order, explicit reset, and the baseline for pool reconciliation.
+An as-yet unnamed draft uses a query-only placeholder name; this never fills the draft's actual
+name or permits exporting an unnamed definition. Reconciliation removes obsolete entries, preserves
+survivors' relative order, and inserts each missing default entry before its first available default
+successor. The result passes the same existing validator. Import never invokes this authoring path.
+
+Browser delivery uses an already validated snapshot and a Blob download within the save gesture.
+Feedback reports a requested download, not unobservable completion of a disk write. Failure and
+cancellation preserve the draft. Repeated download and choosing the same file again are supported.
+
+The next test stage covers the approved #197 black-box cases using Production WASM, custom
+controller/file integration, and browser download/upload. Custom test configuration keeps Node
+runtime tests separate from TSX/jsdom UI tests. Official pages, storage, PWA behavior, and custom
+source isolation remain regression boundaries. No new rule-level test matrix is owned by #197.

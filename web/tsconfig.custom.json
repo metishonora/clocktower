@@ -10,10 +10,12 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
   "include": [
     "src/custom/**/*.ts",
+    "src/custom/**/*.tsx",
     "src/vite-env.d.ts"
   ]
 }

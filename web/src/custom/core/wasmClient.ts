@@ -10,6 +10,7 @@ import type {
   SetupDistributionRequest,
 } from "./types.js";
 import type { CoreAdapter } from "./coreAdapter.js";
+import { CustomDefinitionValidationError } from "./definitionValidator.js";
 import type { CustomDefinitionValidator } from "./definitionValidator.js";
 import { memoizeLatestJsonRequest, serializeReplayRequest } from "./latestJsonRequestCache.js";
 import { withExpectedEventCount } from "./streamVersion.js";
@@ -127,7 +128,7 @@ export async function loadCustomDefinitionValidator(): Promise<CustomDefinitionV
       throw new Error("커스텀 시나리오에 첫날 밤 순서가 필요합니다.");
     }
     const result = queryCustomFirstNightPlan(definition);
-    if (!result.ok) throw new Error(result.error.messageKo);
+    if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
     if (result.value.source !== "definition") {
       throw new Error("커스텀 시나리오의 명시적 첫날 밤 순서를 검증하지 못했습니다.");
     }

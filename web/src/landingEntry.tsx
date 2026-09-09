@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
-import { ScriptLanding } from "./features/script-selection/ScriptLanding";
+import { CustomScenarioLanding } from "./customScenarioLanding";
 import {
   resolvePromoCardDesign,
   resolvePromoCardProductionRoute,
@@ -53,7 +53,7 @@ createRoot(document.getElementById("root")!).render(
         />
       </React.Suspense>
     ) : (
-      <ScriptLanding />
+      <CustomScenarioLanding />
     )}
   </React.StrictMode>,
 );
