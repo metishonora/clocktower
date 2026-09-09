@@ -56,7 +56,7 @@ it("C11 C18-a C19 C20-a C21-c C23 C25: causal twin repair, whole-file rejection 
     const candidate = await realWasmCore().propose(session.snapshot.canonical, { type: "confirmStep", payload: { stepId: beforeRepair.currentStep!.id, input: { playerIds: ["p2"] } } });
     if (!candidate.ok)
         throw Error(candidate.error.code);
-    for (const [field, value] of [["triggerEventId", first.proposal.event.id], ["triggerEventId", "future"], ["previousPreparationEventId", first.proposal.event.id]]) {
+    for (const [field, value] of [["triggerEventId", assign.proposal.event.id], ["triggerEventId", first.proposal.event.id], ["triggerEventId", "future"], ["previousPreparationEventId", first.proposal.event.id]]) {
         const event = structuredClone(candidate.value.event);
         Object.assign(custom(event).actionCause!, { [field!]: value });
         await rejectEvent(session, event);
@@ -68,6 +68,20 @@ it("C11 C18-a C19 C20-a C21-c C23 C25: causal twin repair, whole-file rejection 
     const notice = await realWasmCore().propose(session.snapshot.canonical, { type: "confirmStep", payload: { stepId: beforeNotice.currentStep!.id, input: null } });
     if (!notice.ok)
         throw Error(notice.error.code);
+    // Both IDs are real assignTwin events in this same Production history.
+    expect(custom(assign.proposal.event).actionRef.actionId).toBe("assignTwin");
+    expect(custom(repair.proposal.event).actionRef.actionId).toBe("assignTwin");
+    for (const field of ["cause", "result"] as const) {
+        const stale = structuredClone(notice.value.event);
+        const payload = custom(stale);
+        if (payload.actionCause?.kind !== "delivery" || payload.result.kind !== "twinInformed")
+            throw Error("expected twin delivery");
+        if (field === "cause")
+            payload.actionCause.preparationEventId = assign.proposal.event.id;
+        else
+            payload.result.relationshipEventId = assign.proposal.event.id;
+        await rejectEvent(session, stale);
+    }
     const bad = structuredClone(notice.value.event);
     custom(bad).abilityUse!.abilityInstanceId = "future";
     await rejectEvent(session, bad);

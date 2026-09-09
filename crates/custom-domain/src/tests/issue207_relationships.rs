@@ -161,3 +161,115 @@ fn bounded_twin_assignment_ignores_name_and_death_but_repairs_same_alignment() {
     state.players[1].alignment = Alignment::Good;
     assert!(candidates(&state).is_empty());
 }
+
+// Bounded registry/reducer evidence, not a claim that multiple alignment changes are
+// reachable in one Production first night. Assignments themselves use real handlers.
+#[test]
+fn repair_rejects_an_older_real_assignment_as_previous_preparation() {
+    use super::issue207_impairments::facts;
+    use crate::{
+        contracts::{ActionCause, GameEvent, GameEventKind},
+        first_night::{
+            action_registry, ActionContext, ActionEventDraft, ActionInput, ValidatedActionEvent,
+        },
+        model::{Alignment, Phase, StepInputFields},
+        reducer::reduce_custom_facts,
+        rules::CustomRuleService,
+        state::FirstNightProgress,
+    };
+    let (definition, mut state) = facts(&["evilTwin", "snakeCharmer", "artist", "monk", "imp"]);
+    let registry = action_registry().unwrap();
+    let mut assignment_ids: Vec<String> = Vec::new();
+    for (index, target) in ["p2", "p3", "p4"].into_iter().enumerate() {
+        let rules = CustomRuleService::new(&definition, &state);
+        let event_id = format!("assignment-{index}");
+        let context = ActionContext {
+            event_id: &event_id,
+            rule_service: &rules,
+        };
+        let entry = crate::characters::sects_and_violets::registrations().into_iter()
+            .find(|entry| matches!(&entry.spec.action_ref, crate::contracts::FirstNightActionRef::Character { action_id, .. } if action_id == "assignTwin"))
+            .unwrap();
+        let occurrences = entry
+            .handler
+            .required_occurrences(&context, &FirstNightProgress::default())
+            .unwrap();
+        assert_eq!(occurrences.len(), 1);
+        let occurrence = &occurrences[0];
+        let input = ActionInput {
+            input: Some(StepInputFields {
+                player_ids: Some(vec![target.into()]),
+                ..Default::default()
+            }),
+            delivered_result: None,
+            registration_judgments: vec![],
+        };
+        let draft = registry
+            .propose_input(&occurrence.action_ref, &context, occurrence, &input)
+            .unwrap();
+        let ActionEventDraft::Custom(draft) = draft else {
+            panic!("custom assignment");
+        };
+        let event = GameEvent {
+            id: event_id.clone(),
+            kind: GameEventKind::CustomActionConfirmed {
+                payload: draft.into_payload(),
+            },
+            phase: Phase::FirstNight,
+            summary: "twin assignment".into(),
+            created_at: "2026-09-09T00:00:00Z".into(),
+        };
+        if index == 2 {
+            assert_eq!(state.twin_relationships.len(), 2);
+            assert_eq!(
+                occurrence.action_cause,
+                Some(ActionCause::RequiredPreparation {
+                    trigger_event_id: state.prefix_event_id.clone(),
+                    previous_preparation_event_id: Some(assignment_ids[1].clone()),
+                })
+            );
+            let before = serde_json::to_value(&state.twin_relationships).unwrap();
+            let mut forged = event.clone();
+            let GameEventKind::CustomActionConfirmed { payload } = &mut forged.kind else {
+                unreachable!()
+            };
+            let Some(ActionCause::RequiredPreparation {
+                previous_preparation_event_id,
+                ..
+            }) = &mut payload.action_cause
+            else {
+                panic!("repair cause");
+            };
+            *previous_preparation_event_id = Some(assignment_ids[0].clone());
+            assert_eq!(
+                registry
+                    .validate_event(occurrence, &context, &forged)
+                    .unwrap_err()
+                    .code,
+                "INVALID_FIRST_NIGHT_ACTION_PROVENANCE"
+            );
+            assert_eq!(
+                serde_json::to_value(&state.twin_relationships).unwrap(),
+                before
+            );
+        }
+        // The unmodified candidate remains valid after the rejected stale reference.
+        let ValidatedActionEvent::Custom(validated) = registry
+            .validate_event(occurrence, &context, &event)
+            .unwrap()
+        else {
+            panic!("custom event");
+        };
+        state = reduce_custom_facts(&definition, &state, &validated).unwrap();
+        assignment_ids.push(event_id);
+        if index < 2 {
+            // Only this alignment transition is injected; no fabricated preparation record.
+            state.players[index + 1].alignment = Alignment::Evil;
+            state.prefix_event_id = format!("alignment-change-{index}");
+        }
+    }
+    assert_eq!(
+        state.twin_relationships.last().unwrap().target_player_id,
+        "p4"
+    );
+}
