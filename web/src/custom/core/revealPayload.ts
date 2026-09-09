@@ -233,7 +233,6 @@ function isAutomaticReminderShape(value: unknown): boolean {
     "label",
     "description",
     "count",
-    "sourceEventId",
     "inactiveReason",
   ]) &&
     nonEmptyString(reminder.playerId) &&
@@ -242,10 +241,8 @@ function isAutomaticReminderShape(value: unknown): boolean {
     nonEmptyString(reminder.label) &&
     nonEmptyString(reminder.description) &&
     (reminder.count === undefined || (Number.isInteger(reminder.count) && Number(reminder.count) >= 0)) &&
-    (reminder.sourceEventId === undefined || nonEmptyString(reminder.sourceEventId)) &&
     (reminder.inactiveReason === undefined || (
-      nonEmptyString(reminder.inactiveReason) &&
-      nonEmptyString(reminder.sourceEventId)
+      nonEmptyString(reminder.inactiveReason)
     ));
 }
 

@@ -12,8 +12,7 @@ use crate::{
     error::{CoreError, ErrorKind},
 };
 
-use super::catalog::ORDERED_ACTIONS;
-const REQUIRED_SYSTEM_ACTION_IDS: [&str; 4] = ["dusk", "minionInfo", "demonInfo", "dawn"];
+use super::catalog::{ORDERED_ACTIONS, SYSTEM_ACTIONS};
 
 fn character(character_id: &str, action_id: &str) -> FirstNightActionRef {
     FirstNightActionRef::Character {
@@ -38,11 +37,11 @@ fn default_plan(context: &ResolvedScriptContext) -> FirstNightOrderPlan {
 }
 
 fn expected_actions(context: &ResolvedScriptContext) -> HashSet<FirstNightActionRef> {
-    let mut expected = HashSet::with_capacity(ORDERED_ACTIONS.len() + 4);
+    let mut expected = HashSet::with_capacity(ORDERED_ACTIONS.len() + SYSTEM_ACTIONS.len());
     expected.extend(
-        REQUIRED_SYSTEM_ACTION_IDS
+        SYSTEM_ACTIONS
             .into_iter()
-            .map(FirstNightActionRef::system),
+            .map(|action_id| FirstNightActionRef::System { action_id }),
     );
     expected.extend(
         ORDERED_ACTIONS

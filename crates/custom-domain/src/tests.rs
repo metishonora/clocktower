@@ -46,3 +46,6 @@ mod issue208_mutant;
 mod issue208_preparations;
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue208_twins;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue209_registry;

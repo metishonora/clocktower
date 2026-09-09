@@ -211,7 +211,17 @@ pub(crate) fn custom_information_reveal(
         crate::model::InformationResult::SpyGrimoire { players } => {
             Some(RevealPayload::SpyGrimoire {
                 kind: "spyGrimoire",
-                players: players.clone(),
+                // Preserve the delivered snapshot, but do not expose replay provenance.
+                players: players
+                    .iter()
+                    .cloned()
+                    .map(|mut player| {
+                        for reminder in &mut player.automatic_reminders {
+                            reminder.source_event_id = None;
+                        }
+                        player
+                    })
+                    .collect(),
             })
         }
         crate::model::InformationResult::CharacterPair { character_ids } => {

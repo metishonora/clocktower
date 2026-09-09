@@ -154,30 +154,24 @@ fn validate_input(
 }
 
 pub(super) fn registrations() -> Vec<RegisteredAction> {
-    [
-        (SystemFirstNightActionId::Dusk, RequiredInputKind::None),
-        (
-            SystemFirstNightActionId::MinionInfo,
-            RequiredInputKind::None,
-        ),
-        (
-            SystemFirstNightActionId::DemonInfo,
-            RequiredInputKind::CharacterIds,
-        ),
-        (SystemFirstNightActionId::Dawn, RequiredInputKind::Day),
-    ]
-    .into_iter()
-    .map(|(action_id, required_input_kind)| {
-        let action_ref = FirstNightActionRef::System { action_id };
-        RegisteredAction {
-            spec: ActionSpec {
-                action_ref: action_ref.clone(),
-                participates_in_first_night: true,
-                required_input_kind,
-                support: PhaseStepSupport::Automated,
-            },
-            handler: Box::new(SystemHandler { action_ref }),
-        }
-    })
-    .collect()
+    super::catalog::SYSTEM_ACTIONS
+        .into_iter()
+        .map(|action_id| {
+            let required_input_kind = match action_id {
+                SystemFirstNightActionId::DemonInfo => RequiredInputKind::CharacterIds,
+                SystemFirstNightActionId::Dawn => RequiredInputKind::Day,
+                _ => RequiredInputKind::None,
+            };
+            let action_ref = FirstNightActionRef::System { action_id };
+            RegisteredAction {
+                spec: ActionSpec {
+                    action_ref: action_ref.clone(),
+                    participates_in_first_night: true,
+                    required_input_kind,
+                    support: PhaseStepSupport::Automated,
+                },
+                handler: Box::new(SystemHandler { action_ref }),
+            }
+        })
+        .collect()
 }

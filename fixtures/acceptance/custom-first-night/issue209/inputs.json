@@ -1,0 +1,288 @@
+{
+  "definition": {
+    "id": "drunk-empath-math",
+    "name": "drunk-empath-math",
+    "characterIds": [
+      "washerwoman",
+      "librarian",
+      "investigator",
+      "chef",
+      "empath",
+      "fortuneTeller",
+      "undertaker",
+      "monk",
+      "ravenkeeper",
+      "virgin",
+      "slayer",
+      "soldier",
+      "mayor",
+      "butler",
+      "drunk",
+      "recluse",
+      "saint",
+      "poisoner",
+      "spy",
+      "scarletWoman",
+      "baron",
+      "imp",
+      "clockmaker",
+      "dreamer",
+      "snakeCharmer",
+      "mathematician",
+      "flowergirl",
+      "townCrier",
+      "oracle",
+      "savant",
+      "seamstress",
+      "philosopher",
+      "artist",
+      "juggler",
+      "sage",
+      "mutant",
+      "sweetheart",
+      "barber",
+      "klutz",
+      "evilTwin",
+      "witch",
+      "cerenovus",
+      "pitHag",
+      "fangGu",
+      "vigormortis",
+      "noDashii",
+      "vortox"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "philosopher",
+        "actionId": "chooseAbility"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "snakeCharmer",
+        "actionId": "choosePlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "evilTwin",
+        "actionId": "learnTwin"
+      },
+      {
+        "kind": "character",
+        "characterId": "witch",
+        "actionId": "chooseCursedPlayer"
+      },
+      {
+        "kind": "character",
+        "characterId": "cerenovus",
+        "actionId": "assignMadness"
+      },
+      {
+        "kind": "character",
+        "characterId": "washerwoman",
+        "actionId": "learnTownsfolk"
+      },
+      {
+        "kind": "character",
+        "characterId": "librarian",
+        "actionId": "learnOutsider"
+      },
+      {
+        "kind": "character",
+        "characterId": "investigator",
+        "actionId": "learnMinion"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "empath",
+        "actionId": "learnEvilNeighbors"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "butler",
+        "actionId": "chooseMaster"
+      },
+      {
+        "kind": "character",
+        "characterId": "clockmaker",
+        "actionId": "learnSteps"
+      },
+      {
+        "kind": "character",
+        "characterId": "dreamer",
+        "actionId": "learnCharacters"
+      },
+      {
+        "kind": "character",
+        "characterId": "seamstress",
+        "actionId": "compareAlignments"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "character",
+        "characterId": "mathematician",
+        "actionId": "learnCount"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  },
+  "rosters": [
+    [
+      "washerwoman",
+      "librarian",
+      "investigator",
+      "chef",
+      "empath",
+      "fortuneTeller",
+      "mathematician",
+      "monk",
+      "soldier",
+      "butler",
+      "drunk",
+      "poisoner",
+      "spy",
+      "scarletWoman",
+      "imp"
+    ],
+    [
+      "philosopher",
+      "fortuneTeller",
+      "mathematician",
+      "monk",
+      "virgin",
+      "scarletWoman",
+      "imp"
+    ],
+    [
+      "philosopher",
+      "mathematician",
+      "monk",
+      "virgin",
+      "slayer",
+      "scarletWoman",
+      "imp"
+    ],
+    [
+      "snakeCharmer",
+      "artist",
+      "mathematician",
+      "philosopher",
+      "noDashii",
+      "scarletWoman",
+      "savant"
+    ],
+    [
+      "washerwoman",
+      "noDashii",
+      "chef",
+      "mathematician",
+      "snakeCharmer",
+      "monk",
+      "virgin",
+      "slayer",
+      "poisoner",
+      "spy"
+    ],
+    [
+      "snakeCharmer",
+      "artist",
+      "savant",
+      "juggler",
+      "sage",
+      "evilTwin",
+      "imp"
+    ],
+    [
+      "mathematician",
+      "monk",
+      "virgin",
+      "slayer",
+      "soldier",
+      "mutant",
+      "poisoner",
+      "imp"
+    ],
+    [
+      "seamstress",
+      "artist",
+      "savant",
+      "juggler",
+      "sage",
+      "recluse",
+      "scarletWoman",
+      "vortox"
+    ],
+    [
+      "drunk",
+      "imp",
+      "mathematician",
+      "monk",
+      "soldier",
+      "mayor",
+      "virgin",
+      "poisoner"
+    ],
+    [
+      "imp",
+      "recluse",
+      "poisoner",
+      "chef",
+      "monk",
+      "soldier",
+      "mayor",
+      "virgin"
+    ],
+    [
+      "noDashii",
+      "soldier",
+      "empath",
+      "monk",
+      "poisoner"
+    ],
+    [
+      "evilTwin",
+      "mutant",
+      "imp",
+      "chef",
+      "monk",
+      "butler",
+      "empath",
+      "soldier",
+      "mayor"
+    ]
+  ]
+}
