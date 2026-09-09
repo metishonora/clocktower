@@ -1,0 +1,40 @@
+.comparisonPrototype { height:100svh; display:flex; flex-direction:column; overflow:hidden; }
+.comparisonReview { flex-shrink:0; gap:14px; padding:10px 20px; flex-wrap:wrap; }
+.comparisonModes,.comparisonControls { display:flex!important; gap:10px!important; align-items:center; }
+.comparisonModes button[aria-pressed=true] { color:#fff1d6; background:#3d3937; border-color:#bba285; }
+.comparisonControls label { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.comparisonScrub input { width:100px; accent-color:#c5a67e; }
+.comparisonReview button:disabled { cursor:default; opacity:.5; }
+.comparisonStage { position:relative; flex:1; min-height:0; overflow:hidden; isolation:isolate; background:#101114; }
+.comparisonLayer { position:absolute; inset:0; }
+.comparisonLayer:focus { outline:none; }
+.comparisonStage .transitionScene { height:100%; min-height:0; }
+.comparisonStage .sceneReading { padding-top:clamp(42px,7vh,80px); padding-bottom:28px; }
+.comparisonStage .sceneHeading { margin-bottom:38px; }
+.comparisonStage .sceneRecord { margin-bottom:28px; padding-bottom:10px; }
+.comparisonStage .scenePassage { width:580px; }
+.pageFold { position:absolute; inset:0; pointer-events:none; background:linear-gradient(105deg,#151319 calc(var(--edge) - 8%),#7b7063 calc(var(--edge) + var(--fold) * .18),#242026 calc(var(--edge) + var(--fold) * .48),#100f13 calc(var(--edge) + var(--fold) * .95)); filter:drop-shadow(15px 0 18px #000c); }
+.foldLight { position:absolute; inset:0; background:linear-gradient(170deg,#d4c1a231,transparent 35%,#0009); }
+.inkVeil { position:absolute; inset:0; pointer-events:none; }
+.inkFilters { position:absolute; }
+.inkPool { position:absolute; width:150vmax; height:150vmax; background:#030407; border-radius:47% 53% 43% 57% / 57% 46% 54% 43%; filter:url(#comparison-ink-bleed); transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread))); }
+.inkPoolOne { top:34%; left:68%; }
+.inkPoolTwo { top:80%; left:15%; width:110vmax; height:120vmax; transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread) * .88)); }
+.inkPoolThree { top:0; left:0; width:90vmax; height:120vmax; transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread) * .78)); }
+.inkPoolFour { top:110%; left:110%; width:95vmax; height:105vmax; }
+@media(max-width:760px) {
+  .comparisonReview { padding:9px 12px; gap:8px; }
+  .comparisonModes,.comparisonControls { width:100%; justify-content:space-between; gap:7px!important; font-size:11px; }
+  .comparisonReview button { padding:7px 9px; font-size:11px; }
+  .comparisonScrub { font-size:0; }
+  .comparisonScrub input { width:70px; }
+  .comparisonStage .sceneReading { padding:34px 24px 20px; }
+  .comparisonStage .sceneHeading { margin-bottom:80px; }
+  .comparisonStage .sceneHeading h1 { font-size:36px; }
+  .comparisonStage .scenePassage { width:100%; font-size:21px; }
+  .comparisonStage .sceneRecord { font-size:19px; margin-bottom:22px; }
+  .comparisonStage .scenePassage p { margin-bottom:18px; }
+  .comparisonStage .sceneAdvance { margin-top:20px; }
+}
+@media(max-height:680px) { .comparisonStage .sceneHeading { margin-bottom:24px; } .comparisonStage .sceneReading { padding-top:24px; } .comparisonStage .scenePassage { font-size:20px; } }
+@media(prefers-reduced-motion:reduce) { .inkPool { filter:none; } }
