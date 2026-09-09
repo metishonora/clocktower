@@ -191,3 +191,17 @@ SHA-256 41194fb6b8857195d5b1098cc0fa1eabae74d2c775cd9ee4df8cc0d7ae9f1247
 기존 CI에 없던 boundary 검사 및 custom-only 격리 실행을 `.github/workflows/validate.yml`에 추가했다. 이 단계는 Production/fixture/공식 WASM을 생성하는 기존 단계 뒤에 위치한다. 기존 Rust workspace·공식 웹·server·browser 단계는 유지했다. 원격 CI 자체는 아직 실행하지 않았다.
 
 **판정:** 검토한 블랙박스 수용 사례와 내부 보강 검사 통과. C27-b에서 발견한 구현 결함은 해결했다. 남은 구현 결함은 없다. 별도 Playwright 브라우저/UI 검사는 실행하지 않았으며, 새 import 화면·사용자 교체 확인·#205 실제 UI 흐름은 이 runtime 수용의 성공으로 간주하지 않는다. GitHub 병합·이슈 종료는 수행하지 않았다.
+
+## #203 감사 후 출처 검사 보완
+
+C21-c의 기존 `previousPreparationEventId` 부정 사례는 실제 `learnTwin` 통지 사건을 참조했다. 이는 다른 종류의 사건을 참조하는 오류를 검증하지만, 다른 지정 이력과의 구분을 직접 확인하지는 않았다.
+
+- Production WASM: `issue209RoundTrip.test.ts`에서 실제 최초 `assignTwin` 사건을 재지정의 잘못된 trigger로 사용하는 경우를 추가했다. 재지정 이후에는 같은 정상 기록 안의 최초 지정과 새 지정이 모두 존재함을 확인하고, 통지의 `actionCause.preparationEventId`와 `result.relationshipEventId`를 각각 최초 지정으로 바꿔 거부를 확인한다. 기존 `rejectEvent`로 append/full replay 거부와 원본 session·IndexedDB 보존을 확인한 뒤 정상 통지와 Undo를 수행한다.
+- 내부 registry/reducer: `repair_rejects_an_older_real_assignment_as_previous_preparation`은 실제 Production handler가 생성하고 검증한 지정들을 reducer에 적용한다. 새 재지정의 `previousPreparationEventId`만 최신 지정에서 더 오래된 실제 지정으로 바꿔 거부를 확인하고, 원래 후보가 계속 수용됨을 확인한다.
+- 내부 사례에서 재지정을 유발하는 진영 변화는 직접 설정한다. 이 근거를 정상 첫날 밤에서 여러 번의 진영 변화가 발생하는 Production 시나리오로 보고하지 않는다. 임의의 준비 기록이나 fixture handler 결과를 Production에 추가하지 않았다.
+
+이 보완은 테스트에 한정하며 runtime, 저장 형식, 공개 계약은 변경하지 않는다. #203 전체 감사의 완료나 이슈 종료를 의미하지 않는다.
+
+보완 검증: custom domain 141개·WASM adapter 6개, fixture domain 102개·웹 13개, custom 웹 109개(타입 검사 포함)가 통과했다. 추가된 Rust 내부 사례 1개와 기존 WASM 왕복 사례의 부정 입력 3개를 포함한다.
+
+`pnpm --dir web build`, `cargo fmt --all -- --check`, `git diff --check`도 통과했다. 기존 unused/dead-code 경고는 유지되며 런타임 정리 작업은 포함하지 않았다.
