@@ -16,12 +16,11 @@
 .pageFold { position:absolute; inset:0; pointer-events:none; background:linear-gradient(105deg,#151319 calc(var(--edge) - 8%),#7b7063 calc(var(--edge) + var(--fold) * .18),#242026 calc(var(--edge) + var(--fold) * .48),#100f13 calc(var(--edge) + var(--fold) * .95)); filter:drop-shadow(15px 0 18px #000c); }
 .foldLight { position:absolute; inset:0; background:linear-gradient(170deg,#d4c1a231,transparent 35%,#0009); }
 .inkVeil { position:absolute; inset:0; pointer-events:none; }
-.inkFilters { position:absolute; }
-.inkPool { position:absolute; width:150vmax; height:150vmax; background:#030407; border-radius:47% 53% 43% 57% / 57% 46% 54% 43%; filter:url(#comparison-ink-bleed); transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread))); }
-.inkPoolOne { top:34%; left:68%; }
-.inkPoolTwo { top:80%; left:15%; width:110vmax; height:120vmax; transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread) * .88)); }
-.inkPoolThree { top:0; left:0; width:90vmax; height:120vmax; transform:translate(-50%,-50%) scale(calc(var(--spread) * var(--spread) * .78)); }
-.inkPoolFour { top:110%; left:110%; width:95vmax; height:105vmax; }
+.inkPool { position:absolute; width:150vmax; height:150vmax; background:url('./assets/ink-blot.svg') center / 100% 100% no-repeat; will-change:transform; }
+.inkPool1 { top:34%; left:68%; }
+.inkPool2 { top:80%; left:15%; width:110vmax; height:120vmax; }
+.inkPool3 { top:0; left:0; width:90vmax; height:120vmax; }
+.inkPool4 { top:110%; left:110%; width:95vmax; height:105vmax; }
 @media(max-width:760px) {
   .comparisonReview { padding:9px 12px; gap:8px; }
   .comparisonModes,.comparisonControls { width:100%; justify-content:space-between; gap:7px!important; font-size:11px; }
@@ -38,3 +37,7 @@
 }
 @media(max-height:680px) { .comparisonStage .sceneHeading { margin-bottom:24px; } .comparisonStage .sceneReading { padding-top:24px; } .comparisonStage .scenePassage { font-size:20px; } }
 @media(prefers-reduced-motion:reduce) { .inkPool { filter:none; } }
+
+.inkToDay .inkPool { background-image:url('./assets/ink-blot-white.svg'); }
+.comparisonControls select { background:#292c32; color:#eee; border:1px solid #666a73; padding:7px; border-radius:4px; font:inherit; }
+@media(max-width:760px) { .comparisonControls { flex-wrap:wrap; } .comparisonControls select { width:100%; } }
