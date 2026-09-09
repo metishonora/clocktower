@@ -1,0 +1,331 @@
+{
+  "washerwoman": {
+    "label": "세탁부",
+    "englishLabel": "Washerwoman",
+    "ability": "게임 시작 시, 플레이어 2명 중 1명이 특정 주민임을 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/washerwoman_g.webp"
+  },
+  "librarian": {
+    "label": "사서",
+    "englishLabel": "Librarian",
+    "ability": "게임 시작 시, 플레이어 2명 중 1명이 특정 외지인임을 (또는 게임에 참여하는 외지인이 없음을) 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/librarian_g.webp"
+  },
+  "investigator": {
+    "label": "수사관",
+    "englishLabel": "Investigator",
+    "ability": "게임 시작 시, 플레이어 2명 중 1명이 특정 하수인임을 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/investigator_g.webp"
+  },
+  "chef": {
+    "label": "요리사",
+    "englishLabel": "Chef",
+    "ability": "게임 시작 시, 서로 이웃하게 앉은 악한 플레이어가 몇 쌍 있는지 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/chef_g.webp"
+  },
+  "empath": {
+    "label": "초공감자",
+    "englishLabel": "Empath",
+    "ability": "매일 밤, 이웃 생존자 2명 중 몇 명이나 악한지를 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/empath_g.webp"
+  },
+  "fortuneTeller": {
+    "label": "점쟁이",
+    "englishLabel": "Fortune Teller",
+    "ability": "매일 밤, 플레이어 2명을 선택합니다: 그중 악마가 있는지 알게 됩니다. 단, 선한 플레이어 중 1명이 당신에게는 악마로 위장되어 보입니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/fortuneteller_g.webp"
+  },
+  "undertaker": {
+    "label": "장의사",
+    "englishLabel": "Undertaker",
+    "ability": "매일 밤*, 오늘 낮에 처형으로 사망한 플레이어의 캐릭터를 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/undertaker_g.webp"
+  },
+  "monk": {
+    "label": "수도사",
+    "englishLabel": "Monk",
+    "ability": "매일 밤*, (당신을 제외하고) 플레이어 1명을 선택합니다: 그는 오늘 밤 악마로부터 안전합니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/monk_g.webp"
+  },
+  "ravenkeeper": {
+    "label": "까마귀지기",
+    "englishLabel": "Ravenkeeper",
+    "ability": "밤에 사망하면, 깨어나서 플레이어 1명을 선택합니다: 그의 캐릭터를 알게 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/ravenkeeper_g.webp"
+  },
+  "virgin": {
+    "label": "성결자",
+    "englishLabel": "Virgin",
+    "ability": "처음으로 지목당했을 때, 당신을 지목한 플레이어가 주민이라면, 그는 즉시 처형당합니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/virgin_g.webp"
+  },
+  "slayer": {
+    "label": "처단자",
+    "englishLabel": "Slayer",
+    "ability": "게임당 1번, 낮 동안, 공개적으로 플레이어 1명을 선택합니다: 그가 악마면 그는 사망합니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/slayer_g.webp"
+  },
+  "soldier": {
+    "label": "군인",
+    "englishLabel": "Soldier",
+    "ability": "악마로부터 안전합니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/soldier_g.webp"
+  },
+  "mayor": {
+    "label": "시장",
+    "englishLabel": "Mayor",
+    "ability": "3명만 생존한 상황에서 처형이 일어나지 않았다면, 당신이 속한 팀이 승리합니다. 밤에 사망한다면, 그 대신 다른 플레이어 1명이 사망할 수도 있습니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/mayor_g.webp"
+  },
+  "butler": {
+    "label": "집사",
+    "englishLabel": "Butler",
+    "ability": "매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다: 다음 날, 그가 투표에 참여한 경우에만 당신도 투표에 참여할 수 있습니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/butler_g.webp"
+  },
+  "drunk": {
+    "label": "주정뱅이",
+    "englishLabel": "Drunk",
+    "ability": "당신은 자신이 주정뱅이라는 사실을 모릅니다. 대신 다른 주민 캐릭터라고 착각하지만, 실제로는 주정뱅이입니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/drunk_g.webp"
+  },
+  "recluse": {
+    "label": "은둔자",
+    "englishLabel": "Recluse",
+    "ability": "당신은 악한 팀 소속의 특정 하수인 또는 악마로 위장될 수도 있습니다(사망한 상태에서도).",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/recluse_g.webp"
+  },
+  "saint": {
+    "label": "성자",
+    "englishLabel": "Saint",
+    "ability": "당신이 처형으로 사망하면, 당신이 속한 팀이 패배합니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/saint_g.webp"
+  },
+  "poisoner": {
+    "label": "독살범",
+    "englishLabel": "Poisoner",
+    "ability": "매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/poisoner_e.webp"
+  },
+  "spy": {
+    "label": "첩자",
+    "englishLabel": "Spy",
+    "ability": "매일 밤, 마도서를 확인해 봅니다. 당신은 선한 팀 소속의 특정 주민 또는 외지인으로 위장될 수도 있습니다(사망한 상태에서도).",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/spy_e.webp"
+  },
+  "scarletWoman": {
+    "label": "탕녀",
+    "englishLabel": "Scarlet Woman",
+    "ability": "플레이어가 5명 이상(여행자는 세지 않음) 생존해 있는 상황에서 악마가 사망하면, 당신이 악마가 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/scarletwoman_e.webp"
+  },
+  "baron": {
+    "label": "남작",
+    "englishLabel": "Baron",
+    "ability": "외지인이 추가로 게임에 참여합니다. [외지인 +2명]",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/baron_e.webp"
+  },
+  "imp": {
+    "label": "임프",
+    "englishLabel": "Imp",
+    "ability": "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 이 방법으로 자결하면, 하수인 1명이 임프가 됩니다.",
+    "source": "troubleBrewing",
+    "image": "assets/characters/tb/imp_e.webp"
+  },
+  "clockmaker": {
+    "label": "시계공",
+    "englishLabel": "Clockmaker",
+    "ability": "게임 시작 시, 악마와 가장 가까운 하수인 사이의 거리를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/clockmaker_g.webp"
+  },
+  "dreamer": {
+    "label": "꿈꾸는 자",
+    "englishLabel": "Dreamer",
+    "ability": "매일 밤, (당신과 여행자를 제외하고) 플레이어 1명을 선택합니다: 선한 캐릭터 하나와 악한 캐릭터 하나를 알게 됩니다. 둘 중 하나가 그의 정체입니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/dreamer_g.webp"
+  },
+  "snakeCharmer": {
+    "label": "뱀 조련사",
+    "englishLabel": "Snake Charmer",
+    "ability": "매일 밤, 생존한 플레이어 1명을 선택합니다: 악마를 선택한다면, 악마는 당신과 소속 및 캐릭터를 맞바꾼 다음 중독됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/snakecharmer_g.webp"
+  },
+  "mathematician": {
+    "label": "수학자",
+    "englishLabel": "Mathematician",
+    "ability": "매일 밤, (새벽부터 지금까지) 다른 플레이어의 능력으로 인해 비정상적으로 작동한 플레이어 능력이 몇 개나 되는지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/mathematician_g.webp"
+  },
+  "flowergirl": {
+    "label": "꽃팔이 소녀",
+    "englishLabel": "Flowergirl",
+    "ability": "매일 밤*, 오늘 낮에 악마가 투표했는지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/flowergirl_g.webp"
+  },
+  "townCrier": {
+    "label": "포고꾼",
+    "englishLabel": "Town Crier",
+    "ability": "매일 밤*, 오늘 낮에 하수인이 지목에 나섰는지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/towncrier_g.webp"
+  },
+  "oracle": {
+    "label": "예언자",
+    "englishLabel": "Oracle",
+    "ability": "매일 밤*, 사망한 플레이어 가운데 몇 명이나 악한 팀인지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/oracle_g.webp"
+  },
+  "savant": {
+    "label": "백치천재",
+    "englishLabel": "Savant",
+    "ability": "매일 낮, 개인적으로 이야기꾼에게 방문해 두 가지 정보를 알게 됩니다: 그중 하나는 진실이고 다른 하나는 거짓입니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/savant_g.webp"
+  },
+  "seamstress": {
+    "label": "재봉사",
+    "englishLabel": "Seamstress",
+    "ability": "게임당 1번, 밤에, (당신을 제외하고) 플레이어 2명을 선택합니다: 그들이 같은 소속인지 아닌지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/seamstress_g.webp"
+  },
+  "philosopher": {
+    "label": "철학자",
+    "englishLabel": "Philosopher",
+    "ability": "게임당 1번, 밤에, 선한 캐릭터 1명을 선택합니다: 그의 능력을 얻습니다. 그 캐릭터가 이미 게임에 참여하고 있다면, 그는 취합니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/philosopher_g.webp"
+  },
+  "artist": {
+    "label": "화가",
+    "englishLabel": "Artist",
+    "ability": "게임당 1번, 낮에, 개인적으로 이야기꾼에게 예/아니오로 답할 수 있는 질문을 합니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/artist_g.webp"
+  },
+  "juggler": {
+    "label": "곡예사",
+    "englishLabel": "Juggler",
+    "ability": "첫 번째 낮에, 공개적으로 플레이어들의 캐릭터를 최대 5번까지 추측할 수 있습니다. 그날 밤, 그중 몇 개나 맞혔는지를 알게 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/juggler_g.webp"
+  },
+  "sage": {
+    "label": "현자",
+    "englishLabel": "Sage",
+    "ability": "악마가 당신을 죽이면, 플레이어 2명을 알게 됩니다. 그중 1명이 악마입니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/sage_g.webp"
+  },
+  "mutant": {
+    "label": "변종",
+    "englishLabel": "Mutant",
+    "ability": "당신이 \"외지인\"이라는 사실에 집착한다면, 당신은 처형당할 수도 있습니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/mutant_g.webp"
+  },
+  "sweetheart": {
+    "label": "사랑꾼",
+    "englishLabel": "Sweetheart",
+    "ability": "당신이 사망할 때, 지금부터 플레이어 1명은 취함 상태가 됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/sweetheart_g.webp"
+  },
+  "barber": {
+    "label": "이발사",
+    "englishLabel": "Barber",
+    "ability": "오늘 낮 또는 오늘 밤에 사망했다면, 악마는 플레이어 2명(다른 악마는 제외)을 선택하여 그 두 명의 캐릭터를 맞바꿀 수 있습니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/barber_g.webp"
+  },
+  "klutz": {
+    "label": "얼뜨기",
+    "englishLabel": "Klutz",
+    "ability": "당신이 사망했다는 사실을 알게 될 때, 생존한 플레이어 1명을 공개적으로 선택합니다: 그가 악한 플레이어라면, 당신이 속한 팀이 패배합니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/klutz_g.webp"
+  },
+  "evilTwin": {
+    "label": "사악한 쌍둥이",
+    "englishLabel": "Evil Twin",
+    "ability": "당신과 선한 쌍둥이는 서로를 알아봅니다. 선한 쌍둥이가 처형당하면, 악한 팀이 승리합니다. 쌍둥이가 둘 다 살아있는 한, 선한 팀은 승리할 수 없습니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/eviltwin_e.webp"
+  },
+  "witch": {
+    "label": "마녀",
+    "englishLabel": "Witch",
+    "ability": "매일 밤, 플레이어 1명을 선택합니다: 그가 다음 날 누군가를 지목한다면, 그는 사망합니다. 플레이어가 3명만 남았다면, 이 능력을 잃습니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/witch_e.webp"
+  },
+  "cerenovus": {
+    "label": "세레노버스",
+    "englishLabel": "Cerenovus",
+    "ability": "매일 밤, 플레이어 1명과 선한 캐릭터 하나를 선택합니다: 선택된 플레이어는 다음 날 자신이 해당 캐릭터라고 집착해야 합니다. 그렇지 않으면, 처형당할 수도 있습니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/cerenovus_e.webp"
+  },
+  "pitHag": {
+    "label": "마귀할멈",
+    "englishLabel": "Pit-Hag",
+    "ability": "매일 밤*, 플레이어 1명과 캐릭터 하나를 선택하고, (그 캐릭터가 게임에 참여하지 않았을 경우) 그를 선택한 캐릭터로 바꿉니다. 이 능력으로 악마를 만든다면, 오늘 밤 예측불허의 죽음이 찾아옵니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/pithag_e.webp"
+  },
+  "fangGu": {
+    "label": "팡 구",
+    "englishLabel": "Fang Gu",
+    "ability": "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 이 능력으로 사망한 첫 외지인만이 악한 팡 구가 되고 당신이 대신 사망합니다. [외지인 +1명]",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/fanggu_e.webp"
+  },
+  "vigormortis": {
+    "label": "비고르모르티스",
+    "englishLabel": "Vigormortis",
+    "ability": "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 당신이 죽인 하수인은 능력을 유지하며, 그와 가까운 양쪽 이웃 주민 중 1명이 중독됩니다. [외지인 -1명]",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/vigormortis_e.webp"
+  },
+  "noDashii": {
+    "label": "노 다시",
+    "englishLabel": "No Dashii",
+    "ability": "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 당신의 이웃 주민 2명은 중독됩니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/nodashii_e.webp"
+  },
+  "vortox": {
+    "label": "보르톡스",
+    "englishLabel": "Vortox",
+    "ability": "매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 주민의 능력은 거짓 정보만 제공합니다. 매일 낮, 누구도 처형되지 않으면 악한 팀이 승리합니다.",
+    "source": "sectsAndViolets",
+    "image": "assets/characters/snv/vortox_e.webp"
+  }
+}
