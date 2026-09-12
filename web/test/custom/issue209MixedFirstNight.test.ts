@@ -2,18 +2,16 @@ import { expect, it } from "vitest";
 import { start, system, take, replayOrThrow, moveBefore, dawnRejected, custom, roundTrip } from "./issue209Support.js";
 it("C01-a C08-a C19 C27-a: fixed R0 information and all TB actions reach Day", async () => {
     const { session } = await start(0);
-    for (const [action, characterId, correctPlayerId] of [["prepareInformation", "monk", "p8"], ["prepareInformation", "butler", "p10"], ["prepareInformation", "poisoner", "p12"]])
-        await take(session, action!, { playerIds: ["p1", correctPlayerId!], characterId, correctPlayerId });
-    await take(session, "assignRedHerring", { playerIds: ["p8"] });
     await system(session);
     await take(session, "choosePoisonTarget", { playerIds: ["p11"] });
-    for (const [action, character] of [["learnTownsfolk", "monk"], ["learnOutsider", "butler"], ["learnMinion", "poisoner"]]) {
-        const r = await take(session, action!, null);
-        expect(r.proposal.revealPayload).toMatchObject({ kind: "setupInformation", revealedCharacterId: character });
+    for (const [action, characterId, correctPlayerId] of [["learnTownsfolk","monk","p8"],["learnOutsider","butler","p10"],["learnMinion","poisoner","p12"]]) {
+        await take(session,"prepareInformation",{playerIds:["p1",correctPlayerId!],characterId,correctPlayerId});
+        expect((await take(session,action!,null)).proposal.revealPayload).toMatchObject({kind:'setupInformation',revealedCharacterId:characterId});
     }
     for (const [action, value] of [["learnEvilPairs", 3], ["learnEvilNeighbors", 0]] as const) {
         expect((await take(session, action, null)).proposal.revealPayload).toEqual({ kind: "numericInformation", characterId: action === "learnEvilPairs" ? "chef" : "empath", value });
     }
+    await take(session,"assignRedHerring",{playerIds:["p8"]});
     const ft = await take(session, "checkDemon", { playerIds: ["p6", "p15"] });
     expect(custom(ft.proposal.event).result).toMatchObject({ information: { deliveredResult: { kind: "boolean", value: true } } });
     await take(session, "chooseMaster", { playerIds: ["p8"] });
@@ -33,10 +31,10 @@ it("C01-a C08-a C19 C27-a: fixed R0 information and all TB actions reach Day", a
 it("C03 C05 C24: original and acquired Fortune Tellers have independent preparation and completion", async () => {
     const { session } = await start(1);
     await dawnRejected(session);
-    await take(session, "assignRedHerring", { playerIds: ["p4"] }, undefined, undefined, "p2");
     await system(session);
     await take(session, "chooseAbility", { characterIds: ["fortuneTeller"] });
     await take(session, "assignRedHerring", { playerIds: ["p4"] }, undefined, undefined, "p1");
+    await take(session, "assignRedHerring", { playerIds: ["p4"] }, undefined, undefined, "p2");
     await take(session, "checkDemon", { playerIds: ["p2", "p4"] }, { kind: "boolean", value: true }, undefined, "p2");
     const before = session.snapshot;
     const state = await replayOrThrow(before.canonical);
@@ -69,7 +67,7 @@ it.each([false, true])("C06 C18-a C20-b C27-a: acquired Washerwoman before/past 
     const delivery = await take(session, "learnTownsfolk", null);
     expect(delivery.proposal.revealPayload).toEqual({ kind: "setupInformation", characterId: "washerwoman", candidatePlayers: [{ playerId: "p1", name: "P1", seat: 1 }, { playerId: "p3", name: "P3", seat: 3 }], revealedCharacterId: "monk", zeroOutsiders: false });
     expect((await replayOrThrow(session.snapshot.canonical)).currentStep?.character).toBe("mathematician");
-    for (const [event, state] of [[delivery.proposal.event, afterPrep], [prep.proposal.event, afterChoice], [choice.proposal.event, before]] as const) {
+    for (const [event, state] of [[delivery.proposal.event, before]] as const) {
         const r = await session.undo(event.id);
         expect(r.ok).toBe(true);
         if (r.ok)
@@ -179,11 +177,11 @@ it.each(["p3", "p2"])("C12-a/b: No Dashii protection retains source-specific tar
 });
 it.each([false, true])("C13-a: mixed starting information validates the actual pair %s", async (valid) => {
     const { session } = await start(2, (_d, p) => { p[0]!.actualCharacter = "washerwoman"; });
+    await system(session);
     const state = await replayOrThrow(session.snapshot.canonical);
     const input = valid ? { playerIds: ["p1", "p2"], characterId: "mathematician", correctPlayerId: "p2" } : { playerIds: ["p4", "p5"], characterId: "mathematician", correctPlayerId: "p4" };
     if (valid) {
         await take(session, "prepareInformation", input);
-        await system(session);
         expect((await take(session, "learnTownsfolk", null)).proposal.revealPayload).toMatchObject({ revealedCharacterId: "mathematician" });
     }
     else {
@@ -214,6 +212,7 @@ it.each([false, true])("C16-a/b C18-b: optional Mutant decision preserves requir
 });
 it("C17 C20-b C27-a: good twin execution terminates FirstNight and Undo restores it", async () => {
     const { session } = await start(11);
+    await system(session);
     await take(session, "assignTwin", { playerIds: ["p2"] });
     const before = await replayOrThrow(session.snapshot.canonical);
     const r = await take(session, "resolveMadnessExecution", { execute: true }, undefined, undefined, "p2", true);

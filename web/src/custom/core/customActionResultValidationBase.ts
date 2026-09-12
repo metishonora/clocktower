@@ -23,6 +23,7 @@ export function isCustomActionResult(
     case "shownCharacterAssigned": return hasExactKeys(value, ["kind", "characterId"]) && isKnownCharacter(value.characterId);
     case "poisoner": case "butler": return hasExactKeys(value, ["kind", "targetPlayerId", "day", "effective"]) && target && day && effect;
     case "twinInformed": return hasExactKeys(value, ["kind", "relationshipEventId", "targetPlayerId", "effective"]) && textId(value.relationshipEventId) && target && effect;
+    case "mutantJudgment": return hasExactKeys(value,["kind","result"]) && ["clear","violation"].includes(String(value.result));
     case "mutantExecution": return hasExactKeys(value, ["kind", "execute", "executed", "died"]) && [value.execute, value.executed, value.died].every(v => typeof v === "boolean");
     case "informationPrepared": {
       const p = value.preparation;

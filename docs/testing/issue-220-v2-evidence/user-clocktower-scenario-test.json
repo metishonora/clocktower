@@ -1,0 +1,91 @@
+{
+  "type": "clocktower-custom-scenario",
+  "version": 1,
+  "scenario": {
+    "name": "test",
+    "characterIds": [
+      "soldier",
+      "ravenkeeper",
+      "librarian",
+      "virgin",
+      "washerwoman",
+      "monk",
+      "investigator",
+      "mayor",
+      "chef",
+      "undertaker",
+      "fortuneTeller",
+      "juggler",
+      "saint",
+      "recluse",
+      "drunk",
+      "mutant",
+      "baron",
+      "poisoner",
+      "spy",
+      "cerenovus",
+      "noDashii",
+      "imp",
+      "vigormortis",
+      "fangGu"
+    ],
+    "firstNightOrder": [
+      {
+        "kind": "system",
+        "actionId": "dusk"
+      },
+      {
+        "kind": "system",
+        "actionId": "minionInfo"
+      },
+      {
+        "kind": "system",
+        "actionId": "demonInfo"
+      },
+      {
+        "kind": "character",
+        "characterId": "poisoner",
+        "actionId": "choosePoisonTarget"
+      },
+      {
+        "kind": "character",
+        "characterId": "cerenovus",
+        "actionId": "assignMadness"
+      },
+      {
+        "kind": "character",
+        "characterId": "washerwoman",
+        "actionId": "learnTownsfolk"
+      },
+      {
+        "kind": "character",
+        "characterId": "librarian",
+        "actionId": "learnOutsider"
+      },
+      {
+        "kind": "character",
+        "characterId": "investigator",
+        "actionId": "learnMinion"
+      },
+      {
+        "kind": "character",
+        "characterId": "chef",
+        "actionId": "learnEvilPairs"
+      },
+      {
+        "kind": "character",
+        "characterId": "fortuneTeller",
+        "actionId": "checkDemon"
+      },
+      {
+        "kind": "character",
+        "characterId": "spy",
+        "actionId": "inspectGrimoire"
+      },
+      {
+        "kind": "system",
+        "actionId": "dawn"
+      }
+    ]
+  }
+}

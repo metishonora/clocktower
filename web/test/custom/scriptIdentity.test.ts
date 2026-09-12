@@ -96,7 +96,7 @@ function customGameFile(value: CustomScriptDefinition): GameFile {
 
 
 function customReplayState(value: CustomScriptDefinition): ReplayState {
-  return {
+  return {actionExecutions:[],latestUndoUnit:null,
     schemaVersion: 4,
     script: { type: "custom", definition: value },
     eventCount: 0,

@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 4,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "c4d92811-530e-42c9-a247-d98fa4fa99fd",
+        "name": "test0912",
+        "characterIds": [
+          "noDashii",
+          "vortox",
+          "vigormortis",
+          "fangGu",
+          "imp",
+          "baron",
+          "poisoner",
+          "spy",
+          "scarletWoman",
+          "pitHag",
+          "witch",
+          "evilTwin",
+          "cerenovus",
+          "mutant",
+          "sweetheart",
+          "klutz",
+          "barber",
+          "saint",
+          "recluse",
+          "butler",
+          "drunk",
+          "soldier",
+          "virgin",
+          "librarian",
+          "monk",
+          "ravenkeeper",
+          "washerwoman",
+          "mayor",
+          "chef",
+          "undertaker",
+          "slayer",
+          "fortuneTeller",
+          "investigator",
+          "empath",
+          "juggler",
+          "flowergirl",
+          "dreamer",
+          "savant",
+          "mathematician",
+          "snakeCharmer",
+          "clockmaker",
+          "oracle",
+          "seamstress",
+          "townCrier",
+          "sage",
+          "philosopher",
+          "artist"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "evilTwin",
+            "actionId": "learnTwin"
+          },
+          {
+            "kind": "character",
+            "characterId": "witch",
+            "actionId": "chooseCursedPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "371a2c17-17c6-4ddd-b020-27c26863553c",
+    "name": "test0912",
+    "createdAt": "2026-09-12T06:27:27.478Z",
+    "updatedAt": "2026-09-12T06:27:27.489Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "ravenkeeper",
+              "shownCharacter": "ravenkeeper"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "mayor",
+              "shownCharacter": "mayor"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "klutz",
+              "shownCharacter": "klutz"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "soldier",
+              "shownCharacter": "soldier"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "undertaker",
+              "shownCharacter": "undertaker"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
+              "actualCharacter": "chef",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "player-11",
+              "seat": 11,
+              "name": "플레이어 11",
+              "actualCharacter": "noDashii",
+              "shownCharacter": "noDashii"
+            },
+            {
+              "id": "player-12",
+              "seat": 12,
+              "name": "플레이어 12",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "player-13",
+              "seat": 13,
+              "name": "플레이어 13",
+              "actualCharacter": "scarletWoman",
+              "shownCharacter": "scarletWoman"
+            },
+            {
+              "id": "player-14",
+              "seat": 14,
+              "name": "플레이어 14",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "player-15",
+              "seat": 15,
+              "name": "플레이어 15",
+              "actualCharacter": "librarian",
+              "shownCharacter": "librarian"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-12T06:27:27.478Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-09-12T06:27:52.932Z"
+}

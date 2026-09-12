@@ -1,3 +1,7 @@
+import {SnvInformationRevealContent} from './shared-ui/SnvInformationRevealContent';
+import {AbilityChoiceControls} from './shared-ui/AbilityChoiceControls';
+import { CharacterAbilityInput } from './shared-ui/InformationInputPresentation';
+import { EventHistoryList } from './shared-ui/EventHistoryList';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { ProductionApplicationShell } from "./shared-ui/ProductionApplicationShell";
 import type { CoreAdapter } from "./core/coreAdapter";
@@ -2650,19 +2654,7 @@ export function SectsAndVioletsGameSurface({
             <h2>계속 진행</h2>
             <button type="button" disabled={storageLoading || operationBusy} onClick={() => importInputRef.current?.click()}>import JSON</button>
           </article>
-          <section className="snvEventLog" aria-label="이벤트 로그">
-            <header><h2>이벤트 로그</h2><strong>{gameFile.game.events.length}건</strong></header>
-            {gameFile.game.events.length ? (
-              <ol className="snvScrollableEventList" aria-label="확정 이벤트 최신순" tabIndex={0}>
-                {[...gameFile.game.events].reverse().map((event, index) => (
-                  <li key={event.id}>
-                    <span>{String(gameFile.game.events.length - index).padStart(2, "0")}</span>
-                    <p>{event.summary}</p>
-                  </li>
-                ))}
-              </ol>
-            ) : <p className="snvEmptyEventLog">확정된 이벤트가 없습니다.</p>}
-          </section>
+          <EventHistoryList events={gameFile.game.events}/>
         </section>
       )}
       {production
@@ -2858,30 +2850,8 @@ function automatedInformationRevealPayload(
     : undefined;
 }
 
-export function ProductionInformationRevealContent({ payload }: { payload: InformationCheckpoint["revealPayload"] }) {
-  if (payload.kind === "dreamerInformation") {
-    return <><span>꿈꾸는 자</span><p className="snvInformationRevealLabel">이 자는…</p><div className="snvTargetedRevealPair">{payload.characterIds.map((id, index) => <Fragment key={id}>{index ? <b>또는</b> : null}<RevealCharacterCard characterId={id} /></Fragment>)}</div></>;
-  }
-  if (payload.kind === "seamstressInformation") {
-    return <><span>재봉사</span><p className="snvInformationRevealLabel">{payload.targetPlayers.map((player) => `${player.seat}번 ${player.name}`).join(" · ")}</p><strong className="snvInformationRevealValue snvSeamstressRevealValue">{payload.sameAlignment ? "같은 진영" : "다른 진영"}</strong></>;
-  }
-  if (payload.kind === "sageInformation") {
-    return <><span>현자</span><p className="snvInformationRevealLabel">당신을 죽인 악마는…</p><div className="snvTargetedRevealPair snvPlayerRevealPair">{payload.candidatePlayers.map((player, index) => <Fragment key={player.playerId}>{index ? <b>또는</b> : null}<div className="snvRevealPlayerCard"><span>{player.seat}</span><strong>{player.name}</strong></div></Fragment>)}</div></>;
-  }
-  const characterId = automatedInformationCharacterId(payload);
-  const asset = sectsAndVioletsCharacterAsset(characterId);
-  return <>
-    {asset?.src ? <img src={asset.src} alt={`${characters.find((character) => character.id === characterId)?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}
-    <span>{characters.find((character) => character.id === characterId)?.name}</span>
-    <p className="snvInformationRevealLabel">{scalarInformationLabel(payload.characterId)}</p>
-    <strong className="snvInformationRevealValue">{scalarInformationValueLabel(payload.characterId, payload.value)}</strong>
-  </>;
-}
-
-function RevealCharacterCard({ characterId }: { characterId: string }) {
-  const character = characters.find((candidate) => candidate.id === characterId);
-  const asset = sectsAndVioletsCharacterAsset(characterId);
-  return <div className="snvRevealCharacterCard">{asset ? <img src={asset.src} alt={`${character?.name ?? characterId} 공식 캐릭터 아이콘`} /> : null}<strong>{character?.name ?? characterId}</strong></div>;
+export function ProductionInformationRevealContent({payload}:{payload:InformationCheckpoint['revealPayload']}) {
+ return <SnvInformationRevealContent payload={payload} label={id=>characters.find(c=>c.id===id)?.name ?? id} icon={id=>{const asset=sectsAndVioletsCharacterAsset(id);return asset?<img src={asset.src} alt={`${characters.find(c=>c.id===id)?.name ?? id} 공식 캐릭터 아이콘`}/>:null;}}/>;
 }
 
 function PhilosopherAbilityTask({
@@ -2919,17 +2889,8 @@ function PhilosopherAbilityTask({
       </div>
     </CharacterDetailButton>
     <p className="snvInformationAbility">{philosopher.ability}</p>
-    <label className="issue107AbilitySelect">
-      <span>능력</span>
-      <select aria-label="얻을 선한 캐릭터 능력" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)}>
-        <option value="">선택</option>
-        {characters.filter((character) => allowed.has(character.id)).map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}
-      </select>
-    </label>
-    <div className="snvStepActions">
-      <button type="button" disabled={busy || !value} onClick={onConfirm}>선택 확정</button>
-      <button type="button" className="secondary" disabled={busy} onClick={onDefer}>이번 밤 보류</button>
-    </div>
+    <AbilityChoiceControls value={value} options={characters.filter(c=>allowed.has(c.id)).map(c=>({id:c.id,label:c.name}))} busy={busy} onChange={onChange} onConfirm={onConfirm} onDefer={onDefer}/>
+
   </article>;
 }
 

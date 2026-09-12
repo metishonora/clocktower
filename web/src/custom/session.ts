@@ -10,6 +10,8 @@ import type {
   Command,
   CoreResult,
   CustomScriptDefinition,
+  Proposal,
+  GameFileV4,
 } from "./core/types.js";
 import {
   CoalescingCustomSessionAutosaveQueue,
@@ -103,6 +105,30 @@ export class CustomCanonicalSession<SetupDraft, Presentation> {
         options.storage,
       ),
     };
+  }
+
+  static async fromFile<S, P>(file: GameFileV4, options: CustomCanonicalSessionLoadOptions<S, P> & { setupDraft: S; presentation: P }): Promise<CoreResult<CustomCanonicalSession<S, P>>> {
+    const controller = new CanonicalSessionController(file.game.script, options.core);
+    const replay = await controller.replay(file);
+    if (!replay.ok) return replay;
+    return { ok: true, value: new CustomCanonicalSession(createCustomWebSessionSnapshot(file, options.setupDraft, options.presentation), replay.value, controller, options.storage) };
+  }
+
+  get replay(): CanonicalReplaySnapshot | undefined { return this.replayState ? structuredClone(this.replayState) : undefined; }
+  retrySave = () => this.autosave.enqueue(this.currentSnapshot);
+  propose(command: Command) { return this.controller.propose(this.currentSnapshot.canonical, this.replayState, command); }
+  async applyProposal(proposal: Proposal, expectedCanonical: GameFileV4): Promise<CoreResult<CustomCanonicalExecution>> {
+    if (JSON.stringify(this.currentSnapshot.canonical) !== JSON.stringify(expectedCanonical)) {
+      return { ok: false, error: { code: 'STALE_COMMAND', messageKo: '진행이 변경되었습니다. 다시 선택하세요.' } };
+    }
+    const applied = await this.controller.apply(this.currentSnapshot.canonical, this.replayState, proposal.event);
+    if (!applied.ok) return applied;
+    // Recheck after the asynchronous replay, before committing the candidate.
+    if (JSON.stringify(this.currentSnapshot.canonical) !== JSON.stringify(expectedCanonical)) {
+      return { ok: false, error: { code: 'STALE_COMMAND', messageKo: '진행이 변경되었습니다. 다시 선택하세요.' } };
+    }
+    this.commitCanonical(applied.value.gameFile, applied.value.replayState);
+    return { ok: true, value: { ...applied.value, proposal, autosave: this.retrySave() } };
   }
 
   static async recoverWithNewGame<SetupDraft, Presentation>(

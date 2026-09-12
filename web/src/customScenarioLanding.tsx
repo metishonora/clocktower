@@ -1,10 +1,11 @@
+import { activeCustomSessionId, forgetCustomSessionNavigation } from './custom/grimoire/browserSessionNavigation.js';
 import { Component, Suspense, lazy, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScriptLanding } from './features/script-selection/ScriptLanding';
 import logo from './assets/prototypes/issue-200/custom-scenario-logo-v1.png';
 import './customScenarioLanding.css';
 const Editor = lazy(async () => {
-  const module = await import('./custom/authoring/CustomScenarioEditor.js');
-  return { default: module.CustomScenarioEditor };
+  const module = await import('./grimoire-custom/CustomGrimoireApplication.js');
+  return { default: module.CustomGrimoireApplication };
 });
 class EditorBoundary extends Component<{ children: ReactNode; onExit: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -15,15 +16,15 @@ class EditorBoundary extends Component<{ children: ReactNode; onExit: () => void
   }
 }
 export function CustomScenarioLanding() {
-  const [phase, setPhase] = useState<'landing' | 'transition' | 'editor'>('landing');
+  const [phase, setPhase] = useState<'landing' | 'transition' | 'editor'>(() => activeCustomSessionId() ? 'editor' : 'landing');
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   useEffect(() => {
     if (phase !== 'transition') return;
     const timer = window.setTimeout(() => setPhase('editor'), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 820);
     return () => window.clearTimeout(timer);
   }, [phase]);
-  if (phase === 'editor') return <EditorBoundary onExit={() => setPhase('landing')}><Suspense fallback={<div className="scenarioLoadStatus" role="status">시나리오를 열고 있습니다.</div>}>
-    <Editor onExit={() => setPhase('landing')} />
+  if (phase === 'editor') return <EditorBoundary onExit={() => { forgetCustomSessionNavigation(); setPhase('landing'); }}><Suspense fallback={<div className="scenarioLoadStatus" role="status">시나리오를 열고 있습니다.</div>}>
+    <Editor onExit={() => { forgetCustomSessionNavigation(); setPhase('landing'); }} />
   </Suspense></EditorBoundary>;
   return <div className="customScenarioLanding">
     <div inert={phase === 'transition'}><ScriptLanding additionalChoice={<button type="button" className="officialScriptChoice customScenarioChoice" aria-label="Custom Scenario 선택"

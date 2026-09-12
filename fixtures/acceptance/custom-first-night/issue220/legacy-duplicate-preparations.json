@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 4,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "220-q-user",
+        "name": "test",
+        "characterIds": [
+          "soldier",
+          "ravenkeeper",
+          "librarian",
+          "virgin",
+          "washerwoman",
+          "monk",
+          "investigator",
+          "mayor",
+          "chef",
+          "undertaker",
+          "fortuneTeller",
+          "juggler",
+          "saint",
+          "recluse",
+          "drunk",
+          "mutant",
+          "baron",
+          "poisoner",
+          "spy",
+          "cerenovus",
+          "noDashii",
+          "imp",
+          "vigormortis",
+          "fangGu"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "220-q",
+    "name": "test",
+    "createdAt": "2026-09-11T00:00:00.000Z",
+    "updatedAt": "2026-09-11T07:09:30.196Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "seat": 1,
+              "name": "P1",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "p2",
+              "seat": 2,
+              "name": "P2",
+              "actualCharacter": "librarian",
+              "shownCharacter": "librarian"
+            },
+            {
+              "id": "p3",
+              "seat": 3,
+              "name": "P3",
+              "actualCharacter": "investigator",
+              "shownCharacter": "investigator"
+            },
+            {
+              "id": "p4",
+              "seat": 4,
+              "name": "P4",
+              "actualCharacter": "chef",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "p5",
+              "seat": 5,
+              "name": "P5",
+              "actualCharacter": "fortuneTeller",
+              "shownCharacter": "fortuneTeller"
+            },
+            {
+              "id": "p6",
+              "seat": 6,
+              "name": "P6",
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
+            },
+            {
+              "id": "p7",
+              "seat": 7,
+              "name": "P7",
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
+            },
+            {
+              "id": "p8",
+              "seat": 8,
+              "name": "P8",
+              "actualCharacter": "mayor",
+              "shownCharacter": "mayor"
+            },
+            {
+              "id": "p9",
+              "seat": 9,
+              "name": "P9",
+              "actualCharacter": "soldier",
+              "shownCharacter": "soldier"
+            },
+            {
+              "id": "p10",
+              "seat": 10,
+              "name": "P10",
+              "actualCharacter": "recluse",
+              "shownCharacter": "recluse"
+            },
+            {
+              "id": "p11",
+              "seat": 11,
+              "name": "P11",
+              "actualCharacter": "drunk",
+              "shownCharacter": "librarian"
+            },
+            {
+              "id": "p12",
+              "seat": 12,
+              "name": "P12",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "p13",
+              "seat": 13,
+              "name": "P13",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "p14",
+              "seat": 14,
+              "name": "P14",
+              "actualCharacter": "cerenovus",
+              "shownCharacter": "cerenovus"
+            },
+            {
+              "id": "p15",
+              "seat": 15,
+              "name": "P15",
+              "actualCharacter": "imp",
+              "shownCharacter": "imp"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-11T00:00:00.000Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-11T07:09:29.960Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "ravenkeeper",
+              "undertaker",
+              "juggler"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-11T07:09:30.002Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:librarian:prepareInformation:owner2:p2:instance8:setup:p2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "p2",
+            "characterId": "librarian",
+            "abilityInstanceId": "setup:p2"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "correctPlayerId": "p10",
+            "playerIds": [
+              "p10",
+              "p8"
+            ],
+            "characterId": "recluse"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p10",
+                  "p8"
+                ],
+                "characterId": "recluse",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p10"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:librarian:prepareInformation:owner2:p2:instance8:setup:p2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-11T07:09:30.031Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:librarian:prepareInformation:simulation5:setup3:p119:setup:p11:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "prepareInformation"
+          },
+          "simulationSource": {
+            "guidance": {
+              "kind": "initialDrunk"
+            },
+            "selectionEventId": "setup",
+            "sourceAbilityUse": {
+              "ownerPlayerId": "p11",
+              "characterId": "drunk",
+              "abilityInstanceId": "setup:p11"
+            }
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "correctPlayerId": "p1",
+            "playerIds": [
+              "p1",
+              "p4"
+            ],
+            "characterId": "saint"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "p1",
+                  "p4"
+                ],
+                "characterId": "saint",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": "p1"
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:librarian:prepareInformation:simulation5:setup3:p119:setup:p11:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-11T07:09:30.095Z"
+      }
+    ]
+  }
+}

@@ -21,6 +21,7 @@ pub(crate) struct NightScheduler<'a> {
     plan: &'a FirstNightOrderPlan,
     registry: &'a ActionRegistry,
     activation: &'a dyn ActivationRule,
+    legacy_initial: bool,
 }
 
 impl<'a> NightScheduler<'a> {
@@ -33,7 +34,37 @@ impl<'a> NightScheduler<'a> {
             plan,
             registry,
             activation,
+            legacy_initial: false,
         }
+    }
+
+    /// Replay-only admission of the old setup-preparation prefix. New proposals never use it.
+    pub(crate) fn with_legacy_initial(mut self) -> Self {
+        self.legacy_initial = true;
+        self
+    }
+
+    pub(crate) fn legacy_initial_candidate(
+        &self,
+        context: &ActionContext<'_>,
+        progress: &SchedulerProgress,
+    ) -> Result<Option<ActionOccurrence>, CoreError> {
+        if !progress.completed_history.iter().all(|entry| is_setup_preparation(&entry.occurrence)) {
+            return Ok(None);
+        }
+        Ok(self.registry.additional_candidates(self.plan, context, progress, false)?
+            .into_iter().next().filter(is_setup_preparation))
+    }
+
+    /// Older logs prepared every owner at an entry before any owner disclosed.
+    /// Replay may admit only the next such preparation at the same configured entry.
+    pub(crate) fn legacy_ordered_preparation_candidate(
+        &self, context: &ActionContext<'_>, progress: &SchedulerProgress,
+    ) -> Result<Option<ActionOccurrence>, CoreError> {
+        let Some(action) = self.plan.0.get(progress.cursor) else { return Ok(None); };
+        Ok(self.registry.additional_candidates(self.plan, context, progress, false)?
+            .into_iter().find(|o| is_setup_preparation(o)
+                && self.registry.linked_action(&o.action_ref).as_ref() == Some(action)))
     }
 
     /// Calculate initial progress from the current facts.  Dusk and every empty entry are
@@ -43,7 +74,7 @@ impl<'a> NightScheduler<'a> {
         context: &ActionContext<'_>,
     ) -> Result<SchedulerProgress, CoreError> {
         let mut progress = SchedulerProgress::default();
-        normalize_progress(self.plan, self.registry, context, &mut progress)?;
+        normalize_progress(self.plan, self.registry, context, &mut progress, false)?;
         Ok(progress)
     }
 
@@ -77,7 +108,7 @@ impl<'a> NightScheduler<'a> {
 
         let mut next = previous.clone();
         dedupe_immediate_queue(&mut next);
-        normalize_progress(self.plan, self.registry, previous_context, &mut next)?;
+        normalize_progress(self.plan, self.registry, previous_context, &mut next, self.legacy_initial)?;
         let occurrence = event.occurrence()?;
         let is_immediate = next
             .immediate_queue
@@ -176,7 +207,7 @@ impl<'a> NightScheduler<'a> {
         // suppressed.  Run the same projection-based cleanup after admission so stale queue rows
         // do not survive merely because ownership exists in the common rule service.
         retain_live_immediate_queue(&mut next, self.registry, next_context)?;
-        normalize_progress(self.plan, self.registry, next_context, &mut next)?;
+        normalize_progress(self.plan, self.registry, next_context, &mut next, false)?;
         Ok(next)
     }
 }
@@ -260,14 +291,16 @@ pub(crate) fn project_pending_steps(
     let mut normalized = progress.clone();
     dedupe_immediate_queue(&mut normalized);
     retain_live_immediate_queue(&mut normalized, registry, context)?;
-    normalize_progress(plan, registry, context, &mut normalized)?;
+    normalize_progress(plan, registry, context, &mut normalized, false)?;
 
+    let pending_preparations = registry.additional_candidates(plan, context, &normalized, false)?;
     let mut projected = Vec::new();
     let mut seen = Vec::new();
     for occurrence in normalized
         .required_queue
         .iter()
         .chain(&normalized.immediate_queue)
+        .chain(&pending_preparations)
     {
         if normalized.is_terminal(occurrence)
             || seen
@@ -326,11 +359,17 @@ fn occurrence_from_step(step: &PhaseStep) -> Result<ActionOccurrence, CoreError>
     ActionOccurrence::from_step(step)
 }
 
+fn is_setup_preparation(occurrence: &ActionOccurrence) -> bool {
+    matches!(&occurrence.action_cause,
+        Some(crate::contracts::ActionCause::InitialPreparation { source_event_id }) if source_event_id == "setup")
+}
+
 fn normalize_progress(
     plan: &FirstNightOrderPlan,
     registry: &ActionRegistry,
     context: &ActionContext<'_>,
     progress: &mut SchedulerProgress,
+    legacy_initial: bool,
 ) -> Result<(), CoreError> {
     if progress.ended
         || context
@@ -344,7 +383,8 @@ fn normalize_progress(
         progress.available_occurrences.clear();
         return Ok(());
     }
-    progress.required_queue = registry.additional_candidates(plan, context, progress, false)?;
+    let required = registry.additional_candidates(plan, context, progress, false)?;
+    progress.required_queue = required.iter().filter(|o| legacy_initial || !is_setup_preparation(o)).cloned().collect();
     progress.available_occurrences = if progress.required_queue.is_empty() {
         registry.additional_candidates(plan, context, progress, true)?
     } else {
@@ -365,6 +405,17 @@ fn normalize_progress(
             progress.cursor += 1;
             progress.current_occurrences.clear();
             continue;
+        }
+        let first_owner = project_occurrences(action_ref, registry, context)?.into_iter()
+            .find(|o| !progress.is_terminal(o) && !progress.immediate_queue.iter().any(|q| q.identity() == o.identity()));
+        progress.required_queue = required.iter().filter(|o| {
+            is_setup_preparation(o) && registry.linked_action(&o.action_ref).as_ref() == Some(action_ref)
+                && first_owner.as_ref().is_none_or(|owner| owner.source() == o.source())
+        }).cloned().collect();
+        if !progress.required_queue.is_empty() {
+            progress.available_occurrences.clear();
+            progress.current_occurrences.clear();
+            return Ok(());
         }
         let projected = project_occurrences(action_ref, registry, context)?;
         let queued = &progress.immediate_queue;
@@ -660,6 +711,7 @@ fn admit_new_instances(
         match decision {
             ActivationDecision::RunImmediately => {
                 if !progress.ended {
+                    progress.immediate_origins.push((candidate.occurrence.identity(), event.event_id().to_string()));
                     progress.immediate_queue.push(candidate.occurrence);
                 }
             }
@@ -754,11 +806,18 @@ fn occurrence_ability_key(occurrence: &ActionOccurrence) -> (&str, &str) {
 
 pub(super) fn sort_additional_occurrences(
     plan: &FirstNightOrderPlan,
+    registry: &ActionRegistry,
     context: &ActionContext<'_>,
     occurrences: &mut [ActionOccurrence],
 ) {
     let index = |o: &ActionOccurrence| {
-        super::catalog::linked_action(&o.action_ref)
+        registry.linked_action(&o.action_ref)
+            .or_else(|| {
+                let facts=context.rule_service.facts()?;
+                let origin=o.ability_use.as_ref().and_then(|source|crate::reducer::recorded_ability(facts,source)).map(|ability|&ability.origin);
+                let event_id=match origin {Some(AbilityOrigin::Acquired {acquisition_event_id,..})=>Some(acquisition_event_id.as_str()),_=>o.simulation_source.as_ref().map(|source|source.selection_event_id.as_str())}?;
+                facts.confirmed_actions.iter().find(|action|action.event_id==event_id).map(|action|action.occurrence.action_ref.clone())
+            })
             .and_then(|a| plan.0.iter().position(|p| *p == a))
             .unwrap_or(plan.0.len())
     };

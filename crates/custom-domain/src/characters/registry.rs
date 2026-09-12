@@ -44,20 +44,17 @@ impl ResolvedScriptContext {
             .collect()
     }
 
-    pub(crate) fn setup_outsider_delta(&self, actual_characters: &[String]) -> i32 {
-        let active = actual_characters
-            .iter()
-            .map(String::as_str)
-            .collect::<HashSet<_>>();
-        self.entries
-            .iter()
-            .filter(|entry| active.contains(entry.id))
-            .map(|entry| {
-                i32::from(trouble_brewing::custom_setup_outsider_delta(entry.id))
-                    + i32::from(sects_and_violets::custom_setup_outsider_delta(entry.id))
+    pub(crate) fn setup_modifiers(&self, actual_characters: &[String]) -> Vec<crate::contracts::SetupModifier> {
+        let active = actual_characters.iter().map(String::as_str).collect::<HashSet<_>>();
+        self.entries.iter().filter(|entry| active.contains(entry.id)).filter_map(|entry| {
+            let amount = i32::from(trouble_brewing::custom_setup_outsider_delta(entry.id))
+                + i32::from(sects_and_violets::custom_setup_outsider_delta(entry.id));
+            (amount != 0).then(|| crate::contracts::SetupModifier {
+                character_id: entry.id.to_owned(), delta: crate::contracts::SetupCountDelta::outsider(amount)
             })
-            .sum()
+        }).collect()
     }
+
 }
 
 #[allow(dead_code)]

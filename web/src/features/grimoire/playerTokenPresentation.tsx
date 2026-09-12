@@ -231,7 +231,7 @@ export function PlayerTokenDetailDialog({
             className="playerTokenCharacterIdentityButton"
             theme={appearance === "tb"
               ? (theme === "day" ? "tb-day" : "tb-night")
-              : (theme === "day" ? "snv-day" : "snv-night")}
+              : appearance === "bmr" ? (theme === "day" ? "bmr-day" : "bmr-night") : (theme === "day" ? "snv-day" : "snv-night")}
             onOpenChange={setCharacterDetailOpen}
           >{characterIdentity}</CharacterDetailButton> : <div
             className="playerTokenCharacterIdentityButton"

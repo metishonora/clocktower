@@ -24,6 +24,7 @@ export type CanonicalStreamIdentity = {
   script: ScriptReference;
   gameId: string;
   eventIds: string[];
+  eventsFingerprint: string;
 };
 
 export type CanonicalReplaySnapshot = ReplayState & {
@@ -180,7 +181,7 @@ export class CanonicalSessionController {
     if (!replayMatches(gameFile, replayState)) {
       return failure("STALE_REPLAY", "게임 상태 복원이 끝난 뒤 다시 시도해 주세요.");
     }
-    const removal = removeLatestCanonicalUndoUnit(gameFile, expectedUnitId);
+    const removal = removeLatestCanonicalUndoUnit(gameFile, expectedUnitId, replayState);
     if (!removal) {
       return failure("STALE_UNDO", "최근 행동이 변경되어 되돌리지 않았습니다.");
     }
@@ -207,6 +208,7 @@ export function replayMatches(
   const expected = streamIdentity(gameFile);
   return sameScriptReference(replayState.stream.script, expected.script)
     && replayState.stream.gameId === expected.gameId
+    && replayState.stream.eventsFingerprint === expected.eventsFingerprint
     && replayState.stream.eventIds.length === expected.eventIds.length
     && replayState.stream.eventIds.every((id, index) => id === expected.eventIds[index]);
 }
@@ -216,6 +218,7 @@ function streamIdentity(gameFile: GameFile): CanonicalStreamIdentity {
     script: cloneScriptReference(gameFile.game.script),
     gameId: gameFile.game.id,
     eventIds: gameFile.game.events.map(({ id }) => id),
+    eventsFingerprint: JSON.stringify(gameFile.game.events),
   };
 }
 

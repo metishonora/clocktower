@@ -14,5 +14,5 @@ fn assignment_is_not_a_player_reveal_and_old_combined_event_cannot_replace_it() 
     let rejected: serde_json::Value =
         serde_json::from_str(&crate::replay_json(&forged.to_string())).unwrap();
     assert_eq!(rejected["ok"], false);
-    assert_eq!(game["game"]["events"].as_array().unwrap().len(), 1);
+    assert_eq!(game["game"]["events"].as_array().unwrap().len(), 3);
 }

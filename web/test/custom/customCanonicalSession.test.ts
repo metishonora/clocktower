@@ -1,3 +1,4 @@
+import {unmodifiedDistribution} from './setupDistributionFixture';
 import { createTestCustomScriptRepository } from "./repositorySupport.js";
 import { deepEqual, equal, ok } from "node:assert/strict";
 import { test } from "vitest";
@@ -272,17 +273,20 @@ function adapter(
       return { ok: true, value: { event, warnings: [], followUpSteps: [], preview: {} } };
     },
     async setupDistribution() {
-      return { ok: true, value: { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 } };
+      return { ok: true, value: unmodifiedDistribution({ Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 }) };
     },
     setupDistributionSync() {
-      return { ok: true, value: { Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 } };
+      return { ok: true, value: unmodifiedDistribution({ Townsfolk: 0, Outsider: 0, Minion: 0, Demon: 0 }) };
     },
   };
 }
 
 function replayState(gameFile: GameFile, definition: CustomScriptDefinition): ReplayState {
   ok(gameFile.schemaVersion === 4 && gameFile.game.script.type === "custom");
+  const event=gameFile.game.events.at(-1),id=event&&event.type!=='setupConfirmed'?event.id:undefined;
   return {
+    actionExecutions:id?[{id,rootStepId:id,displayStepId:id,stepIds:[id],eventIds:[id],status:'complete'}]:[],
+    latestUndoUnit:id?{id,executionId:id,eventIds:[id],summaryStepId:id}:null,
     schemaVersion: 4,
     script: { type: "custom", definition },
     eventCount: gameFile.game.events.length,

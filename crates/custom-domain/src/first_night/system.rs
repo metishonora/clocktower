@@ -165,6 +165,8 @@ pub(super) fn registrations() -> Vec<RegisteredAction> {
             let action_ref = FirstNightActionRef::System { action_id };
             RegisteredAction {
                 spec: ActionSpec {
+                    prerequisites: vec![],
+                    continuation_sources: vec![],
                     action_ref: action_ref.clone(),
                     participates_in_first_night: true,
                     required_input_kind,

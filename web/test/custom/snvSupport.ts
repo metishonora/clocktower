@@ -21,19 +21,24 @@ export const definition: CustomScriptDefinition = {
     { kind: "system", actionId: "dawn" },
   ],
 };
+const initialTwinTargets=new WeakMap<CustomCanonicalSession<unknown,unknown>,string>();
 export async function createSession(roster: string[], script = definition, initialTwinTarget = "p1") {
   const players: SetupPlayerInput[] = roster.map((actualCharacter, i) => ({ id: `p${i + 1}`, seat: i + 1, name: `P${i + 1}`, actualCharacter }));
   const storage = new IndexedDbCustomWebSessionStorageDriver(script.id, new IDBFactory());
   const session = CustomCanonicalSession.create({ definition: script, core: realWasmCore(), storage, setupDraft: { players }, presentation: { activeTab: "play" }, gameId: script.id, now: new Date("2026-09-08T00:00:00.000Z") });
   const setup = await session.confirmSetup({ type: "createGame", payload: { players } });
   if (!setup.ok) throw new Error(`${setup.error.code}: ${setup.error.messageKo}`);
-  if (roster.includes("evilTwin")) await take(session, "evilTwin", { playerIds: [initialTwinTarget] });
+  initialTwinTargets.set(session,initialTwinTarget);
   await take(session, "minionInfo", null);
   await take(session, "demonInfo", { characterIds: ["soldier", "mayor", "virgin"] });
   return { session, storage };
 }
 export async function take(session: CustomCanonicalSession<unknown, unknown>, expected: string, input: PhaseStepInput, deliveredResult?: InformationResult, registrationJudgments?: RegistrationJudgment[]) {
-  const state = await replayOrThrow(session.snapshot.canonical);
+  let state = await replayOrThrow(session.snapshot.canonical);
+  if(expected==='evilTwin'&&input===null&&state.currentStep?.actionRef?.actionId==='assignTwin') {
+    await take(session,'evilTwin',{playerIds:[initialTwinTargets.get(session) ?? 'p1']});
+    state=await replayOrThrow(session.snapshot.canonical);
+  }
   const step = state.currentStep;
   if (!step) throw new Error(`Expected ${expected}, no step`);
   expect(step.character ?? step.actionRef?.actionId).toBe(expected);

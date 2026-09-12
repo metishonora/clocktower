@@ -19,6 +19,8 @@ use super::system;
 /// the required input and result kinds; the registry owns shared identity and registration checks.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ActionSpec {
+    pub(crate) prerequisites: Vec<FirstNightActionRef>,
+    pub(crate) continuation_sources: Vec<super::execution::DependencySource>,
     pub(crate) action_ref: FirstNightActionRef,
     pub(crate) participates_in_first_night: bool,
     pub(crate) required_input_kind: RequiredInputKind,
@@ -337,6 +339,16 @@ pub(crate) trait ActionHandler {
         Ok(vec![])
     }
 
+    /// Character-owned resolution of the persisted source, independent of presentation order.
+    fn dependency_event(&self, _context: &ActionContext<'_>, occurrence: &ActionOccurrence) -> Result<Option<String>, CoreError> {
+        Ok(match &occurrence.action_cause {
+            Some(crate::contracts::ActionCause::Delivery { preparation_event_id }) => Some(preparation_event_id.clone()),
+            _ => None,
+        })
+    }
+    /// Preview the consumer while its declared prerequisite is pending. This is overview-only;
+    /// scheduler eligibility and command validation still require the prepared facts.
+    fn pending_after_prerequisite(&self, _context: &ActionContext<'_>, _predecessor: &ActionOccurrence) -> Result<Option<PhaseStep>, CoreError> { Ok(None) }
     fn permits_defer(&self) -> bool {
         false
     }
@@ -349,6 +361,9 @@ pub(crate) trait ActionHandler {
         spec: &ActionSpec,
         context: &ActionContext<'_>,
     ) -> Result<Vec<PhaseStep>, CoreError>;
+    /// Expensive legal editor choices are needed only for selectable tasks, not order rows.
+    fn enrich_input(&self, _context: &ActionContext<'_>, _occurrence: &ActionOccurrence,
+        _step: &mut PhaseStep) -> Result<(), CoreError> { Ok(()) }
     fn propose(
         &self,
         spec: &ActionSpec,
@@ -471,7 +486,7 @@ impl ActionRegistry {
                 }
             }
         }
-        super::runtime::sort_additional_occurrences(plan, context, &mut candidates);
+        super::runtime::sort_additional_occurrences(plan, self, context, &mut candidates);
         Ok(candidates)
     }
 
@@ -481,6 +496,17 @@ impl ActionRegistry {
         };
         for entry in entries {
             registry.register(entry)?;
+        }
+        for entry in registry.entries.values() {
+            let kinds=entry.spec.continuation_sources.iter().filter(|source| **source!=super::execution::DependencySource::ImmediateOrigin).count();
+            if (!entry.spec.prerequisites.is_empty()&&kinds!=1)||entry.spec.prerequisites.len()>1 {
+                return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+            }
+            for parent in &entry.spec.prerequisites {
+                if *parent == entry.spec.action_ref || !registry.entries.contains_key(parent) || registry.entries.values().filter(|e|e.spec.prerequisites.contains(parent)).count()!=1 {
+                    return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+                }
+            }
         }
         Ok(registry)
     }
@@ -533,6 +559,23 @@ impl ActionRegistry {
             .ok_or_else(|| ErrorKind::FirstNightActionHandlerUnavailable.into_error())
     }
 
+    /// Scheduling placement comes from the consumer's declaration, never a second pair table.
+    pub(crate) fn linked_action(&self, action: &FirstNightActionRef) -> Option<FirstNightActionRef> {
+        self.entries.values().find(|entry| entry.spec.prerequisites.contains(action))
+            .map(|entry| entry.spec.action_ref.clone())
+            .or_else(|| self.entries.get(action).filter(|e| e.spec.participates_in_first_night).map(|_| action.clone()))
+    }
+
+    pub(crate) fn pending_consumer(&self, context:&ActionContext<'_>, predecessor:&ActionOccurrence) -> Result<Option<PhaseStep>,CoreError> {
+        let consumers:Vec<_>=self.entries.values().filter(|e|e.spec.prerequisites.contains(&predecessor.action_ref)).collect();
+        if consumers.len()>1 {return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());}
+        match consumers.first() {
+            Some(entry)=>{
+                if let Some(step)=entry.handler.pending_after_prerequisite(context,predecessor)? {return Ok(Some(step));}
+                Ok(entry.handler.project(&entry.spec,context)?.into_iter().find(|step| ActionOccurrence::from_step(step).is_ok_and(|consumer|consumer.source()==predecessor.source())))
+            },None=>Ok(None)
+        }
+    }
     /// Propose a draft and immediately run the same common plus action-specific validation that
     /// replay uses. This keeps a handler from returning a draft that could never be confirmed.
     pub(crate) fn propose(
@@ -598,6 +641,12 @@ impl ActionRegistry {
         input: &StepInput,
         players: &[crate::model::Player],
     ) -> Result<(), CoreError> {
+        if input.as_ref().is_some_and(|fields| fields.madness_check.is_some())
+            && !matches!(&occurrence.action_ref, FirstNightActionRef::Character { character_id, action_id }
+                if character_id == "mutant" && action_id == "resolveMadnessExecution")
+        {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
         if input.is_none() && self.lookup(&occurrence.action_ref)?.handler.permits_defer() {
             return Ok(());
         }
@@ -644,6 +693,11 @@ impl ActionRegistry {
             }
         }
         Ok(step)
+    }
+
+    pub(crate) fn enrich_input(&self, context: &ActionContext<'_>, occurrence: &ActionOccurrence,
+        step: &mut PhaseStep) -> Result<(), CoreError> {
+        self.lookup(&occurrence.action_ref)?.handler.enrich_input(context, occurrence, step)
     }
 
     /// Validate a persisted event against the preceding occurrence. The returned custom event is

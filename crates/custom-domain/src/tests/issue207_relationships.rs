@@ -44,9 +44,6 @@ pub(super) fn game(minion: &str) -> Value {
         .as_array_mut()
         .unwrap()
         .push(result["value"]["event"].clone());
-    if minion == "evilTwin" {
-        return game;
-    }
     assert_eq!(
         replay(&game)["currentStep"]["id"],
         "firstNight:system:minionInfo"
@@ -71,12 +68,6 @@ fn twin_swap_creates_separate_assignment_and_delivery_with_causal_undo() {
     );
     assert_eq!(propose(&game, json!({"playerIds":["p7"]}))["ok"], false);
     let assignment = confirm(&mut game, json!({"playerIds":["p1"]}));
-    assert!(propose(&game, Value::Null)["value"]["revealPayload"].is_object()); // minion information, not twin delivery
-    confirm(&mut game, Value::Null);
-    confirm(
-        &mut game,
-        json!({"characterIds":["soldier","mayor","virgin"]}),
-    );
     assert_eq!(
         replay(&game)["currentStep"]["actionRef"]["actionId"],
         "learnTwin"

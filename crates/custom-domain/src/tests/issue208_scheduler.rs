@@ -31,7 +31,7 @@ impl Additional {
                 }
             } else {
                 ActionCause::InitialPreparation {
-                    source_event_id: "setup".into(),
+                    source_event_id: "test-acquisition".into(),
                 }
             }),
         )
@@ -150,6 +150,8 @@ fn required_preparation_precedes_dawn_and_optional_confirmation_does_not_consume
         registry
             .register(RegisteredAction {
                 spec: ActionSpec {
+                    prerequisites: vec![],
+                    continuation_sources: vec![],
                     action_ref: action.clone(),
                     participates_in_first_night: false,
                     required_input_kind: RequiredInputKind::None,

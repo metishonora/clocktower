@@ -552,7 +552,7 @@ fn custom_definition_plan_replays_while_official_setup_shape_stays_exact() {
         assert_eq!(custom_replay["ok"], true, "{custom_replay}");
         assert_eq!(
             custom_replay["value"]["currentStep"]["actionRef"]["actionId"],
-            "prepareInformation"
+            "minionInfo"
         );
     }
     #[cfg(feature = "custom-runtime-fixtures")]

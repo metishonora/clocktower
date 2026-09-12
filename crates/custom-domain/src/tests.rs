@@ -49,3 +49,6 @@ mod issue208_twins;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue209_registry;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue220_action_dependencies;

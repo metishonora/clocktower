@@ -1,0 +1,41 @@
+.customGrimoireSetup { box-sizing: border-box; }
+.customGrimoireSetup *, .customGrimoireSetup *::before, .customGrimoireSetup *::after { box-sizing: border-box; }
+.customGrimoireSetup .productionApplicationUtilities:empty { display: none; }
+.customGrimoireSetup .productionApplicationHeader h1 { overflow-wrap: anywhere; word-break: keep-all; min-width: 0; }
+.customGrimoireSetup .productionApplicationHeader > div { min-width: 0; }
+.customGrimoireSetup .snvPhaseMark { flex-shrink: 0; }
+.customSetupDistribution { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.customSetupDistribution > div { display: grid; gap: 8px; text-align: center; }
+.customSetupDistribution span { color: #ccb6d4; font-size: .8rem; }
+.customSetupActions { max-width: 1180px; margin: 20px auto; display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; align-items: center; }
+.customSetupActions [role="alert"] { flex-basis: 100%; color: #ffc3c8; }
+.customGrimoireSetup .customSetupActions button, .customSetupResult button { padding: 12px 20px; min-height: 44px; border: 1px solid #a383b6; border-radius: 12px; color: #f8f0fb; background: #5c396d; font: inherit; font-weight: 700; cursor: pointer; }
+.customGrimoireSetup button:disabled { opacity: .4; cursor: default; }
+.customSetupRoleDetail { max-width: 1180px; margin: 20px auto 0; padding: 16px; border: 1px solid #775585; border-radius: 14px; }
+.customSetupRoleDetail > img { width: 64px; height: 64px; object-fit: contain; float: left; margin-right: 16px; }
+.customSetupRoleDetail h2 { margin: 0 0 8px; }
+.customSetupRoleDetail p { line-height: 1.6; margin: 0; }
+.customSetupInspector { min-width: 0; padding: 20px; border: 1px solid #694578; border-radius: 14px; background: #281731; align-self: start; }
+.customSetupInspector header { display: flex; align-items: center; justify-content: space-between; }
+.customSetupInspector h2 { margin: 0 0 16px; }
+.customSetupInspector header button { color: inherit; background: transparent; border: 0; min-width: 44px; min-height: 44px; font-size: 1.4rem; }
+.customSetupInspector label { display: grid; gap: 8px; margin-top: 12px; }
+.customSetupInspector input, .customSetupInspector select { width: 100%; min-height: 44px; padding: 10px; color: inherit; background: #1b1122; border: 1px solid #775585; border-radius: 8px; font: inherit; }
+.customSetupInspector p { line-height: 1.6; overflow-wrap: anywhere; }
+.customSetupResult { max-width: 1180px; margin: 24px auto; padding: 28px; border: 1px solid #775585; border-radius: 14px; }
+@media (max-width: 760px) {
+  .customGrimoireSetup .snvSeatingWorkspace { grid-template-columns: minmax(0, 1fr); }
+  .customSetupInspector { width: 100%; margin-top: 16px; }
+  .customSetupDistribution { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .customSetupActions > button { width: 100%; }
+}
+@media (max-width: 600px) {
+  .customGrimoireSetup .snvSurfaceTabs { gap: 8px; }
+  .customGrimoireSetup .snvSurfaceTabs > button { flex: 1; min-width: 0; padding-inline: 8px; }
+}
+.customGrimoireSetup .customSetupRoleDetail { display: flow-root; height: auto; overflow: visible; }
+.customGrimoireSetup .customSetupRoleDetail p { display: block; overflow: visible; -webkit-line-clamp: unset; }
+@media (max-width: 600px) {
+  .customGrimoireSetup .snvSeatingToolbar { flex-wrap: wrap; }
+  .customGrimoireSetup .snvSeatingToolbar > button { white-space: nowrap; }
+}

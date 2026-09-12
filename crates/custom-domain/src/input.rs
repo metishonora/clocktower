@@ -13,6 +13,9 @@ pub(crate) fn simple_step(
     can_skip: bool,
 ) -> PhaseStep {
     PhaseStep {
+        execution: None,
+        information_flow: None,
+        madness: None,
         simulation_source: None,
         follow_up_cause: None,
         action_cause: None,
@@ -39,6 +42,9 @@ pub(crate) fn phase_transition_step(
     next_phase: RequiredInputKind,
 ) -> PhaseStep {
     PhaseStep {
+        execution: None,
+        information_flow: None,
+        madness: None,
         simulation_source: None,
         follow_up_cause: None,
         action_cause: None,
@@ -60,6 +66,7 @@ pub(crate) fn phase_transition_step(
             allowed_player_ids: None,
             dependent_player_selections: vec![],
             player_registration_options: None,
+            setup_information_choices: None,
             zero_allowed: false,
             supports_random_suggestion: false,
             player_id: None,
@@ -89,6 +96,7 @@ pub(crate) fn required_none() -> RequiredInput {
         allowed_player_ids: None,
         dependent_player_selections: vec![],
         player_registration_options: None,
+            setup_information_choices: None,
         zero_allowed: false,
         supports_random_suggestion: false,
         player_id: None,
@@ -117,6 +125,7 @@ pub(crate) fn required_characters(
         allowed_player_ids: None,
         dependent_player_selections: vec![],
         player_registration_options: None,
+            setup_information_choices: None,
         zero_allowed: false,
         supports_random_suggestion,
         player_id: None,

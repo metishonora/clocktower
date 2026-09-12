@@ -282,6 +282,8 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
         let action_ref = action(character, id);
         RegisteredAction {
             spec: ActionSpec {
+                prerequisites: if id == "learnTwin" { vec![action("evilTwin", "assignTwin")] } else { vec![] },
+                continuation_sources: if id == "resolveMadnessExecution" { vec![] } else { vec![crate::first_night::execution::DependencySource::Relationship, crate::first_night::execution::DependencySource::ImmediateOrigin] },
                 action_ref: action_ref.clone(),
                 participates_in_first_night: !matches!(
                     id,
@@ -536,6 +538,13 @@ impl SnvHandler {
             })
             .transpose()?;
         Ok(PhaseStep {
+            execution: None,
+            information_flow: None,
+            madness: if self.character() == "mutant" {
+                let check = mutant_check(facts, occurrence);
+                let source_effective = occurrence.ability_use.as_ref().is_some_and(|source| effective(facts, source));
+                Some(crate::model::MadnessState {check, source_effective, can_check: check != Some(crate::model::MadnessCheckResult::Violation), can_execute: source_effective})
+            } else { None },
             id: occurrence.step_id()?,
             phase: Phase::FirstNight,
             step_type: StepType::Character,
@@ -584,6 +593,14 @@ impl SnvHandler {
             .ok_or_else(provenance_error)?;
         if self.character() == "mutant" {
             let fields = input.input.as_ref().ok_or_else(invalid)?;
+            if let Some(result) = fields.madness_check {
+                if *fields != (StepInputFields { madness_check: Some(result), ..Default::default() })
+                    || mutant_check(facts, occurrence) == Some(crate::model::MadnessCheckResult::Violation)
+                    || mutant_check(facts, occurrence) == Some(result) {
+                    return Err(invalid());
+                }
+                return Ok((CustomActionResult::MutantJudgment { result }, CustomFactChanges::default()));
+            }
             let execute = fields.execute.ok_or_else(invalid)?;
             if *fields
                 != (StepInputFields {
@@ -996,6 +1013,18 @@ fn twin_needs_repair(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
             })
 }
 impl ActionHandler for SnvHandler {
+    fn pending_after_prerequisite(&self, context:&ActionContext<'_>, predecessor:&ActionOccurrence) -> Result<Option<PhaseStep>,CoreError> {
+        if self.id()!="learnTwin" {return Ok(None);}
+        let consumer=ActionOccurrence::character(self.action_ref.clone(),predecessor.ability_use.clone().ok_or_else(provenance_error)?)?;
+        Ok(Some(self.step(context,&consumer)?))
+    }
+
+    fn dependency_event(&self, context: &ActionContext<'_>, occurrence: &ActionOccurrence) -> Result<Option<String>, CoreError> {
+        if self.id() != "learnTwin" { return Ok(None); }
+        let facts=context.rule_service.facts().ok_or_else(provenance_error)?;
+        Ok(facts.twin_relationships.iter().rev().find(|r| Some(&r.ability_use)==occurrence.ability_use.as_ref()).map(|r|r.source_event_id.clone()))
+    }
+
     fn required_occurrences(
         &self,
         c: &ActionContext<'_>,
@@ -1764,7 +1793,15 @@ impl SnvHandler {
             if targets.is_empty() {
                 prompt.computed_result = baseline;
             } else {
+                let fixed_character_id = if self.character() == "dreamer" {
+                    targets.first().and_then(|id| facts.players.iter().find(|p| &p.id == id))
+                        .filter(|player| !choices.is_empty() && choices.iter().all(|choice|
+                            matches!(&choice.result, InformationResult::CharacterPair { character_ids }
+                                if character_ids.contains(&player.actual_character))))
+                        .map(|player| player.actual_character.clone())
+                } else { None };
                 prompt.target_checks.push(TargetInformationCheck {
+                    fixed_character_id,
                     target_player_ids: targets,
                     computed_result: baseline.ok_or_else(invalid)?,
                     choices,
@@ -1874,4 +1911,11 @@ fn impairment_details(facts: &CustomGameFacts, actor: &str) -> Vec<DeliveryReaso
             },
         })
         .collect()
+}
+
+fn mutant_check(facts: &CustomGameFacts, occurrence: &ActionOccurrence) -> Option<crate::model::MadnessCheckResult> {
+    facts.confirmed_actions.iter().rev().find_map(|fact| {
+        if fact.occurrence.ability_use != occurrence.ability_use { return None; }
+        match &fact.result { CustomActionResult::MutantJudgment { result } => Some(*result), _ => None }
+    })
 }

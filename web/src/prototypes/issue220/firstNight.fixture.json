@@ -1,0 +1,108 @@
+[
+  {
+    "kind": "system",
+    "actionId": "dusk"
+  },
+  {
+    "kind": "system",
+    "actionId": "minionInfo"
+  },
+  {
+    "kind": "system",
+    "actionId": "demonInfo"
+  },
+  {
+    "kind": "character",
+    "characterId": "philosopher",
+    "actionId": "chooseAbility"
+  },
+  {
+    "kind": "character",
+    "characterId": "poisoner",
+    "actionId": "choosePoisonTarget"
+  },
+  {
+    "kind": "character",
+    "characterId": "snakeCharmer",
+    "actionId": "choosePlayer"
+  },
+  {
+    "kind": "character",
+    "characterId": "evilTwin",
+    "actionId": "learnTwin"
+  },
+  {
+    "kind": "character",
+    "characterId": "witch",
+    "actionId": "chooseCursedPlayer"
+  },
+  {
+    "kind": "character",
+    "characterId": "cerenovus",
+    "actionId": "assignMadness"
+  },
+  {
+    "kind": "character",
+    "characterId": "washerwoman",
+    "actionId": "learnTownsfolk"
+  },
+  {
+    "kind": "character",
+    "characterId": "librarian",
+    "actionId": "learnOutsider"
+  },
+  {
+    "kind": "character",
+    "characterId": "investigator",
+    "actionId": "learnMinion"
+  },
+  {
+    "kind": "character",
+    "characterId": "chef",
+    "actionId": "learnEvilPairs"
+  },
+  {
+    "kind": "character",
+    "characterId": "empath",
+    "actionId": "learnEvilNeighbors"
+  },
+  {
+    "kind": "character",
+    "characterId": "fortuneTeller",
+    "actionId": "checkDemon"
+  },
+  {
+    "kind": "character",
+    "characterId": "butler",
+    "actionId": "chooseMaster"
+  },
+  {
+    "kind": "character",
+    "characterId": "clockmaker",
+    "actionId": "learnSteps"
+  },
+  {
+    "kind": "character",
+    "characterId": "dreamer",
+    "actionId": "learnCharacters"
+  },
+  {
+    "kind": "character",
+    "characterId": "seamstress",
+    "actionId": "compareAlignments"
+  },
+  {
+    "kind": "character",
+    "characterId": "spy",
+    "actionId": "inspectGrimoire"
+  },
+  {
+    "kind": "character",
+    "characterId": "mathematician",
+    "actionId": "learnCount"
+  },
+  {
+    "kind": "system",
+    "actionId": "dawn"
+  }
+]

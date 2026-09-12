@@ -91,7 +91,10 @@ fn setup_distribution(
         "playerCount": player_count,
         "actualCharacters": actual_characters,
     });
-    serde_json::from_str(&setup_distribution_json(&request.to_string())).unwrap()
+    let mut result: Value = serde_json::from_str(&setup_distribution_json(&request.to_string())).unwrap();
+    // These legacy cases assert distribution rules; T11 separately covers the explanatory projection.
+    if let Some(value) = result.get_mut("value").and_then(Value::as_object_mut) { value.remove("adjustment"); }
+    result
 }
 
 fn propose_create(game: &Value, players: Value) -> Value {

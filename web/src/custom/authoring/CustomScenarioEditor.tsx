@@ -1,4 +1,6 @@
+import type { ImportedGame } from './importScenarioSource.js';
 import { useEffect, useState } from 'react';
+import type { ValidatedScenario } from '../core/definitionValidator.js';
 import manuscript from '../../assets/prototypes/issue-200/continuous-manuscript-dolly-master-v6.png';
 import { useScenarioEditor } from './useScenarioEditor.js';
 import { ScenarioSourceSheet } from './ScenarioSourceSheet.js';
@@ -7,8 +9,9 @@ import { FirstNightOrderSheet } from './FirstNightOrderSheet.js';
 import { ScenarioReviewSheet } from './ScenarioReviewSheet.js';
 import { catalog, countsFor, characterPresentation, type KindFilter, type SourceFilter } from './characterPresentation.js';
 import './scenarioEditor.css';
-export function CustomScenarioEditor({ onExit }: { onExit: () => void }) {
+export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile }: { onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { state, controller } = useScenarioEditor();
+  useEffect(() => { if (sourceFile) void controller.importFile(sourceFile); }, [controller, sourceFile]);
   const [kind, setKind] = useState<KindFilter>('Townsfolk');
   const [source, setSource] = useState<SourceFilter>('all');
   const [query, setQuery] = useState('');
@@ -51,7 +54,7 @@ export function CustomScenarioEditor({ onExit }: { onExit: () => void }) {
           onToggleCharacter={id => { setFocused(id); controller.toggleCharacter(id); }} onCloseCharacter={() => setFocused(undefined)}
           onBack={() => controller.setStep('scenario')} onContinue={() => controller.setStep('nightOrder')} />
         : state.step === 'nightOrder' ? <FirstNightOrderSheet state={state} controller={controller} />
-        : <ScenarioReviewSheet state={state} controller={controller} />}
+        : <ScenarioReviewSheet state={state} controller={controller} onNewGrimoire={onNewGrimoire} onResume={onResume} />}
       </div>
     </main></div>
   </div>;

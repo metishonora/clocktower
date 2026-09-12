@@ -1,3 +1,5 @@
+import {GrimoireNotificationPrompt} from '../../shared-ui/GrimoireHandoffView';
+import { MadnessRevealContent } from "../../shared-ui/MadnessRevealContent";
 import type { PendingIdentityReveal, Player } from "../../core/types";
 import { sectsAndVioletsCharacterAsset } from "../../sectsAndVioletsCharacterAssets";
 import { SectsAndVioletsReveal } from "../reveal/SectsAndVioletsReveal";
@@ -13,7 +15,6 @@ export function CerenovusMadnessReveal({
   if (reveal.payload.kind !== "madnessAssignment") return null;
   const asset = sectsAndVioletsCharacterAsset(reveal.payload.characterId);
   const characterName = asset?.label ?? reveal.payload.characterId;
-  const instruction = `내일 ${characterName}${quotationParticle(characterName)} 집착해야 합니다.`;
   return (
     <SectsAndVioletsReveal
       dialogLabel="세레노버스 집착 공개"
@@ -21,11 +22,7 @@ export function CerenovusMadnessReveal({
       closeLabel="확인했으면 눈을 감으세요"
       onClose={onConfirm}
     >
-      <div className="cerenovusMadnessRevealIdentity">
-        <p className="cerenovusMadnessRevealLead">세레노버스가 당신을 선택했습니다.</p>
-        <h1>{instruction}</h1>
-        {asset ? <img src={asset.src} alt={characterName} /> : null}
-      </div>
+      <MadnessRevealContent characterName={characterName} icon={asset ? <img src={asset.src} alt={characterName}/> : null}/>
     </SectsAndVioletsReveal>
   );
 }
@@ -43,11 +40,5 @@ export function CerenovusMadnessRevealPrompt({
   player?: Player;
   onReveal: () => void;
 }) {
-  return (
-    <section className="cerenovusMadnessRevealPrompt" role="dialog" aria-label="집착 안내">
-      <strong>집착 안내</strong>
-      <p>{player ? `${player.seat}번 ${player.name}` : "플레이어"}</p>
-      <button type="button" onClick={onReveal}>공개</button>
-    </section>
-  );
+  return <GrimoireNotificationPrompt kind="madnessAssignment" playerLabel={player?`${player.seat}번 ${player.name}`:'플레이어'} onReveal={onReveal}/>;
 }

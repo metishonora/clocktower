@@ -1,0 +1,10 @@
+import {Fragment,type ReactNode} from 'react';
+import {scalarInformationLabel,scalarInformationValueLabel,type ScalarInformationCharacterId} from './scalarInformationPresentation';
+type Person={playerId:string;seat:number;name:string};
+export type SnvInformationReveal={kind:'numericInformation';characterId:Exclude<ScalarInformationCharacterId,'flowergirl'|'townCrier'>;value:number}|{kind:'booleanInformation';characterId:'flowergirl'|'townCrier';value:boolean}|{kind:'dreamerInformation';characterIds:[string,string]}|{kind:'seamstressInformation';targetPlayers:Person[];sameAlignment:boolean}|{kind:'sageInformation';candidatePlayers:Person[]};
+export function SnvInformationRevealContent({payload,label,icon}:{payload:SnvInformationReveal;label:(id:string)=>string;icon:(id:string)=>ReactNode}){
+ if(payload.kind==='dreamerInformation')return <><span>꿈꾸는 자</span><p className="snvInformationRevealLabel">이 자는…</p><div className="snvTargetedRevealPair">{payload.characterIds.map((id,index)=><Fragment key={id}>{index?<b>또는</b>:null}<div className="snvRevealCharacterCard">{icon(id)}<strong>{label(id)}</strong></div></Fragment>)}</div></>;
+ if(payload.kind==='seamstressInformation')return <><span>재봉사</span><p className="snvInformationRevealLabel">{payload.targetPlayers.map(p=>`${p.seat}번 ${p.name}`).join(' · ')}</p><strong className="snvInformationRevealValue snvSeamstressRevealValue">{payload.sameAlignment?'같은 진영':'다른 진영'}</strong></>;
+ if(payload.kind==='sageInformation')return <><span>현자</span><p className="snvInformationRevealLabel">당신을 죽인 악마는…</p><div className="snvTargetedRevealPair snvPlayerRevealPair">{payload.candidatePlayers.map((p,index)=><Fragment key={p.playerId}>{index?<b>또는</b>:null}<div className="snvRevealPlayerCard"><span>{p.seat}</span><strong>{p.name}</strong></div></Fragment>)}</div></>;
+ return <>{icon(payload.characterId)}<span>{label(payload.characterId)}</span><p className="snvInformationRevealLabel">{scalarInformationLabel(payload.characterId)}</p><strong className="snvInformationRevealValue">{scalarInformationValueLabel(payload.characterId,payload.value)}</strong></>;
+}

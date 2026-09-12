@@ -1,3 +1,4 @@
+import {GrimoireHandoffView} from './shared-ui/GrimoireHandoffView';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { ConfirmedDayActionRecord, DayState, PhaseOverviewItem, PhaseStep, Player, ReplayState } from "./core/types";
 import {
@@ -628,6 +629,8 @@ export function SectsAndVioletsLiveGrimoire({
             operationBusy={operationBusy}
             onConfirm={onConfirm}
           />
+        ) : handoff && !centerPrompt && !acquiredHandoffAbilityCharacterId && ['snakeCharmer','evilTwin','witch','cerenovus'].includes(handoff.kind) ? (
+          <GrimoireHandoffView showReset={false} title={handoffPanelTitle(handoff,handoff.complete)} completed={handoff.complete} busy={operationBusy} ready={ready} onReset={onResetDaySelection} onConfirm={onConfirm} onContinue={onReturn} confirmLabel={confirmLabel(handoff,nominator,nominee,voterIds.length,target,secondaryTarget)} rows={[{label:'행동자',value:playerStateLabel(playerById(players,actorId))},{label:'선택 대상',value:playerStateLabel(target)}]}>{handoffSupplement}</GrimoireHandoffView>
         ) : handoff && !centerPrompt ? (
           <aside className={`issue116SelectionPanel${handoff.complete ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
             <header className="issue116SelectionHeader">

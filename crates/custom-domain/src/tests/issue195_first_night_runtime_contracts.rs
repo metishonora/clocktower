@@ -101,6 +101,9 @@ impl ActionHandler for FixtureHandler {
                     instance.ability_use.clone(),
                 )?;
                 Ok(PhaseStep {
+                    execution: None,
+                    information_flow: None,
+                    madness: None,
                     simulation_source: None,
                     follow_up_cause: None,
                     action_cause: None,
@@ -187,6 +190,8 @@ fn registration(
 ) -> RegisteredAction {
     RegisteredAction {
         spec: ActionSpec {
+            prerequisites: vec![],
+            continuation_sources: vec![],
             action_ref: spec_ref,
             participates_in_first_night: true,
             required_input_kind: crate::model::RequiredInputKind::None,

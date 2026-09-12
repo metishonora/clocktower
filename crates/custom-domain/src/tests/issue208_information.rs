@@ -227,18 +227,18 @@ fn separate_fortune_teller_sources_can_share_red_herring_and_normal_yes_is_not_f
         ("scarletWoman", None),
         ("imp", None),
     ]);
-    take(
-        &mut game,
-        "assignRedHerring",
-        json!({"playerIds":["p4"]}),
-        None,
-        vec![],
-    );
     system(&mut game);
     take(
         &mut game,
         "philosopher",
         json!({"characterIds":["fortuneTeller"]}),
+        None,
+        vec![],
+    );
+    take(
+        &mut game,
+        "assignRedHerring",
+        json!({"playerIds":["p4"]}),
         None,
         vec![],
     );
@@ -291,6 +291,7 @@ fn librarian_zero_counts_actual_drunk_as_outsider_and_vortox_requires_false_prop
         ("scarletWoman", None),
         ("imp", None),
     ]);
+    system(&mut normal);
     take(
         &mut normal,
         "prepareInformation",
@@ -298,7 +299,6 @@ fn librarian_zero_counts_actual_drunk_as_outsider_and_vortox_requires_false_prop
         None,
         vec![],
     );
-    system(&mut normal);
     let zero = take(&mut normal, "learnOutsider", Value::Null, None, vec![]);
     assert_eq!(zero["revealPayload"]["zeroOutsiders"], true);
     let mut vortox = roster_game(&[
@@ -311,6 +311,7 @@ fn librarian_zero_counts_actual_drunk_as_outsider_and_vortox_requires_false_prop
         ("scarletWoman", None),
         ("vortox", None),
     ]);
+    system(&mut vortox);
     // True 'one of these is Drunk' is forbidden by Vortox, despite being an allowed outsider identity.
     assert_eq!(
         proposal(
@@ -328,7 +329,6 @@ fn librarian_zero_counts_actual_drunk_as_outsider_and_vortox_requires_false_prop
         None,
         vec![],
     );
-    system(&mut vortox);
     take(&mut vortox, "learnOutsider", Value::Null, None, vec![]);
     assert_eq!(
         replay(&vortox)["currentStep"]["informationPrompt"]["computedResult"]["value"],
@@ -361,13 +361,16 @@ fn recovery_requires_repreparation_and_preserves_earlier_spy_snapshot() {
     let spy = order.remove(index);
     order.insert(3, spy);
     let mut game = start(&input);
-    take(
-        &mut game,
-        "prepareInformation",
-        json!({"playerIds":["p7","p8"],"characterId":"monk","correctPlayerId":"p7"}),
-        None,
-        vec![],
-    );
+    // Valid legacy saved preparation: this impaired Setup proposition was legal before
+    // system information. New commands may no longer create this leading prefix.
+    let state = replay(&game);
+    let step = state["phaseOverview"].as_array().unwrap().iter().find(|s| s["actionRef"]["actionId"] == "prepareInformation").unwrap();
+    let event = json!({"id":"legacy-prep","type":"customActionConfirmed","phase":"firstNight","createdAt":"t","summary":"legacy preparation","payload":{
+        "stepId":step["id"],"actionRef":step["actionRef"],"abilityUse":step["abilityUse"],"actionCause":step["actionCause"],
+        "input":{"playerIds":["p7","p8"],"characterId":"monk","correctPlayerId":"p7"},
+        "result":{"kind":"informationPrepared","preparation":{"information":{"kind":"setupInfo","playerIds":["p7","p8"],"characterId":"monk","zeroOutsiders":false},"correctPlayerId":"p7"}}
+    }});
+    game["game"]["events"].as_array_mut().unwrap().push(event);
     system(&mut game);
     let spy = take(&mut game, "inspectGrimoire", Value::Null, None, vec![]);
     let snapshot = spy["event"]["payload"]["result"].clone();

@@ -15,6 +15,7 @@ fn optional(game: &Value, execute: bool) -> Value {
 #[test]
 fn optional_good_twin_execution_ends_game_and_undo_restores_entire_prefix() {
     let mut game = start(&seed("mutant-good-twin"));
+    super::issue208_information::system(&mut game);
     take(
         &mut game,
         "assignTwin",
@@ -52,6 +53,7 @@ fn optional_good_twin_execution_ends_game_and_undo_restores_entire_prefix() {
 #[test]
 fn declining_optional_execution_keeps_regular_step_and_changes_request_prefix() {
     let mut game = start(&seed("mutant-good-twin"));
+    super::issue208_information::system(&mut game);
     take(
         &mut game,
         "assignTwin",
@@ -68,7 +70,10 @@ fn declining_optional_execution_keeps_regular_step_and_changes_request_prefix() 
         .unwrap()
         .push(proposal["value"]["event"].clone());
     let after = replay(&game);
-    assert_eq!(after["currentStep"], before["currentStep"]);
+    let mut old_step=before["currentStep"].clone(); let mut new_step=after["currentStep"].clone();
+    old_step.as_object_mut().unwrap().remove("execution");new_step.as_object_mut().unwrap().remove("execution");
+    assert_eq!(new_step,old_step);
+    assert_eq!(after["currentStep"]["execution"]["relation"],"reference");
     assert_ne!(after["availableActions"], before["availableActions"]);
     assert!(after["gameEnd"].is_null());
 }

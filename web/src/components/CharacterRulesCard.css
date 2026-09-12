@@ -138,3 +138,16 @@
   .characterRulesHeader { padding: 16px 18px; }
   .characterRulesBody { padding: 18px 20px 30px; }
 }
+
+.characterRulesBackdrop.bmr-night {
+  --character-detail-bg:#21070d;--character-detail-surface:#3b0914;
+  --character-detail-line:rgba(224,156,164,.22);--character-detail-ink:#fff5f1;
+  --character-detail-muted:#c9a5a9;--character-detail-accent:#e9c36e;--character-detail-link:#e9c36e;
+  background:rgba(24,4,10,.72);
+}
+.characterRulesBackdrop.bmr-day {
+  --character-detail-bg:#f7eee1;--character-detail-surface:#f1d6cf;
+  --character-detail-line:rgba(112,41,54,.22);--character-detail-ink:#3b2026;
+  --character-detail-muted:#76545b;--character-detail-accent:#8f3a4c;--character-detail-link:#8f3a4c;
+  background:rgba(59,32,38,.5);
+}

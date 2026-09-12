@@ -56,3 +56,11 @@
   .snvEvilInformationIdentityCards,
   .snvEvilInformationCharacterCards { grid-auto-columns: minmax(82px, 27vw); gap: 8px; }
 }
+
+@media (max-width:480px) {
+  .snvEvilInformationTask h3 { font-size:1.65rem; word-break:keep-all; }
+  .snvEvilInformationTaskActions { flex-wrap:wrap; }
+  .snvEvilInformationTaskActions button { word-break:keep-all; }
+  .snvEvilInformationTaskActions .prominent { min-width:0; }
+  .snvEvilInformationTaskActions .snvEvilInformationNext { flex-basis:100%; }
+}

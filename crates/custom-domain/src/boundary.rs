@@ -139,7 +139,8 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "shownCharacterAssigned"
             | "poisoner"
             | "butler"
-            | "mutantExecution",
+            | "mutantExecution"
+            | "mutantJudgment",
         ) => {
             let typed: CustomActionResult = serde_json::from_value(value.clone())
                 .map_err(|_| ErrorKind::MalformedEvent.into_error())?;
@@ -337,6 +338,7 @@ fn validate_custom_step_input_json(value: &Value) -> Result<(), CoreError> {
         "nomineeId",
         "voterIds",
         "execute",
+        "madnessCheck",
         "died",
         "mayorDecision",
         "successorPlayerId",

@@ -1,6 +1,15 @@
+import { UndoButton } from './shared-ui/UndoButton';
+import {SetupAdjustment} from './shared-ui/SetupAdjustment';
+import {GameStorageView} from './shared-ui/GameStorageView';
+import {DemonChoices} from './shared-ui/DemonChoices';
+import {EvilInformationRevealContent} from './shared-ui/EvilInformationRevealContent';
+import { GameConfirmationDialog as ConfirmationDialog } from './shared-ui/GameConfirmationDialog';
+import { BmrInformationTask } from './shared-ui/BmrInformationTask';
+import { BmrRevealSurface } from './shared-ui/BmrRevealSurface';
+import { NightTaskCard } from './shared-ui/NightTaskCard';
+import { AssignmentSurface } from './shared-ui/AssignmentSurface';
 import {
   type ChangeEvent,
-  type CSSProperties,
   useEffect,
   useMemo,
   useRef,
@@ -39,12 +48,6 @@ import { PlayerTokenDetailDialog } from "./features/grimoire/playerTokenPresenta
 import { browserRuntimeClock, numberedPhaseForStep } from "./features/phase-control/phaseRuntime.js";
 import { usePhaseRuntime } from "./features/phase-control/usePhaseRuntime.js";
 import { exportGameFileJson, importGameFileJson } from "./gameStorage.js";
-import {
-  GrimoirePresentation,
-  RectangularGrimoireBoard,
-  grimoireHeights,
-  rectangularSeatPositions,
-} from "./shared-ui/GrimoirePresentation.js";
 import { PlayPresentation } from "./shared-ui/PlayPresentation.js";
 import { ProductionApplicationShell } from "./shared-ui/ProductionApplicationShell.js";
 import { RoleCatalog, SetupPresentation } from "./shared-ui/SetupPresentation.js";
@@ -546,13 +549,7 @@ export function BadMoonRisingGameSurface({
       leading={<span className={`bmrSkyDisc ${theme}`} role="img" aria-label={theme === "day" ? "낮 · 해" : "밤 · 혈월"} />}
       hiddenInputs={<input ref={importInputRef} hidden type="file" accept="application/json,.json" onChange={(event) => void importGame(event)} />}
       headerActionsAriaLabel="되돌리기"
-      headerActions={<button
-        type="button"
-        className={`snvGlobalUndo${undoUnit ? "" : " empty"}`}
-        disabled={!undoUnit || operationBusy}
-        aria-label={undoUnit ? `최근 행동 되돌리기: ${undoUnit.summary}` : "되돌릴 행동 없음"}
-        onClick={() => void undoLatest()}
-      ><UndoIcon /></button>}
+      headerActions={<UndoButton summary={undoUnit?.summary} disabled={operationBusy} onUndo={()=>void undoLatest()}/>}
       utilities={[
         { id: "new-game", label: "새 게임", className: "snvNewGameTab", onSelect: () => setNewGameConfirmOpen(true) },
         { id: "storage", label: "저장 / 불러오기", active: activeTab === "storage" },
@@ -702,17 +699,8 @@ function BmrSetup({
           >{count}명</button>)}
         </div>
       </section>
-      <section className="snvControlCard">
-        <span>악마</span>
-        <div className="bmrDemonChoices">{demons.map((character) => <button
-          key={character.id}
-          type="button"
-          aria-label={`${character.name} 악마 선택`}
-          aria-pressed={draft.selectedIds.includes(character.id)}
-          disabled={busy}
-          onClick={() => onCharacter(character.id)}
-        ><CharacterMedallion characterId={character.id} compact /><strong>{character.name}</strong></button>)}</div>
-      </section>
+      <DemonChoices characters={demons.map(c=>({id:c.id,name:c.name,icon:<CharacterMedallion characterId={c.id} compact/>}))} selectedIds={draft.selectedIds} busy={busy} onSelect={onCharacter}/>
+
       <div className={`bmrSetupChoiceReveal${hasGodfather ? " visible" : ""}`} aria-hidden={!hasGodfather}>
         <div><GodfatherAdjustment
           choices={setupChoices}
@@ -775,11 +763,7 @@ function GodfatherAdjustment({ choices, selectedChoiceId, disabled, onSelect, co
   onSelect: (id: SetupChoiceId) => void;
   compact?: boolean;
 }) {
-  return <section
-    className={compact ? "bmrMobileGodfatherAdjustment" : "bmrSetupChoice"}
-    aria-label="대부 보정"
-  >
-    <div className="bmrSetupChoiceTitle"><span>대부 보정</span>{compact ? null : <strong>인원 구성을 선택하세요</strong>}</div>
+  return <SetupAdjustment title="대부 보정" compact={compact} prompt="인원 구성을 선택하세요">
     <div className="bmrSetupChoiceOptions">{choices.map(({ id }) => <button
       key={id}
       type="button"
@@ -791,7 +775,7 @@ function GodfatherAdjustment({ choices, selectedChoiceId, disabled, onSelect, co
       <strong>{id === "addOutsider" ? "외지인 +1" : "외지인 -1"}</strong>
       {compact ? null : <span>{id === "addOutsider" ? "주민 -1" : "주민 +1"}</span>}
     </button>)}</div>
-  </section>;
+  </SetupAdjustment>;
 }
 
 function BmrGrimoire({
@@ -833,13 +817,6 @@ function BmrGrimoire({
   onConfirm: () => void;
   onGoToProgress: () => void;
 }) {
-  const desktopPositions = useMemo(() => rectangularSeatPositions(draft.playerCount, false), [draft.playerCount]);
-  const mobilePositions = useMemo(() => rectangularSeatPositions(draft.playerCount, true), [draft.playerCount]);
-  const heights = grimoireHeights(draft.playerCount);
-  const sizeStyle = {
-    "--grimoire-height": `${heights.desktop}px`,
-    "--mobile-grimoire-height": `${heights.mobile}px`,
-  } as CSSProperties;
   const selectedCharacterId = selectedSeat ? draft.seatAssignments[selectedSeat] : undefined;
   const selectedCharacter = bmrCharacter(selectedCharacterId);
   const selectedName = selectedSeat ? draft.seatNames[selectedSeat]?.trim() || `플레이어 ${selectedSeat}` : "";
@@ -853,102 +830,13 @@ function BmrGrimoire({
       ? "미치광이에게 보여줄 악마를 선택하세요."
       : undefined;
 
-  return <>
-  <GrimoirePresentation
+  return <><AssignmentSurface draft={draft} characters={badMoonRisingCharacters} alignmentForId={defaultBmrAlignment}
     ariaLabel={draft.seatingConfirmed ? "확정된 Bad Moon Rising 마도서" : "Bad Moon Rising 마도서 배치"}
-    className={`snvSeatingSurface bmrGrimoireSurface${draft.seatingConfirmed ? " confirmed" : " assignmentStarted"}`}
-    workspaceClassName={`snvSeatingWorkspace bmrGrimoireWorkspace${draft.seatingConfirmed ? " confirmed" : ""}`}
-    style={sizeStyle}
-    toolbar={<div className="snvSeatingToolbar" aria-label="마도서 배치 도구">
-      <button type="button" className={`snvToolbarBack${draft.seatingConfirmed ? " destructive" : ""}`} aria-label="배치로 돌아가기" onClick={onReturn}><span aria-hidden="true">←</span></button>
-      {draft.seatingConfirmed ? null : <>
-        <button type="button" disabled={busy} onClick={onRandomize}>무작위 배치</button>
-        <button type="button" disabled={busy} onClick={onReset}>배치 초기화</button>
-      </>}
-    </div>}
-    board={<RectangularGrimoireBoard
-      ariaLabel={`${draft.playerCount}자리 마도서`}
-      className="snvGrimoireDraft bmrGrimoireBoard"
-      centerClassName={`snvGrimoireCenter${draft.seatingConfirmed ? " live issue116PhaseClock" : ""}`}
-      centerAriaLabel={draft.seatingConfirmed ? "현재 단계" : undefined}
-      style={sizeStyle}
-      seats={Array.from({ length: draft.playerCount }, (_, index) => {
-        const seat = index + 1;
-        const characterId = draft.seatAssignments[seat];
-        const character = bmrCharacter(characterId);
-        const name = draft.seatNames[seat]?.trim() || `플레이어 ${seat}`;
-        const needsShownCharacter = character?.id === "lunatic" && !draft.shownCharacters[seat];
-        return {
-          id: `seat-${seat}`,
-          position: desktopPositions[index],
-          mobilePosition: mobilePositions[index],
-          className: `${character ? `assigned alignment-${defaultBmrAlignment(character.id)} kind-${character.kind}` : "unassigned"}${needsShownCharacter ? " needsShownCharacter" : ""}${selectedSeat === seat ? " selected" : ""}`,
-          ariaLabel: `${seat}번 좌석, ${name}, ${character?.name ?? "미할당"}${needsShownCharacter ? ", 보여줄 악마 선택 필요" : ""}`,
-          pressed: selectedSeat === seat,
-          onSelect: () => onSeat(seat),
-          content: <>
-            <span className="snvSeatNumber">{seat}</span>
-            {character ? <CharacterMedallion characterId={character.id} seat /> : <span className="bmrEmptySeat">+</span>}
-            <span className="snvSeatPlayerName">{name}</span>
-            <small>{needsShownCharacter ? "악마 선택 필요" : character?.name ?? "미할당"}</small>
-          </>,
-        };
-      })}
-      center={<>
-        <strong>{draft.seatingConfirmed ? phaseLabel : `${Object.keys(draft.seatAssignments).length}/${draft.playerCount}`}</strong>
-        {draft.seatingConfirmed
-          ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time>
-          : <span>{pendingCharacterId ? `${bmrCharacter(pendingCharacterId)?.name} 선택` : "배치"}</span>}
-        {draft.seatingConfirmed ? <button type="button" aria-label="진행으로 이동" onClick={onGoToProgress}>진행 →</button> : null}
-      </>}
-    />}
-    inspector={draft.seatingConfirmed ? undefined : <>
-      {selectedSeat ? <button type="button" className="snvMobileSeatPanelBackdrop" aria-label="좌석 상세 닫기 배경" onClick={onClose} /> : null}
-      <aside className={`snvSeatingTray contentHeight bmrSeatingTray${selectedSeat ? " mobileOpen" : " mobileCollapsed"}`} aria-label="배치할 직업">
-        {selectedSeat ? <div className="snvSeatInspector fixed compactTwoRow bmrSeatInspector" aria-label="좌석 편집기">
-          <div className="snvSeatInspectorHeader" aria-label="좌석 편집기 머리글">
-            <span>{selectedSeat}번 좌석</span>
-            <strong>{selectedCharacter?.name ?? "미할당"}</strong>
-            <span
-              className={`snvAlignmentIcon ${selectedCharacter ? `alignment-${defaultBmrAlignment(selectedCharacter.id)}` : "unassigned"}`}
-              aria-label={selectedCharacter ? `${defaultBmrAlignment(selectedCharacter.id) === "evil" ? "악한" : "선한"} 진영` : "진영 미정"}
-            >{selectedCharacter ? defaultBmrAlignment(selectedCharacter.id) === "evil" ? "악" : "선" : "-"}</span>
-          </div>
-          <input
-            type="text"
-            aria-label={`${selectedSeat}번 좌석 이름`}
-            placeholder="플레이어 이름"
-            value={draft.seatNames[selectedSeat] ?? ""}
-            onChange={(event) => onName(selectedSeat, event.target.value)}
-          />
-          {selectedCharacter?.id === "lunatic" ? <label className={`bmrLunaticShownField${draft.shownCharacters[selectedSeat] ? "" : " required"}`}><span>보여줄 악마{draft.shownCharacters[selectedSeat] ? "" : " · 선택 필요"}</span><select aria-label="보여줄 악마" aria-invalid={!draft.shownCharacters[selectedSeat]} value={draft.shownCharacters[selectedSeat] ?? ""} onChange={(event) => onShownCharacter(selectedSeat, event.target.value)}>
-            <option value="">선택하세요</option>
-            {demonCharacters.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
-          </select></label> : null}
-        </div> : null}
-        <div className="snvSelectedRosterTray bmrRosterTray">
-          {draft.selectedIds.map((characterId) => {
-            const character = bmrCharacter(characterId)!;
-            const assignedSeat = Number(Object.entries(draft.seatAssignments).find(([, id]) => id === characterId)?.[0]);
-            const selectedForSeat = Boolean(selectedSeat && draft.seatAssignments[selectedSeat] === characterId);
-            return <button
-              key={characterId}
-              type="button"
-              className={`${assignedSeat ? "assigned " : ""}${selectedForSeat ? "selectedForSeat " : ""}compact`}
-              aria-label={assignedSeat ? `${character.name} 직업, ${assignedSeat}번 배치됨` : `${character.name} 배치`}
-              aria-pressed={selectedForSeat || pendingCharacterId === characterId}
-              onClick={() => onCharacter(characterId)}
-            ><CharacterMedallion characterId={characterId} compact /><span>{character.name}</span></button>;
-          })}
-        </div>
-      </aside>
-    </>}
-    actionsClassName="snvSeatingActions bmrSeatingActions"
-    actions={!draft.seatingConfirmed ? <>
-      {seatingIssue ? <p className="bmrSeatingValidation" role="status">{seatingIssue}</p> : <span aria-hidden="true" />}
-      <button type="button" className="snvConfirmRoster prominent" aria-label="좌석 확정" disabled={!seatingComplete || busy} onClick={onConfirm}>좌석 확정</button>
-    </> : undefined}
-  />
+    renderCharacter={(id,size) => <CharacterMedallion characterId={id} seat={size === 'seat'} compact={size === 'compact'} />}
+    shownChoices={{lunatic:{label:'보여줄 악마',options:demonCharacters}}} seatingIssue={seatingIssue}
+    phaseLabel={phaseLabel} phaseRuntime={phaseRuntime} selectedSeat={selectedSeat} pendingCharacterId={pendingCharacterId}
+    seatingComplete={seatingComplete} busy={busy} onReturn={onReturn} onRandomize={onRandomize} onReset={onReset}
+    onSeat={onSeat} onCharacter={onCharacter} onName={onName} onShownCharacter={onShownCharacter} onClose={onClose} onConfirm={onConfirm} onGoToProgress={onGoToProgress} />
   {draft.seatingConfirmed && selectedSeat && selectedCharacter ? <PlayerTokenDetailDialog
     appearance="bmr"
     player={{
@@ -1049,12 +937,11 @@ function ManualTask({ step, players, busy, onResolve }: {
 }) {
   const character = bmrCharacter(step.character);
   const player = players.find((candidate) => candidate.id === step.playerId);
-  return <article className="snvCurrentStep bmrCurrentStep" aria-label={character ? `${character.name} 단계` : "낮 수동 진행"}>
-    <p className="snvCurrentStepLabel">현재 할 일</p>
-    {character ? <div className="bmrCurrentIdentity"><CharacterMedallion characterId={character.id} /><span><span>{character.name}</span><strong>{player ? `${player.seat}번 ${player.name}` : "Storyteller"}</strong></span></div> : <h3>낮 진행</h3>}
-    <p className="bmrAbilitySummary">{character?.ability ?? "낮 동안 필요한 진행을 수동으로 처리하세요."}</p>
+  return <NightTaskCard className="bmrCurrentStep" ariaLabel={character ? `${character.name} 단계` : "낮 수동 진행"}
+    identity={character ? <div className="bmrCurrentIdentity"><CharacterMedallion characterId={character.id} /><span><span>{character.name}</span><strong>{player ? `${player.seat}번 ${player.name}` : "Storyteller"}</strong></span></div> : <h3>낮 진행</h3>}
+    ability={character?.ability ?? "낮 동안 필요한 진행을 수동으로 처리하세요."}>
     <div className="snvStepActions"><button type="button" disabled={busy} onClick={() => onResolve("handled")}>처리 완료</button><button type="button" className="secondary" disabled={busy} onClick={() => onResolve("notApplicable")}>해당 없음</button></div>
-  </article>;
+  </NightTaskCard>;
 }
 
 function TransitionTask({ step, busy, onTransition }: { step: PhaseStep; busy: boolean; onTransition: () => void }) {
@@ -1080,33 +967,15 @@ function BmrEvilInformationTask({ step, players, selectedBluffIds, completed, bu
   const wakePlayers = players.filter((player) => isDemon
     ? bmrCharacter(player.actualCharacter)?.kind === "demon"
     : bmrCharacter(player.actualCharacter)?.kind === "minion");
-  return <article className="snvCurrentStep bmrCurrentStep bmrEvilInformationTask">
-    <p className="snvCurrentStepLabel">현재 할 일</p><h3>{isDemon ? "악마 정보" : "하수인 정보"}</h3>
-    <p><strong>{wakePlayers.map((player) => `${player.seat}번 ${player.name}`).join(", ")}</strong>를 깨웁니다.</p>
-    {isDemon ? <div className="bmrBluffGrid" aria-label="사용 가능한 속임수">
-      {(step.requiredInput.allowedCharacterIds ?? []).map((id) => <button
-        key={id}
-        type="button"
-        aria-label={`${bmrCharacter(id)?.name ?? id} 속임수 선택`}
-        aria-pressed={selectedBluffIds.includes(id)}
-        disabled={busy || completed || (!selectedBluffIds.includes(id) && selectedBluffIds.length >= 3)}
-        onClick={() => onToggle(id)}
-      ><CharacterMedallion characterId={id} compact /><span>{bmrCharacter(id)?.name ?? id}</span></button>)}
-    </div> : null}
-    <div className="snvStepActions">
-      <button type="button" disabled={busy || completed || (isDemon && selectedBluffIds.length !== 3)} onClick={onReveal}>정보 공개</button>
-      <button type="button" className="secondary" disabled={busy || !completed} onClick={onNext}>다음으로</button>
-    </div>
-  </article>;
+  return <BmrInformationTask isDemon={isDemon} characters={(step.requiredInput.allowedCharacterIds ?? []).map(id=>({id,name:bmrCharacter(id)?.name ?? id,icon:<CharacterMedallion characterId={id} compact/>}))} wakePlayers={wakePlayers} selectedCharacterIds={selectedBluffIds} revealed={completed} busy={busy} onToggle={onToggle} onReveal={onReveal} onContinue={onNext}/>;
 }
 
 function BmrEvilInformationReveal({ payload, onClose }: { payload: EvilInformationRevealPayload; onClose: () => void }) {
   const minion = payload.kind === "minionInformation";
-  return <div className="bmrRevealBackdrop"><section className="bmrReveal" role="dialog" aria-modal="true" aria-label={minion ? "하수인 정보 공개" : "악마 정보 공개"}>
-    <h1>{minion ? "당신은 하수인입니다" : "당신은 악마입니다"}</h1>
-    {minion ? <RevealPlayers title="악마" players={payload.demonPlayers} /> : <><RevealPlayers title="하수인" players={payload.minionPlayers} /><section><h2>속임수</h2><div className="bmrRevealBluffs">{payload.bluffCharacterIds.map((id) => <article key={id}><CharacterMedallion characterId={id} /><strong>{bmrCharacter(id)?.name ?? id}</strong></article>)}</div></section></>}
-    <button type="button" onClick={onClose}>확인했으면 눈을 감으세요</button>
-  </section></div>;
+  return <BmrRevealSurface dialogLabel={minion ? "하수인 정보 공개" : "악마 정보 공개"} closeLabel="확인했으면 눈을 감으세요" onClose={onClose}>
+    <EvilInformationRevealContent minion={minion} players={payload.kind==='minionInformation'?payload.demonPlayers:payload.minionPlayers} bluffs={payload.kind==='demonInformation'?payload.bluffCharacterIds.map(id=>({id,label:bmrCharacter(id)?.name ?? id,icon:<CharacterMedallion characterId={id}/>})):[]}/>
+
+  </BmrRevealSurface>;
 }
 
 function RevealPlayers({ title, players }: { title: string; players: Array<{ seat: number; name: string }> }) {
@@ -1166,16 +1035,9 @@ function CharacterMedallion({ characterId, compact = false, seat = false }: { ch
 }
 
 function BmrStorage({ hasGame, onExport, onImport }: { hasGame: boolean; onExport: () => void; onImport: () => void }) {
-  return <section className="bmrStorage" aria-label="저장 및 불러오기"><h2>게임 데이터</h2><div><button type="button" disabled={!hasGame} onClick={onExport}>JSON 내보내기</button><button type="button" onClick={onImport}>BMR JSON 가져오기</button></div><p>Bad Moon Rising 게임 파일만 가져올 수 있습니다.</p></section>;
+  return <GameStorageView canExport={hasGame} onExport={onExport} onImport={onImport} importLabel="BMR JSON 가져오기" description="Bad Moon Rising 게임 파일만 가져올 수 있습니다."/>;
 }
 
-function ConfirmationDialog({ label, title, description, confirmLabel, onCancel, onConfirm }: { label: string; title: string; description: string; confirmLabel: string; onCancel: () => void; onConfirm: () => void }) {
-  return <div className="snvDetailsBackdrop"><section className="bmrConfirmDialog" role="dialog" aria-modal="true" aria-label={label}><h2>{title}</h2><p>{description}</p><div><button type="button" onClick={onCancel}>취소</button><button type="button" className="snvDestructiveAction" onClick={onConfirm}>{confirmLabel}</button></div></section></div>;
-}
-
-function UndoIcon() {
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12.2 9.2 6.5 14.8l5.7 5.7" /><path d="M7.2 14.8h10.2a8 8 0 1 1-6.3 12.9" /></svg>;
-}
 
 function validRestoredTab(tab: BmrTab | undefined, draft: BmrSetupState): BmrTab {
   if (!draft.rosterConfirmed) return "roles";
