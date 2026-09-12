@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 4,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "c4d92811-530e-42c9-a247-d98fa4fa99fd",
+        "name": "test0912",
+        "characterIds": [
+          "noDashii",
+          "vortox",
+          "vigormortis",
+          "fangGu",
+          "imp",
+          "baron",
+          "poisoner",
+          "spy",
+          "scarletWoman",
+          "pitHag",
+          "witch",
+          "evilTwin",
+          "cerenovus",
+          "mutant",
+          "sweetheart",
+          "klutz",
+          "barber",
+          "saint",
+          "recluse",
+          "butler",
+          "drunk",
+          "soldier",
+          "virgin",
+          "librarian",
+          "monk",
+          "ravenkeeper",
+          "washerwoman",
+          "mayor",
+          "chef",
+          "undertaker",
+          "slayer",
+          "fortuneTeller",
+          "investigator",
+          "empath",
+          "juggler",
+          "flowergirl",
+          "dreamer",
+          "savant",
+          "mathematician",
+          "snakeCharmer",
+          "clockmaker",
+          "oracle",
+          "seamstress",
+          "townCrier",
+          "sage",
+          "philosopher",
+          "artist"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "evilTwin",
+            "actionId": "learnTwin"
+          },
+          {
+            "kind": "character",
+            "characterId": "witch",
+            "actionId": "chooseCursedPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "9541d96b-4bde-4d08-b893-193265f76c63",
+    "name": "test0912",
+    "createdAt": "2026-09-12T06:24:01.418Z",
+    "updatedAt": "2026-09-12T06:25:36.670Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "librarian",
+              "shownCharacter": "librarian"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "washerwoman",
+              "shownCharacter": "washerwoman"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "poisoner",
+              "shownCharacter": "poisoner"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "vortox",
+              "shownCharacter": "vortox"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "virgin",
+              "shownCharacter": "virgin"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "sweetheart",
+              "shownCharacter": "sweetheart"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "ravenkeeper",
+              "shownCharacter": "ravenkeeper"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "monk",
+              "shownCharacter": "monk"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "klutz",
+              "shownCharacter": "klutz"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
+              "actualCharacter": "soldier",
+              "shownCharacter": "soldier"
+            },
+            {
+              "id": "player-11",
+              "seat": 11,
+              "name": "플레이어 11",
+              "actualCharacter": "spy",
+              "shownCharacter": "spy"
+            },
+            {
+              "id": "player-12",
+              "seat": 12,
+              "name": "플레이어 12",
+              "actualCharacter": "mayor",
+              "shownCharacter": "mayor"
+            },
+            {
+              "id": "player-13",
+              "seat": 13,
+              "name": "플레이어 13",
+              "actualCharacter": "barber",
+              "shownCharacter": "barber"
+            },
+            {
+              "id": "player-14",
+              "seat": 14,
+              "name": "플레이어 14",
+              "actualCharacter": "mutant",
+              "shownCharacter": "mutant"
+            },
+            {
+              "id": "player-15",
+              "seat": 15,
+              "name": "플레이어 15",
+              "actualCharacter": "baron",
+              "shownCharacter": "baron"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-12T06:24:01.418Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-12T06:24:01.433Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "saint",
+              "recluse",
+              "butler"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-12T06:24:11.436Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:poisoner:choosePoisonTarget:owner8:player-3:instance14:setup:player-3",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-3",
+            "characterId": "poisoner",
+            "abilityInstanceId": "setup:player-3"
+          },
+          "input": {
+            "playerIds": [
+              "player-1"
+            ]
+          },
+          "result": {
+            "kind": "poisoner",
+            "targetPlayerId": "player-1",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:poisoner:choosePoisonTarget:owner8:player-3:instance14:setup:player-3",
+        "createdAt": "2026-09-12T06:24:19.057Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:washerwoman:prepareInformation:owner8:player-2:instance14:setup:player-2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "prepareInformation"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-2",
+            "characterId": "washerwoman",
+            "abilityInstanceId": "setup:player-2"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "playerIds": [
+              "player-1",
+              "player-2"
+            ],
+            "characterId": "seamstress"
+          },
+          "result": {
+            "kind": "informationPrepared",
+            "preparation": {
+              "information": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "player-1",
+                  "player-2"
+                ],
+                "characterId": "seamstress",
+                "zeroOutsiders": false
+              },
+              "correctPlayerId": null
+            }
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:washerwoman:prepareInformation:owner8:player-2:instance14:setup:player-2:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-12T06:24:22.663Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:washerwoman:learnTownsfolk:owner8:player-2:instance14:setup:player-2",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-2",
+            "characterId": "washerwoman",
+            "abilityInstanceId": "setup:player-2"
+          },
+          "input": null,
+          "result": {
+            "kind": "preparedInformationDelivered",
+            "preparationEventId": "phase-step-5",
+            "information": {
+              "actor": {
+                "playerId": "player-2",
+                "characterId": "washerwoman"
+              },
+              "targetPlayerIds": [
+                "player-1",
+                "player-2"
+              ],
+              "deliveredResult": {
+                "kind": "setupInfo",
+                "playerIds": [
+                  "player-1",
+                  "player-2"
+                ],
+                "characterId": "seamstress",
+                "zeroOutsiders": false
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "vortox",
+                    "demonPlayerId": "player-4"
+                  }
+                ]
+              }
+            },
+            "spent": false
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:washerwoman:learnTownsfolk:owner8:player-2:instance14:setup:player-2",
+        "createdAt": "2026-09-12T06:25:14.957Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-09-12T06:26:23.550Z"
+}

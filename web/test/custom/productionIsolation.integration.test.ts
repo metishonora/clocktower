@@ -7,6 +7,7 @@ import { realWasmCore } from "./realCustomWasmHarness.js";
 describe("Issue #206 production custom-runtime isolation", () => {
   it("requires real TB preparation before the planned delivery in ordinary generated WASM", async () => {
     const definition = productionDefinition();
+    definition.characterIds.push('artist','savant','juggler');
     definition.characterIds = definition.characterIds.map(id => id === "philosopher" ? "washerwoman" : id);
     definition.firstNightOrder = definition.firstNightOrder.map(ref => ref.kind === "character" ? { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" } : ref);
     const empty = createCustomGameFile(
@@ -26,7 +27,10 @@ describe("Issue #206 production custom-runtime isolation", () => {
     };
     const replayed = await realWasmCore().replay(setupGame);
     expect(replayed.ok).toBe(true);
-    if (replayed.ok) expect(replayed.value.currentStep?.actionRef?.actionId).toBe("prepareInformation");
+    if (replayed.ok) expect(replayed.value.currentStep?.actionRef?.actionId).toBe("demonInfo");
+    const demon=await realWasmCore().propose(setupGame,{type:'confirmStep',payload:{stepId:'firstNight:system:demonInfo',input:{characterIds:['artist','savant','juggler']}}});
+    expect(demon.ok).toBe(true);
+    if(demon.ok){setupGame.game.events.push(demon.value.event);const state=await realWasmCore().replay(setupGame);expect(state.ok&&state.value.currentStep?.actionRef?.actionId).toBe('prepareInformation');}
   });
 
   it("rejects fixture result discriminators at the production Rust and TypeScript boundaries", async () => {

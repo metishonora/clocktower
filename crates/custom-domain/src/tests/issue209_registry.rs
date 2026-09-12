@@ -145,6 +145,8 @@ fn an_unexpected_identity_is_invalid_even_when_spec_and_handler_agree() {
     registry
         .register(RegisteredAction {
             spec: ActionSpec {
+                prerequisites: vec![],
+                continuation_sources: vec![],
                 action_ref: action.clone(),
                 participates_in_first_night: true,
                 required_input_kind: RequiredInputKind::None,

@@ -1858,3 +1858,27 @@
   .customScenarioSurface input:not([type="file"]) { min-height: 44px; }
   .customScenarioSurface .issue200CharacterFooter .issue200CharacterDetail { grid-template-columns: 34px minmax(0, 1fr) 44px; }
 }
+
+/* Final approved #205 source panel; no repository or intermediate import step. */
+.customScenarioSurface .customScenarioSource { top:auto;bottom:28px;height:auto;min-height:0;max-height:calc(100% - 56px);gap:16px;padding-block:24px; }
+.customScenarioSurface .customScenarioSource::before,.customScenarioSurface .customScenarioSource::after { display:none; }
+.customScenarioSurface .issue202AltFlatChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.customScenarioSource footer { justify-content:flex-end; }
+.customScenarioImport { display:grid;justify-items:center;gap:10px; }
+.customScenarioImport button { min-height:44px;padding:10px 24px;border:1px solid #9a7b5066;color:#f5e4c7;background:#221d19cf;font:inherit; }
+.customScenarioImport p { margin:0;font-size:13px; }
+@media(max-width:680px){.customScenarioSurface .customScenarioSource{bottom:14px;left:10px;right:10px;width:auto;transform:none;padding:20px 16px 14px;max-height:calc(100% - 28px)}.customScenarioSurface .issue202AltFlatChoices{grid-template-columns:1fr}.customScenarioSource button{min-height:44px}}
+
+.customScenarioSurface .customScenarioSource { grid-template-rows:auto;overflow-y:auto; }
+.customScenarioSurface .customScenarioSource h1 { font-size:clamp(20px,2vw,28px); }
+.customScenarioSurface .customScenarioSource .issue202AltFlatChoices strong { font-size:clamp(17px,1.3vw,18px); }
+.customScenarioSurface .issue202Gate4ActionPanel > button { font-size:17px;min-height:62px; }
+
+/* Mobile catalog names remain readable without clipping, including the all-role view. */
+@media (max-width: 720px) {
+  .customScenarioSurface .issue200CharacterGrid { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 12px 8px; }
+  .customScenarioSurface .issue200CharacterGrid button { min-width: 0; min-height: 112px; padding: 6px 2px; gap: 8px; }
+  .customScenarioSurface .issue200CharacterGrid button > span { width: 56px; }
+  .customScenarioSurface .issue200CharacterGrid button img { width: 52px; height: 52px; }
+  .customScenarioSurface .issue200CharacterGrid button > strong { overflow: visible; white-space: normal; text-overflow: clip; word-break: keep-all; overflow-wrap: anywhere; font-size: .8rem; line-height: 1.4; text-align: center; }
+}

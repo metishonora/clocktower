@@ -13,7 +13,7 @@ vi.mock("../../src/generated/clocktower_custom_wasm/clocktower_custom_wasm.js", 
   custom_script_catalog: () => "[]",
   custom_first_night_plan: () => { throw new Error("unexpected definition query"); },
 }));
-beforeEach(() => { vi.resetModules(); state.fail = true; state.calls = 0; state.replay = JSON.stringify({ ok: true, value: trace.trace[0]!.replay }); });
+beforeEach(() => { vi.resetModules(); state.fail = true; state.calls = 0; state.replay = JSON.stringify({ ok: true, value: {...trace.trace[0]!.replay,actionExecutions:[],latestUndoUnit:null} }); });
 
 test("failed custom initialization clears its own pending request and permits a later retry", async () => {
   const client = await import("../../src/custom/core/wasmClient.js");
@@ -23,7 +23,7 @@ test("failed custom initialization clears its own pending request and permits a 
   expect(state.calls).toBe(1);
   expect(client.setupDistributionSync({ customDefinition: game.game.script.definition, playerCount: 7, actualCharacters: [] })).toBeUndefined();
   state.fail = false;
-  expect(await client.replay(game)).toEqual({ ok: true, value: trace.trace[0]!.replay });
+  expect(await client.replay(game)).toEqual({ ok: true, value: {...trace.trace[0]!.replay,actionExecutions:[],latestUndoUnit:null} });
   expect(state.calls).toBe(2);
 });
 

@@ -1,3 +1,9 @@
+import {SpyGrimoireView} from '../../shared-ui/SpyGrimoireView';
+import type {RectangularGrimoireSeat} from '../../shared-ui/GrimoirePresentation';
+import {GrimoireHandoffView} from '../../shared-ui/GrimoireHandoffView';
+import {GrimoireSeatContent} from '../../shared-ui/GrimoireSeatContent';
+import { InformationTreatmentInput } from '../../shared-ui/InformationInputPresentation';
+import { GrimoireSelectionPanel } from '../../shared-ui/GrimoireSelectionPanel';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { characterAsset } from "../../characterAssets";
 import { troubleBrewingCharacterDetail } from "../../characterDetails";
@@ -231,30 +237,7 @@ export function TroubleBrewingLiveGrimoire({
     setDetailsPlayerId(player.id);
   }
 
-  return <>
-    <GrimoirePresentation
-      ariaLabel={revealMode ? "Trouble Brewing 첩자 마도서" : "Trouble Brewing 마도서 검토"}
-      className={`snvSeatingSurface snvTabPanel tbConfirmedGrimoire confirmed issue116GrimoireSurface${handoff === "nomination" ? " issue116NominationMode" : handoff === "vote" ? " issue116VoteMode" : handoff === "target" ? " issue116AttackMode" : ""}${theme === "day" ? " snvDayMode" : " snvNightMode"}`}
-      toolbar={revealMode ? <div className="snvSeatingToolbar tbSpyRevealToolbar" aria-label="첩자 공개 안내">
-        <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
-      </div> : handoff ? (
-        <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
-          {!selectionComplete ? <button type="button" className="tbHandoffCancel" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
-        </GrimoireToolbar>
-      ) : (
-        <GrimoireToolbar ariaLabel="확정된 마도서 도구">
-          <button type="button" className="snvToolbarBack destructive" disabled={busy || interactionLocked} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
-        </GrimoireToolbar>
-      )}
-      workspaceClassName={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}${revealMode ? " tbRevealWorkspace" : ""}`}
-      style={sizeStyle}
-      board={<RectangularGrimoireBoard
-        ariaLabel={revealMode ? "첩자 공개 마도서 좌석 맵" : "라이브 마도서 좌석 맵"}
-        className="snvGrimoireDraft rectangular tbGrimoireBoard"
-        centerClassName="snvGrimoireCenter live issue116PhaseClock"
-        centerAriaLabel={revealMode ? "첩자 공개" : "현재 단계"}
-        style={sizeStyle}
-        seats={players.map((player, index) => {
+  const seats:RectangularGrimoireSeat[] = players.map((player, index) => {
           const position = desktopPositions[index];
           const mobilePosition = mobilePositions[index];
           const presentation = troubleBrewingSeatPresentation(player.actualCharacter, player.shownCharacter);
@@ -346,25 +329,37 @@ export function TroubleBrewingLiveGrimoire({
             onPointerUp: cancelLongPress,
             onPointerCancel: cancelLongPress,
             onPointerLeave: cancelLongPress,
-            content: <>
-              <span className="snvSeatNumber">{player.seat}</span>
-              {showGhostVoteIndicator ? <GhostVoteIcon /> : asset ? <img
-                src={asset.src}
-                alt=""
-                style={showSpentGhostVoteState ? { filter: "grayscale(1) blur(.45px)", opacity: .42 } : undefined}
-              /> : null}
-              {!player.alive ? <FuneralIcon /> : null}
-              <span className="snvSeatPlayerName">{player.name}</span>
-              <small>{selectionRole ?? displayedCharacter?.label ?? characterLabel(presentation.displayedCharacterId)}</small>
-              {revealMode && automaticTokenLabels.length ? <span className="tbRevealTokenList" aria-label="적용 토큰">
-                {automaticTokenLabels.map((label) => <span key={label}>{label}</span>)}
-              </span> : null}
-            </>,
+            content: <GrimoireSeatContent seat={player.seat} name={player.name} alive={player.alive} label={selectionRole ?? displayedCharacter?.label ?? characterLabel(presentation.displayedCharacterId)} tokenLabels={[]} icon={showGhostVoteIndicator?<GhostVoteIcon/>:asset?<img src={asset.src} alt="" style={showSpentGhostVoteState?{filter:"grayscale(1) blur(.45px)",opacity:.42}:undefined}/>:null}/>,
             afterSeat: <>
               <PlayerTokenCountBadge count={tokenCount} position={position} mobilePosition={mobilePosition} theme={theme} />
             </>,
           };
-        })}
+        });
+  if(revealMode)return <SpyGrimoireView seats={seats} style={sizeStyle} title="Trouble Brewing" phaseLabel={phaseLabel} runtime={phaseRuntime} disabled={progressActionDisabled} onClose={revealMode.onClose}/>;
+  return <>
+    {interactionLocked && !handoff ? <SpyGrimoireView seats={seats} style={sizeStyle} title="Trouble Brewing" phaseLabel={phaseLabel} runtime={phaseRuntime} disabled={progressActionDisabled} buttonLabel={progressActionLabel} onClose={()=>onGoToProgress?.()}/> : <GrimoirePresentation
+      ariaLabel={revealMode ? "Trouble Brewing 첩자 마도서" : "Trouble Brewing 마도서 검토"}
+      className={`snvSeatingSurface snvTabPanel tbConfirmedGrimoire confirmed issue116GrimoireSurface${handoff === "nomination" ? " issue116NominationMode" : handoff === "vote" ? " issue116VoteMode" : handoff === "target" ? " issue116AttackMode" : ""}${theme === "day" ? " snvDayMode" : " snvNightMode"}`}
+      toolbar={revealMode ? <div className="snvSeatingToolbar tbSpyRevealToolbar" aria-label="첩자 공개 안내">
+        <div><p>SPY · ACTUAL GRIMOIRE</p><h1>Trouble Brewing</h1></div>
+      </div> : handoff ? (
+        <GrimoireToolbar phaseLabel={phaseLabel} showCurrentActor={Boolean(actorPlayerId)}>
+          {!selectionComplete ? <button type="button" className="tbHandoffCancel" disabled={busy} onClick={onCancelSelection}>{handoff === "vote" ? "투표 취소 →" : handoff === "target" ? "선택 취소 →" : "돌아가기 →"}</button> : null}
+        </GrimoireToolbar>
+      ) : (
+        <GrimoireToolbar ariaLabel="확정된 마도서 도구">
+          <button type="button" className="snvToolbarBack destructive" disabled={busy || interactionLocked} aria-label="배치로 돌아가기" onClick={onReturnToAssignment}><span aria-hidden="true">←</span></button>
+        </GrimoireToolbar>
+      )}
+      workspaceClassName={`snvSeatingWorkspace stable${handoff ? "" : " issue116ReferenceWorkspace"}${revealMode ? " tbRevealWorkspace" : ""}`}
+      style={sizeStyle}
+      board={<RectangularGrimoireBoard
+        ariaLabel={revealMode ? "첩자 공개 마도서 좌석 맵" : "라이브 마도서 좌석 맵"}
+        className="snvGrimoireDraft rectangular tbGrimoireBoard"
+        centerClassName="snvGrimoireCenter live issue116PhaseClock"
+        centerAriaLabel={revealMode ? "첩자 공개" : "현재 단계"}
+        style={sizeStyle}
+        seats={seats}
         overlay={handoff === "nomination" && nominator && nominee ? <NominationArrow
           nominatorIndex={players.indexOf(nominator)}
           nomineeIndex={players.indexOf(nominee)}
@@ -376,7 +371,7 @@ export function TroubleBrewingLiveGrimoire({
         center={handoff === "nomination" || handoff === "vote" ? undefined : <>
           <strong>{revealMode ? "첩자 공개" : gameEnded ? "게임 종료" : phaseLabel}</strong>
           {!revealMode && !gameEnded ? <time aria-label={`${phaseLabel} 경과 시간 ${phaseRuntime}`}>{phaseRuntime}</time> : null}
-          {revealMode ? <button type="button" onClick={revealMode.onClose}>확인했으면 눈을 감으세요</button> : !gameEnded && !handoff ? <button type="button" disabled={progressActionDisabled} onClick={onGoToProgress}>{progressActionLabel}</button> : null}
+          {!gameEnded && !handoff ? <button type="button" disabled={progressActionDisabled} onClick={onGoToProgress}>{progressActionLabel}</button> : null}
         </>}
       />}
       inspector={handoff ? <TroubleBrewingSelectionPanel
@@ -396,7 +391,7 @@ export function TroubleBrewingLiveGrimoire({
         onReset={onResetSelection}
         onConfirm={onConfirmSelection}
       /> : undefined}
-    />
+    />}
     {!revealMode && detailsPlayer && detailsCharacter ? <PlayerTokenDetailDialog
       appearance="tb"
       characterDetails={troubleBrewingCharacterDetail(detailsCharacter.id)}
@@ -484,13 +479,16 @@ function TroubleBrewingSelectionPanel({
     : handoff === "vote" ? `${voterIds.length}표로 투표 확정`
       : target ? "선택 확정" : "대상을 선택하세요";
 
-  return <aside className={`issue116SelectionPanel${completedSelection ? " snvSelectionCompletePanel" : ""}`} aria-label="현재 마도서 작업">
-    <header className="issue116SelectionHeader">
-      <h2>{title}</h2>
-      {!completedSelection ? <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
+  if(handoff==='target')return <GrimoireHandoffView continueLabel={completedSelection?.actionLabel} title={title} completed={!!completedSelection} busy={busy} ready={ready} onReset={()=>onReset?.()} onConfirm={()=>onConfirm?.()} onContinue={()=>completedSelection?.onContinue()} confirmLabel={confirmLabel} resetLabel={setupInformationTargetCount>0?'초기화':'선택 초기화 X'} rows={completedSelection?.summary ?? (numberedTargetCount>0?targets.map((p,index)=>({label:targetOrdinal(index),value:playerLabel(p)})):[{label:selectionPresentation?.fieldLabel ?? targetSelectionFieldLabel(currentStep),value:targetLabel}])}>
+    {selectionChoices?<InformationTreatmentInput className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment" label={selectionChoices.label} value={selectionChoices.selectedId} disabled={busy} options={selectionChoices.options.map(option=>({...option,accessibleLabel:option.ariaLabel}))} onChange={selectionChoices.onChange}/>:null}
+  </GrimoireHandoffView>;
+  return <GrimoireSelectionPanel title={title} completed={!!completedSelection} reset={!completedSelection ? <button type="button" disabled={busy || (setupInformationTargetCount > 0 && targets.length === 0)} onClick={onReset}>
         {handoff === "nomination" ? "지명 초기화 X" : handoff === "vote" ? "투표 초기화 X" : setupInformationTargetCount > 0 ? "초기화" : "선택 초기화 X"}
-      </button> : null}
-    </header>
+      </button> : null} action={completedSelection ? (
+      <button type="button" className="issue116PrimaryAction issue116NextAction" disabled={busy} onClick={completedSelection.onContinue}>{completedSelection.actionLabel ?? "다음 →"}</button>
+    ) : (
+      <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
+    )}>
     {completedSelection?.summary ? <dl>
       {completedSelection.summary.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
     </dl> : handoff === "nomination" ? <dl>
@@ -506,24 +504,11 @@ function TroubleBrewingSelectionPanel({
     </dl> : <dl>
       <div><dt>{selectionPresentation?.fieldLabel ?? targetSelectionFieldLabel(currentStep)}</dt><dd>{targetLabel}</dd></div>
     </dl>}
-    {selectionChoices ? <fieldset className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment">
-      <legend>{selectionChoices.label}</legend>
-      {selectionChoices.options.map((option) => <button
-        type="button"
-        className={[option.className, selectionChoices.selectedId === option.id ? "selected" : ""].filter(Boolean).join(" ")}
-        aria-label={option.ariaLabel}
-        aria-pressed={selectionChoices.selectedId === option.id}
-        disabled={busy}
-        onClick={() => selectionChoices.onChange(option.id)}
-        key={option.id}
-      >{option.label}</button>)}
-    </fieldset> : null}
-    {completedSelection ? (
-      <button type="button" className="issue116PrimaryAction issue116NextAction" disabled={busy} onClick={completedSelection.onContinue}>{completedSelection.actionLabel ?? "다음 →"}</button>
-    ) : (
-      <button type="button" className="issue116PrimaryAction" disabled={!ready || busy} onClick={onConfirm}>{confirmLabel}</button>
-    )}
-  </aside>;
+    {selectionChoices ? <InformationTreatmentInput className="snvInformationBinary tbSelectionChoices tbRegistrationTreatment"
+      label={selectionChoices.label} value={selectionChoices.selectedId} disabled={busy}
+      options={selectionChoices.options.map(option=>({...option,accessibleLabel:option.ariaLabel}))}
+      onChange={selectionChoices.onChange}/> : null}
+  </GrimoireSelectionPanel>;
 }
 
 function playerLabel(player?: Player) {

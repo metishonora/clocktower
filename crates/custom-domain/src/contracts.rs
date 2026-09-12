@@ -182,14 +182,45 @@ pub(crate) struct SetupDistribution {
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq, Clone)]
-#[serde(untagged)]
-pub(crate) enum SetupDistributionResult {
-    Distribution(SetupDistribution),
+#[serde(rename_all = "PascalCase")]
+pub(crate) struct SetupCountDelta {
+    pub(crate) townsfolk: i32,
+    pub(crate) outsider: i32,
+    pub(crate) minion: i32,
+    pub(crate) demon: i32,
+}
+impl SetupCountDelta {
+    pub(crate) fn outsider(amount: i32) -> Self {
+        Self { townsfolk: -amount, outsider: amount, minion: 0, demon: 0 }
+    }
+}
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupModifier {
+    pub(crate) character_id: String,
+    pub(crate) delta: SetupCountDelta,
+}
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupAdjustment {
+    pub(crate) base: SetupDistribution,
+    pub(crate) modifiers: Vec<SetupModifier>,
+    pub(crate) requested_delta: SetupCountDelta,
+    pub(crate) applied_delta: SetupCountDelta,
+    pub(crate) limited: bool,
+}
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
+pub(crate) struct SetupDistributionResult {
+    #[serde(flatten)]
+    pub(crate) distribution: SetupDistribution,
+    pub(crate) adjustment: SetupAdjustment,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
+    pub(crate) action_executions: Vec<crate::first_night::execution::ActionExecution>,
+    pub(crate) latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
     pub(crate) schema_version: u32,
     #[serde(flatten)]
     pub(crate) script_identity: ReplayScriptIdentity,
@@ -218,6 +249,8 @@ pub(crate) enum ReplayScriptIdentity {
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RuleState {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) automatic_reminders: Vec<AutomaticReminder>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(crate) preparations: Vec<PreparationRecord>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -469,6 +502,7 @@ pub(crate) enum CustomActionResult {
         day: u16,
         effective: bool,
     },
+    MutantJudgment { result: crate::model::MadnessCheckResult },
     MutantExecution {
         execute: bool,
         executed: bool,

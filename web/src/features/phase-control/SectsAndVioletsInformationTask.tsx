@@ -1,3 +1,7 @@
+import {NumberInformationEditor} from '../../shared-ui/NumberInformationEditor';
+import {MathematicianAuditRowView} from '../../shared-ui/MathematicianAuditRowView';
+import {RoleInformationTaskView} from '../../shared-ui/RoleInformationTaskView';
+import { InformationTaskPresentation, InformationPairInput, InformationBinaryInput } from '../../shared-ui/InformationTaskPresentation';
 import { useEffect, useMemo, useState } from "react";
 import { CharacterDetailButton } from "../../components/CharacterRulesCard";
 import type {
@@ -87,9 +91,7 @@ export function SectsAndVioletsInformationTask({
   const needsTargets = targeted && !targetCheck;
   const usesManualStepLayout = needsTargets;
 
-  return (
-    <article className={`snvCurrentStep snvInformationTask${usesManualStepLayout ? " snvInformationTaskPending" : ""}${characterId === "clockmaker" ? " snvClockmakerInformationTask" : ""}`} aria-label={`${character?.name ?? characterId} 정보`}>
-      {usesManualStepLayout ? <p className="snvCurrentStepLabel">현재 할 일</p> : null}
+  return <RoleInformationTaskView className={characterId==='clockmaker'?'snvClockmakerInformationTask':''} ariaLabel={`${character?.name ?? characterId} 정보`} identity={<>
       {acquiredAbilityCharacterId ? <AcquiredAbilityPresentation
         actor={actor}
         abilityCharacterId={acquiredAbilityCharacterId}
@@ -116,13 +118,10 @@ export function SectsAndVioletsInformationTask({
 
       <p className="snvInformationAbility">{character?.ability}</p>
       </>}
-      {needsTargets ? (
-        <div className="snvStepActions snvInformationTargetActions">
-          <button type="button" className="prominent" disabled={busy} onClick={onChooseTargets}>대상 선택</button>
-          {characterId === "seamstress" ? <button type="button" className="secondary" disabled={busy} onClick={onSkip}>오늘 사용하지 않음</button> : null}
-        </div>
-      ) : (
-        <>
+</>} needsTargets={needsTargets} busy={busy} onChooseTargets={onChooseTargets} onSkip={characterId==='seamstress'?onSkip:undefined}
+ revealed={revealed} canReveal={!!selectedResult||truthConstraintViolation} influence={influence ?? ''} revealLabel={influencePresentation?.action ?? '정보 공개'}
+ actionsClassName={`${matchesTargetedInformationCharacter(characterId)?' snvTargetedInformationActions':''}${usesSpaciousInformationLayout(characterId)?' snvSpaciousInformationActions':''}`}
+ onReveal={()=>{if(truthConstraintViolation){setTruthWarningAttempt(attempt=>attempt+1);return;}onReveal();}} onContinue={onContinue}>
           {targeted && targetCheck ? (
             <dl className="snvInformationValues snvTargetedInformationContext snvMobileStackedInformationContext" role="group" aria-label="대상과 진실">
               <div><dt>대상</dt><dd>{selectedPlayerIds.map((id) => playerLabel(players, id)).join(" · ")}</dd></div>
@@ -164,20 +163,7 @@ export function SectsAndVioletsInformationTask({
             <GenericEditor step={step} choices={choices} value={selectedResult} busy={busy || revealed} onChange={onDeliveredResultChange} />
           ) : null}
           {mathematicianAudit ? <MathematicianAuditDisclosure audit={mathematicianAudit} players={players} /> : null}
-          <div className={`snvStepActions snvInformationActions${matchesTargetedInformationCharacter(characterId) ? " snvTargetedInformationActions" : ""}${usesSpaciousInformationLayout(characterId) ? " snvSpaciousInformationActions" : ""}`}>
-            <button type="button" className={`informationReveal ${revealed ? "" : "prominent"} ${influence ?? ""}`} disabled={busy || (!selectedResult && !truthConstraintViolation)} onClick={() => {
-              if (truthConstraintViolation) {
-                setTruthWarningAttempt((attempt) => attempt + 1);
-                return;
-              }
-              onReveal();
-            }}>{influencePresentation?.action ?? "정보 공개"}</button>
-            {revealed && onContinue ? <button type="button" className="prominent" disabled={busy} onClick={onContinue}>다음 단계</button> : null}
-          </div>
-        </>
-      )}
-    </article>
-  );
+  </RoleInformationTaskView>;
 }
 
 function NumberConstraintEditor({ step, value, error, truthWarningAttempt, suppressHint = false, busy, onChange }: { step: PhaseStep; value: string; error?: string; truthWarningAttempt: number; suppressHint?: boolean; busy: boolean; onChange: (value: string) => void }) {
@@ -185,35 +171,17 @@ function NumberConstraintEditor({ step, value, error, truthWarningAttempt, suppr
   const truth = step.informationPrompt?.computedResult?.kind === "number" ? step.informationPrompt.computedResult.value : undefined;
   const excludesTruth = Boolean(step.informationPrompt?.numberConstraint?.excludedValues.length);
   const truthError = error === "보르톡스가 작동 중이므로 진실은 전달할 수 없습니다.";
-  return <dl className="snvInformationValues snvSpaciousInformationEditor snvNumberConstraintEditor" aria-label="전달할 숫자 정보"><div>
-    <dt><label htmlFor={`delivered-${step.id}`}>전달할 정보</label></dt>
-    <dd><input id={`delivered-${step.id}`} aria-label="전달할 숫자" type="number" min="0" step="1" inputMode="numeric" value={value} disabled={busy} onChange={(event) => onChange(event.target.value)} /><span>{numericUnit(characterId)}</span></dd>
-  </div>{error || !suppressHint ? <p key={truthError ? truthWarningAttempt : 0} className={error ? truthError ? `snvInformationInputTruthWarning${truthWarningAttempt ? " truthPulse" : ""}` : "snvInformationInputError" : "snvInformationInputHint"} role={error ? "alert" : undefined}>{error ?? (excludesTruth ? `0 이상의 정수 · 진실 ${truth ?? "-"} 제외` : "0 이상의 정수 · 진실도 전달 가능")}</p> : null}</dl>;
+  return <NumberInformationEditor id={step.id} value={value} unit={numericUnit(characterId)} error={error} hint={suppressHint?undefined:excludesTruth?`0 이상의 정수 · 진실 ${truth ?? '-'} 제외`:'0 이상의 정수 · 진실도 전달 가능'} truthWarning={truthError} attempt={truthWarningAttempt} busy={busy} onChange={onChange}/>;
 }
 
 function MathematicianAuditDisclosure({ audit, players }: { audit: MathematicianAudit; players: Player[] }) {
   const records = dedupeMathematicianRecords(audit.records);
-  return <details className="snvMathematicianAudit" aria-label="계산 근거">
-    <summary><span>계산 근거</span><small>{records.length}명</small></summary>
-    {records.length === 0 ? <p className="snvMathematicianAuditEmpty">비정상 작동 기록 없음</p> : <ol className="snvMathematicianAuditList" aria-label="비정상 작동 기록">
-      {records.map((record) => <MathematicianAuditRow key={`${record.subjectPlayerId}:${record.abilityInstanceId}`} record={record} players={players} />)}
-    </ol>}
-  </details>;
+  return <InformationTaskPresentation count={records.length}>{records.map(record=><MathematicianAuditRow key={`${record.subjectPlayerId}:${record.abilityInstanceId}`} record={record} players={players}/>)}</InformationTaskPresentation>;
 }
 
 function MathematicianAuditRow({ record, players }: { record: MathematicianAudit["records"][number]; players: Player[] }) {
   const evidence = latestMathematicianEvidence(record);
-  return <li className="snvMathematicianAuditRow">
-    <div className="snvMathematicianAuditMain">
-      <strong>{playerLabel(players, record.subjectPlayerId)}</strong>
-      <span className="snvMathematicianAuditCharacter">{characterName(evidence?.characterId ?? record.characterId)}</span>
-      <span className="snvMathematicianAuditOutcome">{evidence ? mathematicianOutcomeLabel(evidence.outcome) : "근거 없음"}</span>
-    </div>
-    {evidence ? <div className="snvMathematicianAuditMeta">
-      <span className="snvMathematicianAuditCauses" aria-label="원인">{dedupeMathematicianCauses(evidence.causes).map((cause) => <em key={cause.type} className={`snvMathematicianAuditCause ${cause.type}`}>{mathematicianCauseLabel(cause)}</em>)}</span>
-      <time>{mathematicianTimingLabel(evidence)}</time>
-    </div> : null}
-  </li>;
+  return <MathematicianAuditRowView player={playerLabel(players,record.subjectPlayerId)} character={characterName(evidence?.characterId ?? record.characterId)} outcome={evidence?mathematicianOutcomeLabel(evidence.outcome):'근거 없음'} causes={evidence?dedupeMathematicianCauses(evidence.causes).map(c=>({type:c.type,label:mathematicianCauseLabel(c)})):undefined} timing={evidence?mathematicianTimingLabel(evidence):undefined}/>;
 }
 
 function dedupeMathematicianRecords(records: MathematicianAudit["records"]): MathematicianAudit["records"] {
@@ -286,15 +254,12 @@ function DreamerEditor({ check, value, busy, onChange }: { check: TargetCheck; v
   const actual = check.computedResult.kind === "character" ? check.computedResult.characterId : "";
   const goodLocked = current[0] === actual;
   const evilLocked = current[1] === actual;
-  return <fieldset className="snvInformationPairEditor snvDreamerEditor"><legend>전달할 캐릭터</legend>
-    <label>선한 캐릭터<select className={goodLocked ? "snvDreamerLockedSelect" : undefined} aria-label="선한 캐릭터" value={current[0]} disabled={busy || goodLocked} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [event.target.value, current[1]] })}>{good.map(option)}</select></label>
-    <label>악한 캐릭터<select className={evilLocked ? "snvDreamerLockedSelect" : undefined} aria-label="악한 캐릭터" value={current[1]} disabled={busy || evilLocked} onChange={(event) => onChange?.({ kind: "characterPair", characterIds: [current[0], event.target.value] })}>{evil.map(option)}</select></label>
-  </fieldset>;
+  return <InformationPairInput value={current} options={[good,evil]} locked={[goodLocked,evilLocked]} disabled={busy} labelFor={characterName} onChange={characterIds=>onChange?.({kind:'characterPair',characterIds})}/>;
 }
 
 function SeamstressEditor({ value, busy, onChange }: { value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {
   const selected = value?.kind === "boolean" ? value.value : undefined;
-  return <fieldset className="snvInformationBinary"><legend>전달할 정보</legend>{[[true, "같은 진영"], [false, "다른 진영"]].map(([candidate, label]) => <button key={String(candidate)} type="button" aria-pressed={selected === candidate} disabled={busy} onClick={() => onChange?.({ kind: "boolean", value: candidate as boolean })}>{label}</button>)}</fieldset>;
+  return <InformationBinaryInput value={selected} options={[{value:true,label:'같은 진영'},{value:false,label:'다른 진영'}]} disabled={busy} onChange={value=>onChange?.({kind:'boolean',value})}/>;
 }
 
 function SageEditor({ players, choices, value, busy, onChange }: { players: Player[]; choices: InformationResult[]; value?: InformationResult; busy: boolean; onChange?: (result: InformationResult) => void }) {

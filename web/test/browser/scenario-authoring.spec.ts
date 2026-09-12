@@ -18,8 +18,8 @@ async function save(page: Page) {
 async function upload(page: Page, bytes: Buffer) {
   await page.getByRole('button', { name: 'JSON에서 불러온다' }).click();
   await page.getByLabel('시나리오 JSON 파일').setInputFiles({ name: 'reusable.json', mimeType: 'application/json', buffer: bytes });
-  await expect(page.getByText('시나리오를 불러왔습니다.')).toBeVisible();
-  await page.getByRole('button', { name: '검토로', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '최종 검토', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '검토로', exact: true })).toHaveCount(0);
 }
 async function databaseSnapshot(page: Page) {
   return page.evaluate(async () => {
@@ -94,7 +94,8 @@ test('wrong file kinds and unsupported fields leave an existing production game 
   }))]) {
     await page.getByLabel('시나리오 JSON 파일').setInputFiles({ name: 'wrong.json', mimeType: 'application/json', buffer });
     await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByRole('button', { name: '검토로', exact: true })).toBeDisabled();
+    await expect(page.getByRole('heading', { name: '최종 검토', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'JSON 파일 선택', exact: true })).toBeEnabled();
     expect(await databaseSnapshot(page)).toEqual(before);
   }
   const valid = Buffer.from(JSON.stringify({ type: 'clocktower-custom-scenario', version: 1, scenario: {
@@ -190,7 +191,7 @@ test('search and source transitions close details and preserve the selected pool
   expect((await save(page)).json).toEqual(before);
 });
 
-for (const viewport of [{ width: 390, height: 844 }, { width: 820, height: 1180 }]) {
+for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 844 }, { width: 820, height: 1180 }]) {
   test(`full 47-character roster remains scrollable and downloadable at ${viewport.width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -201,6 +202,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 820, height: 1180 
     await page.getByLabel('캐릭터 검색').fill('');
     const characters = page.locator('.issue200CharacterGrid button');
     await expect(characters).toHaveCount(47);
+    if (viewport.width <= 390) {
+      const clipped = await characters.locator('strong').evaluateAll(labels => labels.filter(label => label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1).map(label => label.textContent));
+      expect(clipped).toEqual([]);
+      expect(await characters.locator('strong').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
+      await page.screenshot({path:testInfo.outputPath('readable-character-catalog.png')});
+    }
     for (const character of await characters.all()) await character.click();
     await page.getByRole('button', { name: '선택 완료' }).click();
     const lastMove = page.getByRole('button', { name: /위로 이동/ }).last();

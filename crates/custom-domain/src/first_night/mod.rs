@@ -1,3 +1,4 @@
+pub(crate) mod execution;
 mod activation;
 pub(crate) mod catalog;
 #[cfg(any(test, feature = "custom-runtime-fixtures"))]

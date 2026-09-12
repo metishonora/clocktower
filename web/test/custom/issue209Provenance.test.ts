@@ -6,9 +6,9 @@ import { parseGameEvent } from "../../src/custom/core/validation.js";
 import type { RegistrationJudgment, CustomScriptDefinition } from "../../src/custom/core/types.js";
 it("C21-a/d C22 C26-a: current acquired occurrence rejects real but wrong identities and duplicate completion", async () => {
     const { session, storage } = await start(1);
-    await take(session, "assignRedHerring", { playerIds: ["p4"] });
     await system(session);
     await take(session, "chooseAbility", { characterIds: ["fortuneTeller"] });
+    await take(session, "assignRedHerring", { playerIds: ["p4"] });
     await take(session, "assignRedHerring", { playerIds: ["p4"] });
     const original = await take(session, "checkDemon", { playerIds: ["p2", "p4"] }, { kind: "boolean", value: true });
     const state = await replayOrThrow(session.snapshot.canonical);

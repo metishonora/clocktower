@@ -18,6 +18,8 @@ use crate::{
 /// The public first-night values calculated from one coherent facts/progress prefix.
 #[derive(Debug)]
 pub(crate) struct FirstNightProjection {
+    pub(crate) action_executions: Vec<crate::first_night::execution::ActionExecution>,
+    pub(crate) latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
     pub(crate) current_step: Option<PhaseStep>,
     pub(crate) phase_overview: Vec<PhaseOverviewItem>,
 }
@@ -26,6 +28,8 @@ pub(crate) struct FirstNightProjection {
 /// not part of the custom runtime remain at their established empty values.
 pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     let mut state = RuleState::default();
+    #[cfg(not(feature = "custom-runtime-fixtures"))]
+    { state.automatic_reminders = facts.players.iter().flat_map(|player| crate::characters::trouble_brewing::spy_reminders(facts, &player.id)).collect(); }
     state.preparations = facts
         .preparations
         .iter()
@@ -70,11 +74,26 @@ pub(crate) fn first_night(
     context: &ActionContext<'_>,
     progress: &FirstNightProgress,
 ) -> Result<FirstNightProjection, CoreError> {
-    let pending = project_pending_steps(plan, registry, context, progress)?;
+    let mut pending = project_pending_steps(plan, registry, context, progress)?;
+    // A rule-owned consumer preview is not an executable scheduler candidate.
+    for predecessor in pending.iter().map(|p|p.occurrence.clone()).collect::<Vec<_>>() {
+        if let Some(step)=registry.pending_consumer(context,&predecessor)? {
+            let occurrence=crate::state::ActionOccurrence::from_step(&step)?;
+            if !pending.iter().any(|p|p.occurrence.action_ref==occurrence.action_ref&&p.occurrence.source()==occurrence.source()) {
+                pending.push(crate::first_night::ProjectedOccurrenceStep {occurrence,step});
+            }
+        }
+    }
+    let occurrences=pending.iter().map(|p|p.occurrence.clone()).collect::<Vec<_>>();
+    for projected in &mut pending {
+        projected.step.execution=Some(crate::first_night::execution::project(registry,context,progress,&projected.occurrence,&occurrences)?);
+    }
+    let pending_steps=pending.iter().map(|p|p.step.clone()).collect::<Vec<_>>();
+    let (action_executions,latest_undo_unit)=crate::first_night::execution::units(progress,&pending_steps)?;
     let next_identity = progress
         .next_occurrence()
         .map(|occurrence| occurrence.identity());
-    let current_step = match progress.next_occurrence() {
+    let mut current_step = match progress.next_occurrence() {
         Some(next) => pending
             .iter()
             .find(|projected| projected.occurrence.identity() == next.identity())
@@ -83,6 +102,10 @@ pub(crate) fn first_night(
             .map(Some)?,
         None => None,
     };
+
+    if let (Some(step), Some(occurrence)) = (&mut current_step, progress.next_occurrence()) {
+        registry.enrich_input(context, occurrence, step)?;
+    }
 
     let mut rows = Vec::new();
     let mut last_linked_entry = 0;
@@ -95,7 +118,7 @@ pub(crate) fn first_night(
             .step
             .action_ref
             .as_ref()
-            .and_then(crate::first_night::catalog::linked_action)
+            .and_then(|a| registry.linked_action(a))
             .and_then(|a| plan.0.iter().position(|p| *p == a))
             .unwrap_or(last_linked_entry);
         last_linked_entry = entry_index;
@@ -110,7 +133,7 @@ pub(crate) fn first_night(
 
     for (sequence, projected) in pending.into_iter().enumerate() {
         let entry_index =
-            crate::first_night::catalog::linked_action(&projected.occurrence.action_ref)
+            registry.linked_action(&projected.occurrence.action_ref)
                 .and_then(|a| plan.0.iter().position(|p| *p == a))
                 .unwrap_or(sequence);
         let status = if next_identity
@@ -137,6 +160,7 @@ pub(crate) fn first_night(
             .then_with(|| left.sequence.cmp(&right.sequence))
     });
     Ok(FirstNightProjection {
+        action_executions, latest_undo_unit,
         current_step,
         phase_overview: rows
             .into_iter()
@@ -380,6 +404,8 @@ pub(crate) fn event_reveal(
 
 fn overview(step: PhaseStep, status: PhaseStepStatus) -> PhaseOverviewItem {
     PhaseOverviewItem {
+        execution: step.execution,
+        information_flow: step.information_flow.clone(),
         simulation_source: step.simulation_source.clone(),
         follow_up_cause: step.follow_up_cause.clone(),
         action_cause: step.action_cause.clone(),

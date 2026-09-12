@@ -337,6 +337,12 @@ fn validate_envelope_fields(
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
+    if payload.input.as_ref().is_some_and(|input| input.madness_check.is_some())
+        && !matches!(&payload.action_ref, FirstNightActionRef::Character { character_id, action_id }
+            if character_id == "mutant" && action_id == "resolveMadnessExecution")
+    {
+        return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+    }
     let simulation_result = matches!(
         payload.result,
         CustomActionResult::Simulation { .. } | CustomActionResult::SimulationChoice { .. }

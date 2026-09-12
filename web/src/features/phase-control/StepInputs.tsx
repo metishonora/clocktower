@@ -1,3 +1,4 @@
+import {InformationResultView} from '../../shared-ui/InformationResultView';
 import { CharacterSelect } from "../../components/CharacterSelect";
 import type {
   DayState,
@@ -502,9 +503,7 @@ function CharacterInformationDeliveryInput({
 }
 
 function TargetInformationResult({ choice }: { choice?: TargetCheck["choices"][number] }) {
-  return <dl className="snvInformationValues tbTargetInformationResult" role="group" aria-label="정보 결과">
-    <div><dt>결과</dt><dd>{choice ? informationResultValueLabel(choice.result) : "선택 필요"}</dd></div>
-  </dl>;
+  return <InformationResultView kind="target">{choice ? informationResultValueLabel(choice.result) : "선택 필요"}</InformationResultView>;
 }
 
 function informationResultLabel(result: TargetCheck["computedResult"]): string {

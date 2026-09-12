@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { expect } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 import { CustomCanonicalSession } from "../../src/custom/session.js";
@@ -8,7 +9,7 @@ import { exportGameFileJson, parseGameFileJson } from "../../src/custom/storage/
 import type { CustomScriptDefinition, SetupPlayerInput, PhaseStepInput, InformationResult, RegistrationJudgment, Command, GameEvent } from "../../src/custom/core/types.js";
 import { realWasmCore, replayOrThrow } from "./realCustomWasmHarness.js";
 export { realWasmCore, replayOrThrow };
-const inputs = JSON.parse(readFileSync(new URL("../../../fixtures/acceptance/custom-first-night/issue209/inputs.json", import.meta.url), "utf8")) as {
+const inputs = JSON.parse(readFileSync(resolve(process.cwd(), "../fixtures/acceptance/custom-first-night/issue209/inputs.json"), "utf8")) as {
     definition: CustomScriptDefinition;
     rosters: string[][];
 };
@@ -104,3 +105,15 @@ export async function dawnRejected(session: Session) {
 }
 export function custom(event: GameEvent) { if (event.type !== "customActionConfirmed")
     throw Error(event.type); return event.payload; }
+
+/** Legacy saved-prefix fixture: no new command may execute this early preparation. */
+export async function startLegacyWasherwoman() {
+    const started=await start(4,d=>moveBefore(d,'inspectGrimoire','chooseAbility'));
+    const file=structuredClone(started.session.snapshot.canonical);
+    const step=started.session.replay!.phaseOverview.find(s=>s.actionRef?.actionId==='prepareInformation')!;
+    const input={playerIds:['p7','p8'],characterId:'monk',correctPlayerId:'p7'};
+    const event:GameEvent={id:'legacy-preparation',type:'customActionConfirmed',phase:'firstNight',createdAt:'2026-09-09T00:00:00Z',summary:'구 초기 준비',payload:{stepId:step.id,actionRef:{kind:'character',characterId:'washerwoman',actionId:'prepareInformation'},abilityUse:step.abilityUse!,actionCause:step.actionCause,input,result:{kind:'informationPrepared',preparation:{information:{kind:'setupInfo',playerIds:input.playerIds,characterId:'monk',zeroOutsiders:false},correctPlayerId:'p7'}}}};
+    file.game.events.push(event);
+    const loaded=await CustomCanonicalSession.fromFile(file,{core:realWasmCore(),storage:started.storage,setupDraft:{},presentation:{}});expect(loaded.ok).toBe(true);if(!loaded.ok)throw Error(loaded.error.messageKo);
+    stores.set(loaded.value,started.storage);await loaded.value.retrySave();return {session:loaded.value,storage:started.storage,initial:{proposal:{event}}};
+}

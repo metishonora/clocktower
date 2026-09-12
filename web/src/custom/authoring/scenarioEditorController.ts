@@ -1,13 +1,17 @@
+import { importScenarioSource } from './importScenarioSource.js';
+import { customGameCanResumeWithDefinition } from '../core/scriptIdentity.js';
+import type { CoreAdapter } from '../core/coreAdapter.js';
 import type { CustomScriptDefinitionDraft, CoreResult, CustomFirstNightPlanResult } from '../core/types.js';
 import { DefinitionInputError } from '../core/definition.js';
 import { CustomDefinitionValidationError, freezeSnapshot, validateScenarioCandidate,
   type LoadCustomDefinitionValidator } from '../core/definitionValidator.js';
-import { parseScenarioFileJson, scenarioDownloadName, serializeScenarioFile } from '../storage/scenarioFile.js';
+import { scenarioDownloadName, serializeScenarioFile } from '../storage/scenarioFile.js';
 import { actionKey, reconcileFirstNightOrder } from './reconcileFirstNightOrder.js';
 import type { EditorError, EditorStep, ScenarioEditorState } from './scenarioEditorState.js';
 
 export type ScenarioEditorDependencies = {
   createId: () => string;
+  replay?: CoreAdapter['replay'];
   loadValidator: LoadCustomDefinitionValidator;
   proposeOrder: (draft: CustomScriptDefinitionDraft) => Promise<CoreResult<CustomFirstNightPlanResult>>;
   download: (json: string, filename: string) => void;
@@ -45,7 +49,7 @@ export class ScenarioEditorController {
     this.listeners.forEach((listener) => listener());
   }
   cancelPending = () => { this.validationRequest++; this.orderRequest++; this.importRequest++; };
-  setStep = (step: EditorStep) => { this.patch({ step }); };
+  setStep = (step: EditorStep) => { this.importRequest++; this.patch({ step, importStatus: 'idle' }); };
   selectSource = (source: 'new' | 'json') => {
     this.importRequest++;
     this.patch({ source, importStatus: 'idle', importName: undefined, importError: undefined });
@@ -55,7 +59,7 @@ export class ScenarioEditorController {
     this.pendingOrderReset = undefined;
     this.patch({ step: 'characters', source: 'new', draft: { id: this.dependencies.createId(), name: '', characterIds: [] },
       change: this.state.change + 1, validated: undefined, validation: 'idle', error: undefined,
-      orderPending: false, importStatus: 'idle', importError: undefined, importName: undefined,
+      orderPending: false, importedGame: undefined, importStatus: 'idle', importError: undefined, importName: undefined,
       downloadStatus: 'idle', downloadError: undefined });
     void this.updateOrder(true);
   };
@@ -136,27 +140,29 @@ export class ScenarioEditorController {
       try { json = await file.text(); }
       catch { throw new Error('파일을 읽지 못했습니다. 다시 선택해 주세요.'); }
       if (request !== this.importRequest) return;
-      const content = parseScenarioFileJson(json);
-      let validated;
-      try {
-        validated = await validateScenarioCandidate({ id: this.dependencies.createId(), ...content }, this.dependencies.loadValidator);
-      } catch (error) {
-        if (error instanceof DefinitionInputError || error instanceof CustomDefinitionValidationError) throw error;
-        throw new Error('시나리오를 확인하지 못했습니다. 다시 시도해 주세요.');
-      }
+      const { validated, game } = await importScenarioSource(json, this.dependencies.createId, this.dependencies.loadValidator, {
+        replay: this.dependencies.replay ?? (async file => (await import('../core/wasmClient.js')).replay(file)),
+      });
       if (request !== this.importRequest) return;
       this.orderRequest++;
       this.pendingOrderReset = undefined;
       this.validationRequest++;
-      this.patch({ draft: validated.definition, change: this.state.change + 1, validated,
+      this.patch({ step: 'review', importedGame: game, draft: validated.definition, change: this.state.change + 1, validated,
         validation: 'valid', error: undefined, orderPending: false, source: 'json',
         importStatus: 'ready', importName: file.name, importError: undefined, downloadStatus: 'idle', downloadError: undefined });
     } catch (error) {
       if (request !== this.importRequest) return;
       const message = error instanceof DefinitionInputError || error instanceof CustomDefinitionValidationError
         ? blockingMessage(editorError(error)) : error instanceof Error ? error.message : '파일을 불러오지 못했습니다.';
-      this.patch({ importStatus: 'error', importError: message });
+      this.patch({ step: 'scenario', source: 'json', importStatus: 'error', importError: message });
     }
+  };
+  getValidatedScenario = () => this.state.validation === 'valid' && !this.state.orderPending
+    ? this.state.validated : undefined;
+  getResumableGame = () => {
+    const validated = this.getValidatedScenario();
+    const game = this.state.importedGame;
+    return validated && game && customGameCanResumeWithDefinition(game.file, validated.definition) ? game : undefined;
   };
   save = () => {
     const snapshot = this.state.validated;

@@ -372,6 +372,8 @@ pub(crate) struct BooleanInformationChoice {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct TargetInformationCheck {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) fixed_character_id: Option<String>,
     pub(crate) target_player_ids: Vec<String>,
     pub(crate) computed_result: InformationResult,
     pub(crate) choices: Vec<TargetInformationChoice>,
@@ -423,6 +425,8 @@ pub(crate) type StepInput = Option<StepInputFields>;
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepInputFields {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) madness_check: Option<MadnessCheckResult>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) correct_player_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) player_ids: Option<Vec<String>>,
@@ -471,6 +475,11 @@ pub(crate) enum MayorDecisionInput {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseStep {
+    pub(crate) execution: Option<crate::first_night::execution::StepExecution>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) madness: Option<MadnessState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) information_flow: Option<InformationFlow>,
     pub(crate) id: String,
     pub(crate) phase: Phase,
     pub(crate) step_type: StepType,
@@ -509,6 +518,13 @@ pub(crate) struct PreActionReveal {
     pub(crate) character_id: &'static str,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetupInformationChoice {
+    pub(crate) preparation: InformationPreparation,
+    pub(crate) registration_judgments: Vec<RegistrationJudgment>,
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RequiredInput {
@@ -531,6 +547,8 @@ pub(crate) struct RequiredInput {
     pub(crate) dependent_player_selections: Vec<DependentPlayerSelection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) player_registration_options: Option<Vec<RegistrationJudgment>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) setup_information_choices: Option<Vec<SetupInformationChoice>>,
     #[serde(skip_serializing_if = "is_false")]
     pub(crate) zero_allowed: bool,
     #[serde(skip_serializing_if = "is_false")]
@@ -583,6 +601,9 @@ pub(crate) struct MayorDecisionPrompt {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PhaseOverviewItem {
+    pub(crate) execution: Option<crate::first_night::execution::StepExecution>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) information_flow: Option<InformationFlow>,
     pub(crate) id: String,
     pub(crate) phase: Phase,
     pub(crate) step_type: StepType,
@@ -796,4 +817,25 @@ impl PhaseStepStatus {
 
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+/// Read-only linkage. Identity includes the preparation occurrence and its causal source.
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InformationFlow {
+    pub(crate) id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) preparation_event_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum MadnessCheckResult { Clear, Violation }
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MadnessState {
+    pub(crate) check: Option<MadnessCheckResult>,
+    pub(crate) source_effective: bool,
+    pub(crate) can_check: bool,
+    pub(crate) can_execute: bool,
 }

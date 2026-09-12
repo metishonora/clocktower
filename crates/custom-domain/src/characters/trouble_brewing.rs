@@ -307,10 +307,10 @@ fn information_true(
     if definition.character_kind(character) != Some(required_kind(c))
         || player_ids.len() != 2
         || player_ids[0] == player_ids[1]
-        || !preparation
+        || preparation
             .correct_player_id
             .as_ref()
-            .is_some_and(|id| player_ids.contains(id))
+            .is_some_and(|id| !player_ids.contains(id))
         || judgments.iter().any(|j| !player_ids.contains(&j.player_id))
     {
         return Err(invalid());
@@ -320,6 +320,18 @@ fn information_true(
         .map(|id| registered_identity(definition, facts, id, judgments))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(identities.iter().any(|(id, _, _)| id == character))
+}
+// Match the original TB reminder contract: identify a unique candidate from the
+// selected identity/registration; arbitrary impaired information has no invented correct seat.
+fn identified_setup_player(facts: &CustomGameFacts, information: &InformationResult,
+    judgments: &[RegistrationJudgment]) -> Option<String> {
+    let InformationResult::SetupInfo { player_ids, character_id: Some(character), zero_outsiders: false } = information else { return None; };
+    let registered = judgments.iter().filter(|j| player_ids.contains(&j.player_id)
+        && j.character_id.as_ref() == Some(character)).collect::<Vec<_>>();
+    if registered.len() == 1 { return Some(registered[0].player_id.clone()); }
+    let matching = player_ids.iter().filter(|id| facts.player(id).is_some_and(|p|
+        p.actual_character == *character || p.actual_character == "drunk" && p.shown_character == *character)).collect::<Vec<_>>();
+    (matching.len() == 1).then(|| matching[0].clone())
 }
 fn validate_preparation(
     definition: &ResolvedScriptContext,
@@ -354,6 +366,65 @@ fn validate_preparation(
     }
     Ok(())
 }
+/// Candidate projection and confirmation share the same character validation. UI code never
+/// guesses the correct token or whether a registration is legal for an impaired ability.
+fn preparation_choices(
+    definition: &ResolvedScriptContext, facts: &CustomGameFacts, character: &str,
+    occurrence: &ActionOccurrence,
+) -> Result<Vec<SetupInformationChoice>, CoreError> {
+    let roles = definition.character_ids().into_iter()
+        .filter(|id| definition.character_kind(id) == Some(required_kind(character)))
+        .collect::<Vec<_>>();
+    let mut choices = vec![];
+    let mut add = |preparation: InformationPreparation, registration_judgments: Vec<RegistrationJudgment>| {
+        if validate_preparation(definition, facts, character, occurrence, &preparation, &registration_judgments).is_ok() {
+            let choice = SetupInformationChoice { preparation, registration_judgments };
+            choices.push(choice);
+        }
+    };
+    for (index, first) in facts.players.iter().enumerate() {
+        for second in facts.players.iter().skip(index + 1) {
+            for role in &roles {
+                let information = InformationResult::SetupInfo {
+                    player_ids: vec![first.id.clone(), second.id.clone()],
+                    character_id: Some((*role).into()), zero_outsiders: false,
+                };
+                // Original TB setupInfoRegistrationJudgments: actual identity first;
+                // otherwise the first eligible selected registration source in seat order.
+                // The shown identity supplies the necessary registration, not an extra UI.
+                let represented = [first, second].iter().any(|p| p.actual_character == *role);
+                let judgments = if represented || has_discretion(facts, occurrence)
+                    || vortox_applies(facts, occurrence, character) {
+                    vec![]
+                } else {
+                    [first, second].iter().find_map(|p| {
+                        let source = registration_source(facts, &p.id)?;
+                        let judgment = RegistrationJudgment {
+                            scope: None, player_id: p.id.clone(),
+                            registered_as: match required_kind(character) {
+                                CharacterKind::Townsfolk => RegistrationValue::Townsfolk,
+                                CharacterKind::Outsider => RegistrationValue::Outsider,
+                                _ => RegistrationValue::Minion,
+                            },
+                            character_id: Some((*role).into()),
+                        };
+                        registration_allowed(&source.character_id, &judgment, definition)
+                            .then_some(vec![judgment])
+                    }).unwrap_or_default()
+                };
+                let correct_player_id = identified_setup_player(facts, &information, &judgments);
+                add(InformationPreparation { information, correct_player_id }, judgments);
+            }
+        }
+    }
+    if character == "librarian" {
+        add(InformationPreparation { information: InformationResult::SetupInfo {
+            player_ids: vec![], character_id: None, zero_outsiders: true,
+        }, correct_player_id: None }, vec![]);
+    }
+    Ok(choices)
+}
+
 pub(crate) fn registrations() -> Vec<RegisteredAction> {
     [
         ("fortuneTeller", "assignRedHerring"),
@@ -376,6 +447,12 @@ pub(crate) fn registrations() -> Vec<RegisteredAction> {
         let action_ref = reference(c, a);
         RegisteredAction {
             spec: ActionSpec {
+                prerequisites: match (c, a) {
+                    ("washerwoman", "learnTownsfolk") | ("librarian", "learnOutsider") | ("investigator", "learnMinion") => vec![reference(c, "prepareInformation")],
+                    ("fortuneTeller", "checkDemon") => vec![reference(c, "assignRedHerring")],
+                    _ => vec![],
+                },
+                continuation_sources: vec![crate::first_night::execution::DependencySource::Preparation, crate::first_night::execution::DependencySource::ImmediateOrigin],
                 action_ref: action_ref.clone(),
                 participates_in_first_night: a == regular_id(c),
                 required_input_kind: if a == "prepareInformation" {
@@ -579,6 +656,19 @@ impl TbHandler {
                 );
             }
         }
+        if self.id() == "assignRedHerring" {
+            let registrations = facts.players.iter().filter_map(|p| {
+                let source = registration_source(facts, &p.id)?;
+                (source.character_id == "spy").then(|| RegistrationJudgment {
+                    scope: None, player_id: p.id.clone(), registered_as: RegistrationValue::Good,
+                    character_id: None,
+                })
+            }).collect::<Vec<_>>();
+            input.allowed_player_ids = Some(facts.players.iter()
+                .filter(|p| p.alignment == Alignment::Good || registrations.iter().any(|j| j.player_id == p.id))
+                .map(|p| p.id.clone()).collect());
+            input.player_registration_options = Some(registrations);
+        }
         let mut step = crate::input::simple_step(
             Phase::FirstNight,
             "custom",
@@ -599,10 +689,31 @@ impl TbHandler {
             .as_ref()
             .and_then(|s| crate::reducer::recorded_ability(facts, s))
             .map(|r| r.origin.clone());
-        if self.id() == regular_id(self.character())
-            && !matches!(self.character(), "poisoner" | "butler")
+        if (self.id() == regular_id(self.character())
+            && !matches!(self.character(), "poisoner" | "butler"))
+            || (self.id() == "prepareInformation" && is_start_info(self.character()))
         {
             step.information_prompt = self.prompt(c, o)?;
+        }
+        if is_start_info(self.character()) {
+            let mut source = o.clone();
+            source.action_ref = reference(self.character(), "prepareInformation");
+            let prior = last_preparation(facts, &source);
+            let preparation = if self.id() == "prepareInformation" {
+                Some(o.clone())
+            } else if let Some(prior) = prior {
+                Some(prior.occurrence.clone())
+            } else {
+                TbHandler { action_ref: reference(self.character(), "prepareInformation") }.preparation_candidates(c, false)?.into_iter()
+                    .find(|candidate| same_source(candidate, o))
+            };
+            if let Some(preparation) = preparation {
+                step.information_flow = Some(crate::model::InformationFlow {
+                    id: preparation.step_id()?,
+                    preparation_event_id: if self.id() == "prepareInformation" { None }
+                        else { prior.map(|p| p.event_id.clone()) },
+                });
+            }
         }
         Ok(step)
     }
@@ -631,7 +742,7 @@ impl TbHandler {
             mathematician_audit: None,
         };
         if is_start_info(self.character()) {
-            return Ok(None);
+            return Ok(Some(prompt));
         }
         let mut players = facts.players.iter().collect::<Vec<_>>();
         players.sort_by_key(|p| p.seat);
@@ -694,7 +805,11 @@ impl TbHandler {
                     }
                     totals = next;
                 }
-                totals.into_values().collect::<Vec<_>>()
+                // Preserve per-edge results and also expose uniform team choices used by
+                // the original TB editor. Equal numeric outcomes can have distinct witnesses.
+                let mut variants = totals.into_values().collect::<Vec<_>>();
+                variants.extend(alignment_variants(facts, &players.iter().map(|p| p.id.clone()).collect::<Vec<_>>(), None));
+                variants
             } else if self.character() == "empath" {
                 let index = players
                     .iter()
@@ -724,7 +839,7 @@ impl TbHandler {
                 let result = self.truth(definition, facts, o, &targets, &js)?;
                 if !choices
                     .iter()
-                    .any(|c: &TargetInformationChoice| c.result == result)
+                    .any(|c: &TargetInformationChoice| c.result == result && c.registration_judgments == js)
                 {
                     choices.push(TargetInformationChoice {
                         is_computed: result == actual,
@@ -774,6 +889,7 @@ impl TbHandler {
             }
             if self.character() == "fortuneTeller" {
                 prompt.target_checks.push(TargetInformationCheck {
+                    fixed_character_id: None,
                     target_player_ids: targets,
                     computed_result: actual,
                     choices,
@@ -1259,7 +1375,9 @@ impl TbHandler {
                         character_id: fields.character_id.clone(),
                         zero_outsiders: zero,
                     },
-                    correct_player_id: fields.correct_player_id.clone(),
+                    correct_player_id: fields.correct_player_id.clone().or_else(|| identified_setup_player(facts,
+                        &InformationResult::SetupInfo { player_ids: fields.player_ids.clone().unwrap_or_default(),
+                            character_id: fields.character_id.clone(), zero_outsiders: zero }, &input.registration_judgments)),
                 };
                 if *fields
                     != (StepInputFields {
@@ -1288,6 +1406,16 @@ impl TbHandler {
     }
 }
 impl ActionHandler for TbHandler {
+    fn dependency_event(&self, context: &ActionContext<'_>, occurrence: &ActionOccurrence) -> Result<Option<String>, CoreError> {
+        if let Some(ActionCause::Delivery { preparation_event_id }) = &occurrence.action_cause { return Ok(Some(preparation_event_id.clone())); }
+        if self.id() == "checkDemon" || (is_start_info(self.character()) && self.id() == regular_id(self.character())) {
+            let mut preparation = occurrence.clone();
+            preparation.action_ref = reference(self.character(), if self.id()=="checkDemon" {"assignRedHerring"} else {"prepareInformation"});
+            return Ok(last_preparation(context.rule_service.facts().ok_or_else(invalid)?, &preparation).map(|p| p.event_id.clone()));
+        }
+        Ok(None)
+    }
+
     fn action_ref(&self) -> &FirstNightActionRef {
         &self.action_ref
     }
@@ -1304,6 +1432,16 @@ impl ActionHandler for TbHandler {
         _: &FirstNightProgress,
     ) -> Result<Vec<ActionOccurrence>, CoreError> {
         self.preparation_candidates(c, true)
+    }
+    fn enrich_input(&self, c: &ActionContext<'_>, o: &ActionOccurrence, step: &mut PhaseStep) -> Result<(), CoreError> {
+        if self.id() == "prepareInformation" {
+            let choices = preparation_choices(c.rule_service.definition().ok_or_else(invalid)?,
+                c.rule_service.facts().ok_or_else(invalid)?, self.character(), o)?;
+            step.required_input.zero_allowed = choices.iter().any(|choice| matches!(choice.preparation.information,
+                InformationResult::SetupInfo { zero_outsiders: true, .. }));
+            step.required_input.setup_information_choices = Some(choices);
+        }
+        Ok(())
     }
     fn project(&self, _: &ActionSpec, c: &ActionContext<'_>) -> Result<Vec<PhaseStep>, CoreError> {
         if self.id() == regular_id(self.character()) {
@@ -1461,7 +1599,7 @@ fn information_causes(
     Ok((reasons, causes))
 }
 
-fn spy_reminders(facts: &CustomGameFacts, player: &str) -> Vec<AutomaticReminder> {
+pub(crate) fn spy_reminders(facts: &CustomGameFacts, player: &str) -> Vec<AutomaticReminder> {
     let mut result = vec![];
     let mut latest = vec![];
     for prep in facts.preparations.iter().rev() {
@@ -1484,7 +1622,7 @@ fn spy_reminders(facts: &CustomGameFacts, player: &str) -> Vec<AutomaticReminder
             CustomActionResult::InformationPrepared { preparation } => {
                 match &preparation.information {
                     InformationResult::SetupInfo { player_ids, .. }
-                        if player_ids.iter().any(|id| id == player) =>
+                        if preparation.correct_player_id.is_some() && player_ids.iter().any(|id| id == player) =>
                     {
                         Some(
                             if preparation.correct_player_id.as_deref() == Some(player) {

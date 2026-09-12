@@ -11,6 +11,9 @@ pub(crate) fn custom_setup_distribution(
     player_count: usize,
     actual_characters: &[String],
 ) -> Result<SetupDistribution, CoreError> {
+    Ok(custom_setup_projection(context, player_count, actual_characters)?.distribution)
+}
+fn custom_setup_projection(context: &ResolvedScriptContext, player_count: usize, actual_characters: &[String]) -> Result<SetupDistributionResult, CoreError> {
     if actual_characters
         .iter()
         .any(|character| !context.contains(character))
@@ -19,7 +22,8 @@ pub(crate) fn custom_setup_distribution(
     }
 
     let base = base_distribution(player_count);
-    let requested_delta = context.setup_outsider_delta(actual_characters);
+    let modifiers = context.setup_modifiers(actual_characters);
+    let requested_delta: i32 = modifiers.iter().map(|m| m.delta.outsider).sum();
     let applied_delta = requested_delta.clamp(-(base.outsider as i32), base.townsfolk as i32);
     let expected = SetupDistribution {
         townsfolk: (base.townsfolk as i32 - applied_delta) as usize,
@@ -39,7 +43,10 @@ pub(crate) fn custom_setup_distribution(
         return Err(ErrorKind::InsufficientSetupRoster.into_error());
     }
 
-    Ok(expected)
+    Ok(SetupDistributionResult { distribution: expected, adjustment: SetupAdjustment {
+        base, modifiers, requested_delta: SetupCountDelta::outsider(requested_delta),
+        applied_delta: SetupCountDelta::outsider(applied_delta), limited: requested_delta != applied_delta,
+    } })
 }
 
 pub(crate) fn validate_setup_inputs_for_custom(
@@ -326,9 +333,9 @@ pub(crate) fn setup_distribution(
     }
     let context = crate::characters::resolve_custom_script(&request.custom_definition)?;
     crate::first_night::plan_for_definition(&request.custom_definition)?;
-    Ok(SetupDistributionResult::Distribution(
-        custom_setup_distribution(&context, request.player_count, &request.actual_characters)?,
-    ))
+    let mut result = custom_setup_projection(&context, request.player_count, &request.actual_characters)?;
+    result.adjustment.modifiers.sort_by_key(|m| request.custom_definition.character_ids.iter().position(|id| id == &m.character_id));
+    Ok(result)
 }
 pub(crate) fn propose_create_game(
     game_file: &GameFile,

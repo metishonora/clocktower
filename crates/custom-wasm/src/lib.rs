@@ -117,7 +117,7 @@ mod tests {
         let replayed = replay(&custom_game(CUSTOM_DEFINITION, &format!("[{SETUP_EVENT}]")));
         assert!(replayed.contains(r#""ok":true"#), "{replayed}");
         assert!(
-            replayed.contains(r#""currentStep":{"id":"firstNight:system:demonInfo"#),
+            serde_json::from_str::<serde_json::Value>(&replayed).unwrap()["value"]["currentStep"]["id"] == "firstNight:system:demonInfo",
             "{replayed}"
         );
         assert!(
@@ -315,4 +315,9 @@ mod tests {
             "expected {code}: {response}"
         );
     }
+}
+
+#[wasm_bindgen]
+pub fn confirmed_event_reveal(game_file_json: &str, event_id: &str) -> String {
+    clocktower_custom_domain::confirmed_event_reveal_json(game_file_json, event_id)
 }

@@ -37,3 +37,7 @@ mod tests;
 mod effects;
 
 mod simulation;
+
+pub fn confirmed_event_reveal_json(game: &str, event_id: &str) -> String {
+    boundary::to_json(boundary::parse_game_file(game).and_then(|file| game::confirmed_event_reveal(file, event_id)))
+}

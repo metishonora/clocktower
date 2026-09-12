@@ -193,7 +193,7 @@ export function parseGameEvent(value: unknown): GameEvent {
   return value as GameEvent;
 }
 export function parseReplayState(value: unknown): ReplayState {
-  if (!isRecord(value) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
+  if (!isRecord(value) || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
@@ -237,7 +237,22 @@ export function parseProposal(value: unknown): Proposal {
   }
   return { ...value, event } as Proposal;
 }
-export function parseSetupDistribution(value: unknown): SetupDistributionResult { if (!isSetupDistribution(value)) throw invalidCoreResponse(); return value; }
+export function parseSetupDistribution(value: unknown): SetupDistributionResult {
+  const kinds = ['Townsfolk','Outsider','Minion','Demon'] as const;
+  const signed = (v: unknown): v is Record<typeof kinds[number],number> => isRecord(v) && hasExactKeys(v,[...kinds]) && kinds.every(k=>Number.isSafeInteger(v[k]));
+  if (!isRecord(value) || !hasExactKeys(value,[...kinds,'adjustment']) || !kinds.every(k=>Number.isSafeInteger(value[k]) && (value[k] as number)>=0)) throw invalidCoreResponse();
+  const a=value.adjustment;
+  if (!isRecord(a) || !hasExactKeys(a,['base','modifiers','requestedDelta','appliedDelta','limited']) || !isSetupDistribution(a.base) || !signed(a.requestedDelta) || !signed(a.appliedDelta) || typeof a.limited!=='boolean' || !Array.isArray(a.modifiers)) throw invalidCoreResponse();
+  const ids=new Set<string>(), sums={Townsfolk:0,Outsider:0,Minion:0,Demon:0};
+  for(const m of a.modifiers){
+    if(!isRecord(m)||!hasExactKeys(m,['characterId','delta'])||typeof m.characterId!=='string'||!m.characterId||ids.has(m.characterId)||!signed(m.delta))throw invalidCoreResponse();
+    const delta=m.delta; if(kinds.reduce((n,k)=>n+delta[k],0)!==0)throw invalidCoreResponse();
+    ids.add(m.characterId);for(const k of kinds)sums[k]+=delta[k];
+  }
+  const base=a.base, requested=a.requestedDelta, applied=a.appliedDelta;
+  if(kinds.some(k=>sums[k]!==requested[k]||base[k]+applied[k]!==value[k])||kinds.reduce((n,k)=>n+applied[k],0)!==0||a.limited!==kinds.some(k=>requested[k]!==applied[k]))throw invalidCoreResponse();
+  return value as unknown as SetupDistributionResult;
+}
 
 
 export function parseFirstNightOrderPlan(value: unknown): FirstNightOrderPlan {
@@ -284,7 +299,7 @@ function isPhaseStep(value: unknown): value is PhaseStep {
     (value.preActionReveal === undefined || isPreActionReveal(value.preActionReveal)) &&
     (value.actionRef === undefined || isFirstNightActionRef(value.actionRef)) &&
     (value.informationPrompt === undefined ||
-      isInformationPrompt(value.informationPrompt, value.requiredInput.kind))
+      isInformationPrompt(value.informationPrompt, value.requiredInput.kind, value.informationFlow !== undefined))
   );
 }
 
@@ -339,6 +354,7 @@ function isCustomPhaseStepInput(value: unknown): value is PhaseStepInput {
       "nomineeId",
       "voterIds",
       "execute",
+      "madnessCheck",
       "died",
       "mayorDecision",
       "successorPlayerId",
@@ -385,7 +401,7 @@ function isPreActionReveal(value: unknown): boolean {
 }
 
 
-function isInformationPrompt(value: unknown, inputKind: unknown): value is InformationPrompt {
+function isInformationPrompt(value: unknown, inputKind: unknown, hasPreparationFlow = false): value is InformationPrompt {
   if (
     !isRecord(value) ||
     (value.deliveryMode !== "fixed" && value.deliveryMode !== "selectable") ||
@@ -425,7 +441,7 @@ function isInformationPrompt(value: unknown, inputKind: unknown): value is Infor
       ));
   }
   if (value.computedResult === undefined) {
-    return inputKind === "setupInfo" && value.numberChoices.length === 0 && value.numberConstraint === undefined && (value.booleanChoices?.length ?? 0) === 0;
+    return (inputKind === "setupInfo" || (inputKind === "none" && hasPreparationFlow)) && value.numberChoices.length === 0 && value.numberConstraint === undefined && (value.booleanChoices?.length ?? 0) === 0;
   }
   if (!isInformationResult(value.computedResult)) return false;
   if (value.computedResult.kind === "boolean") {
@@ -777,6 +793,13 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
     (value.playerRegistrationOptions === undefined ||
       (Array.isArray(value.playerRegistrationOptions) &&
         value.playerRegistrationOptions.every(isRegistrationJudgment))) &&
+    (value.setupInformationChoices === undefined ||
+      (Array.isArray(value.setupInformationChoices) && value.setupInformationChoices.every(choice =>
+        isRecord(choice) && hasExactKeys(choice,["preparation","registrationJudgments"]) &&
+        isRecord(choice.preparation) && hasExactKeys(choice.preparation,["information","correctPlayerId"]) &&
+        isInformationResult(choice.preparation.information) && choice.preparation.information.kind === "setupInfo" &&
+        (choice.preparation.correctPlayerId === null || isString(choice.preparation.correctPlayerId)) &&
+        Array.isArray(choice.registrationJudgments) && choice.registrationJudgments.every(isRegistrationJudgment)))) &&
     (value.zeroAllowed === undefined || typeof value.zeroAllowed === "boolean") &&
     (value.supportsRandomSuggestion === undefined || typeof value.supportsRandomSuggestion === "boolean") &&
     (value.executionSurvivalAllowed === undefined || typeof value.executionSurvivalAllowed === "boolean") &&
@@ -800,7 +823,8 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
 function isTargetCheck(value: unknown): boolean {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices"]) &&
+    hasExactKeys(value, ["targetPlayerIds", "computedResult", "choices", ...(value.fixedCharacterId === undefined ? [] : ["fixedCharacterId"])]) &&
+    (value.fixedCharacterId === undefined || isKnownCharacter(value.fixedCharacterId)) &&
     Array.isArray(value.targetPlayerIds) &&
     value.targetPlayerIds.every(isString) &&
     isInformationResult(value.computedResult) &&
@@ -823,7 +847,8 @@ function isPreparationRecord(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value,["sourceEventId","actionRef","abilityUse","simulationSource","result","registrationJudgments"]) && nonempty(value.sourceEventId) && isFirstNightActionRef(value.actionRef) && ((value.abilityUse !== undefined && isAbilityUseRef(value.abilityUse) && value.simulationSource === undefined) || (value.abilityUse === undefined && isSimulationSource(value.simulationSource))) && validateCustomActionResult(value.result,isKnownCharacter,isSpyGrimoirePlayer) && Array.isArray(value.registrationJudgments) && value.registrationJudgments.every(isRegistrationJudgment);
 }
 function isRuleState(value: unknown): boolean {
-  return isRecord(value) && hasOnlyKeys(value, ["unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships", "preparations", "poisonerChoices", "masterChoices", "guidance"]) &&
+  return isRecord(value) && hasOnlyKeys(value, ["automaticReminders", "unannouncedNightDeathPlayerIds", "activeImpairments", "abilityGrants", "abilityUses", "philosopherChoices", "witchCurses", "twinRelationships", "preparations", "poisonerChoices", "masterChoices", "guidance"]) &&
+    optionalList(value.automaticReminders, isAutomaticReminder) &&
     Array.isArray(value.unannouncedNightDeathPlayerIds) && value.unannouncedNightDeathPlayerIds.every(isString) &&
     optionalList(value.activeImpairments, isActiveImpairment) && optionalList(value.abilityGrants, isAbilityGrant) &&
     optionalList(value.abilityUses, v => isRecord(v) && hasExactKeys(v, ["sourceEventId", "abilityUse"]) && isUseFact(v)) &&
@@ -872,6 +897,7 @@ function isAutomaticReminder(value: unknown): boolean {
 
 
 function isPhaseStepInput(value: unknown): value is PhaseStepInput {
+  if(isRecord(value) && hasExactKeys(value,["madnessCheck"])) return value.madnessCheck === "clear" || value.madnessCheck === "violation";
   if (value === null) return true;
   if (!isRecord(value)) return false;
   if (Array.isArray(value.playerIds) && value.playerIds.every(isString)) {
@@ -1148,6 +1174,9 @@ function isOccurrenceSource(value: Record<string, unknown>): boolean {
   return true;
 }
 function isStepSource(value: Record<string, unknown>): boolean {
+  if (!isStepExecution(value.execution)) return false;
+  if(value.madness !== undefined && (!isRecord(value.madness) || !hasExactKeys(value.madness,["check","sourceEffective","canCheck","canExecute"]) || ![null,"clear","violation"].includes(value.madness.check as null|string) || ![value.madness.sourceEffective,value.madness.canCheck,value.madness.canExecute].every(v=>typeof v === "boolean"))) return false;
+  if(value.informationFlow !== undefined && (!isRecord(value.informationFlow) || !hasOnlyKeys(value.informationFlow,["id","preparationEventId"]) || !nonempty(value.informationFlow.id) || (value.informationFlow.preparationEventId !== undefined && !nonempty(value.informationFlow.preparationEventId)))) return false;
   if (isCustomCharacterActionRef(value.actionRef)) {
     if (!isOccurrenceSource(value)) return false;
     if (isAbilityUseRef(value.abilityUse)) return isAbilityContext(value.abilityUse, value.abilityOrigin) &&
@@ -1158,3 +1187,8 @@ function isStepSource(value: Record<string, unknown>): boolean {
   }
   return value.abilityUse === undefined && value.abilityOrigin === undefined && value.simulationSource === undefined && value.followUpCause === undefined && value.actionCause === undefined;
 }
+
+function uniqueIds(value:unknown): value is string[] {return Array.isArray(value)&&value.every(nonempty)&&new Set(value).size===value.length;}
+function isStepExecution(value:unknown):boolean {return isRecord(value)&&hasOnlyKeys(value,['id','rootStepId','displayStepId','predecessorEventId','relation'])&&[value.id,value.rootStepId,value.displayStepId].every(nonempty)&&(value.predecessorEventId===undefined||nonempty(value.predecessorEventId))&&['independent','continuation','reference'].includes(value.relation as string);}
+function isActionExecution(value:unknown):boolean {return isRecord(value)&&hasExactKeys(value,['id','rootStepId','displayStepId','stepIds','eventIds','status'])&&[value.id,value.rootStepId,value.displayStepId].every(nonempty)&&uniqueIds(value.stepIds)&&uniqueIds(value.eventIds)&&['pending','active','complete','interrupted'].includes(value.status as string);}
+function isLatestUndoUnit(value:unknown):boolean {return value===null||(isRecord(value)&&hasExactKeys(value,['id','executionId','eventIds','summaryStepId'])&&[value.id,value.executionId,value.summaryStepId].every(nonempty)&&uniqueIds(value.eventIds)&&value.eventIds.length>0&&value.eventIds.at(-1)===value.id);}

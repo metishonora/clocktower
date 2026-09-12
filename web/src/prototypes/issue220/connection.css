@@ -1,0 +1,28 @@
+@import "../../features/phase-control/sectsAndVioletsInformationTask.css";
+.p220Console { overflow: auto; min-height: 0; background: #211228; }
+.p220Console .snvFoundationPrototype { min-height: 100%; }
+.p220Loading { z-index: 25; bottom: 54px; background: #170e21ed; }
+.p220Loading .loadingMark { display:grid;place-items:center;height:108px;border-radius:50%;font-size:3rem; }
+.p220Task { padding:24px; max-width:100%; }
+.p220TaskIdentity { display:flex;gap:18px;align-items:center; }
+.p220TaskIdentity img { width:76px;height:76px;object-fit:contain; }
+.p220TaskIdentity h3 { margin:0;font-size:1.65rem; }
+.p220TaskActions { display:flex;gap:12px;flex-wrap:wrap;margin-top:24px; }
+.p220TaskActions button, .p220Field select { min-height:44px;padding:10px 18px;color:#f5e8fc;background:#533462;border:1px solid #a98cb6;border-radius:10px;font:inherit; }
+.p220Field { display:grid;gap:12px;max-width:360px;margin-top:24px; }
+.p220BluffGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:20px; }
+.p220BluffGrid button { min-width:0;color:inherit;background:#2c1a35;border:1px solid #725880;border-radius:12px;padding:10px;cursor:pointer; }
+.p220BluffGrid button[aria-pressed=true] { border:2px solid #f2d095;background:#57415b; }
+.p220BluffGrid .snvRevealCharacterCard img { width:60px;height:60px;object-fit:contain; }
+.p220BluffGrid .snvRevealCharacterCard { display:grid;justify-items:center;gap:8px; }
+.p220RevealCards { display:flex;flex-wrap:wrap;justify-content:center;gap:12px; }
+.p220RevealCards .snvRevealCharacterCard img { width:90px;height:90px;object-fit:contain; }
+.p220RevealCards .snvRevealCharacterCard { display:grid;justify-items:center;gap:8px; }
+.p220Person { display:grid;gap:10px;margin:20px; }
+.p220Person strong { font-size:2rem; }
+.p220Console button:focus-visible,.p220Console select:focus-visible { outline:2px solid #f2d095;outline-offset:3px; }
+.p220Console button:disabled { opacity:.4; }
+@media(max-width:600px){.p220Task {padding:16px}.p220TaskActions button{flex:1}.p220Console .snvPrototypeHeader h1{font-size:1.5rem}.p220RevealCards .snvRevealCharacterCard img{width:65px;height:65px}}
+body:has(.p205Root) > .snvInformationRevealBackdrop { overflow-y:auto; }
+body:has(.p205Root) > .snvInformationRevealBackdrop .snvInformationReveal { margin:auto; }
+@media(max-width:600px){body:has(.p205Root) > .snvInformationRevealBackdrop{padding:16px}body:has(.p205Root) > .snvInformationRevealBackdrop h2{font-size:2rem}body:has(.p205Root) > .snvInformationRevealBackdrop .snvInformationReveal{padding:24px}body:has(.p205Root) > .snvInformationRevealBackdrop .snvInformationReveal > button{margin-top:24px}}

@@ -702,6 +702,9 @@ fn project_instance(
 ) -> Result<PhaseStep, CoreError> {
     let occurrence = ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())?;
     Ok(PhaseStep {
+                    execution: None,
+                    information_flow: None,
+                    madness: None,
         simulation_source: None,
         follow_up_cause: None,
         action_cause: None,
@@ -755,6 +758,8 @@ fn required_input_for(
 pub(super) fn registrations() -> Vec<RegisteredAction> {
     let mut registrations = vec![RegisteredAction {
         spec: ActionSpec {
+            prerequisites: vec![],
+            continuation_sources: vec![],
             action_ref: fixture_action(),
             participates_in_first_night: true,
             required_input_kind: RequiredInputKind::None,
@@ -787,6 +792,8 @@ pub(super) fn registrations() -> Vec<RegisteredAction> {
             }
             registrations.push(RegisteredAction {
                 spec: ActionSpec {
+                    prerequisites: vec![],
+                    continuation_sources: vec![],
                     action_ref: action_ref.clone(),
                     participates_in_first_night: true,
                     required_input_kind: if grant_target(&action_ref).is_some() {

@@ -1,3 +1,4 @@
+import type { ImportedGame } from './importScenarioSource.js';
 import type { CustomScriptDefinitionDraft } from '../core/types.js';
 import type { DefinitionSection } from '../core/definition.js';
 
@@ -11,6 +12,7 @@ export type ScenarioEditorState = {
   change: number;
   validation: 'idle' | 'pending' | 'valid' | 'invalid';
   validated?: ValidatedScenario;
+  importedGame?: ImportedGame;
   error?: EditorError;
   orderPending: boolean;
   importStatus: 'idle' | 'reading' | 'ready' | 'error';

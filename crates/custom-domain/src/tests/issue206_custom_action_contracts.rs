@@ -315,6 +315,8 @@ fn proposal_rejects_a_handler_that_changes_the_command_input() {
     let action_ref = FirstNightActionRef::system("dawn");
     let registry = ActionRegistry::new(vec![RegisteredAction {
         spec: ActionSpec {
+            prerequisites: vec![],
+            continuation_sources: vec![],
             action_ref: action_ref.clone(),
             participates_in_first_night: true,
             required_input_kind: RequiredInputKind::Day,

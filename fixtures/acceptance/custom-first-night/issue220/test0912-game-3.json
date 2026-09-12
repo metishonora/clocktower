@@ -1,0 +1,634 @@
+{
+  "schemaVersion": 4,
+  "game": {
+    "script": {
+      "type": "custom",
+      "definition": {
+        "id": "c4d92811-530e-42c9-a247-d98fa4fa99fd",
+        "name": "test0912",
+        "characterIds": [
+          "noDashii",
+          "vortox",
+          "vigormortis",
+          "fangGu",
+          "imp",
+          "baron",
+          "poisoner",
+          "spy",
+          "scarletWoman",
+          "pitHag",
+          "witch",
+          "evilTwin",
+          "cerenovus",
+          "mutant",
+          "sweetheart",
+          "klutz",
+          "barber",
+          "saint",
+          "recluse",
+          "butler",
+          "drunk",
+          "soldier",
+          "virgin",
+          "librarian",
+          "monk",
+          "ravenkeeper",
+          "washerwoman",
+          "mayor",
+          "chef",
+          "undertaker",
+          "slayer",
+          "fortuneTeller",
+          "investigator",
+          "empath",
+          "juggler",
+          "flowergirl",
+          "dreamer",
+          "savant",
+          "mathematician",
+          "snakeCharmer",
+          "clockmaker",
+          "oracle",
+          "seamstress",
+          "townCrier",
+          "sage",
+          "philosopher",
+          "artist"
+        ],
+        "firstNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "evilTwin",
+            "actionId": "learnTwin"
+          },
+          {
+            "kind": "character",
+            "characterId": "witch",
+            "actionId": "chooseCursedPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          {
+            "kind": "character",
+            "characterId": "washerwoman",
+            "actionId": "learnTownsfolk"
+          },
+          {
+            "kind": "character",
+            "characterId": "librarian",
+            "actionId": "learnOutsider"
+          },
+          {
+            "kind": "character",
+            "characterId": "investigator",
+            "actionId": "learnMinion"
+          },
+          {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          {
+            "kind": "character",
+            "characterId": "empath",
+            "actionId": "learnEvilNeighbors"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          {
+            "kind": "character",
+            "characterId": "dreamer",
+            "actionId": "learnCharacters"
+          },
+          {
+            "kind": "character",
+            "characterId": "seamstress",
+            "actionId": "compareAlignments"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "character",
+            "characterId": "mathematician",
+            "actionId": "learnCount"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ]
+      }
+    },
+    "id": "d0481585-f93c-4175-8091-47d77fa5f621",
+    "name": "test0912",
+    "createdAt": "2026-09-12T06:34:35.021Z",
+    "updatedAt": "2026-09-12T06:37:11.269Z",
+    "events": [
+      {
+        "id": "setup-1",
+        "type": "setupConfirmed",
+        "payload": {
+          "players": [
+            {
+              "id": "player-1",
+              "seat": 1,
+              "name": "플레이어 1",
+              "actualCharacter": "seamstress",
+              "shownCharacter": "seamstress"
+            },
+            {
+              "id": "player-2",
+              "seat": 2,
+              "name": "플레이어 2",
+              "actualCharacter": "townCrier",
+              "shownCharacter": "townCrier"
+            },
+            {
+              "id": "player-3",
+              "seat": 3,
+              "name": "플레이어 3",
+              "actualCharacter": "evilTwin",
+              "shownCharacter": "evilTwin"
+            },
+            {
+              "id": "player-4",
+              "seat": 4,
+              "name": "플레이어 4",
+              "actualCharacter": "recluse",
+              "shownCharacter": "recluse"
+            },
+            {
+              "id": "player-5",
+              "seat": 5,
+              "name": "플레이어 5",
+              "actualCharacter": "butler",
+              "shownCharacter": "butler"
+            },
+            {
+              "id": "player-6",
+              "seat": 6,
+              "name": "플레이어 6",
+              "actualCharacter": "oracle",
+              "shownCharacter": "oracle"
+            },
+            {
+              "id": "player-7",
+              "seat": 7,
+              "name": "플레이어 7",
+              "actualCharacter": "cerenovus",
+              "shownCharacter": "cerenovus"
+            },
+            {
+              "id": "player-8",
+              "seat": 8,
+              "name": "플레이어 8",
+              "actualCharacter": "philosopher",
+              "shownCharacter": "philosopher"
+            },
+            {
+              "id": "player-9",
+              "seat": 9,
+              "name": "플레이어 9",
+              "actualCharacter": "sage",
+              "shownCharacter": "sage"
+            },
+            {
+              "id": "player-10",
+              "seat": 10,
+              "name": "플레이어 10",
+              "actualCharacter": "clockmaker",
+              "shownCharacter": "clockmaker"
+            },
+            {
+              "id": "player-11",
+              "seat": 11,
+              "name": "플레이어 11",
+              "actualCharacter": "drunk",
+              "shownCharacter": "chef"
+            },
+            {
+              "id": "player-12",
+              "seat": 12,
+              "name": "플레이어 12",
+              "actualCharacter": "fangGu",
+              "shownCharacter": "fangGu"
+            },
+            {
+              "id": "player-13",
+              "seat": 13,
+              "name": "플레이어 13",
+              "actualCharacter": "pitHag",
+              "shownCharacter": "pitHag"
+            },
+            {
+              "id": "player-14",
+              "seat": 14,
+              "name": "플레이어 14",
+              "actualCharacter": "snakeCharmer",
+              "shownCharacter": "snakeCharmer"
+            },
+            {
+              "id": "player-15",
+              "seat": 15,
+              "name": "플레이어 15",
+              "actualCharacter": "mathematician",
+              "shownCharacter": "mathematician"
+            }
+          ]
+        },
+        "phase": "setup",
+        "summary": "초기 설정 확정: 15명",
+        "createdAt": "2026-09-12T06:34:35.021Z"
+      },
+      {
+        "id": "phase-step-2",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:philosopher:chooseAbility:owner8:player-8:instance14:setup:player-8",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "philosopher",
+            "actionId": "chooseAbility"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-8",
+            "characterId": "philosopher",
+            "abilityInstanceId": "setup:player-8"
+          },
+          "input": {
+            "characterIds": [
+              "clockmaker"
+            ]
+          },
+          "result": {
+            "kind": "philosopherChoice",
+            "characterId": "clockmaker",
+            "outcome": "acquired"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:philosopher:chooseAbility:owner8:player-8:instance14:setup:player-8",
+        "createdAt": "2026-09-12T06:34:35.032Z"
+      },
+      {
+        "id": "phase-step-3",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:clockmaker:learnSteps:owner8:player-8:instance92:customGrant:12#phase-step-28#player-811#philosopher14#setup:player-810#clockmaker:8#player-8",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "clockmaker",
+            "actionId": "learnSteps"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-8",
+            "characterId": "clockmaker",
+            "abilityInstanceId": "customGrant:12#phase-step-28#player-811#philosopher14#setup:player-810#clockmaker:8#player-8"
+          },
+          "input": null,
+          "result": {
+            "kind": "informationDelivered",
+            "information": {
+              "actor": {
+                "playerId": "player-8",
+                "characterId": "clockmaker"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "registrationJudgment",
+                    "judgments": [
+                      {
+                        "playerId": "player-4",
+                        "registeredAs": "demon"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "spent": false
+          },
+          "deliveredResult": {
+            "kind": "number",
+            "value": 1
+          },
+          "registrationJudgments": [
+            {
+              "playerId": "player-4",
+              "registeredAs": "demon"
+            }
+          ]
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:clockmaker:learnSteps:owner8:player-8:instance92:customGrant:12#phase-step-28#player-811#philosopher14#setup:player-810#clockmaker:8#player-8",
+        "createdAt": "2026-09-12T06:34:53.027Z"
+      },
+      {
+        "id": "phase-step-4",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:minionInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "minionInfo"
+          },
+          "input": null
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:minionInfo",
+        "createdAt": "2026-09-12T06:36:11.837Z"
+      },
+      {
+        "id": "phase-step-5",
+        "type": "phaseStepConfirmed",
+        "payload": {
+          "stepId": "firstNight:system:demonInfo",
+          "actionRef": {
+            "kind": "system",
+            "actionId": "demonInfo"
+          },
+          "input": {
+            "characterIds": [
+              "monk",
+              "ravenkeeper",
+              "virgin"
+            ]
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:system:demonInfo",
+        "createdAt": "2026-09-12T06:36:14.648Z"
+      },
+      {
+        "id": "phase-step-6",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:snakeCharmer:choosePlayer:owner9:player-14:instance15:setup:player-14",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "snakeCharmer",
+            "actionId": "choosePlayer"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-14",
+            "characterId": "snakeCharmer",
+            "abilityInstanceId": "setup:player-14"
+          },
+          "input": {
+            "playerIds": [
+              "player-12"
+            ]
+          },
+          "result": {
+            "kind": "snakeCharmer",
+            "targetPlayerId": "player-12",
+            "outcome": "swapped"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:snakeCharmer:choosePlayer:owner9:player-14:instance15:setup:player-14",
+        "createdAt": "2026-09-12T06:36:18.541Z"
+      },
+      {
+        "id": "phase-step-7",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:evilTwin:assignTwin:owner8:player-3:instance14:setup:player-3:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "evilTwin",
+            "actionId": "assignTwin"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-3",
+            "characterId": "evilTwin",
+            "abilityInstanceId": "setup:player-3"
+          },
+          "actionCause": {
+            "kind": "initialPreparation",
+            "sourceEventId": "setup"
+          },
+          "input": {
+            "playerIds": [
+              "player-1"
+            ]
+          },
+          "result": {
+            "kind": "twinAssigned",
+            "targetPlayerId": "player-1"
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:evilTwin:assignTwin:owner8:player-3:instance14:setup:player-3:cause53:{\"kind\":\"initialPreparation\",\"sourceEventId\":\"setup\"}",
+        "createdAt": "2026-09-12T06:36:23.430Z"
+      },
+      {
+        "id": "phase-step-8",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:evilTwin:learnTwin:owner8:player-3:instance14:setup:player-3",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "evilTwin",
+            "actionId": "learnTwin"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-3",
+            "characterId": "evilTwin",
+            "abilityInstanceId": "setup:player-3"
+          },
+          "input": null,
+          "result": {
+            "kind": "twinInformed",
+            "relationshipEventId": "phase-step-7",
+            "targetPlayerId": "player-1",
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:evilTwin:learnTwin:owner8:player-3:instance14:setup:player-3",
+        "createdAt": "2026-09-12T06:36:35.796Z"
+      },
+      {
+        "id": "phase-step-9",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:cerenovus:assignMadness:owner8:player-7:instance14:setup:player-7",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-7",
+            "characterId": "cerenovus",
+            "abilityInstanceId": "setup:player-7"
+          },
+          "input": {
+            "playerIds": [
+              "player-15"
+            ],
+            "characterId": "klutz"
+          },
+          "result": {
+            "kind": "cerenovus",
+            "targetPlayerId": "player-15",
+            "characterId": "klutz",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:cerenovus:assignMadness:owner8:player-7:instance14:setup:player-7",
+        "createdAt": "2026-09-12T06:36:36.111Z"
+      },
+      {
+        "id": "phase-step-10",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:chef:learnEvilPairs:simulation5:setup9:player-1115:setup:player-11",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "chef",
+            "actionId": "learnEvilPairs"
+          },
+          "simulationSource": {
+            "guidance": {
+              "kind": "initialDrunk"
+            },
+            "selectionEventId": "setup",
+            "sourceAbilityUse": {
+              "ownerPlayerId": "player-11",
+              "characterId": "drunk",
+              "abilityInstanceId": "setup:player-11"
+            }
+          },
+          "input": null,
+          "result": {
+            "kind": "simulation",
+            "information": {
+              "actor": {
+                "playerId": "player-11",
+                "characterId": "chef"
+              },
+              "targetPlayerIds": [],
+              "computedResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveredResult": {
+                "kind": "number",
+                "value": 1
+              },
+              "deliveryContext": {
+                "type": "discretionary",
+                "reasons": [
+                  {
+                    "type": "drunk"
+                  }
+                ]
+              }
+            },
+            "spent": false
+          },
+          "deliveredResult": {
+            "kind": "number",
+            "value": 1
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:chef:learnEvilPairs:simulation5:setup9:player-1115:setup:player-11",
+        "createdAt": "2026-09-12T06:36:48.655Z"
+      },
+      {
+        "id": "phase-step-11",
+        "type": "customActionConfirmed",
+        "payload": {
+          "stepId": "firstNight:butler:chooseMaster:owner8:player-5:instance14:setup:player-5",
+          "actionRef": {
+            "kind": "character",
+            "characterId": "butler",
+            "actionId": "chooseMaster"
+          },
+          "abilityUse": {
+            "ownerPlayerId": "player-5",
+            "characterId": "butler",
+            "abilityInstanceId": "setup:player-5"
+          },
+          "input": {
+            "playerIds": [
+              "player-2"
+            ]
+          },
+          "result": {
+            "kind": "butler",
+            "targetPlayerId": "player-2",
+            "day": 1,
+            "effective": true
+          }
+        },
+        "phase": "firstNight",
+        "summary": "단계 확정: firstNight:butler:chooseMaster:owner8:player-5:instance14:setup:player-5",
+        "createdAt": "2026-09-12T06:37:07.369Z"
+      }
+    ]
+  },
+  "exportedAt": "2026-09-12T06:50:27.788Z"
+}

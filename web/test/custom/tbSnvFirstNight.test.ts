@@ -34,7 +34,7 @@ it("preserves Chef scoped registration witnesses through the canonical parser",a
   const result=await take(session,"learnEvilPairs",null,{kind:"number",value:1},choice.registrationJudgments);expect(result.proposal.revealPayload).toEqual({kind:"numericInformation",characterId:"chef",value:1});
 });
 it("saves optional Mutant victory, exposes only the execution, and restores the prefix on Undo",async()=>{
-  const {session,storage}=await start("mutant-good-twin");await take(session,"assignTwin",{playerIds:["mutant"]});const before=await replayOrThrow(session.snapshot.canonical);
+  const {session,storage}=await start("mutant-good-twin");await system(session);await take(session,"assignTwin",{playerIds:["mutant"]});const before=await replayOrThrow(session.snapshot.canonical);
   const executed=await take(session,"resolveMadnessExecution",{execute:true},undefined,undefined,true);const after=await replayOrThrow(session.snapshot.canonical);expect(after.gameEnd?.reason).toBe("goodTwinExecuted");expect(after.currentStep).toBeNull();expect(after.availableActions??[]).toEqual([]);expect(executed.proposal.revealPayload).not.toHaveProperty("winningAlignment");
   const loaded=await CustomCanonicalSession.load({core:realWasmCore(),storage});if(loaded.status!=="loaded")throw Error(loaded.status);expect(await replayOrThrow(loaded.session.snapshot.canonical)).toEqual(after);
   const undo=await loaded.session.undo(executed.proposal.event.id);if(!undo.ok)throw Error(undo.error.code);expect(await undo.value.autosave).toBe(true);expect(await replayOrThrow(loaded.session.snapshot.canonical)).toEqual(before);
@@ -42,7 +42,7 @@ it("saves optional Mutant victory, exposes only the execution, and restores the 
 it("keeps prepared information markers in a narrow Spy snapshot",async()=>{
   const roster=["washerwoman","mathematician","monk","virgin","slayer","spy","imp"];
   const players=roster.map((actualCharacter,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter}));const {session}=await start("drunk-empath-math",players);
-  await take(session,"prepareInformation",{playerIds:["p1","p3"],characterId:"monk",correctPlayerId:"p3"});await system(session);
+  await system(session);await take(session,"prepareInformation",{playerIds:["p1","p3"],characterId:"monk",correctPlayerId:"p3"});
   const delivery=await take(session,"learnTownsfolk",null);expect(delivery.proposal.revealPayload).toMatchObject({kind:"setupInformation",revealedCharacterId:"monk"});
   const spy=await take(session,"inspectGrimoire",null);expect(spy.proposal.revealPayload).toMatchObject({kind:"spyGrimoire"});if(!spy.proposal.revealPayload || !("kind" in spy.proposal.revealPayload) || spy.proposal.revealPayload.kind!=="spyGrimoire")throw Error("spy");
   expect(spy.proposal.revealPayload.players[2]).toMatchObject({characterId:"monk",alignment:"good",automaticReminders:[{tokenId:"townsfolk"}]});expect(spy.proposal.revealPayload).not.toHaveProperty("computedResult");
@@ -51,9 +51,10 @@ it("runs all nine TB actions with mixed SnV guidance and retained Spy markers th
   const roster=["washerwoman","librarian","investigator","chef","empath","fortuneTeller","mathematician","monk","soldier","butler","drunk","poisoner","spy","scarletWoman","imp"];
   const players=roster.map((actualCharacter,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter,...(actualCharacter==="drunk"?{shownCharacter:"clockmaker"}:{})}));
   const {session,storage}=await start("drunk-empath-math",players);
-  for(const [characterId,correctPlayerId] of [["monk","p8"],["butler","p10"],["poisoner","p12"]]) await take(session,"prepareInformation",{playerIds:["p1",correctPlayerId!],characterId,correctPlayerId});
-  await take(session,"assignRedHerring",{playerIds:["p8"]});await system(session);await take(session,"choosePoisonTarget",{playerIds:["p11"]});
-  for(const action of ["learnTownsfolk","learnOutsider","learnMinion","learnEvilPairs","learnEvilNeighbors"]) await take(session,action,null);
+  await system(session);await take(session,"choosePoisonTarget",{playerIds:["p11"]});
+  for(const [action,characterId,correctPlayerId] of [["learnTownsfolk","monk","p8"],["learnOutsider","butler","p10"],["learnMinion","poisoner","p12"]]) {await take(session,"prepareInformation",{playerIds:["p1",correctPlayerId!],characterId,correctPlayerId});await take(session,action!,null);}
+  for(const action of ["learnEvilPairs","learnEvilNeighbors"])await take(session,action,null);
+  await take(session,"assignRedHerring",{playerIds:["p8"]});
   await take(session,"checkDemon",{playerIds:["p6","p15"]});await take(session,"chooseMaster",{playerIds:["p8"]});await take(session,"learnSteps",null,{kind:"number",value:0});
   const spy=await take(session,"inspectGrimoire",null);expect(spy.proposal.revealPayload).toMatchObject({kind:"spyGrimoire"});
   const math=await take(session,"learnCount",null);expect(math.proposal.revealPayload).toMatchObject({kind:"numericInformation",value:1});await take(session,"dawn",null);
@@ -63,7 +64,7 @@ it("runs all nine TB actions with mixed SnV guidance and retained Spy markers th
 it("keeps an impaired Spy's alternate delivery separate from actual players",async()=>{
   const roster=["washerwoman","mathematician","monk","virgin","slayer","soldier","chef","poisoner","spy","imp"];
   const {session}=await start("drunk-empath-math",roster.map((actualCharacter,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter})));
-  await take(session,"prepareInformation",{playerIds:["p1","p3"],characterId:"monk",correctPlayerId:"p3"});await system(session);await take(session,"choosePoisonTarget",{playerIds:["p9"]});await take(session,"learnTownsfolk",null);await take(session,"learnEvilPairs",null);
+  await system(session);await take(session,"choosePoisonTarget",{playerIds:["p9"]});await take(session,"prepareInformation",{playerIds:["p1","p3"],characterId:"monk",correctPlayerId:"p3"});await take(session,"learnTownsfolk",null);await take(session,"learnEvilPairs",null);
   const before=await replayOrThrow(session.snapshot.canonical);const alternate=structuredClone(before.currentStep!.informationPrompt!.computedResult!);if(alternate.kind!=="spyGrimoire")throw Error("spy");alternate.players[0]!.characterId="artist";alternate.players[0]!.alive=false;
   const delivered=await take(session,"inspectGrimoire",null,alternate);const after=await replayOrThrow(session.snapshot.canonical);expect(after.players).toEqual(before.players);expect(delivered.proposal.revealPayload).toMatchObject({kind:"spyGrimoire",players:expect.arrayContaining([expect.objectContaining({characterId:"artist",alive:false})])});expect(after.currentStep?.informationPrompt?.computedResult).toEqual({kind:"number",value:1});
 });

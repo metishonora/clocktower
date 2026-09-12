@@ -84,6 +84,7 @@ export type SetupPlayerInput = {
 
 
 export type PhaseStepInput =
+  | { madnessCheck: "clear" | "violation" }
   | null
   | { playerIds: string[]; characterId?: string; zeroOutsiders?: boolean; correctPlayerId?: string }
   | { zeroOutsiders: true; playerIds?: string[] }
@@ -253,6 +254,7 @@ export type InformationPrompt = {
 
 
 export type TargetCheck = {
+  fixedCharacterId?: string;
   targetPlayerIds: string[];
   computedResult: InformationResult;
   choices: Array<{
@@ -280,7 +282,10 @@ export type Command = { type: "createGame"; payload: { players: SetupPlayerInput
 export type CoreResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: string; messageKo: string } };
-export type ReplayState = { schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
+export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
+export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
+export type ReplayState = {actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -289,6 +294,7 @@ export type PendingIdentityReveal = {
   payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
 };
 export type RuleState = {
+  automaticReminders?: AutomaticReminder[];
   preparations?: PreparationRecord[];
   poisonerChoices?: TargetAssignment[];
   masterChoices?: TargetAssignment[];
@@ -510,7 +516,9 @@ export type SetupDistribution = {
   Minion: number;
   Demon: number;
 };
-export type SetupDistributionResult = SetupDistribution;
+export type SetupCountDelta = { Townsfolk:number; Outsider:number; Minion:number; Demon:number };
+export type SetupAdjustment = { base:SetupDistribution; modifiers:Array<{characterId:string;delta:SetupCountDelta}>; requestedDelta:SetupCountDelta; appliedDelta:SetupCountDelta; limited:boolean };
+export type SetupDistributionResult = SetupDistribution & { adjustment:SetupAdjustment };
 
 
 type EventCommon = {
@@ -535,6 +543,7 @@ export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind:
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
+  | {kind:"mutantJudgment";result:"clear"|"violation"}
   | { kind: "redHerringAssigned" | "twinAssigned"; targetPlayerId: string }
   | { kind: "informationPrepared"; preparation: InformationPreparation }
   | { kind: "preparedInformationDelivered"; preparationEventId: string; information: ConfirmedInformation; spent: boolean }
@@ -660,6 +669,9 @@ export type CoreWarning = {
 
 
 export type PhaseStep = {
+  execution: StepExecution;
+  madness?: {check:"clear"|"violation"|null;sourceEffective:boolean;canCheck:boolean;canExecute:boolean};
+  informationFlow?: {id:string;preparationEventId?:string};
   id: string;
   phase: Phase;
   stepType: StepType;
@@ -736,6 +748,7 @@ export type RequiredInput = {
   allowedCharacterIds?: string[];
   allowedPlayerIds?: string[];
   playerRegistrationOptions?: RegistrationJudgment[];
+  setupInformationChoices?: Array<{preparation: InformationPreparation; registrationJudgments: RegistrationJudgment[]}>;
   zeroAllowed?: boolean;
   supportsRandomSuggestion?: boolean;
   executionSurvivalAllowed?: boolean;

@@ -1,0 +1,3 @@
+import type {ReactNode} from 'react';
+import {CharacterAbilityInput} from './InformationInputPresentation';
+export function AbilityChoiceControls({input,value,options,busy,onChange,onConfirm,onDefer}:{input?:ReactNode;value:string;options:{id:string;label:string}[];busy:boolean;onChange:(id:string)=>void;onConfirm:()=>void;onDefer?:()=>void}){return <>{input ?? <CharacterAbilityInput value={value} options={options} disabled={busy} onChange={onChange}/>}<div className="snvStepActions"><button type="button" disabled={busy||!value} onClick={onConfirm}>선택 확정</button>{onDefer?<button type="button" className="secondary" disabled={busy} onClick={onDefer}>이번 밤 보류</button>:null}</div></>;}

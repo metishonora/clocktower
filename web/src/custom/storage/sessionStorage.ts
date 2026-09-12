@@ -1,3 +1,4 @@
+import { createBrowserId } from '../browserId.js';
 import type { CustomScriptDefinition, GameFileV4 } from "../core/types.js";
 import { parseCustomScriptDefinition, parseGameFileJson } from "./gameFile.js";
 
@@ -22,6 +23,7 @@ export type CustomWebSessionLoadResult<SetupDraft = unknown, Presentation = unkn
 
 export type CustomWebSessionStorageDriver<SetupDraft = unknown, Presentation = unknown> = {
   loadSession(): Promise<CustomWebSessionLoadResult<SetupDraft, Presentation>>;
+  writeOwnedSession?(snapshot: CustomWebSessionSnapshot<SetupDraft, Presentation>, expected?: CustomWebSessionSnapshot<SetupDraft, Presentation>): Promise<void>;
   saveSession(snapshot: CustomWebSessionSnapshot<SetupDraft, Presentation>): Promise<void>;
   replaceUnreadableSession(
     snapshot: CustomWebSessionSnapshot<SetupDraft, Presentation>,
@@ -138,6 +140,31 @@ export class IndexedDbCustomWebSessionStorageDriver<SetupDraft = unknown, Presen
     }
   }
 
+  /** Activation omits expected; ordinary saves compare and put in the same transaction. */
+  async writeOwnedSession(snapshot: CustomWebSessionSnapshot<SetupDraft, Presentation>, expected?: CustomWebSessionSnapshot<SetupDraft, Presentation>): Promise<void> {
+    const validated = parseCustomWebSession<SetupDraft, Presentation>(snapshot, this.customScriptId);
+    if (!validated.canonical.game.events.length) throw invalidSession();
+    const db = await this.openDb();
+    try {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const done = transactionDone(tx);
+      // Attach rejection before any awaited request can abort the transaction.
+      void done.catch(() => {});
+      const store = tx.objectStore(STORE_NAME);
+      const key = customSessionStorageKey(this.customScriptId);
+      if (expected) {
+        const existing = await requestToPromise<unknown>(store.get(key));
+        if (JSON.stringify(existing) !== JSON.stringify(parseCustomWebSession(expected, this.customScriptId))) {
+          tx.abort();
+          await done.catch(() => {});
+          throw new Error("다른 게임 기록으로 저장이 변경되었습니다. 현재 게임은 JSON으로 저장할 수 있습니다.");
+        }
+      }
+      store.put(validated, key);
+      await done;
+    } finally { db.close(); }
+  }
+
   private async openDb(): Promise<IDBDatabase> {
     const request = this.idb.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
@@ -150,7 +177,7 @@ export class IndexedDbCustomWebSessionStorageDriver<SetupDraft = unknown, Presen
 
 export function createCustomGameFile(
   definition: CustomScriptDefinition,
-  gameId: string = crypto.randomUUID(),
+  gameId: string = createBrowserId(),
   now = new Date(),
 ): GameFileV4 {
   const snapshot = structuredClone(parseCustomScriptDefinition(definition));

@@ -12,7 +12,12 @@ fn production_prefixes_and_proposals_preserve_frozen_baseline() {
         let replay: Value =
             serde_json::from_str(&replay_json(&prefix["game"].to_string())).unwrap();
         assert_eq!(replay["ok"], true, "prefix {index}: {replay}");
-        assert_eq!(replay["value"], prefix["replay"], "prefix {index}");
+        let mut legacy=replay["value"].clone();
+        legacy.as_object_mut().unwrap().remove("actionExecutions");
+        legacy.as_object_mut().unwrap().remove("latestUndoUnit");
+        if let Some(step)=legacy["currentStep"].as_object_mut() {step.remove("execution");}
+        for step in legacy["phaseOverview"].as_array_mut().unwrap() {step.as_object_mut().unwrap().remove("execution");}
+        assert_eq!(legacy, prefix["replay"], "prefix {index}");
         if index > 0 {
             let previous = trace[index - 1]["game"].to_string();
             let command = prefix["command"].to_string();

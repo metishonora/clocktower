@@ -32,64 +32,20 @@ pub(crate) const ORDERED_ACTIONS: [(&str, &str); 18] = [
     ("mathematician", "learnCount"),
 ];
 
-/// Registered actions outside the user-owned regular night order. The linked action is used
-/// only to place preparation/history; it never creates another definition-order entry.
-pub(crate) const ADDITIONAL_ACTIONS: [(&str, &str, Option<(&str, &str)>); 7] = [
-    (
-        "fortuneTeller",
-        "assignRedHerring",
-        Some(("fortuneTeller", "checkDemon")),
-    ),
-    (
-        "washerwoman",
-        "prepareInformation",
-        Some(("washerwoman", "learnTownsfolk")),
-    ),
-    (
-        "librarian",
-        "prepareInformation",
-        Some(("librarian", "learnOutsider")),
-    ),
-    (
-        "investigator",
-        "prepareInformation",
-        Some(("investigator", "learnMinion")),
-    ),
-    ("evilTwin", "assignTwin", Some(("evilTwin", "learnTwin"))),
-    (
-        "drunk",
-        "assignShownCharacter",
-        Some(("philosopher", "chooseAbility")),
-    ),
-    ("mutant", "resolveMadnessExecution", None),
+/// Registered keys outside the regular night order. Dependencies belong to ActionSpec.
+pub(crate) const ADDITIONAL_ACTIONS: [(&str, &str); 7] = [
+    ("fortuneTeller", "assignRedHerring"),
+    ("washerwoman", "prepareInformation"),
+    ("librarian", "prepareInformation"),
+    ("investigator", "prepareInformation"),
+    ("evilTwin", "assignTwin"),
+    ("drunk", "assignShownCharacter"),
+    ("mutant", "resolveMadnessExecution"),
 ];
 pub(crate) fn is_additional(action: &crate::contracts::FirstNightActionRef) -> bool {
     matches!(action, crate::contracts::FirstNightActionRef::Character { character_id, action_id }
-        if ADDITIONAL_ACTIONS.iter().any(|(c, a, _)| c == character_id && a == action_id))
+        if ADDITIONAL_ACTIONS.iter().any(|(c, a)| c == character_id && a == action_id))
 }
-pub(crate) fn linked_action(
-    action: &crate::contracts::FirstNightActionRef,
-) -> Option<crate::contracts::FirstNightActionRef> {
-    use crate::contracts::FirstNightActionRef;
-    let FirstNightActionRef::Character {
-        character_id,
-        action_id,
-    } = action
-    else {
-        return Some(action.clone());
-    };
-    ADDITIONAL_ACTIONS
-        .iter()
-        .find(|(c, a, _)| c == character_id && a == action_id)
-        .map(|(_, _, link)| {
-            link.map(|(c, a)| FirstNightActionRef::Character {
-                character_id: c.into(),
-                action_id: a.into(),
-            })
-        })
-        .unwrap_or_else(|| Some(action.clone()))
-}
-
 /// Complete production declaration. The boolean denotes membership in the regular order,
 /// not whether a preparation or optional action can occur during the first night.
 #[cfg_attr(feature = "custom-runtime-fixtures", allow(dead_code))]
@@ -113,7 +69,7 @@ pub(crate) fn production_actions() -> Vec<(FirstNightActionRef, bool)> {
         .chain(
             ADDITIONAL_ACTIONS
                 .into_iter()
-                .map(|(character_id, action_id, _)| {
+                .map(|(character_id, action_id)| {
                     (
                         FirstNightActionRef::Character {
                             character_id: character_id.into(),

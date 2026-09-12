@@ -1,11 +1,11 @@
-.snvInformationRevealBackdrop:has(.tbInformationReveal) {
+:is(.snvInformationRevealBackdrop, .bmrRoleRevealBackdrop):has(.tbInformationReveal) {
   color: #fff8e8;
   background:
     radial-gradient(circle at 50% 20%, rgba(76, 118, 79, .32), transparent 38%),
     #071611;
 }
 
-.snvInformationReveal.tbInformationReveal {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal {
   box-sizing: border-box;
   border-color: rgba(226, 201, 143, .34);
   background:
@@ -14,7 +14,7 @@
   box-shadow: 0 30px 100px rgba(1, 10, 6, .72);
 }
 
-.snvInformationReveal.tbInformationReveal > .tbRevealIcon {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal > .tbRevealIcon {
   width: clamp(54px, 10vw, 82px);
   height: clamp(54px, 10vw, 82px);
   margin: 0 auto 8px;
@@ -22,46 +22,46 @@
   filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .24));
 }
 
-.snvInformationReveal.tbInformationReveal > .tbRevealEyebrow {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal > .tbRevealEyebrow {
   color: #d2ad64;
   font-size: .72rem;
   font-weight: 900;
   letter-spacing: .14em;
 }
 
-.snvInformationReveal.tbInformationReveal > h2 {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal > h2 {
   margin: 18px 0 12px;
   color: #fff8e8;
   font: clamp(2rem, 7vw, 4.2rem)/1.08 Georgia, "Noto Serif KR", serif;
   letter-spacing: -.035em;
 }
 
-.snvInformationReveal.tbInformationReveal .tbRevealDescription {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal .tbRevealDescription {
   max-width: 640px;
   color: #d8ccb0;
   font-size: clamp(.96rem, 2.3vw, 1.2rem);
   line-height: 1.6;
 }
 
-.snvInformationReveal.tb-setupInformation,
-.snvInformationReveal.tb-characterInformation,
-.snvInformationReveal.tb-numericInformation,
-.snvInformationReveal.tb-fortuneTellerInformation {
+:is(.snvInformationReveal, .bmrRoleReveal).tb-setupInformation,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-characterInformation,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-numericInformation,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-fortuneTellerInformation {
   gap: clamp(16px, 3vh, 26px);
 }
 
-.snvInformationReveal.tb-setupInformation > .tbRevealEyebrow,
-.snvInformationReveal.tb-characterInformation > .tbRevealEyebrow,
-.snvInformationReveal.tb-numericInformation > .tbRevealEyebrow,
-.snvInformationReveal.tb-fortuneTellerInformation > .tbRevealEyebrow {
+:is(.snvInformationReveal, .bmrRoleReveal).tb-setupInformation > .tbRevealEyebrow,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-characterInformation > .tbRevealEyebrow,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-numericInformation > .tbRevealEyebrow,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-fortuneTellerInformation > .tbRevealEyebrow {
   align-self: center;
   font-size: clamp(.72rem, 1.8vw, .92rem);
 }
 
-.snvInformationReveal.tb-setupInformation .tbRevealDescription,
-.snvInformationReveal.tb-characterInformation .tbRevealDescription,
-.snvInformationReveal.tb-numericInformation .tbRevealDescription,
-.snvInformationReveal.tb-fortuneTellerInformation .tbRevealDescription {
+:is(.snvInformationReveal, .bmrRoleReveal).tb-setupInformation .tbRevealDescription,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-characterInformation .tbRevealDescription,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-numericInformation .tbRevealDescription,
+:is(.snvInformationReveal, .bmrRoleReveal).tb-fortuneTellerInformation .tbRevealDescription {
   margin: 0;
   color: #e7dcc5;
   font-size: clamp(1.15rem, 3.5vw, 1.7rem);
@@ -69,7 +69,7 @@
   text-align: center;
 }
 
-.snvInformationReveal.tb-fortuneTellerInformation > .tbRevealValue {
+:is(.snvInformationReveal, .bmrRoleReveal).tb-fortuneTellerInformation > .tbRevealValue {
   margin: 0;
 }
 
@@ -133,7 +133,7 @@
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .3));
 }
 
-.snvInformationReveal.tbInformationReveal .tbRevealCharacterIdentity > h2 {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal .tbRevealCharacterIdentity > h2 {
   margin: 0;
   color: #fff8e8;
   font: clamp(2rem, 7vw, 4.2rem)/1.08 Georgia, "Noto Serif KR", serif;
@@ -249,7 +249,7 @@
   object-fit: contain;
 }
 
-.snvInformationReveal.tbEvilInformationReveal {
+:is(.snvInformationReveal, .bmrRoleReveal).tbEvilInformationReveal {
   width: min(940px, 100%);
   min-height: min(620px, calc(100dvh - 40px));
   padding: clamp(22px, 3vw, 34px);
@@ -356,7 +356,7 @@
 
 .tbRevealEmpty { color: #d8ccb0; }
 
-.snvInformationReveal.tbInformationReveal > button {
+:is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal > button {
   justify-self: center;
   min-height: 44px;
   margin-top: 34px;
@@ -369,7 +369,7 @@
   font-weight: 900;
 }
 
-.snvInformationReveal.tbEvilInformationReveal > button { margin-top: 0; }
+:is(.snvInformationReveal, .bmrRoleReveal).tbEvilInformationReveal > button { margin-top: 0; }
 
 .tbRevealTwinPair { width: min(700px, 100%); }
 .tbRevealTwinPair article { position: relative; display: grid; min-width: 0; padding: 16px 12px; place-items: center; align-content: center; gap: 7px; border: 1px solid rgba(221, 198, 151, .22); border-radius: 18px; background: linear-gradient(145deg, rgba(55, 107, 80, .34), rgba(126, 81, 46, .15)); }
@@ -379,8 +379,8 @@
 .tbRevealTwinPair article small { color: #d2ad64; font-weight: 900; }
 
 @media (max-width: 620px) {
-  .snvInformationRevealBackdrop:has(.tbInformationReveal) { padding: 12px; }
-  .snvInformationReveal.tbInformationReveal { min-height: calc(100dvh - 24px); padding: 24px 14px; border-radius: 24px; }
+  :is(.snvInformationRevealBackdrop, .bmrRoleRevealBackdrop):has(.tbInformationReveal) { padding: 12px; }
+  :is(.snvInformationReveal, .bmrRoleReveal).tbInformationReveal { min-height: calc(100dvh - 24px); padding: 24px 14px; border-radius: 24px; }
   .tbRevealPlayerPair,
   .tbRevealCharacterPair,
   .tbRevealTwinPair { gap: 7px; }
@@ -391,5 +391,5 @@
   .tbRevealCharacterCards > .tbRevealCharacterCard { padding: 9px 4px; }
   .tbRevealSeatCards { grid-auto-columns: minmax(82px, 28vw); gap: 8px; }
   .tbRevealSeatCards > article { padding: 8px 5px; }
-  .snvInformationReveal.tbEvilInformationReveal { padding: 22px 12px; }
+  :is(.snvInformationReveal, .bmrRoleReveal).tbEvilInformationReveal { padding: 22px 12px; }
 }

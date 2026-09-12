@@ -1,3 +1,5 @@
+import { isRevealPayload } from './revealPayload.js';
+import type { RevealPayload } from './types.js';
 import type {
   Command,
   CoreResult,
@@ -22,6 +24,7 @@ import {
   parseSetupDistribution,
 } from "./validation.js";
 import init, {
+  confirmed_event_reveal as wasmConfirmedEventReveal,
   custom_script_catalog as wasmCustomScriptCatalog,
   custom_first_night_plan as wasmCustomFirstNightPlan,
   propose as wasmPropose,
@@ -135,7 +138,17 @@ export async function loadCustomDefinitionValidator(): Promise<CustomDefinitionV
   };
 }
 
+export async function confirmedEventReveal(gameFile: GameFile, eventId: string): Promise<CoreResult<RevealPayload | null>> {
+  await ensureWasm();
+  return parseCoreResult(JSON.parse(wasmConfirmedEventReveal(JSON.stringify(gameFile), eventId)), value => {
+    if (value === null) return null;
+    if (!isRevealPayload(value)) throw new Error('공개 정보 형식이 올바르지 않습니다.');
+    return value;
+  });
+}
+
 export const wasmCoreAdapter: CoreAdapter = {
+  confirmedEventReveal,
   replay,
   propose,
   setupDistribution,

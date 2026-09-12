@@ -1,9 +1,8 @@
 import { expect, it } from "vitest";
 import { isSpyGrimoireRevealPayload } from "../../src/custom/core/revealPayload.js";
-import { start, system, take, replayOrThrow, moveBefore, dawnRejected, custom, roundTrip, rejectCommand, rejectEvent, realWasmCore } from "./issue209Support.js";
+import { start, startLegacyWasherwoman, system, take, replayOrThrow, moveBefore, dawnRejected, custom, roundTrip, rejectCommand, rejectEvent, realWasmCore } from "./issue209Support.js";
 it("C10 C19 C21-c C27-b: recovery requires a new preparation while old Spy delivery stays fixed", async () => {
-    const { session } = await start(4, d => moveBefore(d, "inspectGrimoire", "chooseAbility"));
-    const initial = await take(session, "prepareInformation", { playerIds: ["p7", "p8"], characterId: "monk", correctPlayerId: "p7" });
+    const { session, initial } = await startLegacyWasherwoman();
     await system(session);
     const spy = await take(session, "inspectGrimoire", null);
     expect(spy.proposal.revealPayload).toMatchObject({ kind: "spyGrimoire", players: expect.arrayContaining([expect.objectContaining({ playerId: "p7", automaticReminders: expect.arrayContaining([expect.objectContaining({ tokenId: "townsfolk" })]) })]) });
@@ -43,8 +42,8 @@ it("C10 C19 C21-c C27-b: recovery requires a new preparation while old Spy deliv
 });
 it("C11 C18-a C19 C20-a C21-c C23 C25: causal twin repair, whole-file rejection and event Undo", async () => {
     const { session } = await start(5, d => moveBefore(d, "learnTwin", "choosePlayer"));
-    const assign = await take(session, "assignTwin", { playerIds: ["p1"] });
     await system(session);
+    const assign = await take(session, "assignTwin", { playerIds: ["p1"] });
     const first = await take(session, "learnTwin", null);
     const beforeSwap = await replayOrThrow(session.snapshot.canonical);
     const swap = await take(session, "choosePlayer", { playerIds: ["p7"] });
@@ -90,7 +89,7 @@ it("C11 C18-a C19 C20-a C21-c C23 C25: causal twin repair, whole-file rejection 
     const missing = structuredClone(session.snapshot.canonical);
     missing.game.events = missing.game.events.filter(e => e.id !== assign.proposal.event.id);
     expect((await realWasmCore().replay(missing)).ok).toBe(false);
-    for (const [event, state] of [[final.proposal.event, beforeNotice], [repair.proposal.event, beforeRepair], [swap.proposal.event, beforeSwap]] as const) {
+    for (const [event, state] of [[final.proposal.event, beforeRepair], [swap.proposal.event, beforeSwap]] as const) {
         const undo = await session.undo(event.id);
         expect(undo.ok).toBe(true);
         if (undo.ok)

@@ -1,12 +1,15 @@
+import type { ImportedGame } from './importScenarioSource.js';
+import type { ValidatedScenario } from '../core/definitionValidator.js';
 import type { ScenarioEditorController } from './scenarioEditorController.js';
 import { blockingMessage } from './scenarioEditorController.js';
 import type { ScenarioEditorState } from './scenarioEditorState.js';
 import { countsFor, kindOrder, kindLabels, recommendedMinimums, characterPresentation } from './characterPresentation.js';
-export function ScenarioReviewSheet({ state, controller }: { state: ScenarioEditorState; controller: ScenarioEditorController }) {
+export function ScenarioReviewSheet({ state, controller, onNewGrimoire, onResume }: { state: ScenarioEditorState; controller: ScenarioEditorController; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { draft } = state;
   const counts = countsFor(draft.characterIds);
   const error = blockingMessage(state.error);
   const shortages = kindOrder.filter(kind => counts[kind] < recommendedMinimums[kind]);
+  const resumable = controller.getResumableGame();
   const invalid = state.validation !== 'valid';
   return <section className={`issue202Gate4Sheet${invalid ? ' is-invalid' : ''}`} aria-labelledby="review-title">
     <header className="issue202Gate4Header"><div><small>Ⅳ</small><div><h1 id="review-title">최종 검토</h1><p>{draft.name || '이름 없는 시나리오'}</p></div></div></header>
@@ -28,8 +31,11 @@ export function ScenarioReviewSheet({ state, controller }: { state: ScenarioEdit
           {shortages.length > 0 && !invalid && <section className="issue202Gate4Recommendation" aria-label="권장 구성 경고"><strong>캐릭터가 부족합니다.</strong><ul>
             {shortages.map(kind => <li key={kind}><span>{kindLabels[kind]}</span><b>{counts[kind]}/{recommendedMinimums[kind]}</b></li>)}
           </ul></section>}
-          <button type="button" className="is-save is-primary" disabled={invalid || state.orderPending} onClick={controller.save}>시나리오 저장</button>
-          <button type="button" disabled>새 마도서 쓰기</button><button type="button" disabled>마도서 이어 쓰기</button>
+          <button type="button" className="is-save" disabled={invalid || state.orderPending} onClick={controller.save}>시나리오 저장</button>
+          <button type="button" className={!resumable ? "is-primary" : undefined} disabled={!onNewGrimoire || invalid || state.orderPending} onClick={() => {
+            const scenario = controller.getValidatedScenario();
+            if (scenario) onNewGrimoire?.(scenario);
+          }}>새 마도서 쓰기</button>{resumable && onResume && <button type="button" className="is-primary" onClick={() => { const game = controller.getResumableGame(); if (game) onResume(game); }}>마도서 이어 쓰기</button>}
           <div aria-live="polite">{state.downloadStatus === 'requested' && <p>다운로드를 요청했습니다.</p>}
             {state.downloadError && <p role="alert">{state.downloadError}</p>}</div>
         </aside>

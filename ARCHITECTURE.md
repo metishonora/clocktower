@@ -310,7 +310,7 @@ after proposal; only a later confirmation adds the event to the record.
 Runtime composition has explicit roles:
 
 - `ActionSpec` declares a stable action reference plus first-night participation, input kind, and
-  support metadata.
+  support metadata, prerequisite action references and continuation-source declarations.
 - A pure `ActionHandler` projects an action through read-only rule services and receives the current
   occurrence and typed input when proposing a result. Character handlers return a typed custom result
   in an event draft, while system handlers retain their existing system draft; acquired abilities
@@ -970,3 +970,47 @@ The next test stage covers the approved #197 black-box cases using Production WA
 controller/file integration, and browser download/upload. Custom test configuration keeps Node
 runtime tests separate from TSX/jsdom UI tests. Official pages, storage, PWA behavior, and custom
 source isolation remain regression boundaries. No new rule-level test matrix is owned by #197.
+
+
+## Custom grimoire presentation and scenario order (#220)
+
+The custom Core owns executable occurrences, preparation dependencies, candidate validity,
+registration judgments, and immutable reveal snapshots. The scenario definition owns regular
+first-night order. Original Setup preparations are admitted at the action that declares them as prerequisites;
+acquired/simulated ability preparations and invalidated preparations retain their causal
+precedence. Replay alone admits an old leading Setup-preparation prefix, validating its original
+source, owner, input and historical snapshot. New proposals cannot use that compatibility path.
+
+`custom/grimoire/firstNightController` owns drafts, raw number text, selection handoff, proposals
+and reveal state. `grimoire-custom/actions/registry` explicitly maps all 29 supported action references to input, selection, completion, reveal and cancellation adapters without scheduling them. `grimoire-custom/taskPresentationModel` adapts that state and Core
+projections to identity, actor, ability, stage, editor, result, warnings and actions. The task and
+board consume this model. Missing candidate contracts block confirmation instead of creating
+raw fallback forms. Setup choices carry the correct reminder owner and registration provenance;
+UI selection narrows those choices without reproducing character rules. Prepared delivery is
+read-only; a Core-projected optional re-preparation reuses the same board editor.
+
+`shared-ui` receives presentation values and callbacks, never official or custom runtime DTOs.
+The official TB setup and scalar editors also consume the extracted setup and treatment controls.
+Production automatic reminders remain character-owned; fixture builds do not call the production
+reminder provider. Current board state and historical Spy payloads remain separate projections.
+
+### Custom action executions and Undo (T13)
+
+`first_night/execution.rs` resolves character-owned preparation/relationship sources and scheduler-recorded
+`RunImmediately` admissions into replay-only execution membership. Matching requires the concrete owner,
+ability instance and simulation source. Preparation consumers declare their prerequisites in `ActionSpec`;
+the catalog contains keys and default order only. A pending consumer preview is an overview value, never
+an executable scheduler admission. Confirmed snapshots freeze the relation at their event prefix.
+Only the latest contiguous execution suffix can continue; an intervening independent event turns an older
+source into a reference. Ordinary `JoinPendingOrder` acquisition does not join its origin's Undo unit.
+
+The read-only DTOs are `PhaseStep.execution`, `ReplayState.actionExecutions` and `latestUndoUnit`.
+The last confirmed event ID identifies an Undo unit, invalidating confirmations made before a child event.
+The browser validates the complete event contents/IDs, game and definition before removing that suffix.
+No execution metadata is persisted: canonical GameFile/schemaVersion 4 and event envelopes are unchanged.
+The controller awaits autosave before continuation or notification. Failed saves retain the confirmed prefix;
+retry can restore a private notification prompt but never opens a public reveal automatically.
+
+The original BMR Undo button is shared by BMR and custom, including its native confirmation and empty state.
+New Scenario retires setup/play/writer/request ownership, remounts an empty authoring instance and clears only
+the navigation marker. Existing save records are preserved until a new game's ordinary save replaces its slot.

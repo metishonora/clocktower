@@ -121,6 +121,7 @@ fn state_scaffold_keeps_occurrence_identity_and_progress_separate_from_wire_cont
         .starts_with("firstNight:washerwoman:"));
 
     let progress = FirstNightProgress {
+        immediate_origins: vec![],
         required_queue: vec![],
         available_occurrences: vec![],
         cursor: 1,

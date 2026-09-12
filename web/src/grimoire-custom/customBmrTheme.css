@@ -1,0 +1,126 @@
+@import '../badMoonRisingGame.css';
+@import '../features/bug-report/bmrBugReport.css';
+@import '../shared-ui/styles/bmrRolePresentation.css';
+
+/* BMR palette over shared layout primitives. Character/team colours stay semantic. */
+.bmrProductionShell.bmrProductionShell.customBmrTheme {
+  --bmr-surface: rgba(42,8,16,.68);
+  --bmr-card: rgba(255,255,255,.04);
+  --bmr-line: rgba(224,156,164,.22);
+  --bmr-ink: #fff5f1;
+  --bmr-muted: #c9a5a9;
+  --bmr-selected: #8e293e;
+  --bmr-input: #300b15;
+  color: var(--bmr-ink);
+  background: radial-gradient(circle at 76% 5%,rgba(196,53,76,.3),transparent 28%),linear-gradient(145deg,#21070d 0%,#3b0914 49%,#120408 100%);
+}
+.bmrProductionShell.customBmrTheme[data-theme=day] {
+  --bmr-surface: rgba(255,249,243,.78);
+  --bmr-card: rgba(175,78,91,.07);
+  --bmr-line: rgba(112,41,54,.22);
+  --bmr-ink: #3b2026;
+  --bmr-muted: #76545b;
+  --bmr-selected: #a63d49;
+  --bmr-input: #fff9f3;
+}
+.bmrProductionShell.customBmrTheme :is(.productionApplicationUtilities,.productionApplicationStages) button,
+.bmrProductionShell.customBmrTheme .snvChoiceRow button,
+.bmrProductionShell.customBmrTheme .roleCatalog article button,
+.bmrProductionShell.customBmrTheme .snvFirstNightHeader button {
+  color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card);
+}
+.bmrProductionShell.customBmrTheme :is(.productionApplicationUtilities,.productionApplicationStages) button.active,
+.bmrProductionShell.customBmrTheme .snvChoiceRow button[aria-pressed=true],
+.bmrProductionShell.customBmrTheme .roleCatalog article button.selected {
+  color:#fff8f4;border-color:#e19a9f;background:var(--bmr-selected);box-shadow:0 8px 24px rgba(101,12,34,.36);
+}
+.bmrProductionShell.customBmrTheme :is(.snvControlCard,.snvDistributionCard,.snvInformationValues > div,.customEventLog,.customSetupRoleDetail) {
+  color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card);
+}
+.bmrProductionShell.customBmrTheme :is(.snvControlCard > span,.roleCatalog h2,.snvDistributionValues span,.snvRoleDetailCopy span,.snvRoleDetailCopy p,.snvCurrentStepLabel,.snvCurrentStep p,.snvInformationValues dt,.customCurrentTask small,.snvPhaseOverview li,.customPhaseOrder small) { color:var(--bmr-muted); }
+.bmrProductionShell.customBmrTheme .snvDistributionCard.emphasized { border-color:rgba(218,138,148,.42);background:rgba(139,38,57,.18); }
+.bmrProductionShell.customBmrTheme :is(.snvDistributionCard h2,.snvDistributionValues strong,.snvRoleDetailCopy h2,.snvInformationValues dd,.bmrCurrentIdentity strong) { color:var(--bmr-ink); }
+.bmrProductionShell.customBmrTheme .bmrRoleDetail { color:var(--bmr-ink);border-color:rgba(218,132,143,.38);background:linear-gradient(135deg,rgba(117,26,43,.96),rgba(52,9,18,.98)); }
+.customBmrTheme[data-theme=day] .bmrRoleDetail { background:linear-gradient(135deg,#fbeadf,#f1d6cf); }
+.bmrProductionShell.customBmrTheme .snvFirstNightHeader { border-color:var(--bmr-line); }
+.bmrProductionShell.customBmrTheme :is(select,input:not([type=checkbox]),textarea) { color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-input); }
+.bmrProductionShell.customBmrTheme input[type=checkbox] { accent-color:#c84d63; }
+.bmrProductionShell.customBmrTheme .snvStepActions button,
+.bmrProductionShell.customBmrTheme .customEventLog button { min-height:44px;padding:10px 15px;color:var(--bmr-ink);border:1px solid var(--bmr-line);border-radius:999px;background:var(--bmr-card);font:inherit;font-weight:800; }
+.bmrProductionShell.customBmrTheme .snvStepActions button.prominent:not(.poisoned):not(.drunk):not(.vortox),
+.bmrProductionShell.customBmrTheme .snvConfirmRoster.prominent:not(:disabled) { color:#2c1608;border-color:var(--bmr-gold);background:linear-gradient(135deg,#f3d78f,#d7a54d);box-shadow:0 14px 34px rgba(195,126,35,.28); }
+.bmrProductionShell.customBmrTheme .snvStepActions button:disabled,
+.bmrProductionShell.customBmrTheme .snvConfirmRoster:disabled { color:var(--bmr-muted);border-color:var(--bmr-line);background:var(--bmr-card);box-shadow:none;opacity:.45;cursor:not-allowed; }
+.bmrProductionShell.customBmrTheme .snvPhaseOverview li { border-color:var(--bmr-line); }
+.bmrProductionShell.customBmrTheme .snvPhaseOverview li.current { color:var(--bmr-gold);background:rgba(151,88,25,.22); }
+.bmrProductionShell.customBmrTheme .snvPhaseOverview li.complete { color:var(--bmr-ink); }
+.bmrProductionShell.customBmrTheme .customEventLog li { border-color:var(--bmr-line); }
+.bmrProductionShell.customBmrTheme :is(button,input,select,textarea):focus-visible { outline:2px solid var(--bmr-gold);outline-offset:3px; }
+.bmrProductionShell.customBmrTheme .customPreparationNotice { margin-block:12px;color:var(--bmr-gold); }
+.bmrProductionShell.customBmrTheme .bmrBluffGrid button:disabled { opacity:.45; }
+.customBmrStorage { display:grid;gap:24px;max-width:760px;margin:auto; }
+.customBmrStorage .bmrStorage { width:100%; }
+.customBmrStorage .bmrStorage > span { display:block;margin-bottom:12px;color:var(--bmr-muted);font-size:.72rem;font-weight:800; }
+.customBmrStorage h2 { overflow-wrap:anywhere; }
+.customBmrStorage p { color:var(--bmr-muted); }
+.bmrRevealBackdrop { --bmr-gold:#e9c36e;box-sizing:border-box;font-family:Inter,Pretendard,system-ui,sans-serif; }
+.bmrReveal.customPublicReveal h2 { color:#d9aeb4; }
+.customGrimoireApplication .customGrimoireLoading { color:#fff5f1;background:radial-gradient(circle at 50% 20%,#6b1729,#18040a 66%); }
+.customGrimoireApplication .customApplicationError { color:#ffd9df;border-color:rgba(235,101,120,.5);background:#731227; }
+
+
+
+.bmrProductionShell.customBmrTheme .snvGrimoireCenter { color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-input); }
+.bmrProductionShell.customBmrTheme .snvGrimoireCenter :is(strong,span) { color:inherit; }
+.bmrProductionShell.customBmrTheme .snvGrimoireCenter.live { background:var(--bmr-input); }
+.bmrProductionShell.customBmrTheme .snvSeatingToolbar button { color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card); }
+.bmrProductionShell.customBmrTheme .customSaveStatus button { min-height:44px;padding:10px 15px;border:1px solid var(--bmr-line);border-radius:999px;color:var(--bmr-ink);background:var(--bmr-card);font:inherit; }
+.bmrProductionShell.customBmrTheme .snvGrimoireCenter.live button { border-color:var(--bmr-gold);color:#2c1608;background:linear-gradient(135deg,#f3d78f,#d7a54d); }
+.bmrProductionShell.customBmrTheme .snvSeatInspectorHeader > span:first-child { color:var(--bmr-muted); }
+.bmrProductionShell.customBmrTheme .snvSelectedRosterTray button { color:var(--bmr-ink);border-color:var(--bmr-line); }
+.playerTokenDetailBackdrop.bmrTheme .snvLiveStatuses span { color:#dbc7c9;border-color:rgba(224,156,164,.22);background:rgba(255,255,255,.04); }
+.playerTokenDetailBackdrop.bmrTheme.day .snvLiveStatuses span { color:#76545b;border-color:rgba(112,41,54,.22);background:rgba(175,78,91,.07); }
+
+.bmrProductionShell.customBmrTheme .bmrGrimoireBoard > button.unassigned { color:var(--bmr-muted);border-color:var(--bmr-line);background:var(--bmr-input); }
+.bmrProductionShell.customBmrTheme .bmrSeatInspector { color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card); }
+.bmrProductionShell.customBmrTheme .customPhaseOrder .customTaskActions { margin:0 0 12px; }
+.bmrProductionShell.customBmrTheme .customPhaseOrder .snvPhaseOverviewAction { text-align:right; }
+
+.customBmrTheme .roleCatalog button[data-selection-disabled=true]:not(.selected) { opacity:.5; }
+.customBmrTheme :is(.issue116SelectionPanel,.snvEventLog,.snvInformationPairEditor) {color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-surface);}
+.customBmrTheme .issue116PrimaryAction {color:#2c1608;border-color:var(--bmr-gold);background:linear-gradient(135deg,#f3d78f,#d7a54d);}
+.customBmrTheme .issue116PrimaryAction:disabled {opacity:.45;}
+.customBmrTheme .issue116SelectionPanel button:not(.issue116PrimaryAction),.customBmrTheme .snvEventLog button {color:var(--bmr-ink);border:1px solid var(--bmr-line);background:var(--bmr-card);border-radius:999px;padding:10px 16px;}
+.customBmrTheme .customPlayWarning {color:var(--bmr-gold);}
+.bmrReveal.customPublicReveal:has(.customSpyBoard) {width:min(1200px,96vw);max-width:1200px;}
+.customSpyBoard {width:100%;}
+
+
+
+
+.bmrProductionShell.bmrProductionShell.customBmrTheme[data-theme=day] {background:radial-gradient(circle at 76% 5%,rgba(221,152,105,.22),transparent 28%),linear-gradient(145deg,#fff7ed,#f3ddd1);}
+.customBmrTheme :is(.snvInformationPairEditor label,.issue107AbilitySelect span,.issue116SelectionPanel dt,.snvMathematicianAudit summary,.snvMathematicianAuditCharacter,.snvMathematicianAuditMeta time) {color:var(--bmr-muted);}
+.customBmrTheme :is(.snvMathematicianAudit,.snvMathematicianAuditRow) {color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card);}
+.customBmrTheme :is(.snvMathematicianAuditMain > strong,.snvMathematicianAuditOutcome) {color:var(--bmr-ink);}
+.customBmrTheme .snvMathematicianAuditCause {color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card);}
+.customBmrTheme .snvInformationBinary button {color:var(--bmr-ink);border-color:var(--bmr-line);background:var(--bmr-card);}
+.customBmrTheme .snvInformationBinary button[aria-pressed=true] {background:var(--bmr-selected);color:#fff5f1;}
+
+.customBmrTheme .snvEventLog > header > strong,.customBmrTheme .snvScrollableEventList li p {color:var(--bmr-ink);}
+.customBmrTheme .snvEventLog > header,.customBmrTheme .snvScrollableEventList li {border-color:var(--bmr-line);}
+
+.bmrProductionShell.customBmrTheme .tbScalarTreatment {
+ --tb-ui-muted:var(--bmr-muted);
+ --tb-treatment-accent:var(--bmr-line);
+ --tb-treatment-text:var(--bmr-ink);
+ --tb-treatment-background:var(--bmr-card);
+ --tb-treatment-selected-background:var(--bmr-selected);
+}
+.bmrProductionShell.customBmrTheme .tbScalarTreatment button:disabled { opacity:.45; cursor:not-allowed; }
+.bmrProductionShell.customBmrTheme .tbScalarTreatment button { overflow-wrap:anywhere; }
+.bmrProductionShell.customBmrTheme .snvSeatInspector .tbSetupInformationEditor { width:100%; margin:12px 0; }
+.bmrProductionShell.customBmrTheme .snvSeatInspector .tbSetupInformationEditor select { width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--bmr-line); border-radius:10px; }
+
+/* Keep the existing BMR utility buttons readable when the extra scenario action wraps. */
+.bmrProductionShell.customBmrTheme .snvUtilityTabs { flex-wrap: wrap; }
+.bmrProductionShell.customBmrTheme .snvUtilityTabs button { white-space: nowrap; }

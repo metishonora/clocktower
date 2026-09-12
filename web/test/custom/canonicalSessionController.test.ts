@@ -1,3 +1,4 @@
+import {unmodifiedDistribution} from './setupDistributionFixture';
 import { deepEqual, equal } from "node:assert/strict";
 
 import { test } from "vitest";
@@ -106,10 +107,10 @@ function adapter(
       return { ok: true, value: replayState(gameFile.game.events.length) };
     },
     async setupDistribution() {
-      return { ok: true, value: { Townsfolk: 5, Outsider: 0, Minion: 1, Demon: 1 } };
+      return { ok: true, value: unmodifiedDistribution({ Townsfolk: 5, Outsider: 0, Minion: 1, Demon: 1 }) };
     },
     setupDistributionSync() {
-      return { ok: true, value: { Townsfolk: 5, Outsider: 0, Minion: 1, Demon: 1 } };
+      return { ok: true, value: unmodifiedDistribution({ Townsfolk: 5, Outsider: 0, Minion: 1, Demon: 1 }) };
     },
   };
 }
@@ -170,6 +171,8 @@ function customFile(events: GameEvent[], definition: CustomScriptDefinition): Ga
 
 function customState(eventCount: number, definition: CustomScriptDefinition): ReplayState {
   return {
+    actionExecutions: eventCount>1?[{id:'latest',rootStepId:'latest',displayStepId:'latest',stepIds:['latest'],eventIds:['latest'],status:'complete'}]:[],
+    latestUndoUnit: eventCount>1?{id:'latest',executionId:'latest',eventIds:['latest'],summaryStepId:'latest'}:null,
     schemaVersion: 4,
     script: { type: "custom", definition },
     eventCount,

@@ -31,10 +31,10 @@ fn additional_actions_never_become_required_definition_order_entries() {
     let all = catalog::ORDERED_ACTIONS
         .iter()
         .copied()
-        .chain(catalog::ADDITIONAL_ACTIONS.iter().map(|(c, a, _)| (*c, *a)))
+        .chain(catalog::ADDITIONAL_ACTIONS.iter().map(|(c, a)| (*c, *a)))
         .collect::<std::collections::HashSet<_>>();
     assert_eq!(all.len(), 25);
-    for (c, a, _) in catalog::ADDITIONAL_ACTIONS {
+    for (c, a) in catalog::ADDITIONAL_ACTIONS {
         let mut altered = definition.clone();
         altered.first_night_order.0.insert(
             1,
@@ -131,7 +131,7 @@ fn production_registers_exactly_the_twenty_five_declared_character_actions() {
     for (c, a) in catalog::ORDERED_ACTIONS
         .iter()
         .copied()
-        .chain(catalog::ADDITIONAL_ACTIONS.iter().map(|(c, a, _)| (*c, *a)))
+        .chain(catalog::ADDITIONAL_ACTIONS.iter().map(|(c, a)| (*c, *a)))
     {
         assert_eq!(
             actual

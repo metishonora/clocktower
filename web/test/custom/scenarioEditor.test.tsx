@@ -53,7 +53,8 @@ it('source input can reselect the same file and a canceled selection preserves t
   const input = screen.getByLabelText('시나리오 JSON 파일') as HTMLInputElement;
   const selected = { name: 'scenario.json', text: async () => scenario };
   fireEvent.change(input, { target: { files: [selected] } });
-  await waitFor(() => expect(screen.getByText('시나리오를 불러왔습니다.')).toBeTruthy());
+  await waitFor(() => expect(controller.getSnapshot().step).toBe('review'));
+  expect(screen.queryByText('시나리오를 불러왔습니다.')).toBeNull();
   const first = controller.getSnapshot().draft;
   expect(input.value).toBe('');
   fireEvent.change(input, { target: { files: [] } });
@@ -86,4 +87,24 @@ it('browser download adapter releases its temporary element and URL even when di
     if (oldRevoke) Object.defineProperty(URL, 'revokeObjectURL', oldRevoke); else Reflect.deleteProperty(URL, 'revokeObjectURL');
     vi.useRealTimers();
   }
+});
+
+it('hands off only the current validated scenario and keeps the production button disabled without a consumer', async () => {
+  const { controller, download } = setup();
+  await controller.importFile({ name: 'scenario.json', text: async () => scenario });
+  const start = vi.fn();
+  function ConnectedReview() {
+    const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+    return <ScenarioReviewSheet state={state} controller={controller} onNewGrimoire={start} />;
+  }
+  const view = render(<Review controller={controller} />);
+  expect((screen.getByRole('button', { name: '새 마도서 쓰기' }) as HTMLButtonElement).disabled).toBe(true);
+  view.rerender(<ConnectedReview />);
+  fireEvent.click(screen.getByRole('button', { name: '새 마도서 쓰기' }));
+  expect(start).toHaveBeenCalledWith(controller.getSnapshot().validated);
+  expect(download).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('시나리오 이름'), { target: { value: '' } });
+  expect(controller.getValidatedScenario()).toBeUndefined();
+  fireEvent.click(screen.getByRole('button', { name: '새 마도서 쓰기' }));
+  expect(start).toHaveBeenCalledTimes(1);
 });

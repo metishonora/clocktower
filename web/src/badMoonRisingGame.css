@@ -126,14 +126,16 @@ body,
 }
 
 .bmrProductionShell[data-theme="day"] .bmrDemonChoices button,
-.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button {
+.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button,
+.bmrProductionShell[data-theme="day"] .bmrSetupAdjustmentValue {
   border-color: rgba(93, 20, 33, .16);
   color: #4c3035;
   background: rgba(255, 255, 255, .45);
 }
 
 .bmrProductionShell[data-theme="day"] .bmrDemonChoices button[aria-pressed="true"],
-.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button[aria-pressed="true"] {
+.bmrProductionShell[data-theme="day"] .bmrSetupChoiceOptions button[aria-pressed="true"],
+.bmrProductionShell[data-theme="day"] .bmrSetupAdjustmentValue.applied {
   border-color: #82283a;
   color: #fff8f4;
   background: linear-gradient(135deg, #7b1b2d, #a63d49);
@@ -228,7 +230,8 @@ body,
   gap: 8px;
 }
 
-.bmrSetupChoiceOptions button {
+.bmrSetupChoiceOptions button,
+.bmrSetupAdjustmentValue {
   display: grid;
   min-height: 66px;
   padding: 9px 10px;
@@ -243,18 +246,21 @@ body,
   cursor: pointer;
 }
 
-.bmrSetupChoiceOptions button[aria-pressed="true"] {
+.bmrSetupChoiceOptions button[aria-pressed="true"],
+.bmrSetupAdjustmentValue.applied {
   border-color: var(--bmr-gold);
   color: #fff8e8;
   background: linear-gradient(135deg, rgba(111, 26, 40, .94), rgba(138, 75, 39, .62));
   box-shadow: 0 0 0 2px rgba(217, 180, 108, .12);
 }
 
-.bmrSetupChoiceOptions button strong {
+.bmrSetupChoiceOptions button strong,
+.bmrSetupAdjustmentValue strong {
   font-size: .78rem;
 }
 
-.bmrSetupChoiceOptions button span {
+.bmrSetupChoiceOptions button span,
+.bmrSetupAdjustmentValue span {
   color: inherit;
   font-size: .66rem;
   opacity: .75;
@@ -343,27 +349,27 @@ body,
   background: radial-gradient(circle, rgba(175, 78, 91, .13), rgba(246, 229, 218, .92)) !important;
 }
 
-.bmrGrimoireBoard > button.assigned.alignment-good {
+.bmrGrimoireBoard > :is(button, article).assigned.alignment-good {
   border-color: rgba(90, 177, 208, .72);
   background: linear-gradient(145deg, #183845, #2d2635);
 }
 
-.bmrGrimoireBoard > button.assigned.alignment-evil {
+.bmrGrimoireBoard > :is(button, article).assigned.alignment-evil {
   border-color: rgba(225, 92, 113, .8);
   background: linear-gradient(145deg, #551b2a, #2b111a);
 }
 
-.bmrGrimoireBoard > button.selected {
+.bmrGrimoireBoard > :is(button, article).selected:not(.snvSeatStateTarget) {
   border-color: var(--bmr-gold) !important;
   box-shadow: 0 0 0 3px rgba(236, 192, 97, .18), 0 8px 28px rgba(8, 0, 2, .4) !important;
 }
 
-.bmrGrimoireBoard > button.needsShownCharacter {
+.bmrGrimoireBoard > :is(button, article).needsShownCharacter {
   border-color: #f0ce78 !important;
   box-shadow: 0 0 0 3px rgba(240, 206, 120, .2), 0 8px 28px rgba(8, 0, 2, .4) !important;
 }
 
-.bmrGrimoireBoard > button.needsShownCharacter small {
+.bmrGrimoireBoard > :is(button, article).needsShownCharacter small {
   color: #ffe39a;
 }
 
@@ -871,6 +877,16 @@ body,
     grid-template-columns: 1fr;
   }
 
+  .bmrGrimoireSurface .snvMobileSeatPanelBackdrop {
+    position: fixed;
+    z-index: 189;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgba(6, 3, 8, .62);
+  }
+
   .bmrSeatingTray.mobileCollapsed {
     display: none;
   }
@@ -905,19 +921,19 @@ body,
     font-size: .64rem;
   }
 
-  .bmrGrimoireBoard > button .bmrCharacterMedallion.seat {
+  .bmrGrimoireBoard > :is(button, article) .bmrCharacterMedallion.seat {
     width: 34px;
     border-width: 1px;
     box-shadow: inset 0 0 0 2px rgba(25, 5, 10, .34), 0 3px 9px rgba(4, 0, 1, .24);
     font-size: .52rem;
   }
 
-  .bmrGrimoireBoard > button .snvSeatPlayerName {
+  .bmrGrimoireBoard > :is(button, article) .snvSeatPlayerName {
     font-size: .68rem;
     line-height: 1.05;
   }
 
-  .bmrGrimoireBoard > button small {
+  .bmrGrimoireBoard > :is(button, article) small {
     font-size: .56rem;
     line-height: 1.05;
   }
@@ -1021,4 +1037,20 @@ body,
   .bmrConfirmDialog > div {
     display: grid;
   }
+}
+
+.customCompactAdjustments {display:none;}
+.bmrSetupAdjustmentValue {cursor:default;}
+.bmrSetupChoiceReveal.visible > div > .bmrSetupChoice + .bmrSetupChoice {margin-top:8px;}
+.bmrSetupAdjustmentLimit {margin:8px 0 0;color:inherit;font-size:.75rem;}
+@media(max-width:700px){
+ .customCompactAdjustments {display:block;grid-column:1 / -1;min-width:0;}
+ .customCompactAdjustments > div {display:grid;gap:6px;}
+ .customCompactAdjustments .bmrMobileGodfatherAdjustment {display:flex;}
+ .customCompactAdjustments .bmrSetupChoiceTitle {min-width:0;overflow-wrap:anywhere;flex:1;}
+ .customCompactAdjustments .bmrSetupAdjustmentValue {min-width:58px;min-height:30px;padding:5px 9px;border-radius:999px;font-size:.69rem;}
+}
+
+.bmrProductionShell[data-theme="day"] .bmrSetupChoiceTitle span {
+  color: #852d40;
 }

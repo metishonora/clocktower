@@ -1,0 +1,40 @@
+.bmrUtilityTabs .bmrBugReportTrigger { border-color: rgba(233, 195, 110, .4); color: #fff5f1; background: rgba(142, 41, 62, .18); }
+.bmrDayMode .bmrUtilityTabs .bmrBugReportTrigger { border-color: rgba(143, 58, 76, .34); color: #8f3a4c; background: rgba(255, 255, 255, .54); }
+.bmrBugReportBackdrop { position: fixed; z-index: 180; inset: 0; display: grid; padding: 22px; place-items: center; background: rgba(24, 4, 10, .72); backdrop-filter: blur(7px); }
+.bmrBugReportDialog { display: grid; box-sizing: border-box; width: min(640px, 100%); max-height: min(92dvh, 880px); grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid rgba(224, 156, 164, .3); border-radius: 24px; color: #fff5f1; background: linear-gradient(145deg, #3b0914, #21070d); box-shadow: 0 30px 100px rgba(8, 0, 3, .62); }
+.bmrBugReportDialog > header { display: flex; padding: 22px 24px 17px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(224, 156, 164, .12); }
+.bmrBugReportDialog h2 { margin: 0; font: 2rem Georgia, serif; }
+.bmrBugReportDialog > header button { width: 40px; height: 40px; padding: 0; border: 1px solid rgba(224, 156, 164, .18); border-radius: 50%; color: inherit; background: rgba(255, 255, 255, .05); font-size: 1.4rem; cursor: pointer; }
+.bmrBugReportBody { display: grid; min-height: 0; padding: 20px 24px; align-content: start; grid-auto-rows: max-content; gap: 16px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.bmrBugReportDescription { display: grid; gap: 7px; }
+.bmrBugReportDescription > span { color: #dbc7c9; font-size: .78rem; font-weight: 850; }
+.bmrBugReportDialog textarea { box-sizing: border-box; width: 100%; min-height: 76px; padding: 11px 12px; resize: vertical; border: 1px solid rgba(224, 156, 164, .2); border-radius: 12px; color: #fff; background: rgba(255, 255, 255, .055); font: inherit; font-size: .82rem; line-height: 1.5; }
+.bmrBugReportDialog textarea:focus-visible { border-color: #e9c36e; outline: 3px solid rgba(233, 195, 110, .13); }
+.bmrBugReportPrivacy { display: grid; padding: 12px 14px; gap: 8px; border: 1px solid rgba(233, 195, 110, .18); border-radius: 13px; background: rgba(142, 41, 62, .1); }
+.bmrBugReportPrivacy div { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; }
+.bmrBugReportPrivacy div > span { color: #e9c36e; font-weight: 950; }
+.bmrBugReportPrivacy p { margin: 0; color: #c9a5a9; font-size: .76rem; line-height: 1.45; }
+.bmrBugReportPrivacy strong { color: #fff5f1; }
+.bmrBugReportPreview, .bmrBugReportOriginal { border: 1px solid rgba(224, 156, 164, .16); border-radius: 13px; background: rgba(255, 255, 255, .035); overflow: hidden; }
+.bmrBugReportPreview summary, .bmrBugReportOriginal > summary { display: flex; min-height: 46px; padding: 0 13px; align-items: center; justify-content: space-between; gap: 12px; font-size: .77rem; font-weight: 850; cursor: pointer; }
+.bmrBugReportPreview summary small { color: #c9a5a9; font-size: .68rem; }
+.bmrBugReportPreview pre { max-height: 230px; margin: 0; padding: 14px; overflow: auto; border-top: 1px solid rgba(224, 156, 164, .12); color: #dbc7c9; background: rgba(18, 4, 8, .34); font: .69rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bmrBugReportOriginal > label { display: flex; padding: 0 13px 8px; align-items: center; gap: 8px; color: #efdde3; font-size: .76rem; font-weight: 850; }
+.bmrBugReportOriginal input { width: 18px; height: 18px; accent-color: #a8344c; }
+.bmrBugReportOriginal p { margin: 0; padding: 0 13px 13px 39px; color: #d4a9b2; font-size: .7rem; line-height: 1.45; }
+.bmrBugReportRecovery, .bmrBugReportSuccess, .bmrBugReportFailure { margin: 0; padding: 12px 14px; border-radius: 12px; font-size: .76rem; }
+.bmrBugReportRecovery { border: 1px solid rgba(244, 194, 76, .38); color: #f8e6b5; background: rgba(143, 95, 13, .18); }
+.bmrBugReportRecovery p { margin: 4px 0 0; line-height: 1.45; }
+.bmrBugReportSuccess { border: 1px solid rgba(111, 204, 161, .36); color: #cef3df; background: rgba(32, 123, 82, .18); }
+.bmrBugReportFailure { border: 1px solid rgba(255, 114, 139, .38); color: #ffd9e0; background: rgba(139, 38, 62, .18); }
+.bmrBugReportDialog > footer { display: flex; padding: 15px 24px 20px; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(224, 156, 164, .1); }
+.bmrBugReportDialog > footer button { min-height: 44px; padding: 9px 13px; border: 1px solid rgba(224, 156, 164, .22); border-radius: 11px; color: inherit; background: rgba(255, 255, 255, .06); font: inherit; font-size: .76rem; font-weight: 850; cursor: pointer; }
+.bmrBugReportDialog > footer button.primary { border-color:#e9c36e;color:#2c1608;background:linear-gradient(135deg,#f3d78f,#d7a54d); }
+@media (max-width: 760px) {
+  .bmrBugReportBackdrop { padding: 10px; align-items: end; }
+  .bmrBugReportDialog { width: 100%; max-height: 94dvh; border-radius: 24px 24px 0 0; }
+  .bmrBugReportDialog textarea { font-size: 16px; }
+  .bmrBugReportDialog > header, .bmrBugReportBody { padding-right: 17px; padding-left: 17px; }
+  .bmrBugReportDialog > footer { padding-right: 17px; padding-left: 17px; flex-wrap: wrap; }
+  .bmrBugReportDialog > footer button { flex: 1 1 auto; }
+}

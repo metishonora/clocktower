@@ -458,6 +458,7 @@ pub(crate) type ActionCompletion = CompletedActionOccurrence;
 /// persistence contract.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub(crate) struct FirstNightProgress {
+    pub(crate) immediate_origins: Vec<(ActionOccurrenceIdentity, String)>,
     pub(crate) required_queue: Vec<ActionOccurrence>,
     pub(crate) available_occurrences: Vec<ActionOccurrence>,
     pub(crate) cursor: usize,
