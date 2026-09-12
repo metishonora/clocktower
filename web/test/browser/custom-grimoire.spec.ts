@@ -13,7 +13,7 @@ async function setup(page:Page) {
   await page.getByRole('button',{name:'새 마도서 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 시나리오 마도서'})).toBeVisible();
   await page.getByRole('button',{name:'5명',exact:true}).click();
   await expect(page.getByRole('button',{name:'직업 선택 확정'})).toBeDisabled();expect(await slots(page)).toEqual([]);
-  for(const name of ['요리사','초공감자','시계공','독살범','임프'])await page.getByRole('button',{name,exact:true}).click();
+  for(const name of ['요리사','초공감자','시계공','독살범','임프'])await page.getByRole('button',{name:name==='임프'?'임프 악마 선택':name,exact:true}).click();
   await expect(page.getByRole('button',{name:'군인',exact:true})).toHaveAttribute('data-selection-disabled','true');
   await expect(page.getByRole('button',{name:'시장',exact:true})).toHaveAttribute('data-selection-disabled','true');
   await page.screenshot({path:test.info().outputPath('role-setup.png'),fullPage:true});
@@ -38,14 +38,14 @@ async function setup(page:Page) {
   await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();
 }
 async function discloseAndCommit(page:Page) {
-  await page.locator('.bmrEvilInformationTask, .customStepInputs').getByRole('button',{name:/^(정보 공개|확인)$/}).click();const dialog=page.getByRole('dialog',{name:'플레이어 정보'});await expect(dialog).toBeVisible();
+  await page.getByRole('button',{name:/정보 공개$/}).click();const dialog=page.getByRole('dialog',{name:'플레이어 정보'});await expect(dialog).toBeVisible();
   await expect(page.locator('.bmrRevealBackdrop')).toBeVisible();
   await page.screenshot({path:test.info().outputPath('bmr-public-reveal.png')});
   expect(await page.locator('#root').evaluate(el=>(el as HTMLElement).inert)).toBe(true);
   await expect(page.getByRole('main',{name:'커스텀 마도서'})).toHaveCount(0);
-  await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'가리기',exact:true})).toBeFocused();
-  await page.getByRole('button',{name:'가리기',exact:true}).click();await expect(dialog).toHaveCount(0);
-  await page.getByRole('button',{name:'다음으로',exact:true}).click();
+  await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'확인했으면 눈을 감으세요',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'확인했으면 눈을 감으세요',exact:true}).click();await expect(dialog).toHaveCount(0);
+  await page.getByRole('button',{name:/^(다음으로|다음 단계)$/,exact:true}).click();
 }
 for(const width of [1366,390,820,320])test(`C05/C06/C16/C21/C27/C34/C37: Production setup, reveal, refresh and exact game resume at ${width}px`,async({page},info)=>{
   test.setTimeout(60000);await page.setViewportSize({width,height:900});await page.emulateMedia({reducedMotion:'reduce'});await setup(page);
@@ -84,7 +84,7 @@ for(const width of [1366,390,820,320])test(`C05/C06/C16/C21/C27/C34/C37: Product
   await expect(page.getByRole('button',{name:'기록',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();await expect(page.getByRole('region',{name:'이벤트 로그'})).toBeVisible();
   await page.screenshot({path:info.outputPath('bmr-history.png'),fullPage:true});await page.getByRole('button',{name:'진행',exact:true}).click();
   await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();
-  const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSON 저장',exact:true}).click();const download=await downloadPromise;const file=JSON.parse(await readFile((await download.path())!,'utf8'));
+  const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSON 내보내기',exact:true}).click();const download=await downloadPromise;const file=JSON.parse(await readFile((await download.path())!,'utf8'));
   expect(file.schemaVersion).toBe(4);expect(file.game.events).toHaveLength(5);
   await page.goto('./?fresh=1');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await upload(page,file);
   await expect(page.getByRole('button',{name:'마도서 이어 쓰기'})).toBeVisible();await page.getByLabel('시나리오 이름',{exact:true}).fill('변경');await expect(page.getByRole('button',{name:'마도서 이어 쓰기'})).toHaveCount(0);
@@ -105,27 +105,32 @@ async function mixedSetupFile(roster:number) {
   return {schemaVersion:4,game:{id:`browser-R${roster}`,name:fixture.definition.name,script:{type:'custom',definition:fixture.definition},createdAt:'2026-09-09T00:00:00Z',updatedAt:'2026-09-09T00:00:00Z',events:[{id:'setup-1',type:'setupConfirmed',phase:'setup',summary:'설정',createdAt:'2026-09-09T00:00:00Z',payload:{players}}]}};
 }
 async function mixedResume(page:Page,roster:number){await enter(page);await upload(page,await mixedSetupFile(roster));await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();}
-test('C29/R2: acquired Washerwoman preparation and delivery are separately usable in Production',async({page},info)=>{
+test('C29/R2: acquired Washerwoman uses one preparation/reveal flow and Undo boundary in Production',async({page},info)=>{
   await page.emulateMedia({reducedMotion:'reduce'});await mixedResume(page,2);await discloseAndCommit(page);
   const catalog=JSON.parse(await readFile(new URL('../../src/custom/authoring/characterPresentation.json',import.meta.url),'utf8'));
   for(const id of ['artist','savant','juggler'])await page.locator('.bmrBluffGrid').getByRole('button',{name:`${catalog[id].label} 속임수 선택`,exact:true}).click();await discloseAndCommit(page);
-  await page.getByRole('combobox',{name:'얻을 캐릭터 능력'}).selectOption('washerwoman');await page.getByRole('button',{name:'확인',exact:true}).click();
-  await expect(page.locator('.customPreparationNotice')).toHaveText('정보 준비');await expect(page.locator('.customPhaseOrder li.current strong')).toHaveText('철학자 · 세탁부 준비');
-  await chooseTargets(page,[1,3],'monk');
+  const persistedEvents=async()=>((await slots(page)) as Array<{canonical:{game:{events:unknown[]}}}>)[0].canonical.game.events;
+  const beforeAcquisition=await persistedEvents();
+  await page.getByRole('combobox',{name:'얻을 선한 캐릭터 능력'}).selectOption('washerwoman');await page.getByRole('button',{name:'선택 확정',exact:true}).click();
+  await expect(page.locator('.customPreparationNotice')).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'세탁부 능력',exact:true})).toBeVisible();
+  await confirmTargets(page,[1,3],'monk');
+  await expect(page.locator('.customPhaseOrder li.current strong')).toHaveText('철학자 · 세탁부');
   await page.screenshot({path:info.outputPath('acquired-preparation.png'),fullPage:true});
-  await page.getByRole('button',{name:'확인',exact:true}).click();
-  await expect(page.locator('.customPreparationNotice')).toHaveCount(0);await page.getByRole('button',{name:'정보 공개',exact:true}).click();await expect(page.getByRole('dialog')).toContainText(catalog.monk.label);await expect(page.getByRole('dialog')).toContainText('P3');await page.screenshot({path:info.outputPath('acquired-prepared-reveal.png')});await page.getByRole('button',{name:'가리기'}).click();await page.getByRole('button',{name:'다음으로',exact:true}).click();
-  page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await expect(page.locator('.customCurrentTask .customBmrRoleName')).toContainText(catalog.washerwoman.label);
+  await page.getByRole('button',{name:'정보 공개',exact:true}).click();await expect(page.getByRole('dialog')).toContainText(catalog.monk.label);await expect(page.getByRole('dialog')).toContainText('P3');await page.screenshot({path:info.outputPath('acquired-prepared-reveal.png')});await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();await page.getByRole('button',{name:'다음 단계',exact:true}).click();
+  await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('dialog',{name:'Undo',exact:true}).getByRole('button',{name:'되돌리기',exact:true}).click();await expect(page.getByRole('combobox',{name:'얻을 선한 캐릭터 능력'})).toHaveValue('');await expect.poll(persistedEvents).toEqual(beforeAcquisition);
 });
 test('C31/R11: optional good-twin execution ends Production play and Undo restores it',async({page},info)=>{
-  await mixedResume(page,11);await discloseAndCommit(page);for(const name of ['화가','백치천재','곡예사'])await page.locator('.bmrBluffGrid').getByRole('button',{name:`${name} 속임수 선택`,exact:true}).click();await discloseAndCommit(page);await chooseTargets(page,[2]);
-  await page.locator('.customPhaseOrder').getByRole('button',{name:/P2.*변종/}).click();await page.getByRole('checkbox',{name:'처형한다'}).check();await discloseAndCommit(page);
-  await expect(page.getByRole('heading',{name:'게임 종료',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'악의 승리',exact:true})).toBeVisible();await expect(page.locator('.customStepInputs')).toHaveCount(0);await page.screenshot({path:info.outputPath('game-end.png')});page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await expect(page.getByRole('heading',{name:'게임 종료',exact:true})).toHaveCount(0);await expect(page.locator('.customCurrentTask')).toBeVisible();await page.locator('.customPhaseOrder').getByRole('button',{name:/P2.*변종/}).click();await expect(page.getByRole('checkbox',{name:'처형한다'})).not.toBeChecked();
+  await mixedResume(page,11);await discloseAndCommit(page);for(const name of ['화가','백치천재','곡예사'])await page.locator('.bmrBluffGrid').getByRole('button',{name:`${name} 속임수 선택`,exact:true}).click();await discloseAndCommit(page);
+  await page.getByRole('button',{name:'쌍둥이 선택',exact:true}).click();await page.getByRole('button',{name:/^2번 P2,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();await page.getByRole('dialog',{name:'쌍둥이 확인 안내'}).getByRole('button',{name:'공개',exact:true}).click();await page.getByRole('button',{name:'확인했으면 눈을 감으세요'}).click();
+  await page.getByRole('button',{name:/변종 집착 확인 열기/}).click();await page.getByRole('button',{name:'외지인임을 집착함',exact:true}).click();await page.getByRole('button',{name:'[2번 P2] 처형',exact:true}).click();await page.getByRole('alertdialog').getByRole('button',{name:'처형 확정',exact:true}).click();
+  await page.getByRole('button',{name:'진행',exact:true}).click();await expect(page.getByRole('heading',{name:'게임 종료',exact:true}).first()).toBeVisible();await expect(page.getByRole('heading',{name:'악의 승리',exact:true})).toBeVisible();await expect(page.locator('.customStepInputs')).toHaveCount(0);await page.screenshot({path:info.outputPath('game-end.png'),fullPage:true});
+  await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('dialog',{name:'Undo',exact:true}).getByRole('button',{name:'되돌리기',exact:true}).click();await expect(page.getByRole('heading',{name:'게임 종료',exact:true})).toHaveCount(0);await expect(page.locator('.snvCurrentStepIdentity')).toBeVisible();await page.getByRole('button',{name:/변종 집착 확인 열기/}).click();await expect(page.getByRole('button',{name:'[2번 P2] 처형',exact:true})).toBeEnabled();
 });
 
 test('C38: supported Day JSON resumes without enabling day abilities or a later night',async({page},info)=>{
   const file=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json',import.meta.url),'utf8'));
-  await enter(page);await upload(page,file);await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();await expect(page.getByRole('heading',{name:'첫날 낮',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day.png'),fullPage:true});await page.getByRole('button',{name:'마도서',exact:true}).click();await page.getByRole('button',{name:/^1번 /}).click();await page.locator('.playerTokenCharacterIdentityButton').click();await expect(page.locator('.characterRulesBackdrop.bmr-day')).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day-detail.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();await page.getByRole('button',{name:'진행',exact:true}).click();await expect(page.locator('.customStepInputs')).toHaveCount(0);await expect(page.getByRole('button',{name:'다음으로',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();await expect(page.getByRole('button',{name:'JSON 저장',exact:true})).toBeEnabled();
+  await enter(page);await upload(page,file);await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();await expect(page.getByRole('heading',{name:'첫날 낮',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day.png'),fullPage:true});await page.getByRole('button',{name:'마도서',exact:true}).click();await page.getByRole('button',{name:/^1번 /}).click();await page.locator('.playerTokenCharacterIdentityButton').click();await expect(page.locator('.characterRulesBackdrop.bmr-day')).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day-detail.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();await page.getByRole('button',{name:'진행',exact:true}).click();await expect(page.locator('.customStepInputs')).toHaveCount(0);await expect(page.getByRole('button',{name:/^(다음으로|다음 단계)$/,exact:true})).toHaveCount(0);await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();await expect(page.getByRole('button',{name:'JSON 내보내기',exact:true})).toBeEnabled();
 });
 
 for (const width of [320,1366]) test(`Utilities preserve autosave through new game/import review at ${width}px`,async({page},info)=>{
@@ -140,7 +145,7 @@ for (const width of [320,1366]) test(`Utilities preserve autosave through new ga
   expect(preview.fixture.file.game.events[0].payload.players[0].id).toBe('p1');expect(preview.original).toBeUndefined();
   await page.screenshot({path:info.outputPath('bug-report.png'),fullPage:true});await report.getByRole('button',{name:'취소',exact:true}).click();
   await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();
-  await expect(page.getByRole('button',{name:'JSON 불러오기',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'JSON 가져오기',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
   await page.screenshot({path:info.outputPath('storage-utilities.png'),fullPage:true});
   await page.getByLabel('마도서 JSON 파일').setInputFiles({name:'resume.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(await mixedSetupFile(2)))});
@@ -151,17 +156,20 @@ for (const width of [320,1366]) test(`Utilities preserve autosave through new ga
   expect(await slots(page)).toEqual(resumed);await expect(page.getByRole('button',{name:'직업 선택 확정'})).toBeDisabled();
   for(const name of ['새 게임','저장 / 불러오기','버그 제보'])await expect(page.getByRole('button',{name,exact:true})).toBeVisible();
   await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();
-  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'JSON 저장',exact:true}).click();
+  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'JSON 내보내기',exact:true}).click();
   const scenarioFile=JSON.parse(await readFile((await (await downloading).path())!,'utf8'));
   expect(scenarioFile.type).toBe('clocktower-custom-scenario');expect(scenarioFile.game).toBeUndefined();expect(await slots(page)).toEqual(resumed);
 });
 
 async function chooseTargets(page:Page,seats:number[],character?:string) {
- await page.getByRole('button',{name:'마도서에서 대상 선택',exact:true}).click();
+ await page.getByRole('button',{name:'대상 선택',exact:true}).click();
+ await confirmTargets(page,seats,character);
+}
+async function confirmTargets(page:Page,seats:number[],character?:string) {
  await expect(page.getByRole('complementary',{name:'현재 마도서 작업'})).toBeVisible();
  for(const seat of seats)await page.locator('.bmrGrimoireBoard').getByRole('button',{name:new RegExp(`^${seat}번 `)}).click();
- if(character)await page.getByRole('combobox',{name:'보여줄 캐릭터'}).selectOption(character);
  await page.getByRole('button',{name:'선택 확정',exact:true}).click();
+ if(character)await page.getByRole('combobox',{name:'보여줄 캐릭터'}).selectOption(character);
 }
 for(const width of [320,390,820,1366])test(`U01/U03/U04/U09/U10/U12: role inspection, reset confirmations and original Setup restart at ${width}`,async({page})=>{
  test.setTimeout(60000);await page.setViewportSize({width,height:900});await page.emulateMedia({reducedMotion:'reduce'});await setup(page);
@@ -171,8 +179,8 @@ for(const width of [320,390,820,1366])test(`U01/U03/U04/U09/U10/U12: role inspec
  await page.locator('.snvRoleDetailIdentity').click();await expect(page.locator('.characterRulesBackdrop.bmr-night')).toBeVisible();await page.keyboard.press('Escape');expect(await slots(page)).toEqual(before);
  await page.getByRole('button',{name:'새 게임',exact:true}).click();await expect(page.getByRole('dialog',{name:'새 게임 확인'}).getByRole('button',{name:'취소'})).toBeFocused();await page.keyboard.press('Escape');expect(await slots(page)).toEqual(before);
  await page.getByRole('button',{name:'마도서',exact:true}).click();await page.locator('.bmrGrimoireBoard').getByRole('button',{name:/^1번 /}).click();await expect(page.getByRole('dialog',{name:/플레이어 상세/})).not.toContainText('생존');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
- await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'배치 복귀 확인'}).getByRole('button',{name:'취소'}).click();expect(await slots(page)).toEqual(before);
- await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'배치 복귀 확인'}).getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await expect(page.getByRole('button',{name:'좌석 확정',exact:true})).toBeEnabled();expect(await slots(page)).toEqual(before);
+ await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'취소'}).click();expect(await slots(page)).toEqual(before);
+ await page.getByRole('button',{name:'배치로 돌아가기',exact:true}).click();await page.getByRole('dialog',{name:'진행 상태 초기화 확인'}).getByRole('button',{name:'초기화하고 돌아가기',exact:true}).click();await expect(page.getByRole('button',{name:'좌석 확정',exact:true})).toBeEnabled();expect(await slots(page)).toEqual(before);
  await page.reload();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();expect(await slots(page)).toEqual(before);
 });
 
@@ -191,15 +199,16 @@ test('C15/U05/U07/U08/U09: R0 full TB information, numeric zero and payload-only
  await discloseAndCommit(page);
  for(const name of ['화가','백치천재','곡예사'])await page.locator('.bmrBluffGrid').getByRole('button',{name:`${name} 속임수 선택`,exact:true}).click();
  await discloseAndCommit(page);await chooseTargets(page,[11]);
- for(const [seat,character] of [[8,'monk'],[10,'butler'],[12,'poisoner']] as const){await chooseTargets(page,[1,seat],character);await page.getByRole('button',{name:'확인',exact:true}).click();await discloseAndCommit(page);}
- await page.getByRole('button',{name:'3',exact:true}).click();await discloseAndCommit(page);
+ for(const [seat,character] of [[8,'monk'],[10,'butler'],[12,'poisoner']] as const){await chooseTargets(page,[1,seat],character);await discloseAndCommit(page);}
+ await page.getByRole('group',{name:'이번 판정의 첩자 취급'}).getByRole('button',{name:'악한 팀으로 취급',exact:true}).click();await discloseAndCommit(page);
  await expect(page.locator('.snvInformationValues')).toContainText('0');await discloseAndCommit(page);
- await chooseTargets(page,[8]);await page.getByRole('button',{name:'확인',exact:true}).click();
- await chooseTargets(page,[6,15]);await page.getByRole('button',{name:'예',exact:true}).click();await discloseAndCommit(page);
- await chooseTargets(page,[8]);await page.getByRole('button',{name:'0',exact:true}).click();await discloseAndCommit(page);
- await page.getByRole('button',{name:'정보 공개',exact:true}).click();const dialog=page.getByRole('dialog',{name:'플레이어 정보'});
- await expect(dialog.getByLabel('공개 마도서')).toBeVisible();await expect(dialog.locator('.bmrGrimoireBoard > article')).toHaveCount(15);await expect(dialog).toContainText('중독');await expect(page.getByRole('main',{name:'커스텀 마도서'})).toHaveCount(0);
- await page.screenshot({path:info.outputPath('r0-spy-payload-board.png'),fullPage:true});await page.getByRole('button',{name:'가리기'}).click();await page.getByRole('button',{name:'다음으로',exact:true}).click();
+ await chooseTargets(page,[8]);
+ for(const seat of [6,15])await page.getByRole('button',{name:new RegExp(`^${seat}번 P${seat},`)}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();await discloseAndCommit(page);
+ await chooseTargets(page,[8]);await page.getByRole('spinbutton',{name:'전달할 숫자'}).fill('0');await discloseAndCommit(page);
+ await page.getByRole('button',{name:'정보 공개',exact:true}).click();const spy=page.getByRole('region',{name:'마도서 첩자 마도서'});
+ await expect(spy).toBeVisible();await expect(spy.getByRole('button',{name:/^\d+번 P/})).toHaveCount(15);await expect(page.getByRole('main',{name:'커스텀 마도서'})).toHaveCount(0);
+ await spy.getByRole('button',{name:/^11번 P11,/}).click();await expect(page.getByRole('dialog',{name:'11번 P11 플레이어 상세'})).toContainText('중독');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
+ await page.screenshot({path:info.outputPath('r0-spy-payload-board.png'),fullPage:true});await page.getByRole('button',{name:'확인 완료',exact:true}).click();await page.getByRole('button',{name:'다음 단계',exact:true}).click();
  await expect(page.locator('.snvInformationValues')).toContainText('1');await discloseAndCommit(page);await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'첫날 낮',exact:true})).toBeVisible();
 });
 
@@ -213,9 +222,9 @@ for(const width of [320,820])test(`A01/A04: uploaded user scenario starts with m
  const catalog=JSON.parse(await readFile(new URL('../../src/custom/authoring/characterPresentation.json',import.meta.url),'utf8'));
  for(const id of ['ravenkeeper','undertaker','juggler'])await page.locator('.bmrBluffGrid').getByRole('button',{name:`${catalog[id].label} 속임수 선택`,exact:true}).click();
  await discloseAndCommit(page);await chooseTargets(page,[9]);
- await page.getByRole('button',{name:'마도서에서 대상 선택'}).click();await page.locator('.bmrGrimoireBoard').getByRole('button',{name:/^6번 /}).click();await page.getByRole('combobox',{name:'집착 캐릭터'}).selectOption('chef');await page.getByRole('button',{name:'선택 확정'}).click();await expect(page.getByRole('dialog',{name:'플레이어 정보'})).toBeVisible();await page.getByRole('button',{name:'가리기',exact:true}).click();await page.getByRole('button',{name:'다음으로',exact:true}).click();
- await expect(page.locator('.customPreparationNotice')).toHaveText('정보 준비');await expect(page.getByText('정답 플레이어',{exact:true})).toHaveCount(0);await expect(page.getByText(/13번 P13 취급/)).toHaveCount(0);
- await chooseTargets(page,[6,8],'monk');await page.getByRole('button',{name:'확인',exact:true}).click();await expect(page.locator('.customStepInputs')).toContainText('준비된 정보');await discloseAndCommit(page);
+ await page.getByRole('button',{name:'집착 지정',exact:true}).click();await page.locator('.bmrGrimoireBoard').getByRole('button',{name:/^6번 /}).click();await page.getByRole('combobox',{name:'집착할 캐릭터'}).selectOption('chef');await page.getByRole('button',{name:'6번 P6 집착 지정',exact:true}).click();await page.getByRole('button',{name:'공개',exact:true}).click();await expect(page.getByRole('dialog',{name:'플레이어 정보'})).toBeVisible();await page.getByRole('button',{name:'확인했으면 눈을 감으세요',exact:true}).click();await page.getByRole('button',{name:'진행',exact:true}).click();
+ await expect(page.locator('.customPreparationNotice')).toHaveCount(0);await expect(page.getByText('정답 플레이어',{exact:true})).toHaveCount(0);await expect(page.getByText(/13번 P13 취급/)).toHaveCount(0);
+ await chooseTargets(page,[6,8],'monk');await discloseAndCommit(page);await expect(page.locator('.snvCurrentStepRoleName')).toHaveText('사서');
  await page.screenshot({path:info.outputPath('user-scenario-next-preparation.png'),fullPage:true});
 });
 

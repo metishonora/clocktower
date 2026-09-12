@@ -35,3 +35,9 @@
 ## Finalize 경계 검사 보완
 
 첫 PR CI에서 `custom/grimoire/actionPresentation`과 controller가 UI 폴더의 action metadata를 참조하는 소유권 위반을 발견했다. metadata 4개 파일을 `web/src/custom/grimoire/actions`로 옮겨 custom 계층과 UI가 같은 소유 모듈을 참조하도록 정리했다. 기존 경계 검사와 검사 회귀 10개, action UI 계약 43개, 웹 production 빌드가 통과했다. 경계 검사 기준이나 action 데이터는 변경하지 않았다. 공식 소스 없는 격리 실행과 최종 CI 결과는 PR에 기록한다.
+
+## Finalize 초기 브라우저 회귀 갱신
+
+두 번째 PR CI는 경계 검사와 공식 코드 없는 격리 실행까지 통과했으며, production 브라우저에서 226개 통과/16개 실패를 보고했다. 실패는 초기 `custom-grimoire.spec.ts`에 남은 구 UI 기대였다. 최신 V/T13 및 사용자 정정과 대조해 악마 선택·저장 버튼 이름, 공개 닫기, 단일 준비/전달, 점쟁이 연속 선택, 자유 행동 dock, 첩자 전체 마도서와 앱 내 Undo 조작을 갱신했다. 테스트 제외나 제품 동작 변경은 없다.
+
+`pnpm --dir web run test:browser:run custom-grimoire.spec.ts --workers=2`: TypeScript 및 18개 브라우저 사례 모두 통과(47.2초). 화면별 설정·파일 왕복/저장 보존·공개 포커스/비밀 화면 격리·전체 첫날 밤→Day·변종 처형/Undo를 유지했다. 철학자의 즉시 능력 선택→준비→전달은 승인된 D2–D4에 따라 한 실행이며, 한 번의 Undo 후 능력 선택 화면과 이전 canonical 사건 목록이 정확히 복원되는 검증을 추가했다. 최종 CI는 새 커밋 전체를 다시 검증한다.
