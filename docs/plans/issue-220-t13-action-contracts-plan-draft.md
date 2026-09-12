@@ -69,7 +69,7 @@ read-only DTO를 다음 의미로 확장한다(이름은 아래를 기준으로 
 
 ### C4. Web 실행과 action adapter
 
-새 `web/src/grimoire-custom/actions/registry.ts`에서 전체29 action 키를 필수 등록한다. adapter의 계약은 `inputView`, `selectionContract`, `completionContract`, `revealView`, `revealOpen/closeDestination`, `cancellation`이다. 원본 view에 Core projection을 공급하며 rule/합법 후보/의존 판단은 갖지 않는다. UI 세부는 계약표 R01–R29가 기준이다.
+새 `web/src/custom/grimoire/actions/registry.ts`에서 전체29 action 키를 필수 등록한다. adapter의 계약은 `inputView`, `selectionContract`, `completionContract`, `revealView`, `revealOpen/closeDestination`, `cancellation`이다. 원본 view에 Core projection을 공급하며 rule/합법 후보/의존 판단은 갖지 않는다. UI 세부는 계약표 R01–R29가 기준이다.
 
 공통 controller는 기존 propose/apply/save/lock/stale를 유지하며 상태를 `editing → proposing → applying/saving → awaitingInput 또는 awaitingReveal → completed`로 연결한다. Core execution ID/current action이 같은 경우 다음 adapter로 인계한다. 입력 없는 연결도 공개 버튼은 자동으로 누르지 않는다. busy/public/중복 입력 잠금은 공통 처리한다.
 
@@ -109,7 +109,7 @@ Undo 범위는 Core latestUndoUnit 하나를 사용한다. session은 stream 전
 
 ### P3. action별 adapter·원본 UI 전수 연결
 
-- **파일:** `web/src/grimoire-custom/actions/{system,troubleBrewing,sectsAndViolets}.ts/tsx`에 action별 명시 등록/함수; `CustomNightTask.tsx`, `CustomStepInputs.tsx`, `CustomGrimoireBoard.tsx`, `CustomReveal.tsx`, `CustomGrimoirePlay.tsx`, `taskPresentationModel.ts`; 해당 `shared-ui/` view와 TB/SnV production 호출부.
+- **파일:** `web/src/custom/grimoire/actions/{system,troubleBrewing,sectsAndViolets}.ts/tsx`에 action별 명시 등록/함수; `CustomNightTask.tsx`, `CustomStepInputs.tsx`, `CustomGrimoireBoard.tsx`, `CustomReveal.tsx`, `CustomGrimoirePlay.tsx`, `taskPresentationModel.ts`; 해당 `shared-ui/` view와 TB/SnV production 호출부.
 - **작업:** 다음 29행을 각각 계약표의 정확한 선택/확정/공개/닫기로 연결한다. 원본 view 추출이 필요한 경우 공식 화면과 custom 모두 그 view를 소비하게 한다. 기존 범용 분기의 소비가 없어지면 제거한다. 중복 markup/CSS로 다시 갈라놓지 않는다.
 - **의존:** P1/P2. 구현 순서는 system/단일 대상 → 필수 준비/정보 → 통지/정체 변화 → 생성/모의 → 나머지 정보/첩자/자유 행동이다. 이 순서는 개발 순서이며 게임 실행 순서와 무관하다.
 - **공통 위험:** requiredInput 종류로 UI를 일괄 결정, 공개 버튼 생략, 중간 진행 탭 삽입, 다른 소유자 draft 재사용, 원본에 없는 판정/다음 버튼, 기존 보정/태그 수정 회귀.

@@ -1,4 +1,4 @@
-import {actionAdapter} from './actions/registry';
+import {actionAdapter} from '../custom/grimoire/actions/registry';
 import {CharacterDetailButton} from '../components/CharacterRulesCard';
 import {troubleBrewingCharacterDetail,sectsAndVioletsCharacterDetail} from '../characterDetails';
 import {AbilityOwnerView,ActingAbilityView} from '../shared-ui/AbilityIdentityView';

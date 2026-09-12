@@ -1,4 +1,4 @@
-import type {PhaseStep,RevealPayload} from '../../custom/core/types';
+import type {PhaseStep,RevealPayload} from '../../core/types';
 import {systemActions} from './system';
 import {troubleBrewingActions} from './troubleBrewing';
 import {sectsAndVioletsActions} from './sectsAndViolets';

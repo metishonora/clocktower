@@ -1,4 +1,4 @@
-import {actionAdapter} from './actions/registry';
+import {actionAdapter} from '../custom/grimoire/actions/registry';
 import {registrationPresentation} from '../custom/grimoire/registrationPresentation';
 import type { FirstNightController } from '../custom/grimoire/firstNightController';
 import { actionInputIdentity, actionPresentation, type TaskStage } from '../custom/grimoire/actionPresentation';

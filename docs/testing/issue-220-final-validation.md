@@ -31,3 +31,7 @@
 [Undo 모바일](issue-220-undo-dialog-evidence/390.png) · [숫자 입력 모바일](issue-220-numeric-evidence/clockmaker-390.png) · [시작 목록](issue-220-order-poison-evidence/order-390.png)
 
 최종 PR/CI/병합 결과는 GitHub #220 및 PR 기록을 따른다.
+
+## Finalize 경계 검사 보완
+
+첫 PR CI에서 `custom/grimoire/actionPresentation`과 controller가 UI 폴더의 action metadata를 참조하는 소유권 위반을 발견했다. metadata 4개 파일을 `web/src/custom/grimoire/actions`로 옮겨 custom 계층과 UI가 같은 소유 모듈을 참조하도록 정리했다. 기존 경계 검사와 검사 회귀 10개, action UI 계약 43개, 웹 production 빌드가 통과했다. 경계 검사 기준이나 action 데이터는 변경하지 않았다. 공식 소스 없는 격리 실행과 최종 CI 결과는 PR에 기록한다.

@@ -1,4 +1,4 @@
-import {actionAdapters} from '../src/grimoire-custom/actions/registry';
+import {actionAdapters} from '../src/custom/grimoire/actions/registry';
 import {afterEach,expect,it,vi} from 'vitest';
 import {act,cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
 import {CustomGrimoirePlay} from '../src/grimoire-custom/CustomGrimoirePlay';

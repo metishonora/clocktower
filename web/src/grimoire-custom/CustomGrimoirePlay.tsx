@@ -1,6 +1,6 @@
 import {LiveUndoDialog} from '../features/event-log/LiveUndoDialog';
 import {GameConfirmationDialog} from '../shared-ui/GameConfirmationDialog';
-import {actionAdapter} from './actions/registry';
+import {actionAdapter} from '../custom/grimoire/actions/registry';
 import {eventPresentation} from '../custom/grimoire/eventPresentation';
 import {MadnessActionView} from '../shared-ui/MadnessActionView';
 import {characterPresentation} from '../custom/authoring/characterPresentation';

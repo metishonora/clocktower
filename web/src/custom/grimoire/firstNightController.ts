@@ -1,4 +1,4 @@
-import {actionAdapter,revealDisposition} from '../../grimoire-custom/actions/registry';
+import {actionAdapter,revealDisposition} from './actions/registry';
 import {registrationPresentation,type RegistrationSelections} from './registrationPresentation.js';
 import { actionInputIdentity, actionPresentation } from './actionPresentation.js';
 import { stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
