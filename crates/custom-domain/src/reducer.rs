@@ -34,7 +34,12 @@ pub(crate) fn reduce_custom_facts(
     previous: &CustomGameFacts,
     event: &ValidatedCustomEvent,
 ) -> Result<CustomGameFacts, CoreError> {
-    if event.id().trim().is_empty() || event.phase() != crate::model::Phase::FirstNight {
+    if event.id().trim().is_empty()
+        || !matches!(
+            event.phase(),
+            crate::model::Phase::FirstNight | crate::model::Phase::Night
+        )
+    {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
 
@@ -43,6 +48,22 @@ pub(crate) fn reduce_custom_facts(
     let mut next = previous.clone();
     apply_changes(&mut next, event)?;
     apply_snv_facts(&mut next, event)?;
+    if event.phase() == crate::model::Phase::Night {
+        for death in event
+            .fact_changes()
+            .life_changes()
+            .iter()
+            .filter(|d| !d.alive)
+        {
+            crate::characters::trouble_brewing::death_succession(
+                context,
+                previous,
+                &mut next,
+                &death.player_id,
+                event.id(),
+            )?;
+        }
+    }
     crate::effects::resolve_effects(context, &mut next)?;
     Ok(next)
 }
@@ -264,6 +285,49 @@ fn apply_changes(
     next: &mut CustomGameFacts,
     event: &ValidatedCustomEvent,
 ) -> Result<(), CoreError> {
+    if matches!(
+        event.phase(),
+        crate::model::Phase::Night | crate::model::Phase::FirstNight
+    ) {
+        for change in event
+            .fact_changes()
+            .life_changes()
+            .iter()
+            .filter(|c| !c.alive)
+        {
+            let player = next
+                .player(&change.player_id)
+                .ok_or_else(invalid_fact)?
+                .clone();
+            let abilities: Vec<_> = next
+                .ability_provenance
+                .iter()
+                .filter(|r| {
+                    r.ability_use.owner_player_id == player.id
+                        && current_ability_instance(next, &r.ability_use)
+                })
+                .map(|r| r.ability_use.clone())
+                .collect();
+            next.night_deaths.push(crate::state::NightDeathRecord {
+                event_id: event.id().into(),
+                night: next.night_number(),
+                player,
+                source: event.occurrence()?,
+                guidance: crate::simulation::sources(next)
+                    .into_iter()
+                    .filter(|g| g.source.source_ability_use.owner_player_id == change.player_id)
+                    .collect(),
+                effective_abilities: abilities
+                    .iter()
+                    .filter(|a| crate::effects::effective(next, a))
+                    .cloned()
+                    .collect(),
+                impairments: next.active_impairments.clone(),
+                resolved_impairments: next.resolved_impairments.clone(),
+                abilities,
+            });
+        }
+    }
     for transition in event.fact_changes().identity_changes() {
         apply_identity_change(next, event, transition)?;
     }
@@ -274,6 +338,9 @@ fn apply_changes(
             .find(|player| player.id == change.player_id)
             .ok_or_else(invalid_fact)?;
         player.alive = change.alive;
+        if !change.alive {
+            player.death_announced = false;
+        }
     }
     for change in event.fact_changes().ability_grants() {
         let ability_instance_id = grant_instance_id(event.id(), change);
@@ -564,7 +631,8 @@ fn apply_snv_facts(
     let occurrence = event.occurrence()?;
     if occurrence.simulation_source.is_some() && !event.fact_changes().is_empty() {
         // Simulated information may contribute audit, but cannot mutate a real ability or effect.
-        if event.fact_changes().poisoner_choice().is_some()
+        if event.fact_changes().monk_protection().is_some()
+            || event.fact_changes().poisoner_choice().is_some()
             || event.fact_changes().master_choice().is_some()
             || event.fact_changes().game_end().is_some()
             || changes.spent.is_some()
@@ -681,6 +749,9 @@ fn apply_snv_facts(
         {
             return Err(invalid_fact());
         }
+    }
+    if let Some(choice) = common.monk_protection() {
+        next.monk_protections.push(choice.clone());
     }
     if let Some(choice) = common.poisoner_choice() {
         next.poisoner_choices.push(choice.clone());

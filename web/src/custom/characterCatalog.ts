@@ -35,5 +35,6 @@ export function resolveCustomScriptDefinition(
     ...definition,
     characterIds: [...definition.characterIds],
     firstNightOrder: structuredClone(definition.firstNightOrder),
+    otherNightOrder: structuredClone(definition.otherNightOrder),
   };
 }

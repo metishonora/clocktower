@@ -16,7 +16,7 @@ pub(super) fn seed(id: &str) -> Value {
         .clone()
 }
 pub(super) fn start(seed: &Value) -> Value {
-    let mut game = json!({"schemaVersion":4,"game":{"id":"208","name":"208","script":{"type":"custom","definition":seed["definition"]},"createdAt":"t","updatedAt":"t","events":[]}});
+    let mut game = json!({"schemaVersion":5,"game":{"id":"208","name":"208","script":{"type":"custom","definition":seed["definition"]},"createdAt":"t","updatedAt":"t","events":[]}});
     let result: Value = serde_json::from_str(&crate::propose_json(
         &game.to_string(),
         &json!({"type":"createGame","payload":seed["setupInput"]}).to_string(),
@@ -364,7 +364,12 @@ fn recovery_requires_repreparation_and_preserves_earlier_spy_snapshot() {
     // Valid legacy saved preparation: this impaired Setup proposition was legal before
     // system information. New commands may no longer create this leading prefix.
     let state = replay(&game);
-    let step = state["phaseOverview"].as_array().unwrap().iter().find(|s| s["actionRef"]["actionId"] == "prepareInformation").unwrap();
+    let step = state["phaseOverview"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["actionRef"]["actionId"] == "prepareInformation")
+        .unwrap();
     let event = json!({"id":"legacy-prep","type":"customActionConfirmed","phase":"firstNight","createdAt":"t","summary":"legacy preparation","payload":{
         "stepId":step["id"],"actionRef":step["actionRef"],"abilityUse":step["abilityUse"],"actionCause":step["actionCause"],
         "input":{"playerIds":["p7","p8"],"characterId":"monk","correctPlayerId":"p7"},

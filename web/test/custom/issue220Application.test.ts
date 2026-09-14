@@ -1,3 +1,4 @@
+import { customOtherNightPlan } from '../../src/custom/core/wasmClient.js';
 import { expect, it, vi } from 'vitest';
 import { CustomGrimoireApplicationController } from '../../src/custom/grimoire/applicationController.js';
 import { IndexedDbCustomWebSessionStorageDriver } from '../../src/custom/storage/sessionStorage.js';
@@ -39,7 +40,7 @@ it('C18/S1-e: corrupt slot is replaced only after valid confirmation; IO failure
 it('C10/C16/C34/C37/S1-f: import resume replaces only on selection, preserves identity, and restores privately',async()=>{
   const first=await started(); const file=first.app.play!.getSnapshot().file;first.app.dispose();
   const newer=await arranged('newer');await newer.setup.confirm();const latest=await stored();newer.app.dispose();
-  const editor=new ScenarioEditorController({createId:()=> 'must-not-use',loadValidator:loadCustomDefinitionValidator,proposeOrder:customFirstNightPlan,download:vi.fn(),replay:realWasmCore().replay});
+  const editor=new ScenarioEditorController({createId:()=> 'must-not-use',loadValidator:loadCustomDefinitionValidator,proposeOrder: customFirstNightPlan, proposeOtherOrder: customOtherNightPlan,download:vi.fn(),replay:realWasmCore().replay});
   await editor.importFile({name:'game.json',text:async()=>exportGameFileJson(file)});expect(editor.getSnapshot().step).toBe('review');expect(editor.getResumableGame()?.file).toEqual(file);expect(await stored()).toEqual(latest);
   editor.setName('edited');await editor.validate();expect(editor.getResumableGame()).toBeUndefined();editor.setName(definition.name);await editor.validate();expect(editor.getResumableGame()?.file.game.id).toBe(file.game.id);
   const app=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await app.resumeImported(editor.getResumableGame()!);expect((await stored()).canonical).toEqual(file);expect(app.play!.getSnapshot().public).toBe(false);app.dispose();
@@ -52,8 +53,8 @@ it('C17/C33/C36: invalid suffix and runtime failures do not adopt a valid prefix
   const fail=new CustomGrimoireApplicationController({...realWasmCore(),replay:async()=>{throw Error('runtime unavailable');}},vi.fn());await fail.resumeImported({file:before.canonical});expect(fail.getSnapshot().error).toContain('runtime unavailable');expect(await stored()).toEqual(before);app.dispose();fail.dispose();
 });
 it('C19/C22/C35: stale import and scenario-only repeated imports cannot recover an unrelated game',async()=>{
-  realWasmCore();let id=0;const editor=new ScenarioEditorController({createId:()=>`new-${++id}`,loadValidator:loadCustomDefinitionValidator,proposeOrder:customFirstNightPlan,download:vi.fn(),replay:realWasmCore().replay});
-  const {id:_id,...scenario}=definition;const json=JSON.stringify({type:'clocktower-custom-scenario',version:1,scenario});
+  realWasmCore();let id=0;const editor=new ScenarioEditorController({createId:()=>`new-${++id}`,loadValidator:loadCustomDefinitionValidator,proposeOrder: customFirstNightPlan, proposeOtherOrder: customOtherNightPlan,download:vi.fn(),replay:realWasmCore().replay});
+  const {id:_id,...scenario}=definition;const json=JSON.stringify({type:'clocktower-custom-scenario',version: 2,scenario});
   const slow=deferred<string>();const importing=editor.importFile({name:'slow',text:()=>slow.promise});editor.startNew();editor.setName('current');slow.resolve(json);await importing;expect(editor.getSnapshot().draft.name).toBe('current');
   await editor.importFile({name:'one',text:async()=>json});const first=editor.getSnapshot().draft.id;await editor.importFile({name:'two',text:async()=>json});expect(editor.getSnapshot().draft.id).not.toBe(first);expect(editor.getResumableGame()).toBeUndefined();expect(editor.getSnapshot().step).toBe('review');
 });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CustomScenarioEditor } from '../custom/authoring/CustomScenarioEditor';
 import { type ValidatedScenario, validateScenarioCandidate } from '../custom/core/definitionValidator';
-import { customFirstNightPlan, loadCustomDefinitionValidator, wasmCoreAdapter } from '../custom/core/wasmClient';
+import { customFirstNightPlan, customOtherNightPlan, loadCustomDefinitionValidator, wasmCoreAdapter } from '../custom/core/wasmClient';
 import { GrimoireSetupController, type GrimoireSetupDraft, type GrimoirePresentationState } from '../custom/grimoire/setupController';
 import type { CustomWebSessionSnapshot, CustomWebSessionStorageDriver } from '../custom/storage/sessionStorage';
 import { CustomGrimoireSetup } from './CustomGrimoireSetup';
@@ -38,8 +38,10 @@ function SetupReview() {
         'drunk', 'recluse', 'butler', 'mutant', 'poisoner', 'scarletWoman', 'witch', 'evilTwin', 'baron', 'cerenovus', 'imp', 'vortox', 'fangGu', 'noDashii',
       ] };
       const plan = await customFirstNightPlan(draft);
+      const other = await customOtherNightPlan(draft);
+      if (!other.ok) throw new Error(other.error.messageKo);
       if (!plan.ok) throw new Error(plan.error.messageKo);
-      start(await validateScenarioCandidate({ ...draft, firstNightOrder: plan.value.plan }, loadCustomDefinitionValidator));
+      start(await validateScenarioCandidate({ ...draft, firstNightOrder: plan.value.plan, otherNightOrder: other.value.plan }, loadCustomDefinitionValidator));
     } catch (cause) { setError(cause instanceof Error ? cause.message : '시나리오를 열지 못했습니다.'); }
     finally { setLoading(false); }
   }

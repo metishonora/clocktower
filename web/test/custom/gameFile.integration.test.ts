@@ -1,10 +1,11 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { expect, test } from "vitest";
 import type { GameFile } from "../../src/custom/core/types.js";
 import { realWasmCore } from "./realCustomWasmHarness.js";
 const wasmCoreAdapter = realWasmCore();
 function game(script: unknown): GameFile {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script,
       id: "issue-192-wasm",
@@ -19,7 +20,7 @@ function game(script: unknown): GameFile {
 test("generated WASM replays a custom snapshot with its complete identity", async () => {
   const result = await wasmCoreAdapter.replay(game({
     type: "custom",
-    definition: {
+    definition: { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker", "imp"]),
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: ["washerwoman", "clockmaker", "imp"],
@@ -37,10 +38,10 @@ test("generated WASM replays a custom snapshot with its complete identity", asyn
   expect(result.ok).toBe(true);
   if (!result.ok) return;
   expect(result.value).toMatchObject({
-    schemaVersion: 4,
+    schemaVersion: 5,
     script: {
       type: "custom",
-      definition: {
+      definition: { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker", "imp"]),
         id: "custom-stable-id",
         name: "Mixed roster",
         characterIds: ["washerwoman", "clockmaker", "imp"],

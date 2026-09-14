@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { createTestCustomScriptRepository } from "./repositorySupport.js";
 import assert from "node:assert/strict";
 import { test } from "vitest";
@@ -88,7 +89,7 @@ test("stored definitions require an explicit first-night order and reject remove
   });
   await putRaw(idb, definitionKey("removed-field"), {
     version: 1,
-    definition: {
+    definition: { otherNightOrder: otherOrderFor(["imp"]),
       id: "removed-field",
       name: "Removed field",
       characterIds: ["imp"],
@@ -282,7 +283,7 @@ function definitionRecord(
 ): StoredCustomScriptDefinition {
   return {
     version: 1,
-    definition: {
+    definition: { otherNightOrder: otherOrderFor(overrides.characterIds ?? DEFAULT_CHARACTER_IDS),
       id,
       name: overrides.name ?? `Definition ${id}`,
       characterIds: overrides.characterIds ?? DEFAULT_CHARACTER_IDS,
@@ -340,7 +341,7 @@ async function readRaw(idb: IDBFactory, key: string): Promise<unknown> {
 function officialGameFile() {
   const now = "2026-09-05T00:00:00.000Z";
   return {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     game: {
       script: { type: "official" as const, scriptId: "troubleBrewing" as const },
       id: "official-game",

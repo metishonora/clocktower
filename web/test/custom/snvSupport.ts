@@ -1,10 +1,11 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { expect } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 import { CustomCanonicalSession } from "../../src/custom/session.js";
 import { IndexedDbCustomWebSessionStorageDriver } from "../../src/custom/storage/sessionStorage.js";
 import type { CustomScriptDefinition, SetupPlayerInput, PhaseStepInput, InformationResult, RegistrationJudgment, Command } from "../../src/custom/core/types.js";
 import { realWasmCore, replayOrThrow } from "./realCustomWasmHarness.js";
-export const definition: CustomScriptDefinition = {
+export const definition: CustomScriptDefinition = { otherNightOrder: otherOrderFor(["philosopher", "snakeCharmer", "evilTwin", "witch", "cerenovus", "clockmaker", "dreamer", "seamstress", "mathematician", "artist", "savant", "juggler", "sage", "recluse", "mutant", "scarletWoman", "imp", "noDashii", "vortox", "soldier", "mayor", "virgin"]),
   id: "snv-207-production", name: "SnV Production",
   characterIds: ["philosopher", "snakeCharmer", "evilTwin", "witch", "cerenovus", "clockmaker", "dreamer", "seamstress", "mathematician", "artist", "savant", "juggler", "sage", "recluse", "mutant", "scarletWoman", "imp", "noDashii", "vortox", "soldier", "mayor", "virgin"],
   firstNightOrder: [

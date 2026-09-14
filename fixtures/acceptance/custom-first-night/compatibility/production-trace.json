@@ -4,7 +4,7 @@
   "trace": [
     {
       "game": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
           "script": {
             "type": "custom",
@@ -42,6 +42,31 @@
                   "kind": "system",
                   "actionId": "dawn"
                 }
+              ],
+              "otherNightOrder": [
+                {
+                  "kind": "system",
+                  "actionId": "dusk"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "monk",
+                  "actionId": "protectPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "imp",
+                  "actionId": "attackPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "undertaker",
+                  "actionId": "learnExecutedCharacter"
+                },
+                {
+                  "kind": "system",
+                  "actionId": "dawn"
+                }
               ]
             }
           },
@@ -53,7 +78,7 @@
         }
       },
       "replay": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "script": {
           "type": "custom",
           "definition": {
@@ -85,6 +110,31 @@
               {
                 "kind": "system",
                 "actionId": "minionInfo"
+              },
+              {
+                "kind": "system",
+                "actionId": "dawn"
+              }
+            ],
+            "otherNightOrder": [
+              {
+                "kind": "system",
+                "actionId": "dusk"
+              },
+              {
+                "kind": "character",
+                "characterId": "monk",
+                "actionId": "protectPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "imp",
+                "actionId": "attackPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "undertaker",
+                "actionId": "learnExecutedCharacter"
               },
               {
                 "kind": "system",
@@ -223,7 +273,7 @@
         }
       },
       "game": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
           "script": {
             "type": "custom",
@@ -256,6 +306,31 @@
                 {
                   "kind": "system",
                   "actionId": "minionInfo"
+                },
+                {
+                  "kind": "system",
+                  "actionId": "dawn"
+                }
+              ],
+              "otherNightOrder": [
+                {
+                  "kind": "system",
+                  "actionId": "dusk"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "monk",
+                  "actionId": "protectPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "imp",
+                  "actionId": "attackPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "undertaker",
+                  "actionId": "learnExecutedCharacter"
                 },
                 {
                   "kind": "system",
@@ -333,7 +408,7 @@
         }
       },
       "replay": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "script": {
           "type": "custom",
           "definition": {
@@ -365,6 +440,31 @@
               {
                 "kind": "system",
                 "actionId": "minionInfo"
+              },
+              {
+                "kind": "system",
+                "actionId": "dawn"
+              }
+            ],
+            "otherNightOrder": [
+              {
+                "kind": "system",
+                "actionId": "dusk"
+              },
+              {
+                "kind": "character",
+                "characterId": "monk",
+                "actionId": "protectPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "imp",
+                "actionId": "attackPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "undertaker",
+                "actionId": "learnExecutedCharacter"
               },
               {
                 "kind": "system",
@@ -663,7 +763,7 @@
         }
       },
       "game": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
           "script": {
             "type": "custom",
@@ -696,6 +796,31 @@
                 {
                   "kind": "system",
                   "actionId": "minionInfo"
+                },
+                {
+                  "kind": "system",
+                  "actionId": "dawn"
+                }
+              ],
+              "otherNightOrder": [
+                {
+                  "kind": "system",
+                  "actionId": "dusk"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "monk",
+                  "actionId": "protectPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "imp",
+                  "actionId": "attackPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "undertaker",
+                  "actionId": "learnExecutedCharacter"
                 },
                 {
                   "kind": "system",
@@ -794,7 +919,7 @@
         }
       },
       "replay": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "script": {
           "type": "custom",
           "definition": {
@@ -826,6 +951,31 @@
               {
                 "kind": "system",
                 "actionId": "minionInfo"
+              },
+              {
+                "kind": "system",
+                "actionId": "dawn"
+              }
+            ],
+            "otherNightOrder": [
+              {
+                "kind": "system",
+                "actionId": "dusk"
+              },
+              {
+                "kind": "character",
+                "characterId": "monk",
+                "actionId": "protectPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "imp",
+                "actionId": "attackPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "undertaker",
+                "actionId": "learnExecutedCharacter"
               },
               {
                 "kind": "system",
@@ -1102,7 +1252,7 @@
         }
       },
       "game": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
           "script": {
             "type": "custom",
@@ -1135,6 +1285,31 @@
                 {
                   "kind": "system",
                   "actionId": "minionInfo"
+                },
+                {
+                  "kind": "system",
+                  "actionId": "dawn"
+                }
+              ],
+              "otherNightOrder": [
+                {
+                  "kind": "system",
+                  "actionId": "dusk"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "monk",
+                  "actionId": "protectPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "imp",
+                  "actionId": "attackPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "undertaker",
+                  "actionId": "learnExecutedCharacter"
                 },
                 {
                   "kind": "system",
@@ -1248,7 +1423,7 @@
         }
       },
       "replay": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "script": {
           "type": "custom",
           "definition": {
@@ -1280,6 +1455,31 @@
               {
                 "kind": "system",
                 "actionId": "minionInfo"
+              },
+              {
+                "kind": "system",
+                "actionId": "dawn"
+              }
+            ],
+            "otherNightOrder": [
+              {
+                "kind": "system",
+                "actionId": "dusk"
+              },
+              {
+                "kind": "character",
+                "characterId": "monk",
+                "actionId": "protectPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "imp",
+                "actionId": "attackPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "undertaker",
+                "actionId": "learnExecutedCharacter"
               },
               {
                 "kind": "system",
@@ -1542,7 +1742,7 @@
         }
       },
       "game": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
           "script": {
             "type": "custom",
@@ -1575,6 +1775,31 @@
                 {
                   "kind": "system",
                   "actionId": "minionInfo"
+                },
+                {
+                  "kind": "system",
+                  "actionId": "dawn"
+                }
+              ],
+              "otherNightOrder": [
+                {
+                  "kind": "system",
+                  "actionId": "dusk"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "monk",
+                  "actionId": "protectPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "imp",
+                  "actionId": "attackPlayer"
+                },
+                {
+                  "kind": "character",
+                  "characterId": "undertaker",
+                  "actionId": "learnExecutedCharacter"
                 },
                 {
                   "kind": "system",
@@ -1703,7 +1928,7 @@
         }
       },
       "replay": {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "script": {
           "type": "custom",
           "definition": {
@@ -1735,6 +1960,31 @@
               {
                 "kind": "system",
                 "actionId": "minionInfo"
+              },
+              {
+                "kind": "system",
+                "actionId": "dawn"
+              }
+            ],
+            "otherNightOrder": [
+              {
+                "kind": "system",
+                "actionId": "dusk"
+              },
+              {
+                "kind": "character",
+                "characterId": "monk",
+                "actionId": "protectPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "imp",
+                "actionId": "attackPlayer"
+              },
+              {
+                "kind": "character",
+                "characterId": "undertaker",
+                "actionId": "learnExecutedCharacter"
               },
               {
                 "kind": "system",

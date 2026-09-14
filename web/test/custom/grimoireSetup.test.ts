@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import {unmodifiedDistribution} from './setupDistributionFixture';
 import { describe, expect, it, vi } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
@@ -14,7 +15,7 @@ async function scenario() {
   const draft = { id: 'issue-220-test', name: '혼합 게임', characterIds: ['soldier', 'mayor', 'clockmaker', 'poisoner', 'imp', 'virgin', 'baron', 'drunk', 'recluse', 'slayer', 'butler', 'fangGu'] };
   const plan = await customFirstNightPlan(draft);
   if (!plan.ok) throw new Error(plan.error.messageKo);
-  return validateScenarioCandidate({ ...draft, firstNightOrder: plan.value.plan }, loadCustomDefinitionValidator);
+  return validateScenarioCandidate({ ...draft, firstNightOrder: plan.value.plan , otherNightOrder: otherOrderFor(draft.characterIds) }, loadCustomDefinitionValidator);
 }
 function storage() { return new IndexedDbCustomWebSessionStorageDriver<GrimoireSetupDraft, GrimoirePresentationState>('issue-220-test', new IDBFactory()); }
 async function arranged(driver: CustomWebSessionStorageDriver<GrimoireSetupDraft, GrimoirePresentationState> = storage(), core = realWasmCore()) {

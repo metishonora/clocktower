@@ -4,7 +4,7 @@ import { actionInputIdentity, actionPresentation } from './actionPresentation.js
 import { stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
 import type { SetupDistributionResult, InformationResult, RegistrationJudgment } from '../core/types.js';
 import type { CoreAdapter } from '../core/coreAdapter.js';
-import type { GameFileV4, PhaseStep, PhaseStepConfirmation, Proposal, ReplayState, RevealPayload } from '../core/types.js';
+import type { GameFileV5, PhaseStep, PhaseStepConfirmation, Proposal, ReplayState, RevealPayload } from '../core/types.js';
 import { freezeSnapshot } from '../core/definitionValidator.js';
 import { proposalRevealPayload } from '../core/revealPayload.js';
 import { latestCanonicalUndoUnit } from '../core/canonicalUndo.js';
@@ -21,12 +21,12 @@ export type FirstNightState = {
   dayHandoff?: DayHandoff;
   dayNotifications?: RevealPayload[];
   setupDistribution?:SetupDistributionResult; setupDistributionPending?:boolean; setupDistributionError?:string;
-  handoff?: {stage:'editing'|'result'|'notification';step:PhaseStep;playerIds:string[];file:GameFileV4;notifications:RevealPayload[];notificationIndex:number};
+  handoff?: {stage:'editing'|'result'|'notification';step:PhaseStep;playerIds:string[];file:GameFileV5;notifications:RevealPayload[];notificationIndex:number};
   inputDraft: CurrentInputDraft; selecting: boolean; selectionRevision:number; selectionKind?: 'action'|'delivery';
   activeReveal?: {origin:'current'|'history'|'notification';identity:string;payload:RevealPayload};
-  replay: ReplayState; file: GameFileV4; selectedStepId?: string; busy: boolean; error?: string;
+  replay: ReplayState; file: GameFileV5; selectedStepId?: string; busy: boolean; error?: string;
   saveStatus: 'saved' | 'saving' | 'failed'; lastSavedEventCount: number;
-  proposal?: Proposal; proposedFile?: GameFileV4; reveal?: RevealPayload; public: boolean; revealShown: boolean;
+  proposal?: Proposal; proposedFile?: GameFileV5; reveal?: RevealPayload; public: boolean; revealShown: boolean;
 };
 export class FirstNightController {
   private state: FirstNightState;

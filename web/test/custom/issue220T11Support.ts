@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import {expect,vi} from 'vitest';
 import {customScriptCharacters} from '../../src/custom/characterCatalog';
 import {customFirstNightPlan,loadCustomDefinitionValidator} from '../../src/custom/core/wasmClient';
@@ -9,7 +10,7 @@ export async function t11Definition(){
  realWasmCore();
  const draft={id:'issue220-t11',name:'T11',characterIds:customScriptCharacters.map(c=>c.id)};
  const plan=await customFirstNightPlan(draft);if(!plan.ok)throw Error(plan.error.messageKo);
- return validateScenarioCandidate({...draft,firstNightOrder:plan.value.plan},loadCustomDefinitionValidator);
+ return validateScenarioCandidate({...draft,firstNightOrder:plan.value.plan, otherNightOrder: otherOrderFor(draft.characterIds) },loadCustomDefinitionValidator);
 }
 export async function t11Setup(core:CoreAdapter=realWasmCore()){
  const app=new CustomGrimoireApplicationController(core,vi.fn());app.startSetup(await t11Definition());

@@ -74,6 +74,8 @@ pub(crate) fn phase_transition_step(
             execution_survival_allowed: false,
             mayor_decision: None,
             demon_succession: None,
+            allowed_chooser_player_ids: None,
+            allowed_successor_player_ids: None,
             optional: false,
         },
         can_skip: false,
@@ -96,7 +98,7 @@ pub(crate) fn required_none() -> RequiredInput {
         allowed_player_ids: None,
         dependent_player_selections: vec![],
         player_registration_options: None,
-            setup_information_choices: None,
+        setup_information_choices: None,
         zero_allowed: false,
         supports_random_suggestion: false,
         player_id: None,
@@ -104,6 +106,8 @@ pub(crate) fn required_none() -> RequiredInput {
         execution_survival_allowed: false,
         mayor_decision: None,
         demon_succession: None,
+        allowed_chooser_player_ids: None,
+        allowed_successor_player_ids: None,
         optional: false,
     }
 }
@@ -125,7 +129,7 @@ pub(crate) fn required_characters(
         allowed_player_ids: None,
         dependent_player_selections: vec![],
         player_registration_options: None,
-            setup_information_choices: None,
+        setup_information_choices: None,
         zero_allowed: false,
         supports_random_suggestion,
         player_id: None,
@@ -133,6 +137,8 @@ pub(crate) fn required_characters(
         execution_survival_allowed: false,
         mayor_decision: None,
         demon_succession: None,
+        allowed_chooser_player_ids: None,
+        allowed_successor_player_ids: None,
         optional: min == 0,
     }
 }

@@ -23,9 +23,9 @@ pub(crate) fn impaired(facts: &CustomGameFacts, player: &str) -> bool {
 }
 pub(crate) fn effective(facts: &CustomGameFacts, source: &AbilityUseRef) -> bool {
     current_ability_instance(facts, source)
-        && facts
-            .player(&source.owner_player_id)
-            .is_some_and(|p| p.alive)
+        && facts.player(&source.owner_player_id).is_some_and(|p| {
+            p.alive || crate::characters::sects_and_violets::vigor_retains(facts, source)
+        })
         && !impaired(facts, &source.owner_player_id)
 }
 pub(crate) fn impairment_causes(facts: &CustomGameFacts, player: &str) -> Vec<AbilityUseRef> {

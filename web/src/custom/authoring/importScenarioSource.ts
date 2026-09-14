@@ -1,9 +1,9 @@
 import type { CoreAdapter } from '../core/coreAdapter.js';
 import { validateScenarioCandidate, type LoadCustomDefinitionValidator, type ValidatedScenario } from '../core/definitionValidator.js';
-import type { GameFileV4 } from '../core/types.js';
+import type { GameFileV5 } from '../core/types.js';
 import { parseGameFileJson } from '../storage/gameFile.js';
 import { parseScenarioFileJson } from '../storage/scenarioFile.js';
-export type ImportedGame = { file: GameFileV4 };
+export type ImportedGame = { file: GameFileV5 };
 export async function importScenarioSource(json: string, createId: () => string, loadValidator: LoadCustomDefinitionValidator, core: Pick<CoreAdapter, 'replay'>): Promise<{ validated: ValidatedScenario; game?: ImportedGame }> {
   let discriminator: unknown;
   try { discriminator = JSON.parse(json); } catch { throw new Error('JSON 파일 형식이 올바르지 않습니다.'); }

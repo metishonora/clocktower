@@ -32,6 +32,8 @@ fn nominations(game: &mut Value) {
         confirm(game, json!({"kind":"advance"}));
     }
 }
+// Entering the production other-night plan requires production character handlers.
+#[cfg(not(feature = "custom-runtime-fixtures"))]
 #[test]
 fn day_to_night_preserves_vote_evidence_execution_death_and_undo() {
     let mut game = game();
@@ -58,7 +60,11 @@ fn day_to_night_preserves_vote_evidence_execution_death_and_undo() {
     let state = replay(&game);
     assert_eq!(state["players"][1]["alive"], false);
     assert_eq!(state["day"]["execution"]["died"], true);
-    assert!(!state["day"]["availableActions"].as_array().unwrap().iter().any(|a| a["characterId"]=="slayer"));
+    assert!(!state["day"]["availableActions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|a| a["characterId"] == "slayer"));
     assert_eq!(
         state["latestUndoUnit"]["eventIds"],
         json!([execution["id"], death["id"]])
@@ -68,6 +74,8 @@ fn day_to_night_preserves_vote_evidence_execution_death_and_undo() {
     game["game"]["events"].as_array_mut().unwrap().pop();
     assert_eq!(replay(&game)["day"]["stage"], "nightReady");
 }
+// Entering the production other-night plan requires production character handlers.
+#[cfg(not(feature = "custom-runtime-fixtures"))]
 #[test]
 fn tied_votes_have_no_candidate_and_explicit_no_execution_can_end_day() {
     let mut game = game();
@@ -119,7 +127,7 @@ fn stale_confirmation_duplicate_voters_and_tampered_evidence_are_rejected() {
 }
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
-fn production(roster: &[&str], inputs: Value) -> Value {
+pub(super) fn production(roster: &[&str], inputs: Value) -> Value {
     let mut pool: Vec<&str> = roster.to_vec();
     for id in [
         "undertaker",
@@ -141,8 +149,9 @@ fn production(roster: &[&str], inputs: Value) -> Value {
     ))
     .unwrap();
     assert_eq!(planned["ok"], true, "{planned}");
+    definition["otherNightOrder"] = crate::tests::other_order_json(&definition["characterIds"]);
     definition["firstNightOrder"] = planned["value"]["plan"].clone();
-    let mut game = json!({"schemaVersion":4,"game":{"id":"day-223","name":"낮 검증","script":{"type":"custom","definition":definition},"createdAt":"2026-09-13T00:00:00Z","updatedAt":"2026-09-13T00:00:00Z","events":[]}});
+    let mut game = json!({"schemaVersion":5,"game":{"id":"day-223","name":"낮 검증","script":{"type":"custom","definition":definition},"createdAt":"2026-09-13T00:00:00Z","updatedAt":"2026-09-13T00:00:00Z","events":[]}});
     let players:Vec<_>=roster.iter().enumerate().map(|(i,c)|{let mut p=json!({"id":format!("p{}",i+1),"seat":i+1,"name":format!("P{}",i+1),"actualCharacter":c});if *c=="drunk"{p["shownCharacter"]=inputs["assignShownCharacter"]["characterIds"][0].clone();}p}).collect();
     let created: Value = serde_json::from_str(&crate::propose_json(
         &game.to_string(),
@@ -685,14 +694,23 @@ fn execution_reminder_requires_a_living_undertaker_source() {
         player["actualCharacter"] = json!(actual);
         player["shownCharacter"] = json!(shown);
         nominations(&mut game);
-        confirm(&mut game, json!({"kind":"nominate","nominatorId":"p2","nomineeId":nominee}));
-        confirm(&mut game, json!({"kind":"vote","voterIds":["p1","p2","p3","p4"]}));
+        confirm(
+            &mut game,
+            json!({"kind":"nominate","nominatorId":"p2","nomineeId":nominee}),
+        );
+        confirm(
+            &mut game,
+            json!({"kind":"vote","voterIds":["p1","p2","p3","p4"]}),
+        );
         confirm(&mut game, json!({"kind":"closeNominations"}));
         confirm(&mut game, json!({"kind":"confirmExecution"}));
         confirm(&mut game, json!({"kind":"confirmDeath"}));
         let state = replay(&game);
         assert_eq!(state["day"]["execution"]["died"], true);
-        let present = state["ruleState"]["automaticReminders"].as_array().into_iter().flatten()
+        let present = state["ruleState"]["automaticReminders"]
+            .as_array()
+            .into_iter()
+            .flatten()
             .any(|r| r["characterId"] == "undertaker" && r["tokenId"] == "diedToday");
         assert_eq!(present, expected, "{actual}/{shown}, executed {nominee}");
     }
@@ -701,15 +719,31 @@ fn execution_reminder_requires_a_living_undertaker_source() {
 #[test]
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 fn observer_tokens_track_actual_day_actions_under_vortox_and_undo() {
-    let mut game = production(&["flowergirl", "townCrier", "soldier", "scarletWoman", "vortox"], json!({}));
+    let mut game = production(
+        &[
+            "flowergirl",
+            "townCrier",
+            "soldier",
+            "scarletWoman",
+            "vortox",
+        ],
+        json!({}),
+    );
     let tokens = |game: &Value| -> Vec<String> {
-        replay(game)["ruleState"]["automaticReminders"].as_array().unwrap().iter()
+        replay(game)["ruleState"]["automaticReminders"]
+            .as_array()
+            .unwrap()
+            .iter()
             .filter(|r| r["characterId"] == "flowergirl" || r["characterId"] == "townCrier")
-            .map(|r| r["tokenId"].as_str().unwrap().to_owned()).collect()
+            .map(|r| r["tokenId"].as_str().unwrap().to_owned())
+            .collect()
     };
     assert_eq!(tokens(&game), ["demonDidNotVote", "minionDidNotNominate"]);
     nominations(&mut game);
-    confirm(&mut game, json!({"kind":"nominate","nominatorId":"p4","nomineeId":"p3"}));
+    confirm(
+        &mut game,
+        json!({"kind":"nominate","nominatorId":"p4","nomineeId":"p3"}),
+    );
     assert_eq!(tokens(&game), ["demonDidNotVote", "minionNominated"]);
     confirm(&mut game, json!({"kind":"vote","voterIds":["p5"]}));
     assert_eq!(tokens(&game), ["demonVoted", "minionNominated"]);
@@ -722,36 +756,61 @@ fn observer_tokens_track_actual_day_actions_under_vortox_and_undo() {
 #[test]
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 fn scarlet_successor_keeps_source_token_after_identity_changes_and_undo_removes_it() {
-    let mut game = production(&["soldier", "mayor", "undertaker", "scarletWoman", "imp"], json!({}));
+    let mut game = production(
+        &["soldier", "mayor", "undertaker", "scarletWoman", "imp"],
+        json!({}),
+    );
     nominations(&mut game);
-    confirm(&mut game, json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p5"}));
-    confirm(&mut game, json!({"kind":"vote","voterIds":["p1","p2","p3"]}));
+    confirm(
+        &mut game,
+        json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p5"}),
+    );
+    confirm(
+        &mut game,
+        json!({"kind":"vote","voterIds":["p1","p2","p3"]}),
+    );
     confirm(&mut game, json!({"kind":"closeNominations"}));
     confirm(&mut game, json!({"kind":"confirmExecution"}));
     let death = confirm(&mut game, json!({"kind":"confirmDeath"}));
     let state = replay(&game);
     assert_eq!(state["players"][3]["actualCharacter"], "imp");
-    let token = state["ruleState"]["automaticReminders"].as_array().unwrap().iter()
-        .find(|r| r["characterId"] == "scarletWoman").unwrap();
+    let token = state["ruleState"]["automaticReminders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["characterId"] == "scarletWoman")
+        .unwrap();
     assert_eq!(token["tokenId"], "isTheDemon");
     assert_eq!(token["playerId"], "p4");
     assert_eq!(token["sourceEventId"], death["id"]);
     game["game"]["events"].as_array_mut().unwrap().pop();
-    assert!(replay(&game)["ruleState"]["automaticReminders"].as_array().is_none_or(|tokens|
-        !tokens.iter().any(|r| r["characterId"] == "scarletWoman")));
+    assert!(replay(&game)["ruleState"]["automaticReminders"]
+        .as_array()
+        .is_none_or(|tokens| !tokens.iter().any(|r| r["characterId"] == "scarletWoman")));
 }
 
 #[test]
 fn execution_target_is_derived_from_votes_and_cannot_be_overridden_or_cancelled() {
     let mut game = game();
     nominations(&mut game);
-    confirm(&mut game, json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p2"}));
-    confirm(&mut game, json!({"kind":"vote","voterIds":["p1","p2","p3","p4"]}));
+    confirm(
+        &mut game,
+        json!({"kind":"nominate","nominatorId":"p1","nomineeId":"p2"}),
+    );
+    confirm(
+        &mut game,
+        json!({"kind":"vote","voterIds":["p1","p2","p3","p4"]}),
+    );
     confirm(&mut game, json!({"kind":"closeNominations"}));
-    for input in [json!({"kind":"execute","playerId":null}), json!({"kind":"execute","playerId":"p3"}),
-        json!({"kind":"confirmExecution","playerId":null})] {
+    for input in [
+        json!({"kind":"execute","playerId":null}),
+        json!({"kind":"execute","playerId":"p3"}),
+        json!({"kind":"confirmExecution","playerId":null}),
+    ] {
         let cmd = command(&game, input);
-        let result: Value = serde_json::from_str(&crate::propose_json(&game.to_string(), &cmd.to_string())).unwrap();
+        let result: Value =
+            serde_json::from_str(&crate::propose_json(&game.to_string(), &cmd.to_string()))
+                .unwrap();
         assert_eq!(result["ok"], false);
     }
     confirm(&mut game, json!({"kind":"confirmExecution"}));

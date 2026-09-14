@@ -18,14 +18,19 @@ fn additional_actions_never_become_required_definition_order_entries() {
         name: "208".into(),
         character_ids: pool,
         first_night_order: None,
+        other_night_order: None,
     };
     let order = plan_for_draft(&draft).unwrap().plan;
     assert_eq!(order.0.len(), 22);
+    let other = crate::first_night::other_plan_for_draft(&draft)
+        .unwrap()
+        .plan;
     let definition = CustomScriptDefinition {
         id: draft.id,
         name: draft.name,
         character_ids: draft.character_ids,
         first_night_order: order,
+        other_night_order: OtherNightOrderPlan(other.0),
     };
     assert!(plan_for_definition(&definition).is_ok());
     let all = catalog::ORDERED_ACTIONS
@@ -121,13 +126,13 @@ fn new_result_and_cause_types_reject_unknown_fields_and_kinds() {
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 #[test]
-fn production_registers_exactly_the_twenty_five_declared_character_actions() {
+fn production_registers_all_declared_character_actions() {
     let actual = crate::characters::trouble_brewing::registrations()
         .into_iter()
         .chain(crate::characters::sects_and_violets::registrations())
         .map(|r| r.spec.action_ref)
         .collect::<Vec<_>>();
-    assert_eq!(actual.len(), 25);
+    assert_eq!(actual.len(), 43);
     for (c, a) in catalog::ORDERED_ACTIONS
         .iter()
         .copied()

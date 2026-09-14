@@ -57,3 +57,50 @@ mod issue223_day;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue223_reminders;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue225_nights;
+
+/// Explicit test fixture order, independent of the production plan authoring implementation.
+fn other_order_json(ids: &serde_json::Value) -> serde_json::Value {
+    let catalog = [
+        ("philosopher", "chooseAbility"),
+        ("poisoner", "choosePoisonTarget"),
+        ("snakeCharmer", "choosePlayer"),
+        ("monk", "protectPlayer"),
+        ("witch", "chooseCursedPlayer"),
+        ("cerenovus", "assignMadness"),
+        ("pitHag", "changeCharacter"),
+        ("imp", "attackPlayer"),
+        ("fangGu", "attackPlayer"),
+        ("noDashii", "attackPlayer"),
+        ("vortox", "attackPlayer"),
+        ("vigormortis", "attackPlayer"),
+        ("barber", "swapCharacters"),
+        ("empath", "learnEvilNeighbors"),
+        ("fortuneTeller", "checkDemon"),
+        ("undertaker", "learnExecutedCharacter"),
+        ("dreamer", "learnCharacters"),
+        ("flowergirl", "learnDemonVoted"),
+        ("townCrier", "learnMinionNominated"),
+        ("oracle", "learnDeadEvilCount"),
+        ("seamstress", "compareAlignments"),
+        ("juggler", "learnJuggles"),
+        ("butler", "chooseMaster"),
+        ("spy", "inspectGrimoire"),
+        ("mathematician", "learnCount"),
+    ];
+    let mut result = vec![serde_json::json!({"kind":"system","actionId":"dusk"})];
+    for (character, action) in catalog {
+        if ids
+            .as_array()
+            .is_some_and(|ids| ids.iter().any(|id| id == character))
+        {
+            result.push(
+                serde_json::json!({"kind":"character","characterId":character,"actionId":action}),
+            );
+        }
+    }
+    result.push(serde_json::json!({"kind":"system","actionId":"dawn"}));
+    serde_json::json!(result)
+}

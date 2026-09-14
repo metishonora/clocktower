@@ -1,3 +1,4 @@
+import {otherOrderFor} from './custom/otherNightFixture';
 import {afterEach,expect,it} from 'vitest';
 import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {CustomGrimoirePlay} from '../src/grimoire-custom/CustomGrimoirePlay';
@@ -133,6 +134,7 @@ it('T10-9 red herring: Core permits good seats and an effective Spy, with automa
 it('T10-6 acquired Washerwoman: the owner selects, discloses, resumes and undoes one continuous flow',async()=>{
  const {newScenario,scenario,confirmAction,roster}=await import('./custom/issue220ScenarioOrderSupport');
  const d=structuredClone(scenario);if(!d.characterIds.includes('philosopher'))d.characterIds.push('philosopher');d.firstNightOrder=d.firstNightOrder.filter(r=>r.actionId!=='chooseAbility');d.firstNightOrder.splice(3,0,{kind:'character',characterId:'philosopher',actionId:'chooseAbility'});
+ d.otherNightOrder=otherOrderFor(d.characterIds);
  const {session}=await newScenario(d,roster.map(id=>id==='washerwoman'?'philosopher':id));await confirmAction(session,'minionInfo',null);await confirmAction(session,'demonInfo',{characterIds:['ravenkeeper','undertaker','juggler']});await confirmAction(session,'chooseAbility',{characterIds:['washerwoman']});
  const app=await resume(session.snapshot.canonical);let reopened:Awaited<ReturnType<typeof resume>>|undefined;
  try{const p=app.play!,owner=p.step!.abilityUse!.ownerPlayerId;const view=play(app);

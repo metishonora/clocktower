@@ -19,6 +19,12 @@ export function isCustomActionResult(
   const day = Number.isInteger(value.day) && (value.day as number) >= 1 && (value.day as number) <= 65535;
   switch (value.kind) {
     case "simulationChoice": return hasExactKeys(value, ["kind", "characterId", "spent"]) && (value.characterId === null || isKnownCharacter(value.characterId)) && typeof value.spent === "boolean";
+    case "monkProtection": case "sweetheartDrunk": return hasExactKeys(value,["kind","targetPlayerId","effective"]) && target && effect;
+    case "vigormortisPoison": return hasExactKeys(value,["kind","deathEventId","targetPlayerId"]) && target && textId(value.deathEventId);
+    case "pitHagChange": return hasExactKeys(value,["kind","targetPlayerId","characterId","changed","createdDemon"]) && target && isKnownCharacter(value.characterId) && typeof value.changed==="boolean" && typeof value.createdDemon==="boolean";
+    case "arbitraryDeaths": return hasExactKeys(value,["kind","playerIds"]) && uniqueIds(value.playerIds);
+    case "barberSwap": return hasExactKeys(value,["kind","playerIds","chooserPlayerId","effective"]) && uniqueIds(value.playerIds) && (value.chooserPlayerId===null||textId(value.chooserPlayerId)) && effect;
+    case "nightAttack": return hasExactKeys(value,["kind","targetPlayerId","killedPlayerId","died","identityChanges"]) && target && (value.killedPlayerId===null||textId(value.killedPlayerId)) && typeof value.died==="boolean" && value.died===(value.killedPlayerId!==null) && Array.isArray(value.identityChanges) && value.identityChanges.every(change=>isRecord(change)&&hasExactKeys(change,["playerId","before","after"])&&textId(change.playerId)&&[change.before,change.after].every(state=>isRecord(state)&&hasExactKeys(state,["actualCharacter","shownCharacter","alignment"])&&isKnownCharacter(state.actualCharacter)&&isKnownCharacter(state.shownCharacter)&&["good","evil"].includes(String(state.alignment))));
     case "redHerringAssigned": case "twinAssigned": return hasExactKeys(value, ["kind", "targetPlayerId"]) && target;
     case "shownCharacterAssigned": return hasExactKeys(value, ["kind", "characterId"]) && isKnownCharacter(value.characterId);
     case "poisoner": case "butler": return hasExactKeys(value, ["kind", "targetPlayerId", "day", "effective"]) && target && day && effect;
@@ -144,6 +150,8 @@ function textId(v: unknown): v is string { return typeof v === "string" && v.tri
 export function isActionCause(v: unknown): boolean {
   if (!isRecord(v)) return false;
   switch (v.kind) {
+    case "death": return hasExactKeys(v,["kind","deathEventId"]) && textId(v.deathEventId);
+    case "effect": return hasExactKeys(v,["kind","triggerEventId","effectEventId"]) && textId(v.triggerEventId) && textId(v.effectEventId);
     case "initialPreparation": return hasExactKeys(v, ["kind", "sourceEventId"]) && textId(v.sourceEventId);
     case "requiredPreparation": return hasExactKeys(v, ["kind", "triggerEventId", "previousPreparationEventId"]) && textId(v.triggerEventId) && (v.previousPreparationEventId === null || textId(v.previousPreparationEventId));
     case "delivery": return hasExactKeys(v, ["kind", "preparationEventId"]) && textId(v.preparationEventId);
@@ -160,3 +168,5 @@ export function isCustomGameEnd(v: unknown): boolean {
   return isRecord(v) && hasExactKeys(v, ["winningAlignment", "reason", "sourceEventId"]) &&
     (v.winningAlignment === "good" || v.winningAlignment === "evil") && ["goodTwinExecuted","saintExecuted","mayorNoExecution","vortoxNoExecution","demonAbsent","twoLivingPlayers","klutzChoice","storytellerDecision"].includes(v.reason as string) && textId(v.sourceEventId);
 }
+
+function uniqueIds(value:unknown): value is string[] {return Array.isArray(value)&&value.every(textId)&&new Set(value).size===value.length;}

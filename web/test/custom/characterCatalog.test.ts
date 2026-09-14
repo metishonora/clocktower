@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import baseline from "../../../fixtures/acceptance/custom-first-night/compatibility/catalog.json" with {type: "json"};
 import { deepEqual, equal, throws } from "node:assert/strict";
 import { test } from "vitest";
@@ -36,7 +37,7 @@ test("keeps non-canonical and BMR IDs outside the custom allowlist", () => {
 });
 
 test("resolves supported definitions without changing order and rejects unsupported IDs", () => {
-  const definition = {
+  const definition = { otherNightOrder: otherOrderFor(["imp", "clockmaker", "washerwoman"]),
     id: "custom-registry-contract",
     name: "Registry contract",
     characterIds: ["imp", "clockmaker", "washerwoman"],
@@ -52,11 +53,11 @@ test("resolves supported definitions without changing order and rejects unsuppor
 
   deepEqual(resolveCustomScriptDefinition(definition), definition);
   deepEqual(resolveCustomScriptDefinition({
-    ...definition,
+    ...definition, otherNightOrder: otherOrderFor([]),
     characterIds: [],
     firstNightOrder: SYSTEM_ONLY_FIRST_NIGHT_ORDER,
   }), {
-    ...definition,
+    ...definition, otherNightOrder: otherOrderFor([]),
     characterIds: [],
     firstNightOrder: SYSTEM_ONLY_FIRST_NIGHT_ORDER,
   });

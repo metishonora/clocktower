@@ -411,7 +411,7 @@ fn resolve(
             crate::characters::sects_and_violets::day_death_consequences(
                 facts, &mut day, id, event_id,
             );
-            crate::characters::trouble_brewing::day_succession(
+            crate::characters::trouble_brewing::death_succession(
                 context,
                 facts,
                 &mut next.facts,
@@ -594,7 +594,12 @@ pub(crate) fn executions(
     let Some(day) = &facts.day else {
         return (units, previous_undo);
     };
-    for entry in &day.history {
+    for entry in facts
+        .past_days
+        .iter()
+        .chain(std::iter::once(day))
+        .flat_map(|d| &d.history)
+    {
         if let Some(last) = units
             .last_mut()
             .filter(|u| u.event_ids.first() == Some(&entry.root_event_id))
@@ -720,6 +725,21 @@ pub(crate) fn enter(facts: &mut CustomGameFacts, day_number: u32) {
     facts.malfunction_audit.clear();
     facts.day = Some(DayProgress::new(day_number));
     record_first_days(facts);
+}
+pub(crate) fn enter_after_night(
+    context: &ResolvedScriptContext,
+    facts: &mut CustomGameFacts,
+    day_number: u32,
+    event_id: &str,
+) {
+    enter(facts, day_number);
+    let end = facts
+        .day
+        .as_ref()
+        .and_then(|day| common_game_end(context, facts, day, event_id));
+    if let Some(day) = &mut facts.day {
+        day.pending_game_end = end;
+    }
 }
 fn record_first_days(facts: &mut CustomGameFacts) {
     let Some(day_number) = facts.day.as_ref().map(|d| d.day) else {

@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { deepEqual, equal, throws } from "node:assert/strict";
 
 import { test } from "vitest";
@@ -13,11 +14,11 @@ function customV4(characterIds: unknown = ["washerwoman", "clockmaker", "imp"]) 
     ? characterIds.filter((id): id is string => typeof id === "string")
     : [];
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: {
         type: "custom",
-        definition: {
+        definition: { otherNightOrder: otherOrderFor(ids),
           id: "custom-stable-id",
           name: "Mixed roster",
           characterIds,
@@ -41,7 +42,7 @@ test("round-trips the complete custom definition without reordering Characters",
 
   deepEqual(second.game.script, {
     type: "custom",
-    definition: {
+    definition: { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker", "imp"]),
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: ["washerwoman", "clockmaker", "imp"],
@@ -57,7 +58,7 @@ test("accepts an empty custom Character list as a structural contract", () => {
 
   deepEqual(parsed.game.script, {
     type: "custom",
-    definition: {
+    definition: { otherNightOrder: otherOrderFor([]),
       id: "custom-stable-id",
       name: "Mixed roster",
       characterIds: [],

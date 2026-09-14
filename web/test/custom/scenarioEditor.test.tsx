@@ -1,3 +1,5 @@
+import { customOtherNightPlan } from '../../src/custom/core/wasmClient.js';
+import { otherOrderFor } from './otherNightFixture.js';
 import { useSyncExternalStore } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
@@ -12,10 +14,10 @@ afterEach(cleanup);
 function setup() {
   const download = vi.fn();
   const controller = new ScenarioEditorController({ createId: () => crypto.randomUUID(),
-    loadValidator: loadCustomDefinitionValidator, proposeOrder: customFirstNightPlan, download });
+    loadValidator: loadCustomDefinitionValidator, proposeOrder: customFirstNightPlan, proposeOtherOrder: customOtherNightPlan, download });
   return { controller, download };
 }
-const scenario = JSON.stringify({ type: 'clocktower-custom-scenario', version: 1, scenario: {
+const scenario = JSON.stringify({ type: 'clocktower-custom-scenario', version: 2, scenario: { otherNightOrder: otherOrderFor(['imp']),
   name: '작은 시나리오', characterIds: ['imp'], firstNightOrder: [
     { kind: 'system', actionId: 'dusk' }, { kind: 'system', actionId: 'minionInfo' },
     { kind: 'system', actionId: 'demonInfo' }, { kind: 'system', actionId: 'dawn' },

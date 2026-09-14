@@ -30,6 +30,7 @@ fn definition(plan: Option<Value>) -> Value {
         "name": "Issue 198 definition",
         "characterIds": ["washerwoman", "clockmaker", "imp"],
     });
+    definition["otherNightOrder"] = crate::tests::other_order_json(&definition["characterIds"]);
     if let Some(plan) = plan {
         definition["firstNightOrder"] = plan;
     }
@@ -38,7 +39,7 @@ fn definition(plan: Option<Value>) -> Value {
 
 fn custom_game(definition: Value) -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": { "type": "custom", "definition": definition },
             "id": "issue-198-game",
@@ -61,7 +62,14 @@ fn setup_definition() -> Value {
             "drunk",
             "poisoner",
             "imp",
-        ],
+        ], "otherNightOrder": crate::tests::other_order_json(&json!([
+            "washerwoman",
+            "clockmaker",
+            "chef",
+            "drunk",
+            "poisoner",
+            "imp",
+        ])),
         "firstNightOrder": [
             system("dusk"),
             system("minionInfo"),

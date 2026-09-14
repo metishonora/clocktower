@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-const scenario = { type:'clocktower-custom-scenario',version:1,scenario:{name:'첫날 밤 연결',characterIds:['chef','empath','clockmaker','poisoner','imp','soldier','mayor','virgin'],firstNightOrder:[
+const scenario = { type:'clocktower-custom-scenario',version:2,scenario:{otherNightOrder:[{kind:'system',actionId:'dusk'},{kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'imp',actionId:'attackPlayer'},{kind:'character',characterId:'empath',actionId:'learnEvilNeighbors'},{kind:'system',actionId:'dawn'}],name:'첫날 밤 연결',characterIds:['chef','empath','clockmaker','poisoner','imp','soldier','mayor','virgin'],firstNightOrder:[
   {kind:'system',actionId:'dusk'},{kind:'system',actionId:'minionInfo'},{kind:'system',actionId:'demonInfo'},
   {kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'chef',actionId:'learnEvilPairs'},
   {kind:'character',characterId:'empath',actionId:'learnEvilNeighbors'},{kind:'character',characterId:'clockmaker',actionId:'learnSteps'},{kind:'system',actionId:'dawn'}]}};
@@ -85,7 +85,7 @@ for(const width of [1366,390,820,320])test(`C05/C06/C16/C21/C27/C34/C37: Product
   await page.screenshot({path:info.outputPath('bmr-history.png'),fullPage:true});await page.getByRole('button',{name:'진행',exact:true}).click();
   await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSON 내보내기',exact:true}).click();const download=await downloadPromise;const file=JSON.parse(await readFile((await download.path())!,'utf8'));
-  expect(file.schemaVersion).toBe(4);expect(file.game.events).toHaveLength(5);
+  expect(file.schemaVersion).toBe(5);expect(file.game.events).toHaveLength(5);
   await page.goto('./?fresh=1');await page.getByRole('button',{name:'Custom Scenario 선택'}).click();await upload(page,file);
   await expect(page.getByRole('button',{name:'마도서 이어 쓰기'})).toBeVisible();await page.getByLabel('시나리오 이름',{exact:true}).fill('변경');await expect(page.getByRole('button',{name:'마도서 이어 쓰기'})).toHaveCount(0);
   await page.getByLabel('시나리오 이름',{exact:true}).fill(file.game.script.definition.name);await expect(page.getByRole('button',{name:'마도서 이어 쓰기'})).toBeVisible();
@@ -102,7 +102,7 @@ test('C36: custom runtime load failure stays recoverable and never creates a gam
 async function mixedSetupFile(roster:number) {
   const fixture=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/issue209/inputs.json',import.meta.url),'utf8'));
   const players=fixture.rosters[roster].map((actualCharacter:string,i:number)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter,...(actualCharacter==='drunk'?{shownCharacter:roster===0?'clockmaker':'empath'}:{})}));
-  return {schemaVersion:4,game:{id:`browser-R${roster}`,name:fixture.definition.name,script:{type:'custom',definition:fixture.definition},createdAt:'2026-09-09T00:00:00Z',updatedAt:'2026-09-09T00:00:00Z',events:[{id:'setup-1',type:'setupConfirmed',phase:'setup',summary:'설정',createdAt:'2026-09-09T00:00:00Z',payload:{players}}]}};
+  return {schemaVersion:5,game:{id:`browser-R${roster}`,name:fixture.definition.name,script:{type:'custom',definition:fixture.definition},createdAt:'2026-09-09T00:00:00Z',updatedAt:'2026-09-09T00:00:00Z',events:[{id:'setup-1',type:'setupConfirmed',phase:'setup',summary:'설정',createdAt:'2026-09-09T00:00:00Z',payload:{players}}]}};
 }
 async function mixedResume(page:Page,roster:number){await enter(page);await upload(page,await mixedSetupFile(roster));await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();}
 test('C29/R2: acquired Washerwoman uses one preparation/reveal flow and Undo boundary in Production',async({page},info)=>{
@@ -232,9 +232,9 @@ test('C15/U05/U07/U08/U09: R0 full TB information, numeric zero and payload-only
 
 for(const width of [320,820])test(`A01/A04: uploaded user scenario starts with minion information and uses board preparation at ${width}`,async({page},info)=>{
  test.setTimeout(90000);await page.setViewportSize({width,height:1180});await page.emulateMedia({reducedMotion:'reduce'});
- const imported=JSON.parse(await readFile(new URL('../../../docs/testing/issue-220-v2-evidence/user-clocktower-scenario-test.json',import.meta.url),'utf8'));
+ const imported=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/issue220/user-scenario.json',import.meta.url),'utf8'));
  const roles=['washerwoman','librarian','investigator','chef','fortuneTeller','monk','virgin','mayor','soldier','recluse','saint','poisoner','spy','cerenovus','imp'];
- const file={schemaVersion:4,game:{id:'user-scenario-browser',name:imported.scenario.name,script:{type:'custom',definition:{id:'user-scenario-browser',...imported.scenario}},createdAt:'t',updatedAt:'t',events:[{id:'setup-user',type:'setupConfirmed',phase:'setup',summary:'설정',createdAt:'t',payload:{players:roles.map((actualCharacter,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter}))}}]}};
+ const file={schemaVersion:5,game:{id:'user-scenario-browser',name:imported.scenario.name,script:{type:'custom',definition:{id:'user-scenario-browser',...imported.scenario}},createdAt:'t',updatedAt:'t',events:[{id:'setup-user',type:'setupConfirmed',phase:'setup',summary:'설정',createdAt:'t',payload:{players:roles.map((actualCharacter,i)=>({id:`p${i+1}`,seat:i+1,name:`P${i+1}`,actualCharacter}))}}]}};
  await enter(page);await upload(page,file);await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();
  await expect(page.locator('.bmrEvilInformationTask')).toContainText('하수인');await discloseAndCommit(page);
  const catalog=JSON.parse(await readFile(new URL('../../src/custom/authoring/characterPresentation.json',import.meta.url),'utf8'));

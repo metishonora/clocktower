@@ -22,7 +22,7 @@ pub(super) fn game(minion: &str) -> Value {
     };
     assert!(before_snake);
     let order = json!([{"kind":"system","actionId":"dusk"},{"kind":"system","actionId":"minionInfo"},{"kind":"system","actionId":"demonInfo"},{"kind":"character","characterId":minion,"actionId":action_id},{"kind":"character","characterId":"snakeCharmer","actionId":"choosePlayer"},{"kind":"system","actionId":"dawn"}]);
-    let mut game = json!({"schemaVersion":4,"game":{"id":"relationships","name":"relationships","script":{"type":"custom","definition":{"id":"relationships","name":"relationships","characterIds":pool,"firstNightOrder":order}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
+    let mut game = json!({"schemaVersion":5,"game":{"id":"relationships","name":"relationships","script":{"type":"custom","definition":{"id":"relationships","name":"relationships","characterIds":pool, "otherNightOrder": crate::tests::other_order_json(&json!(pool)),"firstNightOrder":order}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
     let roster = [
         "snakeCharmer",
         "artist",

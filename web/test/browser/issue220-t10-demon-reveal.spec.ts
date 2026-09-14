@@ -10,7 +10,7 @@ async function discloseAndCommit(page:Page) {
 }
 for(const width of [320,390])test(`T10-1: demon reveal keeps every bluff inside its mobile card at ${width}px`,async({page})=>{
  test.setTimeout(60000);await page.setViewportSize({width,height:1000});await page.emulateMedia({reducedMotion:'reduce'});
- const imported=JSON.parse(await readFile(new URL('../../../docs/testing/issue-220-v2-evidence/user-clocktower-scenario-test.json',import.meta.url),'utf8'));
+ const imported=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/issue220/user-scenario.json',import.meta.url),'utf8'));
  const catalog=JSON.parse(await readFile(new URL('../../src/custom/authoring/characterPresentation.json',import.meta.url),'utf8'));
  const roles=['imp','washerwoman','librarian','investigator','chef','fortuneTeller','monk','virgin','mayor','soldier','recluse','saint','poisoner','spy','cerenovus'];
  await enter(page);await upload(page,imported);await page.getByRole('button',{name:'새 마도서 쓰기'}).click();await page.getByRole('button',{name:'15명',exact:true}).click();

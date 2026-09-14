@@ -1,7 +1,7 @@
 import {GameStorageView} from '../shared-ui/GameStorageView';
 import { type ReactNode, useRef, useState } from 'react';
 import { GameConfirmationDialog } from '../shared-ui/GameConfirmationDialog';
-import type { CustomScriptDefinition, GameFileV4 } from '../custom/core/types';
+import type { CustomScriptDefinition, GameFileV5 } from '../custom/core/types';
 import { serializeScenarioFile } from '../custom/storage/scenarioFile';
 import { exportGameFileJson } from '../custom/storage/gameFile';
 import { downloadScenarioFile } from '../custom/authoring/browserScenarioFiles';
@@ -11,7 +11,7 @@ import type { WorkflowDestination } from '../shared-ui/ProductionApplicationShel
 
 export type CustomUtilityActions = { onNewGame: () => void; onNewScenario?: () => void; onImport: (file:File) => void };
 type ReportContext = { eventCount:number; phase:string };
-type ReportSource = {definition:CustomScriptDefinition; file?:GameFileV4};
+type ReportSource = {definition:CustomScriptDefinition; file?:GameFileV5};
 export function buildCustomReport({gameFile:source,symptom,environment,reproductionContext,includeOriginalGameFile}:BugReportBuildInput<ReportContext,ReportSource>):BugReportResult<ReportContext,ReportSource> {
   const fixture:ReportSource = JSON.parse(JSON.stringify(source, (key,value) => {
     if (key === 'name') return '익명';
@@ -23,7 +23,7 @@ export function buildCustomReport({gameFile:source,symptom,environment,reproduct
   const attachmentJson = JSON.stringify({type:'clocktower.custom.bug-report',metadata,symptom,reproductionContext,fixture,...(includeOriginalGameFile?{original:source}:{})},null,2);
   return {subject:'[Clocktower Custom] 버그 제보',body:attachmentJson,attachmentJson,metadata,fixture,reproductionContext,reportType:'clocktower.custom.bug-report',reportSchemaVersion:1};
 }
-export function useCustomUtilities({definition,file,busy,onNewGame,onNewScenario,onImport,history}:{history?:ReactNode;definition:CustomScriptDefinition;file?:GameFileV4;busy:boolean}&CustomUtilityActions) {
+export function useCustomUtilities({definition,file,busy,onNewGame,onNewScenario,onImport,history}:{history?:ReactNode;definition:CustomScriptDefinition;file?:GameFileV5;busy:boolean}&CustomUtilityActions) {
   const [confirmNewScenario,setConfirmNewScenario] = useState(false);
   const [confirmNewGame,setConfirmNewGame] = useState(false);
   const [open,setOpen] = useState<'storage'|'bug-report'>();

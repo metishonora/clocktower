@@ -27,6 +27,7 @@ import init, {
   confirmed_event_reveal as wasmConfirmedEventReveal,
   custom_script_catalog as wasmCustomScriptCatalog,
   custom_first_night_plan as wasmCustomFirstNightPlan,
+  custom_other_night_plan as wasmCustomOtherNightPlan,
   propose as wasmPropose,
   replay as wasmReplay,
   setup_distribution as wasmSetupDistribution,
@@ -123,17 +124,26 @@ function queryCustomFirstNightPlan(
   );
 }
 
+export async function customOtherNightPlan(customDefinition: CustomScriptDefinitionDraft): Promise<CoreResult<CustomFirstNightPlanResult>> {
+  await ensureWasm();
+  return queryCustomOtherNightPlan(customDefinition);
+}
+function queryCustomOtherNightPlan(customDefinition: CustomScriptDefinitionDraft): CoreResult<CustomFirstNightPlanResult> {
+  return parseCoreResult(JSON.parse(wasmCustomOtherNightPlan(JSON.stringify({ customDefinition }))), parseCustomFirstNightPlanResult);
+}
+
 export async function loadCustomDefinitionValidator(): Promise<CustomDefinitionValidator> {
   await ensureWasm();
   return (definition) => {
     // Validation must never enter the authoring query's missing-order proposal path.
-    if (!Array.isArray(definition.firstNightOrder)) {
-      throw new Error("커스텀 시나리오에 첫날 밤 순서가 필요합니다.");
+    if (!Array.isArray(definition.firstNightOrder) || !Array.isArray(definition.otherNightOrder)) {
+      throw new Error("커스텀 시나리오에 두 밤의 순서가 필요합니다.");
     }
-    const result = queryCustomFirstNightPlan(definition);
-    if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
-    if (result.value.source !== "definition") {
-      throw new Error("커스텀 시나리오의 명시적 첫날 밤 순서를 검증하지 못했습니다.");
+    for (const result of [queryCustomFirstNightPlan(definition), queryCustomOtherNightPlan(definition)]) {
+      if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
+      if (result.value.source !== "definition") {
+        throw new Error("커스텀 시나리오의 명시적 밤 순서를 검증하지 못했습니다.");
+      }
     }
   };
 }

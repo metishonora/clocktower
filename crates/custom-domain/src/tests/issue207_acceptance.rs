@@ -1,6 +1,6 @@
 //! Production registry ownership is exact and independent of fixture registration.
 #[test]
-fn nine_ordered_snv_handlers_and_two_additional_actions_are_registered() {
+fn all_snv_handlers_are_registered_with_nine_first_night_entries() {
     use crate::contracts::FirstNightActionRef;
     let registrations = crate::characters::sects_and_violets::registrations();
     let mut refs = registrations
@@ -17,17 +17,31 @@ fn nine_ordered_snv_handlers_and_two_additional_actions_are_registered() {
     assert_eq!(
         refs,
         vec![
+            "barber:swapCharacters",
             "cerenovus:assignMadness",
             "clockmaker:learnSteps",
             "dreamer:learnCharacters",
             "evilTwin:assignTwin",
             "evilTwin:learnTwin",
+            "fangGu:attackPlayer",
+            "flowergirl:learnDemonVoted",
+            "juggler:learnJuggles",
             "mathematician:learnCount",
             "mutant:resolveMadnessExecution",
+            "noDashii:attackPlayer",
+            "oracle:learnDeadEvilCount",
             "philosopher:chooseAbility",
+            "pitHag:changeCharacter",
+            "pitHag:chooseDeaths",
+            "sage:learnDemon",
             "seamstress:compareAlignments",
             "snakeCharmer:choosePlayer",
-            "witch:chooseCursedPlayer"
+            "sweetheart:makeDrunk",
+            "townCrier:learnMinionNominated",
+            "vigormortis:attackPlayer",
+            "vigormortis:choosePoison",
+            "vortox:attackPlayer",
+            "witch:chooseCursedPlayer",
         ]
     );
     assert_eq!(

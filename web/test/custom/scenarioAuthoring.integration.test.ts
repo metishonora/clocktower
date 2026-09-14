@@ -1,3 +1,5 @@
+import { customOtherNightPlan } from '../../src/custom/core/wasmClient.js';
+import { otherOrderFor } from './otherNightFixture.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ScenarioEditorController, type ScenarioEditorDependencies } from '../../src/custom/authoring/scenarioEditorController.js';
 import { actionKey } from '../../src/custom/authoring/reconcileFirstNightOrder.js';
@@ -16,8 +18,8 @@ const order = [
   { kind: 'system', actionId: 'demonInfo' },
   { kind: 'system', actionId: 'dawn' },
 ] as const;
-const content = { name: '재사용 / 시나리오', characterIds: ['philosopher', 'poisoner', 'imp'], firstNightOrder: order };
-const envelope = (scenario: unknown = content) => ({ type: 'clocktower-custom-scenario', version: 1, scenario });
+const content = { otherNightOrder: otherOrderFor(['philosopher', 'poisoner', 'imp']),  name: '재사용 / 시나리오', characterIds: ['philosopher', 'poisoner', 'imp'], firstNightOrder: order };
+const envelope = (scenario: unknown = content) => ({ type: 'clocktower-custom-scenario', version: 2, scenario });
 const file = (value: unknown = envelope()) => ({ name: 'scenario.json', text: async () => JSON.stringify(value) });
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -30,7 +32,7 @@ function editor(overrides: Partial<ScenarioEditorDependencies> = {}) {
   const download = vi.fn();
   const loadValidator = vi.fn(loadCustomDefinitionValidator);
   const controller = new ScenarioEditorController({ createId: () => `local-${++id}`, loadValidator,
-    proposeOrder: customFirstNightPlan, download, ...overrides });
+    proposeOrder: customFirstNightPlan, proposeOtherOrder: customOtherNightPlan, download, ...overrides });
   return { controller, download, loadValidator };
 }
 async function settled(controller: ScenarioEditorController) {
@@ -103,11 +105,11 @@ describe('scenario files through the production authoring controller and shared 
   it.each([
     ['official script', ['imp', { id: '_meta', name: 'official' }]],
     ['GameFile', { formatVersion: 1, gameId: 'game', events: [] }],
-    ['version', { ...envelope(), version: 2 }],
+    ['version', { ...envelope(), version: 1 }],
     ['unknown envelope field', { ...envelope(), author: 'ignored?' }],
     ['other-night', envelope({ ...content, otherNightOrder: [] })],
     ['unknown scenario field', envelope({ ...content, id: 'external-id' })],
-    ['missing actions', envelope({ ...content, firstNightOrder: [order[0], order[5]] })],
+    ['missing actions', envelope({ ...content, firstNightOrder: [order[0], order[5]] , otherNightOrder: otherOrderFor(content.characterIds) })],
     ['duplicate character', envelope({ ...content, characterIds: ['imp', 'imp'] })],
     ['unsupported character', envelope({ ...content, characterIds: ['po'] })],
   ])('rejects %s atomically, preserving the last valid draft', async (_label, candidate) => {

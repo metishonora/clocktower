@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { deepEqual, equal, throws } from "node:assert/strict";
 import { test } from "vitest";
 
@@ -46,11 +47,11 @@ test("definition-owned first-night order round-trips with a roster-only setup ev
     createdAt: "2026-09-04T00:00:00.000Z",
   });
   const game = {
-    schemaVersion: 4 as const,
+    schemaVersion: 5 as const,
     game: {
       script: {
         type: "custom" as const,
-        definition: {
+        definition: { otherNightOrder: otherOrderFor(["philosopher", "poisoner", "imp"]),
           id: "mixed-first-night",
           name: "Mixed first night",
           characterIds: ["philosopher", "poisoner", "imp"],

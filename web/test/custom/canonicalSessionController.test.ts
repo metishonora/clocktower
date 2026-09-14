@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import {unmodifiedDistribution} from './setupDistributionFixture';
 import { deepEqual, equal } from "node:assert/strict";
 
@@ -7,7 +8,7 @@ import type { CoreAdapter } from "../../src/custom/core/coreAdapter.js";
 
 import { CanonicalSessionController, replayMatches } from "../../src/custom/core/canonicalSessionController.js";
 
-import type { CustomScriptDefinition, GameEvent, GameFile, GameFileV4, ReplayState } from "../../src/custom/core/types.js";
+import type { CustomScriptDefinition, GameEvent, GameFile, GameFileV5, ReplayState } from "../../src/custom/core/types.js";
 
 
 test("custom session controller binds replay to the complete definition snapshot", async () => {
@@ -60,7 +61,7 @@ test("custom controller rejects a replay result for a different snapshot and Und
   const undone = await controller.undo(gameFile, replayed.value, "latest");
   equal(undone.ok, true);
   if (undone.ok) {
-    if (undone.value.gameFile.schemaVersion !== 4) throw new Error("expected schema v4 custom game");
+    if (undone.value.gameFile.schemaVersion !== 5) throw new Error("expected schema v4 custom game");
     deepEqual(undone.value.gameFile.game.script, { type: "custom", definition });
     deepEqual(undone.value.gameFile.game.events.map(({ id }) => id), ["setup"]);
   }
@@ -138,7 +139,7 @@ function event(id: string, type: "setupConfirmed" | "phaseStepConfirmed" = "phas
 
 
 function customDefinition(): CustomScriptDefinition {
-  return {
+  return { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker", "imp"]),
     id: "controller-custom",
     name: "Controller custom",
     characterIds: ["washerwoman", "clockmaker", "imp"],
@@ -154,9 +155,9 @@ function customDefinition(): CustomScriptDefinition {
 }
 
 
-function customFile(events: GameEvent[], definition: CustomScriptDefinition): GameFileV4 {
+function customFile(events: GameEvent[], definition: CustomScriptDefinition): GameFileV5 {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: { type: "custom", definition },
       id: "custom-controller-test",
@@ -173,7 +174,7 @@ function customState(eventCount: number, definition: CustomScriptDefinition): Re
   return {
     actionExecutions: eventCount>1?[{id:'latest',rootStepId:'latest',displayStepId:'latest',stepIds:['latest'],eventIds:['latest'],status:'complete'}]:[],
     latestUndoUnit: eventCount>1?{id:'latest',executionId:'latest',eventIds:['latest'],summaryStepId:'latest'}:null,
-    schemaVersion: 4,
+    schemaVersion: 5,
     script: { type: "custom", definition },
     eventCount,
     phase: "day",

@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import {unmodifiedDistribution} from './setupDistributionFixture';
 import { createTestCustomScriptRepository } from "./repositorySupport.js";
 import { deepEqual, equal, ok } from "node:assert/strict";
@@ -220,7 +221,7 @@ test("coordinator keeps unreadable load blocked until explicit new-game recovery
 });
 
 function customDefinition(): CustomScriptDefinition {
-  return {
+  return { otherNightOrder: otherOrderFor(["philosopher", "imp"]),
     id: "canonical-session",
     name: "Canonical session",
     characterIds: ["philosopher", "imp"],
@@ -282,12 +283,12 @@ function adapter(
 }
 
 function replayState(gameFile: GameFile, definition: CustomScriptDefinition): ReplayState {
-  ok(gameFile.schemaVersion === 4 && gameFile.game.script.type === "custom");
+  ok(gameFile.schemaVersion === 5 && gameFile.game.script.type === "custom");
   const event=gameFile.game.events.at(-1),id=event&&event.type!=='setupConfirmed'?event.id:undefined;
   return {
     actionExecutions:id?[{id,rootStepId:id,displayStepId:id,stepIds:[id],eventIds:[id],status:'complete'}]:[],
     latestUndoUnit:id?{id,executionId:id,eventIds:[id],summaryStepId:id}:null,
-    schemaVersion: 4,
+    schemaVersion: 5,
     script: { type: "custom", definition },
     eventCount: gameFile.game.events.length,
     phase: gameFile.game.events.length === 0 ? "setup" : "firstNight",

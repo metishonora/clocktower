@@ -1,5 +1,5 @@
 import { createBrowserId } from '../browserId.js';
-import type { CustomScriptDefinition, GameFileV4 } from "../core/types.js";
+import type { CustomScriptDefinition, GameFileV5 } from "../core/types.js";
 import { parseCustomScriptDefinition, parseGameFileJson } from "./gameFile.js";
 
 const DB_NAME = "clocktower";
@@ -11,7 +11,7 @@ export type CustomWebSessionSnapshot<SetupDraft = unknown, Presentation = unknow
   version: 1;
   customScriptId: string;
   savedAt: string;
-  canonical: GameFileV4;
+  canonical: GameFileV5;
   setupDraft: SetupDraft;
   presentation: Presentation;
 };
@@ -179,11 +179,11 @@ export function createCustomGameFile(
   definition: CustomScriptDefinition,
   gameId: string = createBrowserId(),
   now = new Date(),
-): GameFileV4 {
+): GameFileV5 {
   const snapshot = structuredClone(parseCustomScriptDefinition(definition));
   const timestamp = now.toISOString();
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: { type: "custom", definition: snapshot },
       id: gameId,
@@ -196,7 +196,7 @@ export function createCustomGameFile(
 }
 
 export function createCustomWebSessionSnapshot<SetupDraft, Presentation>(
-  canonical: GameFileV4,
+  canonical: GameFileV5,
   setupDraft: SetupDraft,
   presentation: Presentation,
   savedAt = new Date().toISOString(),
@@ -277,7 +277,7 @@ function parseCustomWebSession<SetupDraft, Presentation>(
   if (expectedId !== undefined && value.customScriptId !== expectedId) {
     throw idMismatch();
   }
-  let canonical: GameFileV4;
+  let canonical: GameFileV5;
   try {
     canonical = parseGameFileJson(JSON.stringify(value.canonical));
   } catch (error) {

@@ -93,6 +93,7 @@ pub(crate) fn plan_for_definition(
     validate_custom_script_definition(definition)?;
     let context = resolve_custom_script(definition)?;
     validate_plan(&context, &definition.first_night_order)?;
+    validate_other_plan(&context, &definition.other_night_order)?;
     Ok(definition.first_night_order.clone())
 }
 
@@ -113,4 +114,56 @@ pub(crate) fn plan_for_draft(
             plan: default_plan(&context),
         })
     }
+}
+
+/// Authoring only. Never called as a fallback by completed definition or replay paths.
+pub(crate) fn default_other_plan(
+    context: &ResolvedScriptContext,
+) -> crate::contracts::OtherNightOrderPlan {
+    crate::contracts::OtherNightOrderPlan(
+        std::iter::once(FirstNightActionRef::system("dusk"))
+            .chain(
+                super::catalog::OTHER_ORDERED_ACTIONS
+                    .iter()
+                    .filter(|(id, _)| context.contains(id))
+                    .map(|(id, action)| character(id, action)),
+            )
+            .chain(std::iter::once(FirstNightActionRef::system("dawn")))
+            .collect(),
+    )
+}
+pub(crate) fn validate_other_plan(
+    context: &ResolvedScriptContext,
+    plan: &crate::contracts::OtherNightOrderPlan,
+) -> Result<(), CoreError> {
+    let entries = &plan.0;
+    let expected = default_other_plan(context)
+        .0
+        .into_iter()
+        .collect::<HashSet<_>>();
+    let actual = entries.iter().cloned().collect::<HashSet<_>>();
+    if entries.first() != Some(&FirstNightActionRef::system("dusk"))
+        || entries.last() != Some(&FirstNightActionRef::system("dawn"))
+        || actual.len() != entries.len()
+        || actual != expected
+    {
+        return Err(ErrorKind::InvalidOtherNightOrderPlan.into_error());
+    }
+    Ok(())
+}
+pub(crate) fn other_plan_for_draft(
+    definition: &CustomScriptDefinitionDraft,
+) -> Result<CustomFirstNightPlanResult, CoreError> {
+    validate_custom_script_definition_draft(definition)?;
+    let context = resolve_custom_script_ids(&definition.character_ids)?;
+    let (source, plan) = if let Some(plan) = &definition.other_night_order {
+        validate_other_plan(&context, plan)?;
+        (FirstNightPlanSource::Definition, plan.clone())
+    } else {
+        (FirstNightPlanSource::Default, default_other_plan(&context))
+    };
+    Ok(CustomFirstNightPlanResult {
+        source,
+        plan: FirstNightOrderPlan(plan.0),
+    })
 }

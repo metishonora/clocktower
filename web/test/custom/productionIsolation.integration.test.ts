@@ -1,7 +1,8 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { describe, expect, it } from "vitest";
 import { createCustomGameFile } from "../../src/custom/storage/sessionStorage.js";
 import { parseGameEvent } from "../../src/custom/core/validation.js";
-import type { CustomScriptDefinition, GameEvent, GameFileV4 } from "../../src/custom/core/types.js";
+import type { CustomScriptDefinition, GameEvent, GameFileV5 } from "../../src/custom/core/types.js";
 import { realWasmCore } from "./realCustomWasmHarness.js";
 
 describe("Issue #206 production custom-runtime isolation", () => {
@@ -10,6 +11,7 @@ describe("Issue #206 production custom-runtime isolation", () => {
     definition.characterIds.push('artist','savant','juggler');
     definition.characterIds = definition.characterIds.map(id => id === "philosopher" ? "washerwoman" : id);
     definition.firstNightOrder = definition.firstNightOrder.map(ref => ref.kind === "character" ? { kind: "character", characterId: "washerwoman", actionId: "learnTownsfolk" } : ref);
+    definition.otherNightOrder = otherOrderFor(definition.characterIds);
     const empty = createCustomGameFile(
       definition,
       "issue-206-production-unsupported",
@@ -21,7 +23,7 @@ describe("Issue #206 production custom-runtime isolation", () => {
     });
     expect(setup.ok).toBe(true);
     if (!setup.ok) return;
-    const setupGame: GameFileV4 = {
+    const setupGame: GameFileV5 = {
       ...empty,
       game: { ...empty.game, events: [setup.value.event] },
     };
@@ -68,7 +70,17 @@ describe("Issue #206 production custom-runtime isolation", () => {
 });
 
 function productionDefinition(): CustomScriptDefinition {
-  return {
+  return { otherNightOrder: otherOrderFor([
+      "philosopher",
+      "ravenkeeper",
+      "mayor",
+      "undertaker",
+      "monk",
+      "soldier",
+      "saint",
+      "scarletWoman",
+      "imp",
+    ]),
     id: "issue-206-production-definition",
     name: "Issue 206 production definition",
     characterIds: [

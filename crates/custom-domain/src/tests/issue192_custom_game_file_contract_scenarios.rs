@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 fn game_v4(script: Value) -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": script,
             "id": "game-custom-contract",
@@ -29,7 +29,7 @@ fn custom_definition(character_ids: Value) -> Value {
         "definition": {
             "id": "custom-stable-id",
             "name": "Mixed roster",
-            "characterIds": character_ids,
+            "characterIds": character_ids, "otherNightOrder": crate::tests::other_order_json(&json!(character_ids)),
             "firstNightOrder": first_night_order,
         }
     })
@@ -173,7 +173,7 @@ fn schema_v4_rejects_mixed_missing_and_unknown_script_references() {
         game_v4(json!({ "type": "official" })),
         game_v4(json!({ "type": "custom" })),
         json!({
-            "schemaVersion": 4,
+            "schemaVersion": 5,
             "game": {
                 "id": "missing-script",
                 "name": "Missing",

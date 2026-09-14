@@ -6,6 +6,7 @@ export type CustomScriptDefinition = {
   name: string;
   characterIds: string[];
   firstNightOrder: FirstNightOrderPlan;
+  otherNightOrder: FirstNightOrderPlan;
 };
 
 
@@ -13,8 +14,9 @@ export type CustomScriptDefinition = {
  * Authoring input for the read-only custom first-night-plan query.
  * Persisted and game-snapshot definitions always carry an explicit order.
  */
-export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNightOrder"> & {
+export type CustomScriptDefinitionDraft = Omit<CustomScriptDefinition, "firstNightOrder" | "otherNightOrder"> & {
   firstNightOrder?: FirstNightOrderPlan;
+  otherNightOrder?: FirstNightOrderPlan;
 };
 
 
@@ -43,8 +45,8 @@ export type ScriptReference = CustomScriptReference;
 type GameFileMetadata = { ui?: { seatLayout?: SeatLayoutState } };
 
 
-export type GameFileV4 = GameFileMetadata & {
-  schemaVersion: 4;
+export type GameFileV5 = GameFileMetadata & {
+  schemaVersion: 5;
   game: {
     script: ScriptReference;
     id: string;
@@ -54,7 +56,7 @@ export type GameFileV4 = GameFileMetadata & {
     events: GameEvent[];
   };
 };
-export type GameFile = GameFileV4;
+export type GameFile = GameFileV5;
 
 
 export type SeatPosition = {
@@ -287,7 +289,7 @@ export type CoreResult<T> =
 export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
 export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
 export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
-export type ReplayState = {day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type ReplayState = {day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -537,6 +539,8 @@ type EventCommon = {
  * extend this boundary when it builds its dedicated WASM artifact.
  */
 export type ActionCause =
+  | { kind: "death"; deathEventId: string }
+  | { kind: "effect"; triggerEventId: string; effectEventId: string }
   | { kind: "initialPreparation"; sourceEventId: string }
   | { kind: "requiredPreparation"; triggerEventId: string; previousPreparationEventId: string | null }
   | { kind: "delivery"; preparationEventId: string }
@@ -545,6 +549,12 @@ export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind:
 export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
+  | { kind: "monkProtection" | "sweetheartDrunk"; targetPlayerId: string; effective: boolean }
+  | { kind: "nightAttack"; targetPlayerId: string; killedPlayerId: string | null; died: boolean; identityChanges: {playerId:string;before:IdentityState;after:IdentityState}[] }
+  | { kind: "pitHagChange"; targetPlayerId:string;characterId:string;changed:boolean;createdDemon:boolean }
+  | { kind: "arbitraryDeaths";playerIds:string[] }
+  | { kind: "barberSwap";playerIds:string[];chooserPlayerId:string|null;effective:boolean }
+  | { kind: "vigormortisPoison";deathEventId:string;targetPlayerId:string }
   | {kind:"mutantJudgment";result:"clear"|"violation"}
   | { kind: "redHerringAssigned" | "twinAssigned"; targetPlayerId: string }
   | { kind: "informationPrepared"; preparation: InformationPreparation }
@@ -748,6 +758,8 @@ export type RequiredInput = {
   setupInfo?: "washerwoman" | "librarian" | "investigator";
   characterKind?: "Townsfolk" | "Outsider" | "Minion" | "Demon";
   allowedCharacterIds?: string[];
+  allowedChooserPlayerIds?: string[];
+  allowedSuccessorPlayerIds?: string[];
   allowedPlayerIds?: string[];
   playerRegistrationOptions?: RegistrationJudgment[];
   setupInformationChoices?: Array<{preparation: InformationPreparation; registrationJudgments: RegistrationJudgment[]}>;

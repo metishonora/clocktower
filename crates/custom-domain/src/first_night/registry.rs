@@ -88,6 +88,24 @@ pub(crate) struct ActionInput {
     pub(crate) registration_judgments: Vec<crate::model::RegistrationJudgment>,
 }
 
+impl ActionContext<'_> {
+    pub(crate) fn night_number(&self) -> u32 {
+        self.rule_service
+            .facts()
+            .map(|f| f.night_number())
+            .unwrap_or(1)
+    }
+    fn stamp(&self, mut step: PhaseStep) -> Result<PhaseStep, CoreError> {
+        let occurrence = ActionOccurrence::from_step(&step)?.in_night(self.night_number());
+        step.id = occurrence.step_id()?;
+        step.phase = if occurrence.night == 1 {
+            crate::model::Phase::FirstNight
+        } else {
+            crate::model::Phase::Night
+        };
+        Ok(step)
+    }
+}
 pub(crate) struct ActionContext<'a> {
     pub(crate) rule_service: &'a dyn FirstNightRuleService,
     pub(crate) event_id: &'a str,
@@ -157,6 +175,7 @@ impl ValidatedCustomEvent {
             self.payload.follow_up_cause.clone(),
             self.payload.action_cause.clone(),
         )
+        .and_then(|o| o.with_step_id(&self.payload.step_id))
     }
 
     pub(crate) fn step_id(&self) -> &str {
@@ -293,7 +312,8 @@ impl ValidatedActionEvent {
 
     pub(crate) fn occurrence(&self) -> Result<ActionOccurrence, CoreError> {
         match self {
-            Self::System(event) => ActionOccurrence::system(event.action_ref.clone()),
+            Self::System(event) => ActionOccurrence::system(event.action_ref.clone())
+                .and_then(|o| o.with_step_id(event.step_id())),
             Self::Custom(event) => event.occurrence(),
         }
     }
@@ -340,15 +360,35 @@ pub(crate) trait ActionHandler {
     }
 
     /// Character-owned resolution of the persisted source, independent of presentation order.
-    fn dependency_event(&self, _context: &ActionContext<'_>, occurrence: &ActionOccurrence) -> Result<Option<String>, CoreError> {
+    fn dependency_event(
+        &self,
+        _context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+    ) -> Result<Option<String>, CoreError> {
         Ok(match &occurrence.action_cause {
-            Some(crate::contracts::ActionCause::Delivery { preparation_event_id }) => Some(preparation_event_id.clone()),
+            Some(crate::contracts::ActionCause::Delivery {
+                preparation_event_id,
+            }) => Some(preparation_event_id.clone()),
             _ => None,
         })
     }
     /// Preview the consumer while its declared prerequisite is pending. This is overview-only;
     /// scheduler eligibility and command validation still require the prepared facts.
-    fn pending_after_prerequisite(&self, _context: &ActionContext<'_>, _predecessor: &ActionOccurrence) -> Result<Option<PhaseStep>, CoreError> { Ok(None) }
+    fn pending_after_prerequisite(
+        &self,
+        _context: &ActionContext<'_>,
+        _predecessor: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        Ok(None)
+    }
+    /// A script handler may authorize a frozen trigger source after ownership changes.
+    fn historical_source(
+        &self,
+        _context: &ActionContext<'_>,
+        _occurrence: &ActionOccurrence,
+    ) -> bool {
+        false
+    }
     fn permits_defer(&self) -> bool {
         false
     }
@@ -362,8 +402,14 @@ pub(crate) trait ActionHandler {
         context: &ActionContext<'_>,
     ) -> Result<Vec<PhaseStep>, CoreError>;
     /// Expensive legal editor choices are needed only for selectable tasks, not order rows.
-    fn enrich_input(&self, _context: &ActionContext<'_>, _occurrence: &ActionOccurrence,
-        _step: &mut PhaseStep) -> Result<(), CoreError> { Ok(()) }
+    fn enrich_input(
+        &self,
+        _context: &ActionContext<'_>,
+        _occurrence: &ActionOccurrence,
+        _step: &mut PhaseStep,
+    ) -> Result<(), CoreError> {
+        Ok(())
+    }
     fn propose(
         &self,
         spec: &ActionSpec,
@@ -478,6 +524,7 @@ impl ActionRegistry {
             } else {
                 entry.handler.required_occurrences(context, progress)?
             } {
+                let occurrence = occurrence.in_night(context.night_number());
                 if occurrence.action_ref != entry.spec.action_ref {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
@@ -498,12 +545,27 @@ impl ActionRegistry {
             registry.register(entry)?;
         }
         for entry in registry.entries.values() {
-            let kinds=entry.spec.continuation_sources.iter().filter(|source| **source!=super::execution::DependencySource::ImmediateOrigin).count();
-            if (!entry.spec.prerequisites.is_empty()&&kinds!=1)||entry.spec.prerequisites.len()>1 {
+            let kinds = entry
+                .spec
+                .continuation_sources
+                .iter()
+                .filter(|source| **source != super::execution::DependencySource::ImmediateOrigin)
+                .count();
+            if (!entry.spec.prerequisites.is_empty() && kinds != 1)
+                || entry.spec.prerequisites.len() > 1
+            {
                 return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
             }
             for parent in &entry.spec.prerequisites {
-                if *parent == entry.spec.action_ref || !registry.entries.contains_key(parent) || registry.entries.values().filter(|e|e.spec.prerequisites.contains(parent)).count()!=1 {
+                if *parent == entry.spec.action_ref
+                    || !registry.entries.contains_key(parent)
+                    || registry
+                        .entries
+                        .values()
+                        .filter(|e| e.spec.prerequisites.contains(parent))
+                        .count()
+                        != 1
+                {
                     return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
                 }
             }
@@ -537,7 +599,8 @@ impl ActionRegistry {
     pub(crate) fn register(&mut self, entry: RegisteredAction) -> Result<(), CoreError> {
         if entry.spec.action_ref != *entry.handler.action_ref()
             || (!entry.spec.participates_in_first_night
-                && !super::catalog::is_additional(&entry.spec.action_ref))
+                && !super::catalog::is_additional(&entry.spec.action_ref)
+                && !super::catalog::is_other_or_trigger(&entry.spec.action_ref))
             || self.entries.contains_key(&entry.spec.action_ref)
         {
             return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
@@ -560,20 +623,55 @@ impl ActionRegistry {
     }
 
     /// Scheduling placement comes from the consumer's declaration, never a second pair table.
-    pub(crate) fn linked_action(&self, action: &FirstNightActionRef) -> Option<FirstNightActionRef> {
-        self.entries.values().find(|entry| entry.spec.prerequisites.contains(action))
+    pub(crate) fn linked_action(
+        &self,
+        action: &FirstNightActionRef,
+    ) -> Option<FirstNightActionRef> {
+        self.entries
+            .values()
+            .find(|entry| entry.spec.prerequisites.contains(action))
             .map(|entry| entry.spec.action_ref.clone())
-            .or_else(|| self.entries.get(action).filter(|e| e.spec.participates_in_first_night).map(|_| action.clone()))
+            .or_else(|| {
+                self.entries
+                    .get(action)
+                    .filter(|e| e.spec.participates_in_first_night)
+                    .map(|_| action.clone())
+            })
     }
 
-    pub(crate) fn pending_consumer(&self, context:&ActionContext<'_>, predecessor:&ActionOccurrence) -> Result<Option<PhaseStep>,CoreError> {
-        let consumers:Vec<_>=self.entries.values().filter(|e|e.spec.prerequisites.contains(&predecessor.action_ref)).collect();
-        if consumers.len()>1 {return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());}
+    pub(crate) fn pending_consumer(
+        &self,
+        context: &ActionContext<'_>,
+        predecessor: &ActionOccurrence,
+    ) -> Result<Option<PhaseStep>, CoreError> {
+        let consumers: Vec<_> = self
+            .entries
+            .values()
+            .filter(|e| e.spec.prerequisites.contains(&predecessor.action_ref))
+            .collect();
+        if consumers.len() > 1 {
+            return Err(ErrorKind::FirstNightActionRegistrationInvalid.into_error());
+        }
         match consumers.first() {
-            Some(entry)=>{
-                if let Some(step)=entry.handler.pending_after_prerequisite(context,predecessor)? {return Ok(Some(step));}
-                Ok(entry.handler.project(&entry.spec,context)?.into_iter().find(|step| ActionOccurrence::from_step(step).is_ok_and(|consumer|consumer.source()==predecessor.source())))
-            },None=>Ok(None)
+            Some(entry) => {
+                if let Some(step) = entry
+                    .handler
+                    .pending_after_prerequisite(context, predecessor)?
+                {
+                    return Ok(Some(context.stamp(step)?));
+                }
+                Ok(entry
+                    .handler
+                    .project(&entry.spec, context)?
+                    .into_iter()
+                    .find(|step| {
+                        ActionOccurrence::from_step(step)
+                            .is_ok_and(|consumer| consumer.source() == predecessor.source())
+                    })
+                    .map(|s| context.stamp(s))
+                    .transpose()?)
+            }
+            None => Ok(None),
         }
     }
     /// Propose a draft and immediately run the same common plus action-specific validation that
@@ -641,7 +739,9 @@ impl ActionRegistry {
         input: &StepInput,
         players: &[crate::model::Player],
     ) -> Result<(), CoreError> {
-        if input.as_ref().is_some_and(|fields| fields.madness_check.is_some())
+        if input
+            .as_ref()
+            .is_some_and(|fields| fields.madness_check.is_some())
             && !matches!(&occurrence.action_ref, FirstNightActionRef::Character { character_id, action_id }
                 if character_id == "mutant" && action_id == "resolveMadnessExecution")
         {
@@ -659,7 +759,13 @@ impl ActionRegistry {
         context: &super::activation::FollowUpContext<'_>,
     ) -> Result<Vec<ActionOccurrence>, CoreError> {
         let mut result = vec![];
-        for action_ref in &plan.0 {
+        let mut refs = plan.0.clone();
+        for (action, _) in super::catalog::production_actions() {
+            if !refs.contains(&action) {
+                refs.push(action);
+            }
+        }
+        for action_ref in &refs {
             let Some(entry) = self.entries.get(action_ref) else {
                 continue;
             };
@@ -667,7 +773,10 @@ impl ActionRegistry {
                 continue;
             };
             for occurrence in rule.candidates(context)? {
-                if occurrence.action_ref != *action_ref || occurrence.follow_up_cause.is_none() {
+                let occurrence = occurrence.in_night(context.next_facts.night_number());
+                if occurrence.action_ref != *action_ref
+                    || (occurrence.follow_up_cause.is_none() && occurrence.action_cause.is_none())
+                {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
                 if !result.contains(&occurrence) {
@@ -684,9 +793,15 @@ impl ActionRegistry {
         occurrence: &ActionOccurrence,
     ) -> Result<Option<PhaseStep>, CoreError> {
         let entry = self.lookup(&occurrence.action_ref)?;
+        if occurrence.night != context.night_number() {
+            return Ok(None);
+        }
+        let semantic = occurrence.clone().in_night(1);
         let step = entry
             .handler
-            .project_occurrence(&entry.spec, context, occurrence)?;
+            .project_occurrence(&entry.spec, context, &semantic)?
+            .map(|step| context.stamp(step))
+            .transpose()?;
         if let Some(step) = &step {
             if ActionOccurrence::from_step(step)? != *occurrence {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
@@ -695,9 +810,15 @@ impl ActionRegistry {
         Ok(step)
     }
 
-    pub(crate) fn enrich_input(&self, context: &ActionContext<'_>, occurrence: &ActionOccurrence,
-        step: &mut PhaseStep) -> Result<(), CoreError> {
-        self.lookup(&occurrence.action_ref)?.handler.enrich_input(context, occurrence, step)
+    pub(crate) fn enrich_input(
+        &self,
+        context: &ActionContext<'_>,
+        occurrence: &ActionOccurrence,
+        step: &mut PhaseStep,
+    ) -> Result<(), CoreError> {
+        self.lookup(&occurrence.action_ref)?
+            .handler
+            .enrich_input(context, occurrence, step)
     }
 
     /// Validate a persisted event against the preceding occurrence. The returned custom event is
@@ -711,6 +832,16 @@ impl ActionRegistry {
     ) -> Result<ValidatedActionEvent, CoreError> {
         let action_ref = &occurrence.action_ref;
         let entry = self.lookup(action_ref)?;
+        if occurrence.night != context.night_number()
+            || event.phase
+                != if occurrence.night == 1 {
+                    crate::model::Phase::FirstNight
+                } else {
+                    crate::model::Phase::Night
+                }
+        {
+            return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
+        }
         let draft = draft_from_wire_event(event)?;
         self.validate_draft(entry, context, occurrence, &draft)?;
         let fact_changes = entry.handler.validate_event_with_id(
@@ -754,7 +885,8 @@ impl ActionRegistry {
                 custom.simulation_source.clone(),
                 custom.follow_up_cause.clone(),
                 custom.action_cause.clone(),
-            )?;
+            )?
+            .with_step_id(&custom.step_id)?;
             if source.identity() != occurrence.identity() {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
             }
@@ -780,11 +912,12 @@ impl ActionRegistry {
                 if expected_ability.character_id != *character_id
                     || custom.ability_use.as_ref() != Some(expected_ability)
                     || custom.action_ref != entry.spec.action_ref
-                    || !context
+                    || (!context
                         .rule_service
                         .try_active_instances(&entry.spec.action_ref)?
                         .iter()
                         .any(|instance| instance.ability_use == *expected_ability)
+                        && !entry.handler.historical_source(context, occurrence))
                 {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
@@ -805,6 +938,7 @@ impl ActionRegistry {
                         candidate.action_ref == occurrence.action_ref
                             && candidate.simulation_source == occurrence.simulation_source
                     })
+                    && !entry.handler.historical_source(context, occurrence)
                 {
                     return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
                 }
@@ -823,7 +957,12 @@ impl ActionRegistry {
         context: &ActionContext<'_>,
     ) -> Result<Vec<PhaseStep>, CoreError> {
         let entry = self.lookup(action_ref)?;
-        let steps = entry.handler.project(&entry.spec, context)?;
+        let steps = entry
+            .handler
+            .project(&entry.spec, context)?
+            .into_iter()
+            .map(|s| context.stamp(s))
+            .collect::<Result<Vec<_>, _>>()?;
         for step in &steps {
             let Some(step_action_ref) = step.action_ref.as_ref() else {
                 return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
@@ -862,7 +1001,12 @@ fn occurrence_from_step(step: &PhaseStep) -> Result<ActionOccurrence, CoreError>
 }
 
 fn draft_from_wire_event(event: &GameEvent) -> Result<ActionEventDraft, CoreError> {
-    if event.id.trim().is_empty() || event.phase != crate::model::Phase::FirstNight {
+    if event.id.trim().is_empty()
+        || !matches!(
+            event.phase,
+            crate::model::Phase::FirstNight | crate::model::Phase::Night
+        )
+    {
         return Err(ErrorKind::MalformedEvent.into_error());
     }
     match &event.kind {
