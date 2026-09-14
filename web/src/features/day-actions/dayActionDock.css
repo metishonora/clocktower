@@ -129,3 +129,27 @@
 @media (prefers-reduced-motion: reduce) {
   .snvDayActionPanel, .snvDayActionDock > button { scroll-behavior: auto; transition: none; }
 }
+
+.tbSlayerActionForm fieldset > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tbSlayerActionForm legend { color: #526d54; }
+.tbSlayerActionForm fieldset button {
+  display: grid;
+  min-height: 58px;
+  padding: 7px;
+  place-items: center;
+  gap: 2px;
+  border-color: rgba(54, 93, 60, .18);
+  color: #27452f;
+  background: rgba(255, 255, 255, .72);
+}
+
+.tbSlayerActionForm fieldset button.selected {
+  border-color: #2f704e;
+  color: #17452f;
+  background: rgba(47, 112, 78, .16);
+  box-shadow: inset 0 0 0 1px rgba(47, 112, 78, .12);
+}
+
+.tbSlayerTargets button > span { color: #8b6a2b; font-size: .65rem; font-weight: 900; }
+.tbSlayerTargets button > strong { font-size: .76rem; }
+.tbSlayerRegistration > div { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }

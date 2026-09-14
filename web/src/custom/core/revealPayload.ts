@@ -1,26 +1,8 @@
+import { automaticReminderPairs } from "./automaticReminderTokens.js";
 import { customScriptCharacters } from "../characterCatalog.js";
 import type { CharacterChangeRevealPayload, EvilTwinPairRevealPayload, MadnessAssignmentRevealPayload, Proposal, RevealPayload, RoleInformationRevealPayload, SpyGrimoireRevealPayload } from "./types.js";
 const characterIds = new Set(customScriptCharacters.map(({ id }) => id));
 
-const troubleBrewingAutomaticReminderPairs = new Set([
-  "noDashii:poisoned", "snakeCharmer:poisoned", "philosopher:drunk", "philosopher:noAbility", "seamstress:noAbility", "witch:cursed", "cerenovus:mad", "evilTwin:twin",
-  "butler:master",
-  "drunk:isTheDrunk",
-  "fortuneTeller:redHerring",
-  "imp:dead",
-  "investigator:minion",
-  "investigator:wrong",
-  "librarian:outsider",
-  "librarian:wrong",
-  "monk:safe",
-  "poisoner:poisoned",
-  "scarletWoman:isTheDemon",
-  "slayer:noAbility",
-  "undertaker:diedToday",
-  "virgin:noAbility",
-  "washerwoman:townsfolk",
-  "washerwoman:wrong",
-]);
 const spyPayloadKeys = ["kind", "players"];
 const spyPlayerKeys = [
   "alignment",
@@ -220,7 +202,7 @@ function isSpyAutomaticReminder(value: unknown, playerId: string): boolean {
   if (!isAutomaticReminderShape(value)) return false;
   const reminder = value as Record<string, unknown>;
   return reminder.playerId === playerId &&
-    troubleBrewingAutomaticReminderPairs.has(`${reminder.characterId}:${reminder.tokenId}`);
+    automaticReminderPairs.has(`${reminder.characterId}:${reminder.tokenId}`);
 }
 
 function isAutomaticReminderShape(value: unknown): boolean {

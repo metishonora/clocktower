@@ -52,3 +52,8 @@ mod issue209_registry;
 
 #[cfg(not(feature = "custom-runtime-fixtures"))]
 mod issue220_action_dependencies;
+
+mod issue223_day;
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue223_reminders;

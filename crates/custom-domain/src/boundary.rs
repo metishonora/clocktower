@@ -47,6 +47,9 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
+    if discriminator.kind == "dayConfirmed" && !value.as_object().is_some_and(|v|has_exact_json_keys(v,&["id","type","phase","payload","summary","createdAt"])) {
+        return Err(ErrorKind::MalformedEvent.into_error());
+    }
     if discriminator.kind == "customActionConfirmed" {
         validate_custom_action_event_json(&value)?;
     }

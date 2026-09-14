@@ -1,3 +1,4 @@
+import type {DayInput,DayConfirmed,DayView} from './dayTypes.js';
 
 
 export type CustomScriptDefinition = {
@@ -164,6 +165,7 @@ export type MathematicianAuditOutcome =
     kind: "incorrectInformation";
     deliveredResult: InformationResult;
   }
+  | { kind: "dayInformation"; truthfulCount: number }
   | { kind: "invalidSavantPattern"; truthfulCount: number }
   | {
     kind: "effectFailure";
@@ -276,7 +278,7 @@ export type PhaseStepCommandPayload = PhaseStepConfirmation & {
   stepId: string;
   expectedEventCount?: number;
 };
-export type Command = { type: "createGame"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "confirmStep"; payload: PhaseStepCommandPayload };
+export type Command = {type:"confirmDay";payload:{stepId:string;expectedEventCount:number;input:DayInput}} | { type: "createGame"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "confirmStep"; payload: PhaseStepCommandPayload };
 
 
 export type CoreResult<T> =
@@ -285,7 +287,7 @@ export type CoreResult<T> =
 export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
 export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
 export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
-export type ReplayState = {actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type ReplayState = {day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 4; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
@@ -540,7 +542,7 @@ export type ActionCause =
   | { kind: "delivery"; preparationEventId: string }
   | { kind: "optional"; prefixEventId: string };
 export type GuidanceCause = { kind: "initialDrunk" | "acquiredDrunk" } | { kind: "choice"; parentEventId: string };
-export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"; sourceEventId: string };
+export type CustomGameEnd = { winningAlignment: "good" | "evil"; reason: "goodTwinExecuted"|"saintExecuted"|"mayorNoExecution"|"vortoxNoExecution"|"demonAbsent"|"twoLivingPlayers"|"klutzChoice"|"storytellerDecision"; sourceEventId: string };
 export type InformationPreparation = { information: InformationResult; correctPlayerId: string | null };
 export type CustomActionResult =
   | {kind:"mutantJudgment";result:"clear"|"violation"}
@@ -579,7 +581,7 @@ export type CustomActionConfirmedPayload = CustomActionSource & {
   input: PhaseStepInput;
   result: CustomActionResult;
 };
-export type GameEvent = EventCommon & ({ type: "setupConfirmed"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "phaseStepConfirmed"; payload: { stepId: string; actionRef?: FirstNightActionRef; abilityUse?: AbilityUseRef; input: PhaseStepInput; information?: ConfirmedInformation } } | { type: "customActionConfirmed"; payload: CustomActionConfirmedPayload });
+export type GameEvent = EventCommon & ({type:"dayConfirmed";payload:DayConfirmed} | { type: "setupConfirmed"; payload: { players: SetupPlayerInput[]; setupChoiceId?: never } } | { type: "phaseStepConfirmed"; payload: { stepId: string; actionRef?: FirstNightActionRef; abilityUse?: AbilityUseRef; input: PhaseStepInput; information?: ConfirmedInformation } } | { type: "customActionConfirmed"; payload: CustomActionConfirmedPayload });
 
 
 export type Phase = "setup" | "firstNight" | "day" | "night";

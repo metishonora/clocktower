@@ -158,5 +158,5 @@ export function isGuidanceCause(v: unknown): boolean {
 }
 export function isCustomGameEnd(v: unknown): boolean {
   return isRecord(v) && hasExactKeys(v, ["winningAlignment", "reason", "sourceEventId"]) &&
-    (v.winningAlignment === "good" || v.winningAlignment === "evil") && v.reason === "goodTwinExecuted" && textId(v.sourceEventId);
+    (v.winningAlignment === "good" || v.winningAlignment === "evil") && ["goodTwinExecuted","saintExecuted","mayorNoExecution","vortoxNoExecution","demonAbsent","twoLivingPlayers","klutzChoice","storytellerDecision"].includes(v.reason as string) && textId(v.sourceEventId);
 }

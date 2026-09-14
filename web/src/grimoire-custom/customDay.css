@@ -1,0 +1,11 @@
+.customDayHistory{margin-top:24px;border-top:1px solid #b5a28a;padding-top:16px}.customDayHistory summary{cursor:pointer;min-height:44px}.customDayHistory ol{padding-left:22px}.customDayHistory li{padding:8px 0}.customDayHistory li span{margin-left:12px}.customDayHistory small{display:block;line-height:1.6}
+.customGrimoirePlay .customDayTask { min-height: 0; padding: clamp(20px, 3vw, 32px); color: var(--bmr-ink); background: var(--bmr-card); border: 1px solid var(--bmr-line); }
+.customGrimoirePlay .customDayTask h3 { margin: 0 0 20px; font-size: clamp(1.8rem, 3vw, 2.5rem); line-height: 1.25; }
+.customDayTask .issue116CandidateSummary { margin: 8px 0 16px; }
+.customDayTask .issue116CandidateSummary strong, .customDayTask .issue116CandidateSummary span { min-height: 64px; padding: 12px 18px; color: var(--bmr-ink); font-size: 1.1rem; }
+.customDayTask .snvStepActions { margin-top: 16px; }
+.customDayRecordedAbility { margin-top: 16px; }
+.customDayRecordedAbility p { overflow-wrap: anywhere; }
+.customDayTask .issue116ExecutionTarget { min-width: 0; }
+@media(max-width:540px) { .customDayTask .issue116CandidateSummary { grid-template-columns: 1fr; gap: 8px; } }
+.customDayFormLock { min-width:0; margin:0; padding:0; border:0; }

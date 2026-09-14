@@ -17,6 +17,12 @@ it('U07: actual Dreamer target check keeps the real character and sends the sele
  const app=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await app.resumeImported({file:session.snapshot.canonical});const p=app.play!;
  render(<CustomNightTask controller={p}/>);
  await act(async()=>{p.beginSelection();p.togglePlayer('p7');await p.acceptSelection();});
+ const truth=()=>Array.from(screen.getByRole('group',{name:'대상과 진실'}).querySelectorAll('dd')).at(-1)?.textContent;
+ expect(truth()).toBe('화가');
+ await act(async()=>{p.beginSelection();p.togglePlayer('p7');p.togglePlayer('p13');await p.acceptSelection();});
+ expect(truth()).toBe('마녀');
+ await act(async()=>{p.beginSelection();p.togglePlayer('p13');p.togglePlayer('p7');await p.acceptSelection();});
+ expect(truth()).toBe('화가');
  const good=screen.getByRole('combobox',{name:'선한 캐릭터'}) as HTMLSelectElement;expect(good.value).toBe('artist');const actualCandidateLocked=good.disabled;
  fireEvent.change(screen.getByRole('combobox',{name:'악한 캐릭터'}),{target:{value:'witch'}});
  fireEvent.click(screen.getByRole('button',{name:/정보 공개$/}));

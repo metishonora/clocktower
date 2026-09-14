@@ -124,3 +124,9 @@
 /* Keep the existing BMR utility buttons readable when the extra scenario action wraps. */
 .bmrProductionShell.customBmrTheme .snvUtilityTabs { flex-wrap: wrap; }
 .bmrProductionShell.customBmrTheme .snvUtilityTabs button { white-space: nowrap; }
+
+.bmrProductionShell.customBmrTheme[data-theme=day] .snvPhaseOverview li.current {
+  color: #3b2026;
+  background: #ecd39e;
+  box-shadow: inset 4px 0 #80521d;
+}

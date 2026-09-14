@@ -7,6 +7,14 @@ export function eventPresentation(file:GameFile,event:GameEvent):string {
  const setup=file.game.events.find(e=>e.type==='setupConfirmed');
  const players=setup?.type==='setupConfirmed'?setup.payload.players:[];
  const person=(id:string|undefined)=>{const p=players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:undefined;};
+ if(event.type==='dayConfirmed'){
+  const {input,result}=event.payload;
+  if(input.kind==='nominate')return `${person(input.nominatorId)} → ${person(input.nomineeId)} · 지목`;
+  if(input.kind==='vote')return `투표 확정 · ${result.countedVoterIds.length}표`;
+  if(input.kind==='confirmDeath')return `${result.deathPlayerIds.map(person).join(' · ')} · 사망 확정`;
+  if(input.kind==='useAbility'&&result.abilityRecord){const a=result.abilityRecord.action;return `${person(a.actorPlayerId)} · ${characterPresentation(a.characterId)?.label} · 능력 기록`;}
+  return event.summary;
+ }
  const payload=event.payload,ref=payload.actionRef;
  if(!ref)return '진행 확정';
  if(ref.kind==='system')return actionLabels[ref.actionId]??'진행 확정';
