@@ -182,11 +182,14 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
     let (_, mut f) = facts(&["philosopher", "soldier"]);
     let parent = source(&f, 0);
     f.ability_grants.push(AbilityGrant {
-        owner_player_id: "p1".into(), character_id: "artist".into(), source_event_id: "choice".into(),
+        owner_player_id: "p1".into(),
+        character_id: "artist".into(),
+        source_event_id: "choice".into(),
         source_ability_instance_id: parent.ability_instance_id,
         ability_instance_id: AbilityInstanceId::new("grant", "p1"),
     });
-    let has_marker = |f: &CustomGameFacts| project(f).iter().any(|r| r.token_id == "isThePhilosopher");
+    let has_marker =
+        |f: &CustomGameFacts| project(f).iter().any(|r| r.token_id == "isThePhilosopher");
     assert!(has_marker(&f));
     f.players[1].actual_character = "artist".into();
     assert!(!has_marker(&f));
@@ -198,41 +201,97 @@ fn philosopher_identity_marker_requires_a_live_grant_without_an_original_charact
 #[test]
 fn every_supported_character_has_an_audited_reminder_policy() {
     // Explicit exclusions: a catalog addition must be reviewed instead of silently lacking tokens.
-    let no_automatic_token = ["chef", "empath", "ravenkeeper", "soldier", "mayor", "recluse", "saint",
-        "spy", "baron", "clockmaker", "dreamer", "oracle", "savant", "sage", "mutant", "klutz", "pitHag", "vortox"];
-    let subsequent_night_only = ["monk", "imp", "fangGu"];
-    let handlers = crate::characters::trouble_brewing::reminder_handlers().into_iter()
-        .chain(crate::characters::sects_and_violets::reminder_handlers()).map(|h| h.character_id)
+    let no_automatic_token = [
+        "chef",
+        "empath",
+        "ravenkeeper",
+        "soldier",
+        "mayor",
+        "recluse",
+        "saint",
+        "spy",
+        "baron",
+        "clockmaker",
+        "dreamer",
+        "oracle",
+        "savant",
+        "sage",
+        "mutant",
+        "klutz",
+        "pitHag",
+        "vortox",
+    ];
+    let subsequent_night_only = ["imp", "fangGu"];
+    let handlers = crate::characters::trouble_brewing::reminder_handlers()
+        .into_iter()
+        .chain(crate::characters::sects_and_violets::reminder_handlers())
+        .map(|h| h.character_id)
         .collect::<Vec<_>>();
     for entry in crate::characters::custom_script_catalog() {
-        let policies = [handlers.contains(&entry.id), no_automatic_token.contains(&entry.id),
-            subsequent_night_only.contains(&entry.id)];
-        assert_eq!(policies.into_iter().filter(|b| *b).count(), 1, "{} must have exactly one audited policy", entry.id);
+        let policies = [
+            handlers.contains(&entry.id),
+            no_automatic_token.contains(&entry.id),
+            subsequent_night_only.contains(&entry.id),
+        ];
+        assert_eq!(
+            policies.into_iter().filter(|b| *b).count(),
+            1,
+            "{} must have exactly one audited policy",
+            entry.id
+        );
     }
-    assert_eq!(handlers.len() + no_automatic_token.len() + subsequent_night_only.len(), 47);
+    assert_eq!(
+        handlers.len() + no_automatic_token.len() + subsequent_night_only.len(),
+        47
+    );
 }
 
 #[test]
 fn observer_markers_use_action_time_identity_and_raw_votes_then_reset_at_dawn() {
-    use crate::{day::contracts::{DayParticipant, NominationRecord}, model::CharacterKind};
+    use crate::{
+        day::contracts::{DayParticipant, NominationRecord},
+        model::CharacterKind,
+    };
     let (_, mut f) = facts(&["flowergirl", "townCrier", "scarletWoman", "vortox"]);
-    assert!(!project(&f).iter().any(|r| r.character_id == "flowergirl" || r.character_id == "townCrier"));
-    let snapshot = f.players.iter().map(|p| DayParticipant {
-        player_id: p.id.clone(), character_id: p.actual_character.clone(), alignment: p.alignment,
-        character_kind: crate::characters::character_kind(&p.actual_character).unwrap(), alive: p.alive,
-        ghost_vote_used: false, abilities: vec![], impairments: vec![],
-    }).collect::<Vec<_>>();
+    assert!(!project(&f)
+        .iter()
+        .any(|r| r.character_id == "flowergirl" || r.character_id == "townCrier"));
+    let snapshot = f
+        .players
+        .iter()
+        .map(|p| DayParticipant {
+            player_id: p.id.clone(),
+            character_id: p.actual_character.clone(),
+            alignment: p.alignment,
+            character_kind: crate::characters::character_kind(&p.actual_character).unwrap(),
+            alive: p.alive,
+            ghost_vote_used: false,
+            abilities: vec![],
+            impairments: vec![],
+        })
+        .collect::<Vec<_>>();
     let mut day = DayProgress::new(1);
     day.nominations.push(NominationRecord {
-        event_id: "nomination".into(), nominator_id: "p3".into(), nominee_id: "p2".into(),
-        nomination_participants: snapshot.clone(), vote_participants: Some(snapshot),
-        voter_ids: Some(vec!["p4".into()]), counted_voter_ids: Some(vec![]), ghost_vote_spent_player_ids: vec![],
+        event_id: "nomination".into(),
+        nominator_id: "p3".into(),
+        nominee_id: "p2".into(),
+        nomination_participants: snapshot.clone(),
+        vote_participants: Some(snapshot),
+        voter_ids: Some(vec!["p4".into()]),
+        counted_voter_ids: Some(vec![]),
+        ghost_vote_spent_player_ids: vec![],
     });
     f.day = Some(day);
     // Current identities no longer match the action-time minion and demon.
     f.players[2].actual_character = "soldier".into();
     f.players[3].actual_character = "soldier".into();
-    let ids = |f: &CustomGameFacts| project(f).into_iter().filter(|r| r.character_id == "flowergirl" || r.character_id == "townCrier").map(|r| r.token_id).collect::<Vec<_>>();
+    let ids = |f: &CustomGameFacts| {
+        project(f)
+            .into_iter()
+            .filter(|r| r.character_id == "flowergirl" || r.character_id == "townCrier")
+            .map(|r| r.token_id)
+            .collect::<Vec<_>>()
+    };
     assert_eq!(ids(&f), ["demonVoted", "minionNominated"]);
     f.day.as_mut().unwrap().stage = DayStage::Night;
     assert_eq!(ids(&f), ["demonVoted", "minionNominated"]);
@@ -241,5 +300,8 @@ fn observer_markers_use_action_time_identity_and_raw_votes_then_reset_at_dawn() 
     f.players[0].alive = false;
     f.players[1].alive = false;
     assert!(ids(&f).is_empty());
-    assert_eq!(crate::characters::character_kind("vortox"), Some(CharacterKind::Demon));
+    assert_eq!(
+        crate::characters::character_kind("vortox"),
+        Some(CharacterKind::Demon)
+    );
 }

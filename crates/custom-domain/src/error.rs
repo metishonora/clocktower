@@ -16,6 +16,7 @@ pub(crate) enum ErrorKind {
     UnsupportedCustomScriptCharacter,
     CustomScriptNotResolved,
     InvalidFirstNightOrderPlan,
+    InvalidOtherNightOrderPlan,
     FirstNightActionRegistrationInvalid,
     FirstNightActionHandlerUnavailable,
     InvalidFirstNightActionProvenance,
@@ -106,6 +107,10 @@ impl ErrorKind {
             Self::CustomScriptNotResolved => (
                 "CUSTOM_SCRIPT_NOT_RESOLVED",
                 "커스텀 시나리오 규칙을 아직 해석할 수 없습니다.",
+            ),
+            Self::InvalidOtherNightOrderPlan => (
+                "INVALID_OTHER_NIGHT_ORDER_PLAN",
+                "이후 밤 행동 순서가 올바르지 않습니다.",
             ),
             Self::InvalidFirstNightOrderPlan => (
                 "INVALID_FIRST_NIGHT_ORDER_PLAN",

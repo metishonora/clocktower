@@ -166,7 +166,7 @@ export function parseGameEvent(value: unknown): GameEvent {
 const dayValidators={ability:isAbilityUseRef,impairment:isActiveImpairment,character:isKnownCharacter,simulation:isSimulationSource};
 export function parseReplayState(value: unknown): ReplayState {
   if(isRecord(value) && value.day!==undefined && !isDayView(value.day,dayValidators))throw invalidCoreResponse();
-  if (!isRecord(value) || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
+  if (!isRecord(value) || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
@@ -178,7 +178,7 @@ function isCustomReplayScriptReference(value: unknown): boolean {
     !hasExactKeys(value, ["type", "definition"]) ||
     value.type !== "custom" ||
     !isRecord(value.definition) ||
-    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder"]) ||
+    !hasExactKeys(value.definition, ["id", "name", "characterIds", "firstNightOrder", "otherNightOrder"]) ||
     typeof value.definition.id !== "string" ||
     value.definition.id.trim().length === 0 ||
     typeof value.definition.name !== "string" ||
@@ -191,7 +191,7 @@ function isCustomReplayScriptReference(value: unknown): boolean {
   ) {
     return false;
   }
-  return isFirstNightOrderPlan(value.definition.firstNightOrder);
+  return isFirstNightOrderPlan(value.definition.firstNightOrder) && isFirstNightOrderPlan(value.definition.otherNightOrder);
 }
 
 
@@ -330,7 +330,7 @@ function isCustomPhaseStepInput(value: unknown): value is PhaseStepInput {
       "madnessCheck",
       "died",
       "mayorDecision",
-      "successorPlayerId",
+      "successorPlayerId", "chooserPlayerId",
     ]) &&
     isPhaseStepInput(value);
 }
@@ -761,6 +761,8 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
       ["Townsfolk", "Outsider", "Minion", "Demon"].includes(String(value.characterKind))) &&
     (value.allowedCharacterIds === undefined ||
       (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
+    (value.allowedChooserPlayerIds === undefined || (Array.isArray(value.allowedChooserPlayerIds) && value.allowedChooserPlayerIds.every(isString))) &&
+    (value.allowedSuccessorPlayerIds === undefined || (Array.isArray(value.allowedSuccessorPlayerIds) && value.allowedSuccessorPlayerIds.every(isString))) &&
     (value.allowedPlayerIds === undefined ||
       (Array.isArray(value.allowedPlayerIds) && value.allowedPlayerIds.every(isString))) &&
     (value.playerRegistrationOptions === undefined ||

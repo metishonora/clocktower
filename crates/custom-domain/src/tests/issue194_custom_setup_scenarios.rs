@@ -15,14 +15,14 @@ fn definition(character_ids: &[&str]) -> Value {
     json!({
         "id": "custom-setup-contract",
         "name": "Custom setup contract",
-        "characterIds": character_ids,
+        "characterIds": character_ids, "otherNightOrder": crate::tests::other_order_json(&json!(character_ids)),
         "firstNightOrder": complete_order_json(character_ids),
     })
 }
 
 fn custom_game(character_ids: &[&str], events: Value) -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": {
                 "type": "custom",
@@ -39,7 +39,7 @@ fn custom_game(character_ids: &[&str], events: Value) -> Value {
 
 fn official_game(events: Value) -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": {
                 "type": "official",
@@ -91,9 +91,12 @@ fn setup_distribution(
         "playerCount": player_count,
         "actualCharacters": actual_characters,
     });
-    let mut result: Value = serde_json::from_str(&setup_distribution_json(&request.to_string())).unwrap();
+    let mut result: Value =
+        serde_json::from_str(&setup_distribution_json(&request.to_string())).unwrap();
     // These legacy cases assert distribution rules; T11 separately covers the explanatory projection.
-    if let Some(value) = result.get_mut("value").and_then(Value::as_object_mut) { value.remove("adjustment"); }
+    if let Some(value) = result.get_mut("value").and_then(Value::as_object_mut) {
+        value.remove("adjustment");
+    }
     result
 }
 
@@ -156,6 +159,7 @@ fn custom_candidate_policy_scopes_bluffs_ability_acquisition_and_transformation(
             .map(|character_id| (*character_id).to_string())
             .collect(),
         first_night_order: complete_order(&definition_order),
+        other_night_order: crate::contracts::OtherNightOrderPlan(vec![]),
     })
     .unwrap();
 

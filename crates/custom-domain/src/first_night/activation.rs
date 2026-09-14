@@ -70,6 +70,8 @@ pub(crate) use ActivationRule as FirstNightActivationRule;
 
 /// A bounded, action-owned follow-up query. No mutable progress or raw event replay is exposed.
 pub(crate) struct FollowUpContext<'a> {
+    pub(crate) plan: &'a crate::contracts::FirstNightOrderPlan,
+    pub(crate) cursor: usize,
     pub(crate) previous_facts: &'a CustomGameFacts,
     pub(crate) next_facts: &'a CustomGameFacts,
     pub(crate) event: &'a ValidatedActionEvent,

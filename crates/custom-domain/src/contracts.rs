@@ -21,6 +21,7 @@ pub(crate) struct CustomScriptDefinition {
     pub(crate) name: String,
     pub(crate) character_ids: Vec<String>,
     pub(crate) first_night_order: FirstNightOrderPlan,
+    pub(crate) other_night_order: OtherNightOrderPlan,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -31,6 +32,8 @@ pub(crate) struct CustomScriptDefinitionDraft {
     pub(crate) character_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) first_night_order: Option<FirstNightOrderPlan>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) other_night_order: Option<OtherNightOrderPlan>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq, Hash)]
@@ -64,6 +67,11 @@ pub(crate) enum FirstNightActionRef {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 #[serde(transparent)]
 pub(crate) struct FirstNightOrderPlan(pub(crate) Vec<FirstNightActionRef>);
+
+/// Other-night order has the same semantic references but a separate phase validator.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(transparent)]
+pub(crate) struct OtherNightOrderPlan(pub(crate) Vec<FirstNightActionRef>);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -116,12 +124,19 @@ pub(crate) struct Discriminator {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub(crate) enum Command {
-    ConfirmDay { payload: crate::day::contracts::DayCommand },
-    CreateGame { payload: CreateGamePayload },
-    ConfirmStep { payload: PhaseStepCommandPayload },
+    ConfirmDay {
+        payload: crate::day::contracts::DayCommand,
+    },
+    CreateGame {
+        payload: CreateGamePayload,
+    },
+    ConfirmStep {
+        payload: PhaseStepCommandPayload,
+    },
 }
 impl Command {
-    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["createGame", "confirmStep", "confirmDay"];
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] =
+        &["createGame", "confirmStep", "confirmDay"];
     pub(crate) fn expected_event_count(&self) -> Option<usize> {
         match self {
             Self::ConfirmStep { payload } => payload.expected_event_count,
@@ -193,7 +208,12 @@ pub(crate) struct SetupCountDelta {
 }
 impl SetupCountDelta {
     pub(crate) fn outsider(amount: i32) -> Self {
-        Self { townsfolk: -amount, outsider: amount, minion: 0, demon: 0 }
+        Self {
+            townsfolk: -amount,
+            outsider: amount,
+            minion: 0,
+            demon: 0,
+        }
     }
 }
 #[derive(Debug, Serialize, PartialEq, Eq, Clone)]
@@ -474,6 +494,38 @@ pub(crate) struct GameEvent {
     deny_unknown_fields
 )]
 pub(crate) enum CustomActionResult {
+    MonkProtection {
+        target_player_id: String,
+        effective: bool,
+    },
+    NightAttack {
+        target_player_id: String,
+        killed_player_id: Option<String>,
+        died: bool,
+        identity_changes: Vec<crate::model::PlayerIdentityTransition>,
+    },
+    PitHagChange {
+        target_player_id: String,
+        character_id: String,
+        changed: bool,
+        created_demon: bool,
+    },
+    ArbitraryDeaths {
+        player_ids: Vec<String>,
+    },
+    BarberSwap {
+        player_ids: Vec<String>,
+        chooser_player_id: Option<String>,
+        effective: bool,
+    },
+    VigormortisPoison {
+        death_event_id: String,
+        target_player_id: String,
+    },
+    SweetheartDrunk {
+        target_player_id: String,
+        effective: bool,
+    },
     RedHerringAssigned {
         target_player_id: String,
     },
@@ -506,7 +558,9 @@ pub(crate) enum CustomActionResult {
         day: u16,
         effective: bool,
     },
-    MutantJudgment { result: crate::model::MadnessCheckResult },
+    MutantJudgment {
+        result: crate::model::MadnessCheckResult,
+    },
     MutantExecution {
         execute: bool,
         executed: bool,
@@ -667,6 +721,13 @@ pub(crate) struct MadnessAssignment {
     deny_unknown_fields
 )]
 pub(crate) enum ActionCause {
+    Death {
+        death_event_id: String,
+    },
+    Effect {
+        trigger_event_id: String,
+        effect_event_id: String,
+    },
     InitialPreparation {
         source_event_id: String,
     },
@@ -762,7 +823,9 @@ pub(crate) struct CustomActionConfirmedPayload {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub(crate) enum GameEventKind {
-    DayConfirmed { payload: crate::day::contracts::DayConfirmed },
+    DayConfirmed {
+        payload: crate::day::contracts::DayConfirmed,
+    },
     SetupConfirmed {
         payload: SetupEventPayload,
     },

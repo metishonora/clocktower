@@ -28,6 +28,12 @@ pub(crate) struct FirstNightProjection {
 /// not part of the custom runtime remain at their established empty values.
 pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     let mut state = RuleState::default();
+    state.unannounced_night_death_player_ids = facts
+        .players
+        .iter()
+        .filter(|p| !p.alive && !p.death_announced)
+        .map(|p| p.id.clone())
+        .collect();
     state.automatic_reminders = crate::reminders::project(facts);
     state.preparations = facts
         .preparations
@@ -75,20 +81,37 @@ pub(crate) fn first_night(
 ) -> Result<FirstNightProjection, CoreError> {
     let mut pending = project_pending_steps(plan, registry, context, progress)?;
     // A rule-owned consumer preview is not an executable scheduler candidate.
-    for predecessor in pending.iter().map(|p|p.occurrence.clone()).collect::<Vec<_>>() {
-        if let Some(step)=registry.pending_consumer(context,&predecessor)? {
-            let occurrence=crate::state::ActionOccurrence::from_step(&step)?;
-            if !pending.iter().any(|p|p.occurrence.action_ref==occurrence.action_ref&&p.occurrence.source()==occurrence.source()) {
-                pending.push(crate::first_night::ProjectedOccurrenceStep {occurrence,step});
+    for predecessor in pending
+        .iter()
+        .map(|p| p.occurrence.clone())
+        .collect::<Vec<_>>()
+    {
+        if let Some(step) = registry.pending_consumer(context, &predecessor)? {
+            let occurrence = crate::state::ActionOccurrence::from_step(&step)?;
+            if !pending.iter().any(|p| {
+                p.occurrence.action_ref == occurrence.action_ref
+                    && p.occurrence.source() == occurrence.source()
+            }) {
+                pending.push(crate::first_night::ProjectedOccurrenceStep { occurrence, step });
             }
         }
     }
-    let occurrences=pending.iter().map(|p|p.occurrence.clone()).collect::<Vec<_>>();
+    let occurrences = pending
+        .iter()
+        .map(|p| p.occurrence.clone())
+        .collect::<Vec<_>>();
     for projected in &mut pending {
-        projected.step.execution=Some(crate::first_night::execution::project(registry,context,progress,&projected.occurrence,&occurrences)?);
+        projected.step.execution = Some(crate::first_night::execution::project(
+            registry,
+            context,
+            progress,
+            &projected.occurrence,
+            &occurrences,
+        )?);
     }
-    let pending_steps=pending.iter().map(|p|p.step.clone()).collect::<Vec<_>>();
-    let (action_executions,latest_undo_unit)=crate::first_night::execution::units(progress,&pending_steps)?;
+    let pending_steps = pending.iter().map(|p| p.step.clone()).collect::<Vec<_>>();
+    let (action_executions, latest_undo_unit) =
+        crate::first_night::execution::units(progress, &pending_steps)?;
     let next_identity = progress
         .next_occurrence()
         .map(|occurrence| occurrence.identity());
@@ -108,7 +131,12 @@ pub(crate) fn first_night(
 
     let mut rows = Vec::new();
     let mut last_linked_entry = 0;
-    for (sequence, completion) in progress.completed_history.iter().enumerate() {
+    for (sequence, completion) in progress
+        .completed_history
+        .iter()
+        .filter(|c| c.occurrence.night == context.night_number())
+        .enumerate()
+    {
         let snapshot = completion
             .snapshot
             .as_ref()
@@ -131,10 +159,10 @@ pub(crate) fn first_night(
     }
 
     for (sequence, projected) in pending.into_iter().enumerate() {
-        let entry_index =
-            registry.linked_action(&projected.occurrence.action_ref)
-                .and_then(|a| plan.0.iter().position(|p| *p == a))
-                .unwrap_or(sequence);
+        let entry_index = registry
+            .linked_action(&projected.occurrence.action_ref)
+            .and_then(|a| plan.0.iter().position(|p| *p == a))
+            .unwrap_or(sequence);
         let status = if next_identity
             .as_ref()
             .is_some_and(|identity| *identity == projected.occurrence.identity())
@@ -159,7 +187,8 @@ pub(crate) fn first_night(
             .then_with(|| left.sequence.cmp(&right.sequence))
     });
     Ok(FirstNightProjection {
-        action_executions, latest_undo_unit,
+        action_executions,
+        latest_undo_unit,
         current_step,
         phase_overview: rows
             .into_iter()
@@ -284,6 +313,42 @@ pub(crate) fn event_reveal(
             information: Some(information),
             ..
         }) => {
+            let reveal_player = |id: &str| {
+                facts.player(id).map(|p| crate::contracts::RevealPlayer {
+                    player_id: p.id.clone(),
+                    seat: p.seat,
+                    name: p.name.clone(),
+                })
+            };
+            if let crate::model::InformationResult::Character {
+                character_id: revealed,
+            } = &information.delivered_result
+            {
+                let FirstNightActionRef::Character { character_id, .. } = action_ref else {
+                    return None;
+                };
+                let target = information
+                    .target_player_ids
+                    .first()
+                    .and_then(|id| reveal_player(id))?;
+                return Some(RevealPayload::CharacterInformation {
+                    kind: "characterInformation",
+                    character_id: character_id.clone(),
+                    target_player: target,
+                    revealed_character_id: revealed.clone(),
+                });
+            }
+            if let crate::model::InformationResult::PlayerPair { player_ids } =
+                &information.delivered_result
+            {
+                return Some(RevealPayload::SageInformation {
+                    kind: "sageInformation",
+                    candidate_players: player_ids
+                        .iter()
+                        .filter_map(|id| reveal_player(id))
+                        .collect(),
+                });
+            }
             if let crate::model::InformationResult::SetupInfo {
                 player_ids,
                 character_id,
@@ -332,6 +397,15 @@ pub(crate) fn event_reveal(
                             .collect(),
                         has_demon: *value,
                     });
+                }
+                if let FirstNightActionRef::Character { character_id, .. } = action_ref {
+                    if character_id != "seamstress" {
+                        return Some(RevealPayload::BooleanInformation {
+                            kind: "booleanInformation",
+                            character_id: character_id.clone(),
+                            value: *value,
+                        });
+                    }
                 }
                 Some(RevealPayload::SeamstressInformation {
                     kind: "seamstressInformation",

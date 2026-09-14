@@ -11,7 +11,7 @@ import type {
   CoreResult,
   CustomScriptDefinition,
   Proposal,
-  GameFileV4,
+  GameFileV5,
 } from "./core/types.js";
 import {
   CoalescingCustomSessionAutosaveQueue,
@@ -107,7 +107,7 @@ export class CustomCanonicalSession<SetupDraft, Presentation> {
     };
   }
 
-  static async fromFile<S, P>(file: GameFileV4, options: CustomCanonicalSessionLoadOptions<S, P> & { setupDraft: S; presentation: P }): Promise<CoreResult<CustomCanonicalSession<S, P>>> {
+  static async fromFile<S, P>(file: GameFileV5, options: CustomCanonicalSessionLoadOptions<S, P> & { setupDraft: S; presentation: P }): Promise<CoreResult<CustomCanonicalSession<S, P>>> {
     const controller = new CanonicalSessionController(file.game.script, options.core);
     const replay = await controller.replay(file);
     if (!replay.ok) return replay;
@@ -117,7 +117,7 @@ export class CustomCanonicalSession<SetupDraft, Presentation> {
   get replay(): CanonicalReplaySnapshot | undefined { return this.replayState ? structuredClone(this.replayState) : undefined; }
   retrySave = () => this.autosave.enqueue(this.currentSnapshot);
   propose(command: Command) { return this.controller.propose(this.currentSnapshot.canonical, this.replayState, command); }
-  async applyProposal(proposal: Proposal, expectedCanonical: GameFileV4): Promise<CoreResult<CustomCanonicalExecution>> {
+  async applyProposal(proposal: Proposal, expectedCanonical: GameFileV5): Promise<CoreResult<CustomCanonicalExecution>> {
     if (JSON.stringify(this.currentSnapshot.canonical) !== JSON.stringify(expectedCanonical)) {
       return { ok: false, error: { code: 'STALE_COMMAND', messageKo: '진행이 변경되었습니다. 다시 선택하세요.' } };
     }
@@ -216,7 +216,7 @@ export class CustomCanonicalSession<SetupDraft, Presentation> {
     this.currentSnapshot = {
       ...this.currentSnapshot,
       savedAt: new Date().toISOString(),
-      canonical: gameFile.schemaVersion === 4
+      canonical: gameFile.schemaVersion === 5
         ? structuredClone(gameFile)
         : createCustomGameFileFromUnexpectedLegacy(gameFile),
     };

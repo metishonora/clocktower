@@ -13,6 +13,7 @@ export type ScenarioEditorDependencies = {
   createId: () => string;
   replay?: CoreAdapter['replay'];
   loadValidator: LoadCustomDefinitionValidator;
+  proposeOtherOrder: (draft: CustomScriptDefinitionDraft) => Promise<CoreResult<CustomFirstNightPlanResult>>;
   proposeOrder: (draft: CustomScriptDefinitionDraft) => Promise<CoreResult<CustomFirstNightPlanResult>>;
   download: (json: string, filename: string) => void;
 };
@@ -99,13 +100,17 @@ export class ScenarioEditorController {
       downloadStatus: 'idle', downloadError: undefined });
     const { id, characterIds } = this.state.draft;
     try {
-      const result = await this.dependencies.proposeOrder({ id, name: this.state.draft.name.trim() ? this.state.draft.name : '새 시나리오', characterIds: [...characterIds] });
+      const draft = { id, name: this.state.draft.name.trim() ? this.state.draft.name : '새 시나리오', characterIds: [...characterIds] };
+      const [result, other] = await Promise.all([this.dependencies.proposeOrder(draft), this.dependencies.proposeOtherOrder(draft)]);
       if (request !== this.orderRequest) return;
       if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
+      if (!other.ok) throw new CustomDefinitionValidationError(other.error.code, other.error.messageKo);
       this.pendingOrderReset = undefined;
       const plan = reset || !this.state.draft.firstNightOrder ? result.value.plan
         : reconcileFirstNightOrder(this.state.draft.firstNightOrder, result.value.plan);
-      this.patch({ draft: { ...this.state.draft, firstNightOrder: structuredClone(plan) },
+      const otherPlan = !this.state.draft.otherNightOrder ? other.value.plan
+        : reconcileFirstNightOrder(this.state.draft.otherNightOrder, other.value.plan);
+      this.patch({ draft: { ...this.state.draft, firstNightOrder: structuredClone(plan), otherNightOrder: structuredClone(otherPlan) },
         change: this.state.change + 1, orderPending: false });
       await this.validate();
     } catch (error) {

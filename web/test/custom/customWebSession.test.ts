@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { createTestCustomScriptRepository } from "./repositorySupport.js";
 import { deepEqual, equal, ok, throws } from "node:assert/strict";
 import { test } from "vitest";
@@ -195,7 +196,7 @@ test("custom game creation snapshots its source definition instead of retaining 
 
 test("custom game creation rejects a definition without an explicit first-night order", () => {
   const source = definition("missing-order");
-  const missingOrder = { ...source, firstNightOrder: undefined } as unknown as CustomScriptDefinition;
+  const missingOrder = { ...source, firstNightOrder: undefined , otherNightOrder: otherOrderFor(source.characterIds) } as unknown as CustomScriptDefinition;
   throws(() => createCustomGameFile(missingOrder, "missing-order-game"));
 });
 
@@ -233,7 +234,7 @@ test("autosave coalesces pending changes and a durability waiter resolves only a
 });
 
 function definition(id: string): CustomScriptDefinition {
-  return {
+  return { otherNightOrder: otherOrderFor(["philosopher", "imp"]),
     id,
     name: `Definition ${id}`,
     characterIds: ["philosopher", "imp"],
@@ -296,7 +297,7 @@ function officialSession() {
     scriptId: "troubleBrewing" as const,
     savedAt: now,
     canonical: {
-      schemaVersion: 4 as const,
+      schemaVersion: 5 as const,
       game: {
         script: { type: "official" as const, scriptId: "troubleBrewing" as const },
         id: "official-game",

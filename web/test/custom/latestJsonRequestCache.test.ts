@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { equal, notEqual } from "node:assert/strict";
 
 import { test } from "vitest";
@@ -55,11 +56,11 @@ test("a replay cache includes the complete custom definition in canonical reques
     serializeReplayRequest,
   );
   const firstInput = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: {
         type: "custom",
-        definition: {
+        definition: { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker"]),
           id: "custom-stable-id",
           name: "Mixed roster",
           characterIds: ["washerwoman", "clockmaker"],
@@ -95,7 +96,7 @@ test("a replay cache includes the complete custom definition in canonical reques
       script: {
         type: "custom",
         definition: {
-          ...firstInput.game.script.definition,
+          ...firstInput.game.script.definition, otherNightOrder: otherOrderFor(["washerwoman", "imp"]),
           characterIds: ["washerwoman", "imp"],
           firstNightOrder: [
             { kind: "system", actionId: "dusk" },

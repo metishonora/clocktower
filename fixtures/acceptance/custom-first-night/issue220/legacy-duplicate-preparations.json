@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "game": {
     "script": {
       "type": "custom",
@@ -79,6 +79,71 @@
             "kind": "character",
             "characterId": "fortuneTeller",
             "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "spy",
+            "actionId": "inspectGrimoire"
+          },
+          {
+            "kind": "system",
+            "actionId": "dawn"
+          }
+        ],
+        "otherNightOrder": [
+          {
+            "kind": "system",
+            "actionId": "dusk"
+          },
+          {
+            "kind": "character",
+            "characterId": "poisoner",
+            "actionId": "choosePoisonTarget"
+          },
+          {
+            "kind": "character",
+            "characterId": "monk",
+            "actionId": "protectPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "cerenovus",
+            "actionId": "assignMadness"
+          },
+          {
+            "kind": "character",
+            "characterId": "imp",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "fangGu",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "noDashii",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "vigormortis",
+            "actionId": "attackPlayer"
+          },
+          {
+            "kind": "character",
+            "characterId": "fortuneTeller",
+            "actionId": "checkDemon"
+          },
+          {
+            "kind": "character",
+            "characterId": "undertaker",
+            "actionId": "learnExecutedCharacter"
+          },
+          {
+            "kind": "character",
+            "characterId": "juggler",
+            "actionId": "learnJuggles"
           },
           {
             "kind": "character",

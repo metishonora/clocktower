@@ -62,7 +62,7 @@ pub(super) fn game(roster: &[&str], order: &[&str]) -> Value {
         plan.push(json!({"kind":"character","characterId":character,"actionId":id}));
     }
     plan.push(json!({"kind":"system","actionId":"dawn"}));
-    let mut game = json!({"schemaVersion":4,"game":{"id":"information207","name":"information207","script":{"type":"custom","definition":{"id":"information207","name":"information207","characterIds":pool,"firstNightOrder":plan}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
+    let mut game = json!({"schemaVersion":5,"game":{"id":"information207","name":"information207","script":{"type":"custom","definition":{"id":"information207","name":"information207","characterIds":pool, "otherNightOrder": crate::tests::other_order_json(&json!(pool)),"firstNightOrder":plan}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
     let players=roster.iter().enumerate().map(|(i,c)|json!({"id":format!("p{}",i+1),"seat":i+1,"name":format!("P{}",i+1),"actualCharacter":c})).collect::<Vec<_>>();
     let result: Value = serde_json::from_str(&crate::propose_json(
         &game.to_string(),

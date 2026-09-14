@@ -49,22 +49,39 @@ impl<'a> NightScheduler<'a> {
         context: &ActionContext<'_>,
         progress: &SchedulerProgress,
     ) -> Result<Option<ActionOccurrence>, CoreError> {
-        if !progress.completed_history.iter().all(|entry| is_setup_preparation(&entry.occurrence)) {
+        if !progress
+            .completed_history
+            .iter()
+            .all(|entry| is_setup_preparation(&entry.occurrence))
+        {
             return Ok(None);
         }
-        Ok(self.registry.additional_candidates(self.plan, context, progress, false)?
-            .into_iter().next().filter(is_setup_preparation))
+        Ok(self
+            .registry
+            .additional_candidates(self.plan, context, progress, false)?
+            .into_iter()
+            .next()
+            .filter(is_setup_preparation))
     }
 
     /// Older logs prepared every owner at an entry before any owner disclosed.
     /// Replay may admit only the next such preparation at the same configured entry.
     pub(crate) fn legacy_ordered_preparation_candidate(
-        &self, context: &ActionContext<'_>, progress: &SchedulerProgress,
+        &self,
+        context: &ActionContext<'_>,
+        progress: &SchedulerProgress,
     ) -> Result<Option<ActionOccurrence>, CoreError> {
-        let Some(action) = self.plan.0.get(progress.cursor) else { return Ok(None); };
-        Ok(self.registry.additional_candidates(self.plan, context, progress, false)?
-            .into_iter().find(|o| is_setup_preparation(o)
-                && self.registry.linked_action(&o.action_ref).as_ref() == Some(action)))
+        let Some(action) = self.plan.0.get(progress.cursor) else {
+            return Ok(None);
+        };
+        Ok(self
+            .registry
+            .additional_candidates(self.plan, context, progress, false)?
+            .into_iter()
+            .find(|o| {
+                is_setup_preparation(o)
+                    && self.registry.linked_action(&o.action_ref).as_ref() == Some(action)
+            }))
     }
 
     /// Calculate initial progress from the current facts.  Dusk and every empty entry are
@@ -108,7 +125,13 @@ impl<'a> NightScheduler<'a> {
 
         let mut next = previous.clone();
         dedupe_immediate_queue(&mut next);
-        normalize_progress(self.plan, self.registry, previous_context, &mut next, self.legacy_initial)?;
+        normalize_progress(
+            self.plan,
+            self.registry,
+            previous_context,
+            &mut next,
+            self.legacy_initial,
+        )?;
         let occurrence = event.occurrence()?;
         let is_immediate = next
             .immediate_queue
@@ -145,7 +168,11 @@ impl<'a> NightScheduler<'a> {
         // This is intentionally before `admit_new_instances`: a source occurrence remains
         // complete even when its ability disappears from next facts, and re-projection cannot
         // repeat it under a replacement instance.
-        let event_stream_index = next.completed_history.len();
+        let event_stream_index = next_context
+            .rule_service
+            .facts()
+            .and_then(|f| f.canonical_event_index)
+            .unwrap_or(next.completed_history.len());
         mark_completed(&mut next, &occurrence, event.event_id(), snapshot)?;
 
         if is_required {
@@ -191,6 +218,8 @@ impl<'a> NightScheduler<'a> {
             let followups = self.registry.follow_up_candidates(
                 self.plan,
                 &super::activation::FollowUpContext {
+                    plan: self.plan,
+                    cursor: next.cursor,
                     previous_facts,
                     next_facts,
                     event,
@@ -199,6 +228,8 @@ impl<'a> NightScheduler<'a> {
             )?;
             for occurrence in followups {
                 if !next.is_terminal(&occurrence) && !next.immediate_queue.contains(&occurrence) {
+                    next.immediate_origins
+                        .push((occurrence.identity(), event.event_id().to_string()));
                     next.immediate_queue.push(occurrence);
                 }
             }
@@ -384,7 +415,11 @@ fn normalize_progress(
         return Ok(());
     }
     let required = registry.additional_candidates(plan, context, progress, false)?;
-    progress.required_queue = required.iter().filter(|o| legacy_initial || !is_setup_preparation(o)).cloned().collect();
+    progress.required_queue = required
+        .iter()
+        .filter(|o| legacy_initial || !is_setup_preparation(o))
+        .cloned()
+        .collect();
     progress.available_occurrences = if progress.required_queue.is_empty() {
         registry.additional_candidates(plan, context, progress, true)?
     } else {
@@ -406,12 +441,26 @@ fn normalize_progress(
             progress.current_occurrences.clear();
             continue;
         }
-        let first_owner = project_occurrences(action_ref, registry, context)?.into_iter()
-            .find(|o| !progress.is_terminal(o) && !progress.immediate_queue.iter().any(|q| q.identity() == o.identity()));
-        progress.required_queue = required.iter().filter(|o| {
-            is_setup_preparation(o) && registry.linked_action(&o.action_ref).as_ref() == Some(action_ref)
-                && first_owner.as_ref().is_none_or(|owner| owner.source() == o.source())
-        }).cloned().collect();
+        let first_owner = project_occurrences(action_ref, registry, context)?
+            .into_iter()
+            .find(|o| {
+                !progress.is_terminal(o)
+                    && !progress
+                        .immediate_queue
+                        .iter()
+                        .any(|q| q.identity() == o.identity())
+            });
+        progress.required_queue = required
+            .iter()
+            .filter(|o| {
+                is_setup_preparation(o)
+                    && registry.linked_action(&o.action_ref).as_ref() == Some(action_ref)
+                    && first_owner
+                        .as_ref()
+                        .is_none_or(|owner| owner.source() == o.source())
+            })
+            .cloned()
+            .collect();
         if !progress.required_queue.is_empty() {
             progress.available_occurrences.clear();
             progress.current_occurrences.clear();
@@ -470,7 +519,8 @@ fn character_entry_has_no_nonterminal_occurrence(
         return Ok(true);
     }
     for instance in active_instances {
-        let occurrence = ActionOccurrence::character(action_ref.clone(), instance.ability_use)?;
+        let occurrence = ActionOccurrence::character(action_ref.clone(), instance.ability_use)?
+            .in_night(context.night_number());
         let queued = progress
             .immediate_queue
             .iter()
@@ -629,7 +679,17 @@ fn admit_new_instances(
     activation: &dyn ActivationRule,
 ) -> Result<(), CoreError> {
     let mut candidates = Vec::new();
-    for (entry_index, action_ref) in plan.0.iter().enumerate() {
+    let mut actions: Vec<_> = plan.0.iter().cloned().enumerate().collect();
+    for (character_id, action_id) in super::catalog::ORDERED_ACTIONS {
+        let action = FirstNightActionRef::Character {
+            character_id: character_id.into(),
+            action_id: action_id.into(),
+        };
+        if !plan.0.contains(&action) {
+            actions.push((0, action));
+        }
+    }
+    for (entry_index, action_ref) in actions.iter().map(|(i, a)| (*i, a)) {
         let FirstNightActionRef::Character { .. } = action_ref else {
             continue;
         };
@@ -669,7 +729,8 @@ fn admit_new_instances(
                 continue;
             }
             let occurrence =
-                ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())?;
+                ActionOccurrence::character(action_ref.clone(), instance.ability_use.clone())?
+                    .in_night(next_context.night_number());
             candidates.push(NewOccurrence {
                 entry_index,
                 occurrence,
@@ -683,7 +744,8 @@ fn admit_new_instances(
     // deterministic without HashMap iteration or wall-clock data.
     candidates.sort_by(compare_new_occurrences);
 
-    for candidate in candidates {
+    for mut candidate in candidates {
+        candidate.occurrence.night = next_context.night_number();
         if progress.is_terminal(&candidate.occurrence)
             || progress
                 .immediate_queue
@@ -711,7 +773,10 @@ fn admit_new_instances(
         match decision {
             ActivationDecision::RunImmediately => {
                 if !progress.ended {
-                    progress.immediate_origins.push((candidate.occurrence.identity(), event.event_id().to_string()));
+                    progress.immediate_origins.push((
+                        candidate.occurrence.identity(),
+                        event.event_id().to_string(),
+                    ));
                     progress.immediate_queue.push(candidate.occurrence);
                 }
             }
@@ -811,12 +876,30 @@ pub(super) fn sort_additional_occurrences(
     occurrences: &mut [ActionOccurrence],
 ) {
     let index = |o: &ActionOccurrence| {
-        registry.linked_action(&o.action_ref)
+        registry
+            .linked_action(&o.action_ref)
             .or_else(|| {
-                let facts=context.rule_service.facts()?;
-                let origin=o.ability_use.as_ref().and_then(|source|crate::reducer::recorded_ability(facts,source)).map(|ability|&ability.origin);
-                let event_id=match origin {Some(AbilityOrigin::Acquired {acquisition_event_id,..})=>Some(acquisition_event_id.as_str()),_=>o.simulation_source.as_ref().map(|source|source.selection_event_id.as_str())}?;
-                facts.confirmed_actions.iter().find(|action|action.event_id==event_id).map(|action|action.occurrence.action_ref.clone())
+                let facts = context.rule_service.facts()?;
+                let origin = o
+                    .ability_use
+                    .as_ref()
+                    .and_then(|source| crate::reducer::recorded_ability(facts, source))
+                    .map(|ability| &ability.origin);
+                let event_id = match origin {
+                    Some(AbilityOrigin::Acquired {
+                        acquisition_event_id,
+                        ..
+                    }) => Some(acquisition_event_id.as_str()),
+                    _ => o
+                        .simulation_source
+                        .as_ref()
+                        .map(|source| source.selection_event_id.as_str()),
+                }?;
+                facts
+                    .confirmed_actions
+                    .iter()
+                    .find(|action| action.event_id == event_id)
+                    .map(|action| action.occurrence.action_ref.clone())
             })
             .and_then(|a| plan.0.iter().position(|p| *p == a))
             .unwrap_or(plan.0.len())

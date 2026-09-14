@@ -68,6 +68,7 @@ fn definition(character_ids: &[&str], first_night_order: Option<&[Value]>) -> Va
         "name": "Mixed first night",
         "characterIds": character_ids,
     });
+    definition["otherNightOrder"] = crate::tests::other_order_json(&definition["characterIds"]);
     if let Some(order) = first_night_order {
         definition["firstNightOrder"] = Value::Array(order.to_vec());
     }
@@ -91,7 +92,7 @@ fn plan_query(definition: Value) -> Value {
 
 fn empty_game(definition: Value) -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": { "type": "custom", "definition": definition },
             "id": "custom-first-night-game",

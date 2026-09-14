@@ -11,8 +11,8 @@ mod input;
 mod messages;
 mod model;
 mod projection;
-mod reminders;
 mod reducer;
+mod reminders;
 mod rules;
 mod setup;
 mod state;
@@ -40,7 +40,15 @@ mod effects;
 mod simulation;
 
 pub fn confirmed_event_reveal_json(game: &str, event_id: &str) -> String {
-    boundary::to_json(boundary::parse_game_file(game).and_then(|file| game::confirmed_event_reveal(file, event_id)))
+    boundary::to_json(
+        boundary::parse_game_file(game)
+            .and_then(|file| game::confirmed_event_reveal(file, event_id)),
+    )
 }
 
 mod day;
+
+/// Read-only authoring query; completed files must already carry the explicit order.
+pub fn custom_other_night_plan_json(request: &str) -> String {
+    boundary::custom_other_night_plan_json(request)
+}

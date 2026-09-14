@@ -47,7 +47,14 @@ pub(crate) fn parse_event(value: Value) -> Result<GameEvent, CoreError> {
     if !GameEventKind::DISCRIMINATORS.contains(&discriminator.kind.as_str()) {
         return Err(ErrorKind::UnsupportedEvent.into_error());
     }
-    if discriminator.kind == "dayConfirmed" && !value.as_object().is_some_and(|v|has_exact_json_keys(v,&["id","type","phase","payload","summary","createdAt"])) {
+    if discriminator.kind == "dayConfirmed"
+        && !value.as_object().is_some_and(|v| {
+            has_exact_json_keys(
+                v,
+                &["id", "type", "phase", "payload", "summary", "createdAt"],
+            )
+        })
+    {
         return Err(ErrorKind::MalformedEvent.into_error());
     }
     if discriminator.kind == "customActionConfirmed" {
@@ -134,6 +141,13 @@ fn validate_custom_action_result_json(value: &Value) -> Result<(), CoreError> {
             | "informationDelivered"
             | "simulationChoice"
             | "simulation"
+            | "monkProtection"
+            | "nightAttack"
+            | "pitHagChange"
+            | "arbitraryDeaths"
+            | "barberSwap"
+            | "sweetheartDrunk"
+            | "vigormortisPoison"
             | "redHerringAssigned"
             | "informationPrepared"
             | "preparedInformationDelivered"
@@ -345,6 +359,8 @@ fn validate_custom_step_input_json(value: &Value) -> Result<(), CoreError> {
         "died",
         "mayorDecision",
         "successorPlayerId",
+        "chooserPlayerId",
+        "poisonedPlayerId",
     ];
     if input
         .keys()
@@ -394,7 +410,7 @@ pub(crate) fn propose_json(json: &str, command: &str) -> String {
 pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
     let raw: RawGameFile =
         serde_json::from_str(json).map_err(|_| ErrorKind::MalformedGameFile.into_error())?;
-    if raw.schema_version != 4 {
+    if raw.schema_version != 5 {
         return Err(ErrorKind::UnsupportedSchemaVersion.into_error());
     }
     if raw.game.fields.contains_key("scriptId") {
@@ -429,11 +445,19 @@ pub(crate) fn parse_game_file(json: &str) -> Result<GameFile, CoreError> {
         }
     }
     Ok(GameFile {
-        schema_version: 4,
+        schema_version: 5,
         script: ScriptReference::Custom { definition },
         game: Game {
             updated_at: raw.game.updated_at,
             events,
         },
     })
+}
+
+pub(crate) fn custom_other_night_plan_json(request: &str) -> String {
+    to_json(
+        serde_json::from_str::<CustomFirstNightPlanRequest>(request)
+            .map_err(|_| ErrorKind::MalformedRequest.into_error())
+            .and_then(|r| crate::first_night::other_plan_for_draft(&r.custom_definition)),
+    )
 }

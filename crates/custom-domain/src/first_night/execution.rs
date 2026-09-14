@@ -206,7 +206,8 @@ fn project_inner(
             // Membership was frozen when the parent confirmed. Only the live contiguous suffix
             // can continue. A past source is retained as a reference in a new execution.
             if let (Some(parent), Some(latest)) = (parent_execution, latest) {
-                if parent.id == latest.id
+                if dependency.predecessor_occurrence.night == occurrence.night
+                    && parent.id == latest.id
                     && progress
                         .next_occurrence()
                         .is_some_and(|next| next == occurrence)

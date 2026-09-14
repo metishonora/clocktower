@@ -21,7 +21,9 @@ fn definition() -> Value {
         "name": "Issue 206 runtime fixture",
         "characterIds": [
             "philosopher", "washerwoman", "librarian", "undertaker", "monk", "ravenkeeper", "scarletWoman", "imp"
-        ],
+        ], "otherNightOrder": crate::tests::other_order_json(&json!([
+            "philosopher", "washerwoman", "librarian", "undertaker", "monk", "ravenkeeper", "scarletWoman", "imp"
+        ])),
         "firstNightOrder": [
             system("dusk"),
             character("philosopher", "chooseAbility"),
@@ -46,7 +48,7 @@ fn players() -> Value {
 
 fn empty_game() -> Value {
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": { "type": "custom", "definition": definition() },
             "id": "issue-206-runtime-game",
@@ -395,7 +397,10 @@ fn completed_snapshots_keep_pre_identity_system_reveals() {
         "characterIds": [
             "librarian", "dreamer", "spy", "imp", "saint", "scarletWoman", "ravenkeeper", "mayor",
             "undertaker", "monk", "soldier"
-        ],
+        ], "otherNightOrder": crate::tests::other_order_json(&json!([
+            "librarian", "dreamer", "spy", "imp", "saint", "scarletWoman", "ravenkeeper", "mayor",
+            "undertaker", "monk", "soldier"
+        ])),
         "firstNightOrder": [
             system("dusk"),
             system("demonInfo"),

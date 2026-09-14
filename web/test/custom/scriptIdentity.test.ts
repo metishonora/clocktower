@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { deepEqual, equal } from "node:assert/strict";
 
 import { test } from "vitest";
@@ -11,7 +12,7 @@ import {
 } from "../../src/custom/core/scriptIdentity.js";
 
 
-const definition: CustomScriptDefinition = {
+const definition: CustomScriptDefinition = { otherNightOrder: otherOrderFor(["washerwoman", "clockmaker", "imp"]),
   id: "custom-identity",
   name: "Mixed identity",
   characterIds: ["washerwoman", "clockmaker", "imp"],
@@ -36,7 +37,7 @@ test("complete custom ScriptReference identity is exact and ordered", () => {
   equal(sameScriptReference(reference, customReference({
     ...definition,
     firstNightOrder: [...definition.firstNightOrder].reverse(),
-  })), false);
+   otherNightOrder: otherOrderFor(definition.characterIds) })), false);
   equal(sameScriptReference(reference, { type: "official", scriptId: "troubleBrewing" } as unknown as ScriptReference), false);
 });
 
@@ -57,11 +58,11 @@ test("custom resume requires the current runtime definition to equal the immutab
   equal(customGameCanResumeWithDefinition(gameFile, {
     ...definition,
     firstNightOrder: undefined,
-  } as unknown as CustomScriptDefinition), false);
+   otherNightOrder: otherOrderFor(definition.characterIds) } as unknown as CustomScriptDefinition), false);
   equal(customGameCanResumeWithDefinition(gameFile, structuredClone(definition)), true);
 
   const official = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: { type: "official", scriptId: "troubleBrewing" },
       id: "official-game",
@@ -82,7 +83,7 @@ function customReference(value: CustomScriptDefinition): ScriptReference {
 
 function customGameFile(value: CustomScriptDefinition): GameFile {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
       script: customReference(value),
       id: "custom-game",
@@ -97,7 +98,7 @@ function customGameFile(value: CustomScriptDefinition): GameFile {
 
 function customReplayState(value: CustomScriptDefinition): ReplayState {
   return {actionExecutions:[],latestUndoUnit:null,
-    schemaVersion: 4,
+    schemaVersion: 5,
     script: { type: "custom", definition: value },
     eventCount: 0,
     phase: "setup",

@@ -1,3 +1,4 @@
+import {otherOrderFor} from './custom/otherNightFixture';
 import {it,expect} from 'vitest';
 import {writeFileSync,mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
@@ -18,6 +19,7 @@ it('generates validated start positions for production browser actions',async()=
  }
  for(const [name,action] of [['clockmaker','learnSteps'],['dreamer','learnCharacters'],['seamstress','compareAlignments'],['mathematician','learnCount']] as const){
   const d=structuredClone(scenario);if(!d.characterIds.includes(name))d.characterIds.push(name);
+ d.otherNightOrder=otherOrderFor(d.characterIds);
   d.firstNightOrder=d.firstNightOrder.filter(r=>r.actionId!==action);d.firstNightOrder.splice(3,0,{kind:'character',characterId:name,actionId:action});
   const {session}=await newScenario(d,roster.map(id=>id==='monk'?name:id));await confirmAction(session,'minionInfo',null);await confirmAction(session,'demonInfo',{characterIds:['ravenkeeper','undertaker','juggler']});
   fixtures[name]=session.snapshot.canonical;

@@ -1,10 +1,11 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { useScenarioEditor } from '../../src/custom/authoring/useScenarioEditor.js';
 import { createCustomGameFile } from '../../src/custom/storage/sessionStorage.js';
 import type { CustomScriptDefinition } from '../../src/custom/core/types.js';
 
-const definition: CustomScriptDefinition = {
+const definition: CustomScriptDefinition = { otherNightOrder: otherOrderFor(['imp']),
   id: 'http-review', name: 'HTTP 검토', characterIds: ['imp'], firstNightOrder: [
     { kind: 'system', actionId: 'dusk' }, { kind: 'system', actionId: 'minionInfo' },
     { kind: 'system', actionId: 'demonInfo' }, { kind: 'system', actionId: 'dawn' },

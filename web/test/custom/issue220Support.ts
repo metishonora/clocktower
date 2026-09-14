@@ -1,10 +1,11 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { expect, vi } from 'vitest';
 import type { CustomScriptDefinition } from '../../src/custom/core/types.js';
 import { CustomGrimoireApplicationController } from '../../src/custom/grimoire/applicationController.js';
 import { IndexedDbCustomWebSessionStorageDriver } from '../../src/custom/storage/sessionStorage.js';
 import type { GrimoireSetupDraft, GrimoirePresentationState } from '../../src/custom/grimoire/setupController.js';
 import { realWasmCore } from './realCustomWasmHarness.js';
-export const definition: CustomScriptDefinition = { id:'issue220-acceptance', name:'첫날 밤 연결',
+export const definition: CustomScriptDefinition = { otherNightOrder: otherOrderFor(['chef','empath','clockmaker','poisoner','imp','soldier','mayor','virgin']),  id:'issue220-acceptance', name:'첫날 밤 연결',
   characterIds:['chef','empath','clockmaker','poisoner','imp','soldier','mayor','virgin'],
   firstNightOrder:[{kind:'system',actionId:'dusk'},{kind:'system',actionId:'minionInfo'},{kind:'system',actionId:'demonInfo'},
     {kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'chef',actionId:'learnEvilPairs'},

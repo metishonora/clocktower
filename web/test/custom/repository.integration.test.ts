@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import { IndexedDbCustomScriptRepository } from "../../src/custom/storage/definitionRepository.js";
@@ -6,7 +7,7 @@ import { realWasmCore } from "./realCustomWasmHarness.js";
 import { loadCustomDefinitionValidator } from "../../src/custom/core/wasmClient.js";
 
 function definition(id = "repository-validation"): CustomScriptDefinition {
-  return {
+  return { otherNightOrder: otherOrderFor(["washerwoman", "imp"]),
     id,
     name: "Repository validation",
     characterIds: ["washerwoman", "imp"],
@@ -60,7 +61,7 @@ describe("Issue #198 repository uses canonical definition validation", () => {
     for (const firstNightOrder of invalidOrders) {
       await expect(repository.save({
         version: 1,
-        definition: { ...valid, firstNightOrder },
+        definition: { ...valid, firstNightOrder , otherNightOrder: otherOrderFor(valid.characterIds) },
       })).rejects.toMatchObject({ code: "CUSTOM_DEFINITION_INVALID" });
       expect(await repository.load(valid.id)).toEqual({
         status: "loaded", record: { version: 1, definition: valid },
@@ -81,7 +82,7 @@ describe("Issue #198 repository uses canonical definition validation", () => {
     const idb = new IDBFactory();
     const repository = new IndexedDbCustomScriptRepository(idb);
     const valid = definition("valid");
-    const invalid = { ...definition("broken"), firstNightOrder: [] };
+    const invalid = { ...definition("broken"), firstNightOrder: [] , otherNightOrder: otherOrderFor(definition("broken").characterIds) };
     await repository.save({ version: 1, definition: valid });
     await putRaw(idb, invalid.id, { version: 1, definition: invalid });
 

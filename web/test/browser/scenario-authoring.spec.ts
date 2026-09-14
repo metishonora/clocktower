@@ -53,7 +53,8 @@ test('creates, reorders and downloads a scenario; a fresh app imports and edits 
   await expect(page.getByRole('region', { name: '권장 구성 경고' })).toBeVisible();
   const original = await save(page);
   expect(original.filename).toBe('clocktower-scenario-밤의 _ 기록.json');
-  expect(original.json).toEqual({ type: 'clocktower-custom-scenario', version: 1, scenario: {
+  expect(original.json).toEqual({ type: 'clocktower-custom-scenario', version: 2, scenario: {
+    otherNightOrder: [{kind:'system',actionId:'dusk'},{kind:'character',characterId:'philosopher',actionId:'chooseAbility'},{kind:'character',characterId:'poisoner',actionId:'choosePoisonTarget'},{kind:'character',characterId:'imp',actionId:'attackPlayer'},{kind:'system',actionId:'dawn'}],
     name: '밤의 / 기록', characterIds: ['philosopher', 'poisoner', 'imp'], firstNightOrder: [
       { kind: 'system', actionId: 'dusk' },
       { kind: 'character', characterId: 'philosopher', actionId: 'chooseAbility' },
@@ -89,7 +90,7 @@ test('wrong file kinds and unsupported fields leave an existing production game 
   await enter(page);
   await page.getByRole('button', { name: 'JSON에서 불러온다' }).click();
   for (const buffer of [await readFile(fixture), Buffer.from('["imp"]'), Buffer.from(JSON.stringify({
-    type: 'clocktower-custom-scenario', version: 1,
+    type: 'clocktower-custom-scenario', version: 2,
     scenario: { name: 'bad', characterIds: ['imp'], firstNightOrder: [], otherNightOrder: [] },
   }))]) {
     await page.getByLabel('시나리오 JSON 파일').setInputFiles({ name: 'wrong.json', mimeType: 'application/json', buffer });
@@ -98,7 +99,8 @@ test('wrong file kinds and unsupported fields leave an existing production game 
     await expect(page.getByRole('button', { name: 'JSON 파일 선택', exact: true })).toBeEnabled();
     expect(await databaseSnapshot(page)).toEqual(before);
   }
-  const valid = Buffer.from(JSON.stringify({ type: 'clocktower-custom-scenario', version: 1, scenario: {
+  const valid = Buffer.from(JSON.stringify({ type: 'clocktower-custom-scenario', version: 2, scenario: {
+    otherNightOrder: [{kind:'system',actionId:'dusk'},{kind:'character',characterId:'imp',actionId:'attackPlayer'},{kind:'system',actionId:'dawn'}],
     name: '기존 게임과 독립', characterIds: ['imp'], firstNightOrder: [
       { kind: 'system', actionId: 'dusk' }, { kind: 'system', actionId: 'minionInfo' },
       { kind: 'system', actionId: 'demonInfo' }, { kind: 'system', actionId: 'dawn' },

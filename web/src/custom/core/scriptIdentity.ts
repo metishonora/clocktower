@@ -15,14 +15,15 @@ export function sameCustomScriptDefinition(
   return left.id === right.id
     && left.name === right.name
     && sameOrderedStrings(left.characterIds, right.characterIds)
-    && sameOrderedActions(left.firstNightOrder, right.firstNightOrder);
+    && sameOrderedActions(left.firstNightOrder, right.firstNightOrder)
+    && sameOrderedActions(left.otherNightOrder, right.otherNightOrder);
 }
 
 export function customGameCanResumeWithDefinition(
   gameFile: GameFile,
   definition: CustomScriptDefinition,
 ): boolean {
-  if (gameFile.schemaVersion !== 4 || gameFile.game.script.type !== "custom") return false;
+  if (gameFile.schemaVersion !== 5 || gameFile.game.script.type !== "custom") return false;
   return sameCustomScriptDefinition(gameFile.game.script.definition, definition);
 }
 

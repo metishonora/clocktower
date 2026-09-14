@@ -21,6 +21,11 @@ pub fn custom_script_catalog() -> String {
 }
 
 #[wasm_bindgen]
+pub fn custom_other_night_plan(request_json: &str) -> String {
+    clocktower_custom_domain::custom_other_night_plan_json(request_json)
+}
+
+#[wasm_bindgen]
 pub fn custom_first_night_plan(request_json: &str) -> String {
     clocktower_custom_domain::custom_first_night_plan_json(request_json)
 }
@@ -34,18 +39,85 @@ mod tests {
   "id": "issue-198-definition",
   "name": "Issue 198 definition",
   "characterIds": [
-    "undertaker", "monk", "ravenkeeper", "virgin", "slayer",
-    "scarletWoman", "imp", "philosopher", "washerwoman", "librarian", "chef"
+    "undertaker",
+    "monk",
+    "ravenkeeper",
+    "virgin",
+    "slayer",
+    "scarletWoman",
+    "imp",
+    "philosopher",
+    "washerwoman",
+    "librarian",
+    "chef"
   ],
   "firstNightOrder": [
-    { "kind": "system", "actionId": "dusk" },
-    { "kind": "system", "actionId": "demonInfo" },
-    { "kind": "character", "characterId": "philosopher", "actionId": "chooseAbility" },
-    { "kind": "system", "actionId": "minionInfo" },
-    { "kind": "character", "characterId": "washerwoman", "actionId": "learnTownsfolk" },
-    { "kind": "character", "characterId": "librarian", "actionId": "learnOutsider" },
-    { "kind": "character", "characterId": "chef", "actionId": "learnEvilPairs" },
-    { "kind": "system", "actionId": "dawn" }
+    {
+      "kind": "system",
+      "actionId": "dusk"
+    },
+    {
+      "kind": "system",
+      "actionId": "demonInfo"
+    },
+    {
+      "kind": "character",
+      "characterId": "philosopher",
+      "actionId": "chooseAbility"
+    },
+    {
+      "kind": "system",
+      "actionId": "minionInfo"
+    },
+    {
+      "kind": "character",
+      "characterId": "washerwoman",
+      "actionId": "learnTownsfolk"
+    },
+    {
+      "kind": "character",
+      "characterId": "librarian",
+      "actionId": "learnOutsider"
+    },
+    {
+      "kind": "character",
+      "characterId": "chef",
+      "actionId": "learnEvilPairs"
+    },
+    {
+      "kind": "system",
+      "actionId": "dawn"
+    }
+  ],
+  "otherNightOrder": [
+    {
+      "kind": "system",
+      "actionId": "dusk"
+    },
+    {
+      "kind": "character",
+      "characterId": "philosopher",
+      "actionId": "chooseAbility"
+    },
+    {
+      "kind": "character",
+      "characterId": "monk",
+      "actionId": "protectPlayer"
+    },
+    {
+      "kind": "character",
+      "characterId": "imp",
+      "actionId": "attackPlayer"
+    },
+    {
+      "kind": "character",
+      "characterId": "undertaker",
+      "actionId": "learnExecutedCharacter"
+    },
+    {
+      "kind": "system",
+      "actionId": "dawn"
+    }
   ]
 }"#;
 
@@ -117,7 +189,9 @@ mod tests {
         let replayed = replay(&custom_game(CUSTOM_DEFINITION, &format!("[{SETUP_EVENT}]")));
         assert!(replayed.contains(r#""ok":true"#), "{replayed}");
         assert!(
-            serde_json::from_str::<serde_json::Value>(&replayed).unwrap()["value"]["currentStep"]["id"] == "firstNight:system:demonInfo",
+            serde_json::from_str::<serde_json::Value>(&replayed).unwrap()["value"]["currentStep"]
+                ["id"]
+                == "firstNight:system:demonInfo",
             "{replayed}"
         );
         assert!(
@@ -264,17 +338,66 @@ mod tests {
     #[test]
     fn wasm_adapter_requires_washerwoman_preparation_before_delivery() {
         let definition = r#"{
-      "id": "issue-198-active-handler",
-      "name": "Issue 198 active handler",
-      "characterIds": ["undertaker", "monk", "ravenkeeper", "virgin", "washerwoman", "scarletWoman", "imp"],
-      "firstNightOrder": [
-        { "kind": "system", "actionId": "dusk" },
-        { "kind": "character", "characterId": "washerwoman", "actionId": "learnTownsfolk" },
-        { "kind": "system", "actionId": "minionInfo" },
-        { "kind": "system", "actionId": "demonInfo" },
-        { "kind": "system", "actionId": "dawn" }
-      ]
-    }"#;
+  "id": "issue-198-active-handler",
+  "name": "Issue 198 active handler",
+  "characterIds": [
+    "undertaker",
+    "monk",
+    "ravenkeeper",
+    "virgin",
+    "washerwoman",
+    "scarletWoman",
+    "imp"
+  ],
+  "firstNightOrder": [
+    {
+      "kind": "system",
+      "actionId": "dusk"
+    },
+    {
+      "kind": "character",
+      "characterId": "washerwoman",
+      "actionId": "learnTownsfolk"
+    },
+    {
+      "kind": "system",
+      "actionId": "minionInfo"
+    },
+    {
+      "kind": "system",
+      "actionId": "demonInfo"
+    },
+    {
+      "kind": "system",
+      "actionId": "dawn"
+    }
+  ],
+  "otherNightOrder": [
+    {
+      "kind": "system",
+      "actionId": "dusk"
+    },
+    {
+      "kind": "character",
+      "characterId": "monk",
+      "actionId": "protectPlayer"
+    },
+    {
+      "kind": "character",
+      "characterId": "imp",
+      "actionId": "attackPlayer"
+    },
+    {
+      "kind": "character",
+      "characterId": "undertaker",
+      "actionId": "learnExecutedCharacter"
+    },
+    {
+      "kind": "system",
+      "actionId": "dawn"
+    }
+  ]
+}"#;
         let event = SETUP_EVENT
             .replace(
                 r#""actualCharacter": "slayer""#,
@@ -295,13 +418,13 @@ mod tests {
 
     fn custom_game(definition: &str, events: &str) -> String {
         format!(
-            r#"{{"schemaVersion":4,"game":{{"script":{{"type":"custom","definition":{definition}}},"id":"issue-198-game","name":"Issue 198 game","createdAt":"2026-09-07T00:00:00.000Z","updatedAt":"2026-09-07T00:00:00.000Z","events":{events}}}}}"#
+            r#"{{"schemaVersion":5,"game":{{"script":{{"type":"custom","definition":{definition}}},"id":"issue-198-game","name":"Issue 198 game","createdAt":"2026-09-07T00:00:00.000Z","updatedAt":"2026-09-07T00:00:00.000Z","events":{events}}}}}"#
         )
     }
 
     fn definition_with_plan(plan: &str) -> String {
         format!(
-            r#"{{"id":"issue-198-definition","name":"Issue 198 definition","characterIds":["undertaker","monk","ravenkeeper","virgin","slayer","scarletWoman","imp","philosopher","washerwoman","librarian","chef"],"firstNightOrder":{plan}}}"#
+            r#"{{"id":"issue-198-definition","name":"Issue 198 definition","characterIds":["undertaker","monk","ravenkeeper","virgin","slayer","scarletWoman","imp","philosopher","washerwoman","librarian","chef"],"otherNightOrder":[{{"kind":"system","actionId":"dusk"}},{{"kind":"character","characterId":"philosopher","actionId":"chooseAbility"}},{{"kind":"character","characterId":"monk","actionId":"protectPlayer"}},{{"kind":"character","characterId":"imp","actionId":"attackPlayer"}},{{"kind":"character","characterId":"undertaker","actionId":"learnExecutedCharacter"}},{{"kind":"system","actionId":"dawn"}}],"firstNightOrder":{plan}}}"#
         )
     }
 

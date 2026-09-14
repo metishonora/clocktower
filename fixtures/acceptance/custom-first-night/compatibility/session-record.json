@@ -3,7 +3,7 @@
   "customScriptId": "issue-207-compatibility",
   "savedAt": "2026-09-08T00:00:00.000Z",
   "canonical": {
-    "schemaVersion": 4,
+    "schemaVersion": 5,
     "game": {
       "script": {
         "type": "custom",
@@ -36,6 +36,31 @@
             {
               "kind": "system",
               "actionId": "minionInfo"
+            },
+            {
+              "kind": "system",
+              "actionId": "dawn"
+            }
+          ],
+          "otherNightOrder": [
+            {
+              "kind": "system",
+              "actionId": "dusk"
+            },
+            {
+              "kind": "character",
+              "characterId": "monk",
+              "actionId": "protectPlayer"
+            },
+            {
+              "kind": "character",
+              "characterId": "imp",
+              "actionId": "attackPlayer"
+            },
+            {
+              "kind": "character",
+              "characterId": "undertaker",
+              "actionId": "learnExecutedCharacter"
             },
             {
               "kind": "system",

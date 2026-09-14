@@ -1,4 +1,4 @@
-import type { GameFile, GameFileV4, ScriptReference, GameEvent, SeatLayoutState } from "../core/types.js";
+import type { GameFile, GameFileV5, ScriptReference, GameEvent, SeatLayoutState } from "../core/types.js";
 import { parseGameEvent } from "../core/validation.js";
 import { parseCustomScriptDefinition } from "../core/definition.js";
 export { parseCustomScriptDefinition } from "../core/definition.js";
@@ -17,7 +17,7 @@ export function exportGameFileJson(gameFile: GameFile, exportedAt = new Date()):
 }
 
 
-export function parseGameFileJson(json: string): GameFileV4 {
+export function parseGameFileJson(json: string): GameFileV5 {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -29,11 +29,11 @@ export function parseGameFileJson(json: string): GameFileV4 {
 }
 
 
-function validateGameFile(value: unknown): GameFileV4 {
+function validateGameFile(value: unknown): GameFileV5 {
   if (!isRecord(value)) {
     throw new Error("게임 파일 형식이 올바르지 않습니다.");
   }
-  if (value.schemaVersion !== 4) {
+  if (value.schemaVersion !== 5) {
     throw new Error("지원하지 않는 게임 파일 버전입니다.");
   }
   if (!isRecord(value.game)) {
@@ -55,7 +55,7 @@ function validateGameFile(value: unknown): GameFileV4 {
   const ui = seatLayout ? { seatLayout } : undefined;
 
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     ...(ui ? { ui } : {}),
     game: {
       script,
@@ -71,7 +71,7 @@ function parseStoredScriptReference(_schemaVersion: unknown, game: Record<string
 function parseScriptReference(value: unknown): ScriptReference { if (!isRecord(value) || value.type !== "custom" || !hasExactKeys(value, ["type", "definition"])) throw malformedGameFile(); return { type: "custom", definition: parseCustomScriptDefinition(value.definition) }; }
 
 
-function canonicalGameFile(gameFile: GameFile): GameFileV4 { return validateGameFile(gameFile); }
+function canonicalGameFile(gameFile: GameFile): GameFileV5 { return validateGameFile(gameFile); }
 
 
 function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {

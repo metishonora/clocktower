@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { expect, it } from "vitest";
 import { CustomCanonicalSession } from "../../src/custom/session.js";
 import { CanonicalSessionController } from "../../src/custom/core/canonicalSessionController.js";
@@ -57,7 +58,7 @@ it("preserves completed simulation and its real source across recovery, reload a
   const seam = order.findIndex(r => r.kind === "character" && r.characterId === "seamstress");
   const entry = order.splice(seam, 1)[0]!;
   order.splice(order.findIndex(r => r.kind === "character" && r.characterId === "snakeCharmer"), 0, entry);
-  const { session, storage } = await createSession(["snakeCharmer", "artist", "mathematician", "philosopher", "noDashii", "scarletWoman", "savant"], { ...definition, firstNightOrder: order });
+  const { session, storage } = await createSession(["snakeCharmer", "artist", "mathematician", "philosopher", "noDashii", "scarletWoman", "savant"], { ...definition, firstNightOrder: order , otherNightOrder: otherOrderFor(definition.characterIds) });
   const choice = await take(session, "philosopher", { characterIds: ["seamstress"] });
   const beforeSimulation = await replayOrThrow(session.snapshot.canonical);
   const simulation = await take(session, "seamstress", { playerIds: ["p2", "p3"] }, { kind: "boolean", value: false });

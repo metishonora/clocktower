@@ -34,6 +34,7 @@ pub(crate) struct CustomFactChanges {
     preparation: bool,
     poisoner_choice: Option<crate::contracts::TargetAssignment>,
     master_choice: Option<crate::contracts::TargetAssignment>,
+    monk_protection: Option<crate::contracts::TargetAssignment>,
     game_end: Option<crate::contracts::CustomGameEnd>,
 }
 
@@ -62,6 +63,18 @@ pub(crate) struct PlayerLifeChange {
 }
 
 impl CustomFactChanges {
+    pub(crate) fn with_monk(mut self, choice: crate::contracts::TargetAssignment) -> Self {
+        self.monk_protection = Some(choice);
+        self
+    }
+    pub(crate) fn monk_protection(&self) -> Option<&crate::contracts::TargetAssignment> {
+        self.monk_protection.as_ref()
+    }
+
+    pub(crate) fn with_life_changes(mut self, changes: Vec<PlayerLifeChange>) -> Self {
+        self.life_changes = changes;
+        self
+    }
     pub(crate) fn with_audit(mut self, audit: Vec<crate::state::MalfunctionEvidence>) -> Self {
         self.audit = audit;
         self
@@ -124,6 +137,7 @@ impl CustomFactChanges {
             && !self.preparation
             && self.poisoner_choice.is_none()
             && self.master_choice.is_none()
+            && self.monk_protection.is_none()
             && self.game_end.is_none()
             && self.identity_changes.is_empty()
             && self.ability_grants.is_empty()
@@ -332,12 +346,15 @@ fn validate_envelope_fields(
     phase: Phase,
     payload: &CustomActionConfirmedPayload,
 ) -> Result<(), CoreError> {
-    if phase != Phase::FirstNight
+    if !matches!(phase, Phase::FirstNight | Phase::Night)
         || !matches!(payload.action_ref, FirstNightActionRef::Character { .. })
     {
         return Err(ErrorKind::InvalidFirstNightActionProvenance.into_error());
     }
-    if payload.input.as_ref().is_some_and(|input| input.madness_check.is_some())
+    if payload
+        .input
+        .as_ref()
+        .is_some_and(|input| input.madness_check.is_some())
         && !matches!(&payload.action_ref, FirstNightActionRef::Character { character_id, action_id }
             if character_id == "mutant" && action_id == "resolveMadnessExecution")
     {

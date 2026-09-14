@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import { CustomCanonicalSession } from "../../src/custom/session.js";
@@ -13,7 +14,7 @@ import type {
   CustomScriptDefinition,
   FirstNightActionRef,
   GameEvent,
-  GameFileV4,
+  GameFileV5,
   PhaseStepInput,
   ReplayState,
   SetupPlayerInput,
@@ -64,7 +65,7 @@ describe("Issue #206 generated custom-runtime fixture", () => {
     );
     const players = fixturePlayers(["philosopher", "washerwoman", "librarian"]);
     const { session, storage } = await createFixtureSession(definition, players);
-    const prefixes: Array<{ canonical: GameFileV4; state: ReplayState }> = [];
+    const prefixes: Array<{ canonical: GameFileV5; state: ReplayState }> = [];
     const recordPrefix = async () => {
       const canonical = session.snapshot.canonical;
       prefixes.push({ canonical, state: await fixtureReplayOrThrow(canonical) });
@@ -1068,11 +1069,11 @@ function cloneMutableEvent(event: GameEvent): MutableEvent {
   return structuredClone(event) as unknown as MutableEvent;
 }
 
-function withEvent(prefix: GameFileV4, event: MutableEvent): GameFileV4 {
+function withEvent(prefix: GameFileV5, event: MutableEvent): GameFileV5 {
   return withGameEvent(prefix, event as unknown as GameEvent);
 }
 
-function withGameEvent(prefix: GameFileV4, event: GameEvent): GameFileV4 {
+function withGameEvent(prefix: GameFileV5, event: GameEvent): GameFileV5 {
   return {
     ...prefix,
     game: {
@@ -1116,7 +1117,7 @@ async function createFixtureSession(
 async function reloadFixturePrefix(
   definition: CustomScriptDefinition,
   players: SetupPlayerInput[],
-  canonical: GameFileV4,
+  canonical: GameFileV5,
 ): Promise<ReplayState> {
   const storage = new IndexedDbCustomWebSessionStorageDriver<
     { players: SetupPlayerInput[] },
@@ -1175,7 +1176,7 @@ function fixtureDefinition(
       : system(token)),
     system("dawn"),
   ];
-  return {
+  return { otherNightOrder: otherOrderFor(uniqueCharacterIds),
     id,
     name: id,
     characterIds: uniqueCharacterIds,

@@ -1,3 +1,4 @@
+import { otherOrderFor } from './otherNightFixture.js';
 import {expect,it} from 'vitest';
 import {setup_distribution} from '../../src/generated/clocktower_custom_wasm/clocktower_custom_wasm';
 import {parseSetupDistribution} from '../../src/custom/core/validation';
@@ -28,7 +29,7 @@ it('T11 M04 selection order and duplicate IDs do not multiply modifiers',async()
 it('T11 existing insufficient-candidate errors must not become a partial success',async()=>{
  const {definition}=await t11Definition();
  const characterIds=definition.characterIds.filter(id=>!['recluse','drunk','saint','butler','mutant','sweetheart','barber','klutz'].includes(id));
- const customDefinition={...definition,characterIds,firstNightOrder:definition.firstNightOrder.filter(r=>r.kind!=='character'||characterIds.includes(r.characterId))};
+ const customDefinition={ ...definition, otherNightOrder: otherOrderFor(characterIds),characterIds,firstNightOrder:definition.firstNightOrder.filter(r=>r.kind!=='character'||characterIds.includes(r.characterId))};
  const result=JSON.parse(setup_distribution(JSON.stringify({customDefinition,playerCount:7,actualCharacters:['fangGu']})));
  expect(result.ok).toBe(false);expect(result.error.code).toBe('INSUFFICIENT_SETUP_ROSTER');
 });

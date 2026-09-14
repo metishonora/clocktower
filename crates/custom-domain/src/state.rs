@@ -16,10 +16,13 @@ use crate::{
 /// ability or an impairment's provenance.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CustomGameFacts {
+    pub(crate) canonical_event_index: Option<usize>,
+    pub(crate) night_deaths: Vec<NightDeathRecord>,
+    pub(crate) monk_protections: Vec<crate::contracts::TargetAssignment>,
     pub(crate) day: Option<crate::day::contracts::DayProgress>,
     pub(crate) scarlet_successions: Vec<ScarletSuccession>,
     pub(crate) past_days: Vec<crate::day::contracts::DayProgress>,
-    pub(crate) day_ability_first_days: Vec<(String,u32)>,
+    pub(crate) day_ability_first_days: Vec<(String, u32)>,
     pub(crate) prefix_event_id: String,
     pub(crate) poisoner_choices: Vec<crate::contracts::TargetAssignment>,
     pub(crate) master_choices: Vec<crate::contracts::TargetAssignment>,
@@ -52,6 +55,14 @@ pub(crate) struct AbilityProvenance {
 }
 
 impl CustomGameFacts {
+    /// Derived from canonical day/night transitions, never stored as a second counter.
+    pub(crate) fn night_number(&self) -> u32 {
+        self.day
+            .as_ref()
+            .map(|day| day.day + u32::from(day.stage == crate::day::contracts::DayStage::Night))
+            .unwrap_or(1)
+    }
+
     pub(crate) fn from_players(players: Vec<Player>) -> Self {
         let ability_provenance = players
             .iter()
@@ -107,8 +118,12 @@ pub(crate) struct ConfirmedActionFact {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum MalfunctionOutcome {
-    DayInformation { truthful_count: u8 },
-    InvalidSavantPattern { truthful_count: u8 },
+    DayInformation {
+        truthful_count: u8,
+    },
+    InvalidSavantPattern {
+        truthful_count: u8,
+    },
     IncorrectInformation {
         delivered_result: crate::model::InformationResult,
     },
@@ -118,6 +133,8 @@ pub(crate) enum MalfunctionOutcome {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FailedEffect {
+    DemonDeath,
+    PitHagCharacterChange,
     PoisonerPoison,
     ButlerMaster,
     MutantExecution,
@@ -148,6 +165,7 @@ pub(crate) struct MalfunctionEvidence {
 /// ability instance.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ActionOccurrence {
+    pub(crate) night: u32,
     pub(crate) action_ref: FirstNightActionRef,
     pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
@@ -163,6 +181,30 @@ pub(crate) enum ActionSource {
 }
 
 impl ActionOccurrence {
+    pub(crate) fn in_night(mut self, night: u32) -> Self {
+        self.night = night;
+        self
+    }
+    /// Core-owned encoding. Consumers treat Step IDs as opaque. The full identity is
+    /// regenerated and checked; a prefix alone never authorizes an occurrence.
+    pub(crate) fn with_step_id(self, step_id: &str) -> Result<Self, crate::error::CoreError> {
+        let night = if step_id.starts_with("firstNight:") {
+            1
+        } else {
+            step_id
+                .strip_prefix("night:")
+                .and_then(|s| s.split(':').next())
+                .and_then(|s| s.parse::<u32>().ok())
+                .filter(|n| *n >= 2)
+                .ok_or_else(invalid_occurrence)?
+        };
+        let value = self.in_night(night);
+        if value.step_id()? != step_id {
+            return Err(invalid_occurrence());
+        }
+        Ok(value)
+    }
+
     pub(crate) fn from_step(step: &PhaseStep) -> Result<Self, crate::error::CoreError> {
         let occurrence = Self::from_all_parts(
             step.action_ref.clone().ok_or_else(invalid_occurrence)?,
@@ -171,6 +213,7 @@ impl ActionOccurrence {
             step.follow_up_cause.clone(),
             step.action_cause.clone(),
         )?;
+        let occurrence = occurrence.with_step_id(&step.id)?;
         if occurrence.step_id()? != step.id {
             return Err(invalid_occurrence());
         }
@@ -200,6 +243,7 @@ impl ActionOccurrence {
         action_cause: Option<crate::contracts::ActionCause>,
     ) -> Result<Self, crate::error::CoreError> {
         let value = Self {
+            night: 1,
             action_ref,
             ability_use,
             simulation_source,
@@ -242,6 +286,11 @@ impl ActionOccurrence {
         if let Some(cause) = &value.action_cause {
             use crate::contracts::ActionCause;
             let valid = match cause {
+                ActionCause::Effect {
+                    trigger_event_id,
+                    effect_event_id,
+                } => !trigger_event_id.trim().is_empty() && !effect_event_id.trim().is_empty(),
+                ActionCause::Death { death_event_id } => !death_event_id.trim().is_empty(),
                 ActionCause::InitialPreparation { source_event_id } => {
                     !source_event_id.trim().is_empty()
                 }
@@ -319,6 +368,7 @@ impl ActionOccurrence {
 
     pub(crate) fn identity(&self) -> ActionOccurrenceIdentity {
         ActionOccurrenceIdentity {
+            night: self.night,
             action_ref: self.action_ref.clone(),
             ability_use: self.ability_use.clone(),
             simulation_source: self.simulation_source.clone(),
@@ -377,6 +427,12 @@ impl ActionOccurrence {
                 &serde_json::to_string(cause).map_err(|_| invalid_occurrence())?,
             ));
         }
+        if self.night == 0 {
+            return Err(invalid_occurrence());
+        }
+        if self.night > 1 {
+            id = id.replacen("firstNight:", &format!("night:{}:", self.night), 1);
+        }
         Ok(id)
     }
 }
@@ -397,6 +453,7 @@ fn invalid_occurrence() -> crate::error::CoreError {
 /// wording or required input, and is therefore safe to use as a completion key.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ActionOccurrenceIdentity {
+    pub(crate) night: u32,
     pub(crate) action_ref: FirstNightActionRef,
     pub(crate) ability_use: Option<AbilityUseRef>,
     pub(crate) simulation_source: Option<crate::contracts::PhilosopherSimulationSource>,
@@ -563,4 +620,18 @@ fn system_action_id(
 pub(crate) struct ScarletSuccession {
     pub(crate) source: AbilityUseRef,
     pub(crate) event_id: String,
+}
+
+/// Frozen before a night death changes ownership, life or persistent effects.
+#[derive(Debug, Clone)]
+pub(crate) struct NightDeathRecord {
+    pub(crate) event_id: String,
+    pub(crate) night: u32,
+    pub(crate) player: Player,
+    pub(crate) source: ActionOccurrence,
+    pub(crate) abilities: Vec<AbilityUseRef>,
+    pub(crate) guidance: Vec<crate::simulation::Guidance>,
+    pub(crate) effective_abilities: Vec<AbilityUseRef>,
+    pub(crate) impairments: Vec<crate::contracts::ActiveImpairment>,
+    pub(crate) resolved_impairments: Vec<DurableImpairment>,
 }

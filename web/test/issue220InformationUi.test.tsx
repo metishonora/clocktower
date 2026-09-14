@@ -1,3 +1,4 @@
+import {otherOrderFor} from './custom/otherNightFixture';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach,beforeEach,expect,it,vi } from 'vitest';
 import { act,cleanup,fireEvent,render,screen,waitFor } from '@testing-library/react';
@@ -70,6 +71,7 @@ it('A06: missing setup candidate contract blocks UI confirmation and preserves c
 
 it('A03: acquired Washerwoman preparation must lead to a usable delivery UI',async()=>{
  const definition=structuredClone(scenario);definition.characterIds.push('philosopher');definition.firstNightOrder.splice(3,0,{kind:'character',characterId:'philosopher',actionId:'chooseAbility'});
+ definition.otherNightOrder=otherOrderFor(definition.characterIds);
  const {session}=await newScenario(definition,userRoster.map(id=>id==='washerwoman'?'philosopher':id));
  await confirmAction(session,'minionInfo',null);await confirmAction(session,'demonInfo',{characterIds:['ravenkeeper','undertaker','juggler']});await confirmAction(session,'chooseAbility',{characterIds:['washerwoman']});
  await confirmAction(session,'prepareInformation',{playerIds:['p6','p8'],characterId:'monk',correctPlayerId:'p6'});

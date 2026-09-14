@@ -1,6 +1,6 @@
-pub(crate) mod execution;
 mod activation;
 pub(crate) mod catalog;
+pub(crate) mod execution;
 #[cfg(any(test, feature = "custom-runtime-fixtures"))]
 mod fixtures;
 mod plan;
@@ -12,7 +12,7 @@ pub(crate) use activation::{
     ActivationContext, ActivationDecision, ActivationRule, FirstNightActivationRule,
     FollowUpContext, FollowUpRule, NoActionActivation,
 };
-pub(crate) use plan::{plan_for_definition, plan_for_draft};
+pub(crate) use plan::{other_plan_for_draft, plan_for_definition, plan_for_draft};
 #[cfg(test)]
 pub(crate) use registry::fixture_action_registry;
 #[allow(unused_imports)]

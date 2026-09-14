@@ -122,6 +122,7 @@ core.setupDistribution(requestJson) -> distributionJson
 core.suggestPhaseInput(gameFileJson, requestJson) -> phaseInputSuggestionJson
 core.customScriptCatalog() -> CustomScriptCatalogEntry[]
 core.customFirstNightPlan(requestJson) -> CustomFirstNightPlanResult
+core.customOtherNightPlan(requestJson) -> CustomFirstNightPlanResult
 ```
 
 `propose` checks the schema version, validates a Storyteller command against the current event log, and returns a proposal containing the canonical event, warnings, computed result, and follow-up step hints when relevant.
@@ -310,9 +311,9 @@ evolving. After S&V behavior is complete, reassess Trouble Brewing against the p
 extract only concepts that are genuinely shared. Until then, keep the script-selection interface
 narrow and do not introduce a generic rules DSL or cross-script reducer abstraction.
 
-### Custom First-Night Action Runtime
+### Custom Night Action Runtime
 
-A persisted custom definition contains a required complete `firstNightOrder`. The plan is ordered
+A persisted custom definition contains required complete `firstNightOrder` and `otherNightOrder` plans. The plan is ordered
 over stable semantic references rather than over players or current assignments:
 
 ```ts
@@ -853,6 +854,7 @@ type CustomScriptDefinition = {
   name: string;
   characterIds: string[];
   firstNightOrder: FirstNightActionRef[];
+  otherNightOrder: FirstNightActionRef[];
 };
 
 type CustomScriptDefinitionDraft = {
@@ -860,6 +862,7 @@ type CustomScriptDefinitionDraft = {
   name: string;
   characterIds: string[];
   firstNightOrder?: FirstNightActionRef[];
+  otherNightOrder?: FirstNightActionRef[];
 };
 
 type ScriptReference =
@@ -867,7 +870,7 @@ type ScriptReference =
   | { type: "custom"; definition: CustomScriptDefinition };
 
 type GameFile = {
-  schemaVersion: 4;
+  schemaVersion: 4; // Official files. CustomGameFile uses schemaVersion: 5.
   exportedAt?: string;
   game: {
     script: ScriptReference;
@@ -905,12 +908,12 @@ There is one active custom game session per stable ID. Its schema-v4 `GameFile.g
 an immutable copy of the definition used when the game was created. Editing the repository record
 therefore neither mutates nor deletes the active game. Resume is available only when the current
 runtime definition exactly matches that embedded snapshot: stable ID, name, ordered Character IDs,
-and the complete ordered `firstNightOrder` must all match. Repository metadata is excluded from this
+and both complete ordered night plans must all match. Repository metadata is excluded from this
 comparison, and reverting the definition exactly restores resume eligibility. Explicitly starting
 a new game replaces the active session for that stable ID.
 
 The canonical definition in a stored custom repository record, session, or completed runtime always
-contains a valid complete `firstNightOrder`. A missing order is invalid on load or resume and is not
+contains both valid complete night orders. A missing order is invalid on load or resume and is not
 filled from the authoring proposal or repaired by migration.
 
 The definition repository prepares the WASM validator before opening IndexedDB transactions, then
@@ -941,7 +944,7 @@ opens it. A schema-version-2 file without `scriptId` is interpreted as Trouble B
 requires one known official `scriptId`. TypeScript normalizes both legacy forms to a schema-v4
 official reference. Schema v4 requires exactly one `game.script` arm and rejects legacy
 `game.scriptId`; a custom definition contains a non-blank ID and name plus an ordered, exactly
-unique array of non-blank Character IDs plus a valid complete `firstNightOrder`. Registry membership
+unique array of non-blank Character IDs plus both valid complete night orders (custom schema v5). Registry membership
 is checked separately. A custom import with a missing or invalid order is rejected as a whole file;
 import never fills the order from the authoring default, migrates it, or installs a successfully
 replayed prefix or partial state. Schema version 1, script-aware version-2 files, wrong-script
@@ -974,10 +977,10 @@ an official UI helper, catalog, validator, or game runtime. Custom-owned present
 supplies labels, descriptions, and paths to static character artwork. Support membership and
 kind still come exclusively from the generated custom catalog.
 
-A portable scenario file is `{ type: "clocktower-custom-scenario", version: 1, scenario: {
-name, characterIds, firstNightOrder } }`. Version 1 is a first-night-only file contract, independent
+A portable scenario file is `{ type: "clocktower-custom-scenario", version: 2, scenario: {
+name, characterIds, firstNightOrder, otherNightOrder } }`. This two-order contract is independent
 of GameFile schema and repository versions. It contains neither the local definition ID nor
-metadata, roster, events, session state, or other-night data. Names and array order are preserved;
+metadata, roster, events, or session state. Names and array order are preserved;
 only the suggested download filename is sanitized. Unknown fields, unsupported versions, and
 other file kinds are rejected rather than discarded or converted.
 
@@ -1048,10 +1051,46 @@ source into a reference. Ordinary `JoinPendingOrder` acquisition does not join i
 The read-only DTOs are `PhaseStep.execution`, `ReplayState.actionExecutions` and `latestUndoUnit`.
 The last confirmed event ID identifies an Undo unit, invalidating confirmations made before a child event.
 The browser validates the complete event contents/IDs, game and definition before removing that suffix.
-No execution metadata is persisted: canonical GameFile/schemaVersion 4 and event envelopes are unchanged.
+No execution metadata is persisted. Custom canonical GameFile uses schemaVersion 5; official GameFile remains version 4.
 The controller awaits autosave before continuation or notification. Failed saves retain the confirmed prefix;
 retry can restore a private notification prompt but never opens a public reveal automatically.
 
 The original BMR Undo button is shared by BMR and custom, including its native confirmation and empty state.
 New Scenario retires setup/play/writer/request ownership, remounts an empty authoring instance and clears only
 the navigation marker. Existing save records are preserved until a new game's ordinary save replaces its slot.
+
+
+### Custom repeated nights (#225)
+
+The shared custom scheduler in `first_night/` runs both phases. `game.rs` selects the definition's
+first-night plan during FirstNight and its other-night plan after a confirmed Day `beginNight`.
+The latter admits dusk/dawn only as system boundaries, with the exact ordered/conditional action
+set in `catalog.rs`. Ravenkeeper, Sage, Sweetheart, Scarlet Woman and Pit-Hag/Vigormortis effect
+consequences are event-caused, not editable order entries. Barber is ordered when its opportunity
+already exists, and immediate when a death occurs after its entry has passed.
+
+`customOtherNightPlan` is an authoring-only query with the same explicit/default source contract
+as `customFirstNightPlan`. Complete definitions require both arrays; runtime, import, storage and
+resume never supply either default. The checked-in order and its source revision live together in
+`catalog.rs`. Portable custom scenario files are v2 and custom game files are v5. Old custom formats
+are rejected without migration or replacement of a valid stored session. Official codecs stay unchanged.
+
+Occurrences add a replay-derived night number to semantic action, actual/simulated ability source
+and cause. First-night IDs remain stable; later IDs start `night:<number>:`. New cycles reset cursor,
+queues and completion membership while retaining confirmed history, ability provenance, spent uses
+and rule-owned effects. Instant start-information acquisition may run outside the other-night plan;
+ordinary acquisitions join pending entries or defer to their next eligible night. Demon replacements
+created by an attack cannot attack again that night.
+
+Night deaths retain their event source, original abilities, simulation guidance and impairment
+snapshot. Character handlers decide which parts are frozen and which target eligibility is evaluated
+at resolution. The same typed result is recomputed for proposal and replay validation. Prior reveals
+come from confirmed snapshots; later identity changes never recalculate them. Daytime information
+uses #223 participant/ability records, including their historical registration sources. At dawn,
+existing daytime game-end confirmation handles a resolved win condition and blocks ordinary progress.
+
+The existing execution/Undo calculator combines night history and all day histories in canonical
+stream order. An immediate consequence shares its origin's contiguous Undo unit; a later independent
+entry or new night's use does not. No queue, cycle plan, reveal recomputation policy or Undo grouping
+is implemented in TypeScript. Input projections include legal Barber chooser and Imp successor IDs;
+#222 owns their eventual visible controls and the other-night editor.

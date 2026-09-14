@@ -176,6 +176,141 @@
           "kind": "system",
           "actionId": "dawn"
         }
+      ],
+      "otherNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "monk",
+          "actionId": "protectPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "pitHag",
+          "actionId": "changeCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "fangGu",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "noDashii",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vortox",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vigormortis",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "barber",
+          "actionId": "swapCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "undertaker",
+          "actionId": "learnExecutedCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "flowergirl",
+          "actionId": "learnDemonVoted"
+        },
+        {
+          "kind": "character",
+          "characterId": "townCrier",
+          "actionId": "learnMinionNominated"
+        },
+        {
+          "kind": "character",
+          "characterId": "oracle",
+          "actionId": "learnDeadEvilCount"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "juggler",
+          "actionId": "learnJuggles"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
       ]
     },
     "setupInput": {
@@ -443,6 +578,141 @@
           "kind": "character",
           "characterId": "seamstress",
           "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ],
+      "otherNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "monk",
+          "actionId": "protectPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "pitHag",
+          "actionId": "changeCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "fangGu",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "noDashii",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vortox",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vigormortis",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "barber",
+          "actionId": "swapCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "undertaker",
+          "actionId": "learnExecutedCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "flowergirl",
+          "actionId": "learnDemonVoted"
+        },
+        {
+          "kind": "character",
+          "characterId": "townCrier",
+          "actionId": "learnMinionNominated"
+        },
+        {
+          "kind": "character",
+          "characterId": "oracle",
+          "actionId": "learnDeadEvilCount"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "juggler",
+          "actionId": "learnJuggles"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
         },
         {
           "kind": "character",
@@ -736,6 +1006,141 @@
           "kind": "system",
           "actionId": "dawn"
         }
+      ],
+      "otherNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "monk",
+          "actionId": "protectPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "pitHag",
+          "actionId": "changeCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "fangGu",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "noDashii",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vortox",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vigormortis",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "barber",
+          "actionId": "swapCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "undertaker",
+          "actionId": "learnExecutedCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "flowergirl",
+          "actionId": "learnDemonVoted"
+        },
+        {
+          "kind": "character",
+          "characterId": "townCrier",
+          "actionId": "learnMinionNominated"
+        },
+        {
+          "kind": "character",
+          "characterId": "oracle",
+          "actionId": "learnDeadEvilCount"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "juggler",
+          "actionId": "learnJuggles"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
       ]
     },
     "setupInput": {
@@ -988,6 +1393,141 @@
           "kind": "character",
           "characterId": "seamstress",
           "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "spy",
+          "actionId": "inspectGrimoire"
+        },
+        {
+          "kind": "character",
+          "characterId": "mathematician",
+          "actionId": "learnCount"
+        },
+        {
+          "kind": "system",
+          "actionId": "dawn"
+        }
+      ],
+      "otherNightOrder": [
+        {
+          "kind": "system",
+          "actionId": "dusk"
+        },
+        {
+          "kind": "character",
+          "characterId": "philosopher",
+          "actionId": "chooseAbility"
+        },
+        {
+          "kind": "character",
+          "characterId": "poisoner",
+          "actionId": "choosePoisonTarget"
+        },
+        {
+          "kind": "character",
+          "characterId": "snakeCharmer",
+          "actionId": "choosePlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "monk",
+          "actionId": "protectPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "witch",
+          "actionId": "chooseCursedPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "cerenovus",
+          "actionId": "assignMadness"
+        },
+        {
+          "kind": "character",
+          "characterId": "pitHag",
+          "actionId": "changeCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "imp",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "fangGu",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "noDashii",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vortox",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "vigormortis",
+          "actionId": "attackPlayer"
+        },
+        {
+          "kind": "character",
+          "characterId": "barber",
+          "actionId": "swapCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "empath",
+          "actionId": "learnEvilNeighbors"
+        },
+        {
+          "kind": "character",
+          "characterId": "fortuneTeller",
+          "actionId": "checkDemon"
+        },
+        {
+          "kind": "character",
+          "characterId": "undertaker",
+          "actionId": "learnExecutedCharacter"
+        },
+        {
+          "kind": "character",
+          "characterId": "dreamer",
+          "actionId": "learnCharacters"
+        },
+        {
+          "kind": "character",
+          "characterId": "flowergirl",
+          "actionId": "learnDemonVoted"
+        },
+        {
+          "kind": "character",
+          "characterId": "townCrier",
+          "actionId": "learnMinionNominated"
+        },
+        {
+          "kind": "character",
+          "characterId": "oracle",
+          "actionId": "learnDeadEvilCount"
+        },
+        {
+          "kind": "character",
+          "characterId": "seamstress",
+          "actionId": "compareAlignments"
+        },
+        {
+          "kind": "character",
+          "characterId": "juggler",
+          "actionId": "learnJuggles"
+        },
+        {
+          "kind": "character",
+          "characterId": "butler",
+          "actionId": "chooseMaster"
         },
         {
           "kind": "character",

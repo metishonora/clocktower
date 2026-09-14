@@ -60,7 +60,10 @@ fn event(
         action_cause: None,
         delivered_result: None,
         registration_judgments: vec![],
-        step_id: format!("firstNight:{character_id}:{id}"),
+        step_id: crate::state::ActionOccurrence::character(action_ref.clone(), ability_use.clone())
+            .unwrap()
+            .step_id()
+            .unwrap(),
         action_ref: action_ref.clone(),
         ability_use: Some(ability_use),
         input: None,

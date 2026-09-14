@@ -426,6 +426,8 @@ pub(crate) type StepInput = Option<StepInputFields>;
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StepInputFields {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) chooser_player_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) madness_check: Option<MadnessCheckResult>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) correct_player_id: Option<String>,
@@ -564,6 +566,10 @@ pub(crate) struct RequiredInput {
     pub(crate) mayor_decision: Option<MayorDecisionPrompt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) demon_succession: Option<DemonSuccessionPrompt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) allowed_chooser_player_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) allowed_successor_player_ids: Option<Vec<String>>,
     pub(crate) optional: bool,
 }
 
@@ -831,7 +837,10 @@ pub(crate) struct InformationFlow {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub(crate) enum MadnessCheckResult { Clear, Violation }
+pub(crate) enum MadnessCheckResult {
+    Clear,
+    Violation,
+}
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MadnessState {

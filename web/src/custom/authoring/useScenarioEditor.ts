@@ -10,6 +10,10 @@ export function useScenarioEditor() {
       const { loadCustomDefinitionValidator } = await import('../core/wasmClient.js');
       return loadCustomDefinitionValidator();
     },
+    proposeOtherOrder: async (draft) => {
+      const { customOtherNightPlan } = await import('../core/wasmClient.js');
+      return customOtherNightPlan(draft);
+    },
     proposeOrder: async (draft) => {
       const { customFirstNightPlan } = await import('../core/wasmClient.js');
       return customFirstNightPlan(draft);

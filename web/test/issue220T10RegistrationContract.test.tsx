@@ -1,3 +1,4 @@
+import {otherOrderFor} from './custom/otherNightFixture';
 import {afterEach,expect,it} from 'vitest';
 import {act,cleanup,fireEvent,render,screen,within,waitFor} from '@testing-library/react';
 import {CustomGrimoirePlay} from '../src/grimoire-custom/CustomGrimoirePlay';
@@ -7,6 +8,7 @@ afterEach(cleanup);
 async function start(role:'chef'|'empath'|'fortuneTeller'|'clockmaker'|'seamstress'){
  const action={chef:'learnEvilPairs',empath:'learnEvilNeighbors',fortuneTeller:'checkDemon',clockmaker:'learnSteps',seamstress:'compareAlignments'}[role];
  const definition=structuredClone(scenario);if(!definition.characterIds.includes(role))definition.characterIds.push(role);
+ definition.otherNightOrder=otherOrderFor(definition.characterIds);
  definition.firstNightOrder=definition.firstNightOrder.filter(r=>r.actionId!==action);definition.firstNightOrder.splice(3,0,{kind:'character',characterId:role,actionId:action});
  const roles=roster.map(id=>['clockmaker','seamstress'].includes(role)?id==='monk'?role:id:role==='empath'?({chef:'empath',investigator:'spy',spy:'investigator',fortuneTeller:'recluse',recluse:'fortuneTeller'}[id]??id):id);
  const {session}=await newScenario(definition,roles);await confirmAction(session,'minionInfo',null);await confirmAction(session,'demonInfo',{characterIds:['ravenkeeper','undertaker','juggler']});

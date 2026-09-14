@@ -9,7 +9,7 @@ use crate::{
     reducer::current_ability_instance,
     state::{ActionOccurrence, CustomGameFacts},
 };
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct Guidance {
     pub(crate) source: PhilosopherSimulationSource,
     pub(crate) character_id: String,
@@ -144,12 +144,22 @@ pub(crate) fn occurrences(
         .collect()
 }
 pub(crate) fn spent(facts: &CustomGameFacts, source: &PhilosopherSimulationSource) -> bool {
-    facts.past_days.iter().chain(facts.day.iter()).flat_map(|d| &d.ability_records).any(|r| r.action.simulation_source.as_ref() == Some(source) && (crate::characters::sects_and_violets::day_is_once(&r.action.character_id) || crate::characters::trouble_brewing::day_is_once(&r.action.character_id))) || facts.confirmed_actions.iter().any(|fact| {
-        fact.occurrence.simulation_source.as_ref() == Some(source)
-            && matches!(
-                fact.result,
-                CustomActionResult::Simulation { spent: true, .. }
-                    | CustomActionResult::SimulationChoice { spent: true, .. }
-            )
-    })
+    facts
+        .past_days
+        .iter()
+        .chain(facts.day.iter())
+        .flat_map(|d| &d.ability_records)
+        .any(|r| {
+            r.action.simulation_source.as_ref() == Some(source)
+                && (crate::characters::sects_and_violets::day_is_once(&r.action.character_id)
+                    || crate::characters::trouble_brewing::day_is_once(&r.action.character_id))
+        })
+        || facts.confirmed_actions.iter().any(|fact| {
+            fact.occurrence.simulation_source.as_ref() == Some(source)
+                && matches!(
+                    fact.result,
+                    CustomActionResult::Simulation { spent: true, .. }
+                        | CustomActionResult::SimulationChoice { spent: true, .. }
+                )
+        })
 }

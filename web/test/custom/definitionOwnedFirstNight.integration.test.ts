@@ -1,9 +1,10 @@
+import { otherOrderFor } from './otherNightFixture.js';
 
 import { IDBFactory } from "fake-indexeddb";
 import { expect, it } from "vitest";
 import { CustomCanonicalSession } from "../../src/custom/session.js";
 import { createCustomGameFile, IndexedDbCustomWebSessionStorageDriver } from "../../src/custom/storage/sessionStorage.js";
-import type { Command, CoreResult, CustomScriptDefinition, FirstNightOrderPlan, GameEvent, GameFile, GameFileV4, PhaseStepInput, SetupPlayerInput, SystemFirstNightActionId } from "../../src/custom/core/types.js";
+import type { Command, CoreResult, CustomScriptDefinition, FirstNightOrderPlan, GameEvent, GameFile, GameFileV5, PhaseStepInput, SetupPlayerInput, SystemFirstNightActionId } from "../../src/custom/core/types.js";
 import { realWasmCore, replayOrThrow } from "./realCustomWasmHarness.js";
 
 it("creates, saves, reloads, confirms, and event-undos with one persisted definition order", async () => {
@@ -135,7 +136,7 @@ it("rejects missing, duplicate, unknown, mismatched, or absent definition action
     ),
   ];
   for (const firstNightOrder of invalidPlans) {
-    const result = await core.replay(rawCustomGame({ ...DEFINITION, firstNightOrder }));
+    const result = await core.replay(rawCustomGame({ ...DEFINITION, firstNightOrder , otherNightOrder: otherOrderFor(DEFINITION.characterIds) }));
     expectCoreError(result, "INVALID_FIRST_NIGHT_ORDER_PLAN");
   }
 
@@ -213,7 +214,7 @@ it("rejects wrong action provenance and out-of-order confirmed events", async ()
 
 it("projects required preparation before a planned TB delivery", async () => {
   const core = realWasmCore();
-  const definition: CustomScriptDefinition = {
+  const definition: CustomScriptDefinition = { otherNightOrder: otherOrderFor(["undertaker", "monk", "ravenkeeper", "virgin", "washerwoman", "scarletWoman", "imp"]),
     id: "issue-198-active-handler",
     name: "Issue 198 active handler",
     characterIds: ["undertaker", "monk", "ravenkeeper", "virgin", "washerwoman", "scarletWoman", "imp"],
@@ -252,7 +253,19 @@ const FIRST_NIGHT_ORDER: FirstNightOrderPlan = [
 ];
 
 
-const DEFINITION: CustomScriptDefinition = {
+const DEFINITION: CustomScriptDefinition = { otherNightOrder: otherOrderFor([
+    "undertaker",
+    "monk",
+    "ravenkeeper",
+    "virgin",
+    "slayer",
+    "scarletWoman",
+    "imp",
+    "philosopher",
+    "washerwoman",
+    "librarian",
+    "chef",
+  ]),
   id: "issue-198-definition",
   name: "Issue 198 definition",
   characterIds: [
@@ -288,9 +301,9 @@ const DEMON_BLUFFS = ["washerwoman", "librarian", "chef"];
 
 function rawCustomGame(definition: unknown, events: unknown[] = []): GameFile {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     game: {
-      script: { type: "custom", definition } as GameFileV4["game"]["script"],
+      script: { type: "custom", definition } as GameFileV5["game"]["script"],
       id: "issue-198-raw-game",
       name: "Issue 198 raw game",
       createdAt: "2026-09-07T00:00:00.000Z",

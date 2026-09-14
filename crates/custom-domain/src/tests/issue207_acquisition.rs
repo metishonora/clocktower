@@ -14,7 +14,7 @@ const POOL: [&str; 10] = [
 ];
 pub(super) fn game(roster: &[&str]) -> Value {
     let order = json!([{"kind":"system","actionId":"dusk"},{"kind":"system","actionId":"minionInfo"},{"kind":"system","actionId":"demonInfo"},{"kind":"character","characterId":"philosopher","actionId":"chooseAbility"},{"kind":"character","characterId":"snakeCharmer","actionId":"choosePlayer"},{"kind":"system","actionId":"dawn"}]);
-    let mut game = json!({"schemaVersion":4,"game":{"id":"snv-207","name":"SnV","script":{"type":"custom","definition":{"id":"snv-207","name":"SnV","characterIds":POOL,"firstNightOrder":order}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
+    let mut game = json!({"schemaVersion":5,"game":{"id":"snv-207","name":"SnV","script":{"type":"custom","definition":{"id":"snv-207","name":"SnV","characterIds":POOL, "otherNightOrder": crate::tests::other_order_json(&json!(POOL)),"firstNightOrder":order}},"createdAt":"2026-09-08T00:00:00Z","updatedAt":"2026-09-08T00:00:00Z","events":[]}});
     let players=roster.iter().enumerate().map(|(i,c)|json!({"id":format!("p{}",i+1),"seat":i+1,"name":format!("P{}",i+1),"actualCharacter":c})).collect::<Vec<_>>();
     let command = json!({"type":"createGame","payload":{"players":players}});
     let proposal: Value = serde_json::from_str(&crate::propose_json(

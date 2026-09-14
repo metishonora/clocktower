@@ -19,20 +19,21 @@ fn definition(character_ids: &[&str]) -> CustomScriptDefinition {
             .map(|character_id| (*character_id).to_string())
             .collect(),
         first_night_order: complete_order(character_ids),
+        other_night_order: crate::contracts::OtherNightOrderPlan(vec![]),
     }
 }
 
 fn custom_game(character_ids: &[&str]) -> Value {
     let first_night_order = complete_order_json(character_ids);
     json!({
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "game": {
             "script": {
                 "type": "custom",
                 "definition": {
                     "id": "custom-registry-contract",
                     "name": "Registry contract",
-                    "characterIds": character_ids,
+                    "characterIds": character_ids, "otherNightOrder": crate::tests::other_order_json(&json!(character_ids)),
                     "firstNightOrder": first_night_order,
                 }
             },
