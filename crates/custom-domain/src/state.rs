@@ -16,6 +16,10 @@ use crate::{
 /// ability or an impairment's provenance.
 #[derive(Debug, Default, Clone)]
 pub(crate) struct CustomGameFacts {
+    pub(crate) day: Option<crate::day::contracts::DayProgress>,
+    pub(crate) scarlet_successions: Vec<ScarletSuccession>,
+    pub(crate) past_days: Vec<crate::day::contracts::DayProgress>,
+    pub(crate) day_ability_first_days: Vec<(String,u32)>,
     pub(crate) prefix_event_id: String,
     pub(crate) poisoner_choices: Vec<crate::contracts::TargetAssignment>,
     pub(crate) master_choices: Vec<crate::contracts::TargetAssignment>,
@@ -103,6 +107,8 @@ pub(crate) struct ConfirmedActionFact {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum MalfunctionOutcome {
+    DayInformation { truthful_count: u8 },
+    InvalidSavantPattern { truthful_count: u8 },
     IncorrectInformation {
         delivered_result: crate::model::InformationResult,
     },
@@ -120,9 +126,13 @@ pub(crate) enum FailedEffect {
     WitchCurse,
     CerenovusMadness,
     EvilTwinRelationship,
+    WitchDeath,
+    SweetheartDrunkenness,
+    VortoxExecution,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct MalfunctionEvidence {
+    pub(crate) daytime_step_id: Option<String>,
     pub(crate) cause_details: Vec<crate::model::DeliveryReason>,
     pub(crate) event_id: String,
     pub(crate) occurrence: ActionOccurrence,
@@ -547,4 +557,10 @@ fn system_action_id(
             Err(crate::error::ErrorKind::InvalidFirstNightActionProvenance.into_error())
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ScarletSuccession {
+    pub(crate) source: AbilityUseRef,
+    pub(crate) event_id: String,
 }

@@ -26,6 +26,10 @@ fn impaired_correct_information_is_not_counted_but_incorrect_information_is() {
             number(delivered),
             vec![],
         );
+        let state = replay(&game);
+        let abnormal = state["ruleState"]["automaticReminders"].as_array().unwrap().iter()
+            .filter(|r| r["characterId"] == "mathematician" && r["tokenId"] == "abnormal").count();
+        assert_eq!(abnormal, expected as usize);
         let result = take(&mut game, "mathematician", Value::Null, None, vec![]);
         assert_eq!(result["revealPayload"]["value"], expected);
     }

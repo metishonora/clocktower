@@ -76,7 +76,7 @@ pub(crate) fn impairment_candidates(
     facts
         .poisoner_choices
         .iter()
-        .filter(|choice| choice.initially_effective)
+        .filter(|choice| choice.initially_effective && day_effect_in_lifetime(facts,choice.day))
         .map(|choice| crate::effects::ImpairmentEffect {
             effect: crate::state::DurableImpairment {
                 source_ability_use: choice.ability_use.clone(),
@@ -1037,7 +1037,7 @@ impl TbHandler {
                                     vec![]
                                 },
                             ),
-                            automatic_reminders: spy_reminders(facts, &p.id),
+                            automatic_reminders: crate::reminders::for_player(facts, &p.id),
                         })
                         .collect(),
                 }
@@ -1091,6 +1091,7 @@ impl TbHandler {
             let (details, causes) = information_causes(facts, o, self.character(), &[])?;
             let audit = if !active && !causes.is_empty() {
                 vec![MalfunctionEvidence {
+                daytime_step_id: None,
                     event_id: c.event_id.into(),
                     occurrence: o.clone(),
                     subject_player_id: actor.into(),
@@ -1184,6 +1185,7 @@ impl TbHandler {
         }
         let audit = if delivered != actual && !causes.is_empty() {
             vec![MalfunctionEvidence {
+                daytime_step_id: None,
                 event_id: c.event_id.into(),
                 occurrence: o.clone(),
                 subject_player_id: actor.into(),
@@ -1282,6 +1284,7 @@ impl TbHandler {
         };
         let audit = if !actual_true && !causes.is_empty() {
             vec![MalfunctionEvidence {
+                daytime_step_id: None,
                 event_id: c.event_id.into(),
                 occurrence: o.clone(),
                 subject_player_id: actor.into(),
@@ -1599,142 +1602,7 @@ fn information_causes(
     Ok((reasons, causes))
 }
 
-pub(crate) fn spy_reminders(facts: &CustomGameFacts, player: &str) -> Vec<AutomaticReminder> {
-    let mut result = vec![];
-    let mut latest = vec![];
-    for prep in facts.preparations.iter().rev() {
-        if latest.iter().any(|o: &&ActionOccurrence| {
-            same_source(o, &prep.occurrence) && o.action_ref == prep.occurrence.action_ref
-        }) {
-            continue;
-        }
-        latest.push(&prep.occurrence);
-        let FirstNightActionRef::Character { character_id, .. } = &prep.occurrence.action_ref
-        else {
-            continue;
-        };
-        let token = match &prep.result {
-            CustomActionResult::RedHerringAssigned { target_player_id }
-                if target_player_id == player =>
-            {
-                Some("redHerring")
-            }
-            CustomActionResult::InformationPrepared { preparation } => {
-                match &preparation.information {
-                    InformationResult::SetupInfo { player_ids, .. }
-                        if preparation.correct_player_id.is_some() && player_ids.iter().any(|id| id == player) =>
-                    {
-                        Some(
-                            if preparation.correct_player_id.as_deref() == Some(player) {
-                                match character_id.as_str() {
-                                    "washerwoman" => "townsfolk",
-                                    "librarian" => "outsider",
-                                    _ => "minion",
-                                }
-                            } else {
-                                "wrong"
-                            },
-                        )
-                    }
-                    _ => None,
-                }
-            }
-            _ => None,
-        };
-        if let Some(token) = token {
-            result.push(AutomaticReminder {
-                player_id: player.into(),
-                character_id: character_id.clone(),
-                token_id: token.into(),
-                label: token.into(),
-                description: token.into(),
-                count: None,
-                inactive_reason: None,
-                source_event_id: Some(prep.event_id.clone()),
-            });
-        }
-    }
-    let mut add = |character: &str, token: &str, event: &str| {
-        result.push(AutomaticReminder {
-            player_id: player.into(),
-            character_id: character.into(),
-            token_id: token.into(),
-            label: token.into(),
-            description: token.into(),
-            count: None,
-            source_event_id: Some(event.into()),
-            inactive_reason: None,
-        })
-    };
-    if let Some(p) = facts
-        .player(player)
-        .filter(|p| p.actual_character == "drunk")
-    {
-        add("drunk", "isTheDrunk", &p.ability_instance.source_event_id);
-    }
-    for grant in facts
-        .ability_grants
-        .iter()
-        .filter(|g| g.owner_player_id == player && g.character_id == "drunk")
-    {
-        add("drunk", "isTheDrunk", &grant.source_event_id);
-    }
-    for effect in facts
-        .active_impairments
-        .iter()
-        .filter(|e| e.player_id == player)
-    {
-        add(
-            &effect.source_character_id,
-            if effect.kind == ImpairmentKind::Poisoned {
-                "poisoned"
-            } else {
-                "drunk"
-            },
-            &effect.source_event_id,
-        );
-    }
-    for choice in facts
-        .master_choices
-        .iter()
-        .filter(|c| c.target_player_id == player)
-    {
-        add("butler", "master", &choice.source_event_id);
-    }
-    for curse in facts
-        .witch_curses
-        .iter()
-        .filter(|c| c.target_player_id == player)
-    {
-        add("witch", "cursed", &curse.source_event_id);
-    }
-    for madness in facts
-        .madness_assignments
-        .iter()
-        .filter(|c| c.target_player_id == player)
-    {
-        add("cerenovus", "mad", &madness.source_event_id);
-    }
-    for twin in facts
-        .twin_relationships
-        .iter()
-        .filter(|c| c.effective && c.target_player_id == player)
-    {
-        add("evilTwin", "twin", &twin.source_event_id);
-    }
-    for used in facts
-        .ability_uses
-        .iter()
-        .filter(|c| c.ability_use.owner_player_id == player)
-    {
-        add(
-            &used.ability_use.character_id,
-            "noAbility",
-            &used.source_event_id,
-        );
-    }
-    result
-}
+
 pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
     let poison = facts
         .poisoner_choices
@@ -1749,7 +1617,7 @@ pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) {
     let masters = facts
         .master_choices
         .iter()
-        .map(|c| c.initially_effective && effective(facts, &c.ability_use))
+        .map(|c| c.initially_effective && effective(facts, &c.ability_use) && day_effect_in_lifetime(facts,c.day))
         .collect::<Vec<_>>();
     for (c, active) in facts.poisoner_choices.iter_mut().zip(poison) {
         c.effective = active;
@@ -1821,4 +1689,460 @@ fn demon_variants(facts: &CustomGameFacts, ids: &[String]) -> Vec<Vec<Registrati
         }
     }
     variants
+}
+
+/// Count submitted votes under every currently effective Butler instance. Submitted voters
+/// remain separately recorded so later information can use the facts at the vote.
+pub(crate) fn day_counted_voters(facts: &CustomGameFacts, voters: &[String]) -> Vec<String> {
+    voters
+        .iter()
+        .filter(|id| {
+            !facts.master_choices.iter().any(|choice| {
+                choice.ability_use.owner_player_id == **id
+                    && choice.effective
+                    && effective(facts, &choice.ability_use)
+                    && !voters.contains(&choice.target_player_id)
+            })
+        })
+        .cloned()
+        .collect()
+}
+
+pub(crate) fn day_actions(facts: &CustomGameFacts) -> Vec<crate::day::contracts::DayAbilityAction> {
+    if facts.day.as_ref().is_some_and(|d| d.stage == crate::day::contracts::DayStage::NightReady) { return vec![]; }
+    crate::day::ability_actions(facts, &["slayer"])
+}
+pub(crate) fn day_nomination(
+    context: &ResolvedScriptContext,
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    day: &mut crate::day::contracts::DayProgress,
+    event_id: &str,
+    nominator: &str,
+    nominee: &str,
+    spy_as_townsfolk: bool,
+) -> Result<bool, CoreError> {
+    use crate::day::contracts::{DayDeathCause, DayStage};
+    let virgin = prior.ability_provenance.iter().find(|r| {
+        r.ability_use.owner_player_id == nominee
+            && r.ability_use.character_id == "virgin"
+            && crate::reducer::current_ability_instance(prior, &r.ability_use)
+            && prior.player(nominee).is_some_and(|p| p.alive)
+            && !prior
+                .ability_uses
+                .iter()
+                .any(|u| u.ability_use == r.ability_use)
+    });
+    let Some(virgin) = virgin else {
+        if spy_as_townsfolk {
+            return Err(invalid());
+        }
+        return Ok(false);
+    };
+    let actor = prior.player(nominator).ok_or_else(invalid)?;
+    if spy_as_townsfolk
+        && !registration_source(prior, &actor.id).is_some_and(|s| s.character_id == "spy")
+    {
+        return Err(invalid());
+    }
+    next.ability_uses.push(AbilityUseRecord {
+        source_event_id: event_id.into(),
+        ability_use: virgin.ability_use.clone(),
+    });
+    if effective(prior, &virgin.ability_use)
+        && (context.character_kind(&actor.actual_character) == Some(CharacterKind::Townsfolk)
+            || spy_as_townsfolk)
+    {
+        crate::day::pending_death(
+            day,
+            nominator,
+            DayDeathCause::Virgin,
+            Some(virgin.ability_use.clone()),
+            event_id,
+            DayStage::NightReady,
+        )?;
+        return Ok(true);
+    }
+    Ok(false)
+}
+pub(crate) fn day_use_ability(
+    context: &ResolvedScriptContext,
+    prior: &CustomGameFacts,
+    day: &mut crate::day::contracts::DayProgress,
+    event_id: &str,
+    action: &crate::day::contracts::DayAbilityAction,
+    input: &crate::day::contracts::DayAbilityInput,
+) -> Result<(), CoreError> {
+    use crate::day::contracts::{DayAbilityInput, DayDeathCause};
+    let DayAbilityInput::Slayer {
+        target_player_id,
+        recluse_as_demon,
+    } = input
+    else {
+        return Err(invalid());
+    };
+    if action.character_id != "slayer" {
+        return Err(invalid());
+    }
+    let target = prior.player(target_player_id).ok_or_else(invalid)?;
+    if *recluse_as_demon
+        && !registration_source(prior, &target.id).is_some_and(|s| s.character_id == "recluse")
+    {
+        return Err(invalid());
+    }
+    let demon = context.character_kind(&target.actual_character) == Some(CharacterKind::Demon)
+        || *recluse_as_demon;
+    if action.effective && target.alive && demon {
+        crate::day::pending_death(
+            day,
+            &target.id,
+            DayDeathCause::Slayer,
+            action.ability_use.clone(),
+            event_id,
+            day.stage,
+        )?;
+    }
+    Ok(())
+}
+pub(crate) fn day_no_execution(prior: &CustomGameFacts, event_id: &str) -> Option<CustomGameEnd> {
+    if prior.players.iter().filter(|p| p.alive).count() == 3
+        && prior
+            .ability_provenance
+            .iter()
+            .any(|r| r.ability_use.character_id == "mayor" && effective(prior, &r.ability_use))
+    {
+        Some(CustomGameEnd {
+            winning_alignment: Alignment::Good,
+            reason: CustomGameEndReason::MayorNoExecution,
+            source_event_id: event_id.into(),
+        })
+    } else {
+        None
+    }
+}
+pub(crate) fn day_execution_end(
+    prior: &CustomGameFacts,
+    player_id: &str,
+    event_id: &str,
+) -> Option<CustomGameEnd> {
+    prior
+        .ability_provenance
+        .iter()
+        .any(|r| {
+            r.ability_use.owner_player_id == player_id
+                && r.ability_use.character_id == "saint"
+                && effective(prior, &r.ability_use)
+        })
+        .then(|| CustomGameEnd {
+            winning_alignment: Alignment::Evil,
+            reason: CustomGameEndReason::SaintExecuted,
+            source_event_id: event_id.into(),
+        })
+}
+pub(crate) fn day_succession(
+    context: &ResolvedScriptContext,
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    dead_id: &str,
+    event_id: &str,
+) -> Result<(), CoreError> {
+    let dead = prior.player(dead_id).ok_or_else(invalid)?;
+    if context.character_kind(&dead.actual_character) != Some(CharacterKind::Demon)
+        || prior.players.iter().filter(|p| p.alive).count() < 5
+    {
+        return Ok(());
+    }
+    let mut successors: Vec<_> = prior
+        .ability_provenance
+        .iter()
+        .filter(|r| {
+            r.ability_use.character_id == "scarletWoman"
+                && effective(prior, &r.ability_use)
+                && r.ability_use.owner_player_id != dead_id
+        })
+        .collect();
+    successors.sort_by_key(|r| prior.player(&r.ability_use.owner_player_id).map(|p| p.seat));
+    // Every owned Scarlet Woman instance receives its own identity transition.
+    for successor in successors {
+        let player = next
+            .players
+            .iter_mut()
+            .find(|p| p.id == successor.ability_use.owner_player_id)
+            .ok_or_else(invalid)?;
+        if player.actual_character == dead.actual_character {
+            continue;
+        }
+        let before = IdentityState {
+            actual_character: player.actual_character.clone(),
+            shown_character: player.shown_character.clone(),
+            alignment: player.alignment,
+        };
+        player.actual_character = dead.actual_character.clone();
+        player.shown_character = dead.actual_character.clone();
+        let after = IdentityState {
+            actual_character: player.actual_character.clone(),
+            shown_character: player.shown_character.clone(),
+            alignment: player.alignment,
+        };
+        player.ability_instance = AbilityInstance {
+            id: AbilityInstanceId::new(event_id, &player.id),
+            character_id: player.actual_character.clone(),
+            source_event_id: event_id.into(),
+        };
+        next.scarlet_successions.push(crate::state::ScarletSuccession {
+            source: successor.ability_use.clone(),
+            event_id: event_id.into(),
+        });
+        next.pending_identity_reveals.push(PendingIdentityReveal {
+            source_event_id: event_id.into(),
+            sequence: next
+                .pending_identity_reveals
+                .iter()
+                .filter(|r| r.source_event_id == event_id)
+                .count() as u8,
+            payload: RevealPayload::CharacterChange {
+                kind: "characterChange",
+                player_id: player.id.clone(),
+                alignment: if player.alignment == Alignment::Good {
+                    "good"
+                } else {
+                    "evil"
+                }
+                .into(),
+                character_id: player.shown_character.clone(),
+            },
+        });
+        player.identity_history.push(IdentityHistoryEntry {
+            source_event_id: event_id.into(),
+            phase: Phase::Day,
+            before,
+            after,
+        });
+        next.ability_provenance.push(AbilityProvenance {
+            ability_use: AbilityUseRef {
+                owner_player_id: player.id.clone(),
+                character_id: player.actual_character.clone(),
+                ability_instance_id: player.ability_instance.id.clone(),
+            },
+            origin: AbilityOrigin::IdentityBound,
+        });
+    }
+    Ok(())
+}
+
+fn day_effect_in_lifetime(facts: &CustomGameFacts, day: u16) -> bool {
+    facts.day.as_ref().is_none_or(|d| {
+        if d.stage == crate::day::contracts::DayStage::Night {
+            u32::from(day) > d.day
+        } else {
+            u32::from(day) == d.day
+        }
+    })
+}
+
+pub(crate) fn day_is_once(character: &str) -> bool {
+    character == "slayer"
+}
+
+pub(crate) fn day_vote_dependencies(
+    facts: &CustomGameFacts,
+) -> Vec<crate::day::contracts::DayVoteDependency> {
+    facts
+        .master_choices
+        .iter()
+        .filter(|c| c.effective && effective(facts, &c.ability_use))
+        .map(|c| crate::day::contracts::DayVoteDependency {
+            voter_id: c.ability_use.owner_player_id.clone(),
+            required_voter_id: c.target_player_id.clone(),
+        })
+        .collect()
+}
+pub(crate) fn day_registration_ids(facts: &CustomGameFacts, character: &str) -> Vec<String> {
+    facts
+        .players
+        .iter()
+        .filter(|p| registration_source(facts, &p.id).is_some_and(|s| s.character_id == character))
+        .map(|p| p.id.clone())
+        .collect()
+}
+pub(crate) fn day_first_nomination_targets(facts: &CustomGameFacts) -> Vec<String> {
+    facts
+        .players
+        .iter()
+        .filter(|p| {
+            p.alive
+                && facts.ability_provenance.iter().any(|r| {
+                    r.ability_use.owner_player_id == p.id
+                        && r.ability_use.character_id == "virgin"
+                        && crate::reducer::current_ability_instance(facts, &r.ability_use)
+                        && !facts
+                            .ability_uses
+                            .iter()
+                            .any(|u| u.ability_use == r.ability_use)
+                })
+        })
+        .map(|p| p.id.clone())
+        .collect()
+}
+
+
+// Source-bound reminder handlers share facts with action handlers, without scheduling an action.
+use crate::reminders::{ReminderContext, ReminderHandler};
+pub(crate) fn reminder_handlers() -> Vec<ReminderHandler> {
+    vec![
+        ReminderHandler { character_id: "scarletWoman", project: scarlet_reminders },
+        ReminderHandler {
+            character_id: "washerwoman",
+            project: setup_reminders,
+        },
+        ReminderHandler {
+            character_id: "librarian",
+            project: setup_reminders,
+        },
+        ReminderHandler {
+            character_id: "investigator",
+            project: setup_reminders,
+        },
+        ReminderHandler {
+            character_id: "fortuneTeller",
+            project: setup_reminders,
+        },
+        ReminderHandler {
+            character_id: "drunk",
+            project: drunk_reminders,
+        },
+        ReminderHandler {
+            character_id: "poisoner",
+            project: |c| c.impairments(),
+        },
+        ReminderHandler {
+            character_id: "butler",
+            project: butler_reminders,
+        },
+        ReminderHandler {
+            character_id: "virgin",
+            project: |c| c.spent(),
+        },
+        ReminderHandler {
+            character_id: "slayer",
+            project: |c| c.spent(),
+        },
+        ReminderHandler {
+            character_id: "undertaker",
+            project: undertaker_reminders,
+        },
+    ]
+}
+fn setup_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
+    let mut result = vec![];
+    let mut seen = vec![];
+    for prep in c
+        .facts
+        .preparations
+        .iter()
+        .rev()
+        .filter(|p| c.matches_occurrence(&p.occurrence))
+    {
+        if seen.contains(&prep.occurrence.action_ref) {
+            continue;
+        }
+        seen.push(prep.occurrence.action_ref.clone());
+        match &prep.result {
+            CustomActionResult::RedHerringAssigned { target_player_id } => {
+                result.push(c.token(target_player_id, "redHerring", &prep.event_id))
+            }
+            CustomActionResult::InformationPrepared { preparation } => {
+                if let (InformationResult::SetupInfo { player_ids, .. }, Some(correct)) =
+                    (&preparation.information, &preparation.correct_player_id)
+                {
+                    for player in player_ids {
+                        let token = if player != correct {
+                            "wrong"
+                        } else {
+                            match &prep.occurrence.action_ref {
+                                FirstNightActionRef::Character { character_id, .. }
+                                    if character_id == "washerwoman" =>
+                                {
+                                    "townsfolk"
+                                }
+                                FirstNightActionRef::Character { character_id, .. }
+                                    if character_id == "librarian" =>
+                                {
+                                    "outsider"
+                                }
+                                _ => "minion",
+                            }
+                        };
+                        result.push(c.token(player, token, &prep.event_id));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    result
+}
+fn drunk_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
+    if !c.current() {
+        return vec![];
+    }
+    let Some(source) = c.ability() else {
+        return vec![];
+    };
+    let event = c
+        .facts
+        .players
+        .iter()
+        .find(|p| p.ability_instance.id == source.ability_instance_id)
+        .map(|p| &p.ability_instance.source_event_id)
+        .or_else(|| {
+            c.facts
+                .ability_grants
+                .iter()
+                .find(|g| g.ability_instance_id == source.ability_instance_id)
+                .map(|g| &g.source_event_id)
+        });
+    event
+        .map(|event| vec![c.token(c.owner(), "isTheDrunk", event)])
+        .unwrap_or_default()
+}
+fn butler_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
+    c.facts
+        .master_choices
+        .iter()
+        .filter(|choice| {
+            c.matches_ability(&choice.ability_use) && day_effect_in_lifetime(c.facts, choice.day)
+        })
+        .map(|choice| c.token(&choice.target_player_id, "master", &choice.source_event_id))
+        .collect()
+}
+fn undertaker_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
+    if !c.living() {
+        return vec![];
+    }
+    let Some(execution) = c
+        .facts
+        .day
+        .as_ref()
+        .and_then(|d| d.execution.as_ref())
+        .filter(|e| e.died)
+    else {
+        return vec![];
+    };
+    let (Some(player), Some(event)) = (&execution.player_id, &execution.death_event_id) else {
+        return vec![];
+    };
+    let mut token = c.token(player, "diedToday", event);
+    token.label = "오늘 사망".into();
+    token.description = "오늘 처형으로 사망한 플레이어입니다.".into();
+    vec![token]
+}
+
+fn scarlet_reminders(c: &ReminderContext<'_>) -> Vec<AutomaticReminder> {
+    c.facts.scarlet_successions.iter().filter(|r| c.matches_ability(&r.source)).map(|r| {
+        let mut token = c.token(c.owner(), "isTheDemon", &r.event_id);
+        token.label = "악마임".into();
+        token.description = "붉은 여인이 악마를 승계했습니다.".into();
+        token
+    }).collect()
 }

@@ -207,7 +207,8 @@ test.each([
 
   const result = screen.getByRole("group", { name: "정보 결과" });
   const deliveredNumber = within(result).getByRole("spinbutton", { name: "전달할 숫자" }) as HTMLInputElement;
-  expect(deliveredNumber.value).toBe("0");
+  // Restored step drafts initialize in an effect after the reveal button mounts.
+  await waitFor(() => expect(deliveredNumber.value).toBe("0"));
   await user.clear(deliveredNumber);
   expect(deliveredNumber.value).toBe("");
   expect((screen.getByRole("button", { name: revealLabel }) as HTMLButtonElement).disabled).toBe(true);

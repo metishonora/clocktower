@@ -31,6 +31,47 @@ HTTPS host -> iPad Safari -> Add to Home Screen
 
 Do not require a localhost server during play.
 
+## Custom daytime runtime (#223)
+
+`crates/custom-domain/src/day` owns daytime commands, progress, event-time participant snapshots,
+nomination/vote/execution history and the transition to the next night. TB/SnV character modules
+own daytime eligibility, registration, effects, death consequences and victory conditions.
+`dayConfirmed` events are validated by recomputing their typed result against the exact prefix;
+the UI consumes `ReplayState.day` and never patches canonical player state.
+
+Actual and simulated abilities retain their original source identities. Death records preserve
+the identity, alignment and impairments at death; Barber handoff and Juggler records remain
+available to the following night. Mathematician evidence starts a new window at dawn.
+Execution/death/consequence confirmations share a causal Undo unit. Canonical files and IndexedDB
+store the same events, and failed saves block further live actions until retry succeeds.
+The next-night transition expires day-limited effects; night action execution remains in #204.
+
+### Custom automatic reminders (#223)
+
+Automatic tokens are read-only projections, never reducer inputs or saved facts. The common
+`reminders.rs` dispatcher registers character handlers from `characters/<script>.rs` and invokes
+them with a `ReminderContext` bound to one concrete source. The source comes from the recorded
+ability provenance ledger (including historical instances and acquired grants), or from confirmed
+simulation guidance. The script's character pool alone never admits a handler invocation.
+Historical preparations retain their original simulation source; active guidance is resolved
+separately, without manufacturing an actual ability instance.
+
+Handlers own token kind, target, evidence event and lifetime. Context queries distinguish current
+instances, living owners, matching action occurrences and actual versus simulated sources; no
+universal effectiveness gate is applied. Undertaker requires a living current ability/guidance
+source, while Barber's pending death handoff and durable poison retain their historical source
+through death or identity change. Resolved effect and spent-use formatting are reusable context
+helpers explicitly selected by character registrations. The common dispatcher contains no
+character-name branches and never infers ability ownership from a token or target's character.
+
+`projection::rule_state` and the Spy information handler consume the same dispatcher. The latter
+freezes the result at the confirmed event prefix using the existing reveal snapshot boundary.
+Overlapping observers of the same marker are deduplicated without modifying the underlying facts.
+Production reminder handlers remain disabled in the isolated fixture runtime. New character tokens
+must be registered in their owning script module and tested for source and lifetime boundaries;
+adding a global post-processing token rule in `projection.rs`, day orchestration or TypeScript is
+not supported. GameFile/schema and confirmed events remain unchanged.
+
 ## Independent official and custom runtimes (#207)
 
 Official execution lives in `crates/domain`, `crates/wasm` and `web/src/core`.

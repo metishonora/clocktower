@@ -28,8 +28,7 @@ pub(crate) struct FirstNightProjection {
 /// not part of the custom runtime remain at their established empty values.
 pub(crate) fn rule_state(facts: &CustomGameFacts) -> RuleState {
     let mut state = RuleState::default();
-    #[cfg(not(feature = "custom-runtime-fixtures"))]
-    { state.automatic_reminders = facts.players.iter().flat_map(|player| crate::characters::trouble_brewing::spy_reminders(facts, &player.id)).collect(); }
+    state.automatic_reminders = crate::reminders::project(facts);
     state.preparations = facts
         .preparations
         .iter()

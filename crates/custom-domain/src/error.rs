@@ -53,7 +53,6 @@ pub(crate) enum ErrorKind {
     StepCannotBeSkipped,
     StepRequiresManualResolution,
     StepIsAutomated,
-    NoExecutionCandidate,
     ExecutionSurvivalNotAllowed,
     MissingDeliveredInformation,
     UnexpectedDeliveredInformation,
@@ -218,7 +217,6 @@ impl ErrorKind {
                 "STEP_IS_AUTOMATED",
                 "자동화 단계는 수동 처리할 수 없습니다.",
             ),
-            Self::NoExecutionCandidate => ("NO_EXECUTION_CANDIDATE", "처형 후보가 없습니다."),
             Self::ExecutionSurvivalNotAllowed => (
                 "EXECUTION_SURVIVAL_NOT_ALLOWED",
                 "현재 스크립트에서는 처형 후 생존을 확정할 수 없습니다.",

@@ -128,9 +128,27 @@ test('C31/R11: optional good-twin execution ends Production play and Undo restor
   await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('dialog',{name:'Undo',exact:true}).getByRole('button',{name:'되돌리기',exact:true}).click();await expect(page.getByRole('heading',{name:'게임 종료',exact:true})).toHaveCount(0);await expect(page.locator('.snvCurrentStepIdentity')).toBeVisible();await page.getByRole('button',{name:/변종 집착 확인 열기/}).click();await expect(page.getByRole('button',{name:'[2번 P2] 처형',exact:true})).toBeEnabled();
 });
 
-test('C38: supported Day JSON resumes without enabling day abilities or a later night',async({page},info)=>{
+test('C38: Day JSON resumes playable daytime with detail, persisted progress, Undo and export',async({page},info)=>{
   const file=JSON.parse(await readFile(new URL('../../../fixtures/acceptance/custom-first-night/compatibility/day.game.json',import.meta.url),'utf8'));
-  await enter(page);await upload(page,file);await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();await expect(page.getByRole('heading',{name:'첫날 낮',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day.png'),fullPage:true});await page.getByRole('button',{name:'마도서',exact:true}).click();await page.getByRole('button',{name:/^1번 /}).click();await page.locator('.playerTokenCharacterIdentityButton').click();await expect(page.locator('.characterRulesBackdrop.bmr-day')).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day-detail.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();await page.getByRole('button',{name:'진행',exact:true}).click();await expect(page.locator('.customStepInputs')).toHaveCount(0);await expect(page.getByRole('button',{name:/^(다음으로|다음 단계)$/,exact:true})).toHaveCount(0);await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();await expect(page.getByRole('button',{name:'JSON 내보내기',exact:true})).toBeEnabled();
+  await enter(page);await upload(page,file);await page.getByRole('button',{name:'마도서 이어 쓰기'}).click();
+  await expect(page.getByRole('main',{name:'커스텀 마도서'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'1일차 낮',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'사망 발표',exact:true})).toBeVisible();
+  await expect(page.getByRole('list',{name:'낮 순서'}).locator('[aria-current=step]')).toContainText('사망 발표');
+  await page.screenshot({path:info.outputPath('bmr-day.png'),fullPage:true});
+  await page.getByRole('button',{name:'마도서',exact:true}).click();await page.getByRole('button',{name:/^1번 /}).click();await page.locator('.playerTokenCharacterIdentityButton').click();
+  await expect(page.locator('.characterRulesBackdrop.bmr-day')).toBeVisible();await page.screenshot({path:info.outputPath('bmr-day-detail.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
+  await page.getByRole('button',{name:'진행',exact:true}).click();
+  await expect(page.getByRole('button',{name:/처단자 행동 열기/})).toBeEnabled();
+  await page.getByRole('button',{name:'발표 완료',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'밀담',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'공개 토론으로',exact:true})).toBeEnabled();
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'밀담',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('button',{name:'되돌리기',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'사망 발표',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'발표 완료',exact:true})).toBeEnabled();
+  await page.getByRole('button',{name:'저장 / 불러오기',exact:true}).click();await expect(page.getByRole('button',{name:'JSON 내보내기',exact:true})).toBeEnabled();
 });
 
 for (const width of [320,1366]) test(`Utilities preserve autosave through new game/import review at ${width}px`,async({page},info)=>{
@@ -209,7 +227,7 @@ test('C15/U05/U07/U08/U09: R0 full TB information, numeric zero and payload-only
  await expect(spy).toBeVisible();await expect(spy.getByRole('button',{name:/^\d+번 P/})).toHaveCount(15);await expect(page.getByRole('main',{name:'커스텀 마도서'})).toHaveCount(0);
  await spy.getByRole('button',{name:/^11번 P11,/}).click();await expect(page.getByRole('dialog',{name:'11번 P11 플레이어 상세'})).toContainText('중독');await page.getByRole('button',{name:'플레이어 상세 닫기'}).click();
  await page.screenshot({path:info.outputPath('r0-spy-payload-board.png'),fullPage:true});await page.getByRole('button',{name:'확인 완료',exact:true}).click();await page.getByRole('button',{name:'다음 단계',exact:true}).click();
- await expect(page.locator('.snvInformationValues')).toContainText('1');await discloseAndCommit(page);await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'첫날 낮',exact:true})).toBeVisible();
+ await expect(page.locator('.snvInformationValues')).toContainText('1');await discloseAndCommit(page);await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'1일차 낮',exact:true})).toBeVisible();
 });
 
 for(const width of [320,820])test(`A01/A04: uploaded user scenario starts with minion information and uses board preparation at ${width}`,async({page},info)=>{

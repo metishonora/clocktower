@@ -116,14 +116,16 @@ pub(crate) struct Discriminator {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub(crate) enum Command {
+    ConfirmDay { payload: crate::day::contracts::DayCommand },
     CreateGame { payload: CreateGamePayload },
     ConfirmStep { payload: PhaseStepCommandPayload },
 }
 impl Command {
-    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["createGame", "confirmStep"];
+    pub(crate) const DISCRIMINATORS: &'static [&'static str] = &["createGame", "confirmStep", "confirmDay"];
     pub(crate) fn expected_event_count(&self) -> Option<usize> {
         match self {
             Self::ConfirmStep { payload } => payload.expected_event_count,
+            Self::ConfirmDay { payload } => Some(payload.expected_event_count),
             _ => None,
         }
     }
@@ -219,6 +221,8 @@ pub(crate) struct SetupDistributionResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) day: Option<crate::day::contracts::DayView>,
     pub(crate) action_executions: Vec<crate::first_night::execution::ActionExecution>,
     pub(crate) latest_undo_unit: Option<crate::first_night::execution::LatestUndoUnit>,
     pub(crate) schema_version: u32,
@@ -700,6 +704,13 @@ pub(crate) struct CustomGameEnd {
 #[serde(rename_all = "camelCase")]
 pub(crate) enum CustomGameEndReason {
     GoodTwinExecuted,
+    SaintExecuted,
+    MayorNoExecution,
+    VortoxNoExecution,
+    DemonAbsent,
+    TwoLivingPlayers,
+    KlutzChoice,
+    StorytellerDecision,
 }
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -751,6 +762,7 @@ pub(crate) struct CustomActionConfirmedPayload {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub(crate) enum GameEventKind {
+    DayConfirmed { payload: crate::day::contracts::DayConfirmed },
     SetupConfirmed {
         payload: SetupEventPayload,
     },
@@ -766,6 +778,7 @@ impl GameEventKind {
         "setupConfirmed",
         "phaseStepConfirmed",
         "customActionConfirmed",
+        "dayConfirmed",
     ];
 }
 

@@ -52,6 +52,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let script = game_file.script.clone();
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
+            day: None,
             action_executions: vec![], latest_undo_unit: None,
             schema_version: game_file.schema_version,
             script_identity: ReplayScriptIdentity::Custom { script },
@@ -71,6 +72,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let components = replay_components(&game_file)?;
     Ok(ReplayState {
+        day: crate::day::view(&components.state.facts),
         action_executions: components.action_executions, latest_undo_unit: components.latest_undo_unit,
         schema_version: game_file.schema_version,
         script_identity: ReplayScriptIdentity::Custom { script },
@@ -104,8 +106,12 @@ pub(crate) fn confirmed_event_reveal(game_file: GameFile, event_id: &str) -> Res
 pub(crate) fn propose(game_file: &GameFile, command: Command) -> Result<Proposal, CoreError> {
     match command {
         Command::CreateGame { payload } => crate::setup::propose_create_game(game_file, payload),
+        Command::ConfirmDay { payload } => {
+            let components = replay_components(game_file)?;
+            let ScriptReference::Custom { definition } = &game_file.script;
+            crate::day::propose(&resolve_custom_script(definition)?, &components.state, payload, game_file.game.events.len(), game_file.game.updated_at.clone().unwrap_or_default())
+        },
         Command::ConfirmStep { payload } => propose_step(game_file, payload),
-        _ => Err(ErrorKind::CommandNotSupportedByScript.into_error()),
     }
 }
 
@@ -291,11 +297,7 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         )?;
     }
 
-    let phase = if state.progress.ended && state.facts.game_end.is_none() {
-        Phase::Day
-    } else {
-        Phase::FirstNight
-    };
+    let phase = if state.facts.day.is_some() {state.phase} else {Phase::FirstNight};
     let (current_step, phase_overview, action_executions, latest_undo_unit) = if phase == Phase::FirstNight {
         let rules = CustomRuleService::new(&context, &state.facts);
         let action_context = ActionContext {
@@ -305,7 +307,9 @@ fn replay_components(game_file: &GameFile) -> Result<ReplayComponents, CoreError
         let projection = project_first_night(&plan, &registry, &action_context, &state.progress)?;
         (projection.current_step, projection.phase_overview, projection.action_executions, projection.latest_undo_unit)
     } else {
-        { let (units,undo)=crate::first_night::execution::units(&state.progress,&[])?; (None, Vec::new(), units, undo) }
+        { let (units,undo)=crate::first_night::execution::units(&state.progress,&[])?;
+          let (units,undo)=crate::day::executions(&state.facts, units, undo);
+          (None, Vec::new(), units, undo) }
     };
     let rules = CustomRuleService::new(&context, &state.facts);
     let action_context = ActionContext {
@@ -343,6 +347,7 @@ fn apply_event(
     event: &GameEvent,
     replay_legacy: bool,
 ) -> Result<CustomGameState, CoreError> {
+    if previous.facts.day.is_some() && matches!(event.kind,GameEventKind::DayConfirmed{..}) { return crate::day::apply(context, previous, event); }
     if previous.phase != Phase::FirstNight
         || previous.progress.ended
         || previous.facts.game_end.is_some()
@@ -426,6 +431,7 @@ fn apply_event(
         Some(snapshot),
     )?;
     let ended = next_progress.ended;
+    if ended && next_facts.game_end.is_none() { crate::day::enter(&mut next_facts,1); }
     Ok(CustomGameState {
         phase: if ended { Phase::Day } else { Phase::FirstNight },
         facts: next_facts,

@@ -160,7 +160,7 @@
 .issue116GrimoireSurface .snvGrimoireDraft > button.snvSettledOtherSeat.snvDeadSeat { filter: none; opacity: .46; }
 
 .snvSelectionCompletePanel { border-color: rgba(83, 190, 154, .24) !important; background: rgba(24, 53, 46, .84) !important; }
-.snvDayMode .snvSelectionCompletePanel { border-color: rgba(39, 139, 120, .24) !important; background: rgba(240, 251, 247, .82) !important; }
+:is(.snvDayMode, [data-theme="day"]) .snvSelectionCompletePanel { border-color: rgba(39, 139, 120, .24) !important; background: rgba(240, 251, 247, .82) !important; }
 
 @media (max-width: 780px) {
   .snvFuneralIcon { top: 2px; right: 4px; width: 20px; height: 27px; }

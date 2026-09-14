@@ -174,6 +174,7 @@ pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) -> Result<(), Cor
         .iter()
         .map(|r| {
             r.initially_effective
+                && daytime_effect_in_lifetime(facts,r.day)
                 && effective(facts, &r.ability_use)
                 && facts.players.iter().filter(|p| p.alive).count() > 3
         })
@@ -184,7 +185,7 @@ pub(crate) fn refresh_assignments(facts: &mut CustomGameFacts) -> Result<(), Cor
     let madness = facts
         .madness_assignments
         .iter()
-        .map(|r| r.initially_effective && effective(facts, &r.ability_use))
+        .map(|r| r.initially_effective && daytime_effect_in_lifetime(facts,r.day) && effective(facts, &r.ability_use))
         .collect::<Vec<_>>();
     for (r, active) in facts.madness_assignments.iter_mut().zip(madness) {
         r.effective = active;
@@ -616,6 +617,7 @@ impl SnvHandler {
             let causes = impairment_causes(facts, &actor.id);
             let audit = if execute && !executed && !causes.is_empty() {
                 vec![MalfunctionEvidence {
+                daytime_step_id: None,
                     event_id: event_id.into(),
                     occurrence: occurrence.clone(),
                     subject_player_id: actor.id.clone(),
@@ -723,6 +725,7 @@ impl SnvHandler {
                     };
                     if !causes.is_empty() {
                         audit.push(MalfunctionEvidence {
+                daytime_step_id: None,
                             cause_details: vec![DeliveryReason::Drunk],
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
@@ -766,6 +769,7 @@ impl SnvHandler {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
                         audit.push(MalfunctionEvidence {
+                daytime_step_id: None,
                             cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
@@ -811,6 +815,7 @@ impl SnvHandler {
                         && !causes.is_empty()
                     {
                         audit.push(MalfunctionEvidence {
+                daytime_step_id: None,
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
                             subject_player_id: actor.id.clone(),
@@ -871,6 +876,7 @@ impl SnvHandler {
                     let causes = impairment_causes(facts, &actor.id);
                     if !causes.is_empty() {
                         audit.push(MalfunctionEvidence {
+                daytime_step_id: None,
                             cause_details: impairment_details(facts, &actor.id),
                             event_id: event_id.into(),
                             occurrence: occurrence.clone(),
@@ -1580,6 +1586,7 @@ impl SnvHandler {
             && !options.causes.is_empty()
         {
             audit.push(MalfunctionEvidence {
+                daytime_step_id: None,
                 cause_details: options
                     .reasons
                     .iter()
@@ -1849,6 +1856,8 @@ fn mathematician_audit(
             })
             .ok_or_else(provenance_error)?;
         let outcome = match &evidence.outcome {
+            MalfunctionOutcome::DayInformation { truthful_count } => AbnormalAbilityOutcome::DayInformation { truthful_count: *truthful_count },
+            MalfunctionOutcome::InvalidSavantPattern { truthful_count } => AbnormalAbilityOutcome::InvalidSavantPattern { truthful_count: *truthful_count },
             MalfunctionOutcome::IncorrectInformation { delivered_result } => {
                 AbnormalAbilityOutcome::IncorrectInformation {
                     delivered_result: delivered_result.clone(),
@@ -1856,6 +1865,9 @@ fn mathematician_audit(
             }
             MalfunctionOutcome::EffectFailure { effect } => AbnormalAbilityOutcome::EffectFailure {
                 effect: match effect {
+                    FailedEffect::WitchDeath => AbnormalAbilityEffect::WitchDeath,
+                    FailedEffect::SweetheartDrunkenness => AbnormalAbilityEffect::SweetheartDrunkenness,
+                    FailedEffect::VortoxExecution => AbnormalAbilityEffect::VortoxExecution,
                     FailedEffect::PoisonerPoison => AbnormalAbilityEffect::PoisonerPoison,
                     FailedEffect::ButlerMaster => AbnormalAbilityEffect::ButlerMaster,
                     FailedEffect::MutantExecution => AbnormalAbilityEffect::MutantExecution,
@@ -1874,8 +1886,8 @@ fn mathematician_audit(
         let causes = evidence.cause_details.clone();
         let item = AbnormalAbilityEvidence {
             resolution_event_id: evidence.event_id.clone(),
-            step_id: evidence.occurrence.step_id()?,
-            phase: Phase::FirstNight,
+            step_id: evidence.daytime_step_id.clone().unwrap_or(evidence.occurrence.step_id()?),
+            phase: if evidence.daytime_step_id.is_some() { Phase::Day } else { Phase::FirstNight },
             character_id: character_id.clone(),
             ability_instance_id: source.ability_instance_id.clone(),
             outcome,
@@ -1918,4 +1930,650 @@ fn mutant_check(facts: &CustomGameFacts, occurrence: &ActionOccurrence) -> Optio
         if fact.occurrence.ability_use != occurrence.ability_use { return None; }
         match &fact.result { CustomActionResult::MutantJudgment { result } => Some(*result), _ => None }
     })
+}
+
+pub(crate) fn day_actions(facts: &CustomGameFacts) -> Vec<crate::day::contracts::DayAbilityAction> {
+    crate::day::ability_actions(facts, &["artist", "savant", "juggler"])
+}
+pub(crate) fn day_use_ability(
+    action: &crate::day::contracts::DayAbilityAction,
+    input: &crate::day::contracts::DayAbilityInput,
+) -> Result<(), CoreError> {
+    use crate::day::contracts::DayAbilityInput;
+    let text = |v: &str| v.trim() == v && v.chars().count() <= 500;
+    let valid = match input {
+        DayAbilityInput::Artist {
+            question, truthful, ..
+        } => {
+            action.character_id == "artist"
+                && text(question)
+                && if action.vortox {
+                    !*truthful
+                } else {
+                    action.impaired || *truthful
+                }
+        }
+        DayAbilityInput::Savant { statements } => {
+            action.character_id == "savant"
+                && statements.iter().all(|s| text(&s.text))
+                && if action.vortox {
+                    statements.iter().all(|s| !s.truthful)
+                } else {
+                    action.impaired || statements.iter().filter(|s| s.truthful).count() == 1
+                }
+        }
+        DayAbilityInput::Juggler { correct_count } => {
+            action.character_id == "juggler" && *correct_count <= 5
+        }
+        _ => false,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(ErrorKind::InvalidDayActionRecord.into_error())
+    }
+}
+pub(crate) fn day_witch(
+    facts: &CustomGameFacts,
+    day: &mut crate::day::contracts::DayProgress,
+    nominator: &str,
+    event_id: &str,
+) -> Result<(), CoreError> {
+    use crate::day::contracts::{DayDeathCause, DayStage};
+    if let Some(curse) = facts
+        .witch_curses
+        .iter()
+        .find(|c| c.target_player_id == nominator && u32::from(c.day) == day.day && c.effective)
+    {
+        crate::day::pending_death(
+            day,
+            nominator,
+            DayDeathCause::Witch,
+            Some(curse.ability_use.clone()),
+            event_id,
+            DayStage::Voting,
+        )?;
+    }
+    Ok(())
+}
+pub(crate) fn day_madness(facts: &CustomGameFacts) -> Vec<crate::day::contracts::DayMadness> {
+    use crate::day::contracts::{DayMadness, DayStage};
+    let Some(day) = &facts.day else {
+        return vec![];
+    };
+    let open = day.stage != DayStage::Night
+        && day.pending_death.is_none()
+        && day.pending_game_end.is_none()
+        && facts.game_end.is_none()
+        && !day
+            .consequences
+            .iter()
+            .any(|c| !c.resolved && c.source.character_id != "barber");
+    let executed = day
+        .execution
+        .as_ref()
+        .is_some_and(|e| e.player_id.is_some());
+    let mut items = vec![];
+    for record in &facts.ability_provenance {
+        let source = &record.ability_use;
+        if source.character_id != "mutant"
+            || !current_ability_instance(facts, source)
+            || !facts
+                .player(&source.owner_player_id)
+                .is_some_and(|p| p.alive)
+        {
+            continue;
+        }
+        let id = format!("mutant:{}", serde_json::to_string(source).expect("source"));
+        let violation = day
+            .madness_checks
+            .iter()
+            .rev()
+            .find(|(key, _)| key == &id)
+            .map(|(_, v)| *v)
+            .or_else(|| {
+                facts.confirmed_actions.iter().rev().find_map(|a| {
+                    if a.occurrence.ability_use.as_ref() == Some(source) {
+                        match a.result {
+                            CustomActionResult::MutantJudgment { result } => {
+                                Some(result == crate::model::MadnessCheckResult::Violation)
+                            }
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                })
+            });
+        items.push(DayMadness {
+            id,
+            source: source.clone(),
+            target_player_id: source.owner_player_id.clone(),
+            character_id: None,
+            effective: effective(facts, source),
+            violation,
+            can_check: open && violation != Some(true),
+            can_execute: open && !executed && effective(facts, source),
+        });
+    }
+    for assignment in &facts.madness_assignments {
+        if u32::from(assignment.day) != day.day
+            || !current_ability_instance(facts, &assignment.ability_use)
+            || !facts
+                .player(&assignment.target_player_id)
+                .is_some_and(|p| p.alive)
+        {
+            continue;
+        }
+        let id = format!("cerenovus:{}", assignment.source_event_id);
+        let violation = day
+            .madness_checks
+            .iter()
+            .rev()
+            .find(|(key, _)| key == &id)
+            .map(|(_, v)| *v);
+        items.push(DayMadness {
+            id,
+            source: assignment.ability_use.clone(),
+            target_player_id: assignment.target_player_id.clone(),
+            character_id: Some(assignment.character_id.clone()),
+            effective: assignment.effective,
+            violation,
+            can_check: open && violation != Some(true),
+            can_execute: open && !executed && assignment.effective,
+        });
+    }
+    items
+}
+pub(crate) fn day_good_win_blocked(facts: &CustomGameFacts) -> bool {
+    facts
+        .twin_relationships
+        .iter()
+        .any(|r| r.effective && facts.player(&r.target_player_id).is_some_and(|p| p.alive))
+}
+pub(crate) fn day_execution_end(
+    facts: &CustomGameFacts,
+    target: &str,
+    event_id: &str,
+) -> Option<crate::contracts::CustomGameEnd> {
+    if facts
+        .player(target)
+        .is_some_and(|p| p.alignment == crate::model::Alignment::Good)
+        && facts.twin_relationships.iter().any(|r| {
+            r.effective && (r.target_player_id == target || r.ability_use.owner_player_id == target)
+        })
+    {
+        Some(crate::contracts::CustomGameEnd {
+            winning_alignment: crate::model::Alignment::Evil,
+            reason: crate::contracts::CustomGameEndReason::GoodTwinExecuted,
+            source_event_id: event_id.into(),
+        })
+    } else {
+        None
+    }
+}
+pub(crate) fn day_no_execution(
+    facts: &CustomGameFacts,
+    event_id: &str,
+) -> Option<crate::contracts::CustomGameEnd> {
+    (!facts.vortox_sources.is_empty()).then(|| crate::contracts::CustomGameEnd {
+        winning_alignment: crate::model::Alignment::Evil,
+        reason: crate::contracts::CustomGameEndReason::VortoxNoExecution,
+        source_event_id: event_id.into(),
+    })
+}
+pub(crate) fn day_death_consequences(
+    prior: &CustomGameFacts,
+    day: &mut crate::day::contracts::DayProgress,
+    player_id: &str,
+    event_id: &str,
+) {
+    for r in &prior.ability_provenance {
+        let source = &r.ability_use;
+        if source.owner_player_id != player_id
+            || !current_ability_instance(prior, source)
+            || !["sweetheart", "klutz", "barber"].contains(&source.character_id.as_str())
+        {
+            continue;
+        }
+        day.consequences
+            .push(crate::day::contracts::DayConsequence {
+                id: format!(
+                    "death:{}:{}",
+                    event_id,
+                    serde_json::to_string(source).expect("source")
+                ),
+                death_event_id: event_id.into(),
+                source: source.clone(),
+                impaired_at_death: impaired(prior, player_id),
+                alignment_at_death: prior.player(player_id).expect("death player").alignment,
+                resolved: false,
+                target_player_id: None,
+            });
+    }
+}
+pub(crate) fn day_resolve_consequence(
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    day: &mut crate::day::contracts::DayProgress,
+    id: &str,
+    target: &Option<String>,
+    event_id: &str,
+) -> Result<(), CoreError> {
+    use crate::{
+        contracts::{CustomGameEnd, CustomGameEndReason},
+        model::Alignment,
+    };
+    let c = day
+        .consequences
+        .iter_mut()
+        .find(|c| c.id == id && !c.resolved && c.source.character_id != "barber")
+        .ok_or_else(invalid)?;
+    if c.impaired_at_death {
+        if target.is_some() {
+            return Err(invalid());
+        }
+    } else {
+        let target = target
+            .as_ref()
+            .and_then(|id| prior.player(id))
+            .ok_or_else(invalid)?;
+        match c.source.character_id.as_str() {
+            "sweetheart" => next.durable_impairments.push(DurableImpairment {
+                source_ability_use: c.source.clone(),
+                impairment: ActiveImpairment {
+                    kind: ImpairmentKind::Drunk,
+                    player_id: target.id.clone(),
+                    source_event_id: event_id.into(),
+                    source_character_id: "sweetheart".into(),
+                    expires: ImpairmentExpiry::Never,
+                },
+            }),
+            "klutz" => {
+                if !target.alive {
+                    return Err(invalid());
+                }
+                if target.alignment != Alignment::Good {
+                    day.pending_game_end = Some(CustomGameEnd {
+                        winning_alignment: if c.alignment_at_death == Alignment::Good {
+                            Alignment::Evil
+                        } else {
+                            Alignment::Good
+                        },
+                        reason: CustomGameEndReason::KlutzChoice,
+                        source_event_id: event_id.into(),
+                    });
+                }
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    c.resolved = true;
+    c.target_player_id = target.clone();
+    Ok(())
+}
+
+fn daytime_effect_in_lifetime(facts: &CustomGameFacts, day: u16) -> bool {
+    facts.day.as_ref().is_none_or(|d| {
+        if d.stage == crate::day::contracts::DayStage::Night {
+            u32::from(day) > d.day
+        } else {
+            u32::from(day) == d.day
+        }
+    })
+}
+
+pub(crate) fn day_is_once(character: &str) -> bool {
+    matches!(character, "artist" | "juggler")
+}
+pub(crate) fn day_repeats_daily(character: &str) -> bool {
+    character == "savant"
+}
+pub(crate) fn day_first_day_only(character: &str) -> bool {
+    character == "juggler"
+}
+pub(crate) fn day_has_pending_consequence(day: &crate::day::contracts::DayProgress) -> bool {
+    day.consequences
+        .iter()
+        .any(|c| !c.resolved && c.source.character_id != "barber")
+}
+pub(crate) fn day_waits_for_win(day: &crate::day::contracts::DayProgress) -> bool {
+    day.consequences
+        .iter()
+        .any(|c| !c.resolved && c.source.character_id == "klutz")
+}
+
+/// Retain event-time evidence for the following Mathematician wake. Guidance does not
+/// invent a real Artist/Savant ability; its actual failed source is recorded separately.
+pub(crate) fn day_record_malfunctions(
+    prior: &CustomGameFacts,
+    next: &mut CustomGameFacts,
+    input: &crate::day::contracts::DayInput,
+    event_id: &str,
+) -> Result<(), CoreError> {
+    use crate::day::contracts::{DayAbilityInput, DayInput};
+    let mut failures = vec![];
+    match input {
+        DayInput::UseAbility { action_id, record } => {
+            if let Some(action) = day_actions(prior).into_iter().find(|a| a.id == *action_id) {
+                if let Some(source) = action.ability_use {
+                    let outcome = match record {
+                        DayAbilityInput::Artist {
+                            truthful: false, ..
+                        } => Some(MalfunctionOutcome::DayInformation { truthful_count: 0 }),
+                        DayAbilityInput::Savant { statements } => {
+                            let truthful_count =
+                                statements.iter().filter(|s| s.truthful).count() as u8;
+                            (truthful_count != 1).then_some(
+                                MalfunctionOutcome::InvalidSavantPattern { truthful_count },
+                            )
+                        }
+                        _ => None,
+                    };
+                    if let Some(outcome) = outcome {
+                        failures.push((source, outcome, true));
+                    }
+                }
+            }
+        }
+        DayInput::Nominate { nominator_id, .. } => {
+            if prior.players.iter().filter(|p| p.alive).count() > 3 {
+                for curse in &prior.witch_curses {
+                    if curse.target_player_id == *nominator_id
+                        && daytime_effect_in_lifetime(prior, curse.day)
+                        && current_ability_instance(prior, &curse.ability_use)
+                        && prior
+                            .player(&curse.ability_use.owner_player_id)
+                            .is_some_and(|p| p.alive)
+                        && !curse.effective
+                    {
+                        failures.push((
+                            curse.ability_use.clone(),
+                            MalfunctionOutcome::EffectFailure {
+                                effect: FailedEffect::WitchDeath,
+                            },
+                            false,
+                        ));
+                    }
+                }
+            }
+        }
+        DayInput::ConfirmDeath => {
+            if let Some(death) = prior.day.as_ref().and_then(|d| d.pending_death.as_ref()) {
+                for r in &prior.ability_provenance {
+                    if r.ability_use.character_id == "sweetheart"
+                        && r.ability_use.owner_player_id == death.player_id
+                        && current_ability_instance(prior, &r.ability_use)
+                        && impaired(prior, &death.player_id)
+                    {
+                        failures.push((
+                            r.ability_use.clone(),
+                            MalfunctionOutcome::EffectFailure {
+                                effect: FailedEffect::SweetheartDrunkenness,
+                            },
+                            false,
+                        ));
+                    }
+                }
+            }
+        }
+        DayInput::ConfirmExecution {} if crate::day::view(prior).is_some_and(|d| d.execution_candidate_id.is_none()) => {
+            for r in &prior.ability_provenance {
+                if r.ability_use.character_id == "vortox"
+                    && current_ability_instance(prior, &r.ability_use)
+                    && prior
+                        .player(&r.ability_use.owner_player_id)
+                        .is_some_and(|p| p.alive)
+                    && impaired(prior, &r.ability_use.owner_player_id)
+                {
+                    failures.push((
+                        r.ability_use.clone(),
+                        MalfunctionOutcome::EffectFailure {
+                            effect: FailedEffect::VortoxExecution,
+                        },
+                        false,
+                    ));
+                }
+            }
+        }
+        _ => {}
+    }
+    for (source, outcome, information) in failures {
+        let mut causes = impairment_causes(prior, &source.owner_player_id);
+        let mut cause_details = impairment_details(prior, &source.owner_player_id);
+        if information {
+            for vortox in &prior.vortox_sources {
+                if !causes.contains(vortox) {
+                    causes.push(vortox.clone());
+                }
+                cause_details.push(DeliveryReason::Vortox {
+                    demon_player_id: vortox.owner_player_id.clone(),
+                });
+            }
+        }
+        if causes.is_empty() {
+            continue;
+        }
+        let occurrence = ActionOccurrence::from_parts(
+            FirstNightActionRef::Character {
+                character_id: source.character_id.clone(),
+                action_id: "daytimeAbility".into(),
+            },
+            Some(source.clone()),
+            None,
+            None,
+        )?;
+        next.malfunction_audit.push(MalfunctionEvidence {
+            daytime_step_id: Some(crate::day::step_id(prior)?),
+            cause_details,
+            event_id: event_id.into(),
+            occurrence,
+            subject_player_id: source.owner_player_id,
+            outcome,
+            causes,
+        });
+    }
+    Ok(())
+}
+
+
+
+use crate::reminders::{ReminderContext, ReminderHandler};
+pub(crate) fn reminder_handlers() -> Vec<ReminderHandler> {
+    vec![
+        ReminderHandler { character_id: "flowergirl", project: flowergirl_reminders },
+        ReminderHandler { character_id: "townCrier", project: town_crier_reminders },
+        ReminderHandler {
+            character_id: "philosopher",
+            project: philosopher_reminders,
+        },
+        ReminderHandler {
+            character_id: "snakeCharmer",
+            project: |c| c.impairments(),
+        },
+        ReminderHandler {
+            character_id: "noDashii",
+            project: |c| c.impairments(),
+        },
+        ReminderHandler {
+            character_id: "vigormortis",
+            project: |c| c.impairments(),
+        },
+        ReminderHandler {
+            character_id: "sweetheart",
+            project: |c| c.impairments(),
+        },
+        ReminderHandler {
+            character_id: "witch",
+            project: witch_reminders,
+        },
+        ReminderHandler {
+            character_id: "cerenovus",
+            project: cerenovus_reminders,
+        },
+        ReminderHandler {
+            character_id: "evilTwin",
+            project: twin_reminders,
+        },
+        ReminderHandler {
+            character_id: "seamstress",
+            project: |c| c.spent(),
+        },
+        ReminderHandler {
+            character_id: "artist",
+            project: |c| c.spent(),
+        },
+        ReminderHandler {
+            character_id: "juggler",
+            project: juggler_reminders,
+        },
+        ReminderHandler {
+            character_id: "barber",
+            project: barber_reminders,
+        },
+        ReminderHandler {
+            character_id: "mathematician",
+            project: mathematician_reminders,
+        },
+    ]
+}
+fn philosopher_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    let mut reminders = c.impairments();
+    reminders.extend(c.spent());
+    for grant in &c.facts.ability_grants {
+        if c.ability().is_some_and(|source| source.owner_player_id == grant.owner_player_id
+            && source.ability_instance_id == grant.source_ability_instance_id)
+            && !c.facts.players.iter().any(|p| p.actual_character == grant.character_id)
+        {
+            let mut token = c.token(c.owner(), "isThePhilosopher", &grant.source_event_id);
+            token.label = "철학자임".into();
+            token.description = "철학자가 이 캐릭터의 능력을 가집니다.".into();
+            reminders.push(token);
+        }
+    }
+    reminders
+}
+fn reminder_day_in_lifetime(facts: &CustomGameFacts, day: u16) -> bool {
+    facts.day.as_ref().is_none_or(|d| {
+        if d.stage == crate::day::contracts::DayStage::Night {
+            u32::from(day) > d.day
+        } else {
+            u32::from(day) == d.day
+        }
+    })
+}
+fn witch_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    c.facts
+        .witch_curses
+        .iter()
+        .filter(|r| c.matches_ability(&r.ability_use) && reminder_day_in_lifetime(c.facts, r.day))
+        .map(|r| c.token(&r.target_player_id, "cursed", &r.source_event_id))
+        .collect()
+}
+fn cerenovus_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    c.facts
+        .madness_assignments
+        .iter()
+        .filter(|r| c.matches_ability(&r.ability_use) && reminder_day_in_lifetime(c.facts, r.day))
+        .map(|r| c.token(&r.target_player_id, "mad", &r.source_event_id))
+        .collect()
+}
+fn twin_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    c.facts
+        .twin_relationships
+        .iter()
+        .filter(|r| c.matches_ability(&r.ability_use) && r.effective)
+        .map(|r| c.token(&r.target_player_id, "twin", &r.source_event_id))
+        .collect()
+}
+fn juggler_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    if !c.living() {
+        return vec![];
+    }
+    let Some(day) = &c.facts.day else {
+        return vec![];
+    };
+    day.ability_records
+        .iter()
+        .filter_map(|r| {
+            if !c.matches_parts(
+                r.action.ability_use.as_ref(),
+                r.action.simulation_source.as_ref(),
+            ) {
+                return None;
+            }
+            let crate::day::contracts::DayAbilityInput::Juggler { correct_count } = r.record else {
+                return None;
+            };
+            let mut token = c.token(&r.action.actor_player_id, "correct", &r.event_id);
+            token.label = "정답".into();
+            token.description = "첫 낮 추측의 정답 수입니다.".into();
+            token.count = Some(correct_count);
+            Some(token)
+        })
+        .collect()
+}
+fn barber_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    let Some(day) = &c.facts.day else {
+        return vec![];
+    };
+    day.consequences
+        .iter()
+        .filter(|r| !r.resolved && c.matches_ability(&r.source))
+        .map(|r| {
+            let mut token = c.token(
+                &r.source.owner_player_id,
+                "haircutsTonight",
+                &r.death_event_id,
+            );
+            token.label = "오늘 밤 이발".into();
+            token.description = "오늘 밤 처리할 이발사 사망입니다.".into();
+            token.inactive_reason = r.impaired_at_death.then(|| "사망 당시 취함·중독".into());
+            token
+        })
+        .collect()
+}
+fn mathematician_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    if !c.living() {
+        return vec![];
+    }
+    let mut seen = std::collections::HashSet::new();
+    c.facts
+        .malfunction_audit
+        .iter()
+        .filter(|e| c.facts.day.as_ref().is_none_or(|day| day.history.iter().any(|h| h.event_id == e.event_id)))
+        .filter(|e| seen.insert(&e.subject_player_id))
+        .map(|e| {
+            let mut token = c.token(&e.subject_player_id, "abnormal", &e.event_id);
+            token.label = "비정상".into();
+            token.description = "낮에 다른 능력의 영향으로 비정상 작동했습니다.".into();
+            token
+        })
+        .collect()
+}
+
+fn flowergirl_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    if !c.living() { return vec![]; }
+    let Some(day) = &c.facts.day else { return vec![]; };
+    let nomination = day.nominations.iter().find(|n| {
+        n.voter_ids.as_ref().is_some_and(|ids| n.vote_participants.as_ref().is_some_and(|players| {
+            players.iter().any(|p| ids.contains(&p.player_id) && p.character_kind == CharacterKind::Demon)
+        }))
+    });
+    let mut token = c.token(c.owner(), if nomination.is_some() { "demonVoted" } else { "demonDidNotVote" },
+        nomination.map(|n| n.event_id.as_str()).unwrap_or(&c.facts.prefix_event_id));
+    token.label = if nomination.is_some() { "악마 투표함" } else { "악마 투표 안 함" }.into();
+    token.description = if nomination.is_some() { "오늘 악마가 처형 투표에 참여했습니다." } else { "오늘 악마가 처형 투표에 참여하지 않았습니다." }.into();
+    vec![token]
+}
+fn town_crier_reminders(c: &ReminderContext<'_>) -> Vec<crate::model::AutomaticReminder> {
+    if !c.living() { return vec![]; }
+    let Some(day) = &c.facts.day else { return vec![]; };
+    let nomination = day.nominations.iter().find(|n| n.nomination_participants.iter()
+        .any(|p| p.player_id == n.nominator_id && p.character_kind == CharacterKind::Minion));
+    let mut token = c.token(c.owner(), if nomination.is_some() { "minionNominated" } else { "minionDidNotNominate" },
+        nomination.map(|n| n.event_id.as_str()).unwrap_or(&c.facts.prefix_event_id));
+    token.label = if nomination.is_some() { "하수인 지목함" } else { "하수인 지목 안 함" }.into();
+    token.description = if nomination.is_some() { "오늘 하수인이 처형 지목에 나섰습니다." } else { "오늘 하수인이 처형 지목에 나서지 않았습니다." }.into();
+    vec![token]
 }

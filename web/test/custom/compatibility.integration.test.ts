@@ -20,6 +20,7 @@ test("independent Production WASM and IndexedDB restore the frozen pre-separatio
     const result=await core.replay(game);expect(result.ok).toBe(true);
     if(!result.ok)throw Error(result.error.messageKo);
     const legacy=JSON.parse(JSON.stringify(result.value,(key,value)=>['execution','actionExecutions','latestUndoUnit'].includes(key)?undefined:value));
+    delete legacy.day;
     expect(legacy).toEqual(prefix.replay);
     if (index > 0) {
       const prior = parseGameFileJson(JSON.stringify(trace[index - 1]!.game));

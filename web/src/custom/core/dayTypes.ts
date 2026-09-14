@@ -1,0 +1,18 @@
+import type {AbilityUseRef, ActiveImpairment, CustomGameEnd, PhilosopherSimulationSource} from './types.js';
+export type DayStage = 'announcement'|'whisper'|'discussion'|'nomination'|'voting'|'execution'|'executionDeath'|'death'|'nightReady'|'night';
+export type DayInput = {kind:'endGame';winningAlignment:'good'|'evil'} | {kind:'useAbility';actionId:string;record:DayAbilityInput}|{kind:'checkMadness';assignmentId:string;violation:boolean}|{kind:'executeMadness';assignmentId:string}|{kind:'resolveConsequence';consequenceId:string;playerId:string|null} | {kind:'advance'|'closeNominations'|'confirmDeath'|'confirmExecution'|'beginNight'|'confirmGameEnd'} | {kind:'nominate';nominatorId:string;nomineeId:string;spyAsTownsfolk:boolean} | {kind:'vote';voterIds:string[]};
+export type DayParticipant = {playerId:string;characterId:string;alignment:"good"|"evil";characterKind:"Townsfolk"|"Outsider"|"Minion"|"Demon";alive:boolean;ghostVoteUsed:boolean;abilities:AbilityUseRef[];impairments:ActiveImpairment[]};
+export type DayOutcome = {abilityRecord:DayAbilityRecord|null;pendingDeath:PendingDayDeath|null;pendingGameEnd:CustomGameEnd|null;consequences:DayConsequence[];stage:DayStage;participants:DayParticipant[];countedVoterIds:string[];ghostVoteSpentPlayerIds:string[];deathPlayerIds:string[]};
+export type DayConfirmed = {stepId:string;day:number;input:DayInput;result:DayOutcome};
+export type DayNomination = {eventId:string;nominatorId:string;nomineeId:string;nominationParticipants:DayParticipant[];voteParticipants:DayParticipant[]|null;voterIds:string[]|null;countedVoterIds:string[]|null;ghostVoteSpentPlayerIds:string[]};
+export type DayExecution = {eventId:string;playerId:string|null;deathEventId:string|null;died:boolean};
+export type DayView = {voteDependencies:{voterId:string;requiredVoterId:string}[];townsfolkRegistrationNominatorIds:string[];firstNominationTargetIds:string[];demonRegistrationTargetIds:string[];availableActions:DayAbilityAction[];abilityRecords:DayAbilityRecord[];madness:DayMadness[];pendingDeath:PendingDayDeath|null;pendingGameEnd:CustomGameEnd|null;consequences:DayConsequence[];deaths:DayDeathRecord[];day:number;stage:DayStage;stepId:string;nominations:DayNomination[];execution:DayExecution|null;eligibleNominatorIds:string[];eligibleNomineeIds:string[];eligibleVoterIds:string[];executionVoteThreshold:number;highestVoteCount:number;executionCandidateId:string|null};
+
+export type DayAbilityInput = {kind:'artist';question:string;answer:'yes'|'no'|'unknown';truthful:boolean}|{kind:'savant';statements:[DayStatement,DayStatement]}|{kind:'juggler';correctCount:number}|{kind:'slayer';targetPlayerId:string;recluseAsDemon:boolean};
+export type DayStatement={text:string;truthful:boolean};
+export type DayAbilityAction={id:string;actorPlayerId:string;characterId:string;abilityUse:AbilityUseRef|null;simulationSource:PhilosopherSimulationSource|null;effective:boolean;impaired:boolean;vortox:boolean};
+export type DayAbilityRecord={eventId:string;day:number;action:DayAbilityAction;record:DayAbilityInput};
+export type PendingDayDeath={playerId:string;cause:'execution'|'virgin'|'madness'|'witch'|'slayer';source:AbilityUseRef|null;rootEventId:string;resumeStage:DayStage};
+export type DayDeathRecord={eventId:string;day:number;cause:PendingDayDeath;participant:DayParticipant};
+export type DayConsequence={id:string;deathEventId:string;source:AbilityUseRef;impairedAtDeath:boolean;alignmentAtDeath:'good'|'evil';resolved:boolean;targetPlayerId:string|null};
+export type DayMadness={id:string;source:AbilityUseRef;targetPlayerId:string;characterId:string|null;effective:boolean;violation:boolean|null;canCheck:boolean;canExecute:boolean};

@@ -1,3 +1,5 @@
+import { automaticReminderPairs } from "./automaticReminderTokens.js";
+import {isDayConfirmed,isDayView} from './dayValidation.js';
 import { isActionCause, isGuidanceCause, isCustomGameEnd } from "./customActionResultValidationBase.js";
 import type { Phase, PhaseStep, CoreResult, GameEvent, ReplayState, Proposal, SetupDistributionResult, FirstNightOrderPlan, CustomFirstNightPlanResult, SetupDistribution, FirstNightActionRef, PhaseStepInput, AbilityUseRef, AbilityOrigin, InformationPrompt, ConfirmedInformation, InformationResult, DeliveryReason, ActiveImpairment, NumberChoice, RegistrationJudgment } from "./types.js";
 import { customScriptCharacters } from "../characterCatalog.js";
@@ -75,41 +77,7 @@ const scriptTokenKeys = new Set([
   "washerwoman:wrong",
 ]);
 
-const troubleBrewingAutomaticReminderPairs = new Set([
-  "noDashii:poisoned", "snakeCharmer:poisoned", "philosopher:drunk", "philosopher:noAbility", "seamstress:noAbility", "witch:cursed", "cerenovus:mad", "evilTwin:twin",
-  "butler:master",
-  "drunk:isTheDrunk",
-  "fortuneTeller:redHerring",
-  "imp:dead",
-  "investigator:minion",
-  "investigator:wrong",
-  "librarian:outsider",
-  "librarian:wrong",
-  "monk:safe",
-  "poisoner:poisoned",
-  "scarletWoman:isTheDemon",
-  "slayer:noAbility",
-  "undertaker:diedToday",
-  "virgin:noAbility",
-  "washerwoman:townsfolk",
-  "washerwoman:wrong",
-]);
 
-const sectsAndVioletsAutomaticReminderCharacters = new Set([
-  "flowergirl",
-  "townCrier",
-  "mathematician",
-  "philosopher",
-  "vigormortis",
-  "noDashii",
-  "fangGu",
-  "witch",
-  "evilTwin",
-  "seamstress",
-  "artist",
-  "juggler",
-  "barber",
-]);
 
 
 export function parseCoreResult<T>(
@@ -153,6 +121,9 @@ export function parseGameEvent(value: unknown): GameEvent {
     throw invalidEvent();
   }
   switch (value.type) {
+    case "dayConfirmed":
+      if(value.phase!=="day" || !hasExactKeys(value,["id","type","phase","payload","summary","createdAt"]) || !isDayConfirmed(payload,dayValidators))throw invalidEvent();
+      break;
     case "setupConfirmed":
       if (
         !hasOnlyKeys(payload, ["players", "setupChoiceId"]) ||
@@ -192,7 +163,9 @@ export function parseGameEvent(value: unknown): GameEvent {
 
   return value as GameEvent;
 }
+const dayValidators={ability:isAbilityUseRef,impairment:isActiveImpairment,character:isKnownCharacter,simulation:isSimulationSource};
 export function parseReplayState(value: unknown): ReplayState {
+  if(isRecord(value) && value.day!==undefined && !isDayView(value.day,dayValidators))throw invalidCoreResponse();
   if (!isRecord(value) || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 4 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
   return value as ReplayState;
 }
@@ -518,7 +491,7 @@ function isMathematicianAuditOutcome(value: unknown): boolean {
     return hasExactKeys(value, ["kind", "deliveredResult"])
       && isInformationResult(value.deliveredResult);
   }
-  if (value.kind === "invalidSavantPattern") {
+  if ((value.kind === "invalidSavantPattern" || value.kind === "dayInformation")) {
     return hasExactKeys(value, ["kind", "truthfulCount"])
       && Number.isInteger(value.truthfulCount);
   }
@@ -666,7 +639,7 @@ function isTroubleBrewingSpyReminder(value: unknown, playerId: string): boolean 
   return isAutomaticReminder(value) &&
     isRecord(value) &&
     value.playerId === playerId &&
-    troubleBrewingAutomaticReminderPairs.has(`${value.characterId}:${value.tokenId}`);
+    automaticReminderPairs.has(`${value.characterId}:${value.tokenId}`);
 }
 
 
@@ -885,8 +858,7 @@ function isAutomaticReminder(value: unknown): boolean {
     hasOnlyKeys(value, ["playerId", "characterId", "tokenId", "label", "description", "count", "sourceEventId", "inactiveReason"]) &&
     typeof value.playerId === "string" &&
     typeof value.tokenId === "string" &&
-    (sectsAndVioletsAutomaticReminderCharacters.has(String(value.characterId)) ||
-      troubleBrewingAutomaticReminderPairs.has(`${value.characterId}:${value.tokenId}`)) &&
+    automaticReminderPairs.has(`${value.characterId}:${value.tokenId}`) &&
     typeof value.label === "string" &&
     typeof value.description === "string" &&
     (value.count === undefined || (Number.isInteger(value.count) && Number(value.count) >= 0)) &&
@@ -1124,7 +1096,7 @@ function invalidEvent(): Error {
 function invalidCoreResponse(): Error {
   return new Error("코어 응답 형식이 올바르지 않습니다.");
 }
-const eventDiscriminatorSet = new Set(["setupConfirmed", "phaseStepConfirmed", "customActionConfirmed"]);
+const eventDiscriminatorSet = new Set(["setupConfirmed", "phaseStepConfirmed", "customActionConfirmed", "dayConfirmed"]);
 
 
 export function numberChoiceIdentity(choice: NumberChoice): string {

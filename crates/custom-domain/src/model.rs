@@ -335,6 +335,7 @@ pub(crate) struct AbnormalAbilityEvidence {
     rename_all_fields = "camelCase"
 )]
 pub(crate) enum AbnormalAbilityOutcome {
+    DayInformation { truthful_count: u8 },
     IncorrectInformation { delivered_result: InformationResult },
     InvalidSavantPattern { truthful_count: u8 },
     EffectFailure { effect: AbnormalAbilityEffect },
