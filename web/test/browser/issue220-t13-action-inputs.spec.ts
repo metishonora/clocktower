@@ -7,7 +7,7 @@ async function open(page:Page,id:string,width:number){await page.setViewportSize
 async function shot(page:Page,name:string){await page.screenshot({path:test.info().outputPath(`${name}.png`),fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);}
 for(const width of [320,390,820,1366]){
  test(`T13 R04 dawn enters day and in-app Undo restores dawn at ${width}`,async({page})=>{
-  await open(page,'R04',width);await shot(page,'dawn');await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'첫날 밤 완료'})).toBeVisible();await shot(page,'day');
+  await open(page,'R04',width);await shot(page,'dawn');await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'1일차 낮',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'사망 발표',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'발표 완료',exact:true})).toBeEnabled();await expect(page.getByRole('list',{name:'낮 순서'}).locator('[aria-current=step]')).toContainText('사망 발표');await shot(page,'day');
   await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('button',{name:'되돌리기',exact:true}).click();await expect(page.getByRole('button',{name:'낮 시작',exact:true})).toBeVisible();
  });
  for(const id of ['R10','R11','R13'])test(`T13 ${id} original single-target input and direct return at ${width}`,async({page})=>{
