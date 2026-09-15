@@ -2,13 +2,13 @@
 //! The representative lifecycle is extended as character handlers are connected.
 use serde_json::{json, Value};
 
-fn system(id: &str) -> Value {
+pub(super) fn system(id: &str) -> Value {
     json!({"kind":"system","actionId":id})
 }
-fn character(id: &str, action: &str) -> Value {
+pub(super) fn character(id: &str, action: &str) -> Value {
     json!({"kind":"character","characterId":id,"actionId":action})
 }
-fn result(game: &Value) -> Value {
+pub(super) fn result(game: &Value) -> Value {
     serde_json::from_str(&crate::replay_json(&game.to_string())).unwrap()
 }
 fn game() -> Value {
@@ -26,19 +26,19 @@ fn game() -> Value {
     ]);
     game
 }
-fn replay(game: &Value) -> Value {
+pub(super) fn replay(game: &Value) -> Value {
     let r = result(game);
     assert_eq!(r["ok"], true, "{r}");
     r["value"].clone()
 }
-fn propose(game: &Value, command: Value) -> Value {
+pub(super) fn propose(game: &Value, command: Value) -> Value {
     serde_json::from_str(&crate::propose_json(
         &game.to_string(),
         &command.to_string(),
     ))
     .unwrap()
 }
-fn append(game: &mut Value, command: Value) -> Value {
+pub(super) fn append(game: &mut Value, command: Value) -> Value {
     let before = game.clone();
     let proposal = propose(game, command.clone());
     assert_eq!(*game, before, "proposal must be pure");
@@ -51,7 +51,7 @@ fn append(game: &mut Value, command: Value) -> Value {
     replay(game);
     event
 }
-fn day(game: &mut Value, input: Value) {
+pub(super) fn day(game: &mut Value, input: Value) {
     let state = replay(game);
     append(
         game,
@@ -61,7 +61,7 @@ fn day(game: &mut Value, input: Value) {
         }}),
     );
 }
-fn begin_night(game: &mut Value) {
+pub(super) fn begin_night(game: &mut Value) {
     for _ in 0..3 {
         day(game, json!({"kind":"advance"}));
     }
@@ -142,7 +142,7 @@ fn next_night_exposes_a_roster_scoped_action_and_transition_undo_restores_day() 
     assert_eq!(replay(&game)["day"]["stage"], "nightReady");
 }
 
-fn step(game: &mut Value, expected: Value, input: Value, delivered: Option<Value>) -> Value {
+pub(super) fn step(game: &mut Value, expected: Value, input: Value, delivered: Option<Value>) -> Value {
     let state = replay(game);
     assert_eq!(state["currentStep"]["actionRef"], expected, "{state}");
     let mut payload = json!({"stepId":state["currentStep"]["id"],

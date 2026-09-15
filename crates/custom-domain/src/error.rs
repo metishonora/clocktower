@@ -17,6 +17,7 @@ pub(crate) enum ErrorKind {
     CustomScriptNotResolved,
     InvalidFirstNightOrderPlan,
     InvalidOtherNightOrderPlan,
+    JinxRegistrationInvalid,
     FirstNightActionRegistrationInvalid,
     FirstNightActionHandlerUnavailable,
     InvalidFirstNightActionProvenance,
@@ -116,6 +117,7 @@ impl ErrorKind {
                 "INVALID_FIRST_NIGHT_ORDER_PLAN",
                 "첫날 밤 행동 순서가 올바르지 않습니다.",
             ),
+            Self::JinxRegistrationInvalid => ("JINX_REGISTRATION_INVALID", "징크스 규칙 연결을 확인할 수 없습니다."),
             Self::FirstNightActionRegistrationInvalid => (
                 "FIRST_NIGHT_ACTION_REGISTRATION_INVALID",
                 "첫날 밤 행동 등록이 올바르지 않습니다.",

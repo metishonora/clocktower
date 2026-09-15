@@ -36,7 +36,7 @@ it('a late Barber offers only legal counts, a Core-projected chooser and sequent
 it('Sage exposes valid information choices and its frozen player reveal',async()=>{
  const {controller:c}=await nightFixture(['soldier','monk','sage','virgin','slayer','scarletWoman','imp']);
  await choose(c,['p1']);await choose(c,['p3']);expect(c.step?.actionRef?.actionId).toBe('learnDemon');
- c.finishHandoff();expect(informationChoices(c.step!,[]).length).toBeGreaterThan(0);c.updateInput({choiceIndex:'0'});await c.prepareCurrent();
+ c.finishHandoff();expect(informationChoices(c.step!,[]).length).toBeGreaterThan(0);c.beginSelection();c.togglePlayer('p1');c.togglePlayer('p7');await c.acceptSelection();await c.prepareCurrent();
  expect(c.getSnapshot().error).toBeUndefined();expect(c.getSnapshot().activeReveal?.payload).toMatchObject({kind:'sageInformation'});c.conceal();await c.confirm();expect(c.getSnapshot().error).toBeUndefined();c.dispose();
 });
 it('Vigormortis death consequence uses poison candidates from the Core',async()=>{

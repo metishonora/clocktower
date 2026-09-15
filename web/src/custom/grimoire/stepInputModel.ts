@@ -1,9 +1,16 @@
 import type { InformationResult, PhaseStep, PhaseStepConfirmation, RegistrationJudgment } from '../core/types.js';
 export type InformationChoice = { result: InformationResult; registrationJudgments: RegistrationJudgment[]; isComputed: boolean };
+export function isPlayerPairInformation(step: PhaseStep): boolean {
+  return step.requiredInput.kind === 'none' && step.informationPrompt?.computedResult?.kind === 'playerPair';
+}
 export function informationChoices(step: PhaseStep, playerIds: string[]): InformationChoice[] {
   const prompt = step.informationPrompt;
   if (!prompt) return [];
   const check = prompt.targetChecks?.find(check => check.targetPlayerIds.length === playerIds.length && check.targetPlayerIds.every(id => playerIds.includes(id)));
+  if (isPlayerPairInformation(step)) {
+    const choices = prompt.targetChecks?.flatMap(c => c.choices) ?? [];
+    return playerIds.length === 0 ? choices : choices.filter(c => c.result.kind === 'playerPair' && playerIds.length === 2 && c.result.playerIds.every(id => playerIds.includes(id)));
+  }
   if (check) return check.choices;
   if (prompt.targetChecks?.length) return [];
   if (prompt.numberChoices.length) return prompt.numberChoices.map(choice => ({ ...choice, result: { kind: 'number', value: choice.value } }));

@@ -2,7 +2,7 @@ import {actionAdapter} from '../custom/grimoire/actions/registry';
 import {registrationPresentation} from '../custom/grimoire/registrationPresentation';
 import type { FirstNightController } from '../custom/grimoire/firstNightController';
 import { actionInputIdentity, actionPresentation, type TaskStage } from '../custom/grimoire/actionPresentation';
-import { informationChoices, selectedSetupChoice, setupChoices } from '../custom/grimoire/stepInputModel';
+import { isPlayerPairInformation, informationChoices, selectedSetupChoice, setupChoices } from '../custom/grimoire/stepInputModel';
 import { characterPresentation } from '../custom/authoring/characterPresentation';
 import type { InformationResult, RegistrationJudgment, ReplayState } from '../custom/core/types';
 
@@ -46,10 +46,11 @@ export function taskPresentationModel(controller:FirstNightController) {
  if(step?.actionRef?.actionId==='attackPlayer'&&!step.requiredInput.attackOptions)editor={kind:'unavailable',message:'공격 입력을 확인할 수 없습니다.'};
  const stage:TaskStage=!step?'end':cause?.kind==='requiredPreparation'||cause?.kind==='initialPreparation'?'preparation':cause?.kind==='delivery'?'delivery':action?.stage??'action';
  const needsPlayers=!!adapter&&adapter.selectionContract!=='none'&&!draft.zero;
- const minPlayers=step?.requiredInput.minSelections??(editor.kind==='setup'?2:1);
- const maxPlayers=step?.requiredInput.maxSelections??(editor.kind==='setup'?2:1);
+ const pairInformation=!!step&&isPlayerPairInformation(step);
+ const minPlayers=pairInformation?2:step?.requiredInput.minSelections??(editor.kind==='setup'?2:1);
+ const maxPlayers=pairInformation?2:step?.requiredInput.maxSelections??(editor.kind==='setup'?2:1);
  const registration=registrationPresentation(step,state.replay,draft);
- const choice=registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
+ const choice=pairInformation?(draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:undefined):registration.kind?registration.choice:draft.choiceIndex!==''?choices[Number(draft.choiceIndex)]:choices.length===1||choices[0]?.result.kind==='characterPair'?choices[0]:undefined;
  const registrationChoices=editor.kind==='setup'?candidates.map(c=>c.registrationJudgments):choices.map(c=>c.registrationJudgments);
  return {identity:actionInputIdentity(state.file,step),actor,ability,stage,editor,result,reprepareId:reprepare?.id,warnings:editor.kind==='unavailable'?[editor.message]:[],
   actions:{confirmLabel:stage==='delivery'?'정보 공개':stage==='transition'?'낮 시작':'확인',skip:!!step&&(step.canSkip||step.requiredInput.optional)},

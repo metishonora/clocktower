@@ -2,7 +2,7 @@ import {reviewedAction,type HandoffStep} from './actionResult';
 import {actionAdapter,revealDisposition} from './actions/registry';
 import {registrationPresentation,type RegistrationSelections} from './registrationPresentation.js';
 import { actionInputIdentity, actionPresentation } from './actionPresentation.js';
-import { stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
+import { isPlayerPairInformation, judgmentsEqual, stepConfirmation, informationChoices, normalizeSetupDraft, selectedSetupChoice, setupSelectionCanComplete } from './stepInputModel.js';
 import type { SetupDistributionResult, InformationResult, RegistrationJudgment } from '../core/types.js';
 import type { CoreAdapter } from '../core/coreAdapter.js';
 import type { GameFileV5, PhaseStep, PhaseStepConfirmation, Proposal, ReplayState, RevealPayload } from '../core/types.js';
@@ -85,6 +85,16 @@ export class FirstNightController {
     this.clearProposal();
     const changedTargets=patch.playerIds && JSON.stringify(patch.playerIds)!==JSON.stringify(this.state.inputDraft.playerIds);
     const draft={...this.state.inputDraft,...(changedTargets?{mayorBounceSelecting:false,mayorDecision:undefined,successorPlayerId:undefined,chooserPlayerId:undefined}:{}),...patch};
+    if(this.step && isPlayerPairInformation(this.step)) {
+      const choices=informationChoices(this.step,draft.playerIds);
+      // Selecting a legal pair also selects its Core-projected registration evidence.
+      // Prefer the Recluse interpretation when the selected pair permits it.
+      const registered=choices.findIndex(c=>c.registrationJudgments.length>0);
+      const index=draft.playerIds.length===2?(registered>=0?registered:choices.length?0:-1):-1;
+      draft.judgments=index<0?[]:choices[index].registrationJudgments;
+      draft.choiceIndex=index<0?'':String(index);
+      draft.delivery=undefined;
+    }
     const registrations=this.step?.requiredInput.playerRegistrationOptions;
     if(registrations)draft.judgments=registrations.filter(j=>draft.playerIds.includes(j.playerId));
     this.patch({inputDraft:this.step?normalizeSetupDraft(this.step,draft):draft});
@@ -98,6 +108,7 @@ export class FirstNightController {
     const step=this.step;if(!step)return false;
     const r=step.requiredInput,ids=this.selectedPlayerIds;
     if(this.state.selectionKind==='delivery')return ids.length===2;
+    if(isPlayerPairInformation(step))return ids.length===2&&informationChoices(step,ids).length>0;
     const d=this.state.inputDraft;
     if(d.zero)return !!r.zeroAllowed;
     if(r.allowedSelectionCounts&&!r.allowedSelectionCounts.includes(ids.length))return false;
@@ -129,6 +140,7 @@ export class FirstNightController {
     if(this.selectingMayorBounce)return this.mayorPrompt?.bounceTargetPlayerIds.includes(id)??false;
     if(this.state.selectionKind==='delivery') return this.state.replay.players.some(p=>p.id===id)&&(ids.includes(id)||ids.length<2);
     if (ids.includes(id)) return true;
+    if(isPlayerPairInformation(this.step!))return ids.length<2 && informationChoices(this.step!,[]).some(c=>c.result.kind==='playerPair'&&[...ids,id].every(target=>c.result.kind==='playerPair'&&c.result.playerIds.includes(target)));
     return (r.allowedPlayerIds ?? this.state.replay.players.map(p=>p.id)).includes(id)
       && ids.length < (r.maxSelections ?? (r.kind==='setupInfo'?2:1))
       && (r.kind!=='setupInfo'||setupSelectionCanComplete(this.step!,[...ids,id]))
@@ -145,6 +157,7 @@ export class FirstNightController {
     const step=this.step;if(!step||this.hasCheckpoint||!this.selectionReady)return;
     if(this.state.selectionKind==='delivery'){if(this.selectedPlayerIds.length===2)this.patch({selecting:false,handoff:undefined});return;}
     const r=step.requiredInput, ids=this.state.inputDraft.playerIds;
+    if(isPlayerPairInformation(step)){this.patch({selecting:false,handoff:undefined});return;}
     const minimum=r.minSelections ?? (r.kind==='setupInfo'?2:1);
     if(!this.state.inputDraft.zero && (ids.length<minimum || ids.length>(r.maxSelections ?? (r.kind==='setupInfo'?2:1))))return;
     if(r.kind==='setupInfo'&&!this.state.inputDraft.zero&&!setupSelectionCanComplete(step,ids))return;
@@ -157,6 +170,7 @@ export class FirstNightController {
     const step=this.step;if(!step)return;
     if(!actionPresentation(step)){this.patch({error:"이 행동의 화면 연결을 확인할 수 없습니다."});return;}
     const d=this.state.inputDraft, choices=informationChoices(step,d.playerIds);
+    if(!skip && isPlayerPairInformation(step) && (d.playerIds.length!==2 || d.choiceIndex==='' || !choices[Number(d.choiceIndex)] || !judgmentsEqual(choices[Number(d.choiceIndex)].registrationJudgments,d.judgments)))return;
     if(!skip && step.requiredInput.kind==='setupInfo'&&!selectedSetupChoice(step,d))return;
     const constraint=step.informationPrompt?.numberConstraint;
     if(!skip&&constraint&&(!d.delivery||d.delivery.kind!=='number'||d.delivery.value<constraint.min||d.delivery.value>constraint.max||constraint.excludedValues.includes(d.delivery.value)))return;

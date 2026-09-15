@@ -7,6 +7,7 @@ mod first_night;
 mod game;
 mod identity;
 mod information;
+mod jinxes;
 mod input;
 mod messages;
 mod model;

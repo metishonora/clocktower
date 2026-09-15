@@ -14,7 +14,7 @@ import { InformationTaskPresentation, InformationPairInput, InformationBinaryInp
 import { CharacterAbilityInput, InformationInputPresentation, InformationNumberInput, InformationTreatmentInput } from '../shared-ui/InformationInputPresentation';
 import type { InformationResult, PhaseStep, RegistrationJudgment, ReplayState } from '../custom/core/types.js';
 import { characterPresentation } from '../custom/authoring/characterPresentation.js';
-import { judgmentsEqual } from '../custom/grimoire/stepInputModel.js';
+import { isPlayerPairInformation, judgmentsEqual } from '../custom/grimoire/stepInputModel.js';
 import type { FirstNightController } from '../custom/grimoire/firstNightController.js';
 export function CustomStepInputs({ step, replay, controller, disabled }: { step: PhaseStep; replay: ReplayState; controller: FirstNightController; disabled: boolean }) {
   const model=taskPresentationModel(controller);
@@ -78,6 +78,10 @@ export function CustomStepInputs({ step, replay, controller, disabled }: { step:
     if(registration.kind||choices.length===1)return <InformationResultView kind="target">{model.choice?.result.kind==='boolean'?model.choice.result.value?'있음':'없음':'선택 필요'}</InformationResultView>;
     return <fieldset className="snvInformationBinary targetInformationChoices tbTargetInformationChoices"><legend>전달할 정보</legend>{choices.map((c,index)=><button type="button" key={index} className={choiceIndex===String(index)?'selected':''} aria-pressed={choiceIndex===String(index)} disabled={disabled} onClick={()=>setChoice(String(index))}>{c.result.kind==='boolean'&&c.result.value?'악마 있음':'악마 없음'}</button>)}</fieldset>;
   }
+  if(isPlayerPairInformation(step)) return playerIds.length===2 ? <>
+    <InformationInputPresentation label="전달할 대상">{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</InformationInputPresentation>
+    <div className="snvStepActions snvInformationTargetActions"><button type="button" className="secondary" disabled={disabled} onClick={()=>controller.beginSelection()}>대상 변경</button></div>
+  </> : null;
   if(model.editor.kind==='ability')return <AbilityChoiceControls input={step.actionRef?.actionId==='assignShownCharacter'?<ShownCharacterField value={characterIds[0] ?? ''} label="표시 배역" options={allowedCharacters.map(id=>({id,name:characterPresentation(id)?.label ?? id}))} busy={disabled} onChange={id=>setCharacters(id?[id]:[])}/>:undefined} value={characterIds[0] ?? ''} options={allowedCharacters.map(id=>({id,label:characterPresentation(id)?.label ?? id}))} busy={disabled} onChange={id=>setCharacters(id?[id]:[])} onConfirm={()=>void submit()} onDefer={r.optional?()=>void submit(true):undefined}/>;
   return <fieldset className="customStepInputs" disabled={disabled}>
     {targeted&&hasTargets&&<dl className="snvInformationValues snvTargetedInformationContext snvMobileStackedInformationContext" role="group" aria-label="대상과 진실"><div><dt>대상</dt><dd>{playerIds.map(id=>{const p=replay.players.find(p=>p.id===id);return p?`${p.seat}번 ${p.name}`:id;}).join(' · ')}</dd></div><div><dt>진실</dt><dd>{(()=>{const check=step.informationPrompt?.targetChecks?.find(c=>c.targetPlayerIds.length===playerIds.length&&c.targetPlayerIds.every(id=>playerIds.includes(id)));if(step.character==='dreamer'){const target=replay.players.find(p=>p.id===playerIds[0]);return target?characterPresentation(target.actualCharacter)?.label??target.actualCharacter:'';}return check?informationLabel(check.computedResult,replay):'';})()}</dd></div></dl>}

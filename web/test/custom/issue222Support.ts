@@ -7,8 +7,8 @@ import {parseGameFileJson} from '../../src/custom/storage/gameFile';
 import {customFirstNightPlan,customOtherNightPlan} from '../../src/custom/core/wasmClient';
 import {realWasmCore} from './realCustomWasmHarness';
 import type {GrimoireSetupDraft,GrimoirePresentationState} from '../../src/custom/grimoire/setupController';
-import type {Command,PhaseStepInput,CustomScriptDefinition} from '../../src/custom/core/types';
-export async function nightFixture(roster:string[],inputs:Record<string,PhaseStepInput>={},extra:string[]=[],edit?:(definition:CustomScriptDefinition)=>void,shown:Record<string,string>={},executeFirstDayPlayerId?:string) {
+import type {Command,PhaseStepInput,CustomScriptDefinition,InformationResult} from '../../src/custom/core/types';
+export async function nightFixture(roster:string[],inputs:Record<string,PhaseStepInput>={},extra:string[]=[],edit?:(definition:CustomScriptDefinition)=>void,shown:Record<string,string>={},executeFirstDayPlayerId?:string,deliveries:Record<string,InformationResult>={}) {
  const core=realWasmCore();
  const pool=[...new Set([...roster,...extra,'undertaker','soldier','mayor','virgin','slayer','saint'])];
  const draft={id:'issue222',name:'이후 밤 인수',characterIds:pool};
@@ -25,7 +25,7 @@ export async function nightFixture(roster:string[],inputs:Record<string,PhaseSte
  for(let i=0;i<50&&session.replay!.phase==='firstNight';i++) {
   const step=session.replay!.currentStep!,id=step.actionRef!.actionId;
   const input=id==='demonInfo'?{characterIds:step.requiredInput.allowedCharacterIds!.slice(0,3)}:inputs[id]??null;
-  await run({type:'confirmStep',payload:{stepId:step.id,input}});
+  await run({type:'confirmStep',payload:{stepId:step.id,input,...(deliveries[id]?{deliveredResult:deliveries[id]}:{})}});
  }
  if(session.replay!.phase!=='day')throw Error('first night not complete');
  const controller=new FirstNightController(session,core);

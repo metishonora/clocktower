@@ -1,0 +1,47 @@
+import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {afterEach, expect, it, vi} from 'vitest';
+import {nightFixture} from './custom/issue222Support';
+import {CustomGrimoirePlay} from '../src/grimoire-custom/CustomGrimoirePlay';
+afterEach(cleanup);
+it('existing Sage input controls send the selected Recluse judgment and show the chosen pair',async()=>{
+  const {controller:c,session}=await nightFixture(['sage','recluse','soldier','virgin','slayer','scarletWoman','imp','mayor'],{},['ravenkeeper']);
+  try {
+    c.beginSelection();c.togglePlayer('p1');await c.acceptSelection();
+    await vi.waitFor(()=>expect(c.getSnapshot().saveStatus).toBe('saved'));c.finishHandoff();
+    expect(c.step?.character).toBe('sage');
+    render(<CustomGrimoirePlay controller={c} onNewGame={()=>{}} onImport={()=>{}}/>);
+    expect(screen.queryByRole('button',{name:'P2 / P3'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'두 명 선택'}));
+    expect(screen.getByRole('button',{name:'선택 확정'})).toHaveProperty('disabled',true);
+    fireEvent.click(screen.getByRole('button',{name:/^3번 P3,/}));
+    expect(screen.getByRole('button',{name:'선택 확정'})).toHaveProperty('disabled',true);
+    fireEvent.click(screen.getByRole('button',{name:/^2번 P2,/}));
+    expect(screen.getByRole('button',{name:/^4번 P4,/})).toHaveProperty('disabled',true);
+    fireEvent.click(screen.getByRole('button',{name:'선택 확정'}));
+    await waitFor(()=>expect(c.getSnapshot().selecting).toBe(false));
+    expect(screen.getByRole('button',{name:'정보 공개'})).toHaveProperty('disabled',false);
+    expect(screen.queryByRole('button',{name:'악마'})).toBeNull();
+    expect(screen.queryByText(/이번 판정의.*취급/)).toBeNull();
+    const change=screen.getByRole('button',{name:'대상 변경'});
+    expect(change.classList.contains('secondary')).toBe(true);
+    expect(change.parentElement?.classList.contains('snvStepActions')).toBe(true);
+    fireEvent.click(change);
+    fireEvent.click(screen.getByRole('button',{name:/^2번 P2,/}));
+    fireEvent.click(screen.getByRole('button',{name:/^7번 P7,/}));
+    fireEvent.click(screen.getByRole('button',{name:'선택 확정'}));
+    await waitFor(()=>expect(c.getSnapshot().selecting).toBe(false));
+    expect(c.getSnapshot().inputDraft.judgments).toEqual([]);
+    fireEvent.click(screen.getByRole('button',{name:'대상 변경'}));
+    fireEvent.click(screen.getByRole('button',{name:/^7번 P7,/}));
+    fireEvent.click(screen.getByRole('button',{name:/^2번 P2,/}));
+    fireEvent.click(screen.getByRole('button',{name:'선택 확정'}));
+    await waitFor(()=>expect(c.getSnapshot().selecting).toBe(false));
+    expect(c.getSnapshot().inputDraft.judgments).toEqual([{playerId:'p2',registeredAs:'demon'}]);
+    fireEvent.click(screen.getByRole('button',{name:'정보 공개'}));
+    await waitFor(()=>expect(c.getSnapshot().activeReveal).toBeTruthy());
+    expect(c.getSnapshot().error).toBeUndefined();
+    expect(c.getSnapshot().activeReveal?.payload).toMatchObject({kind:'sageInformation',candidatePlayers:[{playerId:'p2'},{playerId:'p3'}]});
+    await act(async()=>{c.conceal();await c.confirm();});
+    expect(session.snapshot.canonical.game.events.at(-1)?.payload).toMatchObject({registrationJudgments:[{playerId:'p2',registeredAs:'demon'}]});
+  } finally {c.dispose();}
+});
