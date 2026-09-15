@@ -166,7 +166,7 @@ export function parseGameEvent(value: unknown): GameEvent {
 const dayValidators={ability:isAbilityUseRef,impairment:isActiveImpairment,character:isKnownCharacter,simulation:isSimulationSource};
 export function parseReplayState(value: unknown): ReplayState {
   if(isRecord(value) && value.day!==undefined && !isDayView(value.day,dayValidators))throw invalidCoreResponse();
-  if (!isRecord(value) || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
+  if (!isRecord(value) || !Number.isInteger(value.nightNumber) || Number(value.nightNumber)<0 || !Array.isArray(value.actionExecutions) || !value.actionExecutions.every(isActionExecution) || !isLatestUndoUnit(value.latestUndoUnit) || !optionalList(value.madnessAssignments, v => isAssignment(v, true)) || value.schemaVersion !== 5 || !isReplayScriptIdentity(value) || !Number.isInteger(value.eventCount) || !isPhase(value.phase) || !Array.isArray(value.players) || !value.players.every(isPlayer) || !(value.currentStep === null || isPhaseStep(value.currentStep)) || !Array.isArray(value.phaseOverview) || !value.phaseOverview.every(isPhaseOverviewItem) || !isRuleState(value.ruleState) || !Array.isArray(value.warnings) || !value.warnings.every(isWarning) || (value.pendingIdentityReveals !== undefined && !isPendingIdentityRevealList(value.pendingIdentityReveals)) || (value.gameEnd !== undefined && value.gameEnd !== null && !isCustomGameEnd(value.gameEnd)) || !optionalList(value.availableActions, isPhaseStep)) throw invalidCoreResponse();
   return value as ReplayState;
 }
 function isReplayScriptIdentity(value: Record<string, unknown>): boolean { return value.scriptId === undefined && isCustomReplayScriptReference(value.script); }
@@ -761,6 +761,8 @@ function isRequiredInput(value: unknown): value is PhaseStep["requiredInput"] {
       ["Townsfolk", "Outsider", "Minion", "Demon"].includes(String(value.characterKind))) &&
     (value.allowedCharacterIds === undefined ||
       (Array.isArray(value.allowedCharacterIds) && value.allowedCharacterIds.every(isKnownCharacter))) &&
+    (value.allowedSelectionCounts === undefined || (Array.isArray(value.allowedSelectionCounts) && value.allowedSelectionCounts.every(n=>Number.isInteger(n)&&Number(n)>=0))) &&
+    (value.attackOptions === undefined || (Array.isArray(value.attackOptions) && value.attackOptions.every(o=>isRecord(o)&&isString(o.targetPlayerId)&&Array.isArray(o.successorPlayerIds)&&o.successorPlayerIds.every(isString)&&(o.mayorDecision===undefined||isMayorDecisionPrompt(o.mayorDecision))))) &&
     (value.allowedChooserPlayerIds === undefined || (Array.isArray(value.allowedChooserPlayerIds) && value.allowedChooserPlayerIds.every(isString))) &&
     (value.allowedSuccessorPlayerIds === undefined || (Array.isArray(value.allowedSuccessorPlayerIds) && value.allowedSuccessorPlayerIds.every(isString))) &&
     (value.allowedPlayerIds === undefined ||
@@ -999,7 +1001,8 @@ function isActiveImpairment(value: unknown): value is ActiveImpairment {
 
 function isPendingIdentityReveal(value: unknown): boolean {
   return isRecord(value) &&
-    hasExactKeys(value, ["sourceEventId", "sequence", "payload"]) &&
+    hasExactKeys(value, ["sourceEventId", "sequence", "payload", ...(value.deliveryEventId === undefined ? [] : ["deliveryEventId"])]) &&
+    (value.deliveryEventId === undefined || isString(value.deliveryEventId)) &&
     typeof value.sourceEventId === "string" &&
     Number.isInteger(value.sequence) &&
     (value.sequence as number) >= 0 &&

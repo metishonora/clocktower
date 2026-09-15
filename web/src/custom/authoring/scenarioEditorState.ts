@@ -3,7 +3,7 @@ import type { CustomScriptDefinitionDraft } from '../core/types.js';
 import type { DefinitionSection } from '../core/definition.js';
 
 export type EditorStep = 'scenario' | 'characters' | 'nightOrder' | 'review';
-export type EditorError = { section: DefinitionSection | 'operation'; message: string };
+export type EditorError = { section: DefinitionSection | 'operation'; message: string; night?: 'first' | 'other' };
 import type { ValidatedScenario } from '../core/definitionValidator.js';
 export type ScenarioEditorState = {
   step: EditorStep;

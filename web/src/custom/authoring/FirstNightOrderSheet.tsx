@@ -4,22 +4,28 @@ import type { ScenarioEditorState } from './scenarioEditorState.js';
 import { blockingMessage } from './scenarioEditorController.js';
 import { actionKey } from './reconcileFirstNightOrder.js';
 import { characterPresentation } from './characterPresentation.js';
-type Night = 'first';
+type Night = 'first' | 'other';
 type OrderEntry = { id: string; label: string; kind: 'boundary' | 'system' | 'character'; characterId?: string; conditional?: boolean; invalid?: 'unknown' | 'duplicate' };
 const labels = { dusk: '해질녘', dawn: '새벽', minionInfo: '하수인 정보', demonInfo: '악마 정보' };
 function assetFor(id?: string) { const entry = id ? characterPresentation(id) : undefined; return entry ? { src: entry.image } : undefined; }
 export function FirstNightOrderSheet({ state, controller }: { state: ScenarioEditorState; controller: ScenarioEditorController }) {
-  const entries: OrderEntry[] = (state.draft.firstNightOrder ?? []).map(action => ({
+  const [night, setNight] = useState<Night>('first');
+  const entriesFor = (night: Night): OrderEntry[] => (state.draft[night === 'first' ? 'firstNightOrder' : 'otherNightOrder'] ?? []).map(action => ({
     id: actionKey(action), label: action.kind === 'system' ? labels[action.actionId] : characterPresentation(action.characterId)?.label ?? action.characterId,
     kind: action.kind === 'system' && (action.actionId === 'dusk' || action.actionId === 'dawn') ? 'boundary' : action.kind,
     characterId: action.kind === 'character' ? action.characterId : undefined,
   }));
   const error = state.error?.section !== 'name' ? blockingMessage(state.error) : undefined;
-  return <section className="issue202Gate3Sheet scenarioFirstNight" aria-labelledby="night-title">
+  return <section className="issue202Gate3Sheet scenarioFirstNight scenarioBothNights" aria-labelledby="night-title">
     <header className="issue202Gate3Header"><div><small>Ⅲ</small><h1 id="night-title">밤 행동 순서</h1></div></header>
     <div aria-live="polite">{state.orderPending ? '순서를 확인하고 있습니다.' : error ? <span role="alert">{error} <button type="button" onClick={controller.retry}>다시 시도</button></span> : null}</div>
-    <OrderPanel night="first" title="첫날 밤" entries={entries} busy={state.orderPending}
-      onMove={(_night, key, direction) => controller.moveAction(key, direction)} onRestore={controller.restoreOrder} />
+    <div className="scenarioNightTabs" role="tablist" aria-label="편집할 밤">{(['first','other'] as const).map(value => <button key={value} type="button" role="tab" id={`order-tab-${value}`} aria-controls={`order-panel-${value}`} aria-selected={night === value} tabIndex={night === value ? 0 : -1} onClick={() => setNight(value)} onKeyDown={event => {
+      if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 'first' : event.key === 'End' ? 'other' : night === 'first' ? 'other' : 'first'; setNight(next); document.getElementById(`order-tab-${next}`)?.focus(); }
+    }}>{value === 'first' ? '첫날 밤' : '이후 밤'}</button>)}</div>
+    <div className="scenarioNightPanels">{(['first','other'] as const).map(value => <div key={value} id={`order-panel-${value}`} className={night === value ? 'is-active' : ''}>
+      <OrderPanel night={value} title={value === 'first' ? '첫날 밤' : '이후 밤'} entries={entriesFor(value)} busy={state.orderPending}
+        onMove={(target, key, direction) => controller.moveAction(key, direction, target)} onRestore={controller.restoreOrder} />
+    </div>)}</div>
     <footer className="scenarioNavigation"><button type="button" onClick={() => controller.setStep('characters')}>← 캐릭터 설정으로</button>
       <button type="button" disabled={state.orderPending || Boolean(error)} onClick={() => controller.setStep('review')}>최종 검토로</button></footer>
   </section>;

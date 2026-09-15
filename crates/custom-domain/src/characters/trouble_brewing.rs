@@ -817,6 +817,10 @@ impl TbHandler {
                     .collect()
             });
         }
+        if self.character() == "imp" {
+            let successors = step.required_input.allowed_successor_player_ids.clone().unwrap_or_default();
+            enrich_attack_input(facts, o.ability_use.as_ref(), &mut step.required_input, &successors);
+        }
         step.ability_origin = o
             .ability_use
             .as_ref()
@@ -2465,10 +2469,13 @@ pub(crate) fn death_succession(
                 source: successor.ability_use.clone(),
                 event_id: event_id.into(),
             });
-        next.pending_identity_reveals.push(PendingIdentityReveal {
+        // Identity changes immediately; a daytime successor learns this at night.
+        let daytime = prior.day.as_ref().is_none_or(|d| d.stage != crate::day::contracts::DayStage::Night);
+        let reveals = if daytime { &mut next.scarlet_day_reveals } else { &mut next.pending_identity_reveals };
+        reveals.push(PendingIdentityReveal {
+            delivery_event_id: None,
             source_event_id: event_id.into(),
-            sequence: next
-                .pending_identity_reveals
+            sequence: reveals
                 .iter()
                 .filter(|r| r.source_event_id == event_id)
                 .count() as u8,
@@ -2899,4 +2906,47 @@ pub(crate) fn historical_registration_source(
         .iter()
         .find(|s| matches!(s.character_id.as_str(), "spy" | "recluse"))
         .cloned()
+}
+
+/// Candidate input projection reuses attack resolution; UI never infers protection or Mayor eligibility.
+pub(crate) fn enrich_attack_input(
+    facts: &CustomGameFacts,
+    source: Option<&AbilityUseRef>,
+    input: &mut crate::model::RequiredInput,
+    successors: &[String],
+) {
+    input.attack_options = Some(facts.players.iter().map(|target| {
+        let mut mayor_decision = None;
+        let mut successor_player_ids = vec![];
+        if let Some(source) = source {
+            let killed = demon_attack_target(facts, source, target, &None);
+            if killed.is_err() && demon_attack_target(facts, source, target, &Some(MayorDecisionInput::MayorDies)).is_ok() {
+                mayor_decision = Some(crate::model::MayorDecisionPrompt {
+                    mayor_player_id: target.id.clone(),
+                    bounce_target_player_ids: facts.players.iter().filter(|p| p.id != target.id).map(|p| p.id.clone()).collect(),
+                });
+            }
+            if killed.ok().flatten().as_deref() == Some(source.owner_player_id.as_str()) && target.id == source.owner_player_id {
+                successor_player_ids = successors.iter().filter(|id| **id != source.owner_player_id).cloned().collect();
+            }
+        }
+        crate::model::AttackTargetOption { target_player_id: target.id.clone(), mayor_decision, successor_player_ids }
+    }).collect());
+}
+
+pub(crate) fn notifies_identity_change(result: &crate::contracts::CustomActionResult) -> bool {
+    matches!(result, crate::contracts::CustomActionResult::NightAttack { .. })
+}
+
+/// Release daytime succession notices only once the next night has begun.
+pub(crate) fn begin_night_identity_reveals(facts: &mut CustomGameFacts, event_id: &str) {
+    for mut reveal in std::mem::take(&mut facts.scarlet_day_reveals) {
+        let RevealPayload::CharacterChange { ref player_id, ref character_id, .. } = reveal.payload else { continue; };
+        if !facts.player(player_id).is_some_and(|p| p.alive && p.actual_character == *character_id) {
+            continue;
+        }
+        reveal.delivery_event_id = Some(event_id.into());
+        reveal.sequence = facts.pending_identity_reveals.iter().filter(|r| r.source_event_id == reveal.source_event_id).count() as u8;
+        facts.pending_identity_reveals.push(reveal);
+    }
 }

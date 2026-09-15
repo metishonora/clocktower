@@ -44,7 +44,9 @@ it('T11 M07: a real Snake Charmer swap cannot change the initial setup adjustmen
  expect(session.replay!.players[6].actualCharacter).toBe('snakeCharmer');expect(session.replay!.players[4].actualCharacter).toBe('vigormortis');
  const app=await resume(JSON.parse(JSON.stringify(session.snapshot.canonical)));apps.push(app);
  const before=structuredClone(app.play!.getSnapshot().file.game.events);
- showPlay(app);fireEvent.click(screen.getByRole('button',{name:'직업'}));
+ showPlay(app);
+ while(app.play!.getSnapshot().handoff?.stage==='notification'){await act(async()=>{app.play!.showNotification();app.play!.conceal();});}
+ fireEvent.click(screen.getByRole('button',{name:'직업'}));
  await waitFor(()=>expect(adjustment('비고르모르티스').length).toBeGreaterThan(0));expectCounts(5,0);
  expect(app.play!.getSnapshot().file.game.events).toEqual(before);
 });

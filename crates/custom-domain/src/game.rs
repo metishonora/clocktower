@@ -52,6 +52,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     let script = game_file.script.clone();
     if game_file.game.events.is_empty() {
         return Ok(ReplayState {
+            night_number: 0,
             day: None,
             action_executions: vec![],
             latest_undo_unit: None,
@@ -73,6 +74,7 @@ pub(crate) fn replay(game_file: GameFile) -> Result<ReplayState, CoreError> {
     }
     let components = replay_components(&game_file)?;
     Ok(ReplayState {
+        night_number: components.state.facts.night_number(),
         day: crate::day::view(&components.state.facts),
         action_executions: components.action_executions,
         latest_undo_unit: components.latest_undo_unit,

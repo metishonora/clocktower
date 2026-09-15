@@ -9,6 +9,7 @@ import { FirstNightOrderSheet } from './FirstNightOrderSheet.js';
 import { ScenarioReviewSheet } from './ScenarioReviewSheet.js';
 import { catalog, countsFor, characterPresentation, type KindFilter, type SourceFilter } from './characterPresentation.js';
 import './scenarioEditor.css';
+import './nightOrders.css';
 export function CustomScenarioEditor({ onExit, onNewGrimoire, onResume, sourceFile }: { onExit: () => void; sourceFile?: File; onNewGrimoire?: (scenario: ValidatedScenario) => void; onResume?: (game: ImportedGame) => void }) {
   const { state, controller } = useScenarioEditor();
   useEffect(() => { if (sourceFile) void controller.importFile(sourceFile); }, [controller, sourceFile]);

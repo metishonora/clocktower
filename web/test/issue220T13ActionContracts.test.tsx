@@ -87,7 +87,7 @@ it('T13 P3: unknown action cannot become a generic working editor',async()=>{
 });
 
 it('T13 P3: every approved action has exactly one explicit adapter',()=>{
- expect(Object.keys(actionAdapters).sort()).toEqual(actionCases.map(c=>`${c[1]}.${c[2]}`).sort());
+ expect(Object.keys(actionAdapters).sort()).toEqual([...actionCases.map(c=>`${c[1]}.${c[2]}`), 'monk.protectPlayer','imp.attackPlayer','ravenkeeper.learnCharacter','undertaker.learnExecutedCharacter','pitHag.changeCharacter','pitHag.chooseDeaths','fangGu.attackPlayer','noDashii.attackPlayer','vortox.attackPlayer','vigormortis.attackPlayer','vigormortis.choosePoison','barber.swapCharacters','sweetheart.makeDrunk','sage.learnDemon','flowergirl.learnDemonVoted','townCrier.learnMinionNominated','oracle.learnDeadEvilCount','juggler.learnJuggles'].sort());
 });
 
 it('T13 P3 A05: an independent interruption is displayed from Core and Undo resumes the original row',async()=>{

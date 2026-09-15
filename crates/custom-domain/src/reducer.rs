@@ -714,15 +714,10 @@ fn apply_snv_facts(
         next.malfunction_audit.push(evidence.clone());
     }
     for (sequence, transition) in event.fact_changes().identity_changes().iter().enumerate() {
-        if matches!(
-            event.payload().result,
-            crate::contracts::CustomActionResult::SnakeCharmer {
-                outcome: crate::contracts::SnakeCharmerOutcome::Swapped,
-                ..
-            }
-        ) {
+        if crate::characters::notifies_identity_change(&event.payload().result) {
             next.pending_identity_reveals
                 .push(crate::contracts::PendingIdentityReveal {
+                    delivery_event_id: None,
                     source_event_id: event.id().into(),
                     sequence: sequence as u8,
                     payload: crate::contracts::RevealPayload::CharacterChange {

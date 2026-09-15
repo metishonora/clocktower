@@ -20,6 +20,7 @@ pub(crate) struct CustomGameFacts {
     pub(crate) night_deaths: Vec<NightDeathRecord>,
     pub(crate) monk_protections: Vec<crate::contracts::TargetAssignment>,
     pub(crate) day: Option<crate::day::contracts::DayProgress>,
+    pub(crate) scarlet_day_reveals: Vec<crate::contracts::PendingIdentityReveal>,
     pub(crate) scarlet_successions: Vec<ScarletSuccession>,
     pub(crate) past_days: Vec<crate::day::contracts::DayProgress>,
     pub(crate) day_ability_first_days: Vec<(String, u32)>,

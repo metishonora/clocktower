@@ -10,12 +10,12 @@ export function informationChoices(step: PhaseStep, playerIds: string[]): Inform
   if (prompt.booleanChoices?.length) return prompt.booleanChoices.map(choice => ({ ...choice, result: { kind: 'boolean', value: choice.value } }));
   return prompt.computedResult ? [{ result: prompt.computedResult, registrationJudgments: [], isComputed: true }] : [];
 }
-export type StepSelection = { playerIds: string[]; characterIds: string[]; correctPlayerId: string; zero: boolean; execute: boolean; choice?: InformationChoice; registrationJudgments: RegistrationJudgment[]; deliveredResult?: InformationResult };
+export type StepSelection = { mayorDecision?: import('../core/types.js').MayorDecisionInput; successorPlayerId?: string; chooserPlayerId?: string; playerIds: string[]; characterIds: string[]; correctPlayerId: string; zero: boolean; execute: boolean; choice?: InformationChoice; registrationJudgments: RegistrationJudgment[]; deliveredResult?: InformationResult };
 export function stepConfirmation(step: PhaseStep, selection: StepSelection, skip = false): PhaseStepConfirmation {
   const { playerIds, characterIds, correctPlayerId, zero, execute } = selection;
   let input: PhaseStepConfirmation['input'] = null;
   if (!skip) switch (step.requiredInput.kind) {
-    case 'playerIds': input = { playerIds }; break;
+    case 'playerIds': input = { playerIds, ...(selection.mayorDecision?{mayorDecision:selection.mayorDecision}:{}), ...(selection.successorPlayerId?{successorPlayerId:selection.successorPlayerId}:{}), ...(playerIds.length&&selection.chooserPlayerId?{chooserPlayerId:selection.chooserPlayerId}:{}) }; break;
     case 'characterIds': input = { characterIds }; break;
     case 'setupInfo': input = zero ? { zeroOutsiders: true } : { playerIds, characterId: characterIds[0], correctPlayerId: correctPlayerId || undefined }; break;
     case 'madnessAssignment': input = { playerIds, characterId: characterIds[0] }; break;

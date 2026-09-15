@@ -531,6 +531,10 @@ pub(crate) struct SetupInformationChoice {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RequiredInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) attack_options: Option<Vec<AttackTargetOption>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) allowed_selection_counts: Option<Vec<u8>>,
     pub(crate) kind: RequiredInputKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) target: Option<InputTarget>,
@@ -848,4 +852,13 @@ pub(crate) struct MadnessState {
     pub(crate) source_effective: bool,
     pub(crate) can_check: bool,
     pub(crate) can_execute: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AttackTargetOption {
+    pub(crate) target_player_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) mayor_decision: Option<MayorDecisionPrompt>,
+    pub(crate) successor_player_ids: Vec<String>,
 }

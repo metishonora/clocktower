@@ -97,7 +97,7 @@ export type PhaseStepInput =
   | { trueValue: number; displayedValue: number; reason?: NumericReason | null }
   | { nominatorId: string; nomineeId: string }
   | { voterIds: string[] }
-  | { playerIds: string[]; mayorDecision: MayorDecisionInput }
+  | { playerIds: string[]; mayorDecision?: MayorDecisionInput; successorPlayerId?: string; chooserPlayerId?: string }
   | { successorPlayerId: string }
   | { execute: boolean }
   | { died: boolean };
@@ -289,10 +289,11 @@ export type CoreResult<T> =
 export type StepExecution = {id:string;rootStepId:string;displayStepId:string;predecessorEventId?:string;relation:'independent'|'continuation'|'reference'};
 export type ActionExecution = {id:string;rootStepId:string;displayStepId:string;stepIds:string[];eventIds:string[];status:'pending'|'active'|'complete'|'interrupted'};
 export type LatestUndoUnit = {id:string;executionId:string;eventIds:string[];summaryStepId:string};
-export type ReplayState = {day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
+export type ReplayState = {nightNumber: number;day?:DayView;actionExecutions:ActionExecution[];latestUndoUnit:LatestUndoUnit|null; schemaVersion: 5; script: CustomScriptReference; eventCount: number; phase: Phase; players: Player[]; currentStep: PhaseStep | null; phaseOverview: PhaseOverviewItem[]; ruleState: RuleState; warnings: CoreWarning[]; gameEnd?: CustomGameEnd | null; availableActions?: PhaseStep[]; pendingIdentityReveals?: PendingIdentityReveal[]; madnessAssignments?: MadnessAssignment[] };
 
 
 export type PendingIdentityReveal = {
+  deliveryEventId?: string;
   sourceEventId: string;
   sequence: number;
   payload: CharacterChangeRevealPayload | MadnessAssignmentRevealPayload | EvilTwinPairRevealPayload;
@@ -751,6 +752,8 @@ export type InputTarget =
 
 
 export type RequiredInput = {
+  attackOptions?: {targetPlayerId: string; mayorDecision?: MayorDecisionPrompt; successorPlayerIds: string[]}[];
+  allowedSelectionCounts?: number[];
   kind: RequiredInputKind;
   target?: InputTarget;
   minSelections?: number;

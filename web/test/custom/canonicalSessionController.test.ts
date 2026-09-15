@@ -172,6 +172,7 @@ function customFile(events: GameEvent[], definition: CustomScriptDefinition): Ga
 
 function customState(eventCount: number, definition: CustomScriptDefinition): ReplayState {
   return {
+    nightNumber: 1,
     actionExecutions: eventCount>1?[{id:'latest',rootStepId:'latest',displayStepId:'latest',stepIds:['latest'],eventIds:['latest'],status:'complete'}]:[],
     latestUndoUnit: eventCount>1?{id:'latest',executionId:'latest',eventIds:['latest'],summaryStepId:'latest'}:null,
     schemaVersion: 5,

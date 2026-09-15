@@ -1,5 +1,10 @@
+import {directNightAction,nightInformation,nightAttack} from './nightContracts';
 import type {ActionAdapter} from './registry';
 export const troubleBrewingActions={
+ 'monk.protectPlayer': {...directNightAction,selectionLabel:'보호 대상 선택'},
+ 'imp.attackPlayer': {...nightAttack,selectionLabel:'공격 대상 선택'},
+ 'ravenkeeper.learnCharacter': {...nightInformation,revealView:'tb',acceptedInputs:['playerIds'],selectionContract:'information',completionContract:{afterSelection:'edit',continuationEntry:'edit'}},
+ 'undertaker.learnExecutedCharacter': {...nightInformation,revealView:'tb'},
  'fortuneTeller.assignRedHerring':{stage:'preparation',inputView:'players',acceptedInputs:['playerIds'],selectionContract:'direct',completionContract:{afterSelection:'confirm',continuationEntry:'select'},revealView:'none',revealOpen:'result',closeDestination:'board',cancellation:'discardInput'},
  'washerwoman.prepareInformation':{stage:'preparation',inputView:'setup',acceptedInputs:['setupInfo'],selectionContract:'setup',completionContract:{afterSelection:'edit',continuationEntry:'select'},revealView:'none',revealOpen:'result',closeDestination:'progress',cancellation:'discardInput'},
  'librarian.prepareInformation':{stage:'preparation',inputView:'setup',acceptedInputs:['setupInfo'],selectionContract:'setup',completionContract:{afterSelection:'edit',continuationEntry:'select'},revealView:'none',revealOpen:'result',closeDestination:'progress',cancellation:'discardInput'},

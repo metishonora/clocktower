@@ -17,6 +17,8 @@ fn production_prefixes_and_proposals_preserve_frozen_baseline() {
         legacy.as_object_mut().unwrap().remove("latestUndoUnit");
         // #223 adds a separately tested daytime projection; every legacy field stays frozen.
         legacy.as_object_mut().unwrap().remove("day");
+        // #222 adds separately tested current-night presentation metadata.
+        legacy.as_object_mut().unwrap().remove("nightNumber");
         if let Some(step)=legacy["currentStep"].as_object_mut() {step.remove("execution");}
         for step in legacy["phaseOverview"].as_array_mut().unwrap() {step.as_object_mut().unwrap().remove("execution");}
         assert_eq!(legacy, prefix["replay"], "prefix {index}");

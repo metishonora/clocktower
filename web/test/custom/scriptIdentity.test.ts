@@ -97,7 +97,7 @@ function customGameFile(value: CustomScriptDefinition): GameFile {
 
 
 function customReplayState(value: CustomScriptDefinition): ReplayState {
-  return {actionExecutions:[],latestUndoUnit:null,
+  return {nightNumber:0,actionExecutions:[],latestUndoUnit:null,
     schemaVersion: 5,
     script: { type: "custom", definition: value },
     eventCount: 0,

@@ -3215,6 +3215,10 @@ impl SnvNightHandler {
             .as_ref()
             .and_then(|a| recorded_ability(facts, a))
             .map(|r| r.origin.clone());
+        if self.id() == "attackPlayer" {
+            super::trouble_brewing::enrich_attack_input(facts, if o.simulation_source.is_some() { None } else { o.ability_use.as_ref() }, &mut step.required_input, &[]);
+        }
+        if self.character() == "barber" { step.required_input.allowed_selection_counts = Some(vec![0, 2]); }
         if self.character() == "sage" {
             let (choices, reasons) = self.sage_options(facts, definition, o);
             let computed = choices
@@ -4165,4 +4169,9 @@ fn historical_day_variants(
         }
     }
     variants
+}
+
+pub(crate) fn notifies_identity_change(result: &CustomActionResult) -> bool {
+    matches!(result, CustomActionResult::SnakeCharmer { outcome: SnakeCharmerOutcome::Swapped, .. }
+        | CustomActionResult::PitHagChange { .. } | CustomActionResult::BarberSwap { .. })
 }
