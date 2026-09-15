@@ -24,10 +24,14 @@ type PromoCardPrototypeProps = {
   headingLinesOverride?: readonly string[];
   timeOverride?: string;
   placeOverride?: string;
+  runtimeOverride?: string;
+  compactHeading?: boolean;
   hideGameName?: boolean;
   hideGenre?: boolean;
+  hideCapacity?: boolean;
   spaciousCopy?: boolean;
   showVioletStamp?: boolean;
+  showEntangledStaffStamp?: boolean;
   openHint?: string;
   idleGlowDelayMs?: number;
 };
@@ -94,10 +98,14 @@ export function PromoCardPrototype({
   headingLinesOverride,
   timeOverride,
   placeOverride,
+  runtimeOverride,
+  compactHeading = false,
   hideGameName = false,
   hideGenre = false,
+  hideCapacity = false,
   spaciousCopy = false,
   showVioletStamp = false,
+  showEntangledStaffStamp = false,
   openHint,
   idleGlowDelayMs,
 }: PromoCardPrototypeProps) {
@@ -120,6 +128,7 @@ export function PromoCardPrototype({
   const invitationTime = timeOverride ?? invitation?.time ?? "";
   const invitationPlace = placeOverride
     ?? (hideDateAndPlace ? "장소: -" : invitation?.place ?? "");
+  const invitationRuntime = runtimeOverride ?? invitation?.runtime ?? "";
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -189,7 +198,9 @@ export function PromoCardPrototype({
             isSectsAndViolets ? "promoCard--snv" : "",
             themedDesign ? `promoCard--tb-${themedDesign}` : "",
             spaciousCopy ? "hasSpaciousCopy" : "",
+            compactHeading ? "hasCompactHeading" : "",
             showVioletStamp ? "hasVioletStamp" : "",
+            showEntangledStaffStamp ? "hasEntangledStaffStamp" : "",
             idleGlowHint ? "hasIdleGlowHint" : "",
             opened ? "isOpen" : "",
           ].filter(Boolean).join(" ")}
@@ -233,6 +244,19 @@ export function PromoCardPrototype({
                 <path className="promoVioletThorns" d="M50 61V80M50 68L43 64M50 73L57 68" />
               </svg>
             ) : null}
+            {showEntangledStaffStamp ? (
+              <svg className="promoEntangledStaffStamp" viewBox="0 0 100 100" aria-hidden="true">
+                <circle className="promoEntangledStampRim" cx="50" cy="50" r="43" />
+                <circle className="promoEntangledStampInnerRim" cx="50" cy="50" r="38" />
+                <path className="promoEntangledStaffWings" d="M47 35C36 28 29 24 19 22C21 29 25 33 31 37L20 34C24 42 34 45 46 44M53 35C64 28 71 24 81 22C79 29 75 33 69 37L80 34C76 42 66 45 54 44" />
+                <path className="promoEntangledStaffSkull" d="M39 29C39 20 43 16 50 16C57 16 61 20 61 29C61 35 57 39 54 41L53 46H47L46 41C43 39 39 35 39 29Z" />
+                <path className="promoEntangledStaffFace" d="M43 31L47 33M57 31L53 33M48 38H52" />
+                <path className="promoEntangledStaffShaft" d="M50 46V83M50 70H59V76H50" />
+                <path className="promoEntangledStaffVine" d="M41 78C62 75 62 68 44 64C32 61 35 54 52 53C68 52 70 44 56 41M59 80C43 76 42 70 58 67C71 64 68 57 49 56C34 55 31 48 43 44" />
+                <path className="promoEntangledStaffThorns" d="M43 64L36 66M58 67L65 69M52 53L50 47M49 56L46 50M56 41L62 38M43 44L37 41" />
+                <path className="promoEntangledStaffLeaves" d="M36 66C30 65 28 61 29 57C34 58 37 61 36 66ZM65 69C71 68 74 64 74 60C68 61 65 64 65 69ZM62 38C68 38 72 34 73 29C67 30 63 33 62 38ZM37 41C31 40 28 36 27 31C33 33 36 36 37 41Z" />
+              </svg>
+            ) : null}
             <header className="promoLetterHeader">
               {invitation ? (
                 <p aria-label="From 이야기꾼">{renderInkText("From 이야기꾼", 1)}</p>
@@ -261,11 +285,13 @@ export function PromoCardPrototype({
                     {!hideGenre ? (
                       <p className="promoGenre" aria-label={invitation.genre}>{renderInkText(invitation.genre, 5)}</p>
                     ) : null}
-                    <p aria-label={invitation.capacity}>{renderInkText(invitation.capacity, 6)}</p>
+                    {!hideCapacity ? (
+                      <p aria-label={invitation.capacity}>{renderInkText(invitation.capacity, 6)}</p>
+                    ) : null}
                     <p aria-label={invitationDate}>{renderInkText(invitationDate, 7)}</p>
                     <p aria-label={invitationTime}>{renderInkText(invitationTime, 8)}</p>
                     <p aria-label={invitationPlace}>{renderInkText(invitationPlace, 9)}</p>
-                    <p aria-label={invitation.runtime}>{renderInkText(invitation.runtime, 10)}</p>
+                    <p aria-label={invitationRuntime}>{renderInkText(invitationRuntime, 10)}</p>
                   </div>
                 </>
               ) : (

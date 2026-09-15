@@ -52,13 +52,21 @@ const promoCardDesign = promoCardRoute === "trouble-brewing"
 const promoCardRequested = Boolean(
   publishedSampleRequested || activeProductionPromoCardRoute || devPromoCardRoute,
 );
+const invitationPathname = window.location.pathname.replace(/\/+$/, "");
 const is260923Invitation = promoCardRoute === "sects-and-violets"
-  && (activeProductionPromoCardRoute === "sects-and-violets"
-    || (import.meta.env.DEV
+  && ((activeProductionPromoCardRoute === "sects-and-violets"
+    && (invitationPathname.endsWith("/invitation/260923")
+      || invitationPathname.endsWith("/invitation/260923-2")))
+    || (!activeProductionPromoCardRoute && import.meta.env.DEV
       && new URLSearchParams(window.location.search).get("prototype") === "260923"));
+const is260921Invitation = promoCardRoute === "sects-and-violets"
+  && ((activeProductionPromoCardRoute === "sects-and-violets"
+    && invitationPathname.endsWith("/invitation/260921"))
+    || (!activeProductionPromoCardRoute && import.meta.env.DEV
+      && new URLSearchParams(window.location.search).get("prototype") === "260921"));
 const promoCardDateOverride = is260923Invitation
     ? "날짜: 26년 9월 23일(수)"
-    : undefined;
+    : is260921Invitation ? "날짜: 26년 9월 21일 (월)" : undefined;
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -75,16 +83,26 @@ createRoot(document.getElementById("root")!).render(
           hideDateAndPlace={publishedSampleRequested}
           hideAcceptanceLink={publishedSampleRequested}
           dateOverride={promoCardDateOverride}
-          headingOverride={promoCardDateOverride ? "광기가 피어나는 마을로 여러분을 초대합니다." : undefined}
-          headingLinesOverride={promoCardDateOverride
+          headingOverride={is260921Invitation
+            ? "뒤엉키는 진실 속에서 당신의 믿음을 시험합니다."
+            : promoCardDateOverride ? "광기가 피어나는 마을로 여러분을 초대합니다." : undefined}
+          headingLinesOverride={is260921Invitation
+            ? ["뒤엉키는 진실 속에서", "당신의 믿음을 시험합니다."]
+            : promoCardDateOverride
             ? ["광기가 피어나는 마을로", "여러분을 초대합니다."]
             : undefined}
-          timeOverride={promoCardDateOverride ? "시간: 19:00~" : undefined}
-          placeOverride={promoCardDateOverride ? "장소: 추후 협의" : undefined}
+          timeOverride={is260921Invitation ? "시간: 18:00~" : promoCardDateOverride ? "시간: 19:00~" : undefined}
+          placeOverride={is260921Invitation
+            ? "장소: 삼성사옥 1층 회의실"
+            : promoCardDateOverride ? "장소: 추후 협의" : undefined}
+          runtimeOverride={is260921Invitation ? "예상 런타임: 2~3시간" : undefined}
+          compactHeading={is260921Invitation}
           hideGameName={Boolean(promoCardDateOverride)}
           hideGenre={Boolean(promoCardDateOverride)}
+          hideCapacity={is260921Invitation}
           spaciousCopy={Boolean(promoCardDateOverride)}
-          showVioletStamp={Boolean(promoCardDateOverride)}
+          showVioletStamp={is260923Invitation}
+          showEntangledStaffStamp={is260921Invitation}
           openHint={promoCardDateOverride ? "초대장을 확인해보세요" : undefined}
           idleGlowDelayMs={promoCardDateOverride ? 1000 : undefined}
         />

@@ -68,6 +68,7 @@ export default defineConfig({
         sectsAndViolets: `${webRoot}sects-and-violets/index.html`,
         invitation260813: `${webRoot}invitation/260813/index.html`,
         invitation260816: `${webRoot}invitation/260816/index.html`,
+        invitation260921: `${webRoot}invitation/260921/index.html`,
         invitation260923: `${webRoot}invitation/260923/index.html`,
         invitation260923Variant2: `${webRoot}invitation/260923-2/index.html`,
         invitationSample: `${webRoot}invitation/sample/index.html`,

@@ -116,6 +116,10 @@ describe("promo card sample route", () => {
   });
 
   test.each([
+    "/invitation/260921",
+    "/invitation/260921/",
+    "/clocktower/invitation/260921",
+    "/clocktower/invitation/260921/",
     "/invitation/260923",
     "/invitation/260923/",
     "/clocktower/invitation/260923",
@@ -130,10 +134,12 @@ describe("promo card sample route", () => {
   });
 
   test.each([
+    "/invitation/260921.html",
     "/invitation/260923.html",
     "/invitation/260923-2.html",
     "/clocktower/invitation/260923-other",
     "/clocktower/invitation/260923/extra",
+    "/clocktower/invitation/260921/extra",
     "/clocktower/invitation/260923-2/extra",
   ])("does not match another active invitation path %s", (pathname) => {
     expect(resolveActivePromoCardProductionRoute({ pathname, search: "" })).toBeUndefined();

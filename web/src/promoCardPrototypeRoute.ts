@@ -42,6 +42,8 @@ const ACTIVE_PRODUCTION_INVITATION_PATHS: Record<
 > = {
   "trouble-brewing": [],
   "sects-and-violets": [
+    "/invitation/260921",
+    "/clocktower/invitation/260921",
     "/invitation/260923",
     "/clocktower/invitation/260923",
     "/invitation/260923-2",
