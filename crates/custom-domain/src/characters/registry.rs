@@ -19,12 +19,15 @@ pub(crate) struct CharacterRegistryEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedScriptContext {
     entries: Vec<CharacterRegistryEntry>,
+    related_jinxes: Vec<crate::jinxes::JinxMetadata>,
     kinds_by_id: HashMap<&'static str, CharacterKind>,
 }
 
 // Issue #193 establishes this query seam before Epic 1 dispatch consumes it.
 #[allow(dead_code)]
 impl ResolvedScriptContext {
+    pub(crate) fn related_jinxes(&self) -> &[crate::jinxes::JinxMetadata] { &self.related_jinxes }
+
     pub(crate) fn character_ids(&self) -> Vec<&'static str> {
         self.entries.iter().map(|entry| entry.id).collect()
     }
@@ -189,5 +192,6 @@ pub(crate) fn resolve_custom_script_ids(
     Ok(ResolvedScriptContext {
         entries,
         kinds_by_id,
+        related_jinxes: crate::jinxes::production()?.related(character_ids),
     })
 }

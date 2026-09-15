@@ -2112,14 +2112,12 @@ fn information_causes(
             reasons.push(reason);
         }
     }
-    if let Some(sim) = &o.simulation_source {
+    if o.simulation_source.is_some() {
         if !reasons.contains(&DeliveryReason::Drunk) {
             reasons.push(DeliveryReason::Drunk);
         }
-        if sim.source_ability_use.character_id == "drunk"
-            && !causes.contains(&sim.source_ability_use)
-        {
-            causes.push(sim.source_ability_use.clone());
+        for source in crate::jinxes::production()?.simulation_causes(o) {
+            if !causes.contains(&source) { causes.push(source); }
         }
     }
     if vortox_applies(facts, o, character) {
@@ -2439,6 +2437,9 @@ pub(crate) fn death_succession(
     successors.sort_by_key(|r| prior.player(&r.ability_use.owner_player_id).map(|p| p.seat));
     // Every owned Scarlet Woman instance receives its own identity transition.
     for successor in successors {
+        if crate::jinxes::production()?.prevents_succession(&crate::jinxes::SuccessionContext {
+            before: prior, after: next, dead_id, successor: &successor.ability_use,
+        }) { continue; }
         let player = next
             .players
             .iter_mut()
@@ -2949,4 +2950,58 @@ pub(crate) fn begin_night_identity_reveals(facts: &mut CustomGameFacts, event_id
         reveal.sequence = facts.pending_identity_reveals.iter().filter(|r| r.source_event_id == reveal.source_event_id).count() as u8;
         facts.pending_identity_reveals.push(reveal);
     }
+}
+
+pub(crate) fn jinx_registrations() -> Vec<crate::jinxes::RegisteredJinx> {
+    use crate::jinxes::{RegisteredJinx, Rule};
+    vec![
+        RegisteredJinx {
+            id: "fanggu--scarletwoman",
+            characters: ["fangGu", "scarletWoman"],
+            evidence: &[
+                "issue213_jinxes::fang_gu_jump_suppresses_scarlet_succession_and_phantom_reveals",
+            ],
+            rules: vec![Rule::PreventSuccession(fang_gu_scarlet_jinx)],
+        },
+        RegisteredJinx {
+            id: "recluse--sage",
+            characters: ["recluse", "sage"],
+            evidence: &[
+                "issue213_jinxes::sage_recluse_choice_requires_exact_judgment_and_survives_replay",
+            ],
+            rules: vec![Rule::Registration(recluse_sage_jinx)],
+        },
+    ]
+}
+fn fang_gu_scarlet_jinx(c: &crate::jinxes::SuccessionContext<'_>) -> bool {
+    c.successor.character_id == "scarletWoman"
+        && c.before
+            .player(c.dead_id)
+            .is_some_and(|p| p.actual_character == "fangGu")
+        && c.after.players.iter().any(|p| {
+            p.alive
+                && p.id != c.successor.owner_player_id
+                && super::character_kind(&p.actual_character) == Some(CharacterKind::Demon)
+        })
+}
+fn recluse_sage_jinx(c: &crate::jinxes::RegistrationContext<'_>) -> Option<RegistrationJudgment> {
+    if !matches!(&c.observer.action_ref, FirstNightActionRef::Character { character_id, .. } if character_id == "sage")
+        || impaired(c.facts, c.target_id)
+    {
+        return None;
+    }
+    c.facts
+        .ability_provenance
+        .iter()
+        .any(|r| {
+            r.ability_use.owner_player_id == c.target_id
+                && r.ability_use.character_id == "recluse"
+                && crate::reducer::current_ability_instance(c.facts, &r.ability_use)
+        })
+        .then(|| RegistrationJudgment {
+            player_id: c.target_id.into(),
+            registered_as: RegistrationValue::Demon,
+            character_id: None,
+            scope: None,
+        })
 }

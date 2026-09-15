@@ -109,6 +109,40 @@ with official source and artifacts absent. The optional `--official` checkpoint 
 runs official TB/SnV/BMR without custom; it is not required again for custom-only behavior changes.
 Release validation still includes `pnpm --dir web build` and PWA verification.
 
+## Custom official Jinx foundation (#213)
+
+`crates/custom-domain/resources/jinxes.json` is a checked-in TPI snapshot at
+`915347e627c3f6cd1f438f82b6001784e11b3e8b`. `jinxes.rs` pairs this metadata with typed
+character-owned registrations. Stable pair IDs use sorted official lowercase IDs;
+resolved metadata retains the exact custom character IDs. This conversion does not
+relax command, definition or import ID validation.
+
+Registry initialization checks the complete published custom character catalog against
+the snapshot. Missing, duplicate, unknown, metadata-only or unverified registrations
+fail with `JINX_REGISTRATION_INVALID` before a resolved script can execute. Off-catalog
+official pairs remain reference data and do not enable unsupported characters.
+`ResolvedScriptContext.related_jinxes()` is a deterministic read-only script query;
+script membership is never a universal rule-effectiveness gate.
+
+Registered callbacks currently serve information registration, succession prevention and
+simulation malfunction causes. Their owning TB/SnV modules decide the conditions using
+current ability provenance, the action occurrence, and before/after facts. New consumers
+can add typed seams without adding character branches to the scheduler or parsing natural
+language rules. Registrations link acceptance evidence; publication changes must pass
+coverage and composed behavior tests.
+
+The Fang Gu/Scarlet Woman rule runs before succession creates an identity or reveal.
+Sage information uses the triggering killer and character-owned Recluse judgments;
+confirmed judgments and delivered information pass the same proposal/replay validation.
+Mathematician evidence retains real Drunk guidance provenance, including acquired Drunk
+abilities and daytime information, without inventing a simulated ability grant. Death,
+impairment and ability ownership remain separate character-owned conditions.
+
+Related metadata and Jinx activity are not separately persisted. Existing events retain
+Storyteller choices and results, and replay derives effects, audit and frozen reveals.
+The source revision identifies the reference snapshot, not a persisted ruleset version.
+Catalog revision, historical ruleset replay and migration remain in #191.
+
 ## Rust and TypeScript Boundary
 
 Keep the WebAssembly boundary small and JSON-based for MVP. The APIs below describe adapter

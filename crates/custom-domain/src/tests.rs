@@ -104,3 +104,6 @@ fn other_order_json(ids: &serde_json::Value) -> serde_json::Value {
     result.push(serde_json::json!({"kind":"system","actionId":"dawn"}));
     serde_json::json!(result)
 }
+
+#[cfg(not(feature = "custom-runtime-fixtures"))]
+mod issue213_jinxes;

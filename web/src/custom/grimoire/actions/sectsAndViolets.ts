@@ -10,7 +10,7 @@ export const sectsAndVioletsActions={
  'vigormortis.choosePoison': {...directNightAction,selectionLabel:'중독 대상 선택'},
  'barber.swapCharacters': {...directNightAction,resultReview:'changedIdentity',selectionLabel:'교환 대상 선택'},
  'sweetheart.makeDrunk': {...directNightAction,selectionLabel:'취할 대상 선택'},
- 'sage.learnDemon': nightInformation,
+ 'sage.learnDemon': {...nightInformation,selectionContract:'information',selectionLabel:'두 명 선택'},
  'flowergirl.learnDemonVoted': nightInformation,
  'townCrier.learnMinionNominated': nightInformation,
  'oracle.learnDeadEvilCount': nightInformation,

@@ -143,6 +143,11 @@ pub(super) fn production(roster: &[&str], inputs: Value) -> Value {
             pool.push(id);
         }
     }
+    for input in ["assignShownCharacter", "chooseAbility"] {
+        if let Some(chosen) = inputs[input]["characterIds"][0].as_str() {
+            if !pool.contains(&chosen) { pool.push(chosen); }
+        }
+    }
     let mut definition = json!({"id":"day-223","name":"낮 검증","characterIds":pool});
     let planned: Value = serde_json::from_str(&crate::custom_first_night_plan_json(
         &json!({"customDefinition":definition}).to_string(),
