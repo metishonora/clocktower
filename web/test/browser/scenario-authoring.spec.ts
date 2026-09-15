@@ -47,7 +47,7 @@ test('creates, reorders and downloads a scenario; a fresh app imports and edits 
   await page.getByRole('tab', { name: /악마/ }).click();
   await page.getByRole('button', { name: /임프/ }).click();
   await page.getByRole('button', { name: '선택 완료' }).click();
-  await page.getByRole('button', { name: '독살범 위로 이동' }).click();
+  await page.getByRole('region', { name: '첫날 밤 순서', exact: true }).getByRole('button', { name: '독살범 위로 이동' }).click();
   await page.getByRole('button', { name: '최종 검토로' }).click();
   await page.getByLabel('시나리오 이름').fill('밤의 / 기록');
   await expect(page.getByRole('region', { name: '권장 구성 경고' })).toBeVisible();
@@ -127,7 +127,7 @@ for (const viewport of [{ width: 1366, height: 900 }, { width: 820, height: 1180
     await page.getByLabel('캐릭터 검색').fill('poisoner');
     await page.getByRole('button', { name: /독살범/ }).click();
     await page.getByRole('button', { name: '선택 완료' }).click();
-    const move = page.getByRole('button', { name: '독살범 위로 이동' });
+    const move = page.getByRole('region', { name: '첫날 밤 순서', exact: true }).getByRole('button', { name: '독살범 위로 이동' });
     await expect(move).toBeEnabled();
     await move.scrollIntoViewIfNeeded();
     if (viewport.width <= 1180) {

@@ -39,10 +39,11 @@ export function taskPresentationModel(controller:FirstNightController) {
  if(step&&action) {
   const kind=step.requiredInput.kind;
   const expected=adapter?.acceptedInputs??[];
-  if(!expected.includes(kind)||(['characterIds','madnessAssignment'].includes(kind)&&!step.requiredInput.allowedCharacterIds)) {
+  if(!expected.includes(kind)||(['characterIds','madnessAssignment','characterTransformation'].includes(kind)&&!step.requiredInput.allowedCharacterIds)) {
    editor={kind:'unavailable',message:'이 행동의 입력 연결을 확인할 수 없습니다.'};
   }
  }
+ if(step?.actionRef?.actionId==='attackPlayer'&&!step.requiredInput.attackOptions)editor={kind:'unavailable',message:'공격 입력을 확인할 수 없습니다.'};
  const stage:TaskStage=!step?'end':cause?.kind==='requiredPreparation'||cause?.kind==='initialPreparation'?'preparation':cause?.kind==='delivery'?'delivery':action?.stage??'action';
  const needsPlayers=!!adapter&&adapter.selectionContract!=='none'&&!draft.zero;
  const minPlayers=step?.requiredInput.minSelections??(editor.kind==='setup'?2:1);

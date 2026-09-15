@@ -241,6 +241,7 @@ pub(crate) struct SetupDistributionResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ReplayState {
+    pub(crate) night_number: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) day: Option<crate::day::contracts::DayView>,
     pub(crate) action_executions: Vec<crate::first_night::execution::ActionExecution>,
@@ -453,6 +454,8 @@ pub(crate) struct EvilTwinRevealPlayer {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PendingIdentityReveal {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) delivery_event_id: Option<String>,
     pub(crate) source_event_id: String,
     pub(crate) sequence: u8,
     pub(crate) payload: RevealPayload,

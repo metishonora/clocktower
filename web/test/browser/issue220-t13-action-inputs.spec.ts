@@ -10,11 +10,16 @@ for(const width of [320,390,820,1366]){
   await open(page,'R04',width);await shot(page,'dawn');await page.getByRole('button',{name:'낮 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'1일차 낮',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'사망 발표',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'발표 완료',exact:true})).toBeEnabled();await expect(page.getByRole('list',{name:'낮 순서'}).locator('[aria-current=step]')).toContainText('사망 발표');await shot(page,'day');
   await page.getByRole('button',{name:/최근 행동 되돌리기:/}).click();await page.getByRole('button',{name:'되돌리기',exact:true}).click();await expect(page.getByRole('button',{name:'낮 시작',exact:true})).toBeVisible();
  });
- for(const id of ['R10','R11','R13'])test(`T13 ${id} original single-target input and direct return at ${width}`,async({page})=>{
+ for(const id of ['R10','R11','R13'])test(`T13 ${id} single-target input and action-specific completion at ${width}`,async({page})=>{
   await open(page,id,width);await page.getByRole('button',{name:id==='R13'?'저주 대상 선택':'대상 선택',exact:true}).click();
   await page.getByRole('button',{name:/^2번 P2,/}).click();await expect(page.locator('.snvSeatStateTarget')).toHaveCount(1);await shot(page,'selected');
   await page.getByRole('button',{name:id==='R13'?'2번 P2 저주 확정':'선택 확정',exact:true}).click();
+  if(id==='R13'){await expect(page.getByRole('heading',{name:'저주 대상 선택 결과'})).toBeVisible();await shot(page,'witch-result');await page.getByRole('button',{name:'다음 →',exact:true}).click();}
   await expect(page.getByRole('button',{name:'진행',exact:true})).toHaveAttribute('aria-current','page');await expect(page.locator('.issue116NextAction')).toHaveCount(0);await shot(page,'returned');
+ });
+ test(`T13 R12 unchanged identity waits for a result at ${width}`,async({page})=>{
+  await open(page,'R12',width);await page.getByRole('button',{name:'대상 선택',exact:true}).click();await page.getByRole('button',{name:/^2번 P2,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'뱀 조련사 결과'})).toBeVisible();await expect(page.getByText('교환 없음',{exact:true})).toBeVisible();await shot(page,'snake-result');await page.getByRole('button',{name:'다음 →',exact:true}).click();await expect(page.getByRole('button',{name:'진행',exact:true})).toHaveAttribute('aria-current','page');
  });
  test(`T13 R12 swapped identities use board prompts and close to board at ${width}`,async({page})=>{
   await open(page,'R12',width);await page.getByRole('button',{name:'대상 선택',exact:true}).click();await page.getByRole('button',{name:/^7번 P7,/}).click();await page.getByRole('button',{name:'선택 확정',exact:true}).click();

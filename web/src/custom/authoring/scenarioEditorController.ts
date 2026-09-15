@@ -9,6 +9,7 @@ import { scenarioDownloadName, serializeScenarioFile } from '../storage/scenario
 import { actionKey, reconcileFirstNightOrder } from './reconcileFirstNightOrder.js';
 import type { EditorError, EditorStep, ScenarioEditorState } from './scenarioEditorState.js';
 
+export type NightOrderKind = 'first' | 'other';
 export type ScenarioEditorDependencies = {
   createId: () => string;
   replay?: CoreAdapter['replay'];
@@ -21,7 +22,7 @@ export function editorError(error: unknown): EditorError {
   if (error instanceof DefinitionInputError) return { section: error.section, message: error.message };
   if (error instanceof CustomDefinitionValidationError) {
     const characterError = ['UNSUPPORTED_CUSTOM_SCRIPT_CHARACTER', 'DUPLICATE_CUSTOM_SCRIPT_CHARACTER', 'MALFORMED_CUSTOM_SCRIPT_DEFINITION'].includes(error.code);
-    return { section: characterError ? 'characters' : 'order', message: error.message };
+    return { section: characterError ? 'characters' : 'order', message: error.message, night: error.code === 'INVALID_OTHER_NIGHT_ORDER_PLAN' ? 'other' : error.code === 'INVALID_FIRST_NIGHT_ORDER_PLAN' ? 'first' : undefined };
   }
   return { section: 'operation', message: '시나리오를 확인하지 못했습니다. 다시 시도해 주세요.' };
 }
@@ -29,7 +30,7 @@ export function blockingMessage(error?: EditorError): string | undefined {
   if (!error) return undefined;
   return error.section === 'name' ? '시나리오 이름이 올바르지 않습니다.'
     : error.section === 'characters' ? 'Character 설정이 올바르지 않습니다.'
-    : error.section === 'order' ? '밤 행동 순서가 올바르지 않습니다.' : error.message;
+    : error.section === 'order' ? `${error.night === 'other' ? '이후 밤' : error.night === 'first' ? '첫날 밤' : '밤'} 행동 순서가 올바르지 않습니다.` : error.message;
 }
 
 export class ScenarioEditorController {
@@ -38,7 +39,7 @@ export class ScenarioEditorController {
   private validationRequest = 0;
   private orderRequest = 0;
   private importRequest = 0;
-  private pendingOrderReset: boolean | undefined;
+  private pendingOrderReset: boolean | NightOrderKind | undefined;
   constructor(private readonly dependencies: ScenarioEditorDependencies) {
     this.state = freezeSnapshot({ step: 'scenario', source: 'new', draft: { id: dependencies.createId(), name: '', characterIds: [] },
       change: 0, validation: 'idle', orderPending: false, importStatus: 'idle', downloadStatus: 'idle' });
@@ -79,19 +80,20 @@ export class ScenarioEditorController {
     this.edited({ ...this.state.draft, characterIds: ids.includes(id) ? ids.filter((entry) => entry !== id) : [...ids, id] });
     void this.updateOrder(false);
   };
-  moveAction = (key: string, direction: -1 | 1) => {
+  moveAction = (key: string, direction: -1 | 1, night: NightOrderKind = 'first') => {
     if (this.state.orderPending) return;
-    const order = [...(this.state.draft.firstNightOrder ?? [])];
+    const field = night === 'first' ? 'firstNightOrder' : 'otherNightOrder';
+    const order = [...(this.state.draft[field] ?? [])];
     const index = order.findIndex((entry) => actionKey(entry) === key);
     const target = index + direction;
     // These are the approved editor's fixed endpoint controls, not a second plan validator.
     if (index <= 0 || index >= order.length - 1 || target <= 0 || target >= order.length - 1) return;
     [order[index], order[target]] = [order[target], order[index]];
-    this.edited({ ...this.state.draft, firstNightOrder: order });
+    this.edited({ ...this.state.draft, [field]: order });
     void this.validate();
   };
-  restoreOrder = () => { void this.updateOrder(true); };
-  private async updateOrder(reset: boolean) {
+  restoreOrder = (night: NightOrderKind = 'first') => { void this.updateOrder(night); };
+  private async updateOrder(reset: boolean | NightOrderKind) {
     const request = ++this.orderRequest;
     this.pendingOrderReset = reset;
     this.validationRequest++;
@@ -106,9 +108,9 @@ export class ScenarioEditorController {
       if (!result.ok) throw new CustomDefinitionValidationError(result.error.code, result.error.messageKo);
       if (!other.ok) throw new CustomDefinitionValidationError(other.error.code, other.error.messageKo);
       this.pendingOrderReset = undefined;
-      const plan = reset || !this.state.draft.firstNightOrder ? result.value.plan
+      const plan = reset === true || reset === 'first' || !this.state.draft.firstNightOrder ? result.value.plan
         : reconcileFirstNightOrder(this.state.draft.firstNightOrder, result.value.plan);
-      const otherPlan = !this.state.draft.otherNightOrder ? other.value.plan
+      const otherPlan = reset === true || reset === 'other' || !this.state.draft.otherNightOrder ? other.value.plan
         : reconcileFirstNightOrder(this.state.draft.otherNightOrder, other.value.plan);
       this.patch({ draft: { ...this.state.draft, firstNightOrder: structuredClone(plan), otherNightOrder: structuredClone(otherPlan) },
         change: this.state.change + 1, orderPending: false });

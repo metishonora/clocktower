@@ -3,6 +3,7 @@ import {systemActions} from './system';
 import {troubleBrewingActions} from './troubleBrewing';
 import {sectsAndVioletsActions} from './sectsAndViolets';
 export type ActionAdapter={
+ resultReview?:'attack'|'selection'|'changedIdentity'|'unchangedIdentity';
  selectionLabel?:string;
  stage:'preparation'|'action'|'delivery'|'transition';
  inputView:'team'|'setup'|'ability'|'players'|'madness'|'execution'|'information'|'none';
@@ -15,14 +16,14 @@ export type ActionAdapter={
  cancellation:'discardInput';
 };
 export const actionAdapters:Readonly<Record<string,ActionAdapter>>=Object.freeze({...systemActions,...troubleBrewingActions,...sectsAndVioletsActions});
-export function actionAdapter(step:PhaseStep):ActionAdapter|undefined {
+export function actionAdapter(step:Pick<PhaseStep,'actionRef'>):ActionAdapter|undefined {
  const ref=step.actionRef;return ref?actionAdapters[`${ref.kind==='system'?'system':ref.characterId}.${ref.actionId}`]:undefined;
 }
 export function revealDisposition(adapter:ActionAdapter,payload:RevealPayload|undefined) {
  if(!payload)return 'none';
  const allowed:Record<ActionAdapter['revealView'],readonly string[]>={
-  team:['minionInformation','demonInformation'],tb:['setupInformation','numericInformation','fortuneTellerInformation'],
-  snv:['numericInformation','dreamerInformation','seamstressInformation'],identity:['characterChange'],
+  team:['minionInformation','demonInformation'],tb:['setupInformation','numericInformation','fortuneTellerInformation','characterInformation'],
+  snv:['numericInformation','dreamerInformation','seamstressInformation','booleanInformation','sageInformation'],identity:['characterChange'],
   twin:['evilTwinPair'],madness:['madnessAssignment'],spy:['spyGrimoire'],none:['mutantExecution'],
  };
  if(!('kind' in payload)||!allowed[adapter.revealView].includes(payload.kind))throw Error('이 행동의 공개 연결을 확인할 수 없습니다.');

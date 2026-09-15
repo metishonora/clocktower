@@ -1205,3 +1205,28 @@ fn poisoned_retained_minion_still_receives_an_ineffective_action() {
     assert_eq!(event["payload"]["result"]["effective"], false);
     assert_eq!(replay(&game)["players"][9]["alive"], false);
 }
+
+// #222 consumes explicit presentation metadata rather than duplicating attack rules in UI.
+#[test]
+fn issue222_attack_input_projects_mayor_and_self_succession_from_current_facts() {
+    let mut g = super::issue223_day::production(&["mayor", "monk", "ravenkeeper", "virgin", "slayer", "spy", "imp"], json!({}));
+    begin_night(&mut g);
+    assert_eq!(replay(&g)["nightNumber"], 2);
+    step(&mut g, character("monk", "protectPlayer"), json!({"playerIds":["p4"]}), None);
+    let r = replay(&g);
+    let options = r["currentStep"]["requiredInput"]["attackOptions"].as_array().unwrap();
+    let mayor = options.iter().find(|o|o["targetPlayerId"]=="p1").unwrap();
+    assert_eq!(mayor["mayorDecision"]["mayorPlayerId"], "p1");
+    assert!(!mayor["mayorDecision"]["bounceTargetPlayerIds"].as_array().unwrap().contains(&json!("p1")));
+    let own = options.iter().find(|o|o["targetPlayerId"]=="p7").unwrap();
+    assert_eq!(own["successorPlayerIds"], json!(["p6"]));
+    step(&mut g, character("imp", "attackPlayer"), json!({"playerIds":["p1"],"mayorDecision":{"kind":"bounce","targetPlayerId":"p4"}}), None);
+    assert!(replay(&g)["players"][3]["alive"].as_bool().unwrap());
+    step(&mut g, character("spy","inspectGrimoire"), Value::Null, None);
+    step(&mut g, system("dawn"), Value::Null, None);
+    begin_night(&mut g);assert_eq!(replay(&g)["nightNumber"],3);
+    step(&mut g, character("monk", "protectPlayer"), json!({"playerIds":["p1"]}), None);
+    let r = replay(&g);
+    let options=r["currentStep"]["requiredInput"]["attackOptions"].as_array().unwrap();
+    assert!(options.iter().find(|o|o["targetPlayerId"]=="p1").unwrap().get("mayorDecision").is_none());
+}

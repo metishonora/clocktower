@@ -534,6 +534,7 @@ fn resolve(
             }
             day.stage = DayStage::Night;
             next.phase = Phase::Night;
+            crate::characters::trouble_brewing::begin_night_identity_reveals(&mut next.facts, event_id);
         }
     }
     crate::characters::sects_and_violets::day_record_malfunctions(

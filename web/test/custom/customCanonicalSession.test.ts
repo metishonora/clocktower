@@ -286,6 +286,7 @@ function replayState(gameFile: GameFile, definition: CustomScriptDefinition): Re
   ok(gameFile.schemaVersion === 5 && gameFile.game.script.type === "custom");
   const event=gameFile.game.events.at(-1),id=event&&event.type!=='setupConfirmed'?event.id:undefined;
   return {
+    nightNumber: 1,
     actionExecutions:id?[{id,rootStepId:id,displayStepId:id,stepIds:[id],eventIds:[id],status:'complete'}]:[],
     latestUndoUnit:id?{id,executionId:id,eventIds:[id],summaryStepId:id}:null,
     schemaVersion: 5,

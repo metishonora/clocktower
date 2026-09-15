@@ -6,7 +6,7 @@ import type { FirstNightController } from '../custom/grimoire/firstNightControll
 export function CustomPhaseOrder({controller}:{controller:FirstNightController}) {
   const state=useSyncExternalStore(controller.subscribe,controller.getSnapshot);
   const step=controller.step;
-  return <section className="customPhaseOrder" aria-label="첫날 밤 행동">
+  return <section className="customPhaseOrder" aria-label="밤 행동">
     <ol className="snvPhaseOverview bmrPhaseOrder" aria-label="진행 순서">{groupedOverview(state.replay).map((s,i)=>{
       const active=s.execution.id===step?.execution.id;
       return <li key={`${s.id}:${i}`} className={active?'current':s.status==='complete'?'complete':''} aria-current={active?'step':undefined} title={stepLabel(s,state.replay)}>

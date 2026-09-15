@@ -9,3 +9,7 @@ pub(crate) fn character_kind(id: &str) -> Option<crate::model::CharacterKind> {
         .find(|entry| entry.id == id)
         .map(|entry| entry.kind)
 }
+
+pub(crate) fn notifies_identity_change(result: &crate::contracts::CustomActionResult) -> bool {
+    trouble_brewing::notifies_identity_change(result) || sects_and_violets::notifies_identity_change(result)
+}

@@ -30,18 +30,32 @@ it('daytime failed save blocks further actions and retry saves the same event ex
  fail.mockRestore();play.retrySave();await vi.waitFor(()=>expect(play.getSnapshot().saveStatus).toBe('saved'));
  const copy=play.getSnapshot().file;app.dispose();const restored=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await restored.restore(copy.game.script.definition.id);expect(restored.play!.getSnapshot().file).toEqual(copy);restored.dispose();
 });
-it('Slayer death restores succession notification and Undo removes the entire causal action',async()=>{
+it('daytime succession changes identity immediately but delivers privately only after night is saved and restored',async()=>{
  const {app,play}=await daytime();const slayer=play.getSnapshot().replay.day!.availableActions.find(a=>a.characterId==='slayer')!;
  const before=play.getSnapshot().file;
  await dayInput(play,{kind:'useAbility',actionId:slayer.id,record:{kind:'slayer',targetPlayerId:'p7',recluseAsDemon:false}});
  await dayInput(play,{kind:'confirmDeath'});
  expect(play.getSnapshot().replay.players.find(p=>p.id==='p6')!.actualCharacter).toBe('imp');
- expect(play.getSnapshot().dayNotifications).toHaveLength(1);expect(play.getSnapshot().public).toBe(false);
+ expect(play.getSnapshot().dayNotifications??[]).toHaveLength(0);expect(play.getSnapshot().replay.pendingIdentityReveals??[]).toHaveLength(0);
+ const death=play.getSnapshot().file.game.events.at(-1)!.id;
  const file=play.getSnapshot().file;app.dispose();const restored=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await restored.restore(file.game.script.definition.id);
- expect(restored.play!.getSnapshot().dayNotifications).toHaveLength(1);
- const count=restored.play!.getSnapshot().file.game.events.length;await restored.play!.confirmDay({kind:'advance'});expect(restored.play!.getSnapshot().file.game.events).toHaveLength(count);
- restored.play!.showPayload(restored.play!.getSnapshot().dayNotifications![0]);expect(restored.play!.getSnapshot().public).toBe(true);restored.play!.conceal();restored.play!.finishDayNotification();
- await restored.play!.undo();expect(restored.play!.getSnapshot().file.game.events).toEqual(before.game.events);restored.dispose();
+ const c=restored.play!;expect(c.getSnapshot().dayNotifications??[]).toHaveLength(0);
+ await toNominations(c);await dayInput(c,{kind:'closeNominations'});await c.confirmDayExecution();
+ const fail=vi.spyOn(IndexedDbCustomWebSessionStorageDriver.prototype,'writeOwnedSession').mockRejectedValueOnce(Error('quota'));
+ await c.confirmDay({kind:'beginNight'});expect(c.getSnapshot().saveStatus).toBe('failed');expect(c.getSnapshot().handoff).toBeUndefined();
+ fail.mockRestore();c.retrySave();await vi.waitFor(()=>expect(c.getSnapshot().handoff?.stage).toBe('notification'));
+ expect(c.getSnapshot().dayNotifications).toBeUndefined();expect(c.getSnapshot().public).toBe(false);
+ expect(c.getSnapshot().replay.pendingIdentityReveals![0]).toMatchObject({sourceEventId:death,deliveryEventId:c.getSnapshot().file.game.events.at(-1)!.id});
+ const copy=parseGameFileJson(exportGameFileJson(c.getSnapshot().file));const resumed=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await resumed.resumeImported({file:copy});
+ expect(resumed.play!.getSnapshot().handoff?.stage).toBe('notification');expect(resumed.play!.getSnapshot().public).toBe(false);
+ const count=resumed.play!.getSnapshot().file.game.events.length;await resumed.play!.prepare({input:{playerIds:['p1']}});expect(resumed.play!.getSnapshot().file.game.events).toHaveLength(count);
+ resumed.play!.showNotification();expect(resumed.play!.getSnapshot().public).toBe(true);resumed.play!.conceal();expect(resumed.play!.getSnapshot().handoff).toBeUndefined();
+ await resumed.play!.undo();await vi.waitFor(()=>expect(resumed.play!.getSnapshot().saveStatus).toBe('saved'));
+ expect(resumed.play!.getSnapshot().replay.phase).toBe('day');expect(resumed.play!.getSnapshot().handoff).toBeUndefined();
+ await dayInput(resumed.play!,{kind:'beginNight'});expect(resumed.play!.getSnapshot().handoff?.stage).toBe('notification');
+ resumed.dispose();restored.dispose();
+ const undoApp=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await undoApp.resumeImported({file});await undoApp.play!.undo();
+ expect(undoApp.play!.getSnapshot().file.game.events).toEqual(before.game.events);expect(undoApp.play!.getSnapshot().replay.players.find(p=>p.id==='p6')!.actualCharacter).toBe('scarletWoman');undoApp.dispose();
 });
 it('altered day snapshots cannot replace a saved game and stale prepared day event is rejected',async()=>{
  const {app,play}=await daytime();

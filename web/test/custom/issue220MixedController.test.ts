@@ -5,6 +5,7 @@ import type { PhaseStepInput,InformationResult } from '../../src/custom/core/typ
 import { start,startLegacyWasherwoman,moveBefore,realWasmCore } from './issue209Support.js';
 async function open(roster:number,change?:Parameters<typeof start>[1]){const {session}=roster===4?await startLegacyWasherwoman():await start(roster,change);const app=new CustomGrimoireApplicationController(realWasmCore(),vi.fn());await app.resumeImported({file:session.snapshot.canonical});expect(app.getSnapshot().screen).toBe('play');return {app,play:app.play!};}
 async function take(play:FirstNightController,action:string,input:PhaseStepInput,deliveredResult?:InformationResult,owner?:string,optional=false){
+  while(play.getSnapshot().handoff?.stage==='notification'){play.showNotification();play.conceal();}
   if(optional){const step=play.steps.find(s=>s.actionRef?.actionId===action && (!owner || s.playerId===owner));expect(step).toBeDefined();play.selectStep(step!.id);}
   expect(play.step?.actionRef?.actionId).toBe(action);if(owner)expect(play.step?.playerId).toBe(owner);
   const before=play.getSnapshot().file.game.events.length;await play.prepare({input,deliveredResult});expect(play.getSnapshot().error).toBeUndefined();const reveal=play.getSnapshot().reveal;

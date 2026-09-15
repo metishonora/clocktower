@@ -56,6 +56,8 @@ pub(crate) fn phase_transition_step(
         ability_use: None,
         ability_origin: None,
         required_input: RequiredInput {
+            attack_options: None,
+            allowed_selection_counts: None,
             kind: next_phase,
             target: Some(InputTarget::Phase),
             min_selections: None,
@@ -88,6 +90,8 @@ pub(crate) fn phase_transition_step(
 
 pub(crate) fn required_none() -> RequiredInput {
     RequiredInput {
+        attack_options: None,
+        allowed_selection_counts: None,
         kind: RequiredInputKind::None,
         target: None,
         min_selections: None,
@@ -119,6 +123,8 @@ pub(crate) fn required_characters(
     supports_random_suggestion: bool,
 ) -> RequiredInput {
     RequiredInput {
+        attack_options: None,
+        allowed_selection_counts: None,
         kind: RequiredInputKind::CharacterIds,
         target: Some(InputTarget::Characters),
         min_selections: Some(min),

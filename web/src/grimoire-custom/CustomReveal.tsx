@@ -82,7 +82,7 @@ function SpyBoard({payload,onClose,closeRef}:{payload:SpyGrimoireRevealPayload;o
    ...(p.automaticReminders??[]),
    ...(p.reminderTokens??[]).filter(id=>!(p.automaticReminders??[]).some(t=>t.tokenId===id)).map(id=>({playerId:p.playerId,characterId:id==='poisoned'?'poisoner':'monk',tokenId:id,label:id==='poisoned'?'중독':'보호',description:''})),
  ]);
- return <><SpyGrimoireView title="마도서" ariaLabel="마도서 첩자 마도서" phaseLabel="첫날 밤" className="bmrGrimoireSurface customSpyBoard" boardClassName="bmrGrimoireBoard" style={style} onClose={onClose} closeRef={closeRef} seats={payload.players.map((p,index)=>({
+ return <><SpyGrimoireView title="마도서" ariaLabel="마도서 첩자 마도서" phaseLabel="밤" className="bmrGrimoireSurface customSpyBoard" boardClassName="bmrGrimoireBoard" style={style} onClose={onClose} closeRef={closeRef} seats={payload.players.map((p,index)=>({
   id:p.playerId,interactive:true,onSelect:()=>setSelected(p.playerId),buttonRef:node=>{if(node)refs.current.set(p.playerId,node);else refs.current.delete(p.playerId);},position:desktop[index],mobilePosition:mobile[index],
   afterSeat:<PlayerTokenCountBadge count={tokens(p).reduce((n,t)=>n+(t.count??1),0)} position={desktop[index]} mobilePosition={mobile[index]} theme="night"/>,
   className:`fixedSize assigned alignment-${p.alignment??'good'} kind-${characterPresentation(p.characterId)?.kind.toLowerCase()}${p.alive?'':' snvDeadSeat'}`,

@@ -783,6 +783,15 @@ fn scarlet_successor_keeps_source_token_after_identity_changes_and_undo_removes_
     assert_eq!(token["tokenId"], "isTheDemon");
     assert_eq!(token["playerId"], "p4");
     assert_eq!(token["sourceEventId"], death["id"]);
+    assert!(state["pendingIdentityReveals"].as_array().is_none_or(Vec::is_empty));
+    let before_night = game.clone();
+    let night = confirm(&mut game, json!({"kind":"beginNight"}));
+    let at_night = replay(&game);
+    assert_eq!(at_night["pendingIdentityReveals"][0]["sourceEventId"], death["id"]);
+    assert_eq!(at_night["pendingIdentityReveals"][0]["deliveryEventId"], night["id"]);
+    assert_eq!(at_night["pendingIdentityReveals"][0]["payload"]["characterId"], "imp");
+    game = before_night;
+    assert!(replay(&game)["pendingIdentityReveals"].as_array().is_none_or(Vec::is_empty));
     game["game"]["events"].as_array_mut().unwrap().pop();
     assert!(replay(&game)["ruleState"]["automaticReminders"]
         .as_array()

@@ -1,3 +1,4 @@
+import {customSeatCharacter} from './customPlayerPresentation';
 import {useSyncExternalStore, type CSSProperties} from 'react';
 import type {FirstNightController} from '../custom/grimoire/firstNightController';
 import {characterPresentation} from '../custom/authoring/characterPresentation';
@@ -30,7 +31,7 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
     toolbar={<GrimoireToolbar showCurrentActor={false}>{!h.complete&&<button type="button" disabled={busy} onClick={()=>void controller.cancelDayHandoff()}>{voting&&controller.canCancelDayVote?'투표 취소 →':'돌아가기 →'}</button>}</GrimoireToolbar>}
     board={<RectangularGrimoireBoard ariaLabel={`${players.length}자리 마도서`} className="snvGrimoireDraft bmrGrimoireBoard" style={style}
       seats={players.map((p,i)=>{
-        const role=characterPresentation(p.actualCharacter);
+        const role=customSeatCharacter(p);
         const self=!voting&&h.nominatorId===p.id&&h.nomineeId===p.id;
         const selected=voting?h.voterIds.includes(p.id):h.nominatorId===p.id||h.nomineeId===p.id;
         const selectionLabel=voting?selected?'투표':undefined:self?'지명자 · 피지명자':h.nominatorId===p.id?'지명자':h.nomineeId===p.id?'피지명자':undefined;
@@ -39,7 +40,7 @@ export function CustomDayBoard({controller}:{controller:FirstNightController}) {
         const ghost=voting&&!p.alive&&!p.ghostVoteUsed,spent=voting&&!p.alive&&p.ghostVoteUsed;
         return {id:p.id,position:desktop[i],mobilePosition:mobile[i],pressed:selected,disabled:busy||h.complete||!eligible,
           ariaLabel:`${p.seat}번 좌석, ${p.name}, ${role?.label}, ${p.alive?'생존':p.ghostVoteUsed?'사망 · 유령표 사용함':'사망 · 유령표 사용 가능'}${selectionLabel?`, ${selectionLabel}`:''}`,
-          className:`assigned alignment-${p.alignment} kind-${role?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${!eligible?' issue116IneligibleSeat':''}`,
+          className:`assigned alignment-${p.alignment} kind-${characterPresentation(p.actualCharacter)?.kind.toLowerCase()}${!p.alive?' snvDeadSeat':''}${ghost?' snvGhostVoteAvailable':''}${spent?' snvGhostVoteSpent':''}${selected?' issue116SelectedSeat snvSeatStateSelected':''}${selected&&!p.alive?' snvSeatStateStrong':''}${selectionClass}${!eligible?' issue116IneligibleSeat':''}`,
           onSelect:()=>controller.selectDayPlayer(p.id),
           content:<GrimoireSeatContent seat={p.seat} name={p.name} alive={p.alive} icon={ghost?<GhostVoteIcon/>:<img src={role?.image} alt=""/>} label={selectionLabel??role?.label??''}/>};
       })}
