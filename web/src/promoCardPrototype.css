@@ -1315,6 +1315,8 @@ body {
   padding-right: 22px;
   padding-bottom: 24px;
   padding-left: 22px;
+  color-scheme: light;
+  background-color: #e2d4c0;
 }
 
 .promoCard--snv.hasCompactHeading .promoLetterCopy--tb {
@@ -1323,9 +1325,11 @@ body {
 
 .promoCard--snv.hasCompactHeading .promoLetterCopy--tb h1 {
   margin-bottom: 24px;
+  color: #25132f;
   font-size: 45px;
   line-height: 1.06;
   letter-spacing: .015em;
+  -webkit-text-fill-color: #25132f;
 }
 
 .promoCard--snv.hasCompactHeading .promoInkLine {
@@ -1343,8 +1347,19 @@ body {
 }
 
 .promoCard--snv.hasCompactHeading .promoEventDetails p {
+  color: #4a3152;
   font-size: 36px;
   line-height: 1.12;
+  -webkit-text-fill-color: #4a3152;
+}
+
+.promoCard--snv.hasCompactHeading .promoLetterHeader p {
+  color: #4a3152;
+  -webkit-text-fill-color: #4a3152;
+}
+
+.promoCard--snv.hasCompactHeading .promoGlyph {
+  -webkit-text-fill-color: currentColor;
 }
 
 .promoVioletStamp {
