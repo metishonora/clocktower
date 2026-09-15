@@ -1311,6 +1311,42 @@ body {
   line-height: 1.14;
 }
 
+.promoCard--snv.hasCompactHeading .promoLetter {
+  padding-right: 22px;
+  padding-bottom: 24px;
+  padding-left: 22px;
+}
+
+.promoCard--snv.hasCompactHeading .promoLetterCopy--tb {
+  margin-top: 42px;
+}
+
+.promoCard--snv.hasCompactHeading .promoLetterCopy--tb h1 {
+  margin-bottom: 24px;
+  font-size: 45px;
+  line-height: 1.06;
+  letter-spacing: .015em;
+}
+
+.promoCard--snv.hasCompactHeading .promoInkLine {
+  width: max-content;
+  transform: scaleX(.84);
+  transform-origin: left center;
+}
+
+.promoCard--snv.hasCompactHeading .promoInkLine:nth-child(2) {
+  transform: scaleX(.93);
+}
+
+.promoCard--snv.hasCompactHeading .promoEventDetails {
+  gap: 9px;
+}
+
+.promoCard--snv.hasCompactHeading .promoEventDetails p {
+  font-size: 36px;
+  line-height: 1.12;
+}
+
 .promoVioletStamp {
   position: absolute;
   z-index: 2;
@@ -1325,6 +1361,68 @@ body {
   mix-blend-mode: multiply;
   transform: rotate(-6deg);
   pointer-events: none;
+}
+
+.promoEntangledStaffStamp {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 12px;
+  width: 86px;
+  height: 86px;
+  overflow: visible;
+  color: #502258;
+  opacity: .77;
+  filter: url("#promo-ink-distress");
+  mix-blend-mode: multiply;
+  transform: rotate(7deg);
+  pointer-events: none;
+}
+
+.promoEntangledStaffStamp path,
+.promoEntangledStaffStamp circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.promoEntangledStampRim {
+  stroke-width: 2.8;
+  stroke-dasharray: 64 3 43 4 52 2;
+}
+
+.promoEntangledStampInnerRim {
+  stroke-width: 1;
+  opacity: .6;
+}
+
+.promoEntangledStaffWings,
+.promoEntangledStaffShaft {
+  stroke-width: 3.2;
+}
+
+.promoEntangledStaffSkull {
+  fill: currentColor !important;
+  stroke-width: 1.7;
+}
+
+.promoEntangledStaffFace {
+  stroke: #eadbc5 !important;
+  stroke-width: 2.2;
+}
+
+.promoEntangledStaffVine {
+  stroke-width: 2.5;
+}
+
+.promoEntangledStaffThorns {
+  stroke-width: 1.6;
+}
+
+.promoEntangledStaffLeaves {
+  fill: currentColor !important;
+  stroke-width: 1;
 }
 
 .promoVioletStamp circle,
