@@ -444,3 +444,8 @@ mod tests {
 pub fn confirmed_event_reveal(game_file_json: &str, event_id: &str) -> String {
     clocktower_custom_domain::confirmed_event_reveal_json(game_file_json, event_id)
 }
+
+#[wasm_bindgen]
+pub fn scenario_jinxes(request_json: &str) -> String {
+    clocktower_custom_domain::scenario_jinxes_json(request_json)
+}

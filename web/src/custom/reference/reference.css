@@ -1,0 +1,53 @@
+.scenarioReferenceCatalogHeader { display:flex; justify-content:flex-end; }
+.scenarioReferencePdfButton { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:42px; padding:10px 15px; color:var(--bmr-ink,#fff5f1); background:var(--bmr-card,rgba(255,255,255,.05)); border:1px solid var(--bmr-line,#976977); border-radius:10px; font-weight:750; font-size:13px; }
+.scenarioReferencePdfButton > span { color:var(--bmr-gold,#e9c36e); }
+.scenarioReferenceCharacterLink { display:inline-flex; align-items:center; text-align:left; gap:8px; padding:2px 0; border:0; background:transparent; color:inherit; font-weight:750; }
+.scenarioReferenceCharacterLink img { width:34px; height:34px; object-fit:contain; flex-shrink:0; }
+.customScenarioSurface .scenarioReferenceLoadError { color:#562e27; background:#fff3e6; border-color:#bb9b86; font-size:12px; flex-wrap:wrap; padding:12px; }
+.scenarioReferenceJinxSection { overflow:hidden; border:1px solid var(--bmr-line); border-radius:20px; background:var(--bmr-card); }
+.scenarioReferenceJinxToggle { display:flex; width:100%; align-items:center; justify-content:space-between; padding:20px 24px; border:0; background:transparent; color:var(--bmr-ink); font-size:16px; font-weight:750; }
+.scenarioReferenceJinxToggle > span:first-child { display:flex; gap:10px; align-items:center; }
+.scenarioReferenceJinxToggle b { padding:3px 8px; border-radius:6px; font-size:12px; color:var(--bmr-muted); background:var(--bmr-card); }
+.scenarioReferenceJinxToggle > span:last-child { color:var(--bmr-muted); font-size:23px; font-weight:400; }
+.scenarioReferenceJinxRow { padding:20px 24px; border-top:1px solid var(--bmr-line); scroll-margin:30px; outline-offset:-3px; }
+.scenarioReferencePair { display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:14px; }
+.scenarioReferencePair > span { color:var(--bmr-muted); font-weight:400; }
+.scenarioReferenceJinxRow p { margin:10px 0 0; font-size:14px; line-height:1.85; color:var(--bmr-muted); word-break:keep-all; overflow-wrap:anywhere; }
+.scenarioReferenceSource { display:inline-block; color:var(--bmr-muted); font-size:12px; margin:10px 0 0; text-underline-offset:4px; }
+.scenarioReferenceLoadError { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px; border:1px solid var(--bmr-line); border-radius:16px; color:var(--bmr-ink); font-size:14px; }
+.scenarioReferenceLoadError button { color:inherit; background:var(--bmr-card); border:1px solid var(--bmr-line); padding:10px; border-radius:8px; }
+.scenarioReferenceDocumentDialog { padding:0; border:0; width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; background:#fff; color:#30292b; color-scheme:only light; isolation:isolate; }
+.scenarioReferenceDocumentDialog[open] { display:flex; flex-direction:column; }
+.scenarioReferenceDocumentDialog::backdrop { background:#191518; }
+.scenarioReferenceDocumentToolbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px 26px; background:#fff; border-bottom:1px solid #d9d3ce; flex-shrink:0; }
+.scenarioReferenceDocumentToolbar h2 { margin:0 0 4px; font-size:16px; }
+.scenarioReferenceDocumentToolbar span { font-size:12px; color:#756970; }
+.scenarioReferenceDocumentToolbar > div:last-child { display:flex; gap:12px; }
+.scenarioReferenceDocumentToolbar button { min-height:42px; padding:10px 16px; border:1px solid #c4b6b6; border-radius:8px; background:#fff; color:#5b2031; font-size:13px; font-weight:750; }
+.scenarioReferenceDocumentToolbar button.scenarioReferenceClose { width:44px; font-size:24px; padding:0; }
+.scenarioReferenceDocumentScroll { flex:1; min-height:0; overflow:auto; padding:28px 0; }
+.scenarioReferencePdfCanvas { display:block; width:min(794px,calc(100% - 32px)); height:auto; margin:0 auto 24px; background:#fff!important; filter:none!important; box-shadow:0 4px 24px #28201f20; }
+.scenarioReferenceOpenPdf { display:inline-flex; align-items:center; min-height:42px; padding:10px 16px; border:1px solid #c4b6b6; border-radius:8px; background:#fff; color:#5b2031; font-size:13px; font-weight:750; text-decoration:none; }
+.scenarioReferencePdfError,.scenarioReferencePdfStatus { color:#30292b; padding:24px; text-align:center; }
+.scenarioReferencePdfError button { margin-left:12px; }
+.customScenarioSurface .issue202Gate4ActionPanel { overflow:auto; align-content:safe center; }
+@media(max-width:760px) {
+  .customScenarioSurface .issue202Gate4ActionPanel { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .customScenarioSurface .issue202Gate4ActionPanel > :not(button) { grid-column:1 / -1; }
+}
+@media(max-width:650px) {
+  .scenarioReferenceJinxRow { padding:18px; }
+  .scenarioReferencePair { gap:7px; font-size:13px; }
+  .scenarioReferencePair img { width:28px; height:28px; }
+  .scenarioReferenceDocumentToolbar { padding:12px 14px; gap:10px; flex-wrap:wrap; }
+  .scenarioReferenceDocumentToolbar > div:first-child { flex:1; min-width:155px; }
+  .scenarioReferenceDocumentToolbar h2 { font-size:14px; }
+  .scenarioReferenceDocumentToolbar span { font-size:10px; }
+  .scenarioReferenceDocumentToolbar > div:last-child { gap:6px; }
+  .scenarioReferenceDocumentToolbar button { font-size:11px; padding:8px; }
+  .scenarioReferenceDocumentToolbar button.scenarioReferenceClose { width:36px; }
+}
+
+.scenarioReferenceSetup .setupPresentationCatalog { display:grid; min-width:0; align-self:start; gap:22px; }
+.scenarioReferenceSetup .roleCatalog { grid-template-rows:auto 1fr; }
+.scenarioReferenceSetup { padding-bottom:220px; }
