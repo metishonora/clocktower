@@ -105,7 +105,7 @@ createRoot(document.getElementById("root")!).render(
             : promoCardDateOverride
             ? ["광기가 피어나는 마을로", "여러분을 초대합니다."]
             : undefined}
-          timeOverride={is260921Invitation ? "시간: 18:00~" : promoCardDateOverride ? "시간: 19:00~" : undefined}
+          timeOverride={is260921Invitation ? "시간: 17:30~" : promoCardDateOverride ? "시간: 19:00~" : undefined}
           placeOverride={is260921Invitation
             ? "장소: 삼성사옥 1층 회의실"
             : promoCardDateOverride ? "장소: 추후 협의" : undefined}
